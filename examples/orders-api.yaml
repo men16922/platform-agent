@@ -1,0 +1,21 @@
+# Example ServiceSpec for platform-agent deployment
+# Usage: python -m src.agents.provisioning.manifest_generator examples/orders-api.yaml
+apiVersion: platform-agent/v1
+kind: ServiceDeployment
+metadata:
+  name: orders-api
+  namespace: default
+spec:
+  image: orders-api
+  version: v1.4.2
+  replicas: 3
+  ports: [8080]
+  health: /healthz
+  provider: local
+  resources:
+    cpu: 500m
+    memory: 256Mi
+  env:
+    APP_ENV: production
+    LOG_LEVEL: info
+    DB_HOST: postgres.default.svc.cluster.local
