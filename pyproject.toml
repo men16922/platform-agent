@@ -13,6 +13,7 @@ dependencies = [
     "structlog>=24.1",
     "requests>=2.31",
     "pyyaml>=6.0",
+    "strands-agents>=1.0",
 ]
 
 [project.optional-dependencies]
