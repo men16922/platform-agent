@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+dist/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# CDK
+src/stacks/node_modules/
+src/stacks/dist/
+src/stacks/cdk.out/
+
+# Environment
+.env
+
+# Overnight harness runtime state
+scripts/overnight/logs/
+scripts/overnight/STOP
+scripts/overnight/DONE
+docs/test/history/*-overnight-review-checklist.md

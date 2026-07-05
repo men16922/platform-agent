@@ -1,0 +1,212 @@
+{
+  "Comment": "platform-agent Provisioning Pipeline: Request → GeneratePlan → [ApprovalGate] → PublishArtifact → Notify",
+  "StartAt": "GeneratePlan",
+  "States": {
+
+    "GeneratePlan": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${ProvisioningFunctionArn}",
+        "Payload.$": "$"
+      },
+      "ResultSelector": {
+        "body.$": "$.Payload"
+      },
+      "ResultPath": "$.plan_result",
+      "OutputPath": "$.plan_result.body",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "PlanFailed",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "CheckApprovalNeeded"
+    },
+
+    "CheckApprovalNeeded": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.needs_approval",
+          "BooleanEquals": true,
+          "Next": "RequestApproval"
+        }
+      ],
+      "Default": "PublishArtifact"
+    },
+
+    "RequestApproval": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+      "Parameters": {
+        "QueueUrl": "${ApprovalQueueUrl}",
+        "MessageBody": {
+          "taskToken.$": "$$.Task.Token",
+          "runbook_id": "provisioning-approval",
+          "actions.$": "States.Array('Review provisioning guardrails', States.Format('Approve provisioning plan for {}', $.blueprint.service_name))",
+          "severity": "P2",
+          "request_kind": "provisioning",
+          "request_subject.$": "$.blueprint.service_name",
+          "request_summary.$": "States.Format('Requester {} asked for {} on {} with estimated monthly cost {} USD and exposure {}', $.requester, $.blueprint.service_name, $.blueprint.platform, $.cost_estimate.monthly_total_usd, $.blueprint.network.exposure)",
+          "alarm_name.$": "$.blueprint.service_name",
+          "root_cause.$": "States.Format('Provisioning request for {} on {} estimated at {} USD/month', $.blueprint.service_name, $.blueprint.platform, $.cost_estimate.monthly_total_usd)",
+          "confidence": 1
+        }
+      },
+      "HeartbeatSeconds": 86400,
+      "TimeoutSeconds": 172800,
+      "Catch": [
+        {
+          "ErrorEquals": ["States.HeartbeatTimeout", "States.Timeout"],
+          "Next": "ApprovalTimeout",
+          "ResultPath": "$.error"
+        },
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "Next": "ApprovalRejected",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "PublishArtifact"
+    },
+
+    "PublishArtifact": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${ProvisioningArtifactWriterArn}",
+        "Payload.$": "$"
+      },
+      "ResultSelector": {
+        "body.$": "$.Payload"
+      },
+      "ResultPath": "$.artifact_result",
+      "OutputPath": "$.artifact_result.body",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "ArtifactPublishFailed",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "NotifySuccess"
+    },
+
+    "NotifySuccess": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${AlertTopicArn}",
+        "Subject": "Provisioning Artifact Ready",
+        "Message": {
+          "event":        "provisioning_artifact_ready",
+          "plan_id.$":    "$.plan_id",
+          "service.$":    "$.blueprint.service_name",
+          "platform.$":   "$.blueprint.platform",
+          "requester.$":  "$.requester",
+          "status":       "artifact_ready",
+          "artifact_s3_uri.$": "$.artifact_bundle.s3_uri"
+        }
+      },
+      "Next": "ProvisioningSuccess"
+    },
+
+    "ProvisioningSuccess": {
+      "Type": "Succeed"
+    },
+
+    "ApprovalTimeout": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${AlertTopicArn}",
+        "Subject": "Provisioning Approval Timed Out",
+        "Message": {
+          "event":       "provisioning_approval_timeout",
+          "plan_id.$":   "$.plan_id",
+          "service.$":   "$.blueprint.service_name",
+          "requester.$": "$.requester"
+        }
+      },
+      "Next": "ProvisioningFailed"
+    },
+
+    "ApprovalRejected": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${AlertTopicArn}",
+        "Subject": "Provisioning Request Rejected",
+        "Message": {
+          "event":       "provisioning_rejected",
+          "plan_id.$":   "$.plan_id",
+          "service.$":   "$.blueprint.service_name",
+          "requester.$": "$.requester"
+        }
+      },
+      "Next": "ProvisioningFailed"
+    },
+
+    "PlanFailed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${AlertTopicArn}",
+        "Subject": "Provisioning Plan Generation Failed",
+        "Message": {
+          "event":     "provisioning_plan_failed",
+          "error.$":   "$.error"
+        }
+      },
+      "Next": "ProvisioningFailed"
+    },
+
+    "ArtifactPublishFailed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${AlertTopicArn}",
+        "Subject": "Provisioning Artifact Publish Failed",
+        "Message": {
+          "event":       "provisioning_artifact_publish_failed",
+          "plan_id.$":   "$.plan_id",
+          "service.$":   "$.blueprint.service_name",
+          "error.$":     "$.error"
+        }
+      },
+      "Next": "ProvisioningFailed"
+    },
+
+    "ProvisioningFailed": {
+      "Type": "Fail",
+      "Error": "ProvisioningFailed",
+      "Cause": "See SNS alert for details"
+    }
+  }
+}

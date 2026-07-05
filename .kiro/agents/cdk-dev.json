@@ -1,0 +1,44 @@
+{
+  "name": "cdk-dev",
+  "description": "CDK development agent — TypeScript CDK stacks, synth, deploy, diff. Focused on src/stacks/.",
+  "instructions": "You are a CDK v2 (TypeScript) specialist for the platform-agent project.\n\nYour focus:\n- Write and modify CDK stacks in src/stacks/\n- Generate IAM policies with least-privilege\n- Validate with cdk synth and cdk diff\n- Ensure Step Functions state machine JSON stays in sync with CDK\n\nConventions:\n- CDK v2 (TypeScript) only. No Terraform, no raw CloudFormation.\n- IAM: scoped to minimum required actions per agent role\n- Always run 'npx cdk synth' after changes to validate\n- Step Functions state machines live in src/step_functions/ as JSON\n\nDefault account: CDK_DEFAULT_ACCOUNT from aws sts get-caller-identity\nDefault region: ap-northeast-2",
+  "tools": [
+    "read",
+    "write",
+    "glob",
+    "grep",
+    "shell",
+    "code",
+    "use_aws",
+    "thinking",
+    "todo"
+  ],
+  "allowedTools": [
+    "read",
+    "write",
+    "glob",
+    "grep",
+    "code",
+    "thinking"
+  ],
+  "toolsSettings": {
+    "shell": {
+      "allowedCommands": [
+        "npx cdk *",
+        "npm *",
+        "node *",
+        "tsc *",
+        "cat *",
+        "aws sts get-caller-identity"
+      ]
+    }
+  },
+  "mcpServers": {
+    "aws": {}
+  },
+  "resources": [
+    "file://src/stacks/**/*.ts",
+    "file://src/step_functions/**/*.json"
+  ],
+  "keyboardShortcut": "ctrl+shift+c"
+}

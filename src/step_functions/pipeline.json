@@ -1,0 +1,289 @@
+{
+  "Comment": "platform-agent Operations Pipeline: Detector → Analyzer → Decision → Executor",
+  "StartAt": "Detector",
+  "States": {
+    "Detector": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${DetectorFunctionArn}",
+        "Payload.$": "$"
+      },
+      "ResultSelector": {
+        "body.$": "$.Payload"
+      },
+      "ResultPath": "$.detector_result",
+      "OutputPath": "$.detector_result.body",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "DetectorFailed",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "Analyzer"
+    },
+
+    "DetectorFailed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${AlertTopicArn}",
+        "Message": {
+          "incident": "Detector Agent failed — manual investigation required",
+          "error.$": "$.error"
+        }
+      },
+      "Next": "PipelineFailed"
+    },
+
+    "Analyzer": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${AnalyzerFunctionArn}",
+        "Payload.$": "$"
+      },
+      "ResultSelector": {
+        "body.$": "$.Payload"
+      },
+      "ResultPath": "$.analyzer_result",
+      "OutputPath": "$.analyzer_result.body",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException"],
+          "IntervalSeconds": 3,
+          "MaxAttempts": 2,
+          "BackoffRate": 1.5
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "AnalyzerFailed",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "CheckSeverity"
+    },
+
+    "AnalyzerFailed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${AlertTopicArn}",
+        "Message": {
+          "incident": "Analyzer Agent failed — manual investigation required",
+          "error.$": "$.error"
+        }
+      },
+      "Next": "PipelineFailed"
+    },
+
+    "CheckSeverity": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.severity",
+          "StringEquals": "P1",
+          "Next": "Decision"
+        },
+        {
+          "Variable": "$.severity",
+          "StringEquals": "P2",
+          "Next": "Decision"
+        },
+        {
+          "Variable": "$.severity",
+          "StringEquals": "P3",
+          "Next": "Decision"
+        }
+      ],
+      "Default": "Decision"
+    },
+
+    "Decision": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${DecisionFunctionArn}",
+        "Payload.$": "$"
+      },
+      "ResultSelector": {
+        "body.$": "$.Payload"
+      },
+      "ResultPath": "$.decision_result",
+      "OutputPath": "$.decision_result.body",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException"],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "DecisionFailed",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "CheckRemediationMode"
+    },
+
+    "DecisionFailed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${AlertTopicArn}",
+        "Message": {
+          "incident": "Decision Agent failed — manual investigation required",
+          "error.$": "$.error"
+        }
+      },
+      "Next": "PipelineFailed"
+    },
+
+    "CheckRemediationMode": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.remediation_mode",
+          "StringEquals": "AUTO",
+          "Next": "Executor"
+        },
+        {
+          "Variable": "$.remediation_mode",
+          "StringEquals": "APPROVE",
+          "Next": "WaitForApproval"
+        },
+        {
+          "Variable": "$.remediation_mode",
+          "StringEquals": "MANUAL",
+          "Next": "Executor"
+        }
+      ],
+      "Default": "Executor"
+    },
+
+    "WaitForApproval": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+      "Parameters": {
+        "QueueUrl": "${ApprovalQueueUrl}",
+        "MessageBody": {
+          "taskToken.$": "$$.Task.Token",
+          "runbook_id.$": "$.runbook_id",
+          "actions.$": "$.actions",
+          "severity.$": "$.analyzer.severity",
+          "alarm_name.$": "$.analyzer.detector.alarm.alarm_name",
+          "root_cause.$": "$.analyzer.root_cause",
+          "confidence.$": "$.analyzer.confidence"
+        }
+      },
+      "ResultPath": "$.approval_result",
+      "HeartbeatSeconds": 3600,
+      "Catch": [
+        {
+          "ErrorEquals": ["States.HeartbeatTimeout"],
+          "Next": "ApprovalTimeout",
+          "ResultPath": "$.error"
+        },
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "Next": "ApprovalRejected",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "Executor"
+    },
+
+    "ApprovalTimeout": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${AlertTopicArn}",
+        "Message": {
+          "incident": "Approval request timed out — manual action required",
+          "alarm_name.$": "$.analyzer.detector.alarm.alarm_name"
+        }
+      },
+      "Next": "PipelineFailed"
+    },
+
+    "ApprovalRejected": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${AlertTopicArn}",
+        "Message": {
+          "incident": "Remediation rejected by operator",
+          "alarm_name.$": "$.analyzer.detector.alarm.alarm_name"
+        }
+      },
+      "Next": "PipelineSucceeded"
+    },
+
+    "Executor": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${ExecutorFunctionArn}",
+        "Payload.$": "$"
+      },
+      "ResultSelector": {
+        "body.$": "$.Payload"
+      },
+      "ResultPath": "$.executor_result",
+      "OutputPath": "$.executor_result.body",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException"],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "ExecutorFailed",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "PipelineSucceeded"
+    },
+
+    "ExecutorFailed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${AlertTopicArn}",
+        "Message": {
+          "incident": "Executor Agent failed — check SSM and Slack webhook",
+          "error.$": "$.error"
+        }
+      },
+      "Next": "PipelineFailed"
+    },
+
+    "PipelineSucceeded": {
+      "Type": "Succeed"
+    },
+
+    "PipelineFailed": {
+      "Type": "Fail",
+      "Error": "PipelineFailed",
+      "Cause": "One or more agents failed. Check SNS alert for details."
+    }
+  }
+}

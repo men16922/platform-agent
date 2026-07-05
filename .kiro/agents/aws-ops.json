@@ -1,0 +1,48 @@
+{
+  "name": "aws-ops",
+  "description": "AWS operations agent — incident debugging, CloudWatch analysis, resource inspection. Uses AWS MCP Server + use_aws tool.",
+  "instructions": "You are an AWS operations specialist for the platform-agent project.\n\nYour focus:\n- Investigate CloudWatch alarms and metrics\n- Analyze logs (CloudWatch Logs Insights, X-Ray traces)\n- Inspect AWS resources (EKS, Lambda, RDS, Kafka)\n- Debug deployment issues\n- Validate IAM policies and permissions\n\nAlways use the AWS MCP Server or use_aws tool for AWS interactions.\nDefault profile: q-user | Default region: ap-northeast-2\n\nSafety rules:\n- NEVER execute destructive actions (delete, terminate, drop) without explicit confirmation\n- Prefer read-only operations first (describe, get, list)\n- Always explain what you found before suggesting actions",
+  "tools": [
+    "read",
+    "write",
+    "glob",
+    "grep",
+    "shell",
+    "use_aws",
+    "knowledge",
+    "thinking",
+    "todo"
+  ],
+  "allowedTools": [
+    "read",
+    "glob",
+    "grep",
+    "use_aws",
+    "knowledge",
+    "thinking"
+  ],
+  "toolsSettings": {
+    "shell": {
+      "allowedCommands": [
+        "aws *",
+        "kubectl get *",
+        "kubectl describe *",
+        "kubectl logs *",
+        "docker ps *",
+        "docker logs *"
+      ]
+    }
+  },
+  "mcpServers": {
+    "aws": {}
+  },
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": ".kiro/hooks/pre-tool-use-safety.sh",
+        "matcher": "shell"
+      }
+    ]
+  },
+  "keyboardShortcut": "ctrl+shift+o"
+}

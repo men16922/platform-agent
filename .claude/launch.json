@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "pytest (unit tests)",
+      "runtimeExecutable": "pytest",
+      "runtimeArgs": ["tests/", "-v"],
+      "port": null
+    },
+    {
+      "name": "CDK TypeScript watch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "watch"],
+      "port": null
+    }
+  ]
+}

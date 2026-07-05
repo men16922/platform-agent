@@ -1,0 +1,204 @@
+{
+  "Comment": "platform-agent Deployment Validation Pipeline: SmokeTest → CanaryAnalysis → RolloutDecision → [ApprovalGate |] ExecuteRollback → Notify",
+  "StartAt": "ValidateDeployment",
+  "States": {
+
+    "ValidateDeployment": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${DeploymentFunctionArn}",
+        "Payload.$": "$"
+      },
+      "ResultSelector": {
+        "body.$": "$.Payload"
+      },
+      "ResultPath": "$.validation_result",
+      "OutputPath": "$.validation_result.body",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "ValidationFailed",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "CheckRolloutAction"
+    },
+
+    "CheckRolloutAction": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.rollout_action",
+          "StringEquals": "ROLLBACK",
+          "Next": "ExecuteRollback"
+        },
+        {
+          "Variable": "$.needs_approval",
+          "BooleanEquals": true,
+          "Next": "RequestRolloutApproval"
+        }
+      ],
+      "Default": "NotifyDeploySuccess"
+    },
+
+    "ExecuteRollback": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${DeploymentRollbackFunctionArn}",
+        "Payload.$": "$"
+      },
+      "ResultSelector": {
+        "body.$": "$.Payload"
+      },
+      "ResultPath": "$.rollback_result",
+      "OutputPath": "$.rollback_result.body",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 2,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "RollbackFailed",
+          "ResultPath": "$.rollback_error"
+        }
+      ],
+      "Next": "NotifyRollback"
+    },
+
+    "RequestRolloutApproval": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sqs:sendMessage.waitForTaskToken",
+      "Parameters": {
+        "QueueUrl": "${ApprovalQueueUrl}",
+        "MessageBody": {
+          "taskToken.$": "$$.Task.Token",
+          "runbook_id": "deployment-rollout-approval",
+          "actions.$": "States.Array(States.Format('Approve rollout for {} {}', $.service_name, $.version))",
+          "severity": "P2",
+          "request_kind": "deployment",
+          "request_subject.$": "States.Format('{} {}', $.service_name, $.version)",
+          "request_summary.$": "States.Format('Deployment validation requested approval for {} {} because {}', $.service_name, $.version, $.rollout_reason)",
+          "alarm_name.$": "$.service_name",
+          "root_cause.$": "States.Format('Deployment {} requires approval: {}', $.version, $.rollout_reason)",
+          "confidence": 1
+        }
+      },
+      "HeartbeatSeconds": 3600,
+      "TimeoutSeconds": 14400,
+      "Catch": [
+        {
+          "ErrorEquals": ["States.HeartbeatTimeout", "States.Timeout"],
+          "Next": "ExecuteRollback",
+          "ResultPath": "$.error"
+        },
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "Next": "ExecuteRollback",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "NotifyDeploySuccess"
+    },
+
+    "NotifyDeploySuccess": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${AlertTopicArn}",
+        "Subject": "Deployment Validated",
+        "Message": {
+          "event":           "deployment_validated",
+          "deployment_id.$": "$.deployment_id",
+          "service.$":       "$.service_name",
+          "version.$":       "$.version",
+          "action.$":        "$.rollout_action"
+        }
+      },
+      "Next": "DeploymentSuccess"
+    },
+
+    "NotifyRollback": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${AlertTopicArn}",
+        "Subject": "Deployment Rollback Routed",
+        "Message": {
+          "event":           "deployment_rollback_routed",
+          "deployment_id.$": "$.deployment_id",
+          "service.$":       "$.service_name",
+          "version.$":       "$.version",
+          "reason.$":        "$.rollout_reason",
+          "rollback_status.$": "$.rollback_status",
+          "rollback_mode.$": "$.rollback_mode",
+          "rollback_execution_id.$": "$.rollback_execution_id",
+          "rollback_target_version.$": "$.rollback_target_version"
+        }
+      },
+      "Next": "DeploymentSuccess"
+    },
+
+    "RollbackFailed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${AlertTopicArn}",
+        "Subject": "CRITICAL: Rollback Failed",
+        "Message": {
+          "event":           "rollback_failed",
+          "deployment_id.$": "$.deployment_id",
+          "service.$":       "$.service_name",
+          "error.$":         "$.rollback_error"
+        }
+      },
+      "Next": "DeploymentFailed"
+    },
+
+    "ValidationFailed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${AlertTopicArn}",
+        "Subject": "Deployment Validation Lambda Failed",
+        "Message": {
+          "event":     "deployment_validation_failed",
+          "error.$":   "$.error"
+        }
+      },
+      "Next": "DeploymentFailed"
+    },
+
+    "DeploymentSuccess": {
+      "Type": "Succeed"
+    },
+
+    "DeploymentFailed": {
+      "Type": "Fail",
+      "Error": "DeploymentFailed",
+      "Cause": "See SNS alert for details"
+    }
+  }
+}

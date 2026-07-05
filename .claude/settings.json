@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "defaultMode": "auto"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/men1692/Desktop/AWS/platform-agent && ruff check --fix $CLAUDE_FILE_PATHS 2>&1 || true"
+          }
+        ]
+      }
+    ]
+  }
+}
