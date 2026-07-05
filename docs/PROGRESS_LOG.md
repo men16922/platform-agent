@@ -6,6 +6,25 @@
 
 ---
 
+## 2026-07-06 — Multi-Cloud AI Deployment: Task 1~3 완료
+
+- Status: 진행 중 (Task 1~3 완료, Task 4 대기)
+- Changed:
+  - Task 1: `infra/local/` (kind-config.yaml, setup.sh, teardown.sh) + Makefile local-cluster 타겟
+  - Task 2: `src/agents/adapters/deployment/` (base.py, local.py, aws.py, gcp.py, azure.py, registry.py) + models.py re-export
+  - Task 3: `src/agents/provisioning/manifest_generator.py` + `examples/orders-api.yaml` + `__main__.py`
+  - pyproject.toml: pyyaml 의존성 추가
+  - docs/NEXT_PLAN.md: Task 1~9 [auto] 등록
+- Verified:
+  - `make local-cluster` → kind 3노드 (v1.34.0) Ready + registry push/pull → Pod Running
+  - `make check` → **198 passed** (0.95s)
+  - `python -m src.agents.provisioning examples/orders-api.yaml` → 유효한 K8s YAML 출력
+  - git log: b17adeb (Task 1) → ef9f450 (Task 2) → 85d252d (Task 3)
+- Blockers: 없음
+- Next: Task 4 (Strands Deployer Agent) — strands-agents 설치 + @tool 기반 배포 에이전트
+
+---
+
 ## 2026-07-05 — overnight-harness 전환 + Kiro CLI 특화 + agent-toolkit-for-aws
 
 - Status: 완료

@@ -17,9 +17,10 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` (pytest) → **159 passed** (2026-07-05, 1.08s)
+- `make check` (pytest) → **198 passed** (2026-07-06, 0.95s)
+- `make local-cluster` → kind 3노드 (v1.34.0) Ready + registry push/pull → Pod Running
+- `python -m src.agents.provisioning examples/orders-api.yaml` → 유효한 K8s YAML
 - AWS API 접근 확인: STS/Lambda/Bedrock via q-user profile (ap-northeast-2)
-- CDK deploy: 미검증 (synth만 이전에 통과)
 
 ## 동작하는 영역 (요약)
 
@@ -31,11 +32,14 @@
 6. **Overnight harness** — overnight-harness 플러그인 기반. `make overnight` / `make overnight-kiro-once`.
 7. **Kiro CLI 에이전트** — aws-ops(운영 디버깅), cdk-dev(CDK 전용), overnight-harness(자동 루프).
 8. **AWS MCP Server** — agent-toolkit-for-aws, mcp-proxy-for-aws@1.6.3, profile: q-user.
+9. **On-prem K8s (kind)** — `make local-cluster` → 3노드 + local registry + NGINX ingress.
+10. **Deployment Adapters** — 4 provider (local/aws/gcp/azure): Build→Push→Deploy→Validate→Rollback.
+11. **Manifest Generator** — ServiceSpec YAML → K8s Deployment/Service/Ingress.
 
 ## Active Focus
 
-- STATUS/docs 현행화 (이 작업) → CDK deploy → E2E smoke test.
-- overnight-harness 첫 루프 smoke test.
+- Task 4: Strands Deployer Agent (AI 에이전트 기반 배포 자율 실행)
+- 설계 문서: `docs/plans/2026-07-05-multi-cloud-ai-deployment-platform.md`
 
 ## Open Risks / Gaps
 

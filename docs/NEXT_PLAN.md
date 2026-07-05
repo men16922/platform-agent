@@ -7,31 +7,31 @@
 
 ---
 
-## Task 1: On-prem 환경 구성 (kind + local registry) [auto] ← 진행 중
+## Task 1: On-prem 환경 구성 (kind + local registry) ✅
 
 - [x] infra/local/kind-config.yaml (3노드 + registry mirror)
 - [x] infra/local/setup.sh (registry + kind + ingress)
 - [x] infra/local/teardown.sh
 - [x] Makefile 타겟 (local-cluster, local-cluster-down, local-cluster-status)
-- [ ] 검증: `make local-cluster` → 3노드 Ready + registry push/pull 확인
-- [ ] git commit
+- [x] 검증: `make local-cluster` → 3노드 Ready + registry push/pull 확인
+- [x] git commit: b17adeb
 
-## Task 2: Deployment Adapter 추상화 [auto]
+## Task 2: Deployment Adapter 추상화 ✅
 
-- [ ] `src/agents/adapters/deployment/base.py` — ABC (BuildAdapter, RegistryAdapter, ClusterAdapter)
-- [ ] `src/agents/adapters/deployment/local.py` — docker build + localhost:5001 + kubectl
-- [ ] `src/agents/adapters/deployment/aws.py` — CodeBuild + ECR + EKS
-- [ ] `src/agents/adapters/deployment/gcp.py` — Cloud Build + AR + GKE
-- [ ] `src/agents/adapters/deployment/azure.py` — Azure Pipelines + ACR + AKS
-- [ ] `src/agents/adapters/deployment/registry.py` — factory
-- [ ] 단위 테스트 + `make check` 통과
+- [x] `src/agents/adapters/deployment/base.py` — ABC (BuildAdapter, RegistryAdapter, ClusterAdapter)
+- [x] `src/agents/adapters/deployment/local.py` — docker build + localhost:5001 + kubectl
+- [x] `src/agents/adapters/deployment/aws.py` — CodeBuild + ECR + EKS
+- [x] `src/agents/adapters/deployment/gcp.py` — Cloud Build + AR + GKE
+- [x] `src/agents/adapters/deployment/azure.py` — Azure Pipelines + ACR + AKS
+- [x] `src/agents/adapters/deployment/registry.py` — factory
+- [x] 24 단위 테스트 + git commit: ef9f450
 
-## Task 3: Service Spec 스키마 + Manifest 생성 [auto]
+## Task 3: Service Spec 스키마 + Manifest 생성 ✅
 
-- [ ] `ServiceSpec` dataclass (models.py)
-- [ ] `manifest_generator.py` — spec → K8s YAML
-- [ ] `examples/orders-api.yaml` 예시
-- [ ] dry-run 검증 테스트
+- [x] `manifest_generator.py` — spec → K8s YAML (Deployment/Service/Ingress)
+- [x] `examples/orders-api.yaml` 예시
+- [x] CLI: `python -m src.agents.provisioning spec.yaml`
+- [x] 15 단위 테스트 + git commit: 85d252d
 
 ## Task 4: Strands Deployer Agent (AWS/Local) [auto]
 
