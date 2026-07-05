@@ -27,7 +27,7 @@
 ## 2. Goals
 
 1. **AI Agent가 배포 파이프라인을 자율적으로 실행** (plan → guard → deploy → validate → report)
-2. **동일 워크플로로 AWS(EKS), GCP(GKE), On-prem(kind)** 커버
+2. **동일 워크플로로 AWS(EKS), GCP(GKE), Azure(AKS), On-prem(kind)** 커버
 3. **시스템 레벨 가드레일** — IAM/RBAC/namespace isolation/policy-as-code
 4. **Strands(AWS) + ADK(GCP)** 공통 인터페이스, MCP + A2A 프로토콜 연결
 5. **Mac 로컬에서 on-prem K8s 환경** 완전 구동 (kind + local registry)
@@ -65,6 +65,7 @@ flowchart TB
 
     subgraph "Execution Layer (Provider Adapters)"
         EKS["AWS: EKS + ECR + CodeBuild"]
+        AKS["Azure: AKS + ACR + Azure Pipelines"]
         GKE["GCP: GKE + AR + Cloud Build"]
         Kind["On-prem: kind + local registry + docker build"]
     end
@@ -75,7 +76,7 @@ flowchart TB
     Guardian -->|rejected| Reporter
     Deployer --> MCP
     Deployer --> Reporter
-    MCP --> EKS & GKE & Kind
+    MCP --> EKS & GKE & AKS & Kind
     Planner <--> A2A
     Deployer <--> A2A
 ```
@@ -96,13 +97,13 @@ flowchart LR
     D --> J["On-prem (kind)"]
 ```
 
-| 단계 | AWS | GCP | On-prem |
-|------|-----|-----|---------|
-| 클라우드 제어 | `aws cli` / Strands tools | `gcloud` / ADK tools | `kubectl` direct |
-| 이미지 빌드 | CodeBuild | Cloud Build | `docker build` (local) |
-| 이미지 저장 | ECR | Artifact Registry | local registry (localhost:5001) |
-| 클러스터 배포 | `kubectl` + Helm | `kubectl` + Helm | `kubectl` + kustomize |
-| 검증 | `curl` + CloudWatch | `curl` + Cloud Monitoring | `curl` + `kubectl logs` |
+| 단계 | AWS | GCP | Azure | On-prem |
+|------|-----|-----|-------|---------|
+| 클라우드 제어 | `aws cli` / Strands tools | `gcloud` / ADK tools | `az cli` / Azure SDK | `kubectl` direct |
+| 이미지 빌드 | CodeBuild | Cloud Build | Azure Pipelines / ACR Tasks | `docker build` (local) |
+| 이미지 저장 | ECR | Artifact Registry | ACR | local registry (localhost:5001) |
+| 클러스터 배포 | `kubectl` + Helm | `kubectl` + Helm | `kubectl` + Helm | `kubectl` + kustomize |
+| 검증 | `curl` + CloudWatch | `curl` + Cloud Monitoring | `curl` + Azure Monitor | `curl` + `kubectl logs` |
 
 ---
 
@@ -164,6 +165,7 @@ make local-cluster-down  # 정리
 | AWS 인프라 (VPC/EKS/IAM) | **CDK (TypeScript)** | 기존 platform-agent 스택 유지 |
 | K8s 워크로드 | **Helm + kustomize** | 멀티클라우드 동일 manifest |
 | GCP 인프라 | **gcloud CLI / Terraform** | ADK agent가 직접 호출 |
+| Azure 인프라 (AKS/ACR) | **az cli / Bicep** | Azure SDK 또는 agent 직접 호출 |
 | On-prem | **kind config + kubectl** | 로컬 테스트, IaC 불필요 |
 
 ---
@@ -339,13 +341,14 @@ src/agents/adapters/deployment/
 ├── registry.py      # get_deployment_adapters(provider) factory
 ├── local.py         # docker build + localhost:5001 + kubectl apply
 ├── aws.py           # CodeBuild + ECR + EKS kubectl
-└── gcp.py           # Cloud Build + AR + GKE kubectl
+├── gcp.py           # Cloud Build + AR + GKE kubectl
+└── azure.py         # Azure Pipelines + ACR + AKS kubectl
 ```
 
 **테스트:**
 - `LocalBuildAdapter.build(spec)` → docker build 성공 (mock)
 - `LocalClusterAdapter.deploy(manifest)` → kubectl apply dry-run
-- factory 함수 provider="local"|"aws"|"gcp" 라우팅 검증
+- factory 함수 provider="local"|"aws"|"gcp"|"azure" 라우팅 검증
 
 **Demo:** `get_deployment_adapters("local").deploy(manifest)` → kind에 리소스 생성.
 
@@ -390,15 +393,18 @@ src/agents/adapters/deployment/
 
 ---
 
-### Task 5: ADK Deployer Agent (GCP) [auto]
+### Task 5: ADK Deployer Agent (GCP) + Azure Adapter [auto]
 
-**목표:** Google ADK로 배포 에이전트 구현. A2A Agent Card로 discover 가능.
+**목표:** Google ADK로 배포 에이전트 구현 + Azure deployment adapter. A2A Agent Card로 discover 가능.
 
 **구현:**
 - `src/agents/ai/adk_deployer.py` — ADK Agent 정의
 - `src/agents/ai/a2a_card.json` — Agent Card (capabilities, endpoint)
 - `src/agents/ai/tools/gcp_build.py` — Cloud Build 트리거
 - `src/agents/ai/tools/gcp_deploy.py` — GKE kubectl apply
+- `src/agents/ai/tools/azure_build.py` — ACR Tasks 빌드
+- `src/agents/ai/tools/azure_deploy.py` — AKS kubectl apply
+- `src/agents/adapters/deployment/azure.py` — Azure Pipelines + ACR + AKS
 
 **테스트:**
 - ADK test harness로 tool 호출 검증
@@ -477,7 +483,7 @@ src/agents/adapters/deployment/
 
 ## 9. Non-Goals (Out of Scope)
 
-- AKS (Azure) — 추후 확장, 이번은 AWS + GCP + on-prem
+- Multi-region replication — 단일 리전으로 충분
 - 멀티 lane 병렬 overnight 루프 — 단일 lane으로 충분
 - Production 배포 — 이번은 로컬/staging 레벨 검증까지
 
@@ -489,12 +495,37 @@ src/agents/adapters/deployment/
 - [ ] `make deploy-local spec=examples/orders-api.yaml` → Agent가 자율 배포 완료
 - [ ] Guardian이 prod 배포 차단, staging 통과
 - [ ] Strands ↔ ADK cross-agent 통신 성공 (MCP + A2A)
+- [ ] Azure adapter (ACR + AKS) 단위 테스트 통과
 - [ ] 전체 flow 5분 이내 (local cluster 기준)
 - [ ] `make check` gate 통과 (기존 159 tests + 신규)
 
 ---
 
-## 11. References
+## 11. Azure Account Setup
+
+| 옵션 | 비용 | AKS | 비고 |
+|------|------|-----|------|
+| **Free Account** | $200 크레딧 (30일) | ✅ AKS Free tier | 카드 등록 필요 |
+| **Azure for Students** | $100 크레딧 (12개월) | ✅ | 학교 이메일 or GitHub Student Pack |
+| **Pay-as-you-go** | 사용한 만큼 | ✅ AKS Free tier = 관리비 $0 | 워커 노드 VM만 과금 |
+
+**AKS Free tier:** 관리 평면 비용 $0. 워커 노드 `Standard_B2s` (2vCPU, 4GB) 1대 ≈ $30/월.
+
+```bash
+# Azure CLI 설치
+brew install azure-cli
+
+# 로그인
+az login
+
+# AKS 클러스터 생성 (Free tier)
+az aks create --resource-group platform-agent-rg --name platform-agent-aks \\
+  --node-count 1 --node-vm-size Standard_B2s --tier free
+```
+
+---
+
+## 12. References
 
 - [Strands Agents SDK](https://strandsagents.com/) — AWS, MCP 네이티브
 - [Google ADK](https://cloud.google.com/products/agent-builder) — GCP, A2A 네이티브
