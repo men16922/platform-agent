@@ -33,12 +33,12 @@
 - [x] CLI: `python -m src.agents.provisioning spec.yaml`
 - [x] 15 단위 테스트 + git commit: 85d252d
 
-## Task 4: Strands Deployer Agent (AWS/Local) [auto]
+## Task 4: Strands Deployer Agent (AWS/Local) ✅
 
-- [ ] `src/agents/ai/strands_deployer.py` — Agent 정의
-- [ ] `src/agents/ai/tools/` — @tool (build, push, deploy, validate, rollback)
-- [ ] pyproject.toml에 `strands-agents>=1.0` 추가
-- [ ] mock model 테스트 (tool 호출 시퀀스)
+- [x] `src/agents/ai/strands_deployer.py` — Agent 정의 + system prompt
+- [x] `src/agents/ai/tools/` — @tool (build, push, deploy, validate, rollback)
+- [x] pyproject.toml에 `strands-agents>=1.0` 추가
+- [x] 19 단위 테스트 (mock model) + git commit: 547b1a0
 
 ## Task 5: ADK Deployer Agent (GCP) + Azure Adapter [auto]
 

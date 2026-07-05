@@ -17,10 +17,12 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` (pytest) → **198 passed** (2026-07-06, 0.95s)
+- `make check` (pytest) → **217 passed** (2026-07-06, 1.12s)
 - `make local-cluster` → kind 3노드 (v1.34.0) Ready + registry push/pull → Pod Running
 - `python -m src.agents.provisioning examples/orders-api.yaml` → 유효한 K8s YAML
+- Strands @tool 함수 5개: mock subprocess 테스트 통과
 - AWS API 접근 확인: STS/Lambda/Bedrock via q-user profile (ap-northeast-2)
+- 클라우드 배포: 없음 (전부 로컬 코드/테스트만. 비용 $0)
 
 ## 동작하는 영역 (요약)
 

@@ -6,22 +6,25 @@
 
 ---
 
-## 2026-07-06 — Multi-Cloud AI Deployment: Task 1~3 완료
+## 2026-07-06 — Multi-Cloud AI Deployment: Task 1~4 완료
 
-- Status: 진행 중 (Task 1~3 완료, Task 4 대기)
+- Status: 진행 중 (Task 1~4 완료, Task 5 대기)
 - Changed:
   - Task 1: `infra/local/` (kind-config.yaml, setup.sh, teardown.sh) + Makefile local-cluster 타겟
   - Task 2: `src/agents/adapters/deployment/` (base.py, local.py, aws.py, gcp.py, azure.py, registry.py) + models.py re-export
   - Task 3: `src/agents/provisioning/manifest_generator.py` + `examples/orders-api.yaml` + `__main__.py`
-  - pyproject.toml: pyyaml 의존성 추가
+  - Task 4: `src/agents/ai/strands_deployer.py` + `src/agents/ai/tools/` (build, push, deploy, validate, rollback)
+  - pyproject.toml: pyyaml + strands-agents 의존성 추가
   - docs/NEXT_PLAN.md: Task 1~9 [auto] 등록
 - Verified:
   - `make local-cluster` → kind 3노드 (v1.34.0) Ready + registry push/pull → Pod Running
-  - `make check` → **198 passed** (0.95s)
+  - `make check` → **217 passed** (1.12s)
   - `python -m src.agents.provisioning examples/orders-api.yaml` → 유효한 K8s YAML 출력
-  - git log: b17adeb (Task 1) → ef9f450 (Task 2) → 85d252d (Task 3)
+  - Strands @tool 함수 5개 mock 테스트 통과
+  - 클라우드 배포: 없음 (전부 로컬 코드/테스트만)
+  - git log: b17adeb → ef9f450 → 85d252d → 547b1a0
 - Blockers: 없음
-- Next: Task 4 (Strands Deployer Agent) — strands-agents 설치 + @tool 기반 배포 에이전트
+- Next: Task 5 (ADK Deployer + Azure adapter) 또는 Task 6 (Guardian Agent)
 
 ---
 
