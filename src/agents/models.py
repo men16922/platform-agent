@@ -113,3 +113,28 @@ def _to_dict(obj: Any) -> Any:
     if isinstance(obj, dict):
         return {k: _to_dict(v) for k, v in obj.items()}
     return obj
+
+
+# ------------------------------------------------------------------
+# Deployment models (re-exported from adapters.deployment.base)
+# ------------------------------------------------------------------
+
+from src.agents.adapters.deployment.base import (  # noqa: E402
+    ServiceSpec,
+    BuildResult,
+    PushResult,
+    DeployResult,
+    DeployStatus,
+    ValidationResult,
+    RollbackResult,
+)
+
+__all_deployment__ = [
+    "ServiceSpec",
+    "BuildResult",
+    "PushResult",
+    "DeployResult",
+    "DeployStatus",
+    "ValidationResult",
+    "RollbackResult",
+]
