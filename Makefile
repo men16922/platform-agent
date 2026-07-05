@@ -23,6 +23,21 @@ lint:  ## run ruff
 synth:  ## CDK synth
 	cd src/stacks && npx cdk synth
 
+# ===== On-prem (kind) cluster targets =====
+
+local-cluster:  ## create kind cluster + local registry + ingress
+	bash infra/local/setup.sh
+
+local-cluster-down:  ## destroy kind cluster + registry
+	bash infra/local/teardown.sh
+
+local-cluster-status:  ## show cluster node and pod status
+	@kubectl get nodes -o wide 2>/dev/null || echo "No cluster running"
+	@echo ""
+	@kubectl get pods -A 2>/dev/null || true
+
+.PHONY: local-cluster local-cluster-down local-cluster-status
+
 # ===== overnight harness targets (append to your Makefile) =====
 # The overnight runner + helpers are the Single Source of Truth in the overnight-harness
 # PLUGIN; this repo does NOT vendor them. These targets resolve the installed plugin at

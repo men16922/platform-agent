@@ -1,41 +1,80 @@
 # NEXT_PLAN — platform-agent
 
-최종 갱신: 2026-07-05
+최종 갱신: 2026-07-06
 
 > **열린 작업만.** 완료 이력은 여기 두지 않는다(→ `COMPLETED_SUMMARY.md` / `PROGRESS_LOG.md`). **≤120줄** 유지.
+> 설계 문서: `docs/plans/2026-07-05-multi-cloud-ai-deployment-platform.md`
 
 ---
 
-## P0 — 인프라 배포 + E2E 검증 [auto]
+## Task 1: On-prem 환경 구성 (kind + local registry) [auto] ← 진행 중
 
-- [ ] `git init` + 초기 커밋 (overnight 루프 전제조건)
-- [ ] `npx cdk deploy` 실행 (ap-northeast-2, q-user)
-- [ ] 테스트 알람 트리거 → Operations 파이프라인 E2E 확인 (alarm → detect → analyze → decide → execute → Slack)
-- [ ] 검증 결과를 STATUS.md baseline에 반영
-- 근거: q-user 접근 확인됨. CDK synth 통과. 실 배포만 남음.
+- [x] infra/local/kind-config.yaml (3노드 + registry mirror)
+- [x] infra/local/setup.sh (registry + kind + ingress)
+- [x] infra/local/teardown.sh
+- [x] Makefile 타겟 (local-cluster, local-cluster-down, local-cluster-status)
+- [ ] 검증: `make local-cluster` → 3노드 Ready + registry push/pull 확인
+- [ ] git commit
 
-## P1 — 비-AWS provider 런타임 연결
+## Task 2: Deployment Adapter 추상화 [auto]
 
-- [ ] detector가 provider registry를 통해 GCP/Azure/on-prem signal adapter를 실제 dispatch하도록 연결
-- [ ] executor가 비-AWS execution adapter로 capability→provider action 해석을 실제 호출하도록 연결
-- [ ] 연결된 비-AWS 경로에 대한 단위 + (가능 시) 통합 테스트 추가
-- 근거: 현재 비-AWS는 scaffold. production path는 AWS-native 한정.
+- [ ] `src/agents/adapters/deployment/base.py` — ABC (BuildAdapter, RegistryAdapter, ClusterAdapter)
+- [ ] `src/agents/adapters/deployment/local.py` — docker build + localhost:5001 + kubectl
+- [ ] `src/agents/adapters/deployment/aws.py` — CodeBuild + ECR + EKS
+- [ ] `src/agents/adapters/deployment/gcp.py` — Cloud Build + AR + GKE
+- [ ] `src/agents/adapters/deployment/azure.py` — Azure Pipelines + ACR + AKS
+- [ ] `src/agents/adapters/deployment/registry.py` — factory
+- [ ] 단위 테스트 + `make check` 통과
 
-## P2 — overnight-harness 루프 검증
+## Task 3: Service Spec 스키마 + Manifest 생성 [auto]
 
-- [ ] `MAX_ITER=1 make overnight-kiro-once` smoke test
-- [ ] gate 통과 + commit 생성 확인
-- [ ] 실패 시 diagnose + 수정
-- 근거: 하네스 전환 완료. 첫 자동 루프 동작 확인 필요.
+- [ ] `ServiceSpec` dataclass (models.py)
+- [ ] `manifest_generator.py` — spec → K8s YAML
+- [ ] `examples/orders-api.yaml` 예시
+- [ ] dry-run 검증 테스트
 
-## P3 — runbook override 등록 자동화
+## Task 4: Strands Deployer Agent (AWS/Local) [auto]
 
-- [ ] `incident-runbooks` override 등록을 위한 CLI 도구
-- [ ] 등록 시 `validate_runbook` 사전 검증으로 malformed 차단
+- [ ] `src/agents/ai/strands_deployer.py` — Agent 정의
+- [ ] `src/agents/ai/tools/` — @tool (build, push, deploy, validate, rollback)
+- [ ] pyproject.toml에 `strands-agents>=1.0` 추가
+- [ ] mock model 테스트 (tool 호출 시퀀스)
+
+## Task 5: ADK Deployer Agent (GCP) + Azure Adapter [auto]
+
+- [ ] `src/agents/ai/adk_deployer.py` — ADK Agent
+- [ ] `src/agents/ai/a2a_card.json` — Agent Card
+- [ ] Azure tools (azure_build, azure_deploy)
+- [ ] `src/agents/adapters/deployment/azure.py` 구현
+
+## Task 6: Guardian Agent (Policy-as-Code) [auto]
+
+- [ ] `src/agents/ai/guardian.py` — 정책 평가 Agent
+- [ ] `src/agents/ai/policies/deploy-policy.yaml`
+- [ ] `src/agents/ai/policy_engine.py` — YAML 정책 파싱/평가
+- [ ] 테스트: prod → APPROVE, staging → AUTO, delete → REJECT
+
+## Task 7: MCP + A2A Gateway [auto]
+
+- [ ] `src/agents/ai/gateway/mcp_server.py` — kubectl/docker MCP
+- [ ] `src/agents/ai/gateway/a2a_server.py` — FastAPI A2A
+- [ ] `src/agents/ai/gateway/bridge.py` — MCP↔A2A 번역
+- [ ] cross-agent 통신 테스트
+
+## Task 8: E2E Pipeline Orchestration (Graph) [auto]
+
+- [ ] `src/agents/ai/pipeline.py` — Strands Graph DAG
+- [ ] `src/agents/ai/orchestrator.py` — CLI entry
+- [ ] E2E 테스트: spec → plan → guard → deploy(kind) → validate → report
+
+## Task 9: Overnight Harness 연동 [auto]
+
+- [ ] overnight 루프 smoke test (`make overnight-kiro-once`)
+- [ ] gate 통과 + commit 확인
 
 ---
 
-## 작업 규칙 (요약)
+## 작업 규칙
 
 - 멀티파일 변경 후 `make check` 실행, pass/fail 보고.
 - 묶음 완료 시 `/checkpoint`로 PROGRESS_LOG append + STATUS 갱신.
