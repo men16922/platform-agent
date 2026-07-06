@@ -1,30 +1,33 @@
 # PROGRESS_LOG — platform-agent
 
-최종 갱신: 2026-07-05
+최종 갱신: 2026-07-06
 
 > 최신 3–5개 증분. **최신이 위.** **≤120줄.** 넘치면 `/tidy-docs` 로 압축.
 
 ---
 
-## 2026-07-06 — Multi-Cloud AI Deployment: Task 1~4 완료
+## 2026-07-06 — Task 5~9 완료 + 3-cloud 실배포 E2E 검증
 
-- Status: 진행 중 (Task 1~4 완료, Task 5 대기)
+- Status: 완료 (전체 로드맵 주요 항목 소진)
 - Changed:
-  - Task 1: `infra/local/` (kind-config.yaml, setup.sh, teardown.sh) + Makefile local-cluster 타겟
-  - Task 2: `src/agents/adapters/deployment/` (base.py, local.py, aws.py, gcp.py, azure.py, registry.py) + models.py re-export
-  - Task 3: `src/agents/provisioning/manifest_generator.py` + `examples/orders-api.yaml` + `__main__.py`
-  - Task 4: `src/agents/ai/strands_deployer.py` + `src/agents/ai/tools/` (build, push, deploy, validate, rollback)
-  - pyproject.toml: pyyaml + strands-agents 의존성 추가
-  - docs/NEXT_PLAN.md: Task 1~9 [auto] 등록
+  - Task 5: ADK Deployer (GCP) + MSFT Deployer (Azure) + A2A Card + GCP/Azure tools (6 files)
+  - Task 6: Guardian Agent + policy_engine.py + deploy-policy.yaml (7 rules)
+  - Task 7: MCP Server (9 tools) + A2A Server (FastAPI) + Bridge
+  - Task 8: E2E Pipeline DAG (7 nodes) + orchestrator CLI
+  - Task 9: Overnight harness gate 통과 (329 passed)
+  - CDK deploy: Lambda bundling fix + requirements-lambda.txt
+  - README.md 현행화 (Multi-Cloud AI Platform 구조 추가)
+  - 4 test result docs (docs/test/)
 - Verified:
-  - `make local-cluster` → kind 3노드 (v1.34.0) Ready + registry push/pull → Pod Running
-  - `make check` → **217 passed** (1.12s)
-  - `python -m src.agents.provisioning examples/orders-api.yaml` → 유효한 K8s YAML 출력
-  - Strands @tool 함수 5개 mock 테스트 통과
-  - 클라우드 배포: 없음 (전부 로컬 코드/테스트만)
-  - git log: b17adeb → ef9f450 → 85d252d → 547b1a0
+  - `make check` → **329 passed** (1.24s)
+  - Local kind E2E: dev ✅, staging ✅, prod ⏸(블로킹 정상)
+  - Strands + Bedrock Claude Haiku: 자율 4-tool 호출 → 실배포
+  - CDK deploy: 97 resources CREATE_COMPLETE (us-east-1)
+  - GCP: Artifact Registry push + GKE Autopilot 배포 (asia-northeast3)
+  - Azure: ACR push + AKS 배포 (koreacentral)
+  - 모든 클라우드 리소스 정리 완료 (비용 $0 복귀)
 - Blockers: 없음
-- Next: Task 5 (ADK Deployer + Azure adapter) 또는 Task 6 (Guardian Agent)
+- Next: Slack interactive buttons / ADK·MSFT LLM 실호출 / 아키텍처 다이어그램
 
 ---
 

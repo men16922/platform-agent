@@ -20,8 +20,8 @@
 - **동작하는 것:** Operations 4단계 파이프라인 + Slack HITL 승인 + AWS portability seam + runbook seed/scan.
 - **하네스:** overnight-harness 플러그인 기반 (5 engine). `make overnight-kiro-once` 로 smoke.
 - **Kiro 특화:** aws-ops / cdk-dev / overnight-harness 3개 에이전트 + safety hook + AWS MCP Server.
-- **검증:** `make check` → 159 passed (2026-07-05). AWS API 접근 정상 (q-user).
-- **현재 초점:** CDK deploy → E2E smoke test → 비-AWS 런타임 연결. (→ NEXT_PLAN)
+- **검증:** `make check` → 329 passed (2026-07-06). 3-cloud 실배포 완료 (AWS/GCP/Azure + Local).
+- **현재 초점:** Slack buttons / ADK·MSFT LLM 실호출 / 아키텍처 다이어그램.
 
 ## Guardrails
 

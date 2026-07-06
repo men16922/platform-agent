@@ -17,12 +17,15 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` (pytest) → **217 passed** (2026-07-06, 1.12s)
+- `make check` (pytest) → **329 passed** (2026-07-06, 1.24s)
 - `make local-cluster` → kind 3노드 (v1.34.0) Ready + registry push/pull → Pod Running
 - `python -m src.agents.provisioning examples/orders-api.yaml` → 유효한 K8s YAML
-- Strands @tool 함수 5개: mock subprocess 테스트 통과
-- AWS API 접근 확인: STS/Lambda/Bedrock via q-user profile (ap-northeast-2)
-- 클라우드 배포: 없음 (전부 로컬 코드/테스트만. 비용 $0)
+- `python -m src.agents.ai.orchestrator` → E2E pipeline 7-step 성공 (dev/staging)
+- Strands Agent + Bedrock Claude Haiku → 자율 4-tool 호출 → 실배포
+- CDK deploy → 97 resources CREATE_COMPLETE (EventBridge+StepFunctions+Lambda+DynamoDB)
+- GCP: Artifact Registry push + GKE Autopilot 배포 ✅
+- Azure: ACR push + AKS 배포 ✅
+- 클라우드 배포: 전부 정리 완료 (비용 $0 복귀)
 
 ## 동작하는 영역 (요약)
 
@@ -40,12 +43,11 @@
 
 ## Active Focus
 
-- Task 4: Strands Deployer Agent (AI 에이전트 기반 배포 자율 실행)
-- 설계 문서: `docs/plans/2026-07-05-multi-cloud-ai-deployment-platform.md`
+- 로드맵 주요 항목 완료 (Task 1~9 + 3-cloud E2E)
+- 다음: Slack interactive buttons / ADK·MSFT LLM 실호출 / 아키텍처 다이어그램
 
 ## Open Risks / Gaps
 
-1. **CDK 미배포** — synth만 통과. 실 배포(alarm→pipeline→SSM→Slack) E2E 미검증.
-2. **비-AWS production runtime 미연결** — adapter 파일 존재, 런타임 경로는 AWS만.
-3. **runbook override 등록 자동화 부재** — 수동 AWS CLI/SDK 전제.
-4. **git repo 미초기화** — 현재 디렉토리에 `.git` 없음. overnight 루프 사용 전 `git init` + 초기 커밋 필요.
+1. **CDK 재배포 시 Lambda bundling** — Docker 없이 로컬 pip 번들링 사용 중 (arm64↔amd64 주의).
+2. **비-AWS AI Agent LLM 미호출** — ADK(Gemini)/MSFT(GPT-4o) 실제 LLM 호출 미검증 (API key 필요).
+3. **Slack App 미연결** — APPROVE 승인 버튼은 코드만 존재, 실 Slack App 미생성.
