@@ -114,6 +114,23 @@ export class IncidentAgentStack extends cdk.Stack {
       });
     const projectRoot = path.join(__dirname, '../..');
     const lambdaCode = lambda.Code.fromAsset(projectRoot, {
+      bundling: {
+        image: lambda.Runtime.PYTHON_3_11.bundlingImage,
+        local: {
+          tryBundle(outputDir: string): boolean {
+            const { execSync } = require('child_process');
+            try {
+              execSync(`pip install -r ${projectRoot}/requirements-lambda.txt -t ${outputDir} --quiet`);
+              execSync(`cp -r ${projectRoot}/src ${outputDir}/src`);
+              return true;
+            } catch {
+              return false;
+            }
+          },
+        },
+        command: ['bash', '-c', 'pip install -r /asset-input/requirements-lambda.txt -t /asset-output && cp -r /asset-input/src /asset-output/src'],
+        platform: 'linux/arm64',
+      },
       exclude: [
         '.env',
         '.env.*',
