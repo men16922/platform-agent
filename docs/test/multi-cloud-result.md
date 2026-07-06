@@ -138,9 +138,32 @@ Local (macOS)
 
 ## 전체 클라우드 커버리지
 
-| Provider | Registry | Cluster | AI Agent Framework | 상태 |
-|----------|----------|---------|-------------------|------|
-| AWS | ECR | EKS (CDK) | Strands (Bedrock Claude) | ✅ 코드+CDK+LLM 검증 |
-| GCP | Artifact Registry | GKE Autopilot | ADK (Gemini) | ✅ 실배포 검증 |
-| Azure | ACR | AKS | MS Agent Framework (GPT-4o) | ✅ 실배포 검증 |
-| Local | localhost:5001 | kind | — | ✅ E2E 파이프라인 검증 |
+| Provider | Registry | Cluster | AI Agent Framework | LLM 실호출 | 상태 |
+|----------|----------|---------|-------------------|-----------|------|
+| AWS | ECR | EKS (CDK) | Strands (Bedrock Claude Haiku) | ✅ 자율 4-tool | ✅ |
+| GCP | Artifact Registry | GKE Autopilot | ADK (Vertex AI Gemini 2.5 Flash) | ✅ 자율 4-tool | ✅ |
+| Azure | ACR | AKS | OpenAI SDK (Azure OpenAI GPT-5-mini) | ✅ 자율 4-tool | ✅ |
+| Local | localhost:5001 | kind | — | — | ✅ E2E 파이프라인 검증 |
+
+### AI Agent LLM 실호출 결과
+
+**모든 AI Agent가 자연어 명령 → 자율 tool calling → kind 클러스터 실배포를 완료했습니다.**
+
+| Agent | Model | 환경 변수 | Tool 호출 순서 |
+|-------|-------|-----------|--------------|
+| Strands | `apac.anthropic.claude-3-haiku-20240307-v1:0` | `AWS_PROFILE=q-user` | build→push→deploy→validate |
+| ADK | `gemini-2.5-flash` (Vertex AI) | `GOOGLE_GENAI_USE_VERTEXAI=TRUE`, `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION=us-central1` | build→push→deploy→validate |
+| MSFT | `gpt-5-mini` (Azure OpenAI) | `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY` | build→push→deploy→validate |
+
+### GPT-5-mini 응답 예시
+
+```
+Done — msft-test v1.0.0 was built, pushed, deployed, and validated on provider "local".
+
+Summary:
+- Image built: localhost:5001/msft-test:1.0.0
+- Image pushed: localhost:5001/msft-test:1.0.0
+- Deployed to cluster: default namespace, 1 replica
+- Endpoint: http://localhost:80
+- Health: deployment "msft-test" successfully rolled out
+```
