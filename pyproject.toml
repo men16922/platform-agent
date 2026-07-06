@@ -16,6 +16,12 @@ dependencies = [
     "strands-agents>=1.0",
 ]
 
+[project.optional-dependencies.gcp]
+dependencies = ["google-adk>=1.0"]
+
+[project.optional-dependencies.azure]
+dependencies = ["agent-framework>=1.0", "azure-identity>=1.15"]
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.1",

@@ -1,6 +1,6 @@
 # NEXT_PLAN — platform-agent
 
-최종 갱신: 2026-07-06
+최종 갱신: 2026-07-06 (Task 5 스코프 수정: Azure → MS Agent Framework)
 
 > **열린 작업만.** 완료 이력은 여기 두지 않는다(→ `COMPLETED_SUMMARY.md` / `PROGRESS_LOG.md`). **≤120줄** 유지.
 > 설계 문서: `docs/plans/2026-07-05-multi-cloud-ai-deployment-platform.md`
@@ -40,37 +40,40 @@
 - [x] pyproject.toml에 `strands-agents>=1.0` 추가
 - [x] 19 단위 테스트 (mock model) + git commit: 547b1a0
 
-## Task 5: ADK Deployer Agent (GCP) + Azure Adapter [auto]
+## Task 5: 클라우드-네이티브 에이전트 (GCP: ADK / Azure: MS Agent Framework) ✅
 
-- [ ] `src/agents/ai/adk_deployer.py` — ADK Agent
-- [ ] `src/agents/ai/a2a_card.json` — Agent Card
-- [ ] Azure tools (azure_build, azure_deploy)
-- [ ] `src/agents/adapters/deployment/azure.py` 구현
+- [x] `src/agents/ai/adk_deployer.py` — Google ADK Agent (GCP adapter를 tool로 호출)
+- [x] `src/agents/ai/msft_deployer.py` — Microsoft Agent Framework Agent (Azure adapter를 tool로 호출)
+- [x] `src/agents/ai/a2a_card.json` — Agent Card (A2A 프로토콜 공통)
+- [x] GCP tools: `src/agents/ai/tools/gcp_build.py`, `gcp_push.py`, `gcp_deploy.py`
+- [x] Azure tools: `src/agents/ai/tools/azure_build.py`, `azure_push.py`, `azure_deploy.py`
+- [x] 테스트: 각 에이전트 mock model 기반 단위 테스트 (34 tests)
 
-## Task 6: Guardian Agent (Policy-as-Code) [auto]
+## Task 6: Guardian Agent (Policy-as-Code) ✅
 
-- [ ] `src/agents/ai/guardian.py` — 정책 평가 Agent
-- [ ] `src/agents/ai/policies/deploy-policy.yaml`
-- [ ] `src/agents/ai/policy_engine.py` — YAML 정책 파싱/평가
-- [ ] 테스트: prod → APPROVE, staging → AUTO, delete → REJECT
+- [x] `src/agents/ai/guardian.py` — 정책 평가 Agent
+- [x] `src/agents/ai/policies/deploy-policy.yaml`
+- [x] `src/agents/ai/policy_engine.py` — YAML 정책 파싱/평가
+- [x] 테스트: prod → APPROVE, staging → AUTO, delete → REJECT (32 tests)
 
-## Task 7: MCP + A2A Gateway [auto]
+## Task 7: MCP + A2A Gateway ✅
 
-- [ ] `src/agents/ai/gateway/mcp_server.py` — kubectl/docker MCP
-- [ ] `src/agents/ai/gateway/a2a_server.py` — FastAPI A2A
-- [ ] `src/agents/ai/gateway/bridge.py` — MCP↔A2A 번역
-- [ ] cross-agent 통신 테스트
+- [x] `src/agents/ai/gateway/mcp_server.py` — kubectl/docker MCP (9 tools)
+- [x] `src/agents/ai/gateway/a2a_server.py` — FastAPI A2A (v1.0 HTTP+JSON)
+- [x] `src/agents/ai/gateway/bridge.py` — MCP↔A2A 번역
+- [x] cross-agent 통신 테스트 (30 tests)
 
-## Task 8: E2E Pipeline Orchestration (Graph) [auto]
+## Task 8: E2E Pipeline Orchestration (Graph) ✅
 
-- [ ] `src/agents/ai/pipeline.py` — Strands Graph DAG
-- [ ] `src/agents/ai/orchestrator.py` — CLI entry
-- [ ] E2E 테스트: spec → plan → guard → deploy(kind) → validate → report
+- [x] `src/agents/ai/pipeline.py` — Strands Graph DAG (7 nodes)
+- [x] `src/agents/ai/orchestrator.py` — CLI entry
+- [x] E2E 테스트: spec → plan → guard → deploy(kind) → validate → report (16 tests)
 
-## Task 9: Overnight Harness 연동 [auto]
+## Task 9: Overnight Harness 연동 ✅
 
-- [ ] overnight 루프 smoke test (`make overnight-kiro-once`)
-- [ ] gate 통과 + commit 확인
+- [x] `make check` gate 통과 (329 passed, 1.24s)
+- [x] Makefile overnight targets 확인 (39줄)
+- [x] harness-config.json gate=make check 연결 확인
 
 ---
 

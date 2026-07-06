@@ -1,0 +1,75 @@
+# Deploy Policy — Guardian Agent rule definitions
+# Decision: APPROVE (human approval needed), AUTO (proceed), REJECT (block)
+
+version: "1.0"
+description: "Deployment guardrails for platform-agent"
+
+rules:
+  # --- Environment-based rules ---
+  - id: prod-requires-approval
+    description: "Production deployments require human approval"
+    condition:
+      field: environment
+      operator: in
+      values: ["production", "prod"]
+    decision: APPROVE
+    priority: 100
+
+  - id: staging-auto-deploy
+    description: "Staging deployments proceed automatically"
+    condition:
+      field: environment
+      operator: in
+      values: ["staging", "stg", "stage"]
+    decision: AUTO
+    priority: 50
+
+  - id: dev-auto-deploy
+    description: "Development deployments proceed automatically"
+    condition:
+      field: environment
+      operator: in
+      values: ["development", "dev", "local"]
+    decision: AUTO
+    priority: 10
+
+  # --- Action-based rules (safety override) ---
+  - id: reject-destructive-actions
+    description: "Block destructive actions (delete, drop, terminate)"
+    condition:
+      field: action
+      operator: matches
+      values: ["delete", "drop", "terminate", "destroy"]
+    decision: REJECT
+    priority: 1000
+
+  - id: reject-namespace-delete
+    description: "Block namespace deletion"
+    condition:
+      field: action
+      operator: equals
+      values: ["delete-namespace"]
+    decision: REJECT
+    priority: 1000
+
+  # --- Scale-based rules ---
+  - id: large-scale-requires-approval
+    description: "Deployments with >10 replicas require approval"
+    condition:
+      field: replicas
+      operator: gt
+      values: [10]
+    decision: APPROVE
+    priority: 200
+
+  - id: cross-region-requires-approval
+    description: "Cross-region deployments require approval"
+    condition:
+      field: cross_region
+      operator: equals
+      values: [true]
+    decision: APPROVE
+    priority: 150
+
+# Default decision when no rules match
+default_decision: AUTO

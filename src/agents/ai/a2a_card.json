@@ -1,0 +1,104 @@
+{
+  "name": "Platform Deployer Agent",
+  "description": "Multi-cloud container deployment agent. Autonomously builds, pushes, deploys, validates, and rolls back container services across AWS (EKS/ECR), GCP (GKE/Artifact Registry), and Azure (AKS/ACR).",
+  "version": "1.0.0",
+  "supportedInterfaces": [
+    {
+      "url": "https://platform-agent.example.com/a2a/v1",
+      "protocolBinding": "HTTP+JSON",
+      "protocolVersion": "1.0"
+    }
+  ],
+  "provider": {
+    "organization": "Platform Engineering",
+    "url": "https://github.com/your-org/platform-agent"
+  },
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false
+  },
+  "defaultInputModes": ["text/plain", "application/json"],
+  "defaultOutputModes": ["text/plain", "application/json"],
+  "skills": [
+    {
+      "id": "deploy-aws",
+      "name": "AWS Deployment",
+      "description": "Build, push, and deploy container services to AWS EKS using ECR and CodeBuild. Validates deployment health and supports automatic rollback.",
+      "tags": ["aws", "eks", "ecr", "kubernetes", "deployment", "containers"],
+      "examples": [
+        "Deploy orders-api v1.4.2 to EKS with 3 replicas",
+        "Build and deploy my-service to the AWS cluster in ap-northeast-2"
+      ],
+      "inputModes": ["text/plain", "application/json"],
+      "outputModes": ["text/plain", "application/json"]
+    },
+    {
+      "id": "deploy-gcp",
+      "name": "GCP Deployment",
+      "description": "Build, push, and deploy container services to GKE using Artifact Registry and Cloud Build. Validates deployment health and supports automatic rollback.",
+      "tags": ["gcp", "gke", "artifact-registry", "cloud-build", "kubernetes", "deployment", "containers"],
+      "examples": [
+        "Deploy payment-service v2.0.0 to GKE with 2 replicas",
+        "Build and push analytics-worker to Artifact Registry, then deploy to GKE"
+      ],
+      "inputModes": ["text/plain", "application/json"],
+      "outputModes": ["text/plain", "application/json"]
+    },
+    {
+      "id": "deploy-azure",
+      "name": "Azure Deployment",
+      "description": "Build, push, and deploy container services to AKS using ACR Tasks. Validates deployment health and supports automatic rollback.",
+      "tags": ["azure", "aks", "acr", "kubernetes", "deployment", "containers"],
+      "examples": [
+        "Deploy user-service v3.1.0 to AKS in koreacentral",
+        "Build with ACR Tasks and deploy to our Azure cluster"
+      ],
+      "inputModes": ["text/plain", "application/json"],
+      "outputModes": ["text/plain", "application/json"]
+    },
+    {
+      "id": "deploy-local",
+      "name": "Local Deployment",
+      "description": "Build, push, and deploy container services to a local kind cluster with localhost registry. Ideal for development and testing.",
+      "tags": ["local", "kind", "kubernetes", "development", "testing", "containers"],
+      "examples": [
+        "Deploy my-service v0.1.0 to the local kind cluster",
+        "Test deploy frontend-app locally with 1 replica"
+      ],
+      "inputModes": ["text/plain", "application/json"],
+      "outputModes": ["text/plain", "application/json"]
+    },
+    {
+      "id": "validate-deployment",
+      "name": "Deployment Validation",
+      "description": "Validate the health and readiness of a deployed service by checking rollout status across any supported provider.",
+      "tags": ["validation", "health-check", "kubernetes", "rollout"],
+      "examples": [
+        "Validate that orders-api is healthy on GKE",
+        "Check if the latest deployment of user-service is ready on AKS"
+      ]
+    },
+    {
+      "id": "rollback-deployment",
+      "name": "Deployment Rollback",
+      "description": "Rollback a failed deployment to its previous stable version on any supported provider.",
+      "tags": ["rollback", "recovery", "kubernetes"],
+      "examples": [
+        "Rollback orders-api on EKS to the previous version",
+        "The deploy failed — rollback payment-service on GKE"
+      ]
+    }
+  ],
+  "securitySchemes": {
+    "bearer": {
+      "httpAuthSecurityScheme": {
+        "scheme": "Bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token for authentication"
+      }
+    }
+  },
+  "securityRequirements": [
+    {"bearer": []}
+  ]
+}
