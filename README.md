@@ -11,6 +11,18 @@ Slack / Jira / GitHub / Alarm
     → Provisioning Agent   (CDK + IAM + cost estimate)
     → Deployment Agent     (smoke test + canary + rollback)
     → Operations Agent     (detect + analyze + decide + execute)
+    → Guardian Agent       (policy-as-code gatekeeper)
+```
+
+### Multi-Cloud AI Deployment Platform
+
+```
+Natural Language Request
+    → Strands Agent  (AWS/Local — Bedrock Claude)
+    → ADK Agent      (GCP — Gemini)
+    → MS Agent Framework (Azure — GPT-4o)
+    → Guardian Agent (Policy: APPROVE / AUTO / REJECT)
+    → E2E Pipeline DAG (plan→guard→build→push→deploy→validate→report)
 ```
 
 ---
@@ -150,40 +162,54 @@ platform-agent/
 │   ├── opencode.json              # opencode permission config
 │   └── Makefile.harness.snippet   # Makefile integration
 │
+├── infra/local/                   # On-prem kind cluster setup
+│   ├── kind-config.yaml           # 3-node cluster + registry
+│   ├── setup.sh                   # Registry + kind + ingress
+│   └── teardown.sh
+│
 ├── .claude/harness-config.json    # Per-repo harness config (doc paths, gate, engine)
 ├── .kiro/                         # Kiro CLI agent profile + steering docs
 ├── .codex/rules/overnight.rules   # Codex permission rules
 │
 ├── src/
 │   ├── agents/
-│   │   ├── models.py          # Shared dataclasses (AlarmContext → ExecutorOutput)
-│   │   ├── provisioning/      # Day 1 scaffolding helpers
-│   │   ├── deployment/        # Smoke/canary/rollback helpers
-│   │   ├── operations/        # Canonical Day 2 handlers + reporting jobs
-│   │   ├── detector/          # Compatibility shim
-│   │   ├── analyzer/          # Compatibility shim
-│   │   ├── decision/          # Compatibility shim
-│   │   ├── executor/          # Compatibility shim
-│   │   └── approval_bridge/   # Compatibility shim
+│   │   ├── models.py              # Shared dataclasses (AlarmContext → ExecutorOutput)
+│   │   ├── provisioning/          # Day 1: CDK gen + manifest gen + CLI
+│   │   ├── deployment/            # Smoke/canary/rollback helpers
+│   │   ├── operations/            # Canonical Day 2 handlers + reporting
+│   │   ├── adapters/deployment/   # Multi-cloud adapters (local/aws/gcp/azure)
+│   │   └── ai/
+│   │       ├── strands_deployer.py   # Strands Agent (AWS/Local — Bedrock)
+│   │       ├── adk_deployer.py       # ADK Agent (GCP — Gemini)
+│   │       ├── msft_deployer.py      # MS Agent Framework (Azure — GPT-4o)
+│   │       ├── guardian.py           # Guardian Agent (policy gatekeeper)
+│   │       ├── policy_engine.py      # YAML policy parser/evaluator
+│   │       ├── pipeline.py           # E2E Pipeline DAG
+│   │       ├── orchestrator.py       # CLI entry point
+│   │       ├── a2a_card.json         # A2A protocol Agent Card
+│   │       ├── policies/             # deploy-policy.yaml
+│   │       ├── tools/                # @tool functions (build/push/deploy/validate/rollback)
+│   │       └── gateway/              # MCP Server + A2A Server + Bridge
 │   ├── stacks/                # CDK v2 TypeScript
 │   └── step_functions/        # State machine JSON
 │
 ├── docs/
+│   ├── test/                  # Integration test results
 │   ├── engineering/           # Harness engineering bibles
 │   ├── architecture.md
 │   ├── agents.md
-│   ├── models.md
-│   ├── portability.md
-│   ├── status.md
-│   └── conventions.md
+│   └── status.md
 │
-└── tests/
-    ├── test_models.py
-    ├── test_detector.py
-    ├── test_decision.py
-    ├── test_provisioning.py
-    ├── test_deployment.py
-    └── test_reporting.py
+├── examples/
+│   └── orders-api.yaml        # ServiceSpec example
+│
+└── tests/                     # 329 unit tests
+    ├── test_strands_deployer.py
+    ├── test_cloud_native_deployers.py
+    ├── test_guardian.py
+    ├── test_gateway.py
+    ├── test_pipeline.py
+    └── ...
 ```
 
 Current implementation snapshot: [`docs/status.md`](docs/status.md)
@@ -234,10 +260,17 @@ See [`docs/engineering/HARNESS_ENGINEERING.md`](docs/engineering/HARNESS_ENGINEE
 
 ## Roadmap
 
+- [x] Multi-cloud deployment adapters (AWS/GCP/Azure/Local)
+- [x] AI Agent deployers (Strands/ADK/MS Agent Framework)
+- [x] Policy-as-Code Guardian Agent
+- [x] MCP + A2A Gateway for cross-agent communication
+- [x] E2E Pipeline DAG orchestration
+- [x] On-prem kind cluster integration
+- [ ] CDK deploy to AWS (EventBridge + Step Functions + Lambda)
 - [ ] Multi-region support (EventBridge cross-region bus)
 - [ ] DynamoDB Global Tables for incident history replication
 - [ ] Slack interactive buttons for APPROVE/REJECT (replace SQS polling)
-- [ ] Provider adapter layer for GCP / Azure / on-prem
+- [ ] GCP/Azure live provider connection
 - [ ] Capability-based runbook schema (cloud-neutral execution)
 
 ---
