@@ -42,6 +42,8 @@ Most AWS tooling solves only one slice of the platform lifecycle. `platform-agen
 
 ## Architecture
 
+![Architecture Diagram](docs/architecture.png)
+
 ```
 Slack / Jira / GitHub / Alarm
         │
