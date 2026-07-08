@@ -9,17 +9,17 @@ from src.agents.adapters.deployment.base import DeploymentAdapters
 
 def get_deployment_adapters(provider: str) -> DeploymentAdapters:
     """Return a DeploymentAdapters bundle for the given provider."""
-    if provider == "local":
-        from src.agents.adapters.deployment.local import (
-            LocalBuildAdapter,
-            LocalClusterAdapter,
-            LocalRegistryAdapter,
+    if provider in ("onprem", "local"):
+        from src.agents.adapters.deployment.onprem import (
+            OnPremBuildAdapter,
+            OnPremClusterAdapter,
+            OnPremRegistryAdapter,
         )
         return DeploymentAdapters(
-            provider="local",
-            build=LocalBuildAdapter(),
-            registry=LocalRegistryAdapter(),
-            cluster=LocalClusterAdapter(),
+            provider="onprem",
+            build=OnPremBuildAdapter(),
+            registry=OnPremRegistryAdapter(),
+            cluster=OnPremClusterAdapter(),
         )
     elif provider == "aws":
         from src.agents.adapters.deployment.aws import (
@@ -63,4 +63,4 @@ def get_deployment_adapters(provider: str) -> DeploymentAdapters:
 
 def supported_deployment_providers() -> list[str]:
     """Return list of supported deployment providers."""
-    return ["local", "aws", "gcp", "azure"]
+    return ["onprem", "aws", "gcp", "azure"]

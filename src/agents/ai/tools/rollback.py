@@ -10,14 +10,14 @@ from src.agents.adapters.deployment import ServiceSpec, get_deployment_adapters
 @tool
 def rollback_deployment(
     service_name: str,
-    provider: str = "local",
+    provider: str = "onprem",
     namespace: str = "default",
 ) -> dict:
     """Rollback a deployment to its previous version.
 
     Args:
         service_name: Name of the deployment to rollback.
-        provider: Deployment provider (local, aws, gcp, azure).
+        provider: Deployment provider (onprem, aws, gcp, azure).
         namespace: Kubernetes namespace.
 
     Returns:

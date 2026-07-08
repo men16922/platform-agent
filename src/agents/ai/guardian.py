@@ -44,7 +44,7 @@ def evaluate_policy(
     action: str = "deploy",
     service_name: str = "",
     replicas: int = 1,
-    provider: str = "local",
+    provider: str = "onprem",
     namespace: str = "default",
     cross_region: bool = False,
     version: str = "",
@@ -56,7 +56,7 @@ def evaluate_policy(
         action: Deployment action (deploy, rollback, delete, scale).
         service_name: Name of the service being deployed.
         replicas: Number of replicas requested.
-        provider: Cloud provider (local, aws, gcp, azure).
+        provider: Cloud provider (onprem, aws, gcp, azure).
         namespace: Kubernetes namespace.
         cross_region: Whether this is a cross-region deployment.
         version: Version being deployed.
@@ -189,7 +189,7 @@ def evaluate_deploy_request(
     action: str = "deploy",
     service_name: str = "",
     replicas: int = 1,
-    provider: str = "local",
+    provider: str = "onprem",
     namespace: str = "default",
     cross_region: bool = False,
     version: str = "",

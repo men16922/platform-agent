@@ -13,7 +13,7 @@ Usage:
         service_name="orders-api",
         version="v1.4.2",
         environment="staging",
-        provider="local",
+        provider="onprem",
         replicas=2,
     )
 
@@ -46,7 +46,7 @@ class PipelineSpec:
     service_name: str
     version: str
     environment: str = "dev"
-    provider: str = "local"
+    provider: str = "onprem"
     replicas: int = 1
     namespace: str = "default"
     image: str = ""

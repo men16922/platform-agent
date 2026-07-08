@@ -11,7 +11,7 @@ spec:
   replicas: 3
   ports: [8080]
   health: /healthz
-  provider: local
+  provider: onprem
   resources:
     cpu: 500m
     memory: 256Mi

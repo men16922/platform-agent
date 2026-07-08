@@ -27,10 +27,10 @@ from src.agents.adapters.deployment.registry import (
     get_deployment_adapters,
     supported_deployment_providers,
 )
-from src.agents.adapters.deployment.local import (
-    LocalBuildAdapter,
-    LocalClusterAdapter,
-    LocalRegistryAdapter,
+from src.agents.adapters.deployment.onprem import (
+    OnPremBuildAdapter,
+    OnPremClusterAdapter,
+    OnPremRegistryAdapter,
 )
 
 
@@ -43,7 +43,7 @@ class TestServiceSpec:
         assert spec.ports == [8080]
         assert spec.health_path == "/healthz"
         assert spec.namespace == "default"
-        assert spec.provider == "local"
+        assert spec.provider == "onprem"
         assert spec.resources == {"cpu": "250m", "memory": "256Mi"}
 
     def test_custom_values(self):
@@ -67,19 +67,24 @@ class TestServiceSpec:
 class TestDeploymentFactory:
     def test_supported_providers(self):
         providers = supported_deployment_providers()
-        assert "local" in providers
+        assert "onprem" in providers
         assert "aws" in providers
         assert "gcp" in providers
         assert "azure" in providers
         assert len(providers) == 4
 
     def test_get_local_adapters(self):
-        adapters = get_deployment_adapters("local")
+        adapters = get_deployment_adapters("onprem")
         assert isinstance(adapters, DeploymentAdapters)
-        assert adapters.provider == "local"
+        assert adapters.provider == "onprem"
         assert isinstance(adapters.build, BuildAdapter)
         assert isinstance(adapters.registry, RegistryAdapter)
         assert isinstance(adapters.cluster, ClusterAdapter)
+
+    def test_get_local_alias(self):
+        """'local' is accepted as backward-compat alias for 'onprem'."""
+        adapters = get_deployment_adapters("local")
+        assert adapters.provider == "onprem"
 
     def test_get_aws_adapters(self):
         adapters = get_deployment_adapters("aws")
@@ -100,10 +105,10 @@ class TestDeploymentFactory:
 
 # --- Local Build Adapter ---
 
-class TestLocalBuildAdapter:
+class TestOnPremBuildAdapter:
     def test_build_success(self):
         spec = ServiceSpec(name="app", image="app", version="v1")
-        adapter = LocalBuildAdapter()
+        adapter = OnPremBuildAdapter()
 
         mock_result = MagicMock()
         mock_result.returncode = 0
@@ -121,7 +126,7 @@ class TestLocalBuildAdapter:
 
     def test_build_failure(self):
         spec = ServiceSpec(name="app", image="app", version="v1")
-        adapter = LocalBuildAdapter()
+        adapter = OnPremBuildAdapter()
 
         mock_result = MagicMock()
         mock_result.returncode = 1
@@ -137,14 +142,14 @@ class TestLocalBuildAdapter:
 
 # --- Local Registry Adapter ---
 
-class TestLocalRegistryAdapter:
+class TestOnPremRegistryAdapter:
     def test_image_uri(self):
-        adapter = LocalRegistryAdapter()
+        adapter = OnPremRegistryAdapter()
         uri = adapter.image_uri("myapp", "v2.0")
         assert uri == "localhost:5001/myapp:v2.0"
 
     def test_push_success(self):
-        adapter = LocalRegistryAdapter()
+        adapter = OnPremRegistryAdapter()
 
         mock_result = MagicMock()
         mock_result.returncode = 0
@@ -158,7 +163,7 @@ class TestLocalRegistryAdapter:
         assert result.image_uri == "localhost:5001/myapp:v1"
 
     def test_push_failure(self):
-        adapter = LocalRegistryAdapter()
+        adapter = OnPremRegistryAdapter()
 
         mock_result = MagicMock()
         mock_result.returncode = 1
@@ -174,10 +179,10 @@ class TestLocalRegistryAdapter:
 
 # --- Local Cluster Adapter ---
 
-class TestLocalClusterAdapter:
+class TestOnPremClusterAdapter:
     def test_deploy_success(self):
         spec = ServiceSpec(name="web", image="web", version="v1", replicas=2)
-        adapter = LocalClusterAdapter()
+        adapter = OnPremClusterAdapter()
 
         mock_result = MagicMock()
         mock_result.returncode = 0
@@ -195,7 +200,7 @@ class TestLocalClusterAdapter:
 
     def test_deploy_generates_valid_manifest(self):
         spec = ServiceSpec(name="api", image="api", version="v1", ports=[8080], replicas=3)
-        adapter = LocalClusterAdapter()
+        adapter = OnPremClusterAdapter()
         manifest = adapter._generate_manifest(spec, "localhost:5001/api:v1")
 
         assert manifest["apiVersion"] == "v1"
@@ -216,7 +221,7 @@ class TestLocalClusterAdapter:
 
     def test_validate_success(self):
         spec = ServiceSpec(name="api", image="api", version="v1")
-        adapter = LocalClusterAdapter()
+        adapter = OnPremClusterAdapter()
 
         mock_result = MagicMock()
         mock_result.returncode = 0
@@ -231,7 +236,7 @@ class TestLocalClusterAdapter:
 
     def test_rollback_success(self):
         spec = ServiceSpec(name="api", image="api", version="v1")
-        adapter = LocalClusterAdapter()
+        adapter = OnPremClusterAdapter()
 
         mock_result = MagicMock()
         mock_result.returncode = 0

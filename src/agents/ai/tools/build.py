@@ -12,7 +12,7 @@ def build_image(
     service_name: str,
     image: str,
     version: str,
-    provider: str = "local",
+    provider: str = "onprem",
     context_path: str = ".",
 ) -> dict:
     """Build a container image for a service.
@@ -21,7 +21,7 @@ def build_image(
         service_name: Name of the service to build.
         image: Image name (without registry prefix).
         version: Image version/tag.
-        provider: Deployment provider (local, aws, gcp, azure).
+        provider: Deployment provider (onprem, aws, gcp, azure).
         context_path: Docker build context path.
 
     Returns:

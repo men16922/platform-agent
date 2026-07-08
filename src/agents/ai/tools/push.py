@@ -11,14 +11,14 @@ from src.agents.adapters.deployment import get_deployment_adapters
 def push_image(
     image: str,
     version: str,
-    provider: str = "local",
+    provider: str = "onprem",
 ) -> dict:
     """Push a built container image to the provider's registry.
 
     Args:
         image: Image name (without registry prefix).
         version: Image version/tag.
-        provider: Deployment provider (local, aws, gcp, azure).
+        provider: Deployment provider (onprem, aws, gcp, azure).
 
     Returns:
         Dict with push result (success, image_uri, error).

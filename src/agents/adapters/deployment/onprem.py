@@ -1,12 +1,15 @@
 """
-Local deployment adapters — docker build + localhost:5001 registry + kubectl.
+On-Prem deployment adapters — docker build + private registry + kubectl.
 
-Designed for the on-prem kind cluster created by `make local-cluster`.
+Deploys to any Kubernetes cluster reachable via kubeconfig.
+For local testing, uses kind cluster + localhost:5001 registry.
+For production, configure ONPREM_REGISTRY_HOST env var for your private registry.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from typing import Any
 
@@ -35,10 +38,10 @@ def _run(cmd: list[str], timeout: int = 60) -> tuple[int, str, str]:
         return 1, "", f"Command not found: {cmd[0]}"
 
 
-class LocalBuildAdapter(BuildAdapter):
+class OnPremBuildAdapter(BuildAdapter):
     """Build container images using local Docker."""
 
-    provider = "local"
+    provider = "onprem"
 
     def build(self, spec: ServiceSpec, context_path: str = ".") -> BuildResult:
         image_tag = f"localhost:5001/{spec.image}:{spec.version}"
@@ -50,11 +53,11 @@ class LocalBuildAdapter(BuildAdapter):
         return BuildResult(success=False, image_tag=image_tag, error=stderr, logs=stdout)
 
 
-class LocalRegistryAdapter(RegistryAdapter):
-    """Push images to the local kind registry (localhost:5001)."""
+class OnPremRegistryAdapter(RegistryAdapter):
+    """Push images to the on-prem registry (configurable via ONPREM_REGISTRY_HOST)."""
 
-    provider = "local"
-    _registry_host = "localhost:5001"
+    provider = "onprem"
+    _registry_host = os.environ.get("ONPREM_REGISTRY_HOST", "localhost:5001")
 
     def push(self, image: str, tag: str) -> PushResult:
         image_uri = self.image_uri(image, tag)
@@ -69,10 +72,10 @@ class LocalRegistryAdapter(RegistryAdapter):
         return f"{self._registry_host}/{name}:{tag}"
 
 
-class LocalClusterAdapter(ClusterAdapter):
-    """Deploy to the local kind cluster using kubectl."""
+class OnPremClusterAdapter(ClusterAdapter):
+    """Deploy to the on-prem Kubernetes cluster using kubectl."""
 
-    provider = "local"
+    provider = "onprem"
 
     def deploy(self, spec: ServiceSpec, image_uri: str) -> DeployResult:
         manifest = self._generate_manifest(spec, image_uri)

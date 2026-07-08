@@ -10,14 +10,14 @@ from src.agents.adapters.deployment import ServiceSpec, get_deployment_adapters
 @tool
 def validate_deployment(
     service_name: str,
-    provider: str = "local",
+    provider: str = "onprem",
     namespace: str = "default",
 ) -> dict:
     """Validate a deployed service by checking rollout status and readiness.
 
     Args:
         service_name: Name of the deployment to validate.
-        provider: Deployment provider (local, aws, gcp, azure).
+        provider: Deployment provider (onprem, aws, gcp, azure).
         namespace: Kubernetes namespace.
 
     Returns:

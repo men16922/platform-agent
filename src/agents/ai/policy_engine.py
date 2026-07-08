@@ -39,7 +39,7 @@ class DeployRequest:
     action: str = "deploy"
     service_name: str = ""
     replicas: int = 1
-    provider: str = "local"
+    provider: str = "onprem"
     namespace: str = "default"
     cross_region: bool = False
     version: str = ""

@@ -7,8 +7,8 @@ autonomously executes: Build → Push → Deploy → Validate → (Rollback if n
 Usage:
     from src.agents.ai.strands_deployer import create_deployer_agent
 
-    agent = create_deployer_agent(provider="local")
-    result = agent("Deploy orders-api v1.4.2 to the local cluster with 3 replicas")
+    agent = create_deployer_agent(provider="onprem")
+    result = agent("Deploy orders-api v1.4.2 to the on-prem cluster with 3 replicas")
 """
 
 from __future__ import annotations
@@ -40,12 +40,12 @@ When asked to deploy a service, follow this exact sequence:
 - If any step fails, report the error clearly and stop (do NOT proceed to the next step).
 - If validation fails after deploy, automatically rollback and report the failure.
 - Never skip the validation step.
-- Use the provider specified by the user (local, aws, gcp, azure). Default is "local".
+- Use the provider specified by the user (onprem, aws, gcp, azure). Default is "onprem".
 - Report a clear summary at the end: what was deployed, where, and whether it succeeded.
 
 ## Available Providers
 
-- `local` — kind cluster with localhost:5001 registry (on-prem Mac)
+- `onprem` — On-premise Kubernetes cluster with private registry (via MCP Gateway)
 - `aws` — EKS + ECR + CodeBuild
 - `gcp` — GKE + Artifact Registry + Cloud Build
 - `azure` — AKS + ACR + ACR Tasks
@@ -59,14 +59,14 @@ When asked to deploy a service, follow this exact sequence:
 
 
 def create_deployer_agent(
-    provider: str = "local",
+    provider: str = "onprem",
     model: str | None = None,
     **kwargs: Any,
 ) -> Agent:
     """Create a Strands deployer agent configured for the given provider.
 
     Args:
-        provider: Target deployment provider (local, aws, gcp, azure).
+        provider: Target deployment provider (onprem, aws, gcp, azure).
         model: Model ID override. Defaults to Bedrock Claude if None.
         **kwargs: Additional Agent constructor arguments.
 

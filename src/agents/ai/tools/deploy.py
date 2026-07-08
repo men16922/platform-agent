@@ -13,7 +13,7 @@ def deploy_to_cluster(
     image: str,
     version: str,
     image_uri: str,
-    provider: str = "local",
+    provider: str = "onprem",
     replicas: int = 1,
     namespace: str = "default",
     health_path: str = "/healthz",
@@ -26,7 +26,7 @@ def deploy_to_cluster(
         image: Image name.
         version: Image version.
         image_uri: Full image URI (from push step).
-        provider: Deployment provider (local, aws, gcp, azure).
+        provider: Deployment provider (onprem, aws, gcp, azure).
         replicas: Number of replicas.
         namespace: Kubernetes namespace.
         health_path: Health check endpoint path.

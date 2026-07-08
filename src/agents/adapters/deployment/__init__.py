@@ -4,7 +4,7 @@ Deployment adapters — multi-cloud container deployment abstraction.
 Usage:
     from src.agents.adapters.deployment import get_deployment_adapters
 
-    adapters = get_deployment_adapters("local")
+    adapters = get_deployment_adapters("onprem")
     build_result = adapters.build.build(spec)
     push_result = adapters.registry.push(image, tag)
     deploy_result = adapters.cluster.deploy(spec, push_result.image_uri)

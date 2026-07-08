@@ -21,7 +21,7 @@ class TestPipelineSpec:
     def test_defaults(self):
         spec = PipelineSpec(service_name="api", version="v1")
         assert spec.environment == "dev"
-        assert spec.provider == "local"
+        assert spec.provider == "onprem"
         assert spec.replicas == 1
         assert spec.image == "api"  # defaults to service_name
 
@@ -95,7 +95,7 @@ class TestDeployPipelineExecution:
             service_name="web",
             version="v1.0",
             environment="dev",
-            provider="local",
+            provider="onprem",
             replicas=2,
         )
 
@@ -112,7 +112,7 @@ class TestDeployPipelineExecution:
             service_name="api",
             version="v2.0",
             environment="prod",
-            provider="local",
+            provider="onprem",
         )
 
         pipeline = DeployPipeline()
@@ -129,7 +129,7 @@ class TestDeployPipelineExecution:
             service_name="api",
             version="v1.0",
             environment="dev",
-            provider="local",
+            provider="onprem",
         )
 
         pipeline = DeployPipeline()
@@ -162,7 +162,7 @@ class TestDeployPipelineExecution:
         # First call (build) fails, rest succeed
         mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="no Dockerfile")
 
-        spec = PipelineSpec(service_name="web", version="v1.0", environment="dev", provider="local")
+        spec = PipelineSpec(service_name="web", version="v1.0", environment="dev", provider="onprem")
 
         pipeline = DeployPipeline()
         result = pipeline.run(spec)
@@ -191,7 +191,7 @@ class TestDeployPipelineExecution:
 
         mock_run.side_effect = side_effect
 
-        spec = PipelineSpec(service_name="web", version="v1.0", environment="dev", provider="local")
+        spec = PipelineSpec(service_name="web", version="v1.0", environment="dev", provider="onprem")
 
         pipeline = DeployPipeline()
         result = pipeline.run(spec)
@@ -209,7 +209,7 @@ class TestDeployPipelineExecution:
             service_name="api",
             version="v3.0",
             environment="staging",
-            provider="local",
+            provider="onprem",
             replicas=3,
         )
 
@@ -228,11 +228,11 @@ class TestOrchestrator:
 
         from src.agents.ai.orchestrator import main
 
-        exit_code = main(["--service", "web", "--version", "v1", "--env", "dev", "--provider", "local"])
+        exit_code = main(["--service", "web", "--version", "v1", "--env", "dev", "--provider", "onprem"])
         assert exit_code == 0
 
     def test_main_blocked(self):
         from src.agents.ai.orchestrator import main
 
-        exit_code = main(["--service", "api", "--version", "v1", "--env", "prod", "--provider", "local"])
+        exit_code = main(["--service", "api", "--version", "v1", "--env", "prod", "--provider", "onprem"])
         assert exit_code == 2  # blocked for approval

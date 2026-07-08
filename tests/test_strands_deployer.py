@@ -31,7 +31,7 @@ class TestDeployerSystemPrompt:
         assert "Rollback" in DEPLOYER_SYSTEM_PROMPT
 
     def test_prompt_includes_providers(self):
-        assert "local" in DEPLOYER_SYSTEM_PROMPT
+        assert "onprem" in DEPLOYER_SYSTEM_PROMPT
         assert "aws" in DEPLOYER_SYSTEM_PROMPT
         assert "gcp" in DEPLOYER_SYSTEM_PROMPT
         assert "azure" in DEPLOYER_SYSTEM_PROMPT
@@ -46,14 +46,14 @@ class TestDeployerSystemPrompt:
 class TestCreateDeployerAgent:
     @patch("src.agents.ai.strands_deployer.Agent")
     def test_creates_agent_with_tools(self, mock_agent_cls):
-        agent = create_deployer_agent(provider="local")
+        agent = create_deployer_agent(provider="onprem")
 
         mock_agent_cls.assert_called_once()
         call_kwargs = mock_agent_cls.call_args[1]
         assert "system_prompt" in call_kwargs
         assert "tools" in call_kwargs
         assert call_kwargs["tools"] == ALL_DEPLOY_TOOLS
-        assert "local" in call_kwargs["system_prompt"]
+        assert "onprem" in call_kwargs["system_prompt"]
 
     @patch("src.agents.ai.strands_deployer.Agent")
     def test_provider_appears_in_system_prompt(self, mock_agent_cls):
@@ -71,7 +71,7 @@ class TestCreateDeployerAgent:
 
     @patch("src.agents.ai.strands_deployer.Agent")
     def test_no_model_by_default(self, mock_agent_cls):
-        create_deployer_agent(provider="local")
+        create_deployer_agent(provider="onprem")
 
         call_kwargs = mock_agent_cls.call_args[1]
         assert "model" not in call_kwargs
@@ -88,7 +88,7 @@ class TestBuildImageTool:
             service_name="api",
             image="api",
             version="v1",
-            provider="local",
+            provider="onprem",
             context_path="/app",
         )
 
@@ -101,7 +101,7 @@ class TestBuildImageTool:
         mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="no Dockerfile")
 
         result = build_image.__wrapped__(
-            service_name="api", image="api", version="v1", provider="local"
+            service_name="api", image="api", version="v1", provider="onprem"
         )
 
         assert result["success"] is False
@@ -113,7 +113,7 @@ class TestPushImageTool:
     def test_push_success(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0, stdout="Pushed", stderr="")
 
-        result = push_image.__wrapped__(image="api", version="v1", provider="local")
+        result = push_image.__wrapped__(image="api", version="v1", provider="onprem")
 
         assert result["success"] is True
         assert result["image_uri"] == "localhost:5001/api:v1"
@@ -122,7 +122,7 @@ class TestPushImageTool:
     def test_push_failure(self, mock_run):
         mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="refused")
 
-        result = push_image.__wrapped__(image="api", version="v1", provider="local")
+        result = push_image.__wrapped__(image="api", version="v1", provider="onprem")
 
         assert result["success"] is False
 
@@ -137,7 +137,7 @@ class TestDeployToClusterTool:
             image="web",
             version="v1",
             image_uri="localhost:5001/web:v1",
-            provider="local",
+            provider="onprem",
             replicas=2,
         )
 
@@ -154,7 +154,7 @@ class TestDeployToClusterTool:
             image="web",
             version="v1",
             image_uri="localhost:5001/web:v1",
-            provider="local",
+            provider="onprem",
         )
 
         assert result["status"] == "failed"
@@ -165,7 +165,7 @@ class TestValidateDeploymentTool:
     def test_validate_healthy(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0, stdout="successfully rolled out", stderr="")
 
-        result = validate_deployment.__wrapped__(service_name="web", provider="local")
+        result = validate_deployment.__wrapped__(service_name="web", provider="onprem")
 
         assert result["healthy"] is True
         assert result["checks_passed"] == 1
@@ -174,7 +174,7 @@ class TestValidateDeploymentTool:
     def test_validate_unhealthy(self, mock_run):
         mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="timed out")
 
-        result = validate_deployment.__wrapped__(service_name="web", provider="local")
+        result = validate_deployment.__wrapped__(service_name="web", provider="onprem")
 
         assert result["healthy"] is False
 
@@ -184,7 +184,7 @@ class TestRollbackDeploymentTool:
     def test_rollback_success(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0, stdout="rolled back", stderr="")
 
-        result = rollback_deployment.__wrapped__(service_name="web", provider="local")
+        result = rollback_deployment.__wrapped__(service_name="web", provider="onprem")
 
         assert result["success"] is True
         assert result["rolled_back_to"] == "previous"
@@ -193,7 +193,7 @@ class TestRollbackDeploymentTool:
     def test_rollback_failure(self, mock_run):
         mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="not found")
 
-        result = rollback_deployment.__wrapped__(service_name="web", provider="local")
+        result = rollback_deployment.__wrapped__(service_name="web", provider="onprem")
 
         assert result["success"] is False
 

@@ -33,7 +33,7 @@ def load_spec(path: str | Path) -> ServiceSpec:
         ports=spec_data.get("ports", [8080]),
         health_path=spec_data.get("health", spec_data.get("health_path", "/healthz")),
         namespace=spec_data.get("namespace", metadata.get("namespace", "default")),
-        provider=spec_data.get("provider", "local"),
+        provider=spec_data.get("provider", "onprem"),
         resources=spec_data.get("resources", {"cpu": "250m", "memory": "256Mi"}),
         env=spec_data.get("env", {}),
     )

@@ -1,7 +1,7 @@
 """
 Deployment adapter abstractions for multi-cloud container deployment.
 
-Each provider (local/aws/gcp/azure) implements these ABCs to support the
+Each provider (onprem/aws/gcp/azure) implements these ABCs to support the
 unified deployment workflow: Build → Push → Deploy → Validate → Rollback.
 """
 
@@ -31,7 +31,7 @@ class ServiceSpec:
     ports: list[int] = field(default_factory=lambda: [8080])
     health_path: str = "/healthz"
     namespace: str = "default"
-    provider: str = "local"
+    provider: str = "onprem"
     resources: dict[str, str] = field(default_factory=lambda: {"cpu": "250m", "memory": "256Mi"})
     env: dict[str, str] = field(default_factory=dict)
 

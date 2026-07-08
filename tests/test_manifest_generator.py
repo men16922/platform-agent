@@ -78,7 +78,7 @@ class TestLoadSpec:
         assert spec.name == "orders-api"
         assert spec.version == "v1.4.2"
         assert spec.replicas == 3
-        assert spec.provider == "local"
+        assert spec.provider == "onprem"
         assert "DB_HOST" in spec.env
 
 
