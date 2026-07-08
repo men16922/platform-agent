@@ -269,8 +269,6 @@ See [`docs/engineering/HARNESS_ENGINEERING.md`](docs/engineering/HARNESS_ENGINEE
 - [x] E2E Pipeline DAG orchestration
 - [x] On-prem kind cluster integration
 - [ ] CDK deploy to AWS (EventBridge + Step Functions + Lambda)
-- [ ] Multi-region support (EventBridge cross-region bus)
-- [ ] DynamoDB Global Tables for incident history replication
 - [ ] Slack interactive buttons for APPROVE/REJECT (replace SQS polling)
 - [ ] GCP/Azure live provider connection
 - [ ] Capability-based runbook schema (cloud-neutral execution)

@@ -96,7 +96,7 @@ def create_adk_deployer_agent(
     """
     import os
     if model is None:
-        model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+        model = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")
     return AdkAgent(
         model=model,
         name="gcp_deployer",
