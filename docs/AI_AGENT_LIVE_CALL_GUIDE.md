@@ -1,16 +1,16 @@
 # AI Agent LLM 실호출 검증 가이드
 
-> ADK (Gemini) / MS Agent Framework (GPT-4o) / Strands (Bedrock Claude) 실호출 검증 절차.
+> ADK (Vertex AI Gemini) / MS Agent Framework (Azure OpenAI GPT-4o) / Strands (Bedrock Claude) 실호출 검증 절차.
 
 ---
 
 ## 사전 조건
 
-| Agent | LLM | API Key / 인증 |
-|-------|-----|----------------|
+| Agent | LLM | 인증 방식 |
+|-------|-----|-----------|
 | Strands Deployer | Bedrock Claude Haiku | AWS 자격증명 (`aws configure`) |
-| ADK Deployer | Gemini 2.0 Flash | `GOOGLE_API_KEY` |
-| MSFT Deployer | GPT-4o | `AZURE_OPENAI_API_KEY` + `AZURE_OPENAI_ENDPOINT` |
+| ADK Deployer | Vertex AI Gemini 2.0 Flash | GCP 자격증명 (`gcloud auth application-default login`) |
+| MSFT Deployer | Azure OpenAI GPT-4o | Azure 자격증명 (`az login`) 또는 API Key |
 
 ---
 
@@ -27,19 +27,29 @@ python -m src.agents.ai.orchestrator \
 
 ---
 
-## 2. ADK Agent (GCP — Gemini)
+## 2. ADK Agent (GCP — Vertex AI Gemini)
 
-### 2-1. API Key 발급
-
-1. [Google AI Studio](https://aistudio.google.com/apikey) 접속
-2. **Create API Key** 클릭 → 키 복사
-3. `.env`에 설정:
+### 2-1. GCP 인증 설정
 
 ```bash
-GOOGLE_API_KEY=AIzaSy...your-key-here
+# Application Default Credentials 설정
+gcloud auth application-default login
+
+# 프로젝트 + 리전 설정
+export GOOGLE_CLOUD_PROJECT=your-project-id
+export GOOGLE_CLOUD_LOCATION=asia-northeast3
 ```
 
-### 2-2. 의존성 확인
+> ADK는 `GOOGLE_CLOUD_PROJECT` + `GOOGLE_CLOUD_LOCATION` 환경변수가 있으면
+> 자동으로 Vertex AI 백엔드를 사용합니다. API Key 발급 불필요.
+
+### 2-2. Vertex AI API 활성화
+
+```bash
+gcloud services enable aiplatform.googleapis.com --project=$GOOGLE_CLOUD_PROJECT
+```
+
+### 2-3. 의존성 확인
 
 ```bash
 pip install google-adk>=1.0
@@ -47,11 +57,12 @@ pip install google-adk>=1.0
 
 > pyproject.toml에 `google-adk` 이미 포함됨.
 
-### 2-3. 실호출 검증 (Python REPL)
+### 2-4. 실호출 검증 (Python REPL)
 
 ```python
 import os
-os.environ["GOOGLE_API_KEY"] = "AIzaSy..."
+os.environ["GOOGLE_CLOUD_PROJECT"] = "your-project-id"
+os.environ["GOOGLE_CLOUD_LOCATION"] = "asia-northeast3"
 
 from src.agents.ai.adk_deployer import create_adk_deployer_agent
 from google.adk.runners import Runner
@@ -70,62 +81,109 @@ content = types.Content(
     parts=[types.Part.from_text("Deploy orders-api v1.4.2 to GKE with 2 replicas")]
 )
 
-# 실행 (도구 호출은 subprocess/gcloud 필요 — API key만으로 LLM 추론 확인)
 events = list(runner.run(user_id="u1", session_id=session.id, new_message=content))
 for event in events:
     print(event)
 ```
 
-### 2-4. ADK CLI (권장)
+### 2-5. ADK CLI (권장)
 
 ```bash
-export GOOGLE_API_KEY=AIzaSy...
+export GOOGLE_CLOUD_PROJECT=your-project-id
+export GOOGLE_CLOUD_LOCATION=asia-northeast3
 cd src/agents/ai
 adk run adk_deployer
 # 또는 웹 UI:
 adk web
 ```
 
-### 2-5. 기대 결과
+### 2-6. 기대 결과
 
 - Gemini가 `gcp_build_image` → `gcp_push_image` → `gcp_deploy_to_cluster` → `gcp_validate_deployment` 순서로 tool 호출
-- GCP 자격증명 없으면 tool 실행 시 오류 발생하지만, **LLM이 tool을 선택하고 올바른 인자를 생성**하는 것이 검증 대상
+- GCP 인프라(GKE 클러스터 등) 없으면 tool 실행 시 오류 발생하지만, **LLM이 tool을 선택하고 올바른 인자를 생성**하는 것이 검증 대상
 
 ---
 
 ## 3. MS Agent Framework (Azure — GPT-4o)
 
-### 3-1. Azure OpenAI 리소스 생성
-
-1. [Azure Portal](https://portal.azure.com) → Azure OpenAI 리소스 생성
-2. 모델 배포: `gpt-4o` (또는 `gpt-4o-mini`)
-3. Endpoint + API Key 복사:
+### 3-1. Azure OpenAI 리소스 생성 (az cli)
 
 ```bash
-AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
-AZURE_OPENAI_API_KEY=abc123...
-AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME=gpt-4o
+# 리소스 그룹
+az group create --name platform-agent-rg --location koreacentral
+
+# Azure OpenAI 리소스 생성
+az cognitiveservices account create \
+  --name platform-agent-aoai \
+  --resource-group platform-agent-rg \
+  --kind OpenAI \
+  --sku S0 \
+  --location koreacentral
+
+# 모델 배포 (gpt-4o)
+az cognitiveservices account deployment create \
+  --name platform-agent-aoai \
+  --resource-group platform-agent-rg \
+  --deployment-name gpt-4o \
+  --model-name gpt-4o \
+  --model-version "2024-08-06" \
+  --model-format OpenAI \
+  --sku-capacity 10 \
+  --sku-name Standard
 ```
 
-### 3-2. 또는 Azure AI Foundry (Project Endpoint)
+### 3-2. 엔드포인트 + 키 조회
 
 ```bash
-AZURE_AI_PROJECT_ENDPOINT=https://your-project.services.ai.azure.com/api/
-AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME=gpt-4o
-# 인증: AzureCliCredential (az login)
+# 엔드포인트
+az cognitiveservices account show \
+  --name platform-agent-aoai \
+  --resource-group platform-agent-rg \
+  --query properties.endpoint -o tsv
+
+# API Key
+az cognitiveservices account keys list \
+  --name platform-agent-aoai \
+  --resource-group platform-agent-rg \
+  --query key1 -o tsv
 ```
 
-### 3-3. 의존성 확인
+### 3-3. 인증 방식 선택
+
+**방법 A: AzureCliCredential (권장 — 키 불필요)**
 
 ```bash
+az login
+export AZURE_AI_PROJECT_ENDPOINT=https://platform-agent-aoai.openai.azure.com/
+export AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME=gpt-4o
+```
+
+코드에서 `AzureCliCredential()`이 `az login` 토큰을 자동으로 사용합니다.
+
+**방법 B: API Key 방식**
+
+```bash
+export AZURE_OPENAI_ENDPOINT=https://platform-agent-aoai.openai.azure.com/
+export AZURE_OPENAI_API_KEY=$(az cognitiveservices account keys list \
+  --name platform-agent-aoai \
+  --resource-group platform-agent-rg \
+  --query key1 -o tsv)
+export AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME=gpt-4o
+```
+
+### 3-4. 의존성 확인
+
+```bash
+pip install "platform-agent[azure]"
+# 또는 직접:
 pip install agent-framework azure-identity
 ```
 
-### 3-4. 실호출 검증 (Python REPL)
+### 3-5. 실호출 검증 (Python REPL)
 
 ```python
 import os
-os.environ["AZURE_AI_PROJECT_ENDPOINT"] = "https://your-project.services.ai.azure.com/api/"
+os.environ["AZURE_AI_PROJECT_ENDPOINT"] = "https://platform-agent-aoai.openai.azure.com/"
 os.environ["AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME"] = "gpt-4o"
 
 from src.agents.ai.msft_deployer import create_msft_deployer_agent
@@ -136,10 +194,16 @@ result = asyncio.run(agent.run("Deploy orders-api v1.4.2 to AKS with 2 replicas"
 print(result)
 ```
 
-### 3-5. 기대 결과
+### 3-6. 기대 결과
 
 - GPT-4o가 `azure_build_image` → `azure_push_image` → `azure_deploy_to_cluster` → `azure_validate_deployment` 순서로 tool 호출
-- Azure 자격증명 없으면 tool 실행 시 오류 발생하지만, **LLM이 tool을 올바르게 선택**하는 것이 검증 대상
+- AKS 클러스터 없으면 tool 실행 시 오류 발생하지만, **LLM이 tool을 올바르게 선택**하는 것이 검증 대상
+
+### 3-7. 리소스 정리
+
+```bash
+az group delete --name platform-agent-rg --yes --no-wait
+```
 
 ---
 
@@ -150,19 +214,20 @@ print(result)
 AWS_REGION=ap-northeast-2
 BEDROCK_MODEL_ID=anthropic.claude-sonnet-4-5
 
-# GCP (ADK — Gemini)
-GOOGLE_API_KEY=
+# GCP (ADK — Vertex AI, API Key 불필요)
+GOOGLE_CLOUD_PROJECT=your-gcp-project
+GOOGLE_CLOUD_LOCATION=asia-northeast3
 GCP_PROJECT=your-gcp-project
 GCP_REGION=asia-northeast3
 
-# Azure (MS Agent Framework — GPT-4o)
-AZURE_AI_PROJECT_ENDPOINT=
+# Azure (MS Agent Framework — AzureCliCredential 또는 API Key)
+AZURE_AI_PROJECT_ENDPOINT=https://your-resource.openai.azure.com/
 AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME=gpt-4o
-# 또는 API Key 방식:
-AZURE_OPENAI_API_KEY=
-AZURE_OPENAI_ENDPOINT=
+# API Key 방식 시:
+# AZURE_OPENAI_API_KEY=
+# AZURE_OPENAI_ENDPOINT=
 AZURE_REGION=koreacentral
-AZURE_RESOURCE_GROUP=your-rg
+AZURE_RESOURCE_GROUP=platform-agent-rg
 ```
 
 ---
@@ -172,7 +237,7 @@ AZURE_RESOURCE_GROUP=your-rg
 | Agent | 모델 | 예상 비용 (1회 호출) |
 |-------|------|---------------------|
 | Strands | Claude Haiku | ~$0.001 |
-| ADK | Gemini 2.0 Flash | ~$0.0003 |
+| ADK | Gemini 2.0 Flash (Vertex) | ~$0.0003 |
 | MSFT | GPT-4o | ~$0.003 |
 | MSFT | GPT-4o-mini | ~$0.0003 |
 
@@ -182,8 +247,9 @@ AZURE_RESOURCE_GROUP=your-rg
 
 ## 검증 체크리스트
 
-- [ ] `GOOGLE_API_KEY` 발급 및 환경변수 설정
+- [ ] `gcloud auth application-default login` + `GOOGLE_CLOUD_PROJECT` 설정
 - [ ] ADK Agent 실행 → Gemini가 tool 호출 순서를 올바르게 계획하는지 확인
-- [ ] `AZURE_AI_PROJECT_ENDPOINT` or `AZURE_OPENAI_ENDPOINT` 설정
+- [ ] Azure OpenAI 리소스 생성 (`az cognitiveservices account create`)
+- [ ] `az login` + `AZURE_AI_PROJECT_ENDPOINT` 설정
 - [ ] MSFT Agent 실행 → GPT-4o가 tool 호출 순서를 올바르게 계획하는지 확인
-- [ ] (Optional) GCP/Azure 자격증명 설정 → 실 배포까지 E2E 확인
+- [ ] (Optional) GCP/Azure 인프라 구성 → 실 배포까지 E2E 확인

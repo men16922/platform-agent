@@ -4,6 +4,12 @@ ADK Deployer Agent — Google ADK-based autonomous deployment pipeline for GCP.
 Uses Google Agent Development Kit (ADK) to create an LLM agent that deploys
 container services to GKE via Cloud Build + Artifact Registry.
 
+Authentication:
+    Vertex AI backend (recommended): set GOOGLE_CLOUD_PROJECT + GOOGLE_CLOUD_LOCATION,
+    then `gcloud auth application-default login`. No API key needed.
+
+    API key backend: set GOOGLE_API_KEY (Google AI Studio).
+
 Usage:
     from src.agents.ai.adk_deployer import create_adk_deployer_agent, root_agent
 
