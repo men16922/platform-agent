@@ -207,125 +207,109 @@ python -m src.agents.ai.orchestrator \
 
 ## 3. Incident Response Pipeline (Day 2 상세)
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ TRIGGER                                                                      │
-│                                                                              │
-│  CloudWatch Alarm (state → ALARM)                                           │
-│       │                                                                      │
-│       ▼                                                                      │
-│  EventBridge Rule (source: aws.cloudwatch)                                  │
-│       │                                                                      │
-│       ▼                                                                      │
-│  AWS Step Functions (Incident Response Workflow)                             │
-└───────┼─────────────────────────────────────────────────────────────────────┘
-        │
-        ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ PIPELINE (Step Functions State Machine)                                      │
-│                                                                              │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │ 1. DETECTOR                                                          │    │
-│  │    • CloudWatch Logs Insights 쿼리 (최근 5분)                        │    │
-│  │    • X-Ray trace 수집                                                │    │
-│  │    • 관련 메트릭 수집 (CPU, Memory, Error Rate)                      │    │
-│  │    • Multi-provider 감지 (aws/gcp/azure/onprem 자동 판별)           │    │
-│  │    Output: DetectorOutput (alarm + logs + traces + NormalizedIncident)│    │
-│  └──────────────────────────────┬──────────────────────────────────────┘    │
-│                                  ▼                                           │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │ 2. ANALYZER                                                          │    │
-│  │    • Bedrock Claude에 컨텍스트 전달 (로그 + 메트릭 + 트레이스)       │    │
-│  │    • LLM이 root cause 추론                                           │    │
-│  │    • Severity 판정: P1 / P2 / P3                                     │    │
-│  │    • Confidence score (0.0 ~ 1.0)                                    │    │
-│  │    • DynamoDB에서 유사 과거 인시던트 조회                             │    │
-│  │    Output: AnalyzerOutput (root_cause + severity + confidence)        │    │
-│  └──────────────────────────────┬──────────────────────────────────────┘    │
-│                                  ▼                                           │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │ 3. DECISION                                                          │    │
-│  │    • Runbook 매칭 (3-tier fallback):                                 │    │
-│  │      ① DynamoDB lookup (커스텀 런북)                                  │    │
-│  │      ② Catalog heuristic (alarm 이름 기반 매칭)                      │    │
-│  │      ③ Builtin fallback (generic-recovery)                           │    │
-│  │    • Capability → Action 해석 (ExecutionAdapter)                     │    │
-│  │    • Remediation mode 결정 (severity 기반)                           │    │
-│  │    • 안전장치: Delete/Drop/Terminate → 강제 APPROVE                  │    │
-│  │    Output: DecisionOutput (runbook + mode + actions)                  │    │
-│  └──────────────┬─────────────────────────────┬────────────────────────┘    │
-│                  │                             │                              │
-│            ┌─────┴─────┐              ┌───────┴───────┐                      │
-│            │ AUTO / APPROVE           │ MANUAL        │                      │
-│            │ (실행)     │              │ (기록만)      │                      │
-│            └─────┬─────┘              └───────┬───────┘                      │
-│                  ▼                             ▼                              │
-│  ┌─────────────────────────────────┐   Slack 알림만                         │
-│  │ 4. EXECUTOR                     │                                        │
-│  │    • SSM Automation 실행        │                                        │
-│  │    • 실행 완료 대기 (폴링)      │                                        │
-│  │    • DynamoDB 이력 기록         │                                        │
-│  │    • Slack 인시던트 리포트 전송 │                                        │
-│  │    Output: ExecutorOutput       │                                        │
-│  └─────────────────────────────────┘                                        │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+### 추상 파이프라인 (클라우드 독립)
 
-### Approval Flow (P2 상세)
+Day 2 파이프라인의 **논리 구조**는 모든 환경에서 동일:
 
 ```
-Decision (P2 판정)
-    │
-    ▼
-Step Functions: WaitForTaskToken (일시정지, token 발급)
-    │
-    ▼
-SQS Queue (token + incident context 전달)
-    │
-    ▼
-Approval Bridge Lambda (SQS trigger)
-    │
-    ├─→ DynamoDB에 pending approval 저장 (TTL 24h)
-    │
-    └─→ Slack 메시지 전송 (Approve / Reject 버튼)
-              │
-              ▼
-        사용자가 버튼 클릭
-              │
-              ▼
-        Slack → Lambda Function URL (HTTP POST)
-              │
-              ▼
-        Approval Bridge Lambda (HTTP trigger)
-              │
-              ├─→ Slack signing secret HMAC 검증
-              ├─→ DynamoDB conditional update (idempotent claim)
-              │
-              └─→ Approve: SendTaskSuccess → Step Functions 재개 → Executor
-                  Reject:  SendTaskFailure → Step Functions 종료
+Signal (알람/메트릭 이상) → Event Bus → Orchestrator → 4-step Pipeline → Report
 ```
 
-### Severity → Mode 매핑
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  1. DETECTOR — 신호 수집 + NormalizedIncident 생성              │
+│  2. ANALYZER — LLM root cause 추론 + severity 판정             │
+│  3. DECISION — Runbook 매칭 + remediation mode 결정             │
+│  4. EXECUTOR — 실행 or 승인 대기 or 기록만                     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+핵심: **4단계 로직은 순수 Python**. 클라우드별로 다른 것은 "어떤 인프라로 이 로직을 호스팅하느냐".
+
+### Provider별 구현 매핑
+
+| 컴포넌트 | AWS (✅ 구현) | GCP (🔲) | Azure (🔲) | On-Prem (🔲) |
+|---------|-------------|---------|-----------|-------------|
+| **Signal** | CloudWatch Alarm | Cloud Monitoring Alert | Azure Monitor Alert | Prometheus / Alertmanager |
+| **Event Bus** | EventBridge | Pub/Sub | Event Grid | Webhook (FastAPI) |
+| **Orchestration** | Step Functions | Cloud Workflows | Durable Functions | Temporal / Prefect |
+| **LLM (Analyzer)** | Bedrock Claude | Vertex AI Gemini | Azure OpenAI GPT | Local LLM or API Key |
+| **Executor** | SSM Automation | gcloud / kubectl | az cli / kubectl | kubectl (via MCP) |
+| **Approval Gate** | SQS + Lambda URL + Slack | Cloud Tasks + Cloud Run + Slack | Service Bus + Az Func + Slack | Redis + FastAPI + Slack |
+| **State Store** | DynamoDB | Firestore | Cosmos DB | PostgreSQL / Redis |
+| **Notification** | Slack Webhook | Slack Webhook | Slack Webhook | Slack Webhook |
+
+### AWS 구현 상세 (현재 동작)
+
+```
+CloudWatch Alarm (ALARM)
+    │
+    ▼
+EventBridge Rule → Step Functions State Machine
+    │
+    ├─→ 1. Detector Lambda (CW Logs Insights + X-Ray + metrics)
+    ├─→ 2. Analyzer Lambda (Bedrock Claude → root cause + severity)
+    ├─→ 3. Decision Lambda (DynamoDB runbook lookup → mode 결정)
+    │       │
+    │       ├─ P1 AUTO → 4. Executor (SSM 즉시 실행)
+    │       ├─ P2 APPROVE → Approval Bridge (아래 상세)
+    │       └─ P3 MANUAL → Slack 알림만
+    │
+    └─→ Report: DynamoDB 이력 + Slack 리포트
+```
+
+### Approval Flow (P2 — provider별)
+
+**AWS 구현 (✅):**
+```
+Decision(P2) → Step Functions WaitForTaskToken
+  → SQS → Approval Bridge Lambda
+    → DynamoDB pending + Slack 버튼 전송
+      → 사용자 클릭 → Lambda Function URL
+        → HMAC 검증 → DynamoDB claim → SendTaskSuccess/Failure
+```
+
+**GCP 구현 (🔲 계획):**
+```
+Decision(P2) → Cloud Workflows callback
+  → Cloud Tasks → Approval Cloud Function
+    → Firestore pending + Slack 버튼 전송
+      → 사용자 클릭 → Cloud Run endpoint
+        → Firestore claim → Workflows resume
+```
+
+**Azure 구현 (🔲 계획):**
+```
+Decision(P2) → Durable Functions external event wait
+  → Service Bus → Approval Az Function
+    → Cosmos DB pending + Slack 버튼 전송
+      → 사용자 클릭 → Az Function HTTP trigger
+        → Cosmos DB claim → Durable Functions raise event
+```
+
+**On-Prem 구현 (🔲 계획):**
+```
+Decision(P2) → Temporal workflow signal wait
+  → Redis queue → Approval FastAPI endpoint
+    → PostgreSQL pending + Slack 버튼 전송
+      → 사용자 클릭 → FastAPI webhook
+        → PostgreSQL claim → Temporal signal
+```
+
+### Severity → Mode 매핑 (모든 provider 공통)
 
 | Severity | Mode | 동작 | RTO 목표 |
 |----------|------|------|----------|
-| **P1** | AUTO | SSM 즉시 실행, 완료까지 폴링 | < 5분 |
-| **P2** | APPROVE | Slack 승인 대기 (1시간 timeout) | < 15분 |
-| **P3** | MANUAL | Slack 알림만, 실행 없음 | 해당 없음 |
+| **P1** | AUTO | 즉시 실행, 완료까지 폴링 | < 5분 |
+| **P2** | APPROVE | 승인 대기 (1시간 timeout) | < 15분 |
+| **P3** | MANUAL | 알림만, 실행 없음 | 해당 없음 |
 
 **Safety Override:** action에 `Delete`, `Drop`, `Terminate` 포함 시 severity 무관 강제 APPROVE.
-
-### Built-in Runbooks
-
-| Alarm 패턴 | Runbook ID | Auto Actions |
-|------------|-----------|--------------|
-| EKS pod OOM / restart loop | `eks-pod-oom` | Pod 재시작 → 노드 스케일아웃 |
-| Lambda throttling | `lambda-throttle` | Reserved concurrency 증가 |
-| RDS CPU high | `rds-cpu-high` | 인스턴스 스케일업 → Read replica 추가 |
-| Kafka consumer lag | `kafka-lag-spike` | Consumer group 스케일아웃 |
-| 기타 | `generic-recovery` | Slack 알림만 |
+이 규칙은 Guardian Agent 정책에 포함되어 있으며, 모든 provider에서 동일하게 적용.
 
 ### Capability Runbook (Cloud-Neutral)
+
+런북은 **capability(의도)**를 선언하고, 실행 시점에 provider adapter가 구체 action으로 해석:
 
 ```python
 # 선언 (cloud-neutral)
@@ -333,15 +317,51 @@ RunbookStep(name="restart_pod", capability="restart_workload", on_failure="conti
 RunbookStep(name="scale_nodes", capability="scale_out", condition={"previous_step_failed": True})
 
 # 실행 시 provider별 해석:
-#   AWS:     restart_workload → AWS-RestartEKSPod (SSM)
-#   GCP:     restart_workload → kubectl rollout restart (via MCP)
-#   Azure:   restart_workload → az aks command invoke
-#   On-Prem: restart_workload → kubectl delete pod (via MCP)
+#   AWS:     restart_workload → AWS-RestartEKSPod (SSM Automation)
+#   GCP:     restart_workload → kubectl rollout restart (Cloud Shell / MCP)
+#   Azure:   restart_workload → az aks command invoke --command "kubectl rollout restart"
+#   On-Prem: restart_workload → kubectl delete pod (via MCP Gateway)
 ```
+
+### Built-in Runbooks
+
+| Alarm 패턴 | Runbook ID | Capability Actions |
+|------------|-----------|-------------------|
+| EKS/GKE/AKS pod OOM | `pod-oom` | restart_workload → scale_out |
+| Lambda/Cloud Func throttle | `function-throttle` | increase_concurrency |
+| RDS/Cloud SQL/Az SQL CPU | `db-cpu-high` | scale_up → add_replica |
+| Kafka consumer lag | `kafka-lag-spike` | scale_out_consumer |
+| 기타 | `generic-recovery` | notify_only |
 
 ---
 
 ## 공유 컴포넌트 (Cross-cutting)
+
+### Guardian Agent
+
+**순수 Python — 클라우드 독립.** YAML 정책 파일을 읽어서 평가할 뿐, 특정 인프라에 종속 없음.
+
+```yaml
+# src/agents/ai/policies/deploy-policy.yaml
+rules:
+  - condition: { environment: "prod" }
+    decision: APPROVE        # 사람 승인 필수
+  - condition: { environment: "staging" }
+    decision: AUTO           # 자동 배포
+  - condition: { action_contains: "delete" }
+    decision: REJECT         # 거부
+```
+
+**Provider별 Guardian 호스팅:**
+
+| 환경 | 호스팅 방식 | 호출 | 상태 |
+|------|-----------|------|------|
+| AWS | Lambda 내 Python | Step Functions에서 직접 호출 | ✅ 구현 |
+| GCP | Cloud Function 내 Python | Workflows에서 HTTP 호출 | 🔲 |
+| Azure | Az Function 내 Python | Durable Functions activity | 🔲 |
+| On-Prem | FastAPI endpoint 또는 직접 import | Orchestrator에서 직접 호출 | 🔲 |
+
+핵심: Guardian 로직은 동일 코드. 차이는 "어디서 실행되느냐"뿐.
 
 ### Gateway
 
@@ -358,22 +378,19 @@ RunbookStep(name="scale_nodes", capability="scale_out", condition={"previous_ste
            → 결과를 A2A task artifact로 반환
 ```
 
-### Guardian Agent
+Gateway는 **On-Prem Agent의 유일한 실행 인터페이스**이자,
+다른 provider에서도 kubectl 기반 작업이 필요할 때 사용 가능.
 
-모든 배포 요청에 대해 정책 평가:
+### IAM / RBAC (Provider별 접근 제어)
 
-```yaml
-# src/agents/ai/policies/deploy-policy.yaml
-rules:
-  - condition: { environment: "prod" }
-    decision: APPROVE        # 사람 승인 필수
-  - condition: { environment: "staging" }
-    decision: AUTO           # 자동 배포
-  - condition: { action_contains: "delete" }
-    decision: REJECT         # 거부
-```
+| Provider | 메커니즘 | Agent 격리 |
+|----------|---------|-----------|
+| AWS | IAM Role per Lambda | Detector/Analyzer/Decision/Executor 각각 별도 역할 |
+| GCP | Service Account per Function | Workload Identity + 최소 권한 |
+| Azure | Managed Identity per Function | RBAC role assignment |
+| On-Prem | K8s ServiceAccount + RBAC | kubeconfig context 분리 |
 
-### IAM (Agent별 최소 권한)
+**AWS IAM 상세 (현재 구현):**
 
 | Agent | 허용 권한 |
 |-------|----------|
