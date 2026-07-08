@@ -155,7 +155,7 @@ def create_msft_deployer_agent(
 
     endpoint = endpoint or os.environ.get("AZURE_AI_PROJECT_ENDPOINT", "")
     deployment_name = deployment_name or os.environ.get(
-        "AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME", "gpt-5-1"
+        "AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME", "gpt-5-4"
     )
 
     client = AzureOpenAIResponsesClient(
