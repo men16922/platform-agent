@@ -78,8 +78,9 @@ class TestMatchBuiltin:
         assert len(rb["actions"]) > 0
         assert rb["capabilities"] == ["restart_workload", "scale_out"]
 
+    @patch("src.agents.operations.decision.handler._scan_dynamo_candidates", return_value=[])
     @patch("src.agents.operations.decision.handler._lookup_dynamo", return_value=None)
-    def test_select_runbook_resolves_capabilities_to_actions(self, lookup_dynamo):
+    def test_select_runbook_resolves_capabilities_to_actions(self, lookup_dynamo, scan_candidates):
         alarm = make_alarm(
             "AWS/EKS",
             metric="pod_restart_total",
