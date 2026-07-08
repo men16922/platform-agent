@@ -52,7 +52,7 @@ When asked to deploy a service, follow this exact sequence:
 ## Infrastructure
 
 - Build: ACR Tasks (az acr build)
-- Registry: Azure Container Registry ({registry}.azurecr.io)
+- Registry: Azure Container Registry (REGISTRY.azurecr.io)
 - Cluster: Azure Kubernetes Service (kubectl apply)
 - Region: Configured via AZURE_REGION env var (default: koreacentral)
 - Resource Group: Configured via AZURE_RESOURCE_GROUP env var
@@ -155,7 +155,7 @@ def create_msft_deployer_agent(
 
     endpoint = endpoint or os.environ.get("AZURE_AI_PROJECT_ENDPOINT", "")
     deployment_name = deployment_name or os.environ.get(
-        "AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME", "gpt-4o"
+        "AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME", "gpt-5-1"
     )
 
     client = AzureOpenAIResponsesClient(

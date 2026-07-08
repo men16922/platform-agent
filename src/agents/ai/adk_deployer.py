@@ -59,7 +59,7 @@ When asked to deploy a service, follow this exact sequence:
 ## Infrastructure
 
 - Build: Google Cloud Build (gcloud builds submit)
-- Registry: Google Artifact Registry ({region}-docker.pkg.dev)
+- Registry: Google Artifact Registry (REGION-docker.pkg.dev)
 - Cluster: Google Kubernetes Engine (kubectl apply)
 - Region: Configured via GCP_REGION env var (default: asia-northeast3)
 - Project: Configured via GCP_PROJECT env var
@@ -82,18 +82,21 @@ GCP_DEPLOY_TOOLS = [
 
 
 def create_adk_deployer_agent(
-    model: str = "gemini-2.0-flash",
+    model: str | None = None,
     **kwargs: Any,
 ) -> AdkAgent:
     """Create an ADK deployer agent configured for GCP.
 
     Args:
-        model: Gemini model ID. Defaults to gemini-2.0-flash.
+        model: Gemini model ID. Defaults to GEMINI_MODEL env var or gemini-2.5-flash.
         **kwargs: Additional AdkAgent constructor arguments.
 
     Returns:
         Configured ADK Agent instance.
     """
+    import os
+    if model is None:
+        model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
     return AdkAgent(
         model=model,
         name="gcp_deployer",
