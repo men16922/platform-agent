@@ -80,7 +80,7 @@ class TestCreateDeployerAgent:
 # --- Tool Function Tests (direct invocation, mocking subprocess) ---
 
 class TestBuildImageTool:
-    @patch("src.agents.adapters.deployment.local.subprocess.run")
+    @patch("src.agents.adapters.deployment.onprem.subprocess.run")
     def test_build_success(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0, stdout="Built OK", stderr="")
 
@@ -96,7 +96,7 @@ class TestBuildImageTool:
         assert result["image_tag"] == "localhost:5001/api:v1"
         assert result["error"] == ""
 
-    @patch("src.agents.adapters.deployment.local.subprocess.run")
+    @patch("src.agents.adapters.deployment.onprem.subprocess.run")
     def test_build_failure(self, mock_run):
         mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="no Dockerfile")
 
@@ -109,7 +109,7 @@ class TestBuildImageTool:
 
 
 class TestPushImageTool:
-    @patch("src.agents.adapters.deployment.local.subprocess.run")
+    @patch("src.agents.adapters.deployment.onprem.subprocess.run")
     def test_push_success(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0, stdout="Pushed", stderr="")
 
@@ -118,7 +118,7 @@ class TestPushImageTool:
         assert result["success"] is True
         assert result["image_uri"] == "localhost:5001/api:v1"
 
-    @patch("src.agents.adapters.deployment.local.subprocess.run")
+    @patch("src.agents.adapters.deployment.onprem.subprocess.run")
     def test_push_failure(self, mock_run):
         mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="refused")
 
@@ -128,7 +128,7 @@ class TestPushImageTool:
 
 
 class TestDeployToClusterTool:
-    @patch("src.agents.adapters.deployment.local.subprocess.run")
+    @patch("src.agents.adapters.deployment.onprem.subprocess.run")
     def test_deploy_success(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0, stdout="created", stderr="")
 
@@ -145,7 +145,7 @@ class TestDeployToClusterTool:
         assert result["deployment_id"] == "default/web"
         assert result["replicas_desired"] == 2
 
-    @patch("src.agents.adapters.deployment.local.subprocess.run")
+    @patch("src.agents.adapters.deployment.onprem.subprocess.run")
     def test_deploy_failure(self, mock_run):
         mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="forbidden")
 
@@ -161,7 +161,7 @@ class TestDeployToClusterTool:
 
 
 class TestValidateDeploymentTool:
-    @patch("src.agents.adapters.deployment.local.subprocess.run")
+    @patch("src.agents.adapters.deployment.onprem.subprocess.run")
     def test_validate_healthy(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0, stdout="successfully rolled out", stderr="")
 
@@ -170,7 +170,7 @@ class TestValidateDeploymentTool:
         assert result["healthy"] is True
         assert result["checks_passed"] == 1
 
-    @patch("src.agents.adapters.deployment.local.subprocess.run")
+    @patch("src.agents.adapters.deployment.onprem.subprocess.run")
     def test_validate_unhealthy(self, mock_run):
         mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="timed out")
 
@@ -180,7 +180,7 @@ class TestValidateDeploymentTool:
 
 
 class TestRollbackDeploymentTool:
-    @patch("src.agents.adapters.deployment.local.subprocess.run")
+    @patch("src.agents.adapters.deployment.onprem.subprocess.run")
     def test_rollback_success(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0, stdout="rolled back", stderr="")
 
@@ -189,7 +189,7 @@ class TestRollbackDeploymentTool:
         assert result["success"] is True
         assert result["rolled_back_to"] == "previous"
 
-    @patch("src.agents.adapters.deployment.local.subprocess.run")
+    @patch("src.agents.adapters.deployment.onprem.subprocess.run")
     def test_rollback_failure(self, mock_run):
         mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="not found")
 

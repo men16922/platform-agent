@@ -123,7 +123,7 @@ Decision(P2) → SQS → Approval Bridge Lambda
 ```bash
 python -m src.agents.ai.orchestrator \
   --service orders-api --version v1.4.2 \
-  --env staging --provider local
+  --env staging --provider onprem
 ```
 
 **E2E Pipeline DAG (7 steps):**
@@ -146,9 +146,10 @@ Spec → Plan → Guard → Build → Push → Deploy → Validate → Report
 
 | Provider | Agent | LLM | Tool 호출 |
 |----------|-------|-----|-----------|
-| AWS/Local | Strands | Bedrock Claude | build→push→deploy→validate 자율 호출 |
+| AWS | Strands | Bedrock Claude | aws_build→aws_push→aws_deploy→validate |
 | GCP | ADK | Vertex AI Gemini 3.5 Flash | gcp_build→gcp_push→gcp_deploy→validate |
 | Azure | MS Agent Framework | Azure OpenAI GPT-5.4 | azure_build→azure_push→azure_deploy→validate |
+| On-Prem | On-Prem Agent | Local LLM or API Key (any) | onprem_build→onprem_push→onprem_deploy→validate |
 
 **Guardian Agent (Policy-as-Code):**
 ```yaml
@@ -189,14 +190,14 @@ scale_out        → gcloud container clusters resize
 ## 로컬 실행
 
 ```bash
-# 1. On-prem 클러스터
-make local-cluster          # kind 3노드 + registry + ingress
+# 1. On-Prem 클러스터 (로컬 테스트용 kind)
+make local-cluster          # kind 3노드 + registry + ingress (테스트용)
 make local-cluster-status   # 상태 확인
 make local-cluster-down     # 정리
 
 # 2. E2E 파이프라인 (로컬)
 python -m src.agents.ai.orchestrator \
-  --service orders-api --version v1.4.2 --env dev --provider local
+  --service orders-api --version v1.4.2 --env dev --provider onprem
 
 # 3. 테스트
 make check                  # 352 tests

@@ -18,10 +18,11 @@ Slack / Jira / GitHub / Alarm
 
 ```
 Natural Language Request
-    → Strands Agent  (AWS/Local — Bedrock Claude)
-    → ADK Agent      (GCP — Gemini 3.5 Flash)
+    → Strands Agent    (AWS — Bedrock Claude)
+    → ADK Agent        (GCP — Gemini 3.5 Flash)
     → MS Agent Framework (Azure — GPT-5.4)
-    → Guardian Agent (Policy: APPROVE / AUTO / REJECT)
+    → On-Prem Agent    (On-Prem — Local LLM or API Key)
+    → Guardian Agent   (Policy: APPROVE / AUTO / REJECT)
     → E2E Pipeline DAG (plan→guard→build→push→deploy→validate→report)
 ```
 
@@ -164,7 +165,7 @@ platform-agent/
 │   ├── opencode.json              # opencode permission config
 │   └── Makefile.harness.snippet   # Makefile integration
 │
-├── infra/local/                   # On-prem kind cluster setup
+├── infra/local/                   # On-prem K8s 로컬 테스트 환경 (kind)
 │   ├── kind-config.yaml           # 3-node cluster + registry
 │   ├── setup.sh                   # Registry + kind + ingress
 │   └── teardown.sh
@@ -179,7 +180,7 @@ platform-agent/
 │   │   ├── provisioning/          # Day 1: CDK gen + manifest gen + CLI
 │   │   ├── deployment/            # Smoke/canary/rollback helpers
 │   │   ├── operations/            # Canonical Day 2 handlers + reporting
-│   │   ├── adapters/deployment/   # Multi-cloud adapters (local/aws/gcp/azure)
+│   │   ├── adapters/deployment/   # Multi-cloud adapters (onprem/aws/gcp/azure)
 │   │   └── ai/
 │   │       ├── strands_deployer.py   # Strands Agent (AWS/Local — Bedrock)
 │   │       ├── adk_deployer.py       # ADK Agent (GCP — Gemini)
@@ -267,7 +268,7 @@ See [`docs/engineering/HARNESS_ENGINEERING.md`](docs/engineering/HARNESS_ENGINEE
 - [x] Policy-as-Code Guardian Agent
 - [x] MCP + A2A Gateway for cross-agent communication
 - [x] E2E Pipeline DAG orchestration
-- [x] On-prem kind cluster integration
+- [x] On-prem Kubernetes integration (kind for local testing)
 - [x] CDK deploy to AWS (EventBridge + Step Functions + Lambda)
 - [x] LLM 실호출 검증 (Bedrock Claude + Vertex AI Gemini 3.5 Flash + Azure OpenAI GPT-5.4)
 - [ ] Slack interactive buttons for APPROVE/REJECT (replace SQS polling)

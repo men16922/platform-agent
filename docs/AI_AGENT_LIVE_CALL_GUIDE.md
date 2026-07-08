@@ -20,7 +20,7 @@
 # Bedrock Claude Haiku 실호출 (이미 검증됨)
 python -m src.agents.ai.orchestrator \
   --service orders-api --version v1.4.2 \
-  --env dev --provider local
+  --env dev --provider onprem
 ```
 
 결과: 자율 4-tool 호출 → 실배포 성공 (docs/test/ 결과 참조)

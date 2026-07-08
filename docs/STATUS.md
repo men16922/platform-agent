@@ -13,7 +13,7 @@
 - 3-cloud AI Agent 실호출 완료: Bedrock Claude + Vertex AI Gemini 3.5 Flash + Azure OpenAI GPT-5.4.
 - Capability-based runbook schema 구현 (cloud-neutral execution steps).
 - overnight-harness 기반 자동 개발 루프 구성 완료 (5 engine 지원).
-- 4 provider 코드 완비: AWS / GCP / Azure / On-Prem (kind).
+- 4 provider 코드 완비: AWS / GCP / Azure / On-Prem.
 
 ## 검증 Baseline (실제로 돌린 것만)
 
@@ -38,8 +38,8 @@
 6. **AI Agents** — Strands(Bedrock) + ADK(Gemini 3.5 Flash) + MSFT(GPT-5.4). 3종 tool calling 검증 완료.
 7. **Guardian Agent** — Policy-as-Code (APPROVE/AUTO/REJECT).
 8. **MCP + A2A Gateway** — kubectl/docker MCP (9 tools) + FastAPI A2A + Bridge.
-9. **On-prem K8s (kind)** — `make local-cluster` → 3노드 + local registry + NGINX ingress.
-10. **Deployment Adapters** — 4 provider (local/aws/gcp/azure): Build→Push→Deploy→Validate→Rollback.
+9. **On-prem K8s** — `make local-cluster` (kind 테스트용) → 3노드 + registry + NGINX ingress.
+10. **Deployment Adapters** — 4 provider (onprem/aws/gcp/azure): Build→Push→Deploy→Validate→Rollback.
 11. **Execution Adapters** — 4 provider: capability → provider-specific action resolution.
 
 ## Active Focus

@@ -86,7 +86,7 @@ class TestDeployPipelineStructure:
 class TestDeployPipelineExecution:
     """E2E pipeline execution with mocked infrastructure."""
 
-    @patch("src.agents.adapters.deployment.local.subprocess.run")
+    @patch("src.agents.adapters.deployment.onprem.subprocess.run")
     def test_full_pipeline_dev_success(self, mock_run):
         """Full pipeline succeeds for dev environment."""
         mock_run.return_value = MagicMock(returncode=0, stdout="success", stderr="")
@@ -156,7 +156,7 @@ class TestDeployPipelineExecution:
         assert result.final_status == StepStatus.FAILED
         assert result.steps[1].output["decision"] == "REJECT"
 
-    @patch("src.agents.adapters.deployment.local.subprocess.run")
+    @patch("src.agents.adapters.deployment.onprem.subprocess.run")
     def test_pipeline_build_failure_skips_rest(self, mock_run):
         """Build failure stops the pipeline and skips subsequent steps."""
         # First call (build) fails, rest succeed
@@ -173,7 +173,7 @@ class TestDeployPipelineExecution:
         assert result.steps[1].status == StepStatus.SUCCESS  # guard
         assert result.steps[2].status == StepStatus.FAILED   # build
 
-    @patch("src.agents.adapters.deployment.local.subprocess.run")
+    @patch("src.agents.adapters.deployment.onprem.subprocess.run")
     def test_pipeline_validate_failure_triggers_rollback(self, mock_run):
         """Validation failure after deploy triggers rollback."""
         call_count = [0]
@@ -200,7 +200,7 @@ class TestDeployPipelineExecution:
         step_names = [s.step_name for s in result.steps]
         assert "rollback" in step_names
 
-    @patch("src.agents.adapters.deployment.local.subprocess.run")
+    @patch("src.agents.adapters.deployment.onprem.subprocess.run")
     def test_pipeline_staging_auto_deploys(self, mock_run):
         """Staging environment auto-deploys without blocking."""
         mock_run.return_value = MagicMock(returncode=0, stdout="success", stderr="")
@@ -222,7 +222,7 @@ class TestDeployPipelineExecution:
 
 
 class TestOrchestrator:
-    @patch("src.agents.adapters.deployment.local.subprocess.run")
+    @patch("src.agents.adapters.deployment.onprem.subprocess.run")
     def test_main_success(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0, stdout="ok", stderr="")
 
