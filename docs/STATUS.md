@@ -44,8 +44,9 @@
 
 ## Active Focus
 
-- docs 현행화 + GitHub push 완료
-- 다음: Slack interactive buttons (App 생성 + E2E)
+- Architecture diagrams 3장 완성 (High-Level, Day1, Day2) — 이미지 파일 배치 대기
+- docs/ARCHITECTURE.md image refs 추가 완료
+- 다음: 이미지 배치 → commit → Slack interactive buttons (last priority)
 
 ## Open Risks / Gaps
 

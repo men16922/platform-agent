@@ -6,6 +6,23 @@
 
 ---
 
+## 2026-07-09 — Architecture Diagrams (3장) + Image References
+
+- Status: 완료
+- Changed:
+  - GPT image generation 프롬프트 3개 작성 및 다이어그램 생성 완료
+    - High-Level Architecture (PATH A/B, Orchestrator, Day1/2, Cross-cutting)
+    - Day 1: AI Deployment Pipeline (7-Step DAG, 4 Agents, 4 Targets)
+    - Day 2: Incident Response Pipeline (Signal→Detect→Analyze→Decide→Execute)
+  - docs/ARCHITECTURE.md: 각 섹션에 `![](images/...)` 참조 추가
+  - docs/images/README.md 생성 (expected files + color scheme 문서화)
+  - 모든 다이어그램 영어 전용, 통일된 color scheme (Orange=AWS, Blue=GCP, Dark Blue=Azure, Gray=On-Prem, Purple=AI)
+- Verified: ARCHITECTURE.md image refs 삽입 확인
+- Blockers: 이미지 파일은 수동으로 docs/images/ 에 배치 필요
+- Next: 이미지 파일 배치 후 commit, Slack App 생성 (last priority)
+
+---
+
 ## 2026-07-09 — LLM 실호출 검증 (3-cloud) + Capability Runbook Schema
 
 - Status: 완료

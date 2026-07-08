@@ -4,6 +4,8 @@
 
 ## 1. High-Level Architecture (전체 구조)
 
+![High-Level Architecture](images/architecture-high-level.png)
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                         누가 파이프라인을 시작하는가?                         │
@@ -83,6 +85,8 @@
 ---
 
 ## 2. AI Deployment Pipeline (Day 1 상세)
+
+![Day 1: AI Deployment Pipeline](images/architecture-day1-pipeline.png)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -206,6 +210,8 @@ python -m src.agents.ai.orchestrator \
 ---
 
 ## 3. Incident Response Pipeline (Day 2 상세)
+
+![Day 2: Incident Response Pipeline](images/architecture-day2-incident.png)
 
 ### 추상 파이프라인 (클라우드 독립)
 
