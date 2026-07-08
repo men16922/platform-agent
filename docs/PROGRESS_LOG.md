@@ -1,8 +1,32 @@
 # PROGRESS_LOG — platform-agent
 
-최종 갱신: 2026-07-06
+최종 갱신: 2026-07-09
 
 > 최신 3–5개 증분. **최신이 위.** **≤120줄.** 넘치면 `/tidy-docs` 로 압축.
+
+---
+
+## 2026-07-09 — LLM 실호출 검증 (3-cloud) + Capability Runbook Schema
+
+- Status: 완료
+- Changed:
+  - ADK Deployer: Vertex AI Gemini 3.5 Flash 실호출 성공 (location=global 해결)
+  - MSFT Deployer: Azure OpenAI GPT-5.4 실호출 성공 (version=2026-03-05 명시, eastus2)
+  - Capability-based runbook schema: RunbookStep + CapabilityRunbook + condition evaluator
+  - CAPABILITY_RUNBOOKS 카탈로그: 5 런북 (steps 기반 cloud-neutral)
+  - system prompt fix: `{region}` → `REGION` (ADK 변수 해석 충돌 해소)
+  - README 로드맵 현행화: CDK deploy ✅, LLM 실호출 ✅
+  - .env / .env.example: GCP(global)/Azure(eastus2)/AWS 정보 기입
+  - Slack App 설정 가이드 (docs/SLACK_APP_SETUP.md)
+  - AI Agent 실호출 가이드 (docs/AI_AGENT_LIVE_CALL_GUIDE.md)
+  - test_decision.py mock 누락 수정 (환경의존 DynamoDB 호출 제거)
+- Verified:
+  - `make check` → **352 passed** (329→352, +23 capability runbook 테스트)
+  - ADK: Gemini 3.5 Flash tool calling (gcp_build_image) ✅
+  - MSFT: GPT-5.4 tool calling (azure_build_image) ✅
+  - 리소스 전부 정리 완료 (AWS/GCP/Azure 비용 $0)
+- Blockers: 없음
+- Next: Slack interactive buttons / GCP·Azure live provider (GKE/AKS)
 
 ---
 
