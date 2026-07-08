@@ -1,6 +1,6 @@
 # AGENT_BRIEF — platform-agent
 
-최종 갱신: 2026-07-05
+최종 갱신: 2026-07-09
 
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 
@@ -17,11 +17,11 @@
 ## Snapshot
 
 - **무엇:** AWS-native 플랫폼 에이전트. provision → deploy 검증 → detect → analyze → decide → execute → Slack 리포트.
-- **동작하는 것:** Operations 4단계 파이프라인 + Slack HITL 승인 + AWS portability seam + runbook seed/scan.
+- **동작하는 것:** Operations 4단계 + 3-cloud AI Agent (Bedrock+Gemini 3.5 Flash+GPT-5.4) + Capability Runbook Schema.
 - **하네스:** overnight-harness 플러그인 기반 (5 engine). `make overnight-kiro-once` 로 smoke.
 - **Kiro 특화:** aws-ops / cdk-dev / overnight-harness 3개 에이전트 + safety hook + AWS MCP Server.
-- **검증:** `make check` → 329 passed (2026-07-06). 3-cloud 실배포 완료 (AWS/GCP/Azure + Local).
-- **현재 초점:** Slack buttons / ADK·MSFT LLM 실호출 / 아키텍처 다이어그램.
+- **검증:** `make check` → 352 passed (2026-07-09). 4 provider 코드+LLM 실호출 검증 완료.
+- **현재 초점:** Slack App 생성 + interactive buttons E2E.
 
 ## Guardrails
 

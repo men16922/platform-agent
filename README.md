@@ -19,8 +19,8 @@ Slack / Jira / GitHub / Alarm
 ```
 Natural Language Request
     → Strands Agent  (AWS/Local — Bedrock Claude)
-    → ADK Agent      (GCP — Gemini)
-    → MS Agent Framework (Azure — GPT-4o)
+    → ADK Agent      (GCP — Gemini 3.5 Flash)
+    → MS Agent Framework (Azure — GPT-5.4)
     → Guardian Agent (Policy: APPROVE / AUTO / REJECT)
     → E2E Pipeline DAG (plan→guard→build→push→deploy→validate→report)
 ```
@@ -183,7 +183,7 @@ platform-agent/
 │   │   └── ai/
 │   │       ├── strands_deployer.py   # Strands Agent (AWS/Local — Bedrock)
 │   │       ├── adk_deployer.py       # ADK Agent (GCP — Gemini)
-│   │       ├── msft_deployer.py      # MS Agent Framework (Azure — GPT-4o)
+│   │       ├── msft_deployer.py      # MS Agent Framework (Azure — GPT-5.4)
 │   │       ├── guardian.py           # Guardian Agent (policy gatekeeper)
 │   │       ├── policy_engine.py      # YAML policy parser/evaluator
 │   │       ├── pipeline.py           # E2E Pipeline DAG
