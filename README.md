@@ -268,9 +268,10 @@ See [`docs/engineering/HARNESS_ENGINEERING.md`](docs/engineering/HARNESS_ENGINEE
 - [x] MCP + A2A Gateway for cross-agent communication
 - [x] E2E Pipeline DAG orchestration
 - [x] On-prem kind cluster integration
-- [ ] CDK deploy to AWS (EventBridge + Step Functions + Lambda)
+- [x] CDK deploy to AWS (EventBridge + Step Functions + Lambda)
+- [x] LLM 실호출 검증 (Bedrock Claude + Vertex AI Gemini 3.5 Flash + Azure OpenAI GPT-5.4)
 - [ ] Slack interactive buttons for APPROVE/REJECT (replace SQS polling)
-- [ ] GCP/Azure live provider connection
+- [ ] GCP/Azure live provider connection (GKE/AKS cluster)
 - [ ] Capability-based runbook schema (cloud-neutral execution)
 
 ---

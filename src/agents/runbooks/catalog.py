@@ -71,3 +71,100 @@ def builtin_runbook_items() -> list[dict[str, Any]]:
         item["alarm_name"] = alarm_name
         items.append(item)
     return items
+
+
+# --- Capability-based runbook catalog (cloud-neutral steps) ---
+
+CAPABILITY_RUNBOOKS: dict[str, dict[str, Any]] = {
+    "eks-pod-oom": {
+        "runbook_id": "eks-pod-oom",
+        "description": "Recover from pod OOMKilled by restarting then scaling",
+        "resource_types": ["kubernetes-workload"],
+        "rto_sec": 180,
+        "steps": [
+            {
+                "name": "restart_pod",
+                "capability": "restart_workload",
+                "description": "Restart the OOMKilled pod with grace period",
+                "parameters": {"grace_period_sec": 30},
+                "on_failure": "continue",
+            },
+            {
+                "name": "scale_nodes",
+                "capability": "scale_out",
+                "description": "Scale out node group if restart didn't recover",
+                "condition": {"previous_step_failed": True},
+                "parameters": {"increment": 1, "max_nodes": 10},
+                "on_failure": "abort",
+            },
+        ],
+    },
+    "lambda-throttle": {
+        "runbook_id": "lambda-throttle",
+        "description": "Increase reserved concurrency for throttled function",
+        "resource_types": ["lambda-function"],
+        "rto_sec": 60,
+        "steps": [
+            {
+                "name": "increase_concurrency",
+                "capability": "increase_function_concurrency",
+                "description": "Bump reserved concurrency by increment",
+                "parameters": {"increment": 50, "max_concurrency": 1000},
+                "on_failure": "abort",
+            },
+        ],
+    },
+    "rds-cpu-high": {
+        "runbook_id": "rds-cpu-high",
+        "description": "Scale RDS instance or add read replica for CPU pressure",
+        "resource_types": ["database-instance"],
+        "rto_sec": 600,
+        "steps": [
+            {
+                "name": "scale_primary",
+                "capability": "scale_database_primary",
+                "description": "Vertically scale the primary instance",
+                "parameters": {"target_class_increment": 1},
+                "on_failure": "continue",
+            },
+            {
+                "name": "add_read_replica",
+                "capability": "scale_database_read",
+                "description": "Add a read replica to offload read traffic",
+                "condition": {"previous_step_failed": True},
+                "parameters": {},
+                "on_failure": "abort",
+            },
+        ],
+    },
+    "kafka-lag-spike": {
+        "runbook_id": "kafka-lag-spike",
+        "description": "Scale consumer group to reduce lag",
+        "resource_types": ["streaming-consumer"],
+        "rto_sec": 300,
+        "steps": [
+            {
+                "name": "scale_consumers",
+                "capability": "scale_out_workers",
+                "description": "Add consumer instances to the group",
+                "parameters": {"increment": 2, "max_consumers": 20},
+                "on_failure": "abort",
+            },
+        ],
+    },
+    "generic-recovery": {
+        "runbook_id": "generic-recovery",
+        "description": "Open a change request for manual review",
+        "resource_types": ["cloud-resource"],
+        "rto_sec": None,
+        "steps": [
+            {
+                "name": "notify",
+                "capability": "open_change_request",
+                "description": "Send Slack alert for human review",
+                "parameters": {},
+                "on_failure": "abort",
+            },
+        ],
+    },
+}
