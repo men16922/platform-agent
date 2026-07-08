@@ -5,52 +5,75 @@
 ## 1. High-Level Architecture (전체 구조)
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                              Entry Points                                     │
-│                                                                              │
-│   ┌─────────────┐                    ┌──────────────────────────────────┐    │
-│   │ PATH A:     │                    │ PATH B:                          │    │
-│   │ CLI / CI    │                    │ AWS Serverless Trigger            │    │
-│   │             │                    │                                  │    │
-│   │ Developer   │                    │ Slack / Jira / GitHub            │    │
-│   │ CI Pipeline │                    │       ↓                          │    │
-│   │ (any compute)                    │ EventBridge → Router Lambda      │    │
-│   └──────┬──────┘                    └───────────────┬──────────────────┘    │
-│          │                                           │                       │
-│          └──────────────┬────────────────────────────┘                       │
-│                         ▼                                                    │
-│            ┌─────────────────────────┐                                       │
-│            │   AI Orchestrator       │  ← 순수 Python, 클라우드 독립         │
-│            │   (pipeline engine)     │                                       │
-│            └────────────┬────────────┘                                       │
-└─────────────────────────┼────────────────────────────────────────────────────┘
-                          │
-          ┌───────────────┼───────────────┐
-          ▼               ▼               ▼
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│ Day 1        │ │ Day 2        │ │ Cross-cutting│
-│ Provisioning │ │ Incident     │ │              │
-│ & Deployment │ │ Response     │ │ Guardian     │
-│              │ │              │ │ Gateway      │
-│              │ │ (AWS-hosted) │ │ Runbooks     │
-└──────────────┘ └──────────────┘ └──────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              Entry Points                                    │
+│                                                                             │
+│  PATH A: 직접 실행 (클라우드 무관)                                          │
+│  ┌────────────────────────────────────────────────────────────────────┐     │
+│  │  • 개발자 CLI (터미널에서 직접)                                     │     │
+│  │  • AI 도구 (Claude Code / Codex / Kiro / AGY)                      │     │
+│  │  • CI/CD (GitHub Actions / Jenkins / GitLab CI)                    │     │
+│  │                                                                    │     │
+│  │  → python -m src.agents.ai.orchestrator --provider <X>             │     │
+│  └───────────────────────────────┬────────────────────────────────────┘     │
+│                                  │                                          │
+│                                  ▼                                          │
+│                     ┌─────────────────────────┐                             │
+│                     │   AI Orchestrator       │  ← 순수 Python              │
+│                     │   (cloud-agnostic)      │                             │
+│                     └────────────┬────────────┘                             │
+│                                  │                                          │
+│  PATH B: 이벤트 기반 자동 트리거 (호스팅 환경별 구현)                       │
+│  ┌──────────────────────────────────────────────────────────────────────┐   │
+│  │  Slack / Jira / GitHub webhook                                       │   │
+│  │       ↓                                                              │   │
+│  │  ┌──────────┐  ┌──────────────┐  ┌───────────┐  ┌─────────────┐    │   │
+│  │  │ AWS      │  │ GCP          │  │ Azure     │  │ On-Prem     │    │   │
+│  │  │EventBridge  │ Pub/Sub      │  │Event Grid │  │ Webhook     │    │   │
+│  │  │→ Lambda  │  │→ Cloud Func  │  │→ Az Func  │  │ (FastAPI)   │    │   │
+│  │  │→ Step Fn │  │→ Workflows   │  │→ Durable  │  │→ orchestrator   │   │
+│  │  │ ✅ 구현  │  │ 🔲 미구현   │  │ 🔲 미구현 │  │ 🔲 미구현   │    │   │
+│  │  └──────────┘  └──────────────┘  └───────────┘  └─────────────┘    │   │
+│  │                                                                      │   │
+│  │  모두 동일한 AI Orchestrator를 호출                                  │   │
+│  └──────────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                  │
+              ┌───────────────────┼───────────────────┐
+              ▼                   ▼                   ▼
+    ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+    │ Day 1        │   │ Day 2        │   │ Cross-cutting│
+    │ Provisioning │   │ Incident     │   │              │
+    │ & Deployment │   │ Response     │   │ Guardian     │
+    │              │   │              │   │ Gateway      │
+    │              │   │              │   │ Runbooks     │
+    └──────────────┘   └──────────────┘   └──────────────┘
 ```
 
 ### 핵심 설계 원칙
 
 | 원칙 | 설명 |
 |------|------|
-| **Control Plane ≠ Data Plane** | AWS(EventBridge+Lambda)는 선택적 호스팅 레이어. 파이프라인 엔진 자체는 어디서든 실행 가능 |
-| **Provider-agnostic core** | Orchestrator는 `--provider` 플래그로 타겟 선택. AWS 인프라 없이도 GCP/Azure/On-Prem 배포 가능 |
+| **파이프라인 = 클라우드 독립** | Orchestrator는 순수 Python. 어떤 환경에서든 실행 가능 |
+| **호스팅 레이어 = 교체 가능** | AWS(EventBridge+Lambda)는 하나의 구현. GCP/Azure/On-Prem도 동일 패턴으로 확장 |
 | **Agent-per-cloud** | 각 클라우드에 최적화된 LLM Agent가 자율적으로 tool calling |
 | **Policy as Code** | Guardian Agent가 모든 배포에 대해 APPROVE/AUTO/REJECT 판정 |
 
 ### 진입 경로 비교
 
-| 경로 | 사용 시점 | AWS 의존성 |
-|------|----------|-----------|
-| **CLI 직접** | 개발자 로컬, CI/CD 파이프라인 (GitHub Actions, Jenkins 등) | 없음 |
-| **EventBridge** | Slack 커맨드, Jira webhook, GitHub event 기반 자동 트리거 | 있음 (Lambda + EventBridge) |
+| 경로 | 트리거 주체 | 설명 |
+|------|-----------|------|
+| **PATH A: 직접 실행** | 개발자, AI 도구, CI/CD | 클라우드 무관. CLI로 orchestrator 직접 호출 |
+| **PATH B: 이벤트 기반** | Slack/Jira/GitHub webhook | 호스팅 환경에 따라 이벤트 수신 방식이 다름 |
+
+**PATH B 호스팅별 구현 상태:**
+
+| 호스팅 환경 | 이벤트 수신 | 오케스트레이션 | 상태 |
+|------------|-----------|--------------|------|
+| AWS | EventBridge → Lambda | Step Functions | ✅ 구현 |
+| GCP | Pub/Sub → Cloud Functions | Cloud Workflows | 🔲 미구현 |
+| Azure | Event Grid → Azure Functions | Durable Functions | 🔲 미구현 |
+| On-Prem | Webhook (FastAPI) | 직접 orchestrator 호출 | 🔲 미구현 |
 
 두 경로 모두 동일한 **AI Orchestrator**로 수렴한다.
 
