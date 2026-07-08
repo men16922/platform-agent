@@ -6,55 +6,58 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                              Entry Points                                    │
+│                         누가 파이프라인을 시작하는가?                         │
 │                                                                             │
-│  PATH A: 직접 실행 (클라우드 무관)                                          │
-│  ┌────────────────────────────────────────────────────────────────────┐     │
-│  │  • 개발자 CLI (터미널에서 직접)                                     │     │
-│  │  • AI 도구 (Claude Code / Codex / Kiro / AGY)                      │     │
-│  │  • CI/CD (GitHub Actions / Jenkins / GitLab CI)                    │     │
-│  │                                                                    │     │
-│  │  → python -m src.agents.ai.orchestrator --provider <X>             │     │
-│  └───────────────────────────────┬────────────────────────────────────┘     │
-│                                  │                                          │
-│                                  ▼                                          │
-│                     ┌─────────────────────────┐                             │
-│                     │   AI Orchestrator       │  ← 순수 Python              │
-│                     │   (cloud-agnostic)      │                             │
-│                     └────────────┬────────────┘                             │
-│                                  │                                          │
-│  PATH B: 이벤트 기반 자동 트리거 (호스팅 환경별 구현)                       │
-│  ┌──────────────────────────────────────────────────────────────────────┐   │
-│  │  Slack / Jira / GitHub webhook                                       │   │
-│  │       ↓                                                              │   │
-│  │  ┌──────────┐  ┌──────────────┐  ┌───────────┐  ┌─────────────┐    │   │
-│  │  │ AWS      │  │ GCP          │  │ Azure     │  │ On-Prem     │    │   │
-│  │  │EventBridge  │ Pub/Sub      │  │Event Grid │  │ Webhook     │    │   │
-│  │  │→ Lambda  │  │→ Cloud Func  │  │→ Az Func  │  │ (FastAPI)   │    │   │
-│  │  │→ Step Fn │  │→ Workflows   │  │→ Durable  │  │→ orchestrator   │   │
-│  │  │ ✅ 구현  │  │ 🔲 미구현   │  │ 🔲 미구현 │  │ 🔲 미구현   │    │   │
-│  │  └──────────┘  └──────────────┘  └───────────┘  └─────────────┘    │   │
-│  │                                                                      │   │
-│  │  모두 동일한 AI Orchestrator를 호출                                  │   │
-│  └──────────────────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                  │
-              ┌───────────────────┼───────────────────┐
-              ▼                   ▼                   ▼
+│  PATH A: 직접 호출                    PATH B: 이벤트 기반 자동 트리거        │
+│  ┌───────────────────────┐           ┌────────────────────────────────┐     │
+│  │ • 개발자 (터미널)      │           │ Slack / Jira / GitHub webhook  │     │
+│  │ • AI 도구             │           │           ↓                    │     │
+│  │   (Claude Code, Codex,│           │ 이벤트 수신 레이어 (환경별):   │     │
+│  │    Kiro, AGY)         │           │  AWS: EventBridge → Lambda     │     │
+│  │ • CI/CD              │           │  GCP: Pub/Sub → Cloud Func     │     │
+│  │   (GitHub Actions,    │           │  Azure: Event Grid → Az Func   │     │
+│  │    Jenkins 등)        │           │  On-Prem: Webhook (FastAPI)    │     │
+│  └───────────┬───────────┘           └──────────────┬─────────────────┘     │
+│              │                                      │                       │
+│              └──────────────┬───────────────────────┘                       │
+│                             ▼                                               │
+│              ┌───────────────────────────────┐                              │
+│              │      AI Orchestrator          │                              │
+│              │    (배포 파이프라인 엔진)       │                              │
+│              │                               │                              │
+│              │  "서비스 X를 버전 Y로,        │                              │
+│              │   환경 Z에, provider P로 배포" │                              │
+│              │                               │                              │
+│              │  → 7-step DAG 실행            │                              │
+│              │  → provider에 맞는 AI Agent    │                              │
+│              │    가 자율적으로 빌드/배포     │                              │
+│              └──────────────┬────────────────┘                              │
+└─────────────────────────────┼───────────────────────────────────────────────┘
+                              │
+              ┌───────────────┼───────────────────┐
+              ▼               ▼                   ▼
     ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
     │ Day 1        │   │ Day 2        │   │ Cross-cutting│
-    │ Provisioning │   │ Incident     │   │              │
-    │ & Deployment │   │ Response     │   │ Guardian     │
+    │ AI 배포      │   │ 인시던트     │   │              │
+    │              │   │ 자동 대응    │   │ Guardian     │
     │              │   │              │   │ Gateway      │
     │              │   │              │   │ Runbooks     │
     └──────────────┘   └──────────────┘   └──────────────┘
 ```
 
+### AI Orchestrator란?
+
+배포 파이프라인을 실행하는 **엔진**. 입력으로 "무엇을 어디에 배포할지"를 받으면, 7단계 DAG를 순서대로 실행한다.
+
+- 특정 클라우드에 종속되지 않음 (순수 Python)
+- 어디서 실행하든 동일하게 동작 (개발자 노트북, CI 서버, Lambda, Cloud Function)
+- provider 값에 따라 적절한 AI Agent를 선택해서 배포 수행
+
 ### 핵심 설계 원칙
 
 | 원칙 | 설명 |
 |------|------|
-| **파이프라인 = 클라우드 독립** | Orchestrator는 순수 Python. 어떤 환경에서든 실행 가능 |
+| **파이프라인 엔진 = 클라우드 독립** | 어떤 환경에서든 실행 가능. 클라우드 SDK 의존 없음 |
 | **호스팅 레이어 = 교체 가능** | AWS(EventBridge+Lambda)는 하나의 구현. GCP/Azure/On-Prem도 동일 패턴으로 확장 |
 | **Agent-per-cloud** | 각 클라우드에 최적화된 LLM Agent가 자율적으로 tool calling |
 | **Policy as Code** | Guardian Agent가 모든 배포에 대해 APPROVE/AUTO/REJECT 판정 |
@@ -63,7 +66,7 @@
 
 | 경로 | 트리거 주체 | 설명 |
 |------|-----------|------|
-| **PATH A: 직접 실행** | 개발자, AI 도구, CI/CD | 클라우드 무관. CLI로 orchestrator 직접 호출 |
+| **PATH A: 직접 호출** | 개발자, AI 도구, CI/CD | 클라우드 무관. Orchestrator를 직접 호출 |
 | **PATH B: 이벤트 기반** | Slack/Jira/GitHub webhook | 호스팅 환경에 따라 이벤트 수신 방식이 다름 |
 
 **PATH B 호스팅별 구현 상태:**
@@ -73,7 +76,7 @@
 | AWS | EventBridge → Lambda | Step Functions | ✅ 구현 |
 | GCP | Pub/Sub → Cloud Functions | Cloud Workflows | 🔲 미구현 |
 | Azure | Event Grid → Azure Functions | Durable Functions | 🔲 미구현 |
-| On-Prem | Webhook (FastAPI) | 직접 orchestrator 호출 | 🔲 미구현 |
+| On-Prem | Webhook (FastAPI) | 직접 호출 | 🔲 미구현 |
 
 두 경로 모두 동일한 **AI Orchestrator**로 수렴한다.
 
@@ -105,16 +108,16 @@
             ┌─────────────────┼─────────────────┬────────────────┐
             ▼                 ▼                 ▼                ▼
   ┌──────────────────┐ ┌───────────────┐ ┌───────────────┐ ┌──────────────┐
-  │ Strands Agent    │ │ ADK Agent     │ │ MS Agent      │ │ Strands Agent│
-  │ (AWS / On-Prem) │ │ (GCP)         │ │ (Azure)       │ │ (On-Prem)    │
-  │                  │ │               │ │               │ │              │
-  │ LLM: Bedrock    │ │ LLM: Gemini   │ │ LLM: GPT-5.4 │ │ LLM: Bedrock │
-  │      Claude     │ │   3.5 Flash   │ │ Azure OpenAI  │ │      Claude  │
+  │ Strands Agent    │ │ ADK Agent     │ │ MS Agent      │ │ On-Prem Agent│
+  │ (AWS)            │ │ (GCP)         │ │ (Azure)       │ │              │
+  │                  │ │               │ │               │ │ LLM: TBD     │
+  │ LLM: Bedrock    │ │ LLM: Gemini   │ │ LLM: GPT-5.4 │ │ (Bedrock or  │
+  │      Claude     │ │   3.5 Flash   │ │ Azure OpenAI  │ │  self-hosted) │
   │                  │ │               │ │               │ │              │
   │ Tools:           │ │ Tools:        │ │ Tools:        │ │ Tools:       │
-  │  aws_build_image│ │ gcp_build_img │ │ azure_build   │ │ local_build  │
-  │  aws_push_image │ │ gcp_push_img  │ │ azure_push    │ │ local_push   │
-  │  aws_deploy     │ │ gcp_deploy    │ │ azure_deploy  │ │ local_deploy │
+  │  aws_build_image│ │ gcp_build_img │ │ azure_build   │ │ onprem_build │
+  │  aws_push_image │ │ gcp_push_img  │ │ azure_push    │ │ onprem_push  │
+  │  aws_deploy     │ │ gcp_deploy    │ │ azure_deploy  │ │ onprem_deploy│
   │  validate       │ │ validate      │ │ validate      │ │ validate     │
   │  rollback       │ │ rollback      │ │ rollback      │ │ rollback     │
   └────────┬─────────┘ └──────┬────────┘ └──────┬────────┘ └──────┬───────┘
@@ -123,11 +126,24 @@
   ┌──────────────────┐ ┌───────────────┐ ┌───────────────┐ ┌──────────────┐
   │ AWS              │ │ GCP           │ │ Azure         │ │ On-Prem      │
   │ EKS + ECR       │ │ GKE +         │ │ AKS + ACR     │ │ Kubernetes   │
-  │ CodeBuild       │ │ Artifact Reg  │ │ ACR Tasks     │ │              │
-  │                  │ │ Cloud Build   │ │               │ │ via MCP      │
-  │ (Cloud SDK)     │ │ (Cloud SDK)   │ │ (Cloud SDK)   │ │ Gateway      │
+  │ CodeBuild       │ │ Artifact Reg  │ │ ACR Tasks     │ │ + Private    │
+  │                  │ │ Cloud Build   │ │               │ │   Registry   │
+  │ (Cloud SDK)     │ │ (Cloud SDK)   │ │ (Cloud SDK)   │ │ (via MCP     │
+  │                  │ │               │ │               │ │  Gateway)    │
   └──────────────────┘ └───────────────┘ └───────────────┘ └──────────────┘
 ```
+
+### Agent별 역할
+
+| Agent | 담당 | LLM | 인프라 접근 방식 |
+|-------|------|-----|----------------|
+| **Strands Agent** | AWS 전용 | Bedrock Claude | Cloud SDK (aws cli) |
+| **ADK Agent** | GCP 전용 | Vertex AI Gemini 3.5 Flash | Cloud SDK (gcloud) |
+| **MS Agent** | Azure 전용 | Azure OpenAI GPT-5.4 | Cloud SDK (az cli) |
+| **On-Prem Agent** | On-Premise K8s | TBD (Bedrock or self-hosted) | MCP Gateway (kubectl/docker) |
+
+- AWS/GCP/Azure: 각 cloud SDK를 직접 호출하여 빌드/푸시/배포
+- On-Prem: **MCP Gateway를 통해서만** 클러스터에 접근 (kubectl + docker subprocess)
 
 ### Pipeline DAG 각 Step 설명
 
@@ -144,16 +160,27 @@
 
 ### On-Prem 제어 경로
 
-On-Prem만 다른 클라우드와 제어 방식이 다르다:
+On-Prem은 다른 클라우드와 제어 방식이 근본적으로 다르다:
 
 ```
-AWS/GCP/Azure:  AI Agent → Cloud SDK 직접 호출 (aws/gcloud/az CLI)
-On-Prem:        AI Agent → MCP Gateway → kubectl/docker subprocess → K8s 클러스터
+AWS/GCP/Azure:  AI Agent → Cloud SDK 직접 호출 (aws/gcloud/az cli)
+On-Prem:        On-Prem Agent → MCP Gateway → kubectl/docker subprocess → K8s 클러스터
 ```
 
-On-Prem 타겟은 **MCP Server가 유일한 실행 인터페이스**. kubeconfig가 가리키는 클러스터가 타겟이 된다.
-- 로컬 테스트: kind 클러스터 + localhost:5000 registry
-- 프로덕션: 실제 on-prem K8s 클러스터 + private registry
+On-Prem Agent는 **MCP Server가 유일한 실행 인터페이스**. kubeconfig가 가리키는 클러스터가 타겟이 된다.
+
+| 환경 | K8s 클러스터 | Registry |
+|------|-------------|----------|
+| 로컬 테스트 | kind | localhost:5001 |
+| 프로덕션 | 실제 on-prem K8s | private registry (Harbor 등) |
+
+**On-Prem Agent의 LLM 선택은 미확정 (TBD):**
+- Bedrock Claude (AWS 네트워크 접근 가능 시)
+- Self-hosted LLM (완전 폐쇄망)
+- 또는 다른 상용 LLM
+
+현재 코드에서는 Strands Agent가 `provider=local`로 On-Prem을 겸하고 있으나,
+아키텍처상으로는 독립 On-Prem Agent로 분리하는 것이 목표.
 
 ### CLI 사용법
 
