@@ -6,6 +6,23 @@
 
 ---
 
+## 2026-07-09 — Slack Interactive Buttons E2E 테스트 완성
+
+- Status: 완료
+- Changed:
+  - `tests/test_approval_bridge_e2e.py` — 25개 E2E 테스트 추가
+    - TestE2EApprovalFlow: 전체 approve/reject 플로우 (SQS→DDB→Slack callback→SFN)
+    - TestSlackSignatureVerification: 실제 HMAC-SHA256 검증 (9 tests)
+    - TestEdgeCases: 중복 클릭, 만료, SFN 실패→PENDING 복원, 배치, fallback
+    - TestBlockKitStructure: Approve/Reject 버튼, non-interactive, header 포맷
+    - TestApprovalIdGeneration: deterministic, collision-resistant, format
+  - handler.py 코드는 이미 완전 구현 상태 확인 (추가 변경 없음)
+- Verified: `make check` → **378 passed** (352→378, +25 E2E + 1 기존 추가)
+- Blockers: 없음
+- Next: README 로드맵 Slack interactive buttons ✅ 체크 + commit
+
+---
+
 ## 2026-07-09 — Architecture Diagrams (3장) + Image References
 
 - Status: 완료

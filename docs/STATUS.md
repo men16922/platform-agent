@@ -17,7 +17,7 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` (pytest) → **352 passed** (2026-07-09, 0.57s)
+- `make check` (pytest) → **378 passed** (2026-07-09, 0.73s)
 - `make local-cluster` → kind 3노드 (v1.34.0) Ready + registry push/pull → Pod Running
 - `python -m src.agents.ai.orchestrator` → E2E pipeline 7-step 성공 (dev/staging)
 - Strands Agent + Bedrock Claude → 자율 4-tool 호출 → 실배포 ✅
@@ -44,12 +44,12 @@
 
 ## Active Focus
 
-- Architecture diagrams 3장 완성 (High-Level, Day1, Day2) — 이미지 파일 배치 대기
-- docs/ARCHITECTURE.md image refs 추가 완료
-- 다음: 이미지 배치 → commit → Slack interactive buttons (last priority)
+- Slack interactive buttons E2E 테스트 완성 (25 tests, 378 passed)
+- Architecture diagrams 이미지 파일 배치 대기
+- 다음: README 로드맵 업데이트 + commit
 
 ## Open Risks / Gaps
 
 1. **CDK 재배포 시 Lambda bundling** — Docker 없이 로컬 pip 번들링 사용 중 (arm64↔amd64 주의).
-2. **Slack App 미연결** — APPROVE 승인 버튼은 코드+가이드 완비, 실 Slack App 미생성.
+2. **Slack App 미연결** — APPROVE 승인 버튼 코드+가이드+E2E 테스트 완비, 실 Slack App 미생성 (코드 ready).
 3. **GCP/Azure 실 클러스터** — tool calling 검증 완료, 실 인프라(GKE/AKS) 배포는 비용 때문에 필요 시 수행.
