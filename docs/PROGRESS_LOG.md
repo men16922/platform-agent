@@ -6,6 +6,25 @@
 
 ---
 
+## 2026-07-10 — 4-Cloud 실배포 데모 (EKS/GKE/AKS/On-Prem)
+
+- Status: 완료 + 정리
+- Changed:
+  - `examples/orders-api/Dockerfile` + `app.py` — 데모용 Flask 앱 (healthz/id 엔드포인트)
+  - `docs/SIMPLE_ARCHITECTURE.md` — 블로그용 심플 아키텍처 문서
+  - CDK Lambda bundling fix (이전 커밋)
+- Verified:
+  - **EKS** (ap-northeast-2): Cloud Build 없이 ECR 직접 push → kubectl → 2 pods Running → /id 응답 ✅
+  - **GKE** (asia-northeast3): Cloud Build → Artifact Registry → kubectl → 2 pods Running → /id 응답 ✅
+  - **AKS** (koreacentral): ACR push → kubectl → 2 pods Running → /id 응답 ✅
+  - **On-Prem** (kind 3-node): docker build → kind load → kubectl → 2 pods Running → /id 응답 ✅
+  - 4곳 모두 외부 엔드포인트 (LB/port-forward) 접근 확인
+  - 데모 후 전체 리소스 삭제 완료 (비용 $0 복귀)
+- Blockers: 없음
+- Next: 블로그 포스팅 게시 + push
+
+---
+
 ## 2026-07-10 — CDK 재배포 (IncidentAgentStack, us-east-1)
 
 - Status: 완료

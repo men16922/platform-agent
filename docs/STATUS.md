@@ -44,9 +44,9 @@
 
 ## Active Focus
 
-- CDK 재배포 완료 (us-east-1, 97 resources)
-- Slack App 생성 → Interactivity URL 설정하면 E2E 연결 완성
-- 다음: Slack App 연결 (수동) or GCP/Azure live provider (비용)
+- 4-Cloud 실배포 데모 완료 (EKS/GKE/AKS/On-Prem → 전부 정리)
+- 블로그 포스팅용 SIMPLE_ARCHITECTURE.md + orders-api 데모앱 작성
+- 다음: push + 블로그 게시
 
 ## Open Risks / Gaps
 
