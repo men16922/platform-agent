@@ -6,6 +6,22 @@
 
 ---
 
+## 2026-07-10 — CDK 재배포 (IncidentAgentStack, us-east-1)
+
+- Status: 완료
+- Changed:
+  - `src/stacks/incident_agent_stack.ts`: Lambda bundling 수정 — `cp -r src/` → `cp -r src/agents + src/step_functions` (src/stacks 제외, 281MB→36MB)
+  - DynamoDB 테이블 4개 (이전 RETAIN 잔류) 수동 삭제 후 CDK 새로 생성
+  - 97 resources CREATE_COMPLETE (us-east-1)
+- Verified:
+  - ApprovalBridgeFunctionUrl: `https://kglj7vclmq4sqm7u7ap5ydldyu0yndto.lambda-url.us-east-1.on.aws/`
+  - IngressFunctionUrl: `https://wztlktdd5l4ox3l3acufj5mu4q0svepc.lambda-url.us-east-1.on.aws/`
+  - Step Functions, EventBridge, SQS, DynamoDB 모두 정상 생성
+- Blockers: 없음
+- Next: Slack App 생성 후 Interactivity URL에 ApprovalBridgeFunctionUrl 설정
+
+---
+
 ## 2026-07-09 — Capability-based Runbook Schema 확장 (9 런북 × 4 provider)
 
 - Status: 완료

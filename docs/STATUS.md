@@ -23,7 +23,7 @@
 - Strands Agent + Bedrock Claude → 자율 4-tool 호출 → 실배포 ✅
 - ADK Agent + Vertex AI Gemini 3.5 Flash → tool calling (gcp_build_image) ✅
 - MSFT Agent + Azure OpenAI GPT-5.4 → tool calling (azure_build_image) ✅
-- CDK deploy → 97 resources CREATE_COMPLETE (현재 스택 삭제, 재배포 가능)
+- CDK deploy → 97 resources CREATE_COMPLETE (us-east-1, 2026-07-10)
 - GCP: Artifact Registry push + GKE Autopilot 배포 (검증 후 정리)
 - Azure: ACR push + AKS 배포 (검증 후 정리)
 - 리소스: 전부 정리 완료 (비용 $0)
@@ -44,9 +44,9 @@
 
 ## Active Focus
 
-- Capability-based runbook schema 확장 완료 (9 런북 × 4 provider × 84 E2E tests)
-- Slack interactive buttons E2E 테스트 완성 (25 tests)
-- 다음: README 로드맵 업데이트 + commit + GCP/Azure live provider (cost gated)
+- CDK 재배포 완료 (us-east-1, 97 resources)
+- Slack App 생성 → Interactivity URL 설정하면 E2E 연결 완성
+- 다음: Slack App 연결 (수동) or GCP/Azure live provider (비용)
 
 ## Open Risks / Gaps
 

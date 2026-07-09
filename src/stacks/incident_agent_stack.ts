@@ -121,14 +121,17 @@ export class IncidentAgentStack extends cdk.Stack {
             const { execSync } = require('child_process');
             try {
               execSync(`pip install -r ${projectRoot}/requirements-lambda.txt -t ${outputDir} --quiet`);
-              execSync(`cp -r ${projectRoot}/src ${outputDir}/src`);
+              execSync(`mkdir -p ${outputDir}/src`);
+              execSync(`cp -r ${projectRoot}/src/agents ${outputDir}/src/agents`);
+              execSync(`cp -r ${projectRoot}/src/step_functions ${outputDir}/src/step_functions`);
+              execSync(`cp ${projectRoot}/src/__init__.py ${outputDir}/src/__init__.py 2>/dev/null || true`);
               return true;
             } catch {
               return false;
             }
           },
         },
-        command: ['bash', '-c', 'pip install -r /asset-input/requirements-lambda.txt -t /asset-output && cp -r /asset-input/src /asset-output/src'],
+        command: ['bash', '-c', 'pip install -r /asset-input/requirements-lambda.txt -t /asset-output && mkdir -p /asset-output/src && cp -r /asset-input/src/agents /asset-output/src/agents && cp -r /asset-input/src/step_functions /asset-output/src/step_functions && cp /asset-input/src/__init__.py /asset-output/src/__init__.py 2>/dev/null || true'],
         platform: 'linux/arm64',
       },
       exclude: [
