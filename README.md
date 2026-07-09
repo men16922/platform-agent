@@ -78,7 +78,11 @@ Router Agent + Overnight Harness
 | EKS pod OOM / restart loop | `eks-pod-oom` | Restart pod → Scale node group |
 | Lambda throttling | `lambda-throttle` | Increase reserved concurrency |
 | RDS CPU high | `rds-cpu-high` | Scale instance → Add read replica |
-| Kafka consumer lag | `kafka-lag-spike` | Scale consumer group |
+| Kafka consumer lag | `kafka-lag-spike` | Scale consumer group → Rebalance |
+| Disk full | `disk-full` | Cleanup disk → Expand volume |
+| Health check failure | `health-check-failure` | Restart workload → Rollback release |
+| Certificate expiry | `certificate-expiry` | Renew certificate → Notify ops |
+| Network latency high | `network-latency-high` | Drain node → Scale out |
 | Any other alarm | `generic-recovery` | Slack alert only |
 
 Custom runbooks can be registered in DynamoDB (`incident-runbooks` table).
@@ -273,7 +277,7 @@ See [`docs/engineering/HARNESS_ENGINEERING.md`](docs/engineering/HARNESS_ENGINEE
 - [x] LLM 실호출 검증 (Bedrock Claude + Vertex AI Gemini 3.5 Flash + Azure OpenAI GPT-5.4)
 - [x] Slack interactive buttons for APPROVE/REJECT (replace SQS polling)
 - [ ] GCP/Azure live provider connection (GKE/AKS cluster)
-- [ ] Capability-based runbook schema (cloud-neutral execution)
+- [x] Capability-based runbook schema (cloud-neutral execution)
 
 ---
 

@@ -17,7 +17,7 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` (pytest) → **378 passed** (2026-07-09, 0.73s)
+- `make check` (pytest) → **462 passed, 1 skipped** (2026-07-09, 0.78s)
 - `make local-cluster` → kind 3노드 (v1.34.0) Ready + registry push/pull → Pod Running
 - `python -m src.agents.ai.orchestrator` → E2E pipeline 7-step 성공 (dev/staging)
 - Strands Agent + Bedrock Claude → 자율 4-tool 호출 → 실배포 ✅
@@ -44,9 +44,9 @@
 
 ## Active Focus
 
-- Slack interactive buttons E2E 테스트 완성 (25 tests, 378 passed)
-- Architecture diagrams 이미지 파일 배치 대기
-- 다음: README 로드맵 업데이트 + commit
+- Capability-based runbook schema 확장 완료 (9 런북 × 4 provider × 84 E2E tests)
+- Slack interactive buttons E2E 테스트 완성 (25 tests)
+- 다음: README 로드맵 업데이트 + commit + GCP/Azure live provider (cost gated)
 
 ## Open Risks / Gaps
 

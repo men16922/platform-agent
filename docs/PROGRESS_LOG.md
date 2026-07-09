@@ -6,6 +6,24 @@
 
 ---
 
+## 2026-07-09 — Capability-based Runbook Schema 확장 (9 런북 × 4 provider)
+
+- Status: 완료
+- Changed:
+  - catalog.py: CAPABILITY_RUNBOOKS 5→9 (disk-full, health-check-failure, certificate-expiry, network-latency-high)
+  - kafka-lag-spike에 rebalance_consumer step 추가, lambda-throttle에 serverless-service 추가
+  - 4 provider execution adapter 매핑 보완:
+    - AWS: rollback_release, rebalance_consumer, cleanup_disk_space, expand_storage, renew_certificate, drain_node
+    - GCP: scale_database_primary, rollback_release, rebalance_consumer + 동일 새 capability
+    - Azure: scale_database_primary, rollback_release, rebalance_consumer + 동일 새 capability
+    - OnPrem: scale_database_primary + 동일 새 capability
+  - tests/test_capability_runbook_e2e.py: 84개 E2E 테스트
+- Verified: `make check` → **462 passed**, 1 skipped (0.78s)
+- Blockers: 없음
+- Next: README 로드맵 체크 + commit
+
+---
+
 ## 2026-07-09 — Slack Interactive Buttons E2E 테스트 완성
 
 - Status: 완료

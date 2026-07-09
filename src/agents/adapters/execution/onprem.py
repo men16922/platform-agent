@@ -29,15 +29,33 @@ class OnPremExecutionAdapter(ExecutionAdapter):
 def _action_for(capability: str, resource_type: str) -> str:
     mapping = {
         ("restart_workload", "kubernetes-workload"): "ONPREM-RolloutRestartWorkload",
+        ("restart_workload", "serverless-service"): "ONPREM-RolloutRestartWorkload",
         ("scale_out", "kubernetes-workload"): "ONPREM-ScaleWorkload",
+        ("scale_out", "network-endpoint"): "ONPREM-ScaleWorkload",
         ("rollback_release", "kubernetes-workload"): "ONPREM-ArgoRolloutRollback",
+        ("rollback_release", "serverless-service"): "ONPREM-ArgoRolloutRollback",
+        ("scale_database_primary", "database-instance"): "ONPREM-ScaleDatabasePrimary",
         ("scale_database_read", "database-instance"): "ONPREM-ScaleReadReplica",
         ("scale_out_workers", "streaming-consumer"): "ONPREM-ScaleConsumerWorkers",
         ("rebalance_consumer", "streaming-consumer"): "ONPREM-RebalanceConsumerGroup",
+        ("cleanup_disk_space", "storage-volume"): "ONPREM-CleanupDiskSpace",
+        ("cleanup_disk_space", "kubernetes-workload"): "ONPREM-CleanupDiskSpace",
+        ("cleanup_disk_space", "database-instance"): "ONPREM-CleanupDiskSpace",
+        ("expand_storage", "storage-volume"): "ONPREM-ExpandVolume",
+        ("expand_storage", "kubernetes-workload"): "ONPREM-ExpandVolume",
+        ("expand_storage", "database-instance"): "ONPREM-ExpandVolume",
+        ("renew_certificate", "certificate"): "ONPREM-RenewCertificate",
+        ("renew_certificate", "cloud-resource"): "ONPREM-RenewCertificate",
+        ("drain_node", "network-endpoint"): "ONPREM-DrainNode",
+        ("drain_node", "kubernetes-workload"): "ONPREM-DrainNode",
         ("open_change_request", "cloud-resource"): "ONPREM-CreateChangeRequest",
         ("open_change_request", "kubernetes-workload"): "ONPREM-CreateChangeRequest",
         ("open_change_request", "database-instance"): "ONPREM-CreateChangeRequest",
         ("open_change_request", "streaming-consumer"): "ONPREM-CreateChangeRequest",
+        ("open_change_request", "serverless-service"): "ONPREM-CreateChangeRequest",
+        ("open_change_request", "certificate"): "ONPREM-CreateChangeRequest",
+        ("open_change_request", "storage-volume"): "ONPREM-CreateChangeRequest",
+        ("open_change_request", "network-endpoint"): "ONPREM-CreateChangeRequest",
     }
     action = mapping.get((capability, resource_type))
     if action:
@@ -53,6 +71,7 @@ def _parameters_for(action: str, incident: NormalizedIncident) -> dict[str, list
         "ONPREM-RolloutRestartWorkload",
         "ONPREM-ScaleWorkload",
         "ONPREM-ArgoRolloutRollback",
+        "ONPREM-DrainNode",
     }:
         return _compact(
             {
@@ -62,11 +81,22 @@ def _parameters_for(action: str, incident: NormalizedIncident) -> dict[str, list
             }
         )
 
-    if action == "ONPREM-ScaleReadReplica":
+    if action in {"ONPREM-ScaleReadReplica", "ONPREM-ScaleDatabasePrimary"}:
         return _compact({"DatabaseName": [incident.resource_id]})
 
     if action in {"ONPREM-ScaleConsumerWorkers", "ONPREM-RebalanceConsumerGroup"}:
         return _compact({"ConsumerGroup": [incident.resource_id]})
+
+    if action in {"ONPREM-CleanupDiskSpace", "ONPREM-ExpandVolume"}:
+        return _compact(
+            {
+                "NodeName": [labels.get("node", "")],
+                "VolumeName": [labels.get("volume", incident.resource_id)],
+            }
+        )
+
+    if action == "ONPREM-RenewCertificate":
+        return _compact({"CertificateName": [incident.resource_id]})
 
     return _compact({"AlertName": [metadata.get("alertname", incident.resource_id)]})
 

@@ -20,8 +20,8 @@
 - **동작하는 것:** Operations 4단계 + 3-cloud AI Agent (Bedrock+Gemini 3.5 Flash+GPT-5.4) + Capability Runbook Schema.
 - **하네스:** overnight-harness 플러그인 기반 (5 engine). `make overnight-kiro-once` 로 smoke.
 - **Kiro 특화:** aws-ops / cdk-dev / overnight-harness 3개 에이전트 + safety hook + AWS MCP Server.
-- **검증:** `make check` → 378 passed (2026-07-09). 4 provider 코드+LLM 실호출 검증 완료.
-- **현재 초점:** Slack interactive buttons E2E 완료. 다음: 이미지 배치 + GCP/Azure live.
+- **검증:** `make check` → 462 passed (2026-07-09). 4 provider 코드+LLM 실호출 검증 완료.
+- **현재 초점:** Capability runbook + Slack buttons 완료. 다음: GCP/Azure live.
 
 ## Guardrails
 
