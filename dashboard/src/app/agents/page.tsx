@@ -1,0 +1,74 @@
+import { mockAgentActivities } from "@/lib/mock-data";
+import { ProviderLogo, providerBadgeStyles } from "@/components/provider-logo";
+
+export default function AgentsPage() {
+  return (
+    <div className="mx-auto max-w-6xl space-y-7">
+      <div>
+        <p className="eyebrow mb-3">Reasoning and execution trace</p>
+        <h2 className="text-3xl font-semibold tracking-tight">Agent activity</h2>
+        <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+          AI Agent autonomous tool-calling log — each agent selects and executes tools without human intervention
+        </p>
+      </div>
+
+      {/* Agent summary */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <AgentCard name="Strands Agent" provider="AWS" llm="Bedrock Claude" cloud="aws" />
+        <AgentCard name="ADK Agent" provider="Google Cloud" llm="Gemini 3.5 Flash" cloud="gcp" />
+        <AgentCard name="MS Agent" provider="Microsoft Azure" llm="GPT-5.4" cloud="azure" />
+        <AgentCard name="On-Prem Agent" provider="CNCF / On-Prem" llm="Any LLM" cloud="onprem" />
+      </div>
+
+      {/* Activity timeline */}
+      <section>
+        <div className="mb-3 flex items-center justify-between"><h3 className="eyebrow">Live activity timeline</h3><span className="text-xs text-[var(--muted)]">6 verified actions</span></div>
+        <div className="space-y-3">
+          {mockAgentActivities.map((activity) => (
+            <div
+              key={activity.id}
+              className="surface relative overflow-hidden p-4 transition-colors hover:border-[#52647f]"
+            >
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <span className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold ${providerBadgeStyles[activity.provider]}`}>
+                  {activity.provider.toUpperCase()}
+                </span>
+                <span className="font-medium text-sm">{activity.agent}</span>
+                <span className="text-xs text-[var(--muted)]">—</span>
+                <span className="text-sm">{activity.action}</span>
+                <span className="ml-auto text-xs text-[var(--muted)]">
+                  {new Date(activity.created_at).toLocaleTimeString()}
+                </span>
+                <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${activity.status === "success" ? "bg-emerald-400/10 text-[var(--success)]" : "bg-red-400/10 text-[var(--danger)]"}`}>
+                  {activity.status === "success" ? "COMPLETE" : "FAILED"}
+                </span>
+              </div>
+              <div className="flex gap-1 flex-wrap">
+                {activity.tool_calls.map((tool) => (
+                  <code
+                    key={tool}
+                    className="rounded-md border border-white/5 bg-white/[0.035] px-1.5 py-1 text-[10px] text-[var(--muted)]"
+                  >
+                    {tool}
+                  </code>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function AgentCard({ name, provider, llm, cloud }: { name: string; provider: string; llm: string; cloud: "aws" | "gcp" | "azure" | "onprem" }) {
+  return (
+    <div className="surface p-4 transition-transform duration-200 hover:-translate-y-0.5">
+      <div className="mb-3 flex items-center gap-2">
+        <span className="flex h-8 w-10 shrink-0 items-center justify-center rounded-lg bg-white p-1"><ProviderLogo provider={cloud} /></span>
+        <span className="font-semibold text-sm">{name}</span>
+      </div>
+      <div className="text-xs text-[var(--muted)]">{provider}</div><div className="mt-1 text-xs text-[var(--muted)]">{llm}</div>
+    </div>
+  );
+}

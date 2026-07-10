@@ -1,7 +1,9 @@
 # AGENT_BRIEF — platform-agent
 
-최종 갱신: 2026-07-09
+최종 갱신: 2026-07-11
 
+> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` Task 10의 첫 단계인 Vercel preview 배포와 Open Graph 메타/이미지를 구성한다.
+>
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 
 ## Read Path (순서대로, bulk-read 금지)
@@ -20,8 +22,8 @@
 - **동작하는 것:** Operations 4단계 + 3-cloud AI Agent (Bedrock+Gemini 3.5 Flash+GPT-5.4) + Capability Runbook Schema.
 - **하네스:** overnight-harness 플러그인 기반 (5 engine). `make overnight-kiro-once` 로 smoke.
 - **Kiro 특화:** aws-ops / cdk-dev / overnight-harness 3개 에이전트 + safety hook + AWS MCP Server.
-- **검증:** `make check` → 462 passed (2026-07-09). 4 provider 코드+LLM 실호출 검증 완료.
-- **현재 초점:** Capability runbook + Slack buttons 완료. 다음: GCP/Azure live.
+- **검증:** `make check` → 490 passed, 1 skipped (2026-07-10); Dashboard lint/build + Playwright desktop/mobile 4-route QA 완료 (2026-07-11).
+- **현재 초점:** Dashboard 반응형·navigation QA 완료. 다음: Vercel preview + Open Graph → mock data API/인증 범위.
 
 ## Guardrails
 

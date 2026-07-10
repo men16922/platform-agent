@@ -1,8 +1,60 @@
 # PROGRESS_LOG — platform-agent
 
-최종 갱신: 2026-07-09
+최종 갱신: 2026-07-11
 
 > 최신 3–5개 증분. **최신이 위.** **≤120줄.** 넘치면 `/tidy-docs` 로 압축.
+
+---
+
+## 2026-07-11 — Dashboard 반응형·navigation QA + mobile navigation 보완
+
+- Status: 완료
+- Changed:
+  - `dashboard/src/components/dashboard-header.tsx` — mobile(<md)에서 Overview/Incidents/Deployments/Agents 4개 route로 이동하는 primary navigation 추가.
+- Verified:
+  - Playwright MCP: desktop 1440×1000, mobile 390×844에서 4 routes 렌더링, 수평 overflow 없음 확인.
+  - mobile primary navigation 4개 링크 노출 및 Incidents/Deployments/Agents 실제 route 이동 확인; console errors 0건.
+  - `dashboard: npm run lint` + `npm run build` → pass; 4 routes static prerendered.
+- Blockers: 없음.
+- Next: Vercel preview 배포와 Open Graph 메타/이미지 구성.
+
+---
+
+## 2026-07-11 — Dashboard 운영 콘솔 디자인 강화
+
+- Status: 완료 (로컬 디자인·렌더링 검수)
+- Changed:
+  - `dashboard/` — Chrome dark 기반 운영 콘솔 UI: 공통 셸, Overview/Incidents/Deployments/Agents 정보 계층 재구성.
+  - `dashboard/public/providers/` — AWS, Google Cloud, Microsoft Azure, CNCF 로컬 SVG 자산 추가; 외부 CDN 의존 제거.
+  - Overview — provider health, severity별 incident surface, Guard intervention 배포 실행 보드, provider-logo deployment register 적용.
+- Verified:
+  - `dashboard: npm run lint` → pass.
+  - `dashboard: npm run build` → pass; 4 routes static prerendered.
+  - Playwright → `http://localhost:3000` 렌더링/스크린샷 검수, 콘솔 오류 0건 (Next font preload warning 1건).
+- Blockers: 없음. Vercel 배포와 실제 API 데이터 연결은 아직 수행하지 않음.
+- Next: 4개 route 반응형·상호작용 QA를 마친 뒤 Vercel preview 배포와 Open Graph 메타데이터를 준비.
+
+---
+
+## 2026-07-10 — GCP/Azure Day2 Operations + Dashboard 구현
+
+- Status: 완료
+- Changed:
+  - `src/agents/operations/gcp/` — 5 모듈 (detector/analyzer/decision/executor/workflows)
+  - `src/agents/operations/azure/` — 5 모듈 (detector/analyzer/decision/executor/durable_functions)
+  - `tests/test_gcp_day2_operations.py` — 28 tests (Vertex AI Gemini 실호출 포함)
+  - `tests/test_azure_day2_operations.py` — 28 tests
+  - `dashboard/` — Next.js 16 + Tailwind 4, 4개 페이지 (Overview/Incidents/Deployments/Agents)
+  - `docs/ARCHITECTURE.md` — GCP/Azure 모든 상태 🔲→✅ 업데이트 + 구현 상세 섹션 추가
+  - `docs/DASHBOARD_DESIGN.md` — 대시보드 디자인 방향 문서 (결정 대기)
+- Verified:
+  - `pytest tests/ --ignore=tests/test_gcp_day2_operations.py` → **490 passed** (462 기존 + 28 Azure)
+  - `pytest tests/test_gcp_day2_operations.py` → **28 passed** (Vertex AI 실호출, severity=P2, confidence=0.95)
+  - Dashboard: `npm run build` → 4 routes static prerendered, HTTP 200 전부 확인
+  - GCP E2E: Cloud Monitoring alert → Pub/Sub → detect → analyze(Gemini) → decide → execute
+  - Azure E2E: Azure Monitor alert → Event Grid → detect → analyze(heuristic) → decide → execute
+- Blockers: 없음
+- Next: 대시보드 디자인 방향 결정 → 스타일 적용 → Vercel 배포
 
 ---
 

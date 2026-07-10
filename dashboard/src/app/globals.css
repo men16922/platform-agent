@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --background: #202124;
+  --foreground: #f1f3f4;
+  --card: #303134;
+  --card-raised: #3c4043;
+  --card-border: #5f6368;
+  --accent: #8ab4f8;
+  --accent-soft: rgba(138, 180, 248, 0.16);
+  --success: #81c995;
+  --warning: #fdd663;
+  --danger: #f28b82;
+  --muted: #bdc1c6;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+body::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 74% -10%, rgba(138, 180, 248, 0.09), transparent 34rem),
+    linear-gradient(180deg, #292a2d, #202124 40rem);
+  background-size: auto, auto;
+}
+
+::selection { background: rgba(124, 108, 255, 0.42); }
+
+.surface {
+  border: 1px solid var(--card-border);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(60, 64, 67, 0.96), rgba(48, 49, 52, 0.96));
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+}
+
+.eyebrow {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--success);
+  box-shadow: 0 0 0 4px rgba(56, 217, 150, 0.12), 0 0 16px rgba(56, 217, 150, 0.72);
+}

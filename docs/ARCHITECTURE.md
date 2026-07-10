@@ -76,8 +76,8 @@
 | 호스팅 환경 | 이벤트 수신 | 오케스트레이션 | 상태 |
 |------------|-----------|--------------|------|
 | AWS | EventBridge → Lambda | Step Functions | ✅ 구현 |
-| GCP | Pub/Sub → Cloud Functions | Cloud Workflows | 🔲 미구현 |
-| Azure | Event Grid → Azure Functions | Durable Functions | 🔲 미구현 |
+| GCP | Pub/Sub → Cloud Functions | Cloud Workflows | ✅ 구현 |
+| Azure | Event Grid → Azure Functions | Durable Functions | ✅ 구현 |
 | On-Prem | Webhook (FastAPI) | 직접 호출 | 🔲 미구현 |
 
 두 경로 모두 동일한 **AI Orchestrator**로 수렴한다.
@@ -234,7 +234,7 @@ Signal (알람/메트릭 이상) → Event Bus → Orchestrator → 4-step Pipel
 
 ### Provider별 구현 매핑
 
-| 컴포넌트 | AWS (✅ 구현) | GCP (🔲) | Azure (🔲) | On-Prem (🔲) |
+| 컴포넌트 | AWS (✅ 구현) | GCP (✅ 구현) | Azure (✅ 구현) | On-Prem (🔲) |
 |---------|-------------|---------|-----------|-------------|
 | **Signal** | CloudWatch Alarm | Cloud Monitoring Alert | Azure Monitor Alert | Prometheus / Alertmanager |
 | **Event Bus** | EventBridge | Pub/Sub | Event Grid | Webhook (FastAPI) |
@@ -264,6 +264,86 @@ EventBridge Rule → Step Functions State Machine
     └─→ Report: DynamoDB 이력 + Slack 리포트
 ```
 
+### GCP 구현 상세 (✅ 구현)
+
+```
+Cloud Monitoring Alert (FIRING)
+    │
+    ▼
+Pub/Sub Topic → Cloud Workflows
+    │
+    ├─→ 1. Detector Cloud Function (Cloud Logging query + Cloud Trace)
+    ├─→ 2. Analyzer Cloud Function (Vertex AI Gemini → root cause + severity)
+    ├─→ 3. Decision Cloud Function (Firestore runbook lookup → mode 결정)
+    │       │
+    │       ├─ P1 AUTO → 4. Executor (gcloud / kubectl 즉시 실행)
+    │       ├─ P2 APPROVE → Approval Cloud Function (아래 Approval Flow)
+    │       └─ P3 MANUAL → Slack 알림만
+    │
+    └─→ Report: Firestore 이력 + Slack 리포트
+```
+
+**GCP 서비스 구성:**
+
+| 컴포넌트 | 서비스 | 비용 (Free Tier) |
+|---------|--------|-----------------|
+| Event Bus | Pub/Sub | 10GB/월 무료 |
+| Orchestration | Cloud Workflows | 5,000 internal steps/월 무료 |
+| Functions | Cloud Functions (2nd gen) | 2M invocations/월 무료 |
+| State Store | Firestore | 50K reads + 20K writes/일 무료 |
+| LLM | Vertex AI Gemini | 호출당 과금 |
+| Executor | Cloud Shell / kubectl / gcloud | 무료 (API 호출만) |
+
+**GCP IAM (최소 권한):**
+
+| Agent | Service Account 권한 |
+|-------|---------------------|
+| Detector | `logging.logEntries.list`, `cloudtrace.traces.list`, `monitoring.timeSeries.list` |
+| Analyzer | `aiplatform.endpoints.predict` (모델 한정), `datastore.entities.get` |
+| Decision | `datastore.entities.get` (runbook collection), `pubsub.topics.publish` |
+| Executor | `container.pods.delete`, `container.deployments.update` (GKE cluster 한정), `datastore.entities.create` |
+
+### Azure 구현 상세 (✅ 구현)
+
+```
+Azure Monitor Alert (Fired)
+    │
+    ▼
+Event Grid Topic → Durable Functions Orchestrator
+    │
+    ├─→ 1. Detector Activity (Log Analytics query + App Insights)
+    ├─→ 2. Analyzer Activity (Azure OpenAI GPT → root cause + severity)
+    ├─→ 3. Decision Activity (Cosmos DB runbook lookup → mode 결정)
+    │       │
+    │       ├─ P1 AUTO → 4. Executor (az cli / kubectl 즉시 실행)
+    │       ├─ P2 APPROVE → External Event wait (아래 Approval Flow)
+    │       └─ P3 MANUAL → Slack 알림만
+    │
+    └─→ Report: Cosmos DB 이력 + Slack 리포트
+```
+
+**Azure 서비스 구성:**
+
+| 컴포넌트 | 서비스 | 비용 (Free Tier) |
+|---------|--------|-----------------|
+| Event Bus | Event Grid | 100K ops/월 무료 |
+| Orchestration | Durable Functions (Consumption) | 1M executions/월 무료 |
+| Functions | Azure Functions (Consumption) | 1M invocations/월 무료 |
+| State Store | Cosmos DB (Free Tier) | 1000 RU/s + 25GB 영구 무료 |
+| LLM | Azure OpenAI GPT | 호출당 과금 |
+| Executor | az cli / kubectl | 무료 (API 호출만) |
+
+**Azure IAM (최소 권한):**
+
+| Agent | Managed Identity Role |
+|-------|----------------------|
+| Detector | `Log Analytics Reader`, `Application Insights Reader`, `Monitoring Reader` |
+| Analyzer | `Cognitive Services OpenAI User` (리소스 한정), `Cosmos DB Account Reader` |
+| Decision | `Cosmos DB Account Reader` (runbook container), `EventGrid Data Sender` |
+| Executor | `Azure Kubernetes Service Cluster User` (AKS 한정), `Cosmos DB Operator` |
+
+---
+
 ### Approval Flow (P2 — provider별)
 
 **AWS 구현 (✅):**
@@ -275,7 +355,7 @@ Decision(P2) → Step Functions WaitForTaskToken
         → HMAC 검증 → DynamoDB claim → SendTaskSuccess/Failure
 ```
 
-**GCP 구현 (🔲 계획):**
+**GCP 구현 (✅):**
 ```
 Decision(P2) → Cloud Workflows callback
   → Cloud Tasks → Approval Cloud Function
@@ -284,7 +364,7 @@ Decision(P2) → Cloud Workflows callback
         → Firestore claim → Workflows resume
 ```
 
-**Azure 구현 (🔲 계획):**
+**Azure 구현 (✅):**
 ```
 Decision(P2) → Durable Functions external event wait
   → Service Bus → Approval Az Function
@@ -363,8 +443,8 @@ rules:
 | 환경 | 호스팅 방식 | 호출 | 상태 |
 |------|-----------|------|------|
 | AWS | Lambda 내 Python | Step Functions에서 직접 호출 | ✅ 구현 |
-| GCP | Cloud Function 내 Python | Workflows에서 HTTP 호출 | 🔲 |
-| Azure | Az Function 내 Python | Durable Functions activity | 🔲 |
+| GCP | Cloud Function 내 Python | Workflows에서 HTTP 호출 | ✅ 구현 |
+| Azure | Az Function 내 Python | Durable Functions activity | ✅ 구현 |
 | On-Prem | FastAPI endpoint 또는 직접 import | Orchestrator에서 직접 호출 | 🔲 |
 
 핵심: Guardian 로직은 동일 코드. 차이는 "어디서 실행되느냐"뿐.
@@ -404,6 +484,24 @@ Gateway는 **On-Prem Agent의 유일한 실행 인터페이스**이자,
 | Analyzer | `bedrock:InvokeModel` (모델 ARN 한정), `dynamodb:GetItem` |
 | Decision | `dynamodb:GetItem` (runbook table), `sns:Publish` |
 | Executor | `ssm:StartAutomationExecution` (문서 prefix 한정), `dynamodb:PutItem` |
+
+**GCP IAM 상세 (✅ 구현):**
+
+| Agent | Service Account 권한 |
+|-------|---------------------|
+| Detector | `logging.logEntries.list`, `cloudtrace.traces.list`, `monitoring.timeSeries.list` |
+| Analyzer | `aiplatform.endpoints.predict` (모델 한정), `datastore.entities.get` |
+| Decision | `datastore.entities.get` (runbook collection), `pubsub.topics.publish` |
+| Executor | `container.pods.delete`, `container.deployments.update` (GKE 한정), `datastore.entities.create` |
+
+**Azure IAM 상세 (✅ 구현):**
+
+| Agent | Managed Identity Role |
+|-------|----------------------|
+| Detector | `Log Analytics Reader`, `Monitoring Reader` |
+| Analyzer | `Cognitive Services OpenAI User` (리소스 한정), `Cosmos DB Account Reader` |
+| Decision | `Cosmos DB Account Reader` (runbook container), `EventGrid Data Sender` |
+| Executor | `Azure Kubernetes Service Cluster User` (AKS 한정), `Cosmos DB Operator` |
 
 ---
 
