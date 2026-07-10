@@ -25,6 +25,7 @@ from src.agents.models import (
     AlarmContext, AnalyzerOutput, DetectorOutput, DecisionOutput,
     ExecutorOutput, NormalizedIncident, RemediationMode, Severity
 )
+from src.agents.operations.activity_writer import record_agent_activity
 
 logger = structlog.get_logger(__name__)
 
@@ -74,6 +75,12 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         decision=decision,
         executed=executed,
         resolved=resolved,
+    )
+
+    _record_activity(
+        incident_id=incident_id,
+        decision=decision,
+        executed=executed,
     )
 
     output = ExecutorOutput(
@@ -313,6 +320,32 @@ def _record_incident(
         })
     except Exception as exc:
         logger.error("executor.dynamo.error", error=str(exc))
+
+
+def _record_activity(
+    incident_id: str,
+    decision: DecisionOutput,
+    executed: list[str],
+) -> None:
+    """Record executor activity to the platform-agent-activity table for the dashboard."""
+    analyzer = decision.analyzer
+    normalized_incident = analyzer.detector.normalized_incident
+    provider = normalized_incident.provider if normalized_incident else "aws"
+
+    agent_name = {
+        "aws": "Executor (AWS)",
+        "gcp": "Executor (GCP)",
+        "azure": "Executor (Azure)",
+        "onprem": "Executor (On-Prem)",
+    }.get(provider, f"Executor ({provider})")
+
+    record_agent_activity(
+        agent=agent_name,
+        provider=provider,
+        action=f"Incident remediation: {decision.runbook_id} ({incident_id})",
+        tool_calls=executed,
+        status="success" if executed else "failed",
+    )
 
 
 # ------------------------------------------------------------------

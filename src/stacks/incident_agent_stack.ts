@@ -153,6 +153,7 @@ export class IncidentAgentStack extends cdk.Stack {
       AWS_ACCOUNT_ID:    this.account,
       INCIDENT_TABLE:    incidentTable.tableName,
       RUNBOOK_TABLE:     runbookTable.tableName,
+      ACTIVITY_TABLE:    activityTable.tableName,
       ALERT_TOPIC_ARN:   alertTopic.topicArn,
       APPROVAL_QUEUE_URL: approvalQueue.queueUrl,
       BEDROCK_MODEL_ID:  'anthropic.claude-sonnet-4-5',
@@ -407,6 +408,7 @@ export class IncidentAgentStack extends cdk.Stack {
       ],
     }));
     incidentTable.grantWriteData(executorRole);
+    activityTable.grantWriteData(executorRole);
 
     const executorFn = new lambda.Function(this, 'ExecutorFunction', {
       ...lambdaDefaults,
