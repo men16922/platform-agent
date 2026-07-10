@@ -8,6 +8,10 @@ dist/
 .ruff_cache/
 .pytest_cache/
 
+# Local development tool artifacts
+.playwright-mcp/
+.serena/
+
 # CDK
 src/stacks/node_modules/
 src/stacks/dist/
