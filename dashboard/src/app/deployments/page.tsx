@@ -1,5 +1,8 @@
-import { mockDeployments } from "@/lib/mock-data";
 import { ProviderLogo, providerBadgeStyles } from "@/components/provider-logo";
+import { DataSourceBadge } from "@/components/data-source-badge";
+import { getDeploymentFeed } from "@/lib/activity-data";
+
+export const dynamic = "force-dynamic";
 
 const statusIcon = {
   success: { icon: "✓", color: "text-[var(--success)]" },
@@ -7,20 +10,25 @@ const statusIcon = {
   "rolling-back": { icon: "↺", color: "text-[var(--warning)]" },
 };
 
-export default function DeploymentsPage() {
+export default async function DeploymentsPage() {
+  const { deployments, source } = await getDeploymentFeed();
+
   return (
     <div className="mx-auto max-w-7xl space-y-7">
-      <div>
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+        <div>
         <p className="eyebrow mb-3">Guarded delivery pipeline</p>
         <h2 className="text-3xl font-semibold tracking-tight">Deployments</h2>
         <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
           AI Agent-driven deployments across 4 cloud providers
         </p>
+        </div>
+        <DataSourceBadge source={source} />
       </div>
 
       {/* Pipeline visualization */}
       <div className="surface overflow-hidden p-5">
-        <div className="mb-5 flex items-start justify-between"><div><p className="eyebrow">Deployment pipeline</p><p className="mt-2 text-sm font-medium">Spec → plan → guard → deploy → validate</p></div><span className="flex items-center gap-2 text-xs text-[var(--success)]"><span className="pulse-dot" />5 runs today</span></div>
+        <div className="mb-5 flex items-start justify-between"><div><p className="eyebrow">Deployment pipeline</p><p className="mt-2 text-sm font-medium">Spec → plan → guard → deploy → validate</p></div><span className="flex items-center gap-2 text-xs text-[var(--success)]"><span className="pulse-dot" />{deployments.length} runs today</span></div>
         <div className="flex flex-wrap items-center gap-2">
           {["Spec", "Plan", "Guard", "Build", "Push", "Deploy", "Validate"].map((step, i) => (
             <div key={step} className="flex items-center gap-2">
@@ -50,7 +58,7 @@ export default function DeploymentsPage() {
             </tr>
           </thead>
           <tbody>
-            {mockDeployments.map((dep) => {
+            {deployments.map((dep) => {
               const status = statusIcon[dep.status];
               return (
                 <tr key={dep.id} className="border-t border-white/6 transition-colors hover:bg-white/[0.025]">

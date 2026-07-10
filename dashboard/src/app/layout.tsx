@@ -14,9 +14,48 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = "https://platform-agent-red.vercel.app";
+
 export const metadata: Metadata = {
-  title: "Platform Agent Dashboard",
-  description: "Multi-Cloud Operations Dashboard — AWS / GCP / Azure",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Platform Agent — Multi-Cloud Operations Dashboard",
+    template: "%s | Platform Agent",
+  },
+  description:
+    "Autonomous multi-cloud operations: provision, deploy, detect, analyze, decide, execute across AWS, GCP, Azure & On-Prem — AI Agent orchestrated.",
+  keywords: [
+    "platform engineering",
+    "multi-cloud",
+    "operations dashboard",
+    "AWS",
+    "GCP",
+    "Azure",
+    "incident response",
+    "AI agent",
+    "DevOps",
+    "SRE",
+  ],
+  authors: [{ name: "platform-agent" }],
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: SITE_URL,
+    siteName: "Platform Agent",
+    title: "Platform Agent — Multi-Cloud Operations Dashboard",
+    description:
+      "Autonomous multi-cloud operations: provision, deploy, detect, analyze, decide, execute across AWS, GCP, Azure & On-Prem.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Platform Agent — Multi-Cloud Operations Dashboard",
+    description:
+      "AI Agent-driven operations across 4 cloud providers. Detect → Analyze → Decide → Execute.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
@@ -31,7 +70,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex">
         <Sidebar />
-        <main className="min-w-0 flex-1 overflow-auto px-5 py-6 sm:px-8 lg:px-10 lg:py-8"><DashboardHeader />{children}</main>
+        <main className="min-w-0 flex-1 overflow-auto px-5 py-6 sm:px-8 lg:px-10 lg:py-8">
+          <DashboardHeader />
+          {children}
+        </main>
       </body>
     </html>
   );

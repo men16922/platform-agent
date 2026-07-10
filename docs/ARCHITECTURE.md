@@ -505,6 +505,25 @@ Gateway는 **On-Prem Agent의 유일한 실행 인터페이스**이자,
 
 ---
 
+## Dashboard read path
+
+```text
+Browser → Vercel Next.js Server Component / API route
+        → Vercel OIDC token
+        → AWS STS AssumeRoleWithWebIdentity
+        → read-only IAM role
+        → DynamoDB incident-history (Scan ≤100)
+```
+
+- 브라우저에는 AWS credential이 전달되지 않는다.
+- Vercel에는 장기 access key를 저장하지 않고 `AWS_ROLE_ARN`만 설정한다.
+- IAM trust는 Vercel team + project + production/preview environment로 제한한다.
+- 현재 live 범위는 AWS incident history뿐이며 deployments/agents/provider health는 명시적 demo data다.
+- live read 실패 시 demo fallback으로 전환하되 UI에 `DEMO FALLBACK`을 표시한다.
+- 상세 활성화 절차: [`docs/DASHBOARD_LIVE_DATA.md`](DASHBOARD_LIVE_DATA.md)
+
+---
+
 ## 참고
 
 - 전체 동작 가이드: [`GUIDE.md`](../GUIDE.md)

@@ -1,12 +1,21 @@
 import { StatusCard } from "@/components/status-card";
 import { IncidentRow } from "@/components/incident-row";
+import { DataSourceBadge } from "@/components/data-source-badge";
 import { ProviderLogo, providerBadgeStyles } from "@/components/provider-logo";
-import { mockCloudHealth, mockIncidents, mockDeployments } from "@/lib/mock-data";
+import { getIncidentFeed } from "@/lib/incident-data";
+import { getDeploymentFeed, getProviderHealthFeed } from "@/lib/activity-data";
 
-export default function OverviewPage() {
-  const recentIncidents = mockIncidents.slice(0, 3);
-  const recentDeployments = mockDeployments.slice(0, 4);
-  const attentionDeployment = mockDeployments.find((deployment) => deployment.status !== "success");
+export const dynamic = "force-dynamic";
+
+export default async function OverviewPage() {
+  const [{ incidents, source }, { deployments }, { health }] = await Promise.all([
+    getIncidentFeed(),
+    getDeploymentFeed(),
+    getProviderHealthFeed(),
+  ]);
+  const recentIncidents = incidents.slice(0, 3);
+  const recentDeployments = deployments.slice(0, 4);
+  const attentionDeployment = deployments.find((deployment) => deployment.status !== "success");
 
   return (
     <div className="mx-auto max-w-7xl space-y-7">
@@ -20,7 +29,8 @@ export default function OverviewPage() {
         </div>
         <div className="surface flex items-center gap-3 px-4 py-3 text-xs">
           <span className="pulse-dot" />
-          <div><p className="font-semibold text-[var(--foreground)]">Live telemetry</p><p className="mt-0.5 text-[var(--muted)]">Last sync just now</p></div>
+          <div><p className="font-semibold text-[var(--foreground)]">Incident telemetry</p><p className="mt-0.5 text-[var(--muted)]">Read-only feed</p></div>
+          <DataSourceBadge source={source} />
         </div>
       </div>
 
@@ -51,16 +61,16 @@ export default function OverviewPage() {
       <section>
         <div className="mb-3 flex items-center justify-between"><h3 className="eyebrow">Provider health</h3><span className="text-xs text-[var(--muted)]">4 regions monitored</span></div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {mockCloudHealth.map((health) => (
-            <StatusCard key={health.provider} health={health} />
+          {health.map((h) => (
+            <StatusCard key={h.provider} health={h} />
           ))}
         </div>
       </section>
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatBox label="Incidents observed" value={mockIncidents.length.toString()} detail="Across all providers" />
-        <StatBox label="Autonomously resolved" value={mockIncidents.filter(i => i.resolved).length.toString()} color="success" detail="83% resolution rate" />
-        <StatBox label="Deployments today" value={mockDeployments.length.toString()} detail="1 needs attention" />
+        <StatBox label="Incidents observed" value={incidents.length.toString()} detail="Current incident feed" />
+        <StatBox label="Autonomously resolved" value={incidents.filter(i => i.resolved).length.toString()} color="success" detail="Resolved by runbook" />
+        <StatBox label="Deployments today" value={deployments.length.toString()} detail={`${deployments.filter(d => d.status !== "success").length || "No"} needs attention`} />
         <StatBox label="Validation checks" value="490" color="success" detail="All passing" />
       </section>
 

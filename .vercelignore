@@ -1,0 +1,30 @@
+# Vercel project Root Directory = dashboard/
+# Using --archive=tgz for deployment; this file excludes unneeded content.
+
+# Python
+src/
+tests/
+scripts/
+infra/
+examples/
+*.py
+*.pyc
+__pycache__/
+.venv/
+*.egg-info/
+
+# CDK / stacks
+src/stacks/node_modules/
+
+# Docs (not needed for build)
+docs/
+
+# Agent configs
+.claude/
+.kiro/
+.codex/
+
+# Build artifacts
+dashboard/.next/
+dashboard/node_modules/
+dashboard/.env.local

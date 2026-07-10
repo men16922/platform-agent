@@ -17,9 +17,11 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` (pytest) → **490 passed, 1 skipped** (2026-07-10, 0.70s) — GCP 28 제외 (Vertex AI 실호출 4분)
+- `make check` (pytest) → **525 passed, 1 skipped** (2026-07-11, 244.82s) — GCP Vertex AI 실호출 포함
 - GCP Day2 tests → **28 passed** (Vertex AI Gemini 실호출, severity=P2, confidence=0.95)
-- Dashboard → `npm run lint` + `npm run build` 성공; 4 routes static prerendered, Playwright desktop/mobile 렌더링·navigation·overflow QA 및 콘솔 오류 0건 확인 (2026-07-11)
+- Dashboard → lint/build 성공; 11 routes (OG/Twitter image 포함); Vercel production 배포 완료 (2026-07-11)
+- CDK → `platform-agent-activity` 테이블 + GSI1 CREATE_COMPLETE; Vercel OIDC read grant UPDATE_COMPLETE (2026-07-11)
+- CDK → Vercel team/project-scoped OIDC provider + DynamoDB read-only role AWS 배포 완료 (2026-07-11)
 - `make local-cluster` → kind 3노드 (v1.34.0) Ready + registry push/pull → Pod Running
 - `python -m src.agents.ai.orchestrator` → E2E pipeline 7-step 성공 (dev/staging)
 - Strands Agent + Bedrock Claude → 자율 4-tool 호출 → 실배포 ✅
@@ -44,17 +46,18 @@
 10. **On-prem K8s** — `make local-cluster` (kind 테스트용) → 3노드 + registry + NGINX ingress.
 11. **Deployment Adapters** — 4 provider (onprem/aws/gcp/azure): Build→Push→Deploy→Validate→Rollback.
 12. **Execution Adapters** — 4 provider: capability → provider-specific action resolution.
-13. **Dashboard** — Next.js 16 + Tailwind 4, 4페이지. Chrome dark 운영 콘솔 UI, provider별 로컬 SVG 자산, incident severity/Guard intervention 시각화 적용; localhost:3000 구동.
+13. **Dashboard** — Next.js 16 + Tailwind 4, 4페이지. AWS incident live/demo/fallback + deployment/activity durable read model (DynamoDB `platform-agent-activity` + GSI1) + Vercel OIDC 최소권한 read role. OG/Twitter image 배포 완료. Auth boundary 설계 완료 (구현 대기).
 
 ## Active Focus
 
-- GCP/Azure Day2 Operations 구현 완료 (3-Cloud Operations 파이프라인 풀 커버)
-- Dashboard 운영 콘솔 디자인·반응형 navigation QA 완료 (Next.js, 4페이지)
-- 다음: Vercel preview 배포 + Open Graph → mock data API/인증 범위 결정 → 블로그 포스팅
+- Task 10 완료: OG + durable read model + auth boundary 설계 → Vercel/CDK 배포 완료
+- 다음: Executor → activity table write path → Auth.js Phase 1
 
 ## Open Risks / Gaps
 
 1. **CDK 재배포 시 Lambda bundling** — Docker 없이 로컬 pip 번들링 사용 중 (arm64↔amd64 주의).
 2. **Slack App 미연결** — APPROVE 승인 버튼 코드+가이드+E2E 테스트 완비, 실 Slack App 미생성 (코드 ready).
 3. **GCP/Azure 실 클러스터** — tool calling 검증 완료, 실 인프라(GKE/AKS) 배포는 비용 때문에 필요 시 수행.
-4. **Dashboard live data** — 현재 화면은 mock data 기반; 배포 전 API/인증 범위 결정 필요.
+4. **Dashboard live dataset** — AWS live 연결 정상; `incident-history` 0건, `platform-agent-activity` 0건 (write path 미구현).
+5. **Dashboard auth** — 설계 완료, Auth.js Phase 1 구현 대기. 쓰기/승인 UI는 구현 전 금지.
+6. **Dashboard dependency audit** — Next.js 16.2.10 내부 PostCSS 중간등급 취약점 2건; upstream release 대기.

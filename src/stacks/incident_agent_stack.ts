@@ -53,6 +53,69 @@ export class IncidentAgentStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
+    // 대시보드 활동 읽기 모델 — 배포/에이전트 활동/프로바이더 헬스
+    const activityTable = new dynamodb.Table(this, 'PlatformAgentActivity', {
+      tableName:   'platform-agent-activity',
+      partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
+      sortKey:      { name: 'SK', type: dynamodb.AttributeType.STRING },
+      billingMode:  dynamodb.BillingMode.PAY_PER_REQUEST,
+      timeToLiveAttribute: 'ttl',
+      pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
+      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    activityTable.addGlobalSecondaryIndex({
+      indexName: 'GSI1',
+      partitionKey: { name: 'GSI1PK', type: dynamodb.AttributeType.STRING },
+      sortKey:      { name: 'GSI1SK', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    // Vercel Dashboard read path — short-lived OIDC credentials, DynamoDB read-only.
+    // Enable with CDK context:
+    //   -c vercelTeamSlug=<team> -c vercelProjectName=<project>
+    // Optionally reuse an account-level provider with:
+    //   -c vercelOidcProviderArn=<provider-arn>
+    const vercelTeamSlug = this.node.tryGetContext('vercelTeamSlug') as string | undefined;
+    const vercelProjectName = this.node.tryGetContext('vercelProjectName') as string | undefined;
+    const vercelOidcProviderArn = this.node.tryGetContext('vercelOidcProviderArn') as string | undefined;
+    let vercelDashboardRole: iam.Role | undefined;
+
+    if (vercelTeamSlug && vercelProjectName) {
+      const providerHost = `oidc.vercel.com/${vercelTeamSlug}`;
+      const providerUrl = `https://${providerHost}`;
+      const audience = `https://vercel.com/${vercelTeamSlug}`;
+      const oidcProvider: iam.IOpenIdConnectProvider = vercelOidcProviderArn
+        ? iam.OpenIdConnectProvider.fromOpenIdConnectProviderArn(
+            this,
+            'ImportedVercelOidcProvider',
+            vercelOidcProviderArn,
+          )
+        : new iam.OpenIdConnectProvider(this, 'VercelOidcProvider', {
+            url: providerUrl,
+            clientIds: [audience],
+          });
+
+      vercelDashboardRole = new iam.Role(this, 'VercelDashboardReadRole', {
+        roleName: 'platform-agent-vercel-dashboard-read',
+        description: 'Read-only incident feed for the Vercel platform-agent dashboard',
+        assumedBy: new iam.WebIdentityPrincipal(oidcProvider.openIdConnectProviderArn, {
+          StringEquals: {
+            [`${providerHost}:aud`]: audience,
+          },
+          StringLike: {
+            [`${providerHost}:sub`]: [
+              `owner:${vercelTeamSlug}:project:${vercelProjectName}:environment:production`,
+              `owner:${vercelTeamSlug}:project:${vercelProjectName}:environment:preview`,
+            ],
+          },
+        }),
+      });
+      incidentTable.grantReadData(vercelDashboardRole);
+      activityTable.grantReadData(vercelDashboardRole);
+    }
+
     // ─────────────────────────────────────────────────────────
     // SNS (알림 & 승인)
     // ─────────────────────────────────────────────────────────
@@ -857,6 +920,13 @@ export class IncidentAgentStack extends cdk.Stack {
       value:      incidentTable.tableName,
       exportName: 'IncidentAgentIncidentTableName',
     });
+    if (vercelDashboardRole) {
+      new cdk.CfnOutput(this, 'VercelDashboardRoleArn', {
+        value: vercelDashboardRole.roleArn,
+        exportName: 'PlatformAgentVercelDashboardRoleArn',
+        description: 'OIDC role ARN for the Vercel read-only dashboard incident feed',
+      });
+    }
     new cdk.CfnOutput(this, 'ProvisioningFunctionArn', {
       value:      provisioningFn.functionArn,
       exportName: 'PlatformAgentProvisioningFunctionArn',

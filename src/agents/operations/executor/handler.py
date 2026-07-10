@@ -71,8 +71,7 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
     _record_incident(
         incident_id=incident_id,
-        alarm=alarm,
-        analyzer=decision.analyzer,
+        decision=decision,
         executed=executed,
         resolved=resolved,
     )
@@ -285,22 +284,32 @@ def _post_slack_report(
 
 def _record_incident(
     incident_id: str,
-    alarm: AlarmContext,
-    analyzer: AnalyzerOutput,
+    decision: DecisionOutput,
     executed: list[str],
     resolved: bool,
 ) -> None:
+    analyzer = decision.analyzer
+    alarm = analyzer.detector.alarm
+    normalized_incident = analyzer.detector.normalized_incident
+    provider = normalized_incident.provider if normalized_incident else "aws"
+    recorded_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
     try:
         table = _DYNAMO.Table(_INCIDENT_TABLE)
         table.put_item(Item={
-            "alarm_name":  alarm.alarm_name,
-            "incident_id": incident_id,
-            "severity":    analyzer.severity.value,
-            "root_cause":  analyzer.root_cause,
-            "executed":    executed,
-            "resolved":    resolved,
-            "resolved_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "ttl":         int(time.time()) + 90 * 86400,  # 90-day retention
+            "alarm_name":      alarm.alarm_name,
+            "incident_id":     incident_id,
+            "provider":        provider,
+            "severity":        analyzer.severity.value,
+            "mode":            decision.remediation_mode.value,
+            "root_cause":      analyzer.root_cause,
+            "runbook_id":      decision.runbook_id,
+            "executed":        executed,  # backward-compatible analyzer lookup
+            "executed_actions": executed,
+            "resolved":        resolved,
+            "created_at":      recorded_at,
+            "resolved_at":     recorded_at,
+            "ttl":             int(time.time()) + 90 * 86400,  # 90-day retention
         })
     except Exception as exc:
         logger.error("executor.dynamo.error", error=str(exc))

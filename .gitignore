@@ -18,7 +18,10 @@ src/stacks/dist/
 src/stacks/cdk.out/
 
 # Environment
-.env
+.env*
+
+# Vercel local project metadata
+.vercel/
 
 # Overnight harness runtime state
 scripts/overnight/logs/

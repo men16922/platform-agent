@@ -1,15 +1,23 @@
-import { mockAgentActivities } from "@/lib/mock-data";
 import { ProviderLogo, providerBadgeStyles } from "@/components/provider-logo";
+import { DataSourceBadge } from "@/components/data-source-badge";
+import { getAgentActivityFeed } from "@/lib/activity-data";
 
-export default function AgentsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AgentsPage() {
+  const { activities, source } = await getAgentActivityFeed();
+
   return (
     <div className="mx-auto max-w-6xl space-y-7">
-      <div>
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+        <div>
         <p className="eyebrow mb-3">Reasoning and execution trace</p>
         <h2 className="text-3xl font-semibold tracking-tight">Agent activity</h2>
         <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
           AI Agent autonomous tool-calling log — each agent selects and executes tools without human intervention
         </p>
+        </div>
+        <DataSourceBadge source={source} />
       </div>
 
       {/* Agent summary */}
@@ -22,9 +30,9 @@ export default function AgentsPage() {
 
       {/* Activity timeline */}
       <section>
-        <div className="mb-3 flex items-center justify-between"><h3 className="eyebrow">Live activity timeline</h3><span className="text-xs text-[var(--muted)]">6 verified actions</span></div>
+        <div className="mb-3 flex items-center justify-between"><h3 className="eyebrow">Live activity timeline</h3><span className="text-xs text-[var(--muted)]">{activities.length} verified actions</span></div>
         <div className="space-y-3">
-          {mockAgentActivities.map((activity) => (
+          {activities.map((activity) => (
             <div
               key={activity.id}
               className="surface relative overflow-hidden p-4 transition-colors hover:border-[#52647f]"
