@@ -1,7 +1,13 @@
 """Supervisor routing and A2A delegation tests."""
 
 from src.agents.ai.gateway.a2a_server import A2AServer
-from src.agents.ai.supervisor import AgentRole, Supervisor, classify_request
+from src.agents.ai.supervisor import AgentRole, Supervisor, classify_request, matching_skills
+
+
+KAGENT_CARD = {
+    "name": "Kubernetes Agent",
+    "skills": [{"id": "cluster-diagnostics", "name": "Cluster Diagnostics", "tags": ["cluster", "diagnostics"]}],
+}
 
 
 def test_classifies_explicit_provisioning_request():
@@ -32,23 +38,43 @@ def test_delegates_over_a2a_with_role_metadata():
         sent["body"] = body
         return {"task": {"id": "remote-task"}}
 
-    supervisor = Supervisor({AgentRole.KAGENT: "http://kagent-agent"}, transport=transport)
+    supervisor = Supervisor(
+        {AgentRole.KAGENT: "http://kagent-agent"}, transport=transport, card_fetcher=lambda _: KAGENT_CARD
+    )
     outcome = supervisor.handle("Show pod status", context_id="ctx-1")
 
     assert outcome.delegated is True
     assert sent["endpoint"] == "http://kagent-agent"
-    assert sent["body"]["message"]["metadata"] == {"supervisorRole": "kagent"}
+    assert sent["body"]["message"]["metadata"]["supervisorRole"] == "kagent"
     assert sent["body"]["message"]["contextId"] == "ctx-1"
+    assert sent["body"]["message"]["metadata"]["matchedSkills"] == ["cluster-diagnostics"]
 
 
 def test_reads_specialist_endpoint_from_environment(monkeypatch):
     monkeypatch.setenv("PLATFORM_KAGENT_A2A_URL", "http://kagent-agent")
-    supervisor = Supervisor.from_environment(transport=lambda endpoint, body: {"endpoint": endpoint})
+    supervisor = Supervisor.from_environment(
+        transport=lambda endpoint, body: {"endpoint": endpoint}, card_fetcher=lambda _: KAGENT_CARD
+    )
 
     outcome = supervisor.handle("Show pod status")
 
     assert outcome.delegated is True
     assert outcome.response == {"endpoint": "http://kagent-agent"}
+
+
+def test_refuses_delegation_when_discovered_card_has_no_matching_skill():
+    supervisor = Supervisor(
+        {AgentRole.KAGENT: "http://kagent-agent"}, card_fetcher=lambda _: {"name": "Deploy Agent", "skills": []}
+    )
+
+    outcome = supervisor.handle("Investigate pod status")
+
+    assert outcome.delegated is False
+    assert outcome.trace[-1]["status"] == "capability_mismatch"
+
+
+def test_matches_kagent_card_capabilities():
+    assert matching_skills(KAGENT_CARD, AgentRole.KAGENT) == ["cluster-diagnostics"]
 
 
 def test_gateway_returns_supervisor_route_trace():
