@@ -103,6 +103,31 @@ Safety override: any action containing `Delete`, `Drop`, or `Terminate` is force
 
 ---
 
+## Key Features & Highlights
+
+### 1. Keyless Federated Multi-Cloud Integration (OIDC)
+To achieve least-privilege security aligned with the AWS Well-Architected Framework (SAP guidelines), `platform-agent` uses **Workload Identity Federation (WIF)** instead of storing long-lived, high-risk credentials.
+* **GCP WIF Integration**: Exchanges signed AWS STS token credentials for a temporary Google OAuth2 access token to securely orchestrate GKE and Cloud Run deployments.
+* **Azure Federated Token Exchange**: Swaps AWS JWT identity assertions for temporary Azure Resource Manager (ARM) tokens to manipulate AKS workloads and Azure Functions.
+
+### 2. Multi-Region Failover & Disaster Recovery (Resilience)
+The remediation execution path is resilient to regional cloud provider outages:
+* **AWS SSM Failover**: Automatically retries SSM execution in `AWS_FAILOVER_REGION` (e.g. `us-east-1`) if the primary region encounters availability faults.
+* **GCP GKE / Cloud Run Failover**: Detects Kubernetes cluster lookup or API server connection failures and automatically routes the recovery action to the standby `GCP_FAILOVER_CLUSTER_NAME` or backup region.
+* **Azure AKS / Function App Failover**: Transparently switches to secondary failover clusters (`AZURE_FAILOVER_CLUSTER_ID`) and backup applications upon primary endpoint timeouts or faults.
+
+### 3. Real-time Next.js Operations Console
+The companion dashboard is a production-ready, high-security console for viewing telemetry and authorizing overrides:
+* **Keyless IAM Read/Write**: Integrates with AWS via OpenID Connect (OIDC) using Vercel Workload Identity, eliminating the need to store AWS keys on Vercel.
+* **Role-Based Access Control (RBAC)**: Supports roles (`Admin`, `Operator`, `Viewer`) dynamically mapped via DynamoDB override tables.
+* **Interactive Control Panels**: Operators and admins can approve pending Step Functions tasks, trigger manual builds, or run rollbacks directly.
+* **Users & Role Overrides Console**: Dedicated `/users` control panel for promoting/demoting user access permissions, equipped with lockout-prevention protection to prevent administrators from self-demotion.
+* **Security Audit Logging**: Full logs of admin and operator actions recorded in DynamoDB, searchable and filterable in the `/audit` console.
+* **Live-Only Data Streaming**: All dummy simulation mock fallbacks have been removed; the console displays and writes only live production telemetry.
+
+---
+
+
 ## Quick start
 
 ### Prerequisites
@@ -276,7 +301,12 @@ See [`docs/engineering/HARNESS_ENGINEERING.md`](docs/engineering/HARNESS_ENGINEE
 - [x] CDK deploy to AWS (EventBridge + Step Functions + Lambda)
 - [x] LLM 실호출 검증 (Bedrock Claude + Vertex AI Gemini 3.5 Flash + Azure OpenAI GPT-5.4)
 - [x] Slack interactive buttons for APPROVE/REJECT (replace SQS polling)
-- [ ] GCP/Azure live provider connection (GKE/AKS cluster)
+- [x] GCP/Azure live provider connection (GKE/AKS cluster REST API runner)
+- [x] Live multi-cloud OIDC Workload Identity Federation (WIF) credential integration
+- [x] AWS/GCP/Azure multi-region & backup cluster automated failover recovery
+- [x] Users Identity & role overrides management console
+- [x] Audit logs search & filters viewer page
+- [x] Next.js Dashboard live DynamoDB connection without mockup data fallback
 - [x] Capability-based runbook schema (cloud-neutral execution)
 
 ---
