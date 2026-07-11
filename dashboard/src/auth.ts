@@ -1,6 +1,13 @@
 import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
+import Credentials from "next-auth/providers/credentials";
 import type { Role } from "@/lib/auth";
+
+// Local-dev-only sign-in. Double-gated so it can NEVER be active in production:
+// requires an explicit opt-in env AND the absence of the Vercel runtime flag.
+// Lets you use the dashboard on localhost when GitHub OAuth callbacks are bound
+// to the production domain and can't complete on http://localhost:3000.
+const DEV_AUTH = process.env.DASHBOARD_DEV_AUTH === "1" && !process.env.VERCEL;
 
 declare module "next-auth" {
   interface Session {
@@ -57,9 +64,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       clientSecret: process.env.AUTH_GITHUB_SECRET,
       authorization: { params: { scope: "read:org user:email" } }, // scope for org membership check
     }),
+    ...(DEV_AUTH
+      ? [
+          Credentials({
+            id: "dev-credentials",
+            name: "Local Dev (no GitHub)",
+            credentials: {},
+            authorize: async () => ({
+              id: "local-dev",
+              name: "Local Dev",
+              email: "local-dev@localhost",
+              username: "local-dev",
+              role: "admin",
+            }),
+          }),
+        ]
+      : []),
   ],
   callbacks: {
     async signIn({ account, profile }) {
+      if (account?.provider === "dev-credentials") return DEV_AUTH; // local dev only
       if (account?.provider === "github") {
         const username = (profile as { login?: string })?.login ?? "";
         const token = account.access_token;
@@ -74,6 +98,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return true;
     },
     async jwt({ token, account, profile }) {
+      if (DEV_AUTH && account?.provider === "dev-credentials") {
+        token.username = "local-dev";
+        token.role = "admin";
+        return token;
+      }
       if (profile) {
         token.username = (profile as { login?: string }).login ?? "";
         
