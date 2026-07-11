@@ -7,6 +7,19 @@
 
 ---
 
+## 2026-07-11 — 유저 권한 관리(Users Admin UI) 및 멀티 클라우드 장애 복원력(Failover) 연동 완료
+
+- Status: Admin용 사용자 계정 권한 제어판 구축 및 AWS/GCP/Azure 장애 발생 시 예비 리전/클러스터 우회 복구(Multi-region Failover) 시스템 구현 완료.
+- Changed:
+  - Users UI: `/users` 계정 권한 설정 페이지를 신설하고 대시보드 내 `UsersTable` 클라이언트 컴포넌트를 연동. Admin 역할 사용자만 진입 가능하며 DynamoDB에 저장된 개별 세션 계정 등급(Viewer/Operator/Admin)을 실시간 편집 가능.
+  - Self-lockout Protection: 관리자가 본인 역할을 실수로 강등하여 관리 콘솔에서 잠기는 잠금 방지(Lockout Protection) 기능 적용.
+  - Sidebar: 로그인 세션의 역할에 따라 `admin` 권한이 있는 경우에만 "Users" 메뉴가 동적으로 노출되도록 개선.
+  - AWS Failover: SSM Automation 실행 실패 시 `AWS_FAILOVER_REGION`(기본 `us-east-1`)으로 자동 스위칭하여 복구 문서를 재시도하도록 보강.
+  - GCP Failover: GKE API 호출 및 Cloud Run 조작 실패 시 `GCP_FAILOVER_CLUSTER_NAME` 및 `GCP_FAILOVER_REGION`으로 우회하여 복구 동작을 연속 수행하도록 지원.
+  - Azure Failover: AKS 크레덴셜 획득/API 배포 실패 시 `AZURE_FAILOVER_CLUSTER_ID` 및 `AZURE_FAILOVER_RESOURCE_ID`로 Failover하여 실행 보장.
+  - Tests: `test_multicloud_runners.py`에 GKE failover 복구 단위 테스트를 추가하고 전체 543개 백엔드 테스트 및 Next.js 프로덕션 빌드/배포 패스 검증 완료.
+- Next: Slack 대화형 연동 가이드 정리.
+
 ## 2026-07-11 — 대시보드 감사 로그(Audit Logs) 뷰어 및 역할 기반 필터 연동 완료
 
 - Status: 시스템 변조/승인 이력을 모니터링할 수 있는 감사 로그(Audit Logs) 조회 페이지 및 전용 API 구현 완료.
