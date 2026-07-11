@@ -1,17 +1,13 @@
 # NEXT_PLAN — platform-agent
 
-최종 갱신: 2026-07-11 (Auth Phase 2 & 3 완료)
+최종 갱신: 2026-07-11
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md` / `PROGRESS_LOG.md`를 참조한다. **≤120줄** 유지.
 
-## 후속 수동 작업
+## 다음 작업 리스트
 
-- [x] [manual] CDK Stack 배포 (`cdk deploy`) 하여 `platform-agent-users` 및 `platform-agent-audit` 테이블 생성 및 OIDC 권한 배포
-- [x] [manual] Vercel env에 다음 테이블 이름 환경 변수 설정 추가:
-  - `DASHBOARD_USERS_TABLE=platform-agent-users`
-  - `DASHBOARD_AUDIT_TABLE=platform-agent-audit`
-  - `DASHBOARD_APPROVAL_TABLE=incident-approval-requests`
-- [x] [manual] Vercel에 대시보드 프로젝트 프로덕션 빌드 재배포
+- [ ] [auto] Slack App 대화형 인터랙티브 컴포넌트 실연동 및 E2E 승인 메시지 전송 테스트
+- [ ] [auto] 작성된 테크 아티클(LinkedIn / Medium) 리뷰 및 소셜 채널 배포 진행
 
 ## 작업 규칙
 
