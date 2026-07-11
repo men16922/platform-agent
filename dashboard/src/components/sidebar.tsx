@@ -16,11 +16,14 @@ export function Sidebar() {
   const { data: session } = useSession();
   
   const role = (session?.user as any)?.role || "viewer";
-  const hasAuditAccess = role === "admin" || role === "operator";
 
-  const navItems = hasAuditAccess
-    ? [...baseNavItems, { href: "/audit", label: "Audit Logs", icon: "🛡" }]
-    : baseNavItems;
+  const navItems = [...baseNavItems];
+  if (role === "admin" || role === "operator") {
+    navItems.push({ href: "/audit", label: "Audit Logs", icon: "🛡" });
+  }
+  if (role === "admin") {
+    navItems.push({ href: "/users", label: "Users", icon: "👥" });
+  }
 
   return (
     <aside className="hidden w-64 shrink-0 border-r border-[var(--card-border)] bg-[#292a2d] md:flex md:flex-col md:min-h-screen">

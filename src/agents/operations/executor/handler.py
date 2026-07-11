@@ -133,15 +133,44 @@ def _run_ssm_actions(
 
             # Poll for terminal state (max 5 min for AUTO, skip polling for APPROVE)
             if decision.remediation_mode == RemediationMode.AUTO:
-                _wait_for_ssm(execution_id, log)
+                _wait_for_ssm(_SSM, execution_id, log)
 
             executed.append(action)
         except _SSM.exceptions.AutomationDefinitionNotFoundException:
             log.warning("executor.ssm.not_found", action=action)
             skipped.append(action)
         except Exception as exc:
-            log.error("executor.ssm.error", action=action, error=str(exc))
-            skipped.append(action)
+            # Primary region execution failed; execute retry on fallback region
+            failover_region = os.getenv("AWS_FAILOVER_REGION", "us-east-1")
+            log.warning(
+                "executor.ssm.primary_failed.retry_failover",
+                action=action,
+                primary_region=_REGION,
+                failover_region=failover_region,
+                error=str(exc)
+            )
+            try:
+                ssm_failover = boto3.client("ssm", region_name=failover_region)
+                resp = ssm_failover.start_automation_execution(
+                    DocumentName    = action,
+                    DocumentVersion = "$DEFAULT",
+                    Parameters      = params,
+                )
+                execution_id = resp["AutomationExecutionId"]
+                log.info("executor.ssm.failover.started", action=action, execution_id=execution_id)
+
+                if decision.remediation_mode == RemediationMode.AUTO:
+                    _wait_for_ssm(ssm_failover, execution_id, log)
+
+                executed.append(action)
+            except Exception as failover_exc:
+                log.error(
+                    "executor.ssm.failover_failed",
+                    action=action,
+                    failover_region=failover_region,
+                    error=str(failover_exc)
+                )
+                skipped.append(action)
 
     return executed, skipped
 
@@ -189,10 +218,10 @@ def _build_ssm_params(
     return _build_action_params(action, alarm, normalized_incident, provider)
 
 
-def _wait_for_ssm(execution_id: str, log: Any, timeout_sec: int = 300) -> None:
+def _wait_for_ssm(client: Any, execution_id: str, log: Any, timeout_sec: int = 300) -> None:
     deadline = time.time() + timeout_sec
     while time.time() < deadline:
-        resp   = _SSM.get_automation_execution(AutomationExecutionId=execution_id)
+        resp   = client.get_automation_execution(AutomationExecutionId=execution_id)
         status = resp["AutomationExecution"]["AutomationExecutionStatus"]
         if status in {"Success", "Failed", "Cancelled", "TimedOut"}:
             log.info("executor.ssm.terminal", execution_id=execution_id, status=status)

@@ -98,6 +98,23 @@ def _run_aks_action(action: str, params: dict[str, list[str]], token: str, log: 
     if not cluster_id or not workload_name:
         raise ValueError(f"Missing AKS parameters: ClusterId and WorkloadName are required. Params: {params}")
 
+    try:
+        _execute_aks_call(action, cluster_id, namespace, workload_name, params, token, log)
+    except Exception as exc:
+        failover_cluster_id = os.getenv("AZURE_FAILOVER_CLUSTER_ID") or f"{cluster_id}-backup"
+        log.warning(
+            "azure_runner.aks.primary_failed.retry_failover",
+            primary_cluster_id=cluster_id,
+            failover_cluster_id=failover_cluster_id,
+            error=str(exc)
+        )
+        _execute_aks_call(action, failover_cluster_id, namespace, workload_name, params, token, log)
+
+
+def _execute_aks_call(
+    action: str, cluster_id: str, namespace: str, workload_name: str,
+    params: dict[str, list[str]], token: str, log: Any
+) -> None:
     # 1. Retrieve AKS Cluster user credentials (kubeconfig/admin credentials) via Azure Resource Manager API
     log.info("azure_runner.aks.get_credentials", cluster_id=cluster_id)
     cred_url = f"https://management.azure.com{cluster_id}/listClusterUserCredentials?api-version=2023-11-01"
@@ -227,6 +244,24 @@ def _run_functionapp_action(action: str, params: dict[str, list[str]], token: st
     if not resource_id:
         raise ValueError(f"Missing ResourceId for Azure Function App. Params: {params}")
 
+    try:
+        _execute_functionapp_call(action, resource_id, app_name, params, token, log)
+    except Exception as exc:
+        failover_resource_id = os.getenv("AZURE_FAILOVER_RESOURCE_ID") or f"{resource_id}-backup"
+        failover_app_name = f"{app_name}-backup"
+        log.warning(
+            "azure_runner.functionapp.primary_failed.retry_failover",
+            primary_resource_id=resource_id,
+            failover_resource_id=failover_resource_id,
+            error=str(exc)
+        )
+        _execute_functionapp_call(action, failover_resource_id, failover_app_name, params, token, log)
+
+
+def _execute_functionapp_call(
+    action: str, resource_id: str, app_name: str,
+    params: dict[str, list[str]], token: str, log: Any
+) -> None:
     url = f"https://management.azure.com{resource_id}?api-version=2022-03-01"
     headers = {
         "Authorization": f"Bearer {token}",
@@ -263,3 +298,4 @@ def _run_functionapp_action(action: str, params: dict[str, list[str]], token: st
 def base64_decode_string(s: str) -> str:
     import base64
     return base64.b64decode(s).decode("utf-8")
+

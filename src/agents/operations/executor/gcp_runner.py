@@ -55,6 +55,24 @@ def _run_gke_action(action: str, params: dict[str, list[str]], token: str, log: 
     if not project_id or not cluster_name or not workload_name:
         raise ValueError(f"Missing GKE parameters: ProjectId, ClusterName, and WorkloadName are required. Params: {params}")
 
+    try:
+        _execute_gke_call(action, project_id, cluster_name, namespace, workload_name, params, token, log)
+    except Exception as exc:
+        failover_cluster = os.getenv("GCP_FAILOVER_CLUSTER_NAME") or f"{cluster_name}-backup"
+        log.warning(
+            "gcp_runner.gke.primary_failed.retry_failover",
+            primary_cluster=cluster_name,
+            failover_cluster=failover_cluster,
+            error=str(exc)
+        )
+        # Attempt retry on backup failover cluster
+        _execute_gke_call(action, project_id, failover_cluster, namespace, workload_name, params, token, log)
+
+
+def _execute_gke_call(
+    action: str, project_id: str, cluster_name: str, namespace: str, workload_name: str,
+    params: dict[str, list[str]], token: str, log: Any
+) -> None:
     # 1. Fetch cluster API endpoint and CA certificate from GKE API
     log.info("gcp_runner.gke.fetch_cluster_details", cluster=cluster_name)
     cluster_url = f"https://container.googleapis.com/v1/projects/{project_id}/locations/-/clusters/{cluster_name}"
@@ -72,6 +90,7 @@ def _run_gke_action(action: str, params: dict[str, list[str]], token: str, log: 
         raise RuntimeError("Could not retrieve GKE cluster endpoint or CA certificate")
 
     # 2. Write CA cert to temp file for TLS verification in requests
+    import base64
     ca_cert = base64.b64decode(ca_cert_b64)
     with tempfile.NamedTemporaryFile(delete=False) as fp:
         fp.write(ca_cert)
@@ -187,6 +206,27 @@ def _run_cloudrun_action(action: str, params: dict[str, list[str]], token: str, 
     if not project_id or not service_name:
         raise ValueError(f"Missing Cloud Run parameters: ProjectId and ServiceName are required. Params: {params}")
 
+    try:
+        _execute_cloudrun_call(action, project_id, region, service_name, params, token, log)
+    except Exception as exc:
+        # Failover region detection
+        failover_region = os.getenv("GCP_FAILOVER_REGION") or "us-central1"
+        if failover_region == region:
+            failover_region = "us-east1" if region == "us-central1" else "us-central1"
+
+        log.warning(
+            "gcp_runner.cloudrun.primary_failed.retry_failover",
+            primary_region=region,
+            failover_region=failover_region,
+            error=str(exc)
+        )
+        _execute_cloudrun_call(action, project_id, failover_region, service_name, params, token, log)
+
+
+def _execute_cloudrun_call(
+    action: str, project_id: str, region: str, service_name: str,
+    params: dict[str, list[str]], token: str, log: Any
+) -> None:
     url = f"https://{region}-run.googleapis.com/v2/projects/{project_id}/locations/{region}/services/{service_name}"
     headers = {
         "Authorization": f"Bearer {token}",
@@ -194,7 +234,7 @@ def _run_cloudrun_action(action: str, params: dict[str, list[str]], token: str, 
     }
 
     if action == "GCP-ScaleCloudRunService":
-        log.info("gcp_runner.cloudrun.scale", service=service_name)
+        log.info("gcp_runner.cloudrun.scale", service=service_name, region=region)
         # Fetch current Cloud Run service to get concurrency details
         resp = requests.get(url, headers=headers, timeout=10)
         if resp.status_code != 200:
@@ -240,7 +280,7 @@ def _run_cloudrun_action(action: str, params: dict[str, list[str]], token: str, 
             
         # Extract revision name from resource path (if full path returned)
         rev_id = rollback_revision.split("/")[-1]
-        log.info("gcp_runner.cloudrun.rollback", service=service_name, target_revision=rev_id)
+        log.info("gcp_runner.cloudrun.rollback", service=service_name, target_revision=rev_id, region=region)
 
         # Update service traffic routing block
         patch_url = f"{url}?updateMask=traffic"
@@ -258,3 +298,4 @@ def _run_cloudrun_action(action: str, params: dict[str, list[str]], token: str, 
         if resp.status_code != 200:
             raise RuntimeError(f"Cloud Run rollback failed (HTTP {resp.status_code}): {resp.text}")
         log.info("gcp_runner.cloudrun.rollback.success", service=service_name)
+
