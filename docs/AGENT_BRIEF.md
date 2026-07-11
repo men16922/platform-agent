@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-11
 
-> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` Task 11 — Executor에서 activity table write path 구현 후 Auth.js Phase 1.
+> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` Task 11 — Vercel env 및 대시보드 manual 배포 후 Auth Phase 2/3 설계.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 
@@ -22,8 +22,8 @@
 - **동작하는 것:** Operations 4단계 + 3-cloud AI Agent (Bedrock+Gemini 3.5 Flash+GPT-5.4) + Capability Runbook Schema.
 - **하네스:** overnight-harness 플러그인 기반 (5 engine). `make overnight-kiro-once` 로 smoke.
 - **Kiro 특화:** aws-ops / cdk-dev / overnight-harness 3개 에이전트 + safety hook + AWS MCP Server.
-- **검증:** `make check` → 525 passed, 1 skipped (2026-07-11); Dashboard build + OG/Twitter image + Vercel production + CDK activity table 배포 완료.
-- **현재 초점:** Executor → activity table write path → Auth.js Phase 1.
+- **검증:** `make check` → 536 passed, 1 skipped (2026-07-11); Dashboard build + OG/Twitter image + Vercel production + CDK activity table 배포 및 Task 11 [auto] 완료.
+- **현재 초점:** Vercel 대시보드 manual 배포 및 Auth Phase 2/3 UI.
 
 ## Guardrails
 

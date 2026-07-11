@@ -104,7 +104,7 @@ export default async function OverviewPage() {
                 <tr key={dep.id} className="border-t border-white/6 transition-colors hover:bg-white/[0.025]">
                   <td className="px-5 py-3.5 font-medium">{dep.service}</td><td className="px-5 py-3.5"><code className="text-xs text-[#cbd6e9]">{dep.version}</code></td><td className="px-5 py-3.5">
                     <span className={`inline-flex items-center gap-1.5 rounded border px-1.5 py-1 text-[10px] font-semibold tracking-wide ${providerBadgeStyles[dep.provider]}`}>
-                      <span className="flex h-4 w-4 items-center justify-center rounded bg-white p-0.5"><ProviderLogo provider={dep.provider} size="sm" /></span>{dep.provider === "gcp" ? "GCP" : dep.provider === "azure" ? "AZURE" : dep.provider === "onprem" ? "CNCF" : "AWS"}
+                      <span className="flex h-4 w-4 items-center justify-center rounded bg-white p-0.5"><ProviderLogo provider={dep.provider} size="sm" /></span>{dep.provider === "gcp" ? "GCP" : dep.provider === "azure" ? "AZURE" : dep.provider === "onprem" ? "ON-PREM" : "AWS"}
                     </span>
                   </td>
                   <td className="px-5 py-3.5 text-xs text-[var(--muted)]">{dep.agent}</td><td className="px-5 py-3.5">

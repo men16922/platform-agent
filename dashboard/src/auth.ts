@@ -28,7 +28,12 @@ function resolveRole(username: string): Role {
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  providers: [GitHub],
+  providers: [
+    GitHub({
+      clientId: process.env.AUTH_GITHUB_ID,
+      clientSecret: process.env.AUTH_GITHUB_SECRET,
+    }),
+  ],
   callbacks: {
     async jwt({ token, profile }) {
       if (profile) {
@@ -45,8 +50,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return session;
     },
-  },
-  pages: {
-    signIn: "/auth/signin",
   },
 });

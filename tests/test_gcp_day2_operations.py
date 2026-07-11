@@ -182,6 +182,7 @@ class TestGcpDetector:
 # ------------------------------------------------------------------
 
 class TestGcpAnalyzer:
+    @patch.dict("sys.modules", {"vertexai": None})
     def test_analyze_fallback_without_vertexai(self, detector_output_dict):
         """Without vertexai installed, should use heuristic fallback."""
         from src.agents.operations.gcp.analyzer import cloud_function_handler
@@ -193,6 +194,7 @@ class TestGcpAnalyzer:
         assert 0.0 <= result["confidence"] <= 1.0
         assert isinstance(result["similar_incidents"], list)
 
+    @patch.dict("sys.modules", {"vertexai": None})
     def test_analyze_severity_heuristic_oom(self, gcp_alert_event):
         """OOM-related alert should map to P2."""
         from src.agents.operations.gcp.detector import cloud_function_handler as detect
@@ -204,6 +206,7 @@ class TestGcpAnalyzer:
 
         assert result["severity"] == "P2"
 
+    @patch.dict("sys.modules", {"vertexai": None})
     def test_analyze_severity_heuristic_critical(self, gcp_alert_event):
         """Outage/down keywords should map to P1."""
         from src.agents.operations.gcp.detector import cloud_function_handler as detect

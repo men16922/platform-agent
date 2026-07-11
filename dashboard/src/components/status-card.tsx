@@ -5,7 +5,7 @@ const providerConfig = {
   aws: { name: "AWS", color: "#FF9900" },
   gcp: { name: "Google Cloud", color: "#8AB4F8" },
   azure: { name: "Microsoft Azure", color: "#00A4EF" },
-  onprem: { name: "CNCF / On-Prem", color: "#69D3A7" },
+  onprem: { name: "On-Premise", color: "#69D3A7" },
 };
 
 const statusColors = {

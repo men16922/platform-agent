@@ -25,7 +25,7 @@ export default async function AgentsPage() {
         <AgentCard name="Strands Agent" provider="AWS" llm="Bedrock Claude" cloud="aws" />
         <AgentCard name="ADK Agent" provider="Google Cloud" llm="Gemini 3.5 Flash" cloud="gcp" />
         <AgentCard name="MS Agent" provider="Microsoft Azure" llm="GPT-5.4" cloud="azure" />
-        <AgentCard name="On-Prem Agent" provider="CNCF / On-Prem" llm="Any LLM" cloud="onprem" />
+        <AgentCard name="On-Prem Agent" provider="On-Premise" llm="Any LLM" cloud="onprem" />
       </div>
 
       {/* Activity timeline */}

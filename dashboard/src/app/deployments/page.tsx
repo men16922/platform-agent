@@ -69,7 +69,7 @@ export default async function DeploymentsPage() {
                   <td className="p-3"><code className="text-xs">{dep.version}</code></td>
                   <td className="p-3">
                     <span className={`inline-flex items-center gap-1.5 rounded border px-1.5 py-1 text-[10px] font-semibold ${providerBadgeStyles[dep.provider]}`}>
-                      <ProviderLogo provider={dep.provider} size="sm" />{dep.provider === "gcp" ? "GCP" : dep.provider === "azure" ? "Azure" : dep.provider === "onprem" ? "On-Prem" : "AWS"}
+                      <ProviderLogo provider={dep.provider} size="sm" />{dep.provider === "gcp" ? "GCP" : dep.provider === "azure" ? "Azure" : dep.provider === "onprem" ? "On-Premise" : "AWS"}
                     </span>
                   </td>
                   <td className="p-3 text-[var(--muted)]">{dep.environment}</td>

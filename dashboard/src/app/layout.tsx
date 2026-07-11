@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/sidebar";
 import { DashboardHeader } from "@/components/dashboard-header";
+import { AuthProvider } from "@/components/auth-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
     template: "%s | Platform Agent",
   },
   description:
-    "Autonomous multi-cloud operations: provision, deploy, detect, analyze, decide, execute across AWS, GCP, Azure & On-Prem — AI Agent orchestrated.",
+    "Autonomous multi-cloud operations: provision, deploy, detect, analyze, decide, execute across AWS, GCP, Azure & On-Premise — AI Agent orchestrated.",
   keywords: [
     "platform engineering",
     "multi-cloud",
@@ -44,7 +45,7 @@ export const metadata: Metadata = {
     siteName: "Platform Agent",
     title: "Platform Agent — Multi-Cloud Operations Dashboard",
     description:
-      "Autonomous multi-cloud operations: provision, deploy, detect, analyze, decide, execute across AWS, GCP, Azure & On-Prem.",
+      "Autonomous multi-cloud operations: provision, deploy, detect, analyze, decide, execute across AWS, GCP, Azure & On-Premise.",
   },
   twitter: {
     card: "summary_large_image",
@@ -69,11 +70,13 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex">
-        <Sidebar />
-        <main className="min-w-0 flex-1 overflow-auto px-5 py-6 sm:px-8 lg:px-10 lg:py-8">
-          <DashboardHeader />
-          {children}
-        </main>
+        <AuthProvider>
+          <Sidebar />
+          <main className="min-w-0 flex-1 overflow-auto px-5 py-6 sm:px-8 lg:px-10 lg:py-8">
+            <DashboardHeader />
+            {children}
+          </main>
+        </AuthProvider>
       </body>
     </html>
   );

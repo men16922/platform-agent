@@ -171,12 +171,59 @@ class DeployPipeline:
                     rollback_result = self._step_rollback(spec, context)
                     result.steps.append(rollback_result)
                 result.final_status = StepStatus.FAILED
+                self._record_pipeline_result(spec, result, context)
                 return result
 
         result.final_status = StepStatus.SUCCESS
+        self._record_pipeline_result(spec, result, context)
         return result
 
     # --- Pipeline Steps ---
+
+    def _record_pipeline_result(self, spec: PipelineSpec, result: "PipelineResult", context: dict) -> None:
+        """Record deployment and agent activity to the activity table (best-effort)."""
+        try:
+            from src.agents.operations.activity_writer import record_deployment, record_agent_activity
+
+            agent_map = {
+                "aws": "Strands Agent (Bedrock Claude)",
+                "gcp": "ADK Agent (Gemini 3.5 Flash)",
+                "azure": "MS Agent (GPT-5.4)",
+                "onprem": "On-Prem Agent (Local LLM)",
+            }
+            agent = agent_map.get(spec.provider, f"Agent ({spec.provider})")
+            status = "success" if result.success else "failed"
+
+            # Compute duration from steps
+            total_steps = len(result.steps)
+            duration_sec = total_steps * 5  # rough estimate when not timed
+
+            pipeline_steps = [
+                {"name": s.step_name, "status": s.status.value}
+                for s in result.steps
+            ]
+
+            dep_id = record_deployment(
+                provider=spec.provider,
+                service=spec.service_name,
+                version=spec.version,
+                environment=spec.environment,
+                status=status,
+                agent=agent,
+                duration_sec=duration_sec,
+                pipeline_steps=pipeline_steps,
+            )
+
+            tool_calls = [s.step_name for s in result.steps if s.status == StepStatus.SUCCESS]
+            record_agent_activity(
+                agent=agent,
+                provider=spec.provider,
+                action=f"Deploy {spec.service_name} {spec.version} to {spec.environment}",
+                tool_calls=tool_calls,
+                status=status,
+            )
+        except Exception:
+            pass  # Best-effort; don't break pipeline on activity write failure
 
     def _step_plan(self, spec: PipelineSpec, context: dict) -> StepResult:
         """Generate deployment plan from spec."""

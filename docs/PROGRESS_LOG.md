@@ -7,6 +7,21 @@
 
 ---
 
+## 2026-07-11 — Dashboard live data pipeline + Auth (Task 11 [auto] 완료)
+
+- Status: Task 11 자동 항목(Activity DB write path, Auth.js Phase 1) 구현 및 검증 완료.
+- Changed:
+  - Write path: `src/agents/ai/pipeline.py`에 `platform-agent-activity` 테이블 적재 로직 `_record_pipeline_result` 구현.
+  - Auth: GitHub OAuth(`dashboard/src/auth.ts`), 세션 프로바이더(`auth-provider.tsx`), 대시보드 헤더 세션 연동 및 미들웨어(`/api/dashboard/:path*/approve` 등) 보호 완료.
+  - Test fix: `tests/test_gcp_day2_operations.py`의 휴리스틱 테스트들이 실 Vertex AI 대신 Mock/Heuristic Fallback을 타도록 `vertexai` 모듈 mock 패치 적용.
+  - Renaming: 대시보드 UI 상의 `CNCF / On-Prem` 표기를 `On-Premise`로 리네이밍.
+- Verified:
+  - `make check` -> 536 passed, 1 skipped (성공).
+  - GCP Day2 tests -> 28 passed.
+  - Dashboard `npm run build` -> Turbopack 컴파일 및 타입 검사 통과.
+- Blockers: 없음.
+- Next: Vercel 환경 변수 `DASHBOARD_ACTIVITY_TABLE` 추가 및 대시보드 재배포 (manual).
+
 ## 2026-07-11 — Dashboard portfolio release (Task 10 완료)
 
 - Status: 3개 항목 모두 구현·배포·검증 완료.

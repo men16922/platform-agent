@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 export const alt =
-  "Platform Agent — Multi-Cloud Operations Dashboard covering AWS, GCP, Azure, and On-Prem";
+  "Platform Agent — Multi-Cloud Operations Dashboard covering AWS, GCP, Azure, and On-Premise";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -91,7 +91,7 @@ export default function OGImage() {
           }}
         >
           Multi-Cloud Operations Dashboard — provision, deploy, detect, analyze,
-          decide, execute across AWS, GCP, Azure &amp; On-Prem.
+          decide, execute across AWS, GCP, Azure &amp; On-Premise.
         </p>
 
         {/* Pipeline steps */}
@@ -139,7 +139,7 @@ export default function OGImage() {
             marginTop: "28px",
           }}
         >
-          {["AWS", "GCP", "Azure", "On-Prem"].map((p) => (
+          {["AWS", "GCP", "Azure", "On-Premise"].map((p) => (
             <span
               key={p}
               style={{
