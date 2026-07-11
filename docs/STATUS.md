@@ -46,16 +46,16 @@
 10. **On-prem K8s** — `make local-cluster` (kind 테스트용) → 3노드 + registry + NGINX ingress.
 11. **Deployment Adapters** — 4 provider (onprem/aws/gcp/azure): Build→Push→Deploy→Validate→Rollback.
 12. **Execution Adapters** — 4 provider: capability → provider-specific action resolution.
-13. **Dashboard** — Next.js 16 + Tailwind 4, 4페이지. AWS incident live/demo/fallback + deployment/activity durable read model (DynamoDB `platform-agent-activity` + GSI1) + Vercel OIDC 최소권한 read role. OG/Twitter image 배포 완료. Auth boundary 설계 완료, GitHub OAuth (Auth.js Phase 1) 연동 완료, Auth Phase 2/3 및 사용자 작용 UI 제어판(승인 카드, 배포 트리거 모달, 롤백 실행 버튼) 구현 및 배포 완료.
+13. **Dashboard** — Next.js 16 + Tailwind 4, 5페이지. AWS incident live/demo/fallback + deployment/activity durable read model (DynamoDB `platform-agent-activity` + GSI1) + Vercel OIDC 최소권한 read role. OG/Twitter image 배포 완료. Auth boundary 설계 완료, GitHub OAuth (Auth.js Phase 1) 연동 완료, Auth Phase 2/3 및 사용자 작용 UI 제어판(승인 카드, 배포 트리거 모달, 롤백 실행 버튼) 및 보안 감사 로그(Audit Logs) 조회 화면 전면 구현 및 배포 완료.
 
 ## Active Focus
 
-- Auth Phase 2 & 3 대화형 UI 제어판 배포 완료 및 AWS STS 연동 GCP/Azure 실 REST API 실행 러너 및 OIDC 자격증명 모듈 구현 완료.
+- 대시보드 감사 로그(Audit Logs) 뷰어 화면 개발, 동적 사이드바 렌더링, 전용 보호 API 연동 및 프로덕션 배포 완료.
 
 ## Open Risks / Gaps
 
 1. **CDK 재배포 시 Lambda bundling** — Docker 없이 로컬 pip 번들링 사용 중 (arm64↔amd64 주의).
-2. **Slack App 미연결** — APPROVE 승인 버튼 코드+가이드+E2E 테스트 완비, 실 Slack App 미생성 (코드 ready).
+2. **Slack App 미연결** — APPROVE 승인 버튼 코드+가이드+E2E 테스트 완비, 실 Slack App 미생성 (코드 ready). OIDC 연계를 통한 Slack Webhook 송출 정상 작동.
 3. **GCP/Azure 실 클러스터** — WIF 자격증명 연동 모듈 및 GKE/Cloud Run/AKS 실 API 호출 러너 구현 완료 (테스트 검증 성공), 실 클러스터 비용 관리에 유의.
 4. **Dashboard live dataset** — AWS live 연결 정상; `incident-history` 0건, `platform-agent-activity` 0건 (write path는 연동됨).
 5. **Dashboard auth** — Auth.js Phase 1/2/3 구현 및 로컬 Next.js 컴파일/빌드 검증 성공.
