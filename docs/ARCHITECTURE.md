@@ -64,6 +64,7 @@
 | **Agent-per-cloud** | 각 클라우드에 네이티브 프레임워크 Agent (Strands/ADK/MSFT/Pydantic AI) |
 | **AI Model Router** | 모델(두뇌) ↔ 환경(대상) 분리 — 어떤 LLM이든 어떤 환경에 배포, 적합도 검증 |
 | **Agent Runtime per environment** | 각 환경을 그 클라우드의 네이티브 매니지드 에이전트 런타임 위에서 실행 (AWS=AgentCore, GCP=Agent Engine, Azure=Foundry, On-Prem=kagent) — [아래](#agent-runtime-레이어-agentcore-레퍼런스--멀티클라우드-로드맵) |
+| **Provision + Deploy (2-role)** | ServiceSpec 기반 두 역할: ① Provision(IaC, 온프렘=Terraform/Ansible) ② Deploy(build→push→deploy→validate). 둘 다 capability→환경별 어댑터 |
 | **Policy as Code** | Guardian Agent가 모든 배포에 대해 APPROVE/AUTO/REJECT 판정 |
 
 ### 진입 경로 비교
@@ -200,6 +201,51 @@
 - **범용 ops로 확장:** 도구셋을 배포(build/push/deploy/validate) 밖으로 넓히고(조회/진단/스케일/롤백/비용 등, MCP 게이트웨이 기반), 시스템프롬프트를 일반화하며, 추론(reasoning) 스트리밍을 추가한다.
 
 출처: [Bedrock AgentCore](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/what-is-bedrock-agentcore.html) · [any framework](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/using-any-agent-framework.html) · [Vertex AI Agent Engine](https://google.github.io/adk-docs/deploy/agent-engine/) · [Foundry Agent Service](https://learn.microsoft.com/en-us/azure/foundry/agents/overview) · [kagent (CNCF)](https://kagent.dev/)
+
+### 2-역할 에이전트: Provision + Deploy (capability 기반)
+
+> **원칙:** `ServiceSpec`(선언적 의도)을 AI 에이전트가 해석해 두 역할로 실행한다. 두 역할 모두 **capability → 환경별 네이티브 어댑터** 패턴(Day-2 runbook과 동일)을 재사용한다 — 즉 "무엇을(capability)"만 선언하고, 실행 시점에 환경의 네이티브 도구로 해석한다.
+
+```
+                     ServiceSpec (선언적 의도)
+                            │  AI Agent가 해석
+             ┌──────────────┴──────────────┐
+             ▼                             ▼
+   ┌────────────────────┐        ┌────────────────────┐
+   │ ① Provision Agent   │        │ ② Deploy Agent      │
+   │   (Day-0/1 · IaC)   │        │   (Day-1 · App)     │
+   │  플랫폼/클러스터     │  ───▶  │  build → push →     │
+   │  프로비저닝          │        │  deploy → validate  │
+   └────────────────────┘        └────────────────────┘
+```
+
+**① Provision (IaC) — 온프렘 = Terraform + Ansible**
+
+| capability | AWS | GCP | Azure | On-Prem | 상태 |
+|---|---|---|---|---|---|
+| 인프라 제어 | CDK / Terraform (aws cli) | gcloud / Terraform | az / Terraform | **Terraform + Ansible** | AWS만 CDK 계획 생성, 나머지 🔲 |
+| 클러스터 | EKS | GKE | AKS | **kubeadm/k3s (Ansible) · kind (Terraform)** | 온프렘 스크립트만 🔲 |
+| 레지스트리 | ECR | Artifact Registry | ACR | **Harbor** | 🔲 |
+
+- 역할 분리: **Terraform = 인프라(VM/클러스터 substrate) 프로비저닝**, **Ansible = 노드 구성(k8s 설치)**. 실 온프렘은 Terraform이 베어메탈/VM을 프로비저닝 → Ansible이 kubeadm/k3s 설치.
+
+**② Deploy (App) — 구현 완료 ✅** (per-environment 네이티브 어댑터)
+
+| 단계 | AWS (EKS) | GCP (GKE) | Azure (AKS) | On-Prem |
+|---|---|---|---|---|
+| Build | CodeBuild ✅ | Cloud Build ✅ | ACR Tasks ✅ | docker build ✅ |
+| Push | ECR ✅ | Artifact Registry ✅ | ACR ✅ | Private Registry ✅ |
+| Deploy | kubectl → EKS ✅ | kubectl → GKE ✅ | kubectl → AKS ✅ | kubectl → local ✅ |
+| Validate | HTTP health ✅ | ✅ | ✅ | ✅ |
+
+**현재 상태:** ② Deploy Agent = 구현 완료(4-provider). ① Provision Agent = AWS `cdk_generator`(계획 생성+Slack 승인)만 존재, **온프렘 Terraform/Ansible 및 통합 provision 어댑터 = 미구현**.
+
+**온프렘 Provision을 Mac에서 테스트 (2티어):**
+
+| 티어 | 방식 | VM |
+|---|---|---|
+| Tier 1 (경량) | **Terraform + kind** (Docker 노드) | ❌ 불필요 |
+| Tier 2 (실 온프렘) | **Multipass VM(Ubuntu) + Ansible → k3s** | ✅ VM 먼저 |
 
 ### Pipeline DAG 각 Step 설명
 
