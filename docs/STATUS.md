@@ -50,13 +50,13 @@
 
 ## Active Focus
 
-- Auth Phase 2 & 3 백엔드 API, AWS CDK 배포, Vercel 환경 변수 설정 및 대화형 UI 제어판 전면 구현 및 프로덕션 배포 완료.
+- Auth Phase 2 & 3 대화형 UI 제어판 배포 완료 및 AWS STS 연동 GCP/Azure 실 REST API 실행 러너 및 OIDC 자격증명 모듈 구현 완료.
 
 ## Open Risks / Gaps
 
 1. **CDK 재배포 시 Lambda bundling** — Docker 없이 로컬 pip 번들링 사용 중 (arm64↔amd64 주의).
 2. **Slack App 미연결** — APPROVE 승인 버튼 코드+가이드+E2E 테스트 완비, 실 Slack App 미생성 (코드 ready).
-3. **GCP/Azure 실 클러스터** — tool calling 검증 완료, 실 인프라(GKE/AKS) 배포는 비용 때문에 필요 시 수행.
+3. **GCP/Azure 실 클러스터** — WIF 자격증명 연동 모듈 및 GKE/Cloud Run/AKS 실 API 호출 러너 구현 완료 (테스트 검증 성공), 실 클러스터 비용 관리에 유의.
 4. **Dashboard live dataset** — AWS live 연결 정상; `incident-history` 0건, `platform-agent-activity` 0건 (write path는 연동됨).
 5. **Dashboard auth** — Auth.js Phase 1/2/3 구현 및 로컬 Next.js 컴파일/빌드 검증 성공.
 6. **Dashboard dependency audit** — Next.js 16.2.10 내부 PostCSS 중간등급 취약점 2건; upstream release 대기.

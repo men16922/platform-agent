@@ -7,6 +7,18 @@
 
 ---
 
+## 2026-07-11 — GCP 및 Azure 실 API 연동 및 OIDC 인증 연동 완료
+
+- Status: AWS STS 연계를 활용한 GCP/Azure 실 REST API 연동 및 OIDC 페더레이션 크레덴셜 자격증명 모듈 구현 완료.
+- Changed:
+  - GCP Auth: AWS STS GetCallerIdentity 서명 정보로 GCP STS 교환 토큰을 가져오는 WIF 페더레이션 자격증명 모듈(`gcp_auth.py`) 구현 (Service Account Key 폴백 지원).
+  - GCP/Azure Runners: GKE 롤아웃 재시작/스케일링/롤백 API 호출 및 Cloud Run 스케일링/트래픽 롤백 REST API 호출이 가능한 실 인프라 러너(`gcp_runner.py`, `azure_runner.py`) 개발.
+  - Executors: 중앙 AWS Step Functions Executor(`handler.py`) 및 GCP Cloud Workflows Executor(`gcp/executor.py`) 양측에 신규 외부 클라우드 실 실행부 바인딩 완료.
+- Verified:
+  - `pytest tests/test_multicloud_runners.py` -> 5 passed (성공).
+  - 전체 파이썬 테스트 슈트 -> 541 passed, 1 skipped (Mock 모드 기본 지원 확인).
+- Next: Slack App 대화형(Interactive) 구성요소의 단일 AWS 연결 설정 연계.
+
 ## 2026-07-11 — Auth Phase 2 & 3 UI Control Panels 구현 및 배포 완료
 
 - Status: 대시보드 내 승인/배포/롤백 수행이 가능한 대화형 UI 구성 요소 개발 및 프로덕션 배포 완료.
