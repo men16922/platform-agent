@@ -20,6 +20,7 @@
 - `make check` (pytest) → **569 passed, 1 skipped** (2026-07-11) — AI Model Router / Pydantic AI On-Prem deployer / MLX proxy / deploy recorder 테스트 포함
 - AI Model Router → `/api/models`(환경별 선택지) + `/api/local-deploy`(자연어 배포) live 확인; 대시보드 `tsc`+`next build` 통과
 - **Live E2E (Pydantic AI + MLX Qwen3-Coder-30B)** → 자연어 "Deploy orders-api ..." → build→push→deploy→validate 자율 실행 → kind `orders-api 1/1 Running`(image v1.5.0) 검증 완료 (2026-07-11)
+- **Deployments Live 추적 배선 완성** → 기록 활성 API 배포 → recorder가 DEPLOY/ACTIVITY(DEP-262AC0A3, v1.6.0) DynamoDB 기록 → 대시보드 `/api/dashboard/deployments`(aws-live)가 최신 배포로 노출 확인 (2026-07-11)
 - Strands + Bedrock 이전 baseline: `make check` 544 passed (2026-07-11, 237.23s)
 - GCP Day2 tests → **28 passed** (Vertex AI mock/heuristic 연동, severity=P2, confidence=0.30)
 - Dashboard → lint/build 성공; 11 routes (OG/Twitter image 포함); Vercel production 배포 완료 (2026-07-11)
@@ -61,7 +62,6 @@
 
 ## Open Risks / Gaps
 
-0. **세션 외 미커밋 워킹트리 변경** — ruff autofix류 다수 파일. `src/agents/models.py` 재수출 제거로 `from src.agents.models import ServiceSpec` ImportError(in-repo 소비자 없어 테스트는 통과). 검토/정리 필요.
 1. **CDK 재배포 시 Lambda bundling** — Docker 없이 로컬 pip 번들링 사용 중 (arm64↔amd64 주의).
 2. **Slack App 미연결** — APPROVE 승인 버튼 코드+가이드+E2E 테스트 완비, 실 Slack App 미생성 (코드 ready). OIDC 연계를 통한 Slack Webhook 송출 정상 작동.
 3. **GCP/Azure 실 클러스터 비용** — 실 배포/Remediation 가동 시 클러스터 리소스 가동 및 WIF OIDC 인증 연동 세부 과금 체크 필요.
