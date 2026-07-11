@@ -34,17 +34,7 @@ function getTableName() {
 }
 
 // In-memory fallback
-let mockAuditLogs: AuditLogEntry[] = [
-  {
-    audit_id: "AUD-1A2B3C4D",
-    who: { username: "operator-demo", email: "ops@example.com" },
-    what: { action: "approve_incident", target: "INC-A3F2B1C8" },
-    result: "success",
-    context: { ip: "127.0.0.1", userAgent: "Mozilla/5.0" },
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
-    ttl: Math.floor(Date.now() / 1000) + TTL_90_DAYS,
-  },
-];
+let mockAuditLogs: AuditLogEntry[] = [];
 
 export async function writeAuditLog(
   who: { username: string; email?: string },
