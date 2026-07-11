@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 
 type Verdict = "recommended" | "allowed" | "discouraged";
+type StepStatus = "running" | "ok" | "fail";
 
 interface ModelOption {
   id: string;
@@ -14,19 +15,20 @@ interface ModelOption {
   reason: string;
 }
 
-interface DeployStep {
+interface LiveStep {
   tool: string;
-  args: Record<string, unknown>;
-  result: unknown;
+  status: StepStatus;
 }
 
 interface ChatMessage {
+  id: number;
   role: "user" | "agent";
   text: string;
   model?: string;
   provider?: string;
   ok?: boolean;
-  steps?: DeployStep[];
+  steps?: LiveStep[];
+  streaming?: boolean;
   error?: string;
   hint?: string;
 }
@@ -44,8 +46,11 @@ const verdictStyle: Record<Verdict, string> = {
   discouraged: "bg-red-400/10 text-[var(--danger)] border-red-500/30",
 };
 
-const stepOk = (result: unknown) =>
-  !(result && typeof result === "object" && "error" in result && (result as { error: unknown }).error);
+const stepMark: Record<StepStatus, { icon: string; cls: string }> = {
+  running: { icon: "◐", cls: "text-[#8ab4f8] animate-pulse" },
+  ok: { icon: "✓", cls: "text-[var(--success)]" },
+  fail: { icon: "✗", cls: "text-[var(--danger)]" },
+};
 
 export function AgentDeployChat() {
   const { data: session } = useSession();
@@ -59,6 +64,7 @@ export function AgentDeployChat() {
   const [instruction, setInstruction] = useState("Deploy orders-api v1.4.2 to the local cluster with 2 replicas");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
+  const idRef = useRef(0);
   const logRef = useRef<HTMLDivElement>(null);
 
   const loadModels = useCallback(async (env: string) => {
@@ -68,9 +74,7 @@ export function AgentDeployChat() {
       const opts: ModelOption[] = data.models || [];
       setModels(opts);
       setModelsNotice(data.source === "static-fallback" ? data.notice : null);
-      if (opts.length && !opts.some((m) => m.id === modelId)) {
-        setModelId(opts[0].id);
-      }
+      if (opts.length && !opts.some((m) => m.id === modelId)) setModelId(opts[0].id);
     } catch {
       setModels([]);
       setModelsNotice("Could not load model options.");
@@ -84,7 +88,7 @@ export function AgentDeployChat() {
 
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, loading]);
+  }, [messages]);
 
   const selected = models.find((m) => m.id === modelId);
 
@@ -92,35 +96,71 @@ export function AgentDeployChat() {
     const text = instruction.trim();
     if (!text || !canDeploy || loading) return;
 
-    setMessages((prev) => [...prev, { role: "user", text, model: modelId, provider }]);
+    const userId = ++idRef.current;
+    const agentId = ++idRef.current;
+    setMessages((prev) => [
+      ...prev,
+      { id: userId, role: "user", text, model: modelId, provider },
+      { id: agentId, role: "agent", text: "", steps: [], streaming: true, model: modelId, provider },
+    ]);
     setLoading(true);
+
+    const patch = (fn: (m: ChatMessage) => ChatMessage) =>
+      setMessages((prev) => prev.map((m) => (m.id === agentId ? fn(m) : m)));
+
     try {
-      const res = await fetch("/api/dashboard/agents/deploy", {
+      const res = await fetch("/api/dashboard/agents/deploy/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ instruction: text, model: modelId, provider }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setMessages((prev) => [
-          ...prev,
-          { role: "agent", text: data.error || "Deploy failed.", error: data.error, hint: data.hint },
-        ]);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "agent",
-            text: data.summary || "(no summary)",
-            model: data.model,
-            provider: data.provider,
-            ok: data.ok,
-            steps: data.steps || [],
-          },
-        ]);
+
+      if (!res.ok || !res.body) {
+        const d = await res.json().catch(() => ({ error: "Deploy stream failed." }));
+        patch((m) => ({ ...m, streaming: false, error: d.error, text: d.error || "failed", hint: d.hint }));
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const chunks = buf.split("\n\n");
+        buf = chunks.pop() || "";
+        for (const chunk of chunks) {
+          const line = chunk.split("\n").find((l) => l.startsWith("data:"));
+          if (!line) continue;
+          let ev: Record<string, unknown>;
+          try {
+            ev = JSON.parse(line.slice(5).trim());
+          } catch {
+            continue;
+          }
+          if (ev.type === "tool_call") {
+            patch((m) => ({ ...m, steps: [...(m.steps || []), { tool: String(ev.tool), status: "running" }] }));
+          } else if (ev.type === "tool_result") {
+            patch((m) => {
+              const steps = [...(m.steps || [])];
+              for (let i = steps.length - 1; i >= 0; i--) {
+                if (steps[i].tool === ev.tool && steps[i].status === "running") {
+                  steps[i] = { ...steps[i], status: ev.ok ? "ok" : "fail" };
+                  break;
+                }
+              }
+              return { ...m, steps };
+            });
+          } else if (ev.type === "done") {
+            patch((m) => ({ ...m, streaming: false, ok: Boolean(ev.ok), text: String(ev.summary || "") }));
+          } else if (ev.type === "error") {
+            patch((m) => ({ ...m, streaming: false, error: String(ev.error), text: String(ev.error || "failed") }));
+          }
+        }
       }
     } catch (err: unknown) {
-      setMessages((prev) => [...prev, { role: "agent", text: "Network error reaching the deploy route.", error: String(err) }]);
+      patch((m) => ({ ...m, streaming: false, error: String(err), text: "Network error reaching the deploy stream." }));
     } finally {
       setLoading(false);
     }
@@ -132,7 +172,7 @@ export function AgentDeployChat() {
         <div>
           <h3 className="text-base font-semibold text-[#cbd6e9]">Deploy via chat — AI Model Router</h3>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Pick an environment and model, then describe the deploy in natural language.
+            Pick an environment and model, then describe the deploy — tool calls stream in live.
           </p>
         </div>
         {!canDeploy && (
@@ -142,7 +182,6 @@ export function AgentDeployChat() {
         )}
       </div>
 
-      {/* Environment + model selectors */}
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">Environment</label>
@@ -156,7 +195,6 @@ export function AgentDeployChat() {
             ))}
           </select>
         </div>
-
         <div className="space-y-1">
           <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">AI Model</label>
           <select
@@ -165,44 +203,31 @@ export function AgentDeployChat() {
             className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-[#cbd6e9] focus:outline-none focus:border-[#8ab4f8]"
           >
             {models.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.label} — {m.verdict}
-              </option>
+              <option key={m.id} value={m.id}>{m.label} — {m.verdict}</option>
             ))}
           </select>
         </div>
       </div>
 
-      {/* Suitability of the selected model */}
       {selected && (
         <div className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-[11px] ${verdictStyle[selected.verdict]}`}>
           <span className="font-bold uppercase tracking-wide">{selected.verdict}</span>
           <span className="opacity-90">{selected.reason}</span>
         </div>
       )}
-      {modelsNotice && (
-        <p className="text-[10px] text-[var(--warning)]">⚠️ {modelsNotice}</p>
-      )}
+      {modelsNotice && <p className="text-[10px] text-[var(--warning)]">⚠️ {modelsNotice}</p>}
 
-      {/* Chat log */}
-      <div ref={logRef} className="max-h-[22rem] overflow-y-auto space-y-3 rounded-lg border border-white/6 bg-black/20 p-3">
+      <div ref={logRef} className="max-h-[24rem] overflow-y-auto space-y-3 rounded-lg border border-white/6 bg-black/20 p-3">
         {messages.length === 0 && (
           <p className="text-xs text-[var(--muted)] py-6 text-center">
             No deploys yet. Describe what to deploy and the selected model will run build → push → deploy → validate.
           </p>
         )}
-        {messages.map((msg, i) => (
-          <ChatBubble key={i} msg={msg} />
+        {messages.map((msg) => (
+          <ChatBubble key={msg.id} msg={msg} />
         ))}
-        {loading && (
-          <div className="text-xs text-[var(--muted)] flex items-center gap-2">
-            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-[#8ab4f8]" />
-            Agent is deploying…
-          </div>
-        )}
       </div>
 
-      {/* Input */}
       <div className="flex gap-2">
         <input
           type="text"
@@ -243,35 +268,35 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
     <div className="flex justify-start">
       <div className="max-w-[92%] rounded-lg rounded-bl-sm border border-white/8 bg-white/[0.03] px-3 py-2.5 text-xs text-[#cbd6e9] space-y-2">
         <div className="flex items-center gap-2">
-          {msg.ok !== undefined && (
-            <span
-              className={`rounded px-1.5 py-0.5 text-[9px] font-bold ${
-                msg.ok ? "bg-emerald-400/10 text-[var(--success)]" : "bg-red-400/10 text-[var(--danger)]"
-              }`}
-            >
+          {msg.streaming ? (
+            <span className="text-[9px] font-bold text-[#8ab4f8] flex items-center gap-1">
+              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[#8ab4f8]" /> DEPLOYING
+            </span>
+          ) : msg.ok !== undefined ? (
+            <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold ${msg.ok ? "bg-emerald-400/10 text-[var(--success)]" : "bg-red-400/10 text-[var(--danger)]"}`}>
               {msg.ok ? "SUCCESS" : "FAILED"}
             </span>
-          )}
+          ) : null}
           {msg.model && <span className="text-[9px] uppercase tracking-wide text-[var(--muted)]">{msg.model}</span>}
         </div>
 
-        <p className="leading-relaxed whitespace-pre-wrap">{msg.text}</p>
-
-        {msg.steps && msg.steps.length > 0 && (
-          <div className="space-y-1 pt-1">
-            {msg.steps.map((step, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <span className={stepOk(step.result) ? "text-[var(--success)]" : "text-[var(--danger)]"}>
-                  {stepOk(step.result) ? "✓" : "✗"}
-                </span>
-                <code className="rounded border border-white/8 bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-[var(--muted)]">
-                  {step.tool}
-                </code>
-              </div>
-            ))}
+        {(msg.steps?.length ?? 0) > 0 && (
+          <div className="space-y-1">
+            {msg.steps!.map((step, i) => {
+              const mark = stepMark[step.status];
+              return (
+                <div key={i} className="flex items-center gap-2">
+                  <span className={mark.cls}>{mark.icon}</span>
+                  <code className="rounded border border-white/8 bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-[var(--muted)]">
+                    {step.tool}
+                  </code>
+                </div>
+              );
+            })}
           </div>
         )}
 
+        {msg.text && <p className="leading-relaxed whitespace-pre-wrap pt-1">{msg.text}</p>}
         {msg.hint && <p className="text-[10px] text-[var(--warning)] pt-1">💡 {msg.hint}</p>}
       </div>
     </div>

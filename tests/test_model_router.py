@@ -103,3 +103,38 @@ def test_route_deploy_cloud_model_validates_without_creds():
 def test_route_deploy_rejects_unknown_model():
     with pytest.raises(ValueError):
         asyncio.run(mr.route_deploy("x", "no-such-model", "aws"))
+
+
+def test_route_deploy_stream_emits_tool_events(monkeypatch):
+    monkeypatch.setattr(ld, "get_deployment_adapters", _fake_adapters)
+
+    def factory(provider="onprem"):
+        return ld.create_local_deployer(provider=provider, model=TestModel())
+
+    async def collect():
+        events = []
+        async for ev in mr.route_deploy_stream(
+            "Deploy orders-api v1 to the local cluster", "local-qwen", "onprem", agent_factory=factory
+        ):
+            events.append(ev)
+        return events
+
+    events = asyncio.run(collect())
+    types = [e["type"] for e in events]
+    assert "tool_call" in types
+    assert "tool_result" in types
+    assert types[-1] == "result"  # final event is the outcome
+    # tool_call events name real deploy tools
+    called = {e["tool"] for e in events if e["type"] == "tool_call"}
+    assert "build_image" in called and "deploy_to_cluster" in called
+    outcome = events[-1]["outcome"]
+    assert outcome.ok is True
+
+
+def test_route_deploy_stream_cloud_model_single_result():
+    async def collect():
+        return [ev async for ev in mr.route_deploy_stream("x", "bedrock-claude", "aws")]
+
+    events = asyncio.run(collect())
+    assert len(events) == 1 and events[0]["type"] == "result"
+    assert events[0]["outcome"].ok is False

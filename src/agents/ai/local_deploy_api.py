@@ -21,19 +21,21 @@ Run with:
 
 from __future__ import annotations
 
+import json
+import logging
 from typing import Any, Callable
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-
-import logging
 
 from src.agents.ai.deploy_recorder import record_deploy
 from src.agents.ai.model_router import (
     ENVIRONMENTS,
     models_for_environment,
     route_deploy,
+    route_deploy_stream,
 )
 
 logger = logging.getLogger(__name__)
@@ -127,4 +129,65 @@ async def local_deploy(
         steps=[DeployStep(**step) for step in outcome.steps],
         suitability=outcome.suitability,
         record=record,
+    )
+
+
+def _sse(obj: dict[str, Any]) -> str:
+    return f"data: {json.dumps(obj)}\n\n"
+
+
+@app.post("/api/local-deploy/stream")
+async def local_deploy_stream(
+    req: DeployRequest,
+    factory: Callable[..., Any] | None = Depends(get_deployer_factory),
+) -> StreamingResponse:
+    """SSE stream of tool-calling progress, ending with a 'done' event.
+
+    Events: tool_call -> tool_result (repeated) -> done (or error).
+    """
+
+    async def generate():
+        try:
+            async for event in route_deploy_stream(
+                req.instruction, req.model, req.provider, agent_factory=factory
+            ):
+                if event["type"] != "result":
+                    yield _sse(event)
+                    continue
+
+                outcome = event["outcome"]
+                record = None
+                if outcome.steps:
+                    try:
+                        record = record_deploy(
+                            instruction=req.instruction,
+                            model=outcome.model,
+                            provider=outcome.provider,
+                            summary=outcome.summary,
+                            steps=outcome.steps,
+                            ok=outcome.ok,
+                        )
+                    except Exception:  # noqa: BLE001
+                        logger.warning("deploy recording failed", exc_info=True)
+                yield _sse(
+                    {
+                        "type": "done",
+                        "ok": outcome.ok,
+                        "model": outcome.model,
+                        "provider": outcome.provider,
+                        "summary": outcome.summary,
+                        "suitability": outcome.suitability,
+                        "record": record,
+                    }
+                )
+        except ValueError as exc:
+            yield _sse({"type": "error", "error": str(exc)})
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("stream deploy failed")
+            yield _sse({"type": "error", "error": str(exc)})
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

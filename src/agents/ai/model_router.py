@@ -185,6 +185,23 @@ def _step_failed(result: Any) -> bool:
     return isinstance(result, dict) and bool(result.get("error"))
 
 
+def _cloud_outcome(model_id: str, provider: str, fit: dict[str, str]) -> DeployOutcome:
+    """Structured outcome for a cloud model routed without live execution."""
+    model = MODELS[model_id]
+    return DeployOutcome(
+        ok=False,
+        model=model_id,
+        provider=provider,
+        summary=(
+            f"{model.label} runs via the {model.framework} deployer and requires "
+            f"{_ENV_LABEL[model.home]} credentials for a live run. "
+            f"Suitability for {_ENV_LABEL[provider]}: {fit['verdict']} — {fit['reason']}"
+        ),
+        steps=[],
+        suitability=fit,
+    )
+
+
 async def route_deploy(
     instruction: str,
     model_id: str,
@@ -224,15 +241,73 @@ async def route_deploy(
 
     # Cloud frameworks (strands/adk/msft) run through their native deployers,
     # which require that cloud's credentials. Validated + dispatched, not faked.
-    return DeployOutcome(
-        ok=False,
-        model=model_id,
-        provider=provider,
-        summary=(
-            f"{model.label} runs via the {model.framework} deployer and requires "
-            f"{_ENV_LABEL[model.home]} credentials for a live run. "
-            f"Suitability for {_ENV_LABEL[provider]}: {fit['verdict']} — {fit['reason']}"
+    return _cloud_outcome(model_id, provider, fit)
+
+
+async def route_deploy_stream(
+    instruction: str,
+    model_id: str,
+    provider: str,
+    *,
+    agent_factory: Callable[..., Any] | None = None,
+):
+    """Async generator of deploy events for live UIs (tool-calling progress).
+
+    Yields dicts:
+      {"type": "tool_call",   "tool": name, "args": {...}}   # tool about to run
+      {"type": "tool_result", "tool": name, "ok": bool}      # tool returned
+      {"type": "result",      "outcome": DeployOutcome}      # final (last event)
+
+    Only the local pydantic-ai path streams; cloud models yield a single result.
+    """
+    if model_id not in MODELS:
+        raise ValueError(f"Unknown model: {model_id}")
+    if provider not in ENVIRONMENTS:
+        raise ValueError(f"Unknown environment: {provider}")
+
+    model = MODELS[model_id]
+    fit = suitability(model_id, provider)
+
+    if model.framework != "pydantic-ai":
+        yield {"type": "result", "outcome": _cloud_outcome(model_id, provider, fit)}
+        return
+
+    from pydantic_ai import Agent as PydAgent
+    from pydantic_ai.messages import FunctionToolCallEvent, FunctionToolResultEvent
+
+    from src.agents.ai.local_deployer import create_local_deployer
+
+    factory = agent_factory or create_local_deployer
+    agent = factory(provider=provider)
+
+    async with agent.iter(instruction) as run:
+        async for node in run:
+            if PydAgent.is_call_tools_node(node):
+                async with node.stream(run.ctx) as tool_stream:
+                    async for event in tool_stream:
+                        if isinstance(event, FunctionToolCallEvent):
+                            part = event.part
+                            yield {"type": "tool_call", "tool": part.tool_name, "args": _args_as_dict(part)}
+                        elif isinstance(event, FunctionToolResultEvent):
+                            result_part = event.part
+                            content = getattr(result_part, "content", None)
+                            yield {
+                                "type": "tool_result",
+                                "tool": getattr(result_part, "tool_name", ""),
+                                "ok": not _step_failed(content),
+                            }
+        result = run.result
+
+    steps = extract_steps(result.all_messages())
+    ok = bool(steps) and not any(_step_failed(step["result"]) for step in steps)
+    yield {
+        "type": "result",
+        "outcome": DeployOutcome(
+            ok=ok,
+            model=model_id,
+            provider=provider,
+            summary=str(result.output),
+            steps=steps,
+            suitability=fit,
         ),
-        steps=[],
-        suitability=fit,
-    )
+    }
