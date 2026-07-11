@@ -19,10 +19,10 @@
 
 - `make check` (pytest) → **584 passed, 1 skipped** (2026-07-11) — AI Model Router / Pydantic AI On-Prem 에이전트 / MLX proxy / deploy recorder / ops_tools / provisioning 어댑터 테스트 포함
 - **범용 On-Prem Ops 에이전트** → provision(2)+deploy(5)+investigate(5) 12도구, reasoning+tool SSE 스트리밍, "list pods" 질의는 진단만 수행 확인
-- **On-Prem Provision(① 역할)** → Terraform(kind) IaC `validate/plan` green + Ansible(k3s) 플레이북; `provision_cluster`/`teardown` 에이전트 도구
+- **On-Prem Provision(① 역할)** → Terraform(kind) IaC `validate/plan` green + Ansible(k3s) 실 Multipass VM 적용: k3s v1.31.4 node Ready, 재실행 idempotent(`changed=0`); `provision_cluster`/`teardown` 에이전트 도구
 - **관측성** → 배포 상세 페이지 `/deployments/[id]`(reasoning/tool args·result/summary) + DynamoDB trace 기록
 - **kagent + local Qwen** → kind Pod→`host.docker.internal:18091/v1` OpenAI-compat ModelConfig 적용, `k8s-agent` A2A JSON-RPC 진단 task가 tool 결과 반환까지 실증.
-- **Supervisor + A2A** → 자연어 요청을 provision/deploy/kagent로 분류하고 등록된 specialist A2A endpoint에만 `message:send` 위임; Gateway 응답에 route trace 기록. Agent Card는 Gateway가 노출하나 supervisor discovery는 미구현.
+- **Supervisor + A2A** → 자연어 요청을 provision/deploy/kagent로 분류하고 Agent Card discovery/skill match 후 해당 transport(JSON-RPC 포함)로 위임; Gateway 응답에 route trace 기록.
 - AI Model Router → `/api/models`(환경별 선택지) + `/api/local-deploy`(자연어 배포) live 확인; 대시보드 `tsc`+`next build` 통과
 - **Live E2E (Pydantic AI + MLX Qwen3-Coder-30B)** → 자연어 "Deploy orders-api ..." → build→push→deploy→validate 자율 실행 → kind `orders-api 1/1 Running`(image v1.5.0) 검증 완료 (2026-07-11)
 - **Deployments Live 추적 배선 완성** → 기록 활성 API 배포 → recorder가 DEPLOY/ACTIVITY(DEP-262AC0A3, v1.6.0) DynamoDB 기록 → 대시보드 `/api/dashboard/deployments`(aws-live)가 최신 배포로 노출 확인 (2026-07-11)

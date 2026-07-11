@@ -23,6 +23,12 @@
         state: present
         update_cache: true
 
+    - name: Ensure k3s configuration directory exists
+      ansible.builtin.file:
+        path: /etc/rancher/k3s
+        state: directory
+        mode: "0755"
+
     - name: Configure containerd registry mirror (private/Harbor registry)
       ansible.builtin.copy:
         dest: /etc/rancher/k3s/registries.yaml
@@ -38,11 +44,14 @@
         set -o pipefail
         if ! command -v k3s >/dev/null 2>&1; then
           curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_version }} sh -
+          echo "k3s installed"
+        else
+          echo "k3s already installed"
         fi
       args:
         executable: /bin/bash
       register: k3s_install
-      changed_when: "'No change' not in k3s_install.stdout"
+      changed_when: "'k3s installed' in k3s_install.stdout"
 
     - name: Wait for the node to be Ready
       ansible.builtin.shell: |

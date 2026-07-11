@@ -23,6 +23,10 @@ src/stacks/cdk.out/
 # Vercel local project metadata
 .vercel/
 
+# Per-machine Ansible targets and retrieved cluster credentials
+infra/onprem/ansible/inventory.ini
+infra/onprem/ansible/kubeconfig-*.yaml
+
 # Overnight harness runtime state
 scripts/overnight/logs/
 scripts/overnight/STOP
