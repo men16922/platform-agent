@@ -73,6 +73,9 @@ def create_deployer_agent(
     Returns:
         Configured Strands Agent instance.
     """
+    import os
+    from strands.models.openai import OpenAIModel
+
     system_prompt = DEPLOYER_SYSTEM_PROMPT + f"\n\nCurrent provider: {provider}\n"
 
     agent_kwargs: dict[str, Any] = {
@@ -81,7 +84,21 @@ def create_deployer_agent(
         **kwargs,
     }
 
-    if model:
+    # If provider is onprem and we want to use MLX-LM local server
+    if provider == "onprem" and os.getenv("ONPREM_LLM_PROVIDER") == "mlx":
+        base_url = os.getenv("ONPREM_LLM_ENDPOINT", "http://localhost:8080/v1")
+        model_id = os.getenv("ONPREM_LLM_MODEL", "mlx-community/Meta-Llama-3-8B-Instruct-4bit")
+        
+        # Instantiate local OpenAIModel pointing to MLX-LM server
+        local_model = OpenAIModel(
+            client_args={
+                "base_url": base_url,
+                "api_key": "mlx-local",
+            },
+            model_id=model_id
+        )
+        agent_kwargs["model"] = local_model
+    elif model:
         agent_kwargs["model"] = model
 
     return Agent(**agent_kwargs)
