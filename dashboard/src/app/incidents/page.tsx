@@ -1,11 +1,14 @@
 import { IncidentRow } from "@/components/incident-row";
 import { DataSourceBadge } from "@/components/data-source-badge";
+import { PendingApprovals } from "@/components/pending-approvals";
 import { getIncidentFeed } from "@/lib/incident-data";
+import { listPendingApprovals } from "@/lib/approval-data";
 
 export const dynamic = "force-dynamic";
 
 export default async function IncidentsPage() {
   const { incidents, source, notice } = await getIncidentFeed();
+  const pendingApprovals = await listPendingApprovals();
 
   return (
     <div className="mx-auto max-w-6xl space-y-7">
@@ -20,6 +23,10 @@ export default async function IncidentsPage() {
         </div>
         <DataSourceBadge source={source} />
       </div>
+
+      {pendingApprovals.length > 0 && (
+        <PendingApprovals initialApprovals={pendingApprovals} />
+      )}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <IncidentStat label="P1 critical" value={incidents.filter(i => i.severity === "P1").length} tone="text-[var(--danger)]" />

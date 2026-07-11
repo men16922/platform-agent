@@ -1,14 +1,8 @@
-import { ProviderLogo, providerBadgeStyles } from "@/components/provider-logo";
 import { DataSourceBadge } from "@/components/data-source-badge";
 import { getDeploymentFeed } from "@/lib/activity-data";
+import { DeploymentsControl } from "@/components/deployments-control";
 
 export const dynamic = "force-dynamic";
-
-const statusIcon = {
-  success: { icon: "✓", color: "text-[var(--success)]" },
-  failed: { icon: "✗", color: "text-[var(--danger)]" },
-  "rolling-back": { icon: "↺", color: "text-[var(--warning)]" },
-};
 
 export default async function DeploymentsPage() {
   const { deployments, source } = await getDeploymentFeed();
@@ -41,54 +35,8 @@ export default async function DeploymentsPage() {
         </div>
       </div>
 
-      {/* Deployments table */}
-      <div className="surface overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-white/[0.025] text-[10px] uppercase tracking-[0.12em] text-[var(--muted)]">
-            <tr>
-              <th className="text-left p-3">ID</th>
-              <th className="text-left p-3">Service</th>
-              <th className="text-left p-3">Version</th>
-              <th className="text-left p-3">Provider</th>
-              <th className="text-left p-3">Environment</th>
-              <th className="text-left p-3">Agent</th>
-              <th className="text-left p-3">Status</th>
-              <th className="text-right p-3">Duration</th>
-              <th className="text-right p-3">Time</th>
-            </tr>
-          </thead>
-          <tbody>
-            {deployments.map((dep) => {
-              const status = statusIcon[dep.status];
-              return (
-                <tr key={dep.id} className="border-t border-white/6 transition-colors hover:bg-white/[0.025]">
-                  <td className="p-3">
-                    <code className="text-xs text-[var(--muted)]">{dep.id}</code>
-                  </td>
-                  <td className="p-3 font-medium">{dep.service}</td>
-                  <td className="p-3"><code className="text-xs">{dep.version}</code></td>
-                  <td className="p-3">
-                    <span className={`inline-flex items-center gap-1.5 rounded border px-1.5 py-1 text-[10px] font-semibold ${providerBadgeStyles[dep.provider]}`}>
-                      <ProviderLogo provider={dep.provider} size="sm" />{dep.provider === "gcp" ? "GCP" : dep.provider === "azure" ? "Azure" : dep.provider === "onprem" ? "On-Premise" : "AWS"}
-                    </span>
-                  </td>
-                  <td className="p-3 text-[var(--muted)]">{dep.environment}</td>
-                  <td className="p-3 text-xs text-[var(--muted)]">{dep.agent}</td>
-                  <td className="p-3">
-                    <span className={status.color}>
-                      {status.icon} {dep.status}
-                    </span>
-                  </td>
-                  <td className="p-3 text-right text-[var(--muted)]">{dep.duration_sec}s</td>
-                  <td className="p-3 text-right text-[var(--muted)] text-xs">
-                    {new Date(dep.created_at).toLocaleTimeString()}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      {/* Deployments controller (table + trigger modals) */}
+      <DeploymentsControl initialDeployments={deployments} />
     </div>
   );
 }
