@@ -4,11 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 
+// Ordered by the platform workflow: drive the agent → provision infra → deploy
+// apps → respond to incidents.
 const baseNavItems = [
   { href: "/", label: "Overview", icon: "⌘" },
-  { href: "/incidents", label: "Incidents", icon: "◈" },
-  { href: "/deployments", label: "Deployments", icon: "↗" },
   { href: "/agents", label: "Agents", icon: "✦" },
+  { href: "/provisioning", label: "Provisioning", icon: "⬡" },
+  { href: "/deployments", label: "Deployments", icon: "↗" },
+  { href: "/history", label: "History", icon: "🕑" },
+  { href: "/incidents", label: "Incidents", icon: "◈" },
 ];
 
 export function Sidebar() {

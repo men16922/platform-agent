@@ -4,9 +4,14 @@
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md` / `PROGRESS_LOG.md`를 참조한다. **≤120줄** 유지.
 
-## 다음 작업 리스트 (2026-07-11 갱신)
+## 다음 작업 리스트 (2026-07-12 갱신)
 
-- [ ] **origin push** — 현재 main이 origin 대비 ahead 20 (미푸시 커밋 정리)
+- [ ] **추적 IA 라이브 실증(자연어 4스텝)** — 로그인(Local Dev admin) + `make dev-up` 후 Agents에서: ① `Provision ... then deploy orders-api ...`(Provisioning+Deployments 2행) → ② `Roll back orders-api to the previous revision`(단일-row 승계) → ③ History 행 클릭→중첩 상세(provisioning⊃deploy, focus만 펼침) → ④ `Tear down the on-prem cluster`(provision rolled-back + orders-api **자동 cascade** rolled-back·Rollback 비활성). 코드/유닛(600 passed)·빌드는 통과, 브라우저 end-to-end만 남음.
+- [ ] **전체 커밋** — 이번 추적 IA 정리분(신규 5파일 포함, 워킹트리) 커밋.
+- [x] ~~대시보드 UI Rollback 팝업/체인~~ — native prompt→인앱 팝업, app(Deployments)/cluster(Provisioning) 분리, 단일-row 승계·teardown cascade 구현. (라이브 클릭 실증은 위 항목)
+- [ ] **`feat/onprem-offline-recording-hybrid-rollback` push/머지 결정** — 커밋 `0b9148c` + 이번 IA 정리분 (origin 미푸시).
+- [ ] (선택) **NEXT_PUBLIC 프로덕션 인라인** — `next start`에서 `NEXT_PUBLIC_DASHBOARD_DEV_AUTH` 미인라인 → 프로덕션 로컬로그인 필요 시 조사(현재 `next dev`로 회피).
+- [ ] **origin push** — 현재 main이 origin 대비 ahead (미푸시 커밋 정리)
 - [x] ~~A2A specialist endpoint + Agent Card discovery~~ — kagent Card discovery/skill match + JSON-RPC 0.3 transport 지원 완료.
 - [x] ~~kagent ↔ 로컬 Qwen 연결~~ — local Qwen ModelConfig + A2A read-only task(tool result 반환) 실증 완료.
 - [x] ~~On-Prem k3s Ansible Provision~~ — 기존 Multipass `k8s-lab`(Ubuntu 24.04)에서 k3s v1.31.4 node Ready 및 재실행 `changed=0` 검증 완료.
@@ -20,6 +25,7 @@
 - [x] ~~AI Model Router 채팅 live 데모 + Deployments 추적 실증~~ — MLX Qwen30B→kind 배포 + recorder→DynamoDB→대시보드 aws-live 노출까지 end-to-end 검증 완료(2026-07-11).
 - [ ] 대시보드 **브라우저 UI**에서 인증된 배포 클릭 데모 — GitHub OAuth 로그인 필요(사용자 수행). 백엔드/배선/read 경로는 모두 검증됨.
 - [ ] (deferred) Slack App 실 생성/토큰 설정 — 코드+하네스(`scripts/slack_live_approval.py`) ready, 실 workspace만 필요
+- [x] ~~LinkedIn 데모 비디오 편집~~ — `docs/post/local-onprem.mov` 원본 영상을 18.2초 자막(Terraform 등 실제 실행 매핑) 포함된 최적화 mp4로 편집 및 렌더링 완료.
 - [ ] (deferred) 테크 아티클(LinkedIn / Medium) 리뷰 및 소셜 채널 배포
 
 ## 작업 규칙

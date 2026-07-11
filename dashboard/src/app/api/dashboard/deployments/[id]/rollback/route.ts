@@ -36,6 +36,7 @@ export async function POST(
   let body: {
     service_name?: string;
     rollback_version?: string;
+    version?: string;
     provider?: string;
     environment?: string;
     scope?: string;
@@ -52,6 +53,7 @@ export async function POST(
   const {
     service_name,
     rollback_version,
+    version,
     provider = "aws",
     environment = "production",
     scope = "app",
@@ -71,7 +73,17 @@ export async function POST(
       const res = await fetch(`${LOCAL_API}/api/local-rollback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ service_name: service_name || cluster_name, namespace, scope, cluster_name }),
+        body: JSON.stringify({
+          service_name: service_name || cluster_name,
+          namespace,
+          scope,
+          cluster_name,
+          // Single-row lifecycle: supersede the original deployment's row.
+          deployment_id: deploymentId,
+          service: service_name,
+          version,
+          environment,
+        }),
       });
       const data = await res.json();
       const ok = res.ok && data.ok;

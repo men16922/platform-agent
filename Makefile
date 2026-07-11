@@ -53,6 +53,11 @@ ROUTER_PORT    ?= 8077
 # Working dir for docker build context (orders-api demo builds from its dir).
 DEPLOY_WORKDIR ?= examples/orders-api
 LLM_LOG_DIR    := /tmp/platform-agent
+# Offline activity store: the router WRITES deploy/rollback rows here and the
+# dashboard READS them (hybrid = this file + AWS). Same path on both sides.
+ACTIVITY_FILE  ?= $(HOME)/.platform-agent/activity.jsonl
+DASHBOARD_DIR  ?= dashboard
+DASHBOARD_PORT ?= 3000
 
 mlx-serve:  ## start local MLX-LM server (run in its own terminal)
 	HF_HUB_DISABLE_XET=1 .venv-mlx/bin/mlx_lm.server --model $(MLX_MODEL) --host 127.0.0.1 --port $(MLX_PORT) --max-tokens 1024 --prompt-cache-bytes 2147483648
@@ -61,7 +66,7 @@ mlx-proxy:  ## start the MLX Qwen tool-call proxy
 	python -m src.agents.ai.mlx_qwen_tool_proxy --upstream http://127.0.0.1:$(MLX_PORT) --host 127.0.0.1 --port $(PROXY_PORT)
 
 router-api:  ## start the AI Model Router API (natural-language deploy)
-	cd $(DEPLOY_WORKDIR) && PYTHONPATH=$(CURDIR) ONPREM_LLM_ENDPOINT=http://127.0.0.1:$(PROXY_PORT)/v1 ONPREM_LLM_MODEL=$(MLX_MODEL) uvicorn src.agents.ai.local_deploy_api:app --host 127.0.0.1 --port $(ROUTER_PORT)
+	cd $(DEPLOY_WORKDIR) && PYTHONPATH=$(CURDIR) PLATFORM_ACTIVITY_FILE=$(ACTIVITY_FILE) ONPREM_LLM_ENDPOINT=http://127.0.0.1:$(PROXY_PORT)/v1 ONPREM_LLM_MODEL=$(MLX_MODEL) uvicorn src.agents.ai.local_deploy_api:app --host 127.0.0.1 --port $(ROUTER_PORT)
 
 local-llm-up:  ## start MLX + proxy + router API in the background (logs in /tmp/platform-agent)
 	@mkdir -p $(LLM_LOG_DIR)
@@ -69,8 +74,8 @@ local-llm-up:  ## start MLX + proxy + router API in the background (logs in /tmp
 	@HF_HUB_DISABLE_XET=1 nohup .venv-mlx/bin/mlx_lm.server --model $(MLX_MODEL) --host 127.0.0.1 --port $(MLX_PORT) --max-tokens 1024 --prompt-cache-bytes 2147483648 > $(LLM_LOG_DIR)/mlx.log 2>&1 &
 	@echo "→ tool-call proxy (:$(PROXY_PORT))"
 	@nohup python -m src.agents.ai.mlx_qwen_tool_proxy --upstream http://127.0.0.1:$(MLX_PORT) --host 127.0.0.1 --port $(PROXY_PORT) > $(LLM_LOG_DIR)/proxy.log 2>&1 &
-	@echo "→ router API (:$(ROUTER_PORT), workdir=$(DEPLOY_WORKDIR)) — set PLATFORM_ACTIVITY_TABLE+AWS_REGION to record into Deployments"
-	@cd $(DEPLOY_WORKDIR) && PYTHONPATH=$(CURDIR) ONPREM_LLM_ENDPOINT=http://127.0.0.1:$(PROXY_PORT)/v1 ONPREM_LLM_MODEL=$(MLX_MODEL) nohup uvicorn src.agents.ai.local_deploy_api:app --host 127.0.0.1 --port $(ROUTER_PORT) > $(LLM_LOG_DIR)/router.log 2>&1 &
+	@echo "→ router API (:$(ROUTER_PORT), workdir=$(DEPLOY_WORKDIR)) — records into $(ACTIVITY_FILE) (add PLATFORM_ACTIVITY_TABLE+AWS_REGION for DynamoDB)"
+	@cd $(DEPLOY_WORKDIR) && PYTHONPATH=$(CURDIR) PLATFORM_ACTIVITY_FILE=$(ACTIVITY_FILE) ONPREM_LLM_ENDPOINT=http://127.0.0.1:$(PROXY_PORT)/v1 ONPREM_LLM_MODEL=$(MLX_MODEL) nohup uvicorn src.agents.ai.local_deploy_api:app --host 127.0.0.1 --port $(ROUTER_PORT) > $(LLM_LOG_DIR)/router.log 2>&1 &
 	@echo "stack starting. Watch: tail -f $(LLM_LOG_DIR)/mlx.log | check: make local-llm-status"
 
 local-llm-down:  ## stop the local LLM deploy stack
@@ -83,7 +88,45 @@ local-llm-status:  ## show local LLM deploy stack status
 	@curl -s -m 3 localhost:$(MLX_PORT)/v1/models >/dev/null 2>&1 && echo "MLX-LM   :$(MLX_PORT)  up" || echo "MLX-LM   :$(MLX_PORT)  down"
 	@curl -s -m 3 localhost:$(ROUTER_PORT)/health >/dev/null 2>&1 && echo "router   :$(ROUTER_PORT)   up" || echo "router   :$(ROUTER_PORT)   down"
 
-.PHONY: mlx-serve mlx-proxy router-api local-llm-up local-llm-down local-llm-status
+dashboard-dev:  ## start the dashboard alone (next dev, foreground)
+	cd $(DASHBOARD_DIR) && npm run dev
+
+# ===== one-shot local dev stack (MLX + proxy + router + dashboard) =====
+dev-up:  ## start the whole local stack in one command (reuses a warm MLX/proxy)
+	@mkdir -p $(LLM_LOG_DIR)
+	@if curl -s -m 3 localhost:$(MLX_PORT)/v1/models >/dev/null 2>&1; then \
+		echo "→ MLX-LM   (:$(MLX_PORT)) already up — reusing"; \
+	else \
+		echo "→ MLX-LM   (:$(MLX_PORT)) — model load takes ~30-60s"; \
+		HF_HUB_DISABLE_XET=1 nohup .venv-mlx/bin/mlx_lm.server --model $(MLX_MODEL) --host 127.0.0.1 --port $(MLX_PORT) --max-tokens 1024 --prompt-cache-bytes 2147483648 > $(LLM_LOG_DIR)/mlx.log 2>&1 & \
+	fi
+	@if lsof -iTCP:$(PROXY_PORT) -sTCP:LISTEN -n -P >/dev/null 2>&1; then \
+		echo "→ proxy    (:$(PROXY_PORT)) already up — reusing"; \
+	else \
+		echo "→ proxy    (:$(PROXY_PORT))"; \
+		nohup python -m src.agents.ai.mlx_qwen_tool_proxy --upstream http://127.0.0.1:$(MLX_PORT) --host 127.0.0.1 --port $(PROXY_PORT) > $(LLM_LOG_DIR)/proxy.log 2>&1 & \
+	fi
+	@echo "→ router   (:$(ROUTER_PORT)) — restart, offline recording → $(ACTIVITY_FILE)"
+	@pkill -f "uvicorn src.agents.ai.local_deploy_api" 2>/dev/null; true
+	@cd $(DEPLOY_WORKDIR) && PYTHONPATH=$(CURDIR) PLATFORM_ACTIVITY_FILE=$(ACTIVITY_FILE) ONPREM_LLM_ENDPOINT=http://127.0.0.1:$(PROXY_PORT)/v1 ONPREM_LLM_MODEL=$(MLX_MODEL) nohup uvicorn src.agents.ai.local_deploy_api:app --host 127.0.0.1 --port $(ROUTER_PORT) > $(LLM_LOG_DIR)/router.log 2>&1 &
+	@echo "→ dashboard(:$(DASHBOARD_PORT)) — restart (next dev)"
+	@pkill -f "next-server" 2>/dev/null; pkill -f "next dev" 2>/dev/null; true
+	@cd $(DASHBOARD_DIR) && nohup npm run dev > $(LLM_LOG_DIR)/dashboard.log 2>&1 &
+	@echo ""
+	@echo "stack starting → http://localhost:$(DASHBOARD_PORT)   (check: make dev-status | logs: $(LLM_LOG_DIR)/)"
+
+dev-down:  ## stop the whole local stack (dashboard + MLX + proxy + router)
+	-@pkill -f "next-server" 2>/dev/null; pkill -f "next dev" 2>/dev/null; true
+	@$(MAKE) local-llm-down
+	@echo "stopped dashboard + local LLM deploy stack"
+
+dev-status:  ## show the whole local stack status
+	@curl -s -m 3 localhost:$(MLX_PORT)/v1/models >/dev/null 2>&1 && echo "MLX-LM    :$(MLX_PORT)  up" || echo "MLX-LM    :$(MLX_PORT)  down"
+	@lsof -iTCP:$(PROXY_PORT) -sTCP:LISTEN -n -P >/dev/null 2>&1 && echo "proxy     :$(PROXY_PORT)  up" || echo "proxy     :$(PROXY_PORT)  down"
+	@curl -s -m 3 localhost:$(ROUTER_PORT)/health >/dev/null 2>&1 && echo "router    :$(ROUTER_PORT)   up" || echo "router    :$(ROUTER_PORT)   down"
+	@curl -s -m 3 localhost:$(DASHBOARD_PORT) >/dev/null 2>&1 && echo "dashboard :$(DASHBOARD_PORT)   up" || echo "dashboard :$(DASHBOARD_PORT)   down"
+
+.PHONY: mlx-serve mlx-proxy router-api local-llm-up local-llm-down local-llm-status dashboard-dev dev-up dev-down dev-status
 
 # ===== overnight harness targets (append to your Makefile) =====
 # The overnight runner + helpers are the Single Source of Truth in the overnight-harness

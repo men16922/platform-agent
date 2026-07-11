@@ -1,8 +1,8 @@
 # AGENT_BRIEF — platform-agent
 
-최종 갱신: 2026-07-11
+최종 갱신: 2026-07-12
 
-> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — (1) **origin push**(ahead 20), (2) supervisor의 실제 specialist A2A endpoint 연결 + **Agent Card discovery**(현재 card는 노출만) 후 kagent↔로컬 Qwen 연결.
+> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — (1) **추적 IA 라이브 실증**: 자연어 4스텝(provision+deploy → app rollback → History 중첩 상세 → teardown cascade) 브라우저 end-to-end, (2) 전체 커밋 + `feat/onprem-offline-recording-hybrid-rollback` **push/머지 결정**, (3) AWS CDK live diff / kagent 정리.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 
@@ -19,11 +19,11 @@
 ## Snapshot
 
 - **무엇:** AWS-native 플랫폼 에이전트. provision → deploy 검증 → detect → analyze → decide → execute → Slack 리포트.
-- **동작하는 것:** Operations 4단계 + 3-cloud AI Agent + AI Model Router + **범용 On-Prem Ops 에이전트**(provision+deploy+investigate 12도구, reasoning+tool 트레이스) + On-Prem **Provision**(Terraform kind/Ansible k3s) + 대시보드 Agents 채팅(SSE 스트리밍·배포 상세페이지·Tools 팝업). kagent kind 설치됨.
-- **하네스:** overnight-harness 플러그인 기반 (5 engine). `make overnight-kiro-once` 로 smoke.
+- **동작하는 것:** Operations 4단계 + 3-cloud AI Agent + **On-Prem Ops**(12도구, trace) + Terraform kind/실 Multipass VM Ansible k3s Provision + kagent↔Local Qwen A2A + Agents UI. **On-Prem 오프라인 완결**: Local Qwen **7B**로 NL provision→deploy→validate ~39s, 로컬 JSONL 기록 + 대시보드 **hybrid**(AWS+On-Prem 병합) + 실 **롤백**(app/cluster). **추적 IA**: activity에 `type`(provision/deploy)·`cluster` 연결키, 대시보드 **Provisioning/Deployments/History** 분리 + **중첩 상세**(provisioning⊃deploys), 롤백 **단일-row 승계**·**teardown→deploy cascade**, 자연어 rollback/teardown도 동일 라우팅.
+- **하네스:** overnight-harness 플러그인 기반 (5 engine). `make overnight-kiro-once` 로 smoke. `make dev-up`으로 로컬 스택(MLX+proxy+router+dashboard) 한 방 기동.
 - **Kiro 특화:** aws-ops / cdk-dev / overnight-harness 3개 에이전트 + safety hook + AWS MCP Server.
-- **검증:** `make check` → 584 passed, 1 skipped (2026-07-11); supervisor/A2A focused tests 37 passed; Dashboard build + Vercel production + 사용자 권한 관리 UI + 멀티클라우드 우회 복구(Failover) 및 로컬 MLX Qwen2.5/3 프록시 기반 kind E2E 자율 배포 검증 성공.
-- **현재 초점:** supervisor의 실제 specialist endpoint·Agent Card discovery 연결, 이후 kagent↔로컬 Qwen.
+- **검증:** `make check` → **600 passed, 1 skipped** (2026-07-12); Dashboard `tsc`0+`next build` 성공; Live 7B provision→deploy→validate ~39s·app/cluster 롤백·hybrid 병합 피드 실증. (추적 IA 정리분은 유닛/빌드만, 라이브 실증 미완)
+- **현재 초점:** 추적 IA 라이브 실증 → 전체 커밋 → 브랜치 push/머지 결정.
 
 ## Guardrails
 

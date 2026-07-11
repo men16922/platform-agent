@@ -36,3 +36,6 @@ docs/test/history/*-overnight-review-checklist.md
 # Terraform local state (on-prem kind provisioning)
 infra/onprem/terraform/*.tfstate
 infra/onprem/terraform/*.tfstate.backup
+
+# Video editing source files
+*.mov

@@ -1,4 +1,5 @@
-/* eslint-disable @next/next/no-img-element -- model marks are small remote brand assets with a text fallback. */
+import { ModelLogoImg } from "./model-logo-img";
+
 // Brand assets are intentionally kept here (rather than duplicated in cards,
 // chat, and timelines). Each image has a monogram fallback for offline demos.
 
@@ -39,7 +40,7 @@ export function ModelLogo({ model, size = "sm" }: { model: string | null | undef
       title={mark.title}
       className={`inline-flex ${dim} shrink-0 items-center justify-center rounded border font-bold leading-none ${mark.cls}`}
     >
-      {mark.src ? <img src={mark.src} alt={mark.title} className="h-full w-full rounded-[3px] object-contain p-px" onError={(event) => { event.currentTarget.style.display = "none"; event.currentTarget.parentElement?.append(mark.label); }} /> : mark.label}
+      {mark.src ? <ModelLogoImg src={mark.src} alt={mark.title} label={mark.label} /> : mark.label}
     </span>
   );
 }

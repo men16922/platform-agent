@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getDeploymentDetail } from "@/lib/activity-data";
+import { getLifecycleDetail, type LifecyclePhase } from "@/lib/activity-data";
+import type { AgentActivity } from "@/lib/mock-data";
 import { ProviderLogo, providerBadgeStyles } from "@/components/provider-logo";
 import { ModelLogo, modelIdFromAgent } from "@/components/model-logo";
 import { DataSourceBadge } from "@/components/data-source-badge";
@@ -11,6 +12,7 @@ const statusBadge: Record<string, string> = {
   success: "bg-emerald-400/12 text-[var(--success)] border-emerald-500/40",
   failed: "bg-red-400/12 text-[var(--danger)] border-red-500/40",
   "rolling-back": "bg-amber-400/12 text-[var(--warning)] border-amber-500/40",
+  "rolled-back": "bg-amber-400/12 text-[var(--warning)] border-amber-500/40",
 };
 
 function stepOk(result: unknown): boolean {
@@ -33,12 +35,12 @@ function asCommandResult(r: unknown): { output: string; error?: string | null } 
 
 export default async function DeploymentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { deployment, activity, source } = await getDeploymentDetail(id);
+  const { cluster, provisioning, deployments, focusId, found, source } = await getLifecycleDetail(id);
 
-  if (!deployment && !activity) {
+  if (!found) {
     return (
       <div className="mx-auto max-w-5xl space-y-6">
-        <Link href="/deployments" className="text-xs text-[var(--muted)] hover:text-white">← Deployments</Link>
+        <Link href="/history" className="text-xs text-[var(--muted)] hover:text-white">← History</Link>
         <div className="surface p-8 text-center text-sm text-[var(--muted)]">
           No run found for <code className="text-[#cbd6e9]">{id}</code>.
         </div>
@@ -46,130 +48,164 @@ export default async function DeploymentDetailPage({ params }: { params: Promise
     );
   }
 
-  const provider = deployment?.provider ?? activity?.provider ?? "onprem";
-  const status = deployment?.status ?? activity?.status ?? "success";
-  const agent = deployment?.agent ?? activity?.agent ?? "Unknown agent";
-  const model = activity?.model ?? modelIdFromAgent(agent);
-  const service = deployment?.service ?? "";
-  const version = deployment?.version ?? "";
-  const createdAt = deployment?.created_at ?? activity?.created_at ?? "";
-  const trace = activity?.trace ?? [];
-
-  const isDeploy = !!service && !["unknown", "service", ""].includes(service);
-  const toolNames = trace.filter((t) => t.kind === "tool").map((t) => t.tool!).filter(Boolean);
-  const uniqueTools = [...new Set(toolNames.length ? toolNames : activity?.tool_calls ?? [])];
+  const head = provisioning?.deployment ?? deployments[0]?.deployment;
+  const provider = head?.provider ?? "onprem";
+  const environment = head?.environment ?? "dev";
 
   return (
     <div className="mx-auto max-w-5xl space-y-7">
       <div className="flex items-center justify-between gap-4">
-        <Link href="/deployments" className="text-xs text-[#8ab4f8] hover:underline">← Deployments</Link>
+        <Link href="/history" className="text-xs text-[#8ab4f8] hover:underline">← History</Link>
         <DataSourceBadge source={source} />
       </div>
 
-      {/* Header */}
+      {/* Header — the cluster lifecycle */}
       <div className="space-y-3">
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#8ab4f8]">Reasoning &amp; execution trace</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#8ab4f8]">Cluster lifecycle</p>
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-2xl font-semibold tracking-tight text-[#e6edf7]">
-            {isDeploy ? service : "Agent run"}
-            {isDeploy && version && <span className="ml-2 font-mono text-lg text-[#8ab4f8]">{version}</span>}
-          </h2>
-          <span className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-bold ${statusBadge[status] ?? statusBadge.success}`}>
-            {status.toUpperCase()}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">
+          <h2 className="text-2xl font-semibold tracking-tight text-[#e6edf7]">{cluster || "Agent run"}</h2>
           <span className={`inline-flex items-center gap-1.5 rounded border px-1.5 py-0.5 text-[10px] font-semibold ${providerBadgeStyles[provider]}`}>
             <ProviderLogo provider={provider} size="sm" />
             {provider.toUpperCase()}
           </span>
-          <span className="inline-flex items-center gap-1.5">
-            <ModelLogo model={model} />
-            {agent}
-          </span>
-          {uniqueTools.map((t) => (
-            <code key={t} className="rounded border border-[#8ab4f8]/25 bg-[#8ab4f8]/10 px-1.5 py-0.5 text-[10px] text-[#a9c7ff]">{t}</code>
-          ))}
+          <span className="text-xs text-[var(--muted)]">{environment}</span>
         </div>
+        <p className="text-xs text-[var(--muted)]">
+          Provisioning and the deployments that landed on this cluster, in one place.
+        </p>
       </div>
 
-      {/* Meta */}
-      <div className="surface grid grid-cols-2 gap-x-6 gap-y-3 p-5 sm:grid-cols-4">
-        <Meta label="Run ID" value={deployment?.id ?? id} mono />
-        <Meta label="Environment" value={deployment?.environment ?? provider} />
-        <Meta label="Started" value={createdAt ? new Date(createdAt).toLocaleString() : "—"} />
-        <Meta label="Activity ID" value={activity?.id ?? "—"} mono />
-      </div>
-
-      {/* Instruction */}
-      {(activity?.instruction || activity?.action) && (
-        <section className="space-y-2">
-          <SectionTitle accent="#8ab4f8">Instruction (natural language)</SectionTitle>
-          <div className="rounded-xl border-l-2 border-[#8ab4f8]/50 bg-[#8ab4f8]/[0.06] p-4 text-sm text-[#e6edf7]">
-            {activity?.instruction || activity?.action}
-          </div>
-        </section>
-      )}
-
-      {/* Execution trace */}
+      {/* Provisioning (top level) */}
       <section className="space-y-2">
-        <SectionTitle accent="#c4b5fd">
-          Execution trace <span className="font-normal text-[var(--muted)]">— what the model actually did</span>
-        </SectionTitle>
-        {trace.length === 0 ? (
-          <div className="surface p-4 text-xs text-[var(--muted)]">
-            {activity?.tool_calls?.length
-              ? `Tools: ${activity.tool_calls.join(" → ")} (detailed args/results not recorded for this run)`
-              : "No execution trace recorded."}
-          </div>
+        <SectionTitle accent="#69d3a7">Provisioning</SectionTitle>
+        {provisioning ? (
+          <PhaseCard phase={provisioning} kind="provision" focusId={focusId} />
         ) : (
-          <ol className="space-y-2.5">
-            {trace.map((item, i) => {
-              if (item.kind === "reasoning") {
-                return (
-                  <li key={i} className="rounded-xl border-l-2 border-[#8ab4f8]/50 bg-[#8ab4f8]/[0.05] p-3.5">
-                    <div className="mb-1 text-[9px] font-bold uppercase tracking-wider text-[#8ab4f8]">🧠 reasoning</div>
-                    <p className="text-xs leading-relaxed text-[#cbd6e9] whitespace-pre-wrap">{item.text}</p>
-                  </li>
-                );
-              }
-              const ok = stepOk(item.result);
-              const cmd = asCommandResult(item.result);
-              return (
-                <li className={`rounded-xl border border-white/6 border-l-2 p-4 space-y-2.5 ${ok ? "border-l-emerald-500/50" : "border-l-red-500/60"}`} key={i}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#c4b5fd]">🔧</span>
-                    <code className="rounded border border-[#c4b5fd]/25 bg-[#c4b5fd]/10 px-2 py-0.5 text-xs font-semibold text-[#d9ccff]">{item.tool}</code>
-                    <span className={`ml-auto rounded px-1.5 py-0.5 text-[9px] font-bold ${ok ? "bg-emerald-400/12 text-[var(--success)]" : "bg-red-400/12 text-[var(--danger)]"}`}>
-                      {ok ? "OK" : "ERROR"}
-                    </span>
-                  </div>
-                  {item.args && Object.keys(item.args).length > 0 && (
-                    <TracePane label="args (in)" body={fmt(item.args)} tone="args" />
-                  )}
-                  {cmd ? (
-                    <>
-                      {cmd.output && <TracePane label="output" body={cmd.output} tone="output" />}
-                      {cmd.error && <TracePane label="error" body={cmd.error} tone="error" />}
-                    </>
-                  ) : (
-                    <TracePane label="result (out)" body={fmt(item.result)} tone="result" />
-                  )}
-                </li>
-              );
-            })}
-          </ol>
+          <div className="surface p-4 text-xs text-[var(--muted)]">
+            No provisioning run recorded for <code className="text-[#cbd6e9]">{cluster}</code> (the cluster may have
+            pre-existed this activity log).
+          </div>
         )}
       </section>
 
-      {/* Summary */}
-      {activity?.summary && (
-        <section className="space-y-2">
-          <SectionTitle accent="#69d3a7">Agent summary</SectionTitle>
-          <div className="rounded-xl border-l-2 border-emerald-500/40 bg-emerald-500/[0.05] p-4 text-sm leading-relaxed text-[#e6edf7]">
-            <Markdown text={activity.summary} />
+      {/* Deployments on this cluster (nested, collapsible) */}
+      <section className="space-y-2">
+        <SectionTitle accent="#8ab4f8">
+          Deployments on this cluster <span className="font-normal text-[var(--muted)]">— {deployments.length}</span>
+        </SectionTitle>
+        {deployments.length === 0 ? (
+          <div className="surface p-4 text-xs text-[var(--muted)]">No app deployments recorded on this cluster yet.</div>
+        ) : (
+          <div className="space-y-2">
+            {deployments.map((phase) => (
+              <PhaseCard key={phase.deployment.id} phase={phase} kind="deploy" focusId={focusId} />
+            ))}
           </div>
-        </section>
+        )}
+      </section>
+    </div>
+  );
+}
+
+// A collapsible lifecycle phase (provisioning or one deployment). The focused row —
+// or the provisioning at the top — opens by default; the rest stay folded.
+function PhaseCard({
+  phase,
+  kind,
+  focusId,
+}: {
+  phase: LifecyclePhase;
+  kind: "provision" | "deploy";
+  focusId: string;
+}) {
+  const { deployment: dep, activity } = phase;
+  // Only the focused row opens: click a deploy → its trace expands, provisioning stays folded.
+  const open = dep.id === focusId;
+  const model = activity?.model ?? modelIdFromAgent(dep.agent);
+  const primary = kind === "provision" ? dep.service : dep.service;
+  const secondary = kind === "provision" ? `mode ${dep.version}` : dep.version;
+
+  return (
+    <details open={open} className="surface group overflow-hidden [&_summary]:list-none">
+      <summary className="flex cursor-pointer flex-wrap items-center gap-3 p-4 hover:bg-white/[0.02]">
+        <span className="text-[var(--muted)] transition-transform group-open:rotate-90">▸</span>
+        <span className="font-medium text-[#e6edf7]">{primary}</span>
+        <code className="text-xs text-[#8ab4f8]">{secondary}</code>
+        <span className={`rounded border px-1.5 py-0.5 text-[10px] font-bold ${statusBadge[dep.status] ?? statusBadge.success}`}>
+          {dep.status.toUpperCase()}
+        </span>
+        <span className="ml-auto inline-flex items-center gap-1.5 text-[11px] text-[var(--muted)]">
+          <ModelLogo model={model} />
+          <span className="font-mono text-[#a9c7ff]">{dep.id}</span>
+          <span suppressHydrationWarning>{dep.created_at ? new Date(dep.created_at).toLocaleString() : ""}</span>
+        </span>
+      </summary>
+      <div className="border-t border-white/6 p-4">
+        <PhaseBody activity={activity} toolCalls={activity?.tool_calls} />
+      </div>
+    </details>
+  );
+}
+
+function PhaseBody({ activity, toolCalls }: { activity: AgentActivity | null; toolCalls?: string[] }) {
+  const trace = activity?.trace ?? [];
+  return (
+    <div className="space-y-4">
+      {(activity?.instruction || activity?.action) && (
+        <div className="rounded-lg border-l-2 border-[#8ab4f8]/50 bg-[#8ab4f8]/[0.06] p-3 text-xs text-[#e6edf7]">
+          {activity?.instruction || activity?.action}
+        </div>
+      )}
+
+      {trace.length === 0 ? (
+        <div className="text-xs text-[var(--muted)]">
+          {toolCalls?.length
+            ? `Tools: ${toolCalls.join(" → ")} (detailed args/results not recorded for this run)`
+            : "No execution trace recorded."}
+        </div>
+      ) : (
+        <ol className="space-y-2.5">
+          {trace.map((item, i) => {
+            if (item.kind === "reasoning") {
+              return (
+                <li key={i} className="rounded-xl border-l-2 border-[#8ab4f8]/50 bg-[#8ab4f8]/[0.05] p-3.5">
+                  <div className="mb-1 text-[9px] font-bold uppercase tracking-wider text-[#8ab4f8]">🧠 reasoning</div>
+                  <p className="whitespace-pre-wrap text-xs leading-relaxed text-[#cbd6e9]">{item.text}</p>
+                </li>
+              );
+            }
+            const ok = stepOk(item.result);
+            const cmd = asCommandResult(item.result);
+            return (
+              <li className={`space-y-2.5 rounded-xl border border-white/6 border-l-2 p-4 ${ok ? "border-l-emerald-500/50" : "border-l-red-500/60"}`} key={i}>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#c4b5fd]">🔧</span>
+                  <code className="rounded border border-[#c4b5fd]/25 bg-[#c4b5fd]/10 px-2 py-0.5 text-xs font-semibold text-[#d9ccff]">{item.tool}</code>
+                  <span className={`ml-auto rounded px-1.5 py-0.5 text-[9px] font-bold ${ok ? "bg-emerald-400/12 text-[var(--success)]" : "bg-red-400/12 text-[var(--danger)]"}`}>
+                    {ok ? "OK" : "ERROR"}
+                  </span>
+                </div>
+                {item.args && Object.keys(item.args).length > 0 && (
+                  <TracePane label="args (in)" body={fmt(item.args)} tone="args" />
+                )}
+                {cmd ? (
+                  <>
+                    {cmd.output && <TracePane label="output" body={cmd.output} tone="output" />}
+                    {cmd.error && <TracePane label="error" body={cmd.error} tone="error" />}
+                  </>
+                ) : (
+                  <TracePane label="result (out)" body={fmt(item.result)} tone="result" />
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      )}
+
+      {activity?.summary && (
+        <div className="rounded-lg border-l-2 border-emerald-500/40 bg-emerald-500/[0.05] p-3 text-xs leading-relaxed text-[#e6edf7]">
+          <Markdown text={activity.summary} />
+        </div>
       )}
     </div>
   );
@@ -181,15 +217,6 @@ function SectionTitle({ children, accent }: { children: React.ReactNode; accent:
       <span className="h-3 w-0.5 rounded" style={{ background: accent }} />
       {children}
     </h3>
-  );
-}
-
-function Meta({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
-  return (
-    <div className="space-y-1">
-      <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">{label}</div>
-      <div className={`text-xs text-[#cbd6e9] ${mono ? "font-mono text-[#a9c7ff]" : ""}`}>{value}</div>
-    </div>
   );
 }
 

@@ -30,7 +30,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from src.agents.ai.deploy_recorder import record_deploy
+from src.agents.ai.deploy_recorder import (
+    record_cluster_teardown,
+    record_deploy,
+    record_rollback,
+)
 from src.agents.ai.local_deployer import rollback_deployment
 from src.agents.ai.model_router import (
     ENVIRONMENTS,
@@ -46,7 +50,8 @@ logger = logging.getLogger(__name__)
 class DeployRequest(BaseModel):
     instruction: str = Field(..., min_length=1, description="Natural-language deploy instruction.")
     model: str = Field("local-qwen", description="AI model id (see /api/models).")
-    provider: str = Field("onprem", description="Target environment (aws/gcp/azure/onprem).")
+    provider: str = Field("onprem", description="Target infrastructure (aws/gcp/azure/onprem).")
+    environment: str = Field("dev", description="Deployment tier (production/staging/dev).")
 
 
 class DeployStep(BaseModel):
@@ -73,7 +78,13 @@ class RollbackRequest(BaseModel):
     cluster_name: str = Field("platform-agent", description="Cluster name (scope=cluster).")
     mode: str = Field("kind", description="Provisioning mode for cluster scope (kind/k3s).")
     model: str = Field("local-qwen", description="Model id recorded for the activity trail.")
-    provider: str = Field("onprem", description="Target environment.")
+    provider: str = Field("onprem", description="Target infrastructure (aws/gcp/azure/onprem).")
+    environment: str = Field("dev", description="Deployment tier (production/staging/dev).")
+    # Supersede-in-place: the original deployment being rolled back. When set, the
+    # rollback flips that row to 'rolled-back' instead of spawning a duplicate.
+    deployment_id: str | None = Field(None, description="Original deployment id to supersede.")
+    service: str | None = Field(None, description="Original service label for the row.")
+    version: str | None = Field(None, description="Original version label for the row.")
 
 
 def get_deployer_factory() -> Callable[..., Any] | None:
@@ -125,6 +136,7 @@ async def local_deploy(
                 instruction=req.instruction,
                 model=outcome.model,
                 provider=outcome.provider,
+                environment=req.environment,
                 summary=outcome.summary,
                 steps=outcome.steps,
                 ok=outcome.ok,
@@ -176,6 +188,7 @@ async def local_deploy_stream(
                             instruction=req.instruction,
                             model=outcome.model,
                             provider=outcome.provider,
+                            environment=req.environment,
                             summary=outcome.summary,
                             steps=outcome.steps,
                             ok=outcome.ok,
@@ -240,14 +253,36 @@ async def local_rollback(req: RollbackRequest) -> dict[str, Any]:
     steps = [{"tool": tool, "args": args, "result": result}]
     record = None
     try:
-        record = record_deploy(
-            instruction=action,
-            model=req.model,
-            provider=req.provider,
-            summary=summary,
-            steps=steps,
-            ok=ok,
-        )
+        if req.scope == "cluster":
+            # Tearing down the cluster removes every app on it — supersede the
+            # provisioning row and cascade its deployments to 'rolled-back'.
+            record = record_cluster_teardown(
+                cluster=req.cluster_name,
+                provider=req.provider,
+                environment=req.environment,
+                model=req.model,
+                summary=summary,
+                steps=steps,
+                ok=ok,
+                provision_deployment_id=req.deployment_id,
+            )
+        else:
+            # App rollback: supersede the original deployment (row flips to
+            # 'rolled-back') rather than appending a duplicate feed row.
+            record = record_rollback(
+                deployment_id=req.deployment_id,
+                kind="deploy",
+                cluster=req.cluster_name,
+                service=req.service or req.service_name or req.cluster_name,
+                version=req.version or "previous",
+                provider=req.provider,
+                environment=req.environment,
+                model=req.model,
+                action=action,
+                summary=summary,
+                steps=steps,
+                ok=ok,
+            )
     except Exception:  # noqa: BLE001
         logger.warning("rollback recording failed", exc_info=True)
 

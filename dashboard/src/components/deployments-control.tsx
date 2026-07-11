@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import type { Deployment } from "@/lib/mock-data";
-import Link from "next/link";
 import { ProviderLogo, providerBadgeStyles } from "@/components/provider-logo";
 import { ModelLogo, modelIdFromAgent } from "@/components/model-logo";
 
@@ -11,15 +11,19 @@ const statusIcon = {
   success: { icon: "✓", color: "text-[var(--success)]" },
   failed: { icon: "✗", color: "text-[var(--danger)]" },
   "rolling-back": { icon: "↺", color: "text-[var(--warning)]" },
+  "rolled-back": { icon: "↺", color: "text-[var(--warning)]" },
 };
 
 const PAGE_SIZE = 10;
 
 interface DeploymentsControlProps {
   initialDeployments: Deployment[];
+  // Clusters whose provisioning was torn down — their apps can't be rolled back.
+  tornDownClusters?: string[];
 }
 
-export function DeploymentsControl({ initialDeployments }: DeploymentsControlProps) {
+export function DeploymentsControl({ initialDeployments, tornDownClusters = [] }: DeploymentsControlProps) {
+  const router = useRouter();
   const { data: session } = useSession();
   const [deployments, setDeployments] = useState<Deployment[]>(initialDeployments);
   const [page, setPage] = useState(0);
@@ -30,6 +34,10 @@ export function DeploymentsControl({ initialDeployments }: DeploymentsControlPro
   const [version, setVersion] = useState("v1.5.0");
   const [provider, setProvider] = useState("aws");
   const [environment, setEnvironment] = useState("production");
+
+  // Rollback modal state (Deployments = app rollback only)
+  const [rollbackTarget, setRollbackTarget] = useState<Deployment | null>(null);
+  const [rollbackVersion, setRollbackVersion] = useState("v1.4.9");
   
   // Loading & error states
   const [loading, setLoading] = useState(false);
@@ -67,6 +75,8 @@ export function DeploymentsControl({ initialDeployments }: DeploymentsControlPro
       // Add simulated temporary deployment to list (or reload)
       const newDep: Deployment = {
         id: data.deployment_id,
+        type: "deploy",
+        cluster: provider === "onprem" ? "platform-agent" : "",
         service: serviceName,
         version,
         provider: provider as any,
@@ -85,26 +95,29 @@ export function DeploymentsControl({ initialDeployments }: DeploymentsControlPro
     }
   };
 
-  const handleRollback = async (dep: Deployment) => {
+  const openRollback = (dep: Deployment) => {
     if (!isAllowed) return;
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    setRollbackVersion("v1.4.9");
+    setRollbackTarget(dep);
+  };
+
+  const confirmRollback = async () => {
+    const dep = rollbackTarget;
+    if (!dep || !isAllowed) return;
 
     // On-prem rolls back the real kind/k3s cluster via the local router; the
     // cloud path takes a target version for the AWS Step Functions pipeline.
     let payload: Record<string, unknown>;
-    let displayVersion: string;
     if (dep.provider === "onprem") {
-      const scope = (prompt(
-        `On-prem rollback for ${dep.service}.\nType "app" to roll back to the previous revision, or "cluster" to tear down the cluster:`,
-        "app",
-      ) || "").trim();
-      if (scope !== "app" && scope !== "cluster") return;
-      payload = { service_name: dep.service, provider: "onprem", environment: dep.environment, scope, namespace: "default", cluster_name: "platform-agent" };
-      displayVersion = scope === "cluster" ? "cluster" : "previous";
+      // Deployments rolls back the app only (previous revision); cluster teardown
+      // lives on the Provisioning page.
+      payload = { service_name: dep.service, version: dep.version, provider: "onprem", environment: dep.environment, scope: "app", namespace: "default", cluster_name: "platform-agent" };
     } else {
-      const rollbackVersion = prompt(`Enter target rollback version for ${dep.service} (current: ${dep.version}):`, "v1.4.9");
-      if (!rollbackVersion) return;
-      payload = { service_name: dep.service, rollback_version: rollbackVersion, provider: dep.provider, environment: dep.environment };
-      displayVersion = rollbackVersion;
+      const target = rollbackVersion.trim();
+      if (!target) return;
+      payload = { service_name: dep.service, rollback_version: target, provider: dep.provider, environment: dep.environment };
     }
 
     setActionLoadingId(dep.id);
@@ -123,20 +136,13 @@ export function DeploymentsControl({ initialDeployments }: DeploymentsControlPro
 
       setSuccessMsg(data.summary || `Successfully executed rollback request ${data.rollback_id}`);
 
-      // Optimistic rollback row (the recorder also persists a real one).
-      const newDep: Deployment = {
-        id: data.rollback_id,
-        service: dep.service,
-        version: displayVersion,
-        provider: dep.provider,
-        environment: dep.environment,
-        status: "rolling-back",
-        duration_sec: 0,
-        agent: "Rollback Executor",
-        created_at: new Date().toISOString(),
-      };
-      setDeployments((current) => [newDep, ...current]);
-      setPage(0);
+      // Single-row lifecycle: flip the original deployment in place (the recorder
+      // superseded its row server-side) — no duplicate row, and its Rollback button
+      // disappears since it only shows for status "success".
+      setDeployments((current) =>
+        current.map((d) => (d.id === dep.id ? { ...d, status: "rolled-back" } : d)),
+      );
+      setRollbackTarget(null);
     } catch (err: any) {
       setErrorMsg(err.message || "An error occurred");
     } finally {
@@ -252,7 +258,7 @@ export function DeploymentsControl({ initialDeployments }: DeploymentsControlPro
                 >
                   <option value="production">Production</option>
                   <option value="staging">Staging</option>
-                  <option value="canary">Canary</option>
+                  <option value="dev">Dev</option>
                 </select>
               </div>
             </div>
@@ -291,6 +297,83 @@ export function DeploymentsControl({ initialDeployments }: DeploymentsControlPro
         </div>
       )}
 
+      {/* Rollback Modal */}
+      {rollbackTarget && (() => {
+        const dep = rollbackTarget;
+        const isOnprem = dep.provider === "onprem";
+        const busy = actionLoadingId === dep.id;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+            <div className="surface w-full max-w-md border border-white/10 p-6 space-y-4 shadow-[0_25px_60px_rgba(0,0,0,0.5)]">
+              <div className="flex justify-between items-center border-b border-white/6 pb-3">
+                <h3 className="text-base font-semibold text-[#cbd6e9]">Roll Back Deployment</h3>
+                <button
+                  type="button"
+                  onClick={() => setRollbackTarget(null)}
+                  className="text-xs text-[var(--muted)] hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="rounded-lg border border-white/8 bg-white/[0.02] px-3 py-2 text-xs text-[var(--muted)]">
+                <span className="font-medium text-[#cbd6e9]">{dep.service}</span>
+                <span className="opacity-60"> · </span>
+                <code className="text-[11px]">{dep.version}</code>
+                <span className="opacity-60"> · </span>
+                {dep.environment}
+                <span className="opacity-60"> · </span>
+                {dep.provider === "onprem" ? "On-Premise" : dep.provider.toUpperCase()}
+              </div>
+
+              {isOnprem ? (
+                <p className="rounded-lg border border-[#8ab4f8]/25 bg-[#8ab4f8]/[0.06] px-3 py-2.5 text-[11px] text-[var(--muted)]">
+                  Rolls <span className="font-semibold text-[#cbd6e9]">{dep.service}</span> back to its previous
+                  revision (<code>kubectl rollout undo</code>). Safe &amp; reversible. To tear down the whole
+                  cluster, use the <span className="text-[#cbd6e9]">Provisioning</span> page instead.
+                </p>
+              ) : (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">
+                    Target Rollback Version
+                  </label>
+                  <input
+                    type="text"
+                    value={rollbackVersion}
+                    onChange={(e) => setRollbackVersion(e.target.value)}
+                    placeholder="e.g. v1.4.9"
+                    className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-[#cbd6e9] focus:outline-none focus:border-[#8ab4f8]"
+                  />
+                  <p className="text-[11px] text-[var(--muted)]">Current version: <code>{dep.version}</code></p>
+                </div>
+              )}
+
+              {errorMsg && (
+                <p className="text-[11px] text-[var(--danger)]">⚠️ {errorMsg}</p>
+              )}
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-white/6">
+                <button
+                  type="button"
+                  onClick={() => setRollbackTarget(null)}
+                  className="rounded-lg border border-white/10 bg-white/[0.025] px-4 py-2 text-xs font-semibold text-[var(--muted)] hover:bg-white/5 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmRollback}
+                  disabled={busy || (!isOnprem && !rollbackVersion.trim())}
+                  className="rounded-lg bg-amber-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-amber-500 disabled:opacity-50"
+                >
+                  {busy ? "Rolling back..." : "Confirm Rollback"}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Deployments Table */}
       <div className="surface overflow-x-auto">
         <table className="w-full text-sm">
@@ -312,13 +395,17 @@ export function DeploymentsControl({ initialDeployments }: DeploymentsControlPro
             {currentDeployments.map((dep) => {
               const status = statusIcon[dep.status as keyof typeof statusIcon] || { icon: "●", color: "text-[var(--warning)]" };
               const isActionLoading = actionLoadingId === dep.id;
+              // No cluster (can't correlate) or a torn-down cluster → rollback unavailable.
+              const clusterDown = !dep.cluster || tornDownClusters.includes(dep.cluster);
 
               return (
-                <tr key={dep.id} className="border-t border-white/6 transition-colors hover:bg-white/[0.025]">
+                <tr
+                  key={dep.id}
+                  onClick={() => router.push(`/deployments/${dep.id}`)}
+                  className="cursor-pointer border-t border-white/6 transition-colors hover:bg-white/[0.025]"
+                >
                   <td className="p-3">
-                    <Link href={`/deployments/${dep.id}`} className="text-xs font-mono text-[#8ab4f8] hover:underline">
-                      {dep.id}
-                    </Link>
+                    <span className="text-xs font-mono text-[#8ab4f8]">{dep.id}</span>
                   </td>
                   <td className="p-3 font-medium">{dep.service}</td>
                   <td className="p-3">
@@ -349,13 +436,22 @@ export function DeploymentsControl({ initialDeployments }: DeploymentsControlPro
                   {isAllowed && (
                     <td className="p-3 text-right">
                       {dep.status === "success" ? (
-                        <button
-                          disabled={isActionLoading}
-                          onClick={() => handleRollback(dep)}
-                          className="rounded border border-red-500/35 bg-red-950/20 px-2.5 py-1 text-[10px] font-bold text-red-200 hover:bg-red-900/40 transition-colors disabled:opacity-50"
-                        >
-                          {isActionLoading ? "Running..." : "Rollback"}
-                        </button>
+                        clusterDown ? (
+                          <span
+                            title={dep.cluster ? "Cluster torn down — re-provision first" : "No linked cluster — rollback unavailable"}
+                            className="cursor-not-allowed rounded border border-white/10 bg-white/[0.02] px-2.5 py-1 text-[10px] font-bold text-[var(--muted)]"
+                          >
+                            Rollback
+                          </span>
+                        ) : (
+                          <button
+                            disabled={isActionLoading}
+                            onClick={(e) => { e.stopPropagation(); openRollback(dep); }}
+                            className="rounded border border-red-500/35 bg-red-950/20 px-2.5 py-1 text-[10px] font-bold text-red-200 hover:bg-red-900/40 transition-colors disabled:opacity-50"
+                          >
+                            {isActionLoading ? "Running..." : "Rollback"}
+                          </button>
+                        )
                       ) : (
                         <span className="text-[10px] text-[var(--muted)]">-</span>
                       )}

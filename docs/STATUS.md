@@ -1,6 +1,6 @@
 # STATUS — platform-agent
 
-최종 갱신: 2026-07-11
+최종 갱신: 2026-07-12
 
 > 현재 구현 상태 / 검증 baseline / active focus / open risks. **≤120줄** 유지.
 
@@ -17,12 +17,16 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` (pytest) → **584 passed, 1 skipped** (2026-07-11) — AI Model Router / Pydantic AI On-Prem 에이전트 / MLX proxy / deploy recorder / ops_tools / provisioning 어댑터 테스트 포함
+- `make check` (pytest) → **600 passed, 1 skipped** (2026-07-12) — AI Model Router / Pydantic AI On-Prem 에이전트 / MLX proxy / deploy recorder(+cascade) / ops_tools / provisioning 어댑터 테스트 포함
+- **LinkedIn 데모 비디오 편집(2026-07-12)** → `docs/post/local-onprem.mov` 원본 영상을 18.2초(1.0MB)로 구간 및 배속(타임랩스) 편집하고, 각 7개 주요 구간의 자막(Terraform 등 실제 실행 매핑)을 영상 하단에 병합한 `local-onprem-edited.mp4` 제작 완료.
+- **배포 추적 IA 정리(2026-07-12)** → activity에 `type`(provision/deploy)·`cluster`(연결키)·`environment`(provider와 분리) 저장; 대시보드 **Provisioning/Deployments/History** 3분리 + **통합 중첩 상세**(provisioning⊃deployments); 롤백 **단일-row 승계**, **cluster teardown→deploy cascade**, 자연어 rollback/teardown도 동일 라우팅; `make dev-up` 한 방 기동. tsc0+next build 성공, `/provisioning`·`/history` 200. **라이브 실증은 미완(사용자 테스트 예정)**.
+- **On-Prem 오프라인 완결(2026-07-12)** → Local Qwen **7B**로 NL provision→deploy→validate **~39s** 자율 실증; `deploy_recorder` **로컬 JSONL** 기록 + 대시보드 **hybrid**(AWS DynamoDB + On-Prem JSONL 병합) read; `/api/local-rollback`로 **app 롤백(rollout undo v2→v1)·cluster 롤백(teardown)** 실증. `mlx_qwen_tool_proxy`가 7B의 ```json/Hermes tool-call 파싱, `deploy_service` 복합툴로 LLM 왕복 축소.
 - **범용 On-Prem Ops 에이전트** → provision(2)+deploy(5)+investigate(5) 12도구, reasoning+tool SSE 스트리밍, "list pods" 질의는 진단만 수행 확인
 - **On-Prem Provision(① 역할)** → Terraform(kind) IaC `validate/plan` green + Ansible(k3s) 실 Multipass VM 적용: k3s v1.31.4 node Ready, 재실행 idempotent(`changed=0`); `provision_cluster`/`teardown` 에이전트 도구
 - **관측성** → 배포 상세 페이지 `/deployments/[id]`(reasoning/tool args·result/summary) + DynamoDB trace 기록
 - **kagent + local Qwen** → kind Pod→`host.docker.internal:18091/v1` OpenAI-compat ModelConfig 적용, `k8s-agent` A2A JSON-RPC 진단 task가 tool 결과 반환까지 실증.
 - **Supervisor + A2A** → 자연어 요청을 provision/deploy/kagent로 분류하고 Agent Card discovery/skill match 후 해당 transport(JSON-RPC 포함)로 위임; Gateway 응답에 route trace 기록.
+- **Dashboard Agents UX** → Agent → AI Model → Selected Runtime → Ask Agent 단일 흐름, 실제 model brand asset과 On-Prem router 상태 패널 추가; `next build` 성공.
 - AI Model Router → `/api/models`(환경별 선택지) + `/api/local-deploy`(자연어 배포) live 확인; 대시보드 `tsc`+`next build` 통과
 - **Live E2E (Pydantic AI + MLX Qwen3-Coder-30B)** → 자연어 "Deploy orders-api ..." → build→push→deploy→validate 자율 실행 → kind `orders-api 1/1 Running`(image v1.5.0) 검증 완료 (2026-07-11)
 - **Deployments Live 추적 배선 완성** → 기록 활성 API 배포 → recorder가 DEPLOY/ACTIVITY(DEP-262AC0A3, v1.6.0) DynamoDB 기록 → 대시보드 `/api/dashboard/deployments`(aws-live)가 최신 배포로 노출 확인 (2026-07-11)
@@ -63,8 +67,10 @@
 ## Active Focus
 
 - 범용 Ops 에이전트 + 관측성 + On-Prem Provision(Terraform/Ansible) + kagent 설치 완료. ARCHITECTURE 통합·최신화(단일 스택 표 + Orchestrator+A2A 타깃).
-- 다음: AWS CDK live diff 재검증(현재 로컬 Lambda bundling hang), 또는 kagent 기본 에이전트 10개 정리 결정.
-- **미푸시**: origin 대비 ahead 20 (push 필요). kagent 기본 에이전트 10개는 데모 후 `helm uninstall` 정리 가능.
+- On-Prem 오프라인 기록/hybrid 대시보드/실 롤백 + Local Qwen 7B 전환 완료(2026-07-12).
+- **배포 추적 IA 정리 완료(2026-07-12, 미커밋)**: Provisioning/Deployments/History 분리 + 중첩 상세 + 롤백 단일-row/teardown cascade + 자연어 라우팅 + `make dev-up`. gate 600 passed.
+- 다음: 자연어 4스텝(provision+deploy→app rollback→History 상세→teardown cascade) **라이브 실증** → 전체 커밋 → 브랜치 push/머지 결정, 이후 AWS CDK live diff/kagent 정리.
+- **미커밋/미푸시**: 이번 IA 정리분은 워킹트리에만 존재(신규 5파일 포함). 기존 기능은 `0b9148c`(브랜치 `feat/onprem-offline-recording-hybrid-rollback`), origin 미푸시.
 
 ## Open Risks / Gaps
 
@@ -73,3 +79,5 @@
 3. **GCP/Azure 실 클러스터 비용** — 실 배포/Remediation 가동 시 클러스터 리소스 가동 및 WIF OIDC 인증 연동 세부 과금 체크 필요.
 4. **Dashboard dependency audit** — Next.js 16.2.10 내부 PostCSS 중간등급 취약점 2건; upstream release 대기.
 5. **A2A endpoint/card discovery** — supervisor의 환경변수 endpoint 등록은 구현됐지만 실제 kagent endpoint와 Agent Card 기반 discovery/skill 매칭은 아직 연결 전.
+6. **추적 IA 라이브 실증 미완** — Provisioning/Deployments/History·중첩 상세·롤백 단일-row·teardown cascade·자연어 라우팅은 빌드/유닛(600 passed)만 통과. 로그인 후 브라우저에서 자연어 4스텝 end-to-end 클릭/실행 실증 필요(코드·라우트 체인은 준비됨). 레거시 activity 행은 `cluster` 없어 롤백 비활성 — 클린슬레이트는 `~/.platform-agent/activity.jsonl` 비우기.
+7. **NEXT_PUBLIC 프로덕션 인라인** — `next start`(Turbopack 빌드)에서 `NEXT_PUBLIC_DASHBOARD_DEV_AUTH`가 인라인 안 됨 → 로컬은 `next dev` 사용 중. 프로덕션 로컬로그인 필요 시 조사 요.

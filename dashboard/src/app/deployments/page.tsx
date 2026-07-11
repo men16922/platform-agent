@@ -5,7 +5,18 @@ import { DeploymentsControl } from "@/components/deployments-control";
 export const dynamic = "force-dynamic";
 
 export default async function DeploymentsPage() {
-  const { deployments, source } = await getDeploymentFeed();
+  const [{ deployments, source }, prov] = await Promise.all([
+    getDeploymentFeed(["deploy"]),
+    getDeploymentFeed(["provision"]),
+  ]);
+
+  // Latest provisioning per cluster (feed is newest-first); a cluster whose latest
+  // provision was rolled back is torn down, so its apps can't be rolled back.
+  const latestByCluster = new Map<string, (typeof prov.deployments)[number]>();
+  for (const p of prov.deployments) if (!latestByCluster.has(p.service)) latestByCluster.set(p.service, p);
+  const tornDownClusters = [...latestByCluster.values()]
+    .filter((p) => p.status === "rolled-back")
+    .map((p) => p.service);
 
   return (
     <div className="mx-auto max-w-[1800px] space-y-7">
@@ -36,7 +47,7 @@ export default async function DeploymentsPage() {
       </div>
 
       {/* Deployments controller (table + trigger modals) */}
-      <DeploymentsControl initialDeployments={deployments} />
+      <DeploymentsControl initialDeployments={deployments} tornDownClusters={tornDownClusters} />
     </div>
   );
 }

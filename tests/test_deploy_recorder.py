@@ -68,3 +68,41 @@ def test_record_deploy_disabled_is_noop(monkeypatch):
     assert rec.record_deploy(
         instruction="x", model="local-qwen", provider="onprem", summary="", steps=_STEPS, ok=True
     ) is None
+
+
+def test_composite_run_splits_into_provision_and_deploy_rows():
+    table = _FakeTable()
+    steps = [
+        {"tool": "provision_cluster", "args": {"cluster_name": "platform-agent", "mode": "kind"}, "result": {"success": True}},
+        {"tool": "deploy_service", "args": {"service_name": "orders-api", "version": "v1.0.0"}, "result": {"error": None}},
+    ]
+    rec.record_deploy(
+        instruction="Provision and deploy orders-api", model="local-qwen", provider="onprem",
+        summary="ok", steps=steps, ok=True, table=table,
+    )
+    by_type = {r["type"]: r for r in rec.read_deploys(table)}
+    assert set(by_type) == {"provision", "deploy"}
+    assert by_type["provision"]["service"] == "platform-agent"
+    assert by_type["deploy"]["service"] == "orders-api"
+    assert by_type["deploy"]["cluster"] == "platform-agent"  # correlation key
+
+
+def test_natural_language_teardown_cascades_to_deployments():
+    table = _FakeTable()
+    rec.record_deploy(
+        instruction="Provision and deploy", model="local-qwen", provider="onprem", summary="ok",
+        steps=[
+            {"tool": "provision_cluster", "args": {"cluster_name": "platform-agent", "mode": "kind"}, "result": {"success": True}},
+            {"tool": "deploy_service", "args": {"service_name": "orders-api", "version": "v1.0.0"}, "result": {"error": None}},
+        ],
+        ok=True, table=table,
+    )
+    # A natural-language "tear down the cluster" run routes through the teardown cascade.
+    rec.record_deploy(
+        instruction="Tear down the cluster", model="local-qwen", provider="onprem", summary="torn down",
+        steps=[{"tool": "teardown_cluster", "args": {"cluster_name": "platform-agent", "mode": "kind"}, "result": {"success": True}}],
+        ok=True, table=table,
+    )
+    by_type = {r["type"]: r for r in rec.read_deploys(table)}
+    assert by_type["provision"]["status"] == "rolled-back"
+    assert by_type["deploy"]["status"] == "rolled-back"  # app removed with its cluster

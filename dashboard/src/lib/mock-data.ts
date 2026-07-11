@@ -16,13 +16,19 @@ export interface Incident {
   created_at: string;
 }
 
+// Domain of a row (which page it belongs to). Rollback is a STATUS, not a type,
+// so a rolled-back provision stays on Provisioning and a rolled-back deploy on Deployments.
+export type DeploymentType = "provision" | "deploy";
+
 export interface Deployment {
   id: string;
   provider: "aws" | "gcp" | "azure" | "onprem";
+  type: DeploymentType;
+  cluster: string; // correlation key: a deploy's target cluster == a provision's service
   service: string;
   version: string;
   environment: string;
-  status: "success" | "failed" | "rolling-back";
+  status: "success" | "failed" | "rolling-back" | "rolled-back";
   agent: string;
   duration_sec: number;
   created_at: string;
