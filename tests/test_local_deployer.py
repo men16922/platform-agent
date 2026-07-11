@@ -56,15 +56,32 @@ def test_deploy_tool_serializes_status_enum(monkeypatch):
     assert out["endpoint"] == "http://svc"
 
 
-def test_all_five_tools_registered():
+def test_deploy_tools_registered():
     names = {t.__name__ for t in ld.LOCAL_DEPLOY_TOOLS}
     assert names == {
+        "deploy_service",
         "build_image",
         "push_image",
         "deploy_to_cluster",
         "validate_deployment",
         "rollback_deployment",
     }
+
+
+def test_deploy_service_runs_full_pipeline(monkeypatch):
+    # deploy_to_cluster reports success via DeployStatus.SUCCESS.value == "success",
+    # so the composite's success gate keys on that (the shared _fake_adapters uses an
+    # unrealistic "DEPLOYED" sentinel; build a realistic cluster stub here).
+    adapters = _fake_adapters("onprem")
+    adapters.cluster.deploy = lambda spec, image_uri: SimpleNamespace(
+        status=SimpleNamespace(value="success"), deployment_id="d1", namespace="default",
+        replicas_desired=1, endpoint="http://svc", error=None,
+    )
+    monkeypatch.setattr(ld, "get_deployment_adapters", lambda provider: adapters)
+    out = ld.deploy_service("orders-api", "1.0.0", context_path="examples/orders-api")
+    assert out["ok"] is True
+    assert out["failed_step"] is None
+    assert out["steps"] == {"build": True, "push": True, "deploy": True, "validate": True}
 
 
 def test_ops_agent_includes_readonly_tools():

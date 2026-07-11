@@ -1,3 +1,6 @@
+import { readFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { getDocumentClient } from "@/lib/aws-client";
 
@@ -10,7 +13,43 @@ import {
   type CloudHealth,
 } from "@/lib/mock-data";
 
-export type ActivityDataSource = "aws-live" | "demo" | "demo-fallback";
+export type ActivityDataSource = "aws-live" | "local" | "hybrid" | "demo" | "demo-fallback";
+
+// ─── Local offline store (JSONL written by the on-prem router's deploy_recorder) ──
+// Keeps the on-prem path fully offline: no DynamoDB. Enabled with
+// DASHBOARD_DATA_SOURCE=local and PLATFORM_ACTIVITY_FILE pointing at the same file.
+
+function isLocalMode() {
+  return process.env.DASHBOARD_DATA_SOURCE === "local";
+}
+
+function localStorePath() {
+  const p = process.env.PLATFORM_ACTIVITY_FILE || path.join(os.homedir(), ".platform-agent", "activity.jsonl");
+  return p.startsWith("~/") ? path.join(os.homedir(), p.slice(2)) : p;
+}
+
+async function readLocalItems(pk: string): Promise<Record<string, unknown>[]> {
+  let raw: string;
+  try {
+    raw = await readFile(localStorePath(), "utf-8");
+  } catch {
+    return []; // no file yet → empty feed
+  }
+  const items = raw
+    .split("\n")
+    .filter((line) => line.trim())
+    .map((line) => {
+      try {
+        return JSON.parse(line) as Record<string, unknown>;
+      } catch {
+        return null;
+      }
+    })
+    .filter((x): x is Record<string, unknown> => x !== null && x.PK === pk);
+  // SK is "<iso>#<id>" → lexicographic sort gives newest-first when reversed.
+  items.sort((a, b) => String(b.SK ?? "").localeCompare(String(a.SK ?? "")));
+  return items;
+}
 
 export interface DeploymentFeed {
   deployments: Deployment[];
@@ -43,6 +82,37 @@ function getTableName() {
   return process.env.DASHBOARD_ACTIVITY_TABLE ?? DEFAULT_TABLE;
 }
 
+// ─── Hybrid: merge AWS (DynamoDB) + On-Prem (local JSONL) into one feed ──
+
+function isHybridMode() {
+  return process.env.DASHBOARD_DATA_SOURCE === "hybrid";
+}
+
+async function queryDynamoItems(pk: string, limit = 50): Promise<Record<string, unknown>[]> {
+  try {
+    const client = getDocumentClient();
+    const result = await client.send(
+      new QueryCommand({
+        TableName: getTableName(),
+        KeyConditionExpression: "PK = :pk",
+        ExpressionAttributeValues: { ":pk": pk },
+        ScanIndexForward: false,
+        Limit: limit,
+      }),
+    );
+    return result.Items ?? [];
+  } catch (error) {
+    // In hybrid mode a missing/unreachable AWS feed must not break the on-prem feed.
+    console.error("dashboard.hybrid.dynamo_query_failed", pk, error);
+    return [];
+  }
+}
+
+function dedupeById<T extends { id: string }>(rows: T[]): T[] {
+  const seen = new Set<string>();
+  return rows.filter((r) => (seen.has(r.id) ? false : (seen.add(r.id), true)));
+}
+
 // ─── Deployment feed ────────────────────────────────────────
 
 function mapDeploymentItem(item: Record<string, unknown>): Deployment | null {
@@ -65,6 +135,22 @@ function mapDeploymentItem(item: Record<string, unknown>): Deployment | null {
 
 export async function getDeploymentFeed(): Promise<DeploymentFeed> {
   const syncedAt = new Date().toISOString();
+  if (isHybridMode()) {
+    const [aws, local] = await Promise.all([queryDynamoItems("DEPLOY"), readLocalItems("DEPLOY")]);
+    const deployments = dedupeById(
+      [...aws, ...local].map(mapDeploymentItem).filter((d): d is Deployment => d !== null),
+    )
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      .slice(0, 50);
+    return { deployments, source: "hybrid", syncedAt };
+  }
+  if (isLocalMode()) {
+    const deployments = (await readLocalItems("DEPLOY"))
+      .map(mapDeploymentItem)
+      .filter((d): d is Deployment => d !== null)
+      .slice(0, 50);
+    return { deployments, source: "local", syncedAt };
+  }
   if (!isLiveMode()) {
     return {
       deployments: mockDeployments,
@@ -109,6 +195,28 @@ export interface DeploymentDetail {
 }
 
 export async function getDeploymentDetail(id: string): Promise<DeploymentDetail> {
+  if (isHybridMode()) {
+    const [awsDep, localDep, awsAct, localAct] = await Promise.all([
+      queryDynamoItems("DEPLOY"),
+      readLocalItems("DEPLOY"),
+      queryDynamoItems("ACTIVITY"),
+      readLocalItems("ACTIVITY"),
+    ]);
+    const deployment =
+      [...localDep, ...awsDep].map(mapDeploymentItem).find((d): d is Deployment => d?.id === id) ?? null;
+    const activity =
+      [...localAct, ...awsAct].map(mapActivityItem).find((a): a is AgentActivity => a?.deployment_id === id) ?? null;
+    return { deployment, activity, source: "hybrid" };
+  }
+  if (isLocalMode()) {
+    const deployment =
+      (await readLocalItems("DEPLOY")).map(mapDeploymentItem).find((d): d is Deployment => d?.id === id) ?? null;
+    const activity =
+      (await readLocalItems("ACTIVITY"))
+        .map(mapActivityItem)
+        .find((a): a is AgentActivity => a?.deployment_id === id) ?? null;
+    return { deployment, activity, source: "local" };
+  }
   if (!isLiveMode()) {
     return { deployment: mockDeployments.find((d) => d.id === id) ?? null, activity: null, source: "demo" };
   }
@@ -185,6 +293,22 @@ function mapActivityItem(item: Record<string, unknown>): AgentActivity | null {
 
 export async function getAgentActivityFeed(): Promise<AgentActivityFeed> {
   const syncedAt = new Date().toISOString();
+  if (isHybridMode()) {
+    const [aws, local] = await Promise.all([queryDynamoItems("ACTIVITY"), readLocalItems("ACTIVITY")]);
+    const activities = dedupeById(
+      [...aws, ...local].map(mapActivityItem).filter((a): a is AgentActivity => a !== null),
+    )
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      .slice(0, 50);
+    return { activities, source: "hybrid", syncedAt };
+  }
+  if (isLocalMode()) {
+    const activities = (await readLocalItems("ACTIVITY"))
+      .map(mapActivityItem)
+      .filter((a): a is AgentActivity => a !== null)
+      .slice(0, 50);
+    return { activities, source: "local", syncedAt };
+  }
   if (!isLiveMode()) {
     return {
       activities: mockAgentActivities,

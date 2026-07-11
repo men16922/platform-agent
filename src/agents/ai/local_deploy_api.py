@@ -31,12 +31,14 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from src.agents.ai.deploy_recorder import record_deploy
+from src.agents.ai.local_deployer import rollback_deployment
 from src.agents.ai.model_router import (
     ENVIRONMENTS,
     models_for_environment,
     route_deploy,
     route_deploy_stream,
 )
+from src.agents.ai.provision_tools import teardown_cluster
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +64,16 @@ class DeployResponse(BaseModel):
     steps: list[DeployStep]
     suitability: dict[str, str]
     record: dict[str, str] | None = None
+
+
+class RollbackRequest(BaseModel):
+    service_name: str = Field(..., min_length=1, description="Deployment to roll back.")
+    namespace: str = Field("default", description="Kubernetes namespace.")
+    scope: str = Field("app", description="'app' (kubectl rollout undo) or 'cluster' (teardown).")
+    cluster_name: str = Field("platform-agent", description="Cluster name (scope=cluster).")
+    mode: str = Field("kind", description="Provisioning mode for cluster scope (kind/k3s).")
+    model: str = Field("local-qwen", description="Model id recorded for the activity trail.")
+    provider: str = Field("onprem", description="Target environment.")
 
 
 def get_deployer_factory() -> Callable[..., Any] | None:
@@ -167,6 +179,7 @@ async def local_deploy_stream(
                             summary=outcome.summary,
                             steps=outcome.steps,
                             ok=outcome.ok,
+                            trace=outcome.trace,
                         )
                     except Exception:  # noqa: BLE001
                         logger.warning("deploy recording failed", exc_info=True)
@@ -192,3 +205,50 @@ async def local_deploy_stream(
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@app.post("/api/local-rollback")
+async def local_rollback(req: RollbackRequest) -> dict[str, Any]:
+    """Roll back an on-prem deployment (real ``kubectl rollout undo``) or, for
+    scope='cluster', tear the cluster down. Records a DEPLOY/ACTIVITY row so the
+    dashboard timeline reflects the action.
+
+    This is the on-prem counterpart to the cloud (AWS Step Functions) rollback:
+    the dashboard's Rollback button routes here when the deployment is on-prem.
+    """
+    if req.provider not in ENVIRONMENTS:
+        raise HTTPException(status_code=400, detail=f"Unknown environment: {req.provider}")
+
+    if req.scope == "cluster":
+        result = teardown_cluster(cluster_name=req.cluster_name, mode=req.mode, provider=req.provider)
+        ok = bool(result.get("success"))
+        tool = "teardown_cluster"
+        args: dict[str, Any] = {"cluster_name": req.cluster_name, "mode": req.mode}
+        action = f"Rollback (cluster teardown): {req.cluster_name}"
+        summary = f"Cluster '{req.cluster_name}' torn down." if ok else f"Cluster teardown failed: {result.get('error')}"
+    else:
+        result = rollback_deployment(req.service_name, provider=req.provider, namespace=req.namespace)
+        ok = bool(result.get("success"))
+        tool = "rollback_deployment"
+        args = {"service_name": req.service_name, "version": "previous", "namespace": req.namespace}
+        action = f"Rollback {req.service_name} to previous revision"
+        summary = (
+            f"{req.service_name} rolled back to previous revision."
+            if ok else f"Rollback failed: {result.get('error')}"
+        )
+
+    steps = [{"tool": tool, "args": args, "result": result}]
+    record = None
+    try:
+        record = record_deploy(
+            instruction=action,
+            model=req.model,
+            provider=req.provider,
+            summary=summary,
+            steps=steps,
+            ok=ok,
+        )
+    except Exception:  # noqa: BLE001
+        logger.warning("rollback recording failed", exc_info=True)
+
+    return {"ok": ok, "scope": req.scope, "result": result, "summary": summary, "record": record}

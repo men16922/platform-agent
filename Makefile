@@ -3,6 +3,11 @@
 
 # ===== Project targets =====
 
+# Test interpreter: pick the first python that can import pytest. Guards against a
+# shell that has .venv-mlx (MLX-only, no pytest) activated shadowing the test env.
+PY := $(shell for p in python python3 /opt/anaconda3/bin/python3.13; do "$$p" -c 'import pytest' >/dev/null 2>&1 && echo "$$p" && break; done)
+PY := $(if $(PY),$(PY),python3)
+
 .PHONY: help install test check lint synth
 
 help:  ## show this help
@@ -13,7 +18,7 @@ install:  ## install Python deps (editable + dev)
 	pip install -e ".[dev]"
 
 test:  ## run pytest
-	python -m pytest tests/ -v
+	$(PY) -m pytest tests/ -v
 
 check: test  ## gate command (overnight harness uses this)
 

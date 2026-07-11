@@ -38,6 +38,9 @@ export async function POST(
     rollback_version?: string;
     provider?: string;
     environment?: string;
+    scope?: string;
+    namespace?: string;
+    cluster_name?: string;
   } = {};
 
   try {
@@ -51,7 +54,51 @@ export async function POST(
     rollback_version,
     provider = "aws",
     environment = "production",
+    scope = "app",
+    namespace = "default",
+    cluster_name = "platform-agent",
   } = body;
+
+  // ── On-prem path: real rollback against the local kind/k3s cluster ──
+  // Routes to the local router (next to the cluster); the cloud AWS Step
+  // Functions path below cannot reach an on-prem cluster.
+  if (provider === "onprem") {
+    if (scope !== "cluster" && !service_name) {
+      return Response.json({ error: "Missing required field: service_name" }, { status: 400 });
+    }
+    const LOCAL_API = process.env.LOCAL_DEPLOY_API_URL || "http://127.0.0.1:8077";
+    try {
+      const res = await fetch(`${LOCAL_API}/api/local-rollback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ service_name: service_name || cluster_name, namespace, scope, cluster_name }),
+      });
+      const data = await res.json();
+      const ok = res.ok && data.ok;
+      await writeAuditLog(
+        { username, email: userEmail },
+        { action: scope === "cluster" ? "rollback_cluster" : "rollback_deployment", target: deploymentId },
+        ok ? "success" : "failed",
+        ok ? undefined : data.error || data.summary,
+        { ip: request.headers.get("x-forwarded-for") || undefined, userAgent: request.headers.get("user-agent") || undefined },
+      );
+      if (!ok) {
+        return Response.json({ error: data.error || data.summary || "On-prem rollback failed" }, { status: 502 });
+      }
+      return Response.json({
+        ok: true,
+        rollback_id: `ROL-${uuidv4().replace(/-/g, "").substring(0, 8).toUpperCase()}`,
+        scope,
+        summary: data.summary,
+        result: data.result,
+      });
+    } catch (error: any) {
+      return Response.json(
+        { error: `On-prem router unreachable at ${LOCAL_API}: ${error.message}` },
+        { status: 502 },
+      );
+    }
+  }
 
   if (!service_name || !rollback_version) {
     return Response.json(

@@ -102,7 +102,7 @@ export function AuditLogsTable({ initialLogs }: AuditLogsTableProps) {
                     <td className="p-3">
                       <code className="text-xs text-[var(--muted)]">{log.audit_id}</code>
                     </td>
-                    <td className="p-3 text-xs text-[var(--muted)]">
+                    <td className="p-3 text-xs text-[var(--muted)]" suppressHydrationWarning>
                       {new Date(log.timestamp).toLocaleString()}
                     </td>
                     <td className="p-3">

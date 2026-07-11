@@ -37,7 +37,9 @@ export function ActivityTimeline({ activities }: { activities: AgentActivity[] }
                 <span className="font-medium text-sm">{activity.agent}</span>
                 <span className="text-xs text-[var(--muted)]">—</span>
                 <span className="text-sm">{activity.action}</span>
-                <span className="ml-auto text-xs text-[var(--muted)]">
+                {/* Locale/timezone-dependent: server (UTC/en-US) and client (local) format
+                    the same instant differently, so suppress the expected hydration diff. */}
+                <span className="ml-auto text-xs text-[var(--muted)]" suppressHydrationWarning>
                   {new Date(activity.created_at).toLocaleTimeString()}
                 </span>
                 <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${activity.status === "success" ? "bg-emerald-400/10 text-[var(--success)]" : "bg-red-400/10 text-[var(--danger)]"}`}>

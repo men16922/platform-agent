@@ -16,13 +16,23 @@ import json
 import os
 import time
 import uuid
+from pathlib import Path
 from typing import Any
 
 from src.agents.ai.model_router import MODELS
 
 
+def _local_store_path() -> str | None:
+    """Path to the local JSONL activity store (offline, no-AWS recording).
+
+    When set, on-prem runs are persisted to a local file the dashboard reads in
+    ``DASHBOARD_DATA_SOURCE=local`` mode — keeping the on-prem path fully offline.
+    """
+    return os.getenv("PLATFORM_ACTIVITY_FILE") or None
+
+
 def recording_enabled() -> bool:
-    return bool(os.getenv("PLATFORM_ACTIVITY_TABLE"))
+    return bool(os.getenv("PLATFORM_ACTIVITY_TABLE")) or bool(_local_store_path())
 
 
 def _table() -> Any:
@@ -30,6 +40,14 @@ def _table() -> Any:
 
     region = os.getenv("AWS_REGION", "ap-northeast-2")
     return boto3.resource("dynamodb", region_name=region).Table(os.environ["PLATFORM_ACTIVITY_TABLE"])
+
+
+def _append_local(path: str, *items: dict[str, Any]) -> None:
+    store = Path(path).expanduser()
+    store.parent.mkdir(parents=True, exist_ok=True)
+    with store.open("a", encoding="utf-8") as handle:
+        for item in items:
+            handle.write(json.dumps(item, default=str) + "\n")
 
 
 def _agent_label(model_id: str) -> str:
@@ -41,12 +59,13 @@ def _agent_label(model_id: str) -> str:
 
 
 def _infer_service_version(steps: list[dict[str, Any]]) -> tuple[str, str]:
+    _SERVICE_TOOLS = ("deploy_service", "build_image", "deploy_to_cluster", "rollback_deployment")
     for step in steps:
-        if step.get("tool") in ("build_image", "deploy_to_cluster"):
-            args = step.get("args") or {}
-            service = args.get("service_name")
-            if service:
-                return str(service), str(args.get("version") or "unknown")
+        args = step.get("args") or {}
+        if step.get("tool") in _SERVICE_TOOLS and args.get("service_name"):
+            return str(args["service_name"]), str(args.get("version") or "unknown")
+        if step.get("tool") in ("provision_cluster", "teardown_cluster") and args.get("cluster_name"):
+            return str(args["cluster_name"]), str(args.get("mode") or "cluster")
     return "unknown", "unknown"
 
 
@@ -65,10 +84,9 @@ def record_deploy(
 
     Returns the generated ids, or None when recording is disabled.
     """
-    if table is None:
-        if not recording_enabled():
-            return None
-        table = _table()
+    # Backend is chosen at persist time: injected table > DynamoDB env > local file.
+    if table is None and not recording_enabled():
+        return None
 
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     deployment_id = "DEP-" + uuid.uuid4().hex[:8].upper()
@@ -78,38 +96,45 @@ def record_deploy(
     agent = _agent_label(model)
     tool_calls = [str(step.get("tool")) for step in steps if step.get("tool")]
 
-    table.put_item(
-        Item={
-            "PK": "DEPLOY",
-            "SK": f"{now}#{deployment_id}",
-            "deployment_id": deployment_id,
-            "service": service,
-            "version": version,
-            "provider": provider,
-            "environment": provider,
-            "status": status,
-            "agent": agent,
-            "duration_sec": 0,
-            "created_at": now,
-        }
-    )
-    table.put_item(
-        Item={
-            "PK": "ACTIVITY",
-            "SK": f"{now}#{activity_id}",
-            "activity_id": activity_id,
-            "deployment_id": deployment_id,  # links the activity to its Deployments detail
-            "agent": agent,
-            "model": model,
-            "provider": provider,
-            "action": instruction[:140],
-            "instruction": instruction[:2000],
-            "summary": (summary or "")[:4000],
-            "tool_calls": tool_calls,
-            # Full ordered trace: reasoning text + tool (args/result), for observability.
-            "trace": json.dumps(trace if trace is not None else [{"kind": "tool", **s} for s in steps])[:350000],
-            "status": status,
-            "created_at": now,
-        }
-    )
+    deploy_item = {
+        "PK": "DEPLOY",
+        "SK": f"{now}#{deployment_id}",
+        "deployment_id": deployment_id,
+        "service": service,
+        "version": version,
+        "provider": provider,
+        "environment": provider,
+        "status": status,
+        "agent": agent,
+        "duration_sec": 0,
+        "created_at": now,
+    }
+    activity_item = {
+        "PK": "ACTIVITY",
+        "SK": f"{now}#{activity_id}",
+        "activity_id": activity_id,
+        "deployment_id": deployment_id,  # links the activity to its Deployments detail
+        "agent": agent,
+        "model": model,
+        "provider": provider,
+        "action": instruction[:140],
+        "instruction": instruction[:2000],
+        "summary": (summary or "")[:4000],
+        "tool_calls": tool_calls,
+        # Full ordered trace: reasoning text + tool (args/result), for observability.
+        "trace": json.dumps(trace if trace is not None else [{"kind": "tool", **s} for s in steps])[:350000],
+        "status": status,
+        "created_at": now,
+    }
+
+    if table is not None:
+        table.put_item(Item=deploy_item)
+        table.put_item(Item=activity_item)
+    elif os.getenv("PLATFORM_ACTIVITY_TABLE"):
+        remote = _table()
+        remote.put_item(Item=deploy_item)
+        remote.put_item(Item=activity_item)
+    elif path := _local_store_path():
+        _append_local(path, deploy_item, activity_item)
+
     return {"deployment_id": deployment_id, "activity_id": activity_id}

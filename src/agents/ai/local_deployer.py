@@ -52,7 +52,9 @@ deployment is one capability among several.
 - `provision_cluster` (Terraform kind / Ansible k3s), `teardown_cluster`
 
 **Deploy (mutating):**
-- `build_image` -> `push_image` -> `deploy_to_cluster` -> `validate_deployment`
+- `deploy_service` — **preferred**: build -> push -> deploy -> validate in ONE call.
+- `build_image` / `push_image` / `deploy_to_cluster` / `validate_deployment` —
+  the individual steps, only when you need fine-grained control.
 
 **Recover (mutating):**
 - `rollback_deployment`
@@ -64,9 +66,10 @@ deployment is one capability among several.
   change anything unless explicitly asked.
 - **For a "set up / provision a cluster" request**, use `provision_cluster`
   first; then deploy only if the user also asked to deploy.
-- **For a deployment request**, follow build -> push -> deploy -> validate in
-  order, passing the `image_uri` returned by push into the deploy step. If
-  validation fails, roll back and report.
+- **For a deployment request**, call `deploy_service` once (it runs build ->
+  push -> deploy -> validate and stops at the first failure). Only fall back to
+  the individual step tools if you need to intervene between steps. If validation
+  fails, roll back and report.
 - Prefer the smallest set of tool calls that answers the request.
 - Be concise. End with a clear summary of what you did and what you found.
 
@@ -147,7 +150,12 @@ def deploy_to_cluster(
     health_path: str = "/healthz",
     ports: list[int] | None = None,
 ) -> dict:
-    """Deploy a service to the target cluster.
+    """Low-level: apply a pre-built image to the cluster (no build/push/validate).
+
+    Prefer ``deploy_service`` for a normal deployment — this tool only runs the
+    kubectl apply step and requires an ``image_uri`` that was already built and
+    pushed, so calling it alone (without build_image/push_image first) deploys a
+    stale or missing image.
 
     Args:
         service_name: Name of the service/deployment.
@@ -207,7 +215,8 @@ def validate_deployment(
         "healthy": result.healthy,
         "checks_passed": result.checks_passed,
         "checks_total": result.checks_total,
-        "details": result.details,
+        # Cap: rollout/kubectl detail strings are fed back into the LLM context.
+        "details": [str(d)[:300] for d in (result.details or [])][:5],
         "error": result.error,
     }
 
@@ -237,7 +246,70 @@ def rollback_deployment(
     }
 
 
-LOCAL_DEPLOY_TOOLS = [build_image, push_image, deploy_to_cluster, validate_deployment, rollback_deployment]
+def deploy_service(
+    service_name: str,
+    version: str,
+    provider: str = "onprem",
+    context_path: str = ".",
+    replicas: int = 1,
+    namespace: str = "default",
+    health_path: str = "/healthz",
+    ports: list[int] | None = None,
+) -> dict:
+    """Deploy a service end-to-end in ONE call: build -> push -> deploy -> validate.
+
+    Prefer this over calling build_image/push_image/deploy_to_cluster/
+    validate_deployment separately — it runs the whole pipeline in a single tool
+    call (fewer LLM round-trips) and stops at the first failing step.
+
+    Args:
+        service_name: Name of the service (also used as the image name).
+        version: Image version/tag (e.g. "v1.7.0").
+        provider: Deployment provider (onprem, aws, gcp, azure).
+        context_path: Docker build context path (where the Dockerfile lives).
+        replicas: Number of replicas.
+        namespace: Kubernetes namespace.
+        health_path: Health check endpoint path.
+        ports: Container ports (default [8080]).
+
+    Returns:
+        Dict with per-step status and a final `healthy` flag. On failure, the
+        `failed_step` field names the step that stopped the pipeline.
+    """
+    steps: dict[str, Any] = {}
+
+    build = build_image(service_name, service_name, version, provider=provider, context_path=context_path)
+    steps["build"] = build.get("success", False)
+    if not build.get("success"):
+        return {"ok": False, "failed_step": "build", "steps": steps, "error": build.get("error")}
+
+    push = push_image(service_name, version, provider=provider)
+    steps["push"] = push.get("success", False)
+    if not push.get("success"):
+        return {"ok": False, "failed_step": "push", "steps": steps, "error": push.get("error")}
+
+    deploy = deploy_to_cluster(
+        service_name, service_name, version, push["image_uri"], provider=provider,
+        replicas=replicas, namespace=namespace, health_path=health_path, ports=ports,
+    )
+    steps["deploy"] = deploy.get("status") == "success"
+    if deploy.get("status") != "success":
+        return {"ok": False, "failed_step": "deploy", "steps": steps, "error": deploy.get("error")}
+
+    validate = validate_deployment(service_name, provider=provider, namespace=namespace)
+    steps["validate"] = validate.get("healthy", False)
+    return {
+        "ok": validate.get("healthy", False),
+        "failed_step": None if validate.get("healthy") else "validate",
+        "steps": steps,
+        "image_uri": push["image_uri"],
+        "endpoint": deploy.get("endpoint"),
+        "checks": f"{validate.get('checks_passed')}/{validate.get('checks_total')}",
+        "error": validate.get("error"),
+    }
+
+
+LOCAL_DEPLOY_TOOLS = [deploy_service, build_image, push_image, deploy_to_cluster, validate_deployment, rollback_deployment]
 
 # Full platform agent tool set = provision (IaC) + deploy/recover + read-only diagnostics.
 from src.agents.ai.ops_tools import OPS_TOOLS  # noqa: E402

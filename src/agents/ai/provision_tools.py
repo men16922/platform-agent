@@ -5,9 +5,20 @@ cluster via IaC (Terraform for kind, Ansible for k3s). Only invoke when the user
 explicitly asks to provision or tear down a cluster.
 """
 
-from __future__ import annotations
+import re
 
 from src.agents.adapters.provisioning import ProvisionSpec, get_provisioning_adapter
+
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+
+
+def _clean_tail(output: str, limit: int) -> str:
+    """Strip ANSI escapes / blank lines so tool results fed back to the LLM are
+    clean text — small models get confused by raw terraform/ANSI noise and stop
+    the tool loop instead of continuing to the next step."""
+    text = _ANSI_RE.sub("", output or "")
+    text = "\n".join(line.rstrip() for line in text.splitlines() if line.strip())
+    return text[-limit:]
 
 
 def provision_cluster(cluster_name: str = "platform-agent", mode: str = "kind", provider: str = "onprem") -> dict:
@@ -23,13 +34,19 @@ def provision_cluster(cluster_name: str = "platform-agent", mode: str = "kind", 
     """
     adapter = get_provisioning_adapter(provider)
     result = adapter.provision_cluster(ProvisionSpec(cluster_name=cluster_name, provider=provider, mode=mode))
-    return {
+    out: dict = {
         "success": result.success,
         "cluster": result.cluster_name,
         "context": result.context,
         "error": result.error,
-        "output": result.output[-2000:],
     }
+    # On success feed a clean one-liner (not raw terraform output) so the agent
+    # moves on to deploy; on failure include a cleaned tail for diagnosis.
+    if result.success:
+        out["note"] = f"cluster ready; kubeconfig context '{result.context}'"
+    else:
+        out["output"] = _clean_tail(result.output, 600)
+    return out
 
 
 def teardown_cluster(cluster_name: str = "platform-agent", mode: str = "kind", provider: str = "onprem") -> dict:
@@ -45,7 +62,10 @@ def teardown_cluster(cluster_name: str = "platform-agent", mode: str = "kind", p
     """
     adapter = get_provisioning_adapter(provider)
     result = adapter.teardown_cluster(ProvisionSpec(cluster_name=cluster_name, provider=provider, mode=mode))
-    return {"success": result.success, "cluster": result.cluster_name, "error": result.error, "output": result.output[-2000:]}
+    out: dict = {"success": result.success, "cluster": result.cluster_name, "error": result.error}
+    if not result.success:
+        out["output"] = _clean_tail(result.output, 600)
+    return out
 
 
 PROVISION_TOOLS = [provision_cluster, teardown_cluster]

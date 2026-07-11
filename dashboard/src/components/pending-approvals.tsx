@@ -125,7 +125,7 @@ export function PendingApprovals({ initialApprovals }: PendingApprovalsProps) {
               </div>
 
               <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/5 pt-3">
-                <span className="text-[10px] text-[var(--muted)]">
+                <span className="text-[10px] text-[var(--muted)]" suppressHydrationWarning>
                   {new Date(req.created_at).toLocaleString()}
                 </span>
                 <div className="flex gap-2">

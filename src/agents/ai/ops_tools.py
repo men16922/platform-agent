@@ -21,10 +21,12 @@ def _kubectl(args: list[str], timeout: int = 30) -> dict[str, Any]:
         return {"ok": False, "output": "", "error": f"kubectl timed out after {timeout}s"}
     ok = result.returncode == 0
     output = (result.stdout or result.stderr).strip()
+    # Cap tightly: this output is fed back into the LLM context every turn, and
+    # large kubectl dumps (describe/logs) balloon the prompt and slow prefill.
     return {
         "ok": ok,
-        "output": output[:8000],
-        "error": None if ok else (result.stderr.strip()[:2000] or "non-zero exit"),
+        "output": output[:1500],
+        "error": None if ok else (result.stderr.strip()[:600] or "non-zero exit"),
     }
 
 

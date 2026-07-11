@@ -48,6 +48,47 @@ def parse_qwen_function_markup(content: str) -> tuple[str, dict[str, Any]] | Non
     return function.group("name").strip(), arguments
 
 
+def _iter_json_objects(text: str):
+    """Yield top-level JSON objects embedded anywhere in text (prose, ``` fences,
+    <tool_call> tags), using brace-balanced decoding so nested args survive."""
+    decoder = json.JSONDecoder()
+    i = 0
+    n = len(text)
+    while i < n:
+        if text[i] == "{":
+            try:
+                obj, end = decoder.raw_decode(text, i)
+                yield obj
+                i = end
+                continue
+            except json.JSONDecodeError:
+                pass
+        i += 1
+
+
+def parse_json_tool_call(content: str) -> tuple[str, dict[str, Any]] | None:
+    """Parse a tool call emitted as a JSON object ``{"name": ..., "arguments": {...}}``.
+
+    Covers models (e.g. Qwen2.5-Coder-Instruct) that write the call as a bare or
+    ```json-fenced object, or inside Hermes ``<tool_call>...</tool_call>`` tags,
+    instead of the Qwen3-Coder ``<function=...>`` markup. Returns the FIRST such
+    object so the agent runs one tool per turn (trailing prose/plans are ignored).
+    """
+    for obj in _iter_json_objects(content):
+        if not isinstance(obj, dict) or "name" not in obj:
+            continue
+        raw_args = obj.get("arguments", obj.get("parameters", {}))
+        if isinstance(raw_args, str):
+            try:
+                raw_args = json.loads(raw_args)
+            except json.JSONDecodeError:
+                raw_args = {}
+        if not isinstance(raw_args, dict):
+            continue
+        return str(obj["name"]).strip(), raw_args
+    return None
+
+
 def _collect_sse_content(payload: str) -> tuple[str, list[dict[str, Any]], dict[str, Any]]:
     content: list[str] = []
     tool_calls_map: dict[int, dict[str, Any]] = {}
@@ -147,7 +188,7 @@ class QwenToolProxyHandler(BaseHTTPRequestHandler):
             content, tool_calls, metadata = _extract_from_json(raw)
 
         if not tool_calls:
-            parsed = parse_qwen_function_markup(content)
+            parsed = parse_qwen_function_markup(content) or parse_json_tool_call(content)
             if parsed:
                 name, arguments = parsed
                 tool_calls = [{

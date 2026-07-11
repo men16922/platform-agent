@@ -32,3 +32,7 @@ scripts/overnight/logs/
 scripts/overnight/STOP
 scripts/overnight/DONE
 docs/test/history/*-overnight-review-checklist.md
+
+# Terraform local state (on-prem kind provisioning)
+infra/onprem/terraform/*.tfstate
+infra/onprem/terraform/*.tfstate.backup

@@ -15,7 +15,12 @@ export function AgentCard({ name, provider, llm, cloud, selected = false, onSele
   const count = toolCount(cloud);
 
   return (
-    <div onClick={onSelect} className={`surface cursor-pointer p-4 transition-all duration-200 hover:-translate-y-0.5 ${selected ? "border-[#8ab4f8]/70 bg-[var(--accent-soft)] shadow-[0_0_0_1px_rgba(138,180,248,0.16)]" : ""}`}>
+    <div onClick={onSelect} className={`surface relative cursor-pointer p-4 transition-all duration-200 hover:-translate-y-0.5 ${selected ? "border-[#8ab4f8] bg-[var(--accent-soft)] shadow-[0_0_0_2px_rgba(138,180,248,0.55)]" : ""}`}>
+      {selected && (
+        <span className="absolute -top-2 -right-2 z-10 inline-flex items-center gap-1 rounded-full bg-[#8ab4f8] px-2 py-0.5 text-[10px] font-bold text-[#0b1220] shadow-[0_2px_8px_rgba(138,180,248,0.5)]">
+          ✓ SELECTED
+        </span>
+      )}
       <div className="mb-3 flex items-center gap-2">
         <span className="flex h-8 w-10 shrink-0 items-center justify-center rounded-lg bg-white p-1">
           <ProviderLogo provider={cloud} />
@@ -31,7 +36,6 @@ export function AgentCard({ name, provider, llm, cloud, selected = false, onSele
       >
         🔧 Tools <span className="text-[#8ab4f8]">{count}</span>
       </button>
-      {selected && <span className="ml-2 text-[10px] font-bold text-[#8ab4f8]">SELECTED</span>}
 
       {open && mounted && createPortal(
         <div

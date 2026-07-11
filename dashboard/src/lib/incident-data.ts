@@ -3,7 +3,7 @@ import { getDocumentClient } from "@/lib/aws-client";
 
 import { mockIncidents, type Incident } from "@/lib/mock-data";
 
-export type IncidentDataSource = "aws-live" | "demo" | "demo-fallback";
+export type IncidentDataSource = "aws-live" | "local" | "hybrid" | "demo" | "demo-fallback";
 
 export interface IncidentFeed {
   incidents: Incident[];

@@ -88,8 +88,24 @@ export function DeploymentsControl({ initialDeployments }: DeploymentsControlPro
   const handleRollback = async (dep: Deployment) => {
     if (!isAllowed) return;
 
-    const rollbackVersion = prompt(`Enter target rollback version for ${dep.service} (current: ${dep.version}):`, "v1.4.9");
-    if (!rollbackVersion) return;
+    // On-prem rolls back the real kind/k3s cluster via the local router; the
+    // cloud path takes a target version for the AWS Step Functions pipeline.
+    let payload: Record<string, unknown>;
+    let displayVersion: string;
+    if (dep.provider === "onprem") {
+      const scope = (prompt(
+        `On-prem rollback for ${dep.service}.\nType "app" to roll back to the previous revision, or "cluster" to tear down the cluster:`,
+        "app",
+      ) || "").trim();
+      if (scope !== "app" && scope !== "cluster") return;
+      payload = { service_name: dep.service, provider: "onprem", environment: dep.environment, scope, namespace: "default", cluster_name: "platform-agent" };
+      displayVersion = scope === "cluster" ? "cluster" : "previous";
+    } else {
+      const rollbackVersion = prompt(`Enter target rollback version for ${dep.service} (current: ${dep.version}):`, "v1.4.9");
+      if (!rollbackVersion) return;
+      payload = { service_name: dep.service, rollback_version: rollbackVersion, provider: dep.provider, environment: dep.environment };
+      displayVersion = rollbackVersion;
+    }
 
     setActionLoadingId(dep.id);
     setErrorMsg(null);
@@ -99,24 +115,19 @@ export function DeploymentsControl({ initialDeployments }: DeploymentsControlPro
       const res = await fetch(`/api/dashboard/deployments/${dep.id}/rollback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          service_name: dep.service,
-          rollback_version: rollbackVersion,
-          provider: dep.provider,
-          environment: dep.environment,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to execute rollback");
 
-      setSuccessMsg(`Successfully executed rollback request ${data.rollback_id}`);
-      
-      // Add simulated rollback runner to list
+      setSuccessMsg(data.summary || `Successfully executed rollback request ${data.rollback_id}`);
+
+      // Optimistic rollback row (the recorder also persists a real one).
       const newDep: Deployment = {
         id: data.rollback_id,
         service: dep.service,
-        version: rollbackVersion,
+        version: displayVersion,
         provider: dep.provider,
         environment: dep.environment,
         status: "rolling-back",
@@ -332,7 +343,7 @@ export function DeploymentsControl({ initialDeployments }: DeploymentsControlPro
                     </span>
                   </td>
                   <td className="p-3 text-right text-[var(--muted)]">{dep.duration_sec}s</td>
-                  <td className="p-3 text-right text-[var(--muted)] text-xs">
+                  <td className="p-3 text-right text-[var(--muted)] text-xs" suppressHydrationWarning>
                     {new Date(dep.created_at).toLocaleTimeString()}
                   </td>
                   {isAllowed && (

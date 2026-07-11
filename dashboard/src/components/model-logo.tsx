@@ -9,11 +9,14 @@ interface Mark {
   src: string;
 }
 
+// Brand marks are served locally from /public/models so they render offline and
+// aren't subject to remote-favicon CSP/availability failures (the monogram is a
+// last-resort fallback if a file is ever missing).
 const MODEL_MARKS: Record<string, Mark> = {
-  "local-qwen": { label: "Q", cls: "bg-[#6d3bef]/20 text-[#c4b5fd] border-[#7c3aed]/40", title: "Local LLM (Qwen)", src: "https://qwen.ai/favicon.ico" },
-  "bedrock-claude": { label: "C", cls: "bg-[#d97757]/20 text-[#f0b49c] border-[#d97757]/45", title: "Bedrock Claude", src: "https://www.anthropic.com/favicon.ico" },
-  "vertex-gemini": { label: "G", cls: "bg-[#4285f4]/20 text-[#a9c7ff] border-[#4285f4]/45", title: "Vertex Gemini", src: "https://www.gstatic.com/images/branding/product/1x/gemini_32dp.png" },
-  "azure-gpt": { label: "A", cls: "bg-[#22b8cf]/20 text-[#9decf9] border-[#22b8cf]/45", title: "Azure OpenAI GPT", src: "https://cdn.simpleicons.org/openai/FFFFFF" },
+  "local-qwen": { label: "Q", cls: "bg-[#6d3bef]/20 text-[#c4b5fd] border-[#7c3aed]/40", title: "Local LLM (Qwen)", src: "/models/qwen.svg" },
+  "bedrock-claude": { label: "C", cls: "bg-[#d97757]/20 text-[#f0b49c] border-[#d97757]/45", title: "Bedrock Claude", src: "/models/claude.svg" },
+  "vertex-gemini": { label: "G", cls: "bg-[#4285f4]/20 text-[#a9c7ff] border-[#4285f4]/45", title: "Vertex Gemini", src: "/models/gemini.svg" },
+  "azure-gpt": { label: "A", cls: "bg-[#22b8cf]/20 text-[#9decf9] border-[#22b8cf]/45", title: "Azure OpenAI GPT", src: "/models/openai.svg" },
 };
 
 const FALLBACK: Mark = { label: "AI", cls: "bg-white/10 text-[var(--muted)] border-white/15", title: "AI model", src: "" };
