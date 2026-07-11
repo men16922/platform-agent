@@ -113,16 +113,12 @@ def _run_ssm_actions(
         params = _build_action_params(action, alarm, normalized_incident, provider)
 
         if provider != "aws":
-            # Non-AWS: action is provider-specific; log pending execution.
-            # Actual GCP/Azure/on-prem API calls are provider-specific and handled
-            # outside SSM — record the resolved action for audit/handoff purposes.
-            log.info(
-                "executor.external.pending",
-                provider=provider,
-                action=action,
-                parameters=params,
-            )
-            executed.append(action)
+            try:
+                _run_external_action(provider, action, params, log)
+                executed.append(action)
+            except Exception as exc:
+                log.error("executor.external.failed", provider=provider, action=action, error=str(exc))
+                skipped.append(action)
             continue
 
         # AWS path: execute via SSM Automation
@@ -394,3 +390,20 @@ def _deserialise_normalized_incident(event: dict[str, Any] | None) -> Normalized
 def _serialise(output: ExecutorOutput) -> dict[str, Any]:
     from dataclasses import asdict
     return json.loads(json.dumps(asdict(output), default=str))
+
+
+def _run_external_action(provider: str, action: str, params: dict[str, list[str]], log: Any) -> None:
+    if provider == "gcp":
+        from src.agents.operations.executor.gcp_runner import run_gcp_action
+        run_gcp_action(action, params, log)
+    elif provider == "azure":
+        from src.agents.operations.executor.azure_runner import run_azure_action
+        run_azure_action(action, params, log)
+    else:
+        # Default mock fallback for onprem or other cloud providers
+        log.info(
+            "executor.external.pending",
+            provider=provider,
+            action=action,
+            parameters=params,
+        )

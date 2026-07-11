@@ -149,14 +149,9 @@ def _execute_single_action(
         resolved = adapter.resolve_action(capability, incident)
         parameters = resolved.get("parameters", {})
 
-        # In production: subprocess.run(["gcloud", ...]) or API client call
-        # Here: log the intended action and return success
-        logger.info(
-            "gcp_executor.execute",
-            action=action,
-            capability=capability,
-            parameters=parameters,
-        )
+        # Call real GKE and Cloud Run action runner
+        from src.agents.operations.executor.gcp_runner import run_gcp_action
+        run_gcp_action(action, parameters, logger)
 
         return {"success": True, "action": action, "parameters": parameters}
 
