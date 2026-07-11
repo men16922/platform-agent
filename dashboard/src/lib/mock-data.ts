@@ -28,6 +28,12 @@ export interface Deployment {
   created_at: string;
 }
 
+export interface TraceStep {
+  tool: string;
+  args?: Record<string, unknown>;
+  result?: unknown;
+}
+
 export interface AgentActivity {
   id: string;
   agent: string;
@@ -36,6 +42,12 @@ export interface AgentActivity {
   tool_calls: string[];
   status: "success" | "failed";
   created_at: string;
+  // Observability (chat/router deploys): links + full execution trace.
+  deployment_id?: string;
+  model?: string;
+  instruction?: string;
+  summary?: string;
+  trace?: TraceStep[];
 }
 
 export interface CloudHealth {

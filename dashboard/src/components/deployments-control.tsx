@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import type { Deployment } from "@/lib/mock-data";
+import Link from "next/link";
 import { ProviderLogo, providerBadgeStyles } from "@/components/provider-logo";
+import { ModelLogo, modelIdFromAgent } from "@/components/model-logo";
 
 const statusIcon = {
   success: { icon: "✓", color: "text-[var(--success)]" },
@@ -295,7 +297,9 @@ export function DeploymentsControl({ initialDeployments }: DeploymentsControlPro
               return (
                 <tr key={dep.id} className="border-t border-white/6 transition-colors hover:bg-white/[0.025]">
                   <td className="p-3">
-                    <code className="text-xs text-[var(--muted)]">{dep.id}</code>
+                    <Link href={`/deployments/${dep.id}`} className="text-xs font-mono text-[#8ab4f8] hover:underline">
+                      {dep.id}
+                    </Link>
                   </td>
                   <td className="p-3 font-medium">{dep.service}</td>
                   <td className="p-3">
@@ -308,7 +312,12 @@ export function DeploymentsControl({ initialDeployments }: DeploymentsControlPro
                     </span>
                   </td>
                   <td className="p-3 text-[var(--muted)]">{dep.environment}</td>
-                  <td className="p-3 text-xs text-[var(--muted)]">{dep.agent}</td>
+                  <td className="p-3 text-xs text-[var(--muted)]">
+                    <span className="inline-flex items-center gap-1.5">
+                      <ModelLogo model={modelIdFromAgent(dep.agent)} />
+                      {dep.agent}
+                    </span>
+                  </td>
                   <td className="p-3">
                     <span className={status.color}>
                       {status.icon} {dep.status}

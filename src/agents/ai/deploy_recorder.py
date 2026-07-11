@@ -12,6 +12,7 @@ recorder is a no-op. The table can be injected for tests.
 
 from __future__ import annotations
 
+import json
 import os
 import time
 import uuid
@@ -96,10 +97,16 @@ def record_deploy(
             "PK": "ACTIVITY",
             "SK": f"{now}#{activity_id}",
             "activity_id": activity_id,
+            "deployment_id": deployment_id,  # links the activity to its Deployments detail
             "agent": agent,
+            "model": model,
             "provider": provider,
             "action": instruction[:140],
+            "instruction": instruction[:2000],
+            "summary": (summary or "")[:4000],
             "tool_calls": tool_calls,
+            # Full execution trace (tool + args + result) for observability.
+            "trace": json.dumps(steps)[:350000],
             "status": status,
             "created_at": now,
         }

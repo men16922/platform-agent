@@ -102,7 +102,55 @@ export async function getDeploymentFeed(): Promise<DeploymentFeed> {
   }
 }
 
+export interface DeploymentDetail {
+  deployment: Deployment | null;
+  activity: AgentActivity | null;
+  source: ActivityDataSource;
+}
+
+export async function getDeploymentDetail(id: string): Promise<DeploymentDetail> {
+  if (!isLiveMode()) {
+    return { deployment: mockDeployments.find((d) => d.id === id) ?? null, activity: null, source: "demo" };
+  }
+  try {
+    const client = getDocumentClient();
+    const query = (pk: string) =>
+      client.send(
+        new QueryCommand({
+          TableName: getTableName(),
+          KeyConditionExpression: "PK = :pk",
+          FilterExpression: "deployment_id = :id",
+          ExpressionAttributeValues: { ":pk": pk, ":id": id },
+        }),
+      );
+    const [depRes, actRes] = await Promise.all([query("DEPLOY"), query("ACTIVITY")]);
+    const deployment = (depRes.Items ?? []).map(mapDeploymentItem).find((d): d is Deployment => d !== null) ?? null;
+    const activity = (actRes.Items ?? []).map(mapActivityItem).find((a): a is AgentActivity => a !== null) ?? null;
+    return { deployment, activity, source: "aws-live" };
+  } catch (error) {
+    console.error("dashboard.deployment.detail_fetch_failed", error);
+    return { deployment: mockDeployments.find((d) => d.id === id) ?? null, activity: null, source: "demo-fallback" };
+  }
+}
+
 // ─── Agent Activity feed ────────────────────────────────────
+
+function parseTrace(raw: unknown): AgentActivity["trace"] {
+  if (typeof raw !== "string" || !raw) return undefined;
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return undefined;
+    return parsed
+      .filter((s): s is Record<string, unknown> => typeof s === "object" && s !== null)
+      .map((s) => ({
+        tool: typeof s.tool === "string" ? s.tool : "unknown",
+        args: typeof s.args === "object" && s.args !== null ? (s.args as Record<string, unknown>) : undefined,
+        result: s.result,
+      }));
+  } catch {
+    return undefined;
+  }
+}
 
 function mapActivityItem(item: Record<string, unknown>): AgentActivity | null {
   const id = typeof item.activity_id === "string" ? item.activity_id : null;
@@ -119,6 +167,11 @@ function mapActivityItem(item: Record<string, unknown>): AgentActivity | null {
       : [],
     status: item.status === "failed" ? "failed" : "success",
     created_at: typeof item.created_at === "string" ? item.created_at : new Date().toISOString(),
+    deployment_id: typeof item.deployment_id === "string" ? item.deployment_id : undefined,
+    model: typeof item.model === "string" ? item.model : undefined,
+    instruction: typeof item.instruction === "string" ? item.instruction : undefined,
+    summary: typeof item.summary === "string" ? item.summary : undefined,
+    trace: parseTrace(item.trace),
   };
 }
 

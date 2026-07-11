@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
+import { ModelLogo } from "@/components/model-logo";
 
 type Verdict = "recommended" | "allowed" | "discouraged";
 type StepStatus = "running" | "ok" | "fail";
@@ -211,6 +212,7 @@ export function AgentDeployChat() {
 
       {selected && (
         <div className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-[11px] ${verdictStyle[selected.verdict]}`}>
+          <ModelLogo model={selected.id} />
           <span className="font-bold uppercase tracking-wide">{selected.verdict}</span>
           <span className="opacity-90">{selected.reason}</span>
         </div>
@@ -333,7 +335,11 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
               {msg.ok ? "SUCCESS" : "FAILED"}
             </span>
           ) : null}
-          {msg.model && <span className="text-[9px] uppercase tracking-wide text-[var(--muted)]">{msg.model}</span>}
+          {msg.model && (
+            <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-wide text-[var(--muted)]">
+              <ModelLogo model={msg.model} /> {msg.model}
+            </span>
+          )}
         </div>
 
         {(msg.steps?.length ?? 0) > 0 && (

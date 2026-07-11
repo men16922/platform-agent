@@ -45,6 +45,8 @@ def test_record_deploy_writes_deploy_and_activity_rows():
     activity = by_pk["ACTIVITY"]
     assert activity["tool_calls"] == ["build_image", "push_image", "deploy_to_cluster", "validate_deployment"]
     assert activity["status"] == "success"
+    # activity links to its deployment detail
+    assert activity["deployment_id"] == deploy["deployment_id"]
 
 
 def test_record_deploy_failed_status():

@@ -37,7 +37,7 @@ export async function POST(request: Request) {
   // the executor into the Deployments/Activity feed).
   await writeAuditLog(
     { username: session.user.username, email: session.user.email || undefined },
-    { action: "agent_nl_deploy_stream", target: `${provider}:${model}` },
+    { action: "agent_nl_deploy_stream", target: `${provider}:${model} — ${instruction.slice(0, 100)}` },
     "success",
     undefined,
     {
