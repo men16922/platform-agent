@@ -16,10 +16,9 @@ interface ModelOption {
   reason: string;
 }
 
-interface LiveStep {
-  tool: string;
-  status: StepStatus;
-}
+type Block =
+  | { type: "reasoning"; text: string }
+  | { type: "tool"; tool: string; status: StepStatus };
 
 interface ChatMessage {
   id: number;
@@ -28,7 +27,7 @@ interface ChatMessage {
   model?: string;
   provider?: string;
   ok?: boolean;
-  steps?: LiveStep[];
+  blocks?: Block[];
   streaming?: boolean;
   error?: string;
   hint?: string;
@@ -102,7 +101,7 @@ export function AgentDeployChat() {
     setMessages((prev) => [
       ...prev,
       { id: userId, role: "user", text, model: modelId, provider },
-      { id: agentId, role: "agent", text: "", steps: [], streaming: true, model: modelId, provider },
+      { id: agentId, role: "agent", text: "", blocks: [], streaming: true, model: modelId, provider },
     ]);
     setLoading(true);
 
@@ -140,18 +139,33 @@ export function AgentDeployChat() {
           } catch {
             continue;
           }
-          if (ev.type === "tool_call") {
-            patch((m) => ({ ...m, steps: [...(m.steps || []), { tool: String(ev.tool), status: "running" }] }));
+          if (ev.type === "reasoning") {
+            const text = String(ev.text || "");
+            if (text) {
+              patch((m) => {
+                const blocks = [...(m.blocks || [])];
+                const last = blocks[blocks.length - 1];
+                if (last && last.type === "reasoning") {
+                  blocks[blocks.length - 1] = { type: "reasoning", text: last.text + text };
+                } else {
+                  blocks.push({ type: "reasoning", text });
+                }
+                return { ...m, blocks };
+              });
+            }
+          } else if (ev.type === "tool_call") {
+            patch((m) => ({ ...m, blocks: [...(m.blocks || []), { type: "tool", tool: String(ev.tool), status: "running" }] }));
           } else if (ev.type === "tool_result") {
             patch((m) => {
-              const steps = [...(m.steps || [])];
-              for (let i = steps.length - 1; i >= 0; i--) {
-                if (steps[i].tool === ev.tool && steps[i].status === "running") {
-                  steps[i] = { ...steps[i], status: ev.ok ? "ok" : "fail" };
+              const blocks = [...(m.blocks || [])];
+              for (let i = blocks.length - 1; i >= 0; i--) {
+                const b = blocks[i];
+                if (b.type === "tool" && b.tool === ev.tool && b.status === "running") {
+                  blocks[i] = { ...b, status: ev.ok ? "ok" : "fail" };
                   break;
                 }
               }
-              return { ...m, steps };
+              return { ...m, blocks };
             });
           } else if (ev.type === "done") {
             patch((m) => ({ ...m, streaming: false, ok: Boolean(ev.ok), text: String(ev.summary || "") }));
@@ -342,19 +356,22 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
           )}
         </div>
 
-        {(msg.steps?.length ?? 0) > 0 && (
-          <div className="space-y-1">
-            {msg.steps!.map((step, i) => {
-              const mark = stepMark[step.status];
-              return (
+        {(msg.blocks?.length ?? 0) > 0 && (
+          <div className="space-y-1.5">
+            {msg.blocks!.map((block, i) =>
+              block.type === "reasoning" ? (
+                <p key={i} className="border-l-2 border-[#8ab4f8]/30 pl-2 text-[11px] italic leading-relaxed text-[var(--muted)] whitespace-pre-wrap">
+                  {block.text}
+                </p>
+              ) : (
                 <div key={i} className="flex items-center gap-2">
-                  <span className={mark.cls}>{mark.icon}</span>
+                  <span className={stepMark[block.status].cls}>{stepMark[block.status].icon}</span>
                   <code className="rounded border border-white/8 bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-[var(--muted)]">
-                    {step.tool}
+                    {block.tool}
                   </code>
                 </div>
-              );
-            })}
+              ),
+            )}
           </div>
         )}
 

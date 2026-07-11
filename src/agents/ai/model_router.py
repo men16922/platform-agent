@@ -69,6 +69,8 @@ class DeployOutcome:
     summary: str
     steps: list[dict[str, Any]] = field(default_factory=list)
     suitability: dict[str, str] = field(default_factory=dict)
+    # Ordered mixed trace: {"kind": "reasoning", "text"} | {"kind": "tool", "tool", "args", "result"}
+    trace: list[dict[str, Any]] = field(default_factory=list)
 
 
 def suitability(model_id: str, provider: str) -> dict[str, str]:
@@ -181,6 +183,48 @@ def extract_steps(messages: list[Any]) -> list[dict[str, Any]]:
     return steps
 
 
+def build_trace(messages: list[Any]) -> list[dict[str, Any]]:
+    """Ordered mixed trace of reasoning text and tool calls from a pydantic-ai run.
+
+    Preserves the sequence the model produced: reasoning/explanation text
+    (TextPart/ThinkingPart) interleaved with tool calls + their results.
+    """
+    from pydantic_ai.messages import TextPart, ThinkingPart, ToolCallPart, ToolReturnPart
+
+    trace: list[dict[str, Any]] = []
+    by_call_id: dict[str, dict[str, Any]] = {}
+    for message in messages:
+        for part in getattr(message, "parts", []):
+            if isinstance(part, (TextPart, ThinkingPart)):
+                text = (part.content or "").strip()
+                if text:
+                    trace.append({"kind": "reasoning", "text": text})
+            elif isinstance(part, ToolCallPart):
+                item = {"kind": "tool", "tool": part.tool_name, "args": _args_as_dict(part), "result": None}
+                trace.append(item)
+                by_call_id[part.tool_call_id] = item
+            elif isinstance(part, ToolReturnPart):
+                item = by_call_id.get(part.tool_call_id)
+                if item is not None:
+                    item["result"] = part.content
+    return trace
+
+
+def _strip_trailing_summary(trace: list[dict[str, Any]], summary: str) -> list[dict[str, Any]]:
+    """Drop the final reasoning item when it just repeats the summary (shown separately)."""
+    if trace and trace[-1].get("kind") == "reasoning" and trace[-1].get("text", "").strip() == (summary or "").strip():
+        return trace[:-1]
+    return trace
+
+
+def _tool_steps(trace: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {"tool": item["tool"], "args": item.get("args", {}), "result": item.get("result")}
+        for item in trace
+        if item.get("kind") == "tool"
+    ]
+
+
 def _step_failed(result: Any) -> bool:
     return isinstance(result, dict) and bool(result.get("error"))
 
@@ -228,15 +272,18 @@ async def route_deploy(
         factory = agent_factory or create_local_deployer
         agent = factory(provider=provider)
         result = await agent.run(instruction)
-        steps = extract_steps(result.all_messages())
+        summary = str(result.output)
+        trace = _strip_trailing_summary(build_trace(result.all_messages()), summary)
+        steps = _tool_steps(trace)
         ok = bool(steps) and not any(_step_failed(step["result"]) for step in steps)
         return DeployOutcome(
             ok=ok,
             model=model_id,
             provider=provider,
-            summary=str(result.output),
+            summary=summary,
             steps=steps,
             suitability=fit,
+            trace=trace,
         )
 
     # Cloud frameworks (strands/adk/msft) run through their native deployers,
@@ -273,7 +320,16 @@ async def route_deploy_stream(
         return
 
     from pydantic_ai import Agent as PydAgent
-    from pydantic_ai.messages import FunctionToolCallEvent, FunctionToolResultEvent
+    from pydantic_ai.messages import (
+        FunctionToolCallEvent,
+        FunctionToolResultEvent,
+        PartDeltaEvent,
+        PartStartEvent,
+        TextPart,
+        TextPartDelta,
+        ThinkingPart,
+        ThinkingPartDelta,
+    )
 
     from src.agents.ai.local_deployer import create_local_deployer
 
@@ -282,7 +338,17 @@ async def route_deploy_stream(
 
     async with agent.iter(instruction) as run:
         async for node in run:
-            if PydAgent.is_call_tools_node(node):
+            if PydAgent.is_model_request_node(node):
+                # Stream the model's reasoning / intermediate text as it forms.
+                async with node.stream(run.ctx) as req_stream:
+                    async for event in req_stream:
+                        if isinstance(event, PartStartEvent) and isinstance(event.part, (TextPart, ThinkingPart)):
+                            if event.part.content:
+                                yield {"type": "reasoning", "text": event.part.content}
+                        elif isinstance(event, PartDeltaEvent) and isinstance(event.delta, (TextPartDelta, ThinkingPartDelta)):
+                            if event.delta.content_delta:
+                                yield {"type": "reasoning", "text": event.delta.content_delta}
+            elif PydAgent.is_call_tools_node(node):
                 async with node.stream(run.ctx) as tool_stream:
                     async for event in tool_stream:
                         if isinstance(event, FunctionToolCallEvent):
@@ -298,7 +364,9 @@ async def route_deploy_stream(
                             }
         result = run.result
 
-    steps = extract_steps(result.all_messages())
+    summary = str(result.output)
+    trace = _strip_trailing_summary(build_trace(result.all_messages()), summary)
+    steps = _tool_steps(trace)
     ok = bool(steps) and not any(_step_failed(step["result"]) for step in steps)
     yield {
         "type": "result",
@@ -306,8 +374,9 @@ async def route_deploy_stream(
             ok=ok,
             model=model_id,
             provider=provider,
-            summary=str(result.output),
+            summary=summary,
             steps=steps,
             suitability=fit,
+            trace=trace,
         ),
     }

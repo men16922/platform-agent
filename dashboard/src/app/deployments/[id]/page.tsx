@@ -103,21 +103,29 @@ export default async function DeploymentDetailPage({ params }: { params: Promise
           </div>
         ) : (
           <ol className="space-y-3">
-            {trace.map((step, i) => {
-              const ok = stepOk(step.result);
+            {trace.map((item, i) => {
+              if (item.kind === "reasoning") {
+                return (
+                  <li key={i} className="surface border-l-2 border-[#8ab4f8]/40 p-4">
+                    <div className="mb-1.5 text-[9px] font-bold uppercase tracking-wider text-[#8ab4f8]">🧠 reasoning</div>
+                    <p className="text-xs leading-relaxed text-[#cbd6e9] whitespace-pre-wrap">{item.text}</p>
+                  </li>
+                );
+              }
+              const ok = stepOk(item.result);
               return (
                 <li key={i} className="surface p-4 space-y-3">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/8 text-[10px] font-bold text-[var(--muted)]">{i + 1}</span>
-                    <code className="rounded border border-white/8 bg-white/[0.04] px-2 py-0.5 text-xs font-semibold text-[#cbd6e9]">{step.tool}</code>
+                    <span className="text-[var(--muted)]">🔧</span>
+                    <code className="rounded border border-white/8 bg-white/[0.04] px-2 py-0.5 text-xs font-semibold text-[#cbd6e9]">{item.tool}</code>
                     <span className={`ml-auto rounded px-1.5 py-0.5 text-[9px] font-bold ${ok ? "bg-emerald-400/10 text-[var(--success)]" : "bg-red-400/10 text-[var(--danger)]"}`}>
                       {ok ? "OK" : "ERROR"}
                     </span>
                   </div>
-                  {step.args && Object.keys(step.args).length > 0 && (
-                    <TracePane label="args (in)" body={fmt(step.args)} />
+                  {item.args && Object.keys(item.args).length > 0 && (
+                    <TracePane label="args (in)" body={fmt(item.args)} />
                   )}
-                  <TracePane label="result (out)" body={fmt(step.result)} />
+                  <TracePane label="result (out)" body={fmt(item.result)} />
                 </li>
               );
             })}

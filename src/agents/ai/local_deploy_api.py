@@ -116,6 +116,7 @@ async def local_deploy(
                 summary=outcome.summary,
                 steps=outcome.steps,
                 ok=outcome.ok,
+                trace=outcome.trace,
             )
         except Exception:  # noqa: BLE001
             logger.warning("deploy recording failed", exc_info=True)

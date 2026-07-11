@@ -142,11 +142,19 @@ function parseTrace(raw: unknown): AgentActivity["trace"] {
     if (!Array.isArray(parsed)) return undefined;
     return parsed
       .filter((s): s is Record<string, unknown> => typeof s === "object" && s !== null)
-      .map((s) => ({
-        tool: typeof s.tool === "string" ? s.tool : "unknown",
-        args: typeof s.args === "object" && s.args !== null ? (s.args as Record<string, unknown>) : undefined,
-        result: s.result,
-      }));
+      .map((s) => {
+        // reasoning item
+        if (s.kind === "reasoning") {
+          return { kind: "reasoning" as const, text: typeof s.text === "string" ? s.text : "" };
+        }
+        // tool item (also the legacy shape, which had no "kind")
+        return {
+          kind: "tool" as const,
+          tool: typeof s.tool === "string" ? s.tool : "unknown",
+          args: typeof s.args === "object" && s.args !== null ? (s.args as Record<string, unknown>) : undefined,
+          result: s.result,
+        };
+      });
   } catch {
     return undefined;
   }

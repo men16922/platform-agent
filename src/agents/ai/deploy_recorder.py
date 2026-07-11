@@ -58,6 +58,7 @@ def record_deploy(
     summary: str,
     steps: list[dict[str, Any]],
     ok: bool,
+    trace: list[dict[str, Any]] | None = None,
     table: Any | None = None,
 ) -> dict[str, str] | None:
     """Persist a DEPLOY + ACTIVITY row for a completed deploy.
@@ -105,8 +106,8 @@ def record_deploy(
             "instruction": instruction[:2000],
             "summary": (summary or "")[:4000],
             "tool_calls": tool_calls,
-            # Full execution trace (tool + args + result) for observability.
-            "trace": json.dumps(steps)[:350000],
+            # Full ordered trace: reasoning text + tool (args/result), for observability.
+            "trace": json.dumps(trace if trace is not None else [{"kind": "tool", **s} for s in steps])[:350000],
             "status": status,
             "created_at": now,
         }

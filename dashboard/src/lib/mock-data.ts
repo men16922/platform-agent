@@ -28,8 +28,10 @@ export interface Deployment {
   created_at: string;
 }
 
-export interface TraceStep {
-  tool: string;
+export interface TraceItem {
+  kind: "reasoning" | "tool";
+  text?: string; // reasoning
+  tool?: string; // tool
   args?: Record<string, unknown>;
   result?: unknown;
 }
@@ -47,7 +49,7 @@ export interface AgentActivity {
   model?: string;
   instruction?: string;
   summary?: string;
-  trace?: TraceStep[];
+  trace?: TraceItem[];
 }
 
 export interface CloudHealth {
