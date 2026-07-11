@@ -61,7 +61,7 @@ export function AgentDeployChat() {
   const [models, setModels] = useState<ModelOption[]>([]);
   const [modelId, setModelId] = useState("local-qwen");
   const [modelsNotice, setModelsNotice] = useState<string | null>(null);
-  const [instruction, setInstruction] = useState("Deploy orders-api v1.4.2 to the local cluster with 2 replicas");
+  const [instruction, setInstruction] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const idRef = useRef(0);
