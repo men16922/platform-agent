@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ModelLogo } from "@/components/model-logo";
 
 type RuntimeStatus = { router: "connected" | "offline"; runtime: string; path: string };
 type Agent = { cloud: string; name: string; provider: string; llm: string; runtime: string; path: string };
-type Model = { id: string; label: string; llm: string; verdict: string } | null;
+type ModelOption = { id: string; label: string; llm: string; framework: string; verdict: "recommended" | "allowed" | "discouraged"; reason: string };
+type Model = ModelOption | null;
 
-export function OnPremRuntimePanel({ agent, model }: { agent: Agent; model: Model }) {
+export function OnPremRuntimePanel({ agent, model, models, modelId, onModelChange }: { agent: Agent; model: Model; models: ModelOption[]; modelId: string; onModelChange: (id: string) => void }) {
   const [status, setStatus] = useState<RuntimeStatus>({ router: "offline", runtime: "Local Qwen", path: "Qwen → supervisor → kagent" });
 
   useEffect(() => {
@@ -33,11 +35,20 @@ export function OnPremRuntimePanel({ agent, model }: { agent: Agent; model: Mode
           {agent.cloud === "onprem" ? `Router ${online ? "connected" : "offline"}` : "Native runtime selected"}
         </div>
       </div>
+      <div className="mt-5 rounded-xl border border-white/8 bg-black/15 p-3 sm:flex sm:items-center sm:justify-between sm:gap-4">
+        <div className="flex items-center gap-2">
+          <ModelLogo model={model?.id} size="md" />
+          <div><div className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-100/60">Selected AI model</div><div className="mt-0.5 text-xs text-[var(--muted)]">Applies to {agent.name}; supervisor and kagent use their configured runtime.</div></div>
+        </div>
+        <select value={modelId} onChange={(event) => onModelChange(event.target.value)} className="mt-3 w-full rounded-lg border border-emerald-300/20 bg-black/25 px-3 py-2 text-xs text-[#dceaff] focus:outline-none focus:border-emerald-300/50 sm:mt-0 sm:w-80">
+          {models.map((option) => <option key={option.id} value={option.id}>{option.label} — {option.verdict}</option>)}
+        </select>
+      </div>
       <div className="mt-6 grid gap-3 sm:grid-cols-3">
         {[model?.llm ?? agent.runtime, "Supervisor", agent.cloud === "onprem" ? "kagent A2A" : `${agent.provider} tools`].map((step, index) => (
           <div key={step} className="rounded-xl border border-white/8 bg-black/15 p-3">
             <div className="flex items-center justify-between text-[10px] font-bold tracking-[0.12em] text-emerald-100/60"><span>0{index + 1}</span><span>READY PATH</span></div>
-            <div className="mt-2 text-sm font-semibold">{step}</div>
+            <div className="mt-2 flex items-center gap-2 text-sm font-semibold">{index === 0 && <ModelLogo model={model?.id} />}{step}</div>
             <div className="mt-1 text-[11px] text-[var(--muted)]">{index === 0 ? `${model?.verdict ?? "native"} model selection` : index === 1 ? "Route + policy boundary" : "Kubernetes tools + trace"}</div>
           </div>
         ))}

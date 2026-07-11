@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { ModelLogo } from "@/components/model-logo";
 import { Markdown } from "@/components/markdown";
@@ -46,51 +46,21 @@ const stepMark: Record<StepStatus, { icon: string; cls: string }> = {
   fail: { icon: "✗", cls: "text-[var(--danger)]" },
 };
 
-export function AgentDeployChat({ selectedProvider, agentName, onModelChange }: { selectedProvider: string; agentName: string; onModelChange?: (model: Pick<ModelOption, "id" | "label" | "llm" | "verdict"> | null) => void }) {
+export function AgentDeployChat({ selectedProvider, agentName, modelId, model }: { selectedProvider: string; agentName: string; modelId: string; model: ModelOption | null }) {
   const { data: session } = useSession();
   const role = (session?.user as { role?: string } | undefined)?.role || "viewer";
   const canDeploy = role === "admin" || role === "operator";
 
-  const [provider, setProvider] = useState(selectedProvider);
-  const [models, setModels] = useState<ModelOption[]>([]);
-  const [modelId, setModelId] = useState("local-qwen");
-  const [modelsNotice, setModelsNotice] = useState<string | null>(null);
+  const provider = selectedProvider;
   const [instruction, setInstruction] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const idRef = useRef(0);
   const logRef = useRef<HTMLDivElement>(null);
 
-  const loadModels = useCallback(async (env: string) => {
-    try {
-      const res = await fetch(`/api/dashboard/agents/models?provider=${encodeURIComponent(env)}`, { cache: "no-store" });
-      const data = await res.json();
-      const opts: ModelOption[] = data.models || [];
-      setModels(opts);
-      setModelsNotice(data.source === "static-fallback" ? data.notice : null);
-      if (opts.length && !opts.some((m) => m.id === modelId)) setModelId(opts[0].id);
-    } catch {
-      setModels([]);
-      setModelsNotice("Could not load model options.");
-    }
-  }, [modelId]);
-
-  useEffect(() => {
-    loadModels(provider);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [provider]);
-
-  useEffect(() => setProvider(selectedProvider), [selectedProvider]);
-
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
-
-  const selected = models.find((m) => m.id === modelId);
-
-  useEffect(() => {
-    onModelChange?.(selected ? { id: selected.id, label: selected.label, llm: selected.llm, verdict: selected.verdict } : null);
-  }, [selected, onModelChange]);
 
   const send = async () => {
     const text = instruction.trim();
@@ -193,7 +163,7 @@ export function AgentDeployChat({ selectedProvider, agentName, onModelChange }: 
         <div>
           <h3 className="text-base font-semibold text-[#cbd6e9]">Ask {agentName}</h3>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Environment is set by your selected agent. Choose a compatible model, then investigate, deploy, or recover with a live trace.
+            Runs with the Agent and AI Model selected above. Investigate, deploy, or recover with a live trace.
           </p>
         </div>
         {!canDeploy && (
@@ -203,38 +173,12 @@ export function AgentDeployChat({ selectedProvider, agentName, onModelChange }: 
         )}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-[0.8fr_1.2fr]">
-        <div className="rounded-lg border border-white/8 bg-white/[0.025] px-3 py-2">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">Selected environment</div>
-          <div className="mt-1 text-sm font-semibold capitalize">{provider === "onprem" ? "On-Prem" : provider}</div>
-        </div>
-        <div className="space-y-1">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">AI Model</label>
-          <select
-            value={modelId}
-            onChange={(e) => setModelId(e.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-[#cbd6e9] focus:outline-none focus:border-[#8ab4f8]"
-          >
-            {models.map((m) => (
-              <option key={m.id} value={m.id}>{m.label} — {m.verdict}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {selected && (
-        <div className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-[11px] ${verdictStyle[selected.verdict]}`}>
-          <ModelLogo model={selected.id} />
-          <span className="font-bold uppercase tracking-wide">{selected.verdict}</span>
-          <span className="opacity-90">{selected.reason}</span>
-        </div>
-      )}
-      {modelsNotice && <p className="text-[10px] text-[var(--warning)]">⚠️ {modelsNotice}</p>}
+      {model && <div className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-[11px] ${verdictStyle[model.verdict]}`}><ModelLogo model={model.id} /><span className="font-bold uppercase tracking-wide">{model.verdict}</span><span className="opacity-90">{model.reason}</span></div>}
 
       <div ref={logRef} className="max-h-[75vh] min-h-[34rem] overflow-y-auto space-y-3 rounded-lg border border-white/6 bg-black/20 p-3">
         {messages.length === 0 && (
           <p className="text-xs text-[var(--muted)] py-6 text-center">
-            Ask the agent. It can investigate (list pods, logs, describe, rollout status) or act (build → push → deploy → validate, rollback) — tool calls stream in live.
+            Describe an operational goal. The selected agent can inspect systems, provision infrastructure, deploy services, diagnose incidents, and run governed recovery actions — every reasoning step and tool call streams here.
           </p>
         )}
         {messages.map((msg) => (
