@@ -77,6 +77,24 @@ def test_matches_kagent_card_capabilities():
     assert matching_skills(KAGENT_CARD, AgentRole.KAGENT) == ["cluster-diagnostics"]
 
 
+def test_uses_discovered_jsonrpc_url_for_kagent():
+    sent: dict = {}
+    card = {**KAGENT_CARD, "preferredTransport": "JSONRPC", "url": "http://k8s-agent.kagent:8080"}
+
+    def transport(endpoint: str, body: dict) -> dict:
+        sent["endpoint"] = endpoint
+        sent["body"] = body
+        return {"jsonrpc": "2.0", "result": {"id": "task-1"}}
+
+    outcome = Supervisor(
+        {AgentRole.KAGENT: "http://configured-endpoint"}, transport=transport, card_fetcher=lambda _: card
+    ).handle("Investigate pod status")
+
+    assert outcome.delegated is True
+    assert sent["endpoint"] == card["url"]
+    assert sent["body"]["method"] == "message/send"
+
+
 def test_gateway_returns_supervisor_route_trace():
     server = A2AServer()
 

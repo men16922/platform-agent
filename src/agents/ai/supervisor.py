@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import uuid
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any, Callable
@@ -65,7 +66,7 @@ ENDPOINT_ENV: dict[AgentRole, str] = {
 
 def post_a2a_message(endpoint: str, body: dict[str, Any], *, timeout: float = 10.0) -> dict[str, Any]:
     """Send one A2A ``message:send`` request using only the standard library."""
-    url = f"{endpoint.rstrip('/')}/message:send"
+    url = endpoint if body.get("jsonrpc") == "2.0" else f"{endpoint.rstrip('/')}/message:send"
     payload = json.dumps(body).encode("utf-8")
     http_request = request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
     with request.urlopen(http_request, timeout=timeout) as response:  # noqa: S310 - endpoint is operator configuration
@@ -162,8 +163,21 @@ class Supervisor:
         }
         if context_id:
             message["contextId"] = context_id
+        preferred_transport = str(card.get("preferredTransport", "HTTP+JSON")).upper()
+        target = str(card.get("url") or endpoint)
+        payload: dict[str, Any]
+        if preferred_transport == "JSONRPC":
+            message["role"] = "user"
+            payload = {
+                "jsonrpc": "2.0",
+                "id": str(uuid.uuid4()),
+                "method": "message/send",
+                "params": {"message": message},
+            }
+        else:
+            payload = {"message": message}
         try:
-            response = self._transport(endpoint, {"message": message})
+            response = self._transport(target, payload)
         except Exception as error:
             trace.append({"kind": "delegation", "status": "failed", "role": decision.role.value})
             return SupervisorOutcome(decision=decision, delegated=False, response={"error": str(error)}, trace=trace)
