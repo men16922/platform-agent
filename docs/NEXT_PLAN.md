@@ -9,7 +9,8 @@
 - [ ] **origin push** — 현재 main이 origin 대비 ahead 20 (미푸시 커밋 정리)
 - [x] ~~A2A specialist endpoint + Agent Card discovery~~ — kagent Card discovery/skill match + JSON-RPC 0.3 transport 지원 완료.
 - [x] ~~kagent ↔ 로컬 Qwen 연결~~ — local Qwen ModelConfig + A2A read-only task(tool result 반환) 실증 완료.
-- [ ] 클라우드 Provision 어댑터(CDK/Terraform apply) — 현재 AWS `cdk_generator`(계획 생성)만
+- [x] ~~AWS Provision adapter~~ — AWS CDK diff(기본) / approved deploy / approved destroy guard 구현 및 unit test 완료.
+- [ ] **AWS CDK live diff 재검증** — 현재 로컬 synth가 Lambda 의존성 번들링에서 완료되지 않음. Java 경고는 무관하며 pre-existing template은 99 resources; 번들링 가능한 환경에서 `npx cdk diff IncidentAgentStack --no-change-set` 확인 필요.
 - [ ] kagent 기본 에이전트 10개 정리(`helm uninstall`) 또는 데모용 유지 결정
 
 ### (이전 리스트 — 참고)

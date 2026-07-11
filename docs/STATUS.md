@@ -63,7 +63,7 @@
 ## Active Focus
 
 - 범용 Ops 에이전트 + 관측성 + On-Prem Provision(Terraform/Ansible) + kagent 설치 완료. ARCHITECTURE 통합·최신화(단일 스택 표 + Orchestrator+A2A 타깃).
-- 다음: 클라우드 Provision 어댑터(CDK/Terraform apply) 또는 kagent 기본 에이전트 10개 정리 결정.
+- 다음: AWS CDK live diff 재검증(현재 로컬 Lambda bundling hang), 또는 kagent 기본 에이전트 10개 정리 결정.
 - **미푸시**: origin 대비 ahead 20 (push 필요). kagent 기본 에이전트 10개는 데모 후 `helm uninstall` 정리 가능.
 
 ## Open Risks / Gaps
