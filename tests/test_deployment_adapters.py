@@ -4,9 +4,7 @@ Tests for deployment adapters — factory, dataclasses, and provider implementat
 
 from __future__ import annotations
 
-import json
 from unittest.mock import patch, MagicMock
-import subprocess
 
 import pytest
 
@@ -17,7 +15,6 @@ from src.agents.adapters.deployment.base import (
     DeploymentAdapters,
     DeployResult,
     DeployStatus,
-    PushResult,
     RegistryAdapter,
     RollbackResult,
     ServiceSpec,
@@ -260,7 +257,6 @@ class TestCloudRegistryUris:
         assert uri == "123456789012.dkr.ecr.us-east-1.amazonaws.com/myapp:v1"
 
     def test_gcp_image_uri(self):
-        from src.agents.adapters.deployment.gcp import GcpRegistryAdapter
         with patch.dict("os.environ", {"GCP_PROJECT": "my-project", "GCP_REGION": "asia-northeast3"}):
             from importlib import reload
             import src.agents.adapters.deployment.gcp as gcp_mod
@@ -271,7 +267,6 @@ class TestCloudRegistryUris:
             assert "myapp" in uri
 
     def test_azure_image_uri(self):
-        from src.agents.adapters.deployment.azure import AzureRegistryAdapter
         with patch.dict("os.environ", {"AZURE_REGISTRY_NAME": "myacr"}):
             from importlib import reload
             import src.agents.adapters.deployment.azure as az_mod

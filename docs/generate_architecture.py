@@ -2,16 +2,14 @@
 
 from diagrams import Cluster, Diagram, Edge
 from diagrams.aws.compute import Lambda, EKS, ECR
-from diagrams.aws.integration import Eventbridge, StepFunctions, SQS, SNS
+from diagrams.aws.integration import Eventbridge, StepFunctions, SNS
 from diagrams.aws.database import Dynamodb
-from diagrams.aws.ml import Sagemaker
 from diagrams.gcp.compute import GKE
 from diagrams.gcp.devtools import ContainerRegistry as GcpAR
 from diagrams.azure.compute import KubernetesServices as AzureAKS
 from diagrams.azure.containers import ContainerRegistries as AzureACR
 from diagrams.onprem.container import Docker
 from diagrams.onprem.client import User
-from diagrams.generic.blank import Blank
 
 graph_attr = {
     "fontsize": "24",

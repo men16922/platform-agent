@@ -9,10 +9,6 @@ from __future__ import annotations
 
 import pytest
 
-from src.agents.adapters.execution.aws import AwsSsmExecutionAdapter
-from src.agents.adapters.execution.azure import AzureExecutionAdapter
-from src.agents.adapters.execution.gcp import GcpExecutionAdapter
-from src.agents.adapters.execution.onprem import OnPremExecutionAdapter
 from src.agents.adapters.registry import get_execution_adapter, supported_providers
 from src.agents.models import NormalizedIncident
 from src.agents.runbooks.capability_schema import (

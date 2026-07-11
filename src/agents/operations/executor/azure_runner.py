@@ -7,7 +7,6 @@ Supports OIDC credentials federation (Azure AD Federated Credentials) and fallba
 
 from __future__ import annotations
 
-import json
 import os
 import time
 from typing import Any

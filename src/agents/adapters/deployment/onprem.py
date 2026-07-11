@@ -97,7 +97,7 @@ class OnPremClusterAdapter(ClusterAdapter):
                 deployment_id=f"{spec.namespace}/{spec.name}",
                 namespace=spec.namespace,
                 replicas_desired=spec.replicas,
-                endpoint=f"http://localhost:80",
+                endpoint="http://localhost:80",
             )
         return DeployResult(status=DeployStatus.FAILED, error=result.stderr)
 

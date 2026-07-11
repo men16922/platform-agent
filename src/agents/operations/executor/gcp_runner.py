@@ -90,7 +90,6 @@ def _execute_gke_call(
         raise RuntimeError("Could not retrieve GKE cluster endpoint or CA certificate")
 
     # 2. Write CA cert to temp file for TLS verification in requests
-    import base64
     ca_cert = base64.b64decode(ca_cert_b64)
     with tempfile.NamedTemporaryFile(delete=False) as fp:
         fp.write(ca_cert)

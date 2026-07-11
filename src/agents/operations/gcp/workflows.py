@@ -13,7 +13,6 @@ Deployment:
 from __future__ import annotations
 
 import json
-import yaml
 from typing import Any
 
 

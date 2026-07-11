@@ -4,11 +4,9 @@ Unit and integration tests for multi-cloud runners and authentication.
 
 from __future__ import annotations
 
-import json
 import os
 from unittest import mock
 
-import pytest
 
 from src.agents.operations.executor.gcp_auth import get_gcp_access_token
 from src.agents.operations.executor.gcp_runner import run_gcp_action

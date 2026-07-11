@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import json
 import os
-import time
 from typing import Any
 
 import structlog
@@ -179,7 +178,7 @@ def _build_kql_query(incident: NormalizedIncident) -> str:
     if incident.resource_type == "kubernetes-workload":
         return (
             "ContainerLog\n"
-            f"| where LogEntry contains 'error' or LogEntry contains 'exception'\n"
+            "| where LogEntry contains 'error' or LogEntry contains 'exception'\n"
             "| project TimeGenerated, LogEntry, ContainerID\n"
             "| order by TimeGenerated desc\n"
             "| take 20"

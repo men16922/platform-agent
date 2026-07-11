@@ -1,7 +1,6 @@
 """Tests for dashboard auth boundary design — permission model correctness."""
 
 import subprocess
-import json
 
 
 def test_auth_module_typescript_compiles():
@@ -24,7 +23,6 @@ def test_auth_module_typescript_compiles():
 def test_auth_role_hierarchy():
     """Verify role permission hierarchy: admin > operator > viewer."""
     # This is a design invariant test — read the source and verify.
-    import importlib.util
     # We can't directly import TS, so verify the design via the doc.
     with open("docs/DASHBOARD_AUTH_DESIGN.md", "r") as f:
         content = f.read()

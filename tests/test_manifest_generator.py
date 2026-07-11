@@ -4,10 +4,7 @@ Tests for manifest_generator — ServiceSpec YAML → K8s manifest conversion.
 
 from __future__ import annotations
 
-import tempfile
-from pathlib import Path
 
-import pytest
 
 from src.agents.adapters.deployment.base import ServiceSpec
 from src.agents.provisioning.manifest_generator import (

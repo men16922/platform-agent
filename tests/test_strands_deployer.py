@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from src.agents.ai.strands_deployer import DEPLOYER_SYSTEM_PROMPT, create_deployer_agent
 from src.agents.ai.tools import ALL_DEPLOY_TOOLS

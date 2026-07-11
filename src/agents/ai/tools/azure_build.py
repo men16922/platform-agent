@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Annotated
 
 from src.agents.adapters.deployment import ServiceSpec, get_deployment_adapters
 
