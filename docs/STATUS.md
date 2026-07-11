@@ -21,7 +21,7 @@
 - **범용 On-Prem Ops 에이전트** → provision(2)+deploy(5)+investigate(5) 12도구, reasoning+tool SSE 스트리밍, "list pods" 질의는 진단만 수행 확인
 - **On-Prem Provision(① 역할)** → Terraform(kind) IaC `validate/plan` green + Ansible(k3s) 플레이북; `provision_cluster`/`teardown` 에이전트 도구
 - **관측성** → 배포 상세 페이지 `/deployments/[id]`(reasoning/tool args·result/summary) + DynamoDB trace 기록
-- **kagent** → kind에 helm 설치(controller/ui/postgres Running, 에이전트 10 CRD); 로컬 Qwen 연결은 미완(호스트 네트워킹)
+- **kagent + local Qwen** → kind Pod→`host.docker.internal:18091/v1` OpenAI-compat ModelConfig 적용, `k8s-agent` A2A JSON-RPC 진단 task가 tool 결과 반환까지 실증.
 - **Supervisor + A2A** → 자연어 요청을 provision/deploy/kagent로 분류하고 등록된 specialist A2A endpoint에만 `message:send` 위임; Gateway 응답에 route trace 기록. Agent Card는 Gateway가 노출하나 supervisor discovery는 미구현.
 - AI Model Router → `/api/models`(환경별 선택지) + `/api/local-deploy`(자연어 배포) live 확인; 대시보드 `tsc`+`next build` 통과
 - **Live E2E (Pydantic AI + MLX Qwen3-Coder-30B)** → 자연어 "Deploy orders-api ..." → build→push→deploy→validate 자율 실행 → kind `orders-api 1/1 Running`(image v1.5.0) 검증 완료 (2026-07-11)
@@ -63,7 +63,7 @@
 ## Active Focus
 
 - 범용 Ops 에이전트 + 관측성 + On-Prem Provision(Terraform/Ansible) + kagent 설치 완료. ARCHITECTURE 통합·최신화(단일 스택 표 + Orchestrator+A2A 타깃).
-- 다음: supervisor의 실제 specialist A2A endpoint 연결 + **Agent Card discovery/능력 협상**, 이후 kagent↔로컬 Qwen 연결.
+- 다음: 클라우드 Provision 어댑터(CDK/Terraform apply) 또는 kagent 기본 에이전트 10개 정리 결정.
 - **미푸시**: origin 대비 ahead 20 (push 필요). kagent 기본 에이전트 10개는 데모 후 `helm uninstall` 정리 가능.
 
 ## Open Risks / Gaps

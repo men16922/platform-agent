@@ -7,8 +7,8 @@
 ## 다음 작업 리스트 (2026-07-11 갱신)
 
 - [ ] **origin push** — 현재 main이 origin 대비 ahead 20 (미푸시 커밋 정리)
-- [ ] **A2A specialist endpoint + Agent Card discovery** — supervisor의 provision/deploy/kagent 요청 분류·환경변수 endpoint 위임·Gateway route trace는 완료. 실제 kagent A2A endpoint를 등록하고 `/.well-known/agent-card.json` discovery/skill 매칭을 연결 (설계는 ARCHITECTURE "Orchestrator+A2A" 섹션)
-- [ ] **kagent ↔ 로컬 Qwen 연결** — kind pod→host MLX 네트워킹 해결(MLX proxy 0.0.0.0 바인딩 + host.docker.internal), ModelConfig CRD로 OpenAI-compat 연결
+- [x] ~~A2A specialist endpoint + Agent Card discovery~~ — kagent Card discovery/skill match + JSON-RPC 0.3 transport 지원 완료.
+- [x] ~~kagent ↔ 로컬 Qwen 연결~~ — local Qwen ModelConfig + A2A read-only task(tool result 반환) 실증 완료.
 - [ ] 클라우드 Provision 어댑터(CDK/Terraform apply) — 현재 AWS `cdk_generator`(계획 생성)만
 - [ ] kagent 기본 에이전트 10개 정리(`helm uninstall`) 또는 데모용 유지 결정
 
