@@ -38,6 +38,48 @@ local-cluster-status:  ## show cluster node and pod status
 
 .PHONY: local-cluster local-cluster-down local-cluster-status
 
+# ===== Local LLM natural-language deploy stack (AI Model Router) =====
+# MLX-LM (Qwen) -> tool-call proxy -> AI Model Router API. The dashboard Agents
+# chat (LOCAL_DEPLOY_API_URL) drives on-prem deploys through this stack.
+MLX_MODEL      ?= mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+MLX_PORT       ?= 18090
+PROXY_PORT     ?= 18091
+ROUTER_PORT    ?= 8077
+# Working dir for docker build context (orders-api demo builds from its dir).
+DEPLOY_WORKDIR ?= examples/orders-api
+LLM_LOG_DIR    := /tmp/platform-agent
+
+mlx-serve:  ## start local MLX-LM server (run in its own terminal)
+	HF_HUB_DISABLE_XET=1 .venv-mlx/bin/mlx_lm.server --model $(MLX_MODEL) --host 127.0.0.1 --port $(MLX_PORT) --max-tokens 1024 --prompt-cache-bytes 2147483648
+
+mlx-proxy:  ## start the MLX Qwen tool-call proxy
+	python -m src.agents.ai.mlx_qwen_tool_proxy --upstream http://127.0.0.1:$(MLX_PORT) --host 127.0.0.1 --port $(PROXY_PORT)
+
+router-api:  ## start the AI Model Router API (natural-language deploy)
+	cd $(DEPLOY_WORKDIR) && PYTHONPATH=$(CURDIR) ONPREM_LLM_ENDPOINT=http://127.0.0.1:$(PROXY_PORT)/v1 ONPREM_LLM_MODEL=$(MLX_MODEL) uvicorn src.agents.ai.local_deploy_api:app --host 127.0.0.1 --port $(ROUTER_PORT)
+
+local-llm-up:  ## start MLX + proxy + router API in the background (logs in /tmp/platform-agent)
+	@mkdir -p $(LLM_LOG_DIR)
+	@echo "→ MLX-LM server (:$(MLX_PORT)) — model load takes ~30-60s"
+	@HF_HUB_DISABLE_XET=1 nohup .venv-mlx/bin/mlx_lm.server --model $(MLX_MODEL) --host 127.0.0.1 --port $(MLX_PORT) --max-tokens 1024 --prompt-cache-bytes 2147483648 > $(LLM_LOG_DIR)/mlx.log 2>&1 &
+	@echo "→ tool-call proxy (:$(PROXY_PORT))"
+	@nohup python -m src.agents.ai.mlx_qwen_tool_proxy --upstream http://127.0.0.1:$(MLX_PORT) --host 127.0.0.1 --port $(PROXY_PORT) > $(LLM_LOG_DIR)/proxy.log 2>&1 &
+	@echo "→ router API (:$(ROUTER_PORT), workdir=$(DEPLOY_WORKDIR)) — set PLATFORM_ACTIVITY_TABLE+AWS_REGION to record into Deployments"
+	@cd $(DEPLOY_WORKDIR) && PYTHONPATH=$(CURDIR) ONPREM_LLM_ENDPOINT=http://127.0.0.1:$(PROXY_PORT)/v1 ONPREM_LLM_MODEL=$(MLX_MODEL) nohup uvicorn src.agents.ai.local_deploy_api:app --host 127.0.0.1 --port $(ROUTER_PORT) > $(LLM_LOG_DIR)/router.log 2>&1 &
+	@echo "stack starting. Watch: tail -f $(LLM_LOG_DIR)/mlx.log | check: make local-llm-status"
+
+local-llm-down:  ## stop the local LLM deploy stack
+	-@pkill -f "mlx_lm.server" 2>/dev/null; true
+	-@pkill -f "mlx_qwen_tool_proxy" 2>/dev/null; true
+	-@pkill -f "uvicorn src.agents.ai.local_deploy_api" 2>/dev/null; true
+	@echo "stopped local LLM deploy stack"
+
+local-llm-status:  ## show local LLM deploy stack status
+	@curl -s -m 3 localhost:$(MLX_PORT)/v1/models >/dev/null 2>&1 && echo "MLX-LM   :$(MLX_PORT)  up" || echo "MLX-LM   :$(MLX_PORT)  down"
+	@curl -s -m 3 localhost:$(ROUTER_PORT)/health >/dev/null 2>&1 && echo "router   :$(ROUTER_PORT)   up" || echo "router   :$(ROUTER_PORT)   down"
+
+.PHONY: mlx-serve mlx-proxy router-api local-llm-up local-llm-down local-llm-status
+
 # ===== overnight harness targets (append to your Makefile) =====
 # The overnight runner + helpers are the Single Source of Truth in the overnight-harness
 # PLUGIN; this repo does NOT vendor them. These targets resolve the installed plugin at
