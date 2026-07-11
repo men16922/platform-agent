@@ -17,5 +17,6 @@ export const config = {
     "/api/dashboard/deployments/trigger",
     "/api/dashboard/settings",
     "/api/dashboard/users",
+    "/api/dashboard/audit",
   ],
 };

@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 
-const navItems = [
+const baseNavItems = [
   { href: "/", label: "Overview", icon: "⌘" },
   { href: "/incidents", label: "Incidents", icon: "◈" },
   { href: "/deployments", label: "Deployments", icon: "↗" },
@@ -12,6 +13,14 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  
+  const role = (session?.user as any)?.role || "viewer";
+  const hasAuditAccess = role === "admin" || role === "operator";
+
+  const navItems = hasAuditAccess
+    ? [...baseNavItems, { href: "/audit", label: "Audit Logs", icon: "🛡" }]
+    : baseNavItems;
 
   return (
     <aside className="hidden w-64 shrink-0 border-r border-[var(--card-border)] bg-[#292a2d] md:flex md:flex-col md:min-h-screen">
