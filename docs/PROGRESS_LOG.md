@@ -15,6 +15,7 @@
   - Audit Page: `/audit` 화면을 신설하여 비인증/Viewer 등급 사용자에게는 "Access Denied" 오류 화면을 출력하고, 승인된 관리자에게는 SSR 기반의 실시간 DynamoDB 로그 리스트 렌더링.
   - Audit logs table: 클라이언트 컴포넌트(`AuditLogsTable`)를 개발하여 감사 ID, 수행한 운영자, 액션, 대상, 결과 상태(Success/Failed), 발신 IP 및 UserAgent의 대화형 검색 및 필터링 기능 추가.
   - Sidebar: 로그인한 세션 유저의 역할에 맞춰 Admin/Operator인 경우에만 좌측 네비게이션 메뉴에 "Audit Logs" 메뉴 아이템이 동적으로 렌더링되도록 개선.
+  - Overview: 메인 Overview 화면의 "Incident feed" 옆 "View all →" 요소를 Next.js `Link` 컴포넌트로 연동하여 실제 Incidents 페이지로 정상 라우팅되도록 수정.
   - Deploy: Next.js 16 빌드 성공 및 최종 프로덕션 웹사이트 배포 완료.
 - Next: Slack App 대화형 구성요소의 실 연동 설정 가이드 수립.
 
