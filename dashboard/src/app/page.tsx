@@ -4,6 +4,7 @@ import { DataSourceBadge } from "@/components/data-source-badge";
 import { ProviderLogo, providerBadgeStyles } from "@/components/provider-logo";
 import { getIncidentFeed } from "@/lib/incident-data";
 import { getDeploymentFeed, getProviderHealthFeed } from "@/lib/activity-data";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +77,7 @@ export default async function OverviewPage() {
 
       <section className="grid gap-7 xl:grid-cols-[1.25fr_0.75fr]">
         <div>
-          <div className="mb-3 flex items-center justify-between"><h3 className="eyebrow">Incident feed</h3><span className="text-xs text-[#aaa1ff]">View all →</span></div>
+          <div className="mb-3 flex items-center justify-between"><h3 className="eyebrow">Incident feed</h3><Link href="/incidents" className="text-xs text-[#aaa1ff] hover:underline">View all →</Link></div>
           <div className="space-y-3">
           {recentIncidents.map((incident) => (
             <IncidentRow key={incident.id} incident={incident} />
