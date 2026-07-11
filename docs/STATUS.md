@@ -17,7 +17,7 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` (pytest) → **536 passed, 1 skipped** (2026-07-11, 229.45s) — GCP Vertex AI mock/heuristic 연동 포함
+- `make check` (pytest) → **542 passed, 1 skipped** (2026-07-11, 207.55s) — GCP Vertex AI mock/heuristic 연동 및 GCP/Azure 실 REST API Failover 러너 테스트 포함
 - GCP Day2 tests → **28 passed** (Vertex AI mock/heuristic 연동, severity=P2, confidence=0.30)
 - Dashboard → lint/build 성공; 11 routes (OG/Twitter image 포함); Vercel production 배포 완료 (2026-07-11)
 - CDK → `platform-agent-activity` 테이블 + GSI1 CREATE_COMPLETE; Vercel OIDC read grant UPDATE_COMPLETE (2026-07-11)
@@ -27,6 +27,8 @@
 - Strands Agent + Bedrock Claude → 자율 4-tool 호출 → 실배포 ✅
 - ADK Agent + Vertex AI Gemini 3.5 Flash → tool calling (gcp_build_image) ✅
 - MSFT Agent + Azure OpenAI GPT-5.4 → tool calling (azure_build_image) ✅
+- GCP/Azure 실 REST API 연동 및 OIDC 페더레이션 크레덴셜 자격증명 모듈 구현 & 테스트 완료 (2026-07-11) ✅
+- AWS/GCP/Azure 다중 리전 및 백업 클러스터 자동 우회 복구(Multi-region Failover) 구현 & 테스트 완료 (2026-07-11) ✅
 - CDK deploy → 97 resources CREATE_COMPLETE (us-east-1, 2026-07-10)
 - GCP: Artifact Registry push + GKE Autopilot 배포 (검증 후 정리)
 - Azure: ACR push + AKS 배포 (검증 후 정리)
@@ -46,17 +48,15 @@
 10. **On-prem K8s** — `make local-cluster` (kind 테스트용) → 3노드 + registry + NGINX ingress.
 11. **Deployment Adapters** — 4 provider (onprem/aws/gcp/azure): Build→Push→Deploy→Validate→Rollback.
 12. **Execution Adapters** — 4 provider: capability → provider-specific action resolution.
-13. **Dashboard** — Next.js 16 + Tailwind 4, 5페이지. AWS incident live/demo/fallback + deployment/activity durable read model (DynamoDB `platform-agent-activity` + GSI1) + Vercel OIDC 최소권한 read role. OG/Twitter image 배포 완료. Auth boundary 설계 완료, GitHub OAuth (Auth.js Phase 1) 연동 완료, Auth Phase 2/3 및 사용자 작용 UI 제어판(승인 카드, 배포 트리거 모달, 롤백 실행 버튼) 및 보안 감사 로그(Audit Logs) 조회 화면 전면 구현 및 배포 완료.
+13. **Dashboard** — Next.js 16 + Tailwind 4, 5페이지. AWS DynamoDB 연동 완료. 모든 데모 목업 데이터를 제거하고 실시간 Live 모드만 활성화. 🔐 Auth.js 기반 GitHub OAuth, Admin/Operator/Viewer 역할 부여 및 사용자 권한 관리 제어판(잠금 방지 보호 포함), 장애 복구 승인(Pending approvals), 신규 배포 트리거/롤백 액션 패널, 보안 감사 로그(Audit Logs) 뷰어 화면 프로덕션 배포 완료.
 
 ## Active Focus
 
-- 대시보드 감사 로그(Audit Logs) 뷰어 화면 개발, 동적 사이드바 렌더링, 전용 보호 API 연동 및 프로덕션 배포 완료.
+- GitHub README 및 고수준 아키텍처 상세 문서의 공개(Public Release) 대비 고도화 완료.
 
 ## Open Risks / Gaps
 
 1. **CDK 재배포 시 Lambda bundling** — Docker 없이 로컬 pip 번들링 사용 중 (arm64↔amd64 주의).
 2. **Slack App 미연결** — APPROVE 승인 버튼 코드+가이드+E2E 테스트 완비, 실 Slack App 미생성 (코드 ready). OIDC 연계를 통한 Slack Webhook 송출 정상 작동.
-3. **GCP/Azure 실 클러스터** — WIF 자격증명 연동 모듈 및 GKE/Cloud Run/AKS 실 API 호출 러너 구현 완료 (테스트 검증 성공), 실 클러스터 비용 관리에 유의.
-4. **Dashboard live dataset** — AWS live 연결 정상; `incident-history` 0건, `platform-agent-activity` 0건 (write path는 연동됨).
-5. **Dashboard auth** — Auth.js Phase 1/2/3 구현 및 로컬 Next.js 컴파일/빌드 검증 성공.
-6. **Dashboard dependency audit** — Next.js 16.2.10 내부 PostCSS 중간등급 취약점 2건; upstream release 대기.
+3. **GCP/Azure 실 클러스터 비용** — 실 배포/Remediation 가동 시 클러스터 리소스 가동 및 WIF OIDC 인증 연동 세부 과금 체크 필요.
+4. **Dashboard dependency audit** — Next.js 16.2.10 내부 PostCSS 중간등급 취약점 2건; upstream release 대기.

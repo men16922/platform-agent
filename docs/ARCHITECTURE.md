@@ -512,15 +512,14 @@ Browser → Vercel Next.js Server Component / API route
         → Vercel OIDC token
         → AWS STS AssumeRoleWithWebIdentity
         → read-only IAM role
-        → DynamoDB incident-history (Scan ≤100)
+        → DynamoDB incident-history & platform-agent-activity tables (Scan/Query)
 ```
 
-- 브라우저에는 AWS credential이 전달되지 않는다.
-- Vercel에는 장기 access key를 저장하지 않고 `AWS_ROLE_ARN`만 설정한다.
-- IAM trust는 Vercel team + project + production/preview environment로 제한한다.
-- 현재 live 범위는 AWS incident history뿐이며 deployments/agents/provider health는 명시적 demo data다.
-- live read 실패 시 demo fallback으로 전환하되 UI에 `DEMO FALLBACK`을 표시한다.
-- 상세 활성화 절차: [`docs/DASHBOARD_LIVE_DATA.md`](DASHBOARD_LIVE_DATA.md)
+- 브라우저에는 AWS credential이 노출되거나 전달되지 않습니다.
+- Vercel에는 장기 Access Key를 저장하지 않고, OIDC를 활용한 `AWS_ROLE_ARN`만 설정하여 키리스(Keyless) 자격증명 획득을 수행합니다.
+- IAM trust 관계는 Vercel team (`men16922`), project (`prj_zvAvIBSR99TCVXhaxeAaXeTCahfp`), production/preview 환경으로 명시적으로 엄격히 제한됩니다.
+- 대시보드의 모든 데모 목업 폴백 데이터셋이 완전히 제거되었으며, 인시던트 피드, 배포 포스처, 에이전트 활동 이력 및 감사 로그(Audit Logs)는 모두 실시간 Live 모드로 DynamoDB에서 직접 조회 및 업데이트를 수행합니다.
+- 상세 연동 절차: [`docs/DASHBOARD_LIVE_DATA.md`](DASHBOARD_LIVE_DATA.md)
 
 ---
 
