@@ -2,6 +2,29 @@
 
 ---
 
+## 환경별 기술 스택 (한눈에)
+
+프로비저닝 · 배포 · 에이전트 런타임 · Day-2를 환경별로 정리한 **단일 레퍼런스**. 상세는 각 섹션 참조. 모든 레이어는 `ServiceSpec`(선언적 의도)을 AI 에이전트가 해석해 실행하며, **capability → 환경별 네이티브 어댑터** 패턴으로 통일된다.
+
+| 레이어 | AWS | GCP | Azure | On-Prem |
+|---|---|---|---|---|
+| **Provision (IaC)** | CDK / Terraform | gcloud / Terraform | az / Terraform | **Terraform + Ansible** |
+| **Cluster** | EKS | GKE | AKS | kind · k3s · kubeadm |
+| **Registry** | ECR | Artifact Registry | ACR | Harbor · local registry |
+| **Build** | CodeBuild | Cloud Build | ACR Tasks | docker build |
+| **Push** | ECR | Artifact Registry | ACR | private registry |
+| **Deploy** | kubectl → EKS | kubectl → GKE | kubectl → AKS | kubectl → local |
+| **Validate** | HTTP health + kubectl | 〃 | 〃 | 〃 |
+| **AI Agent (deploy)** | Strands + Bedrock Claude | ADK + Gemini 3.5 Flash | MSFT SDK + Azure GPT-5.4 | **Pydantic AI + Local Qwen (MLX)** |
+| **Agent Runtime** | Bedrock AgentCore | Vertex AI Agent Engine | Foundry Agent Service | **kagent (CNCF)** |
+| **Day-2 (Event / Orch)** | EventBridge / Step Functions | Pub/Sub / Cloud Workflows | Event Grid / Durable Functions | Webhook / Temporal |
+
+**구현 상태:** Deploy(4-provider) ✅ · On-Prem Provision(Terraform kind + Ansible k3s) ✅ · Day-2(AWS/GCP/Azure) ✅ · 클라우드 Provision·Agent Runtime 호스팅·Orchestrator+A2A 통합 = 🔲 로드맵.
+
+> **AI Model Router:** 위 "AI Agent (deploy)"는 각 환경의 *네이티브(recommended)* 조합일 뿐이다. 모델(두뇌)과 환경(대상)은 분리돼 있어 어떤 모델이든 어떤 환경에 배포할 수 있고, 적합도만 표기된다 ([상세](#ai-model-router-모델--환경-분리)).
+
+---
+
 ## 1. High-Level Architecture (전체 구조)
 
 ![High-Level Architecture](images/architecture-high-level.png)
@@ -147,10 +170,10 @@
 | **Strands Agent** | Strands | AWS | Bedrock Claude | Cloud SDK (aws cli) |
 | **ADK Agent** | Google ADK | GCP | Vertex AI Gemini 3.5 Flash | Cloud SDK (gcloud) |
 | **MS Agent** | MSFT Agent SDK | Azure | Azure OpenAI GPT-5.4 | Cloud SDK (az cli) |
-| **On-Prem Agent** | **Pydantic AI** | On-Prem K8s | Local MLX Qwen (or any OpenAI-compat) | MCP Gateway (kubectl/docker) |
+| **On-Prem Agent** | **Pydantic AI** | On-Prem K8s | Local MLX Qwen (or any OpenAI-compat) | in-process 도구 (kubectl/docker/terraform subprocess) |
 
-- AWS/GCP/Azure: 각 cloud SDK를 직접 호출하여 빌드/푸시/배포
-- On-Prem: **MCP Gateway를 통해서만** 클러스터에 접근 (kubectl + docker subprocess)
+- AWS/GCP/Azure: 각 cloud SDK를 직접 호출하여 빌드/푸시/배포.
+- On-Prem: 인터랙티브 에이전트(`local_deployer`)는 **in-process Python 도구**로 직접 실행. **MCP Gateway는 A2A/외부 에이전트용 별개 경로**이며, 인터랙티브 에이전트의 MCP Gateway 통합은 [로드맵](#orchestrator--a2a-멀티에이전트-통합--타깃)이다.
 - "담당(네이티브)"는 recommended 환경일 뿐, AI Model Router가 모델↔환경을 분리한다 (아래).
 
 ### AI Model Router (모델 ↔ 환경 분리)
@@ -247,6 +270,39 @@
 | Tier 1 (경량) | **Terraform + kind** (Docker 노드) | ❌ 불필요 |
 | Tier 2 (실 온프렘) | **Multipass VM(Ubuntu) + Ansible → k3s** | ✅ VM 먼저 |
 
+### Orchestrator + A2A (멀티에이전트 통합 — 타깃)
+
+> 지금까지의 조각(2-역할 · Model Router · Agent Runtime · MCP Gateway)을 하나로 수렴시키는 상위 패턴. 요청을 받아 적절한 전문 에이전트에게 위임하는 **Orchestrator(supervisor)** + 에이전트 간 **A2A** 상호운용 + **MCP** 단일 도구 카탈로그.
+
+```
+        사용자 NL 요청
+             │
+     ┌───────▼────────┐
+     │  Orchestrator   │  요청 분류 → 적절한 에이전트/역할로 라우팅
+     │  (supervisor)   │  (AI Model Router의 확장)
+     └───┬────┬────┬───┘
+     A2A │    │    │ A2A
+     ┌───▼─┐ ┌▼──┐ ┌▼─────────────┐
+     │Prov │ │Dep│ │ kagent agents │  k8s · istio · promql · observability …
+     │agent│ │loy│ │ (K8s CRD)     │
+     └──┬──┘ └─┬─┘ └──────┬────────┘
+        └───── MCP Gateway (단일 도구 카탈로그) ─────┘
+```
+
+- **Orchestrator = supervisor 라우터**: NL 요청이 provision / deploy / 진단 중 무엇인지 판단 → 해당 전문 에이전트에게 **A2A**로 위임. 현재 `orchestrator.py`(배포 파이프라인 엔진) + AI Model Router를 이 supervisor로 확장한다.
+- **A2A (Agent-to-Agent):** 우리 에이전트 ↔ **kagent 에이전트** 상호운용. Gateway의 A2A Server가 이미 있고, kagent도 A2A 네이티브라 연결 가능.
+- **MCP Gateway = 단일 거버넌스 도구 카탈로그** (AgentCore Gateway 스타일).
+
+**현재 vs 타깃:**
+
+| | 현재 | 타깃 |
+|---|---|---|
+| 라우팅 | AI Model Router (model × env × role) | + Orchestrator supervisor (요청 → 에이전트) |
+| 에이전트 연결 | 각자 독립 실행 | **A2A** 상호운용 (kagent 포함) |
+| 도구 | in-process(인터랙티브) + MCP(A2A) **분리** | **MCP Gateway 단일 카탈로그** |
+
+**레퍼런스 (`whchoi98/awsops`):** AgentCore Runtime + Strands + 다수 MCP 게이트웨이 + route classifier — 정확히 이 Orchestrator + MCP 패턴이다.
+
 ### Pipeline DAG 각 Step 설명
 
 | Step | 역할 | 실패 시 |
@@ -262,14 +318,16 @@
 
 ### On-Prem 제어 경로
 
-On-Prem은 다른 클라우드와 제어 방식이 근본적으로 다르다:
+On-Prem은 두 실행 경로가 있다 (현재 분리, 통합은 로드맵):
 
 ```
-AWS/GCP/Azure:  AI Agent → Cloud SDK 직접 호출 (aws/gcloud/az cli)
-On-Prem:        On-Prem Agent → MCP Gateway → kubectl/docker subprocess → K8s 클러스터
+AWS/GCP/Azure:        AI Agent → Cloud SDK 직접 호출 (aws/gcloud/az cli)
+On-Prem (인터랙티브):  On-Prem Agent(Pydantic AI) → in-process 도구
+                        (kubectl / docker / terraform / ansible subprocess) → K8s
+On-Prem (A2A/외부):    외부 Agent → A2A → MCP Gateway → kubectl/docker → K8s
 ```
 
-On-Prem Agent는 **MCP Server가 유일한 실행 인터페이스**. kubeconfig가 가리키는 클러스터가 타겟이 된다.
+인터랙티브 에이전트는 in-process 도구로 직접 실행하고, MCP Gateway는 A2A/외부 에이전트가 쓴다. 대상 클러스터는 kubeconfig 컨텍스트가 가리키는 것.
 
 | 환경 | K8s 클러스터 | Registry |
 |------|-------------|----------|
@@ -575,8 +633,7 @@ rules:
            → 결과를 A2A task artifact로 반환
 ```
 
-Gateway는 **On-Prem Agent의 유일한 실행 인터페이스**이자,
-다른 provider에서도 kubectl 기반 작업이 필요할 때 사용 가능.
+Gateway(MCP+A2A)는 **A2A/외부 에이전트의 실행 인터페이스**다 (kagent 등과의 상호운용 지점). 인터랙티브 On-Prem 에이전트는 현재 in-process 도구를 쓰며, 이 Gateway로의 통합은 [Orchestrator+A2A 로드맵](#orchestrator--a2a-멀티에이전트-통합--타깃)에 속한다.
 
 ### IAM / RBAC (Provider별 접근 제어)
 
