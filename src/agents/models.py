@@ -119,14 +119,17 @@ def _to_dict(obj: Any) -> Any:
 # Deployment models (re-exported from adapters.deployment.base)
 # ------------------------------------------------------------------
 
-from src.agents.adapters.deployment.base import (  # noqa: E402
-    ServiceSpec,
+# Intentional re-export surface: `from src.agents.models import ServiceSpec`.
+# noqa: F401 keeps ruff --fix from pruning these as "unused" (usage is the
+# public re-export, not a local reference); E402 allows the mid-file import.
+from src.agents.adapters.deployment.base import (  # noqa: E402, F401
     BuildResult,
-    PushResult,
     DeployResult,
     DeployStatus,
-    ValidationResult,
+    PushResult,
     RollbackResult,
+    ServiceSpec,
+    ValidationResult,
 )
 
 __all_deployment__ = [
