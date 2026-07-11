@@ -1,8 +1,6 @@
 import { DataSourceBadge } from "@/components/data-source-badge";
-import { AgentDeployChat } from "@/components/agent-deploy-chat";
-import { AgentCard } from "@/components/agent-card";
 import { ActivityTimeline } from "@/components/activity-timeline";
-import { OnPremRuntimePanel } from "@/components/onprem-runtime-panel";
+import { AgentsWorkspace } from "@/components/agents-workspace";
 import { getAgentActivityFeed } from "@/lib/activity-data";
 
 export const dynamic = "force-dynamic";
@@ -23,18 +21,7 @@ export default async function AgentsPage() {
         <DataSourceBadge source={source} />
       </div>
 
-      {/* Agent summary */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <AgentCard name="Strands Agent" provider="AWS" llm="Bedrock Claude" cloud="aws" />
-        <AgentCard name="ADK Agent" provider="Google Cloud" llm="Gemini 3.5 Flash" cloud="gcp" />
-        <AgentCard name="MS Agent" provider="Microsoft Azure" llm="GPT-5.4" cloud="azure" />
-        <AgentCard name="On-Prem Agent" provider="On-Premise" llm="Local Qwen + kagent" cloud="onprem" />
-      </div>
-
-      <OnPremRuntimePanel />
-
-      {/* Deploy via chat — AI Model Router */}
-      <AgentDeployChat />
+      <AgentsWorkspace />
 
       {/* Activity timeline (paginated, 10 per page) */}
       <ActivityTimeline activities={activities} />

@@ -7,7 +7,7 @@ import { AGENT_TOOLS, toolCount } from "@/lib/agent-tools";
 
 type Cloud = "aws" | "gcp" | "azure" | "onprem";
 
-export function AgentCard({ name, provider, llm, cloud }: { name: string; provider: string; llm: string; cloud: Cloud }) {
+export function AgentCard({ name, provider, llm, cloud, selected = false, onSelect }: { name: string; provider: string; llm: string; cloud: Cloud; selected?: boolean; onSelect?: () => void }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -15,7 +15,7 @@ export function AgentCard({ name, provider, llm, cloud }: { name: string; provid
   const count = toolCount(cloud);
 
   return (
-    <div className="surface p-4 transition-transform duration-200 hover:-translate-y-0.5">
+    <div onClick={onSelect} className={`surface cursor-pointer p-4 transition-all duration-200 hover:-translate-y-0.5 ${selected ? "border-[#8ab4f8]/70 bg-[var(--accent-soft)] shadow-[0_0_0_1px_rgba(138,180,248,0.16)]" : ""}`}>
       <div className="mb-3 flex items-center gap-2">
         <span className="flex h-8 w-10 shrink-0 items-center justify-center rounded-lg bg-white p-1">
           <ProviderLogo provider={cloud} />
@@ -26,11 +26,12 @@ export function AgentCard({ name, provider, llm, cloud }: { name: string; provid
       <div className="mt-1 text-xs text-[var(--muted)]">{llm}</div>
 
       <button
-        onClick={() => setOpen(true)}
+        onClick={(event) => { event.stopPropagation(); setOpen(true); }}
         className="mt-3 inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10px] font-semibold text-[var(--muted)] transition-colors hover:border-[#8ab4f8]/40 hover:text-white"
       >
         🔧 Tools <span className="text-[#8ab4f8]">{count}</span>
       </button>
+      {selected && <span className="ml-2 text-[10px] font-bold text-[#8ab4f8]">SELECTED</span>}
 
       {open && mounted && createPortal(
         <div

@@ -34,13 +34,6 @@ interface ChatMessage {
   hint?: string;
 }
 
-const ENVIRONMENTS: { id: string; label: string }[] = [
-  { id: "onprem", label: "On-Prem" },
-  { id: "aws", label: "AWS" },
-  { id: "gcp", label: "Google Cloud" },
-  { id: "azure", label: "Azure" },
-];
-
 const verdictStyle: Record<Verdict, string> = {
   recommended: "bg-emerald-400/10 text-[var(--success)] border-emerald-500/30",
   allowed: "bg-amber-400/10 text-[var(--warning)] border-amber-500/30",
@@ -53,12 +46,12 @@ const stepMark: Record<StepStatus, { icon: string; cls: string }> = {
   fail: { icon: "✗", cls: "text-[var(--danger)]" },
 };
 
-export function AgentDeployChat() {
+export function AgentDeployChat({ selectedProvider, agentName, onModelChange }: { selectedProvider: string; agentName: string; onModelChange?: (model: Pick<ModelOption, "id" | "label" | "llm" | "verdict"> | null) => void }) {
   const { data: session } = useSession();
   const role = (session?.user as { role?: string } | undefined)?.role || "viewer";
   const canDeploy = role === "admin" || role === "operator";
 
-  const [provider, setProvider] = useState("onprem");
+  const [provider, setProvider] = useState(selectedProvider);
   const [models, setModels] = useState<ModelOption[]>([]);
   const [modelId, setModelId] = useState("local-qwen");
   const [modelsNotice, setModelsNotice] = useState<string | null>(null);
@@ -87,11 +80,17 @@ export function AgentDeployChat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [provider]);
 
+  useEffect(() => setProvider(selectedProvider), [selectedProvider]);
+
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
   const selected = models.find((m) => m.id === modelId);
+
+  useEffect(() => {
+    onModelChange?.(selected ? { id: selected.id, label: selected.label, llm: selected.llm, verdict: selected.verdict } : null);
+  }, [selected, onModelChange]);
 
   const send = async () => {
     const text = instruction.trim();
@@ -192,9 +191,9 @@ export function AgentDeployChat() {
     <section className="surface p-5 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h3 className="text-base font-semibold text-[#cbd6e9]">Ask the agent — AI Model Router</h3>
+          <h3 className="text-base font-semibold text-[#cbd6e9]">Ask {agentName}</h3>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Pick an environment and model, then ask — the agent investigates, deploys or recovers via tools, streaming live.
+            Environment is set by your selected agent. Choose a compatible model, then investigate, deploy, or recover with a live trace.
           </p>
         </div>
         {!canDeploy && (
@@ -204,18 +203,10 @@ export function AgentDeployChat() {
         )}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">Environment</label>
-          <select
-            value={provider}
-            onChange={(e) => setProvider(e.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-[#cbd6e9] focus:outline-none focus:border-[#8ab4f8]"
-          >
-            {ENVIRONMENTS.map((env) => (
-              <option key={env.id} value={env.id}>{env.label}</option>
-            ))}
-          </select>
+      <div className="grid gap-3 sm:grid-cols-[0.8fr_1.2fr]">
+        <div className="rounded-lg border border-white/8 bg-white/[0.025] px-3 py-2">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">Selected environment</div>
+          <div className="mt-1 text-sm font-semibold capitalize">{provider === "onprem" ? "On-Prem" : provider}</div>
         </div>
         <div className="space-y-1">
           <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">AI Model</label>
