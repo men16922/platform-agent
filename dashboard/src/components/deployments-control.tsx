@@ -13,6 +13,8 @@ const statusIcon = {
   "rolling-back": { icon: "↺", color: "text-[var(--warning)]" },
 };
 
+const PAGE_SIZE = 10;
+
 interface DeploymentsControlProps {
   initialDeployments: Deployment[];
 }
@@ -20,6 +22,7 @@ interface DeploymentsControlProps {
 export function DeploymentsControl({ initialDeployments }: DeploymentsControlProps) {
   const { data: session } = useSession();
   const [deployments, setDeployments] = useState<Deployment[]>(initialDeployments);
+  const [page, setPage] = useState(0);
   
   // Modal states
   const [showTriggerModal, setShowTriggerModal] = useState(false);
@@ -36,6 +39,9 @@ export function DeploymentsControl({ initialDeployments }: DeploymentsControlPro
 
   const userRole = (session?.user as any)?.role || "viewer";
   const isAllowed = userRole === "admin" || userRole === "operator";
+  const pages = Math.max(1, Math.ceil(deployments.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pages - 1);
+  const currentDeployments = deployments.slice(currentPage * PAGE_SIZE, currentPage * PAGE_SIZE + PAGE_SIZE);
 
   const triggerDeployment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +76,8 @@ export function DeploymentsControl({ initialDeployments }: DeploymentsControlPro
         agent: "Strands Agent (Bedrock)",
         created_at: new Date().toISOString(),
       };
-      setDeployments([newDep, ...deployments]);
+      setDeployments((current) => [newDep, ...current]);
+      setPage(0);
     } catch (err: any) {
       setErrorMsg(err.message || "An error occurred");
     } finally {
@@ -117,7 +124,8 @@ export function DeploymentsControl({ initialDeployments }: DeploymentsControlPro
         agent: "Rollback Executor",
         created_at: new Date().toISOString(),
       };
-      setDeployments([newDep, ...deployments]);
+      setDeployments((current) => [newDep, ...current]);
+      setPage(0);
     } catch (err: any) {
       setErrorMsg(err.message || "An error occurred");
     } finally {
@@ -290,7 +298,7 @@ export function DeploymentsControl({ initialDeployments }: DeploymentsControlPro
             </tr>
           </thead>
           <tbody>
-            {deployments.map((dep) => {
+            {currentDeployments.map((dep) => {
               const status = statusIcon[dep.status as keyof typeof statusIcon] || { icon: "●", color: "text-[var(--warning)]" };
               const isActionLoading = actionLoadingId === dep.id;
 
@@ -348,6 +356,28 @@ export function DeploymentsControl({ initialDeployments }: DeploymentsControlPro
           </tbody>
         </table>
       </div>
+
+      {pages > 1 && (
+        <div className="flex items-center justify-center gap-3 text-xs">
+          <button
+            onClick={() => setPage(currentPage - 1)}
+            disabled={currentPage === 0}
+            className="rounded-md border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[var(--muted)] transition-colors hover:text-white disabled:opacity-40 disabled:hover:text-[var(--muted)]"
+          >
+            ← Prev
+          </button>
+          <span className="text-[var(--muted)]">
+            {currentPage + 1} <span className="opacity-50">/ {pages}</span>
+          </span>
+          <button
+            onClick={() => setPage(currentPage + 1)}
+            disabled={currentPage >= pages - 1}
+            className="rounded-md border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[var(--muted)] transition-colors hover:text-white disabled:opacity-40 disabled:hover:text-[var(--muted)]"
+          >
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   );
 }

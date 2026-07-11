@@ -1,31 +1,29 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { ProviderLogo, providerBadgeStyles } from "@/components/provider-logo";
 import { ModelLogo, modelIdFromAgent } from "@/components/model-logo";
 import type { AgentActivity } from "@/lib/mock-data";
 
-const PAGE_SIZE = 10;
+const RECENT_ACTIVITY_LIMIT = 5;
 
 export function ActivityTimeline({ activities }: { activities: AgentActivity[] }) {
-  const [page, setPage] = useState(0);
-  const pages = Math.max(1, Math.ceil(activities.length / PAGE_SIZE));
-  const current = Math.min(page, pages - 1);
-  const slice = activities.slice(current * PAGE_SIZE, current * PAGE_SIZE + PAGE_SIZE);
+  const recentActivities = activities.slice(0, RECENT_ACTIVITY_LIMIT);
 
   return (
     <section>
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="eyebrow">Live activity timeline</h3>
-        <span className="text-xs text-[var(--muted)]">{activities.length} verified actions</span>
+        <h3 className="eyebrow">Recent activity</h3>
+        <span className="text-xs text-[var(--muted)]">
+          Latest {recentActivities.length} of {activities.length} verified actions
+        </span>
       </div>
 
       <div className="space-y-3">
-        {slice.length === 0 && (
+        {recentActivities.length === 0 && (
           <p className="text-xs text-[var(--muted)] py-6 text-center">No activity yet.</p>
         )}
-        {slice.map((activity) => {
+        {recentActivities.map((activity) => {
           const model = activity.model ?? modelIdFromAgent(activity.agent);
           const cls = "block surface relative overflow-hidden p-4 transition-colors hover:border-[#52647f]";
           const body = (
@@ -68,27 +66,6 @@ export function ActivityTimeline({ activities }: { activities: AgentActivity[] }
         })}
       </div>
 
-      {pages > 1 && (
-        <div className="mt-4 flex items-center justify-center gap-3 text-xs">
-          <button
-            onClick={() => setPage(current - 1)}
-            disabled={current === 0}
-            className="rounded-md border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[var(--muted)] transition-colors hover:text-white disabled:opacity-40 disabled:hover:text-[var(--muted)]"
-          >
-            ← Prev
-          </button>
-          <span className="text-[var(--muted)]">
-            {current + 1} <span className="opacity-50">/ {pages}</span>
-          </span>
-          <button
-            onClick={() => setPage(current + 1)}
-            disabled={current >= pages - 1}
-            className="rounded-md border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[var(--muted)] transition-colors hover:text-white disabled:opacity-40 disabled:hover:text-[var(--muted)]"
-          >
-            Next →
-          </button>
-        </div>
-      )}
     </section>
   );
 }
