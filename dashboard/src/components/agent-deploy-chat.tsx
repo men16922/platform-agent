@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { ModelLogo } from "@/components/model-logo";
+import { Markdown } from "@/components/markdown";
 
 type Verdict = "recommended" | "allowed" | "discouraged";
 type StepStatus = "running" | "ok" | "fail";
@@ -272,61 +273,6 @@ export function AgentDeployChat() {
   );
 }
 
-// Minimal, dependency-free markdown for the agent's summary (our own LLM output):
-// **bold**, `code`, and `-`/`*` bullet lists. Text is rendered via React children,
-// so it is escaped — no HTML injection.
-function renderInline(text: string, keyBase: string): React.ReactNode[] {
-  const nodes: React.ReactNode[] = [];
-  const regex = /(\*\*[^*]+\*\*|`[^`]+`)/g;
-  let last = 0;
-  let match: RegExpExecArray | null;
-  let i = 0;
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > last) nodes.push(text.slice(last, match.index));
-    const tok = match[0];
-    if (tok.startsWith("**")) {
-      nodes.push(<strong key={`${keyBase}-${i}`} className="font-semibold text-[#e6edf7]">{tok.slice(2, -2)}</strong>);
-    } else {
-      nodes.push(
-        <code key={`${keyBase}-${i}`} className="rounded bg-white/[0.06] px-1 py-0.5 text-[10px] text-[#a9c7ff]">{tok.slice(1, -1)}</code>,
-      );
-    }
-    last = match.index + tok.length;
-    i++;
-  }
-  if (last < text.length) nodes.push(text.slice(last));
-  return nodes;
-}
-
-function Markdown({ text }: { text: string }) {
-  const lines = text.split("\n");
-  const blocks: React.ReactNode[] = [];
-  let bullets: string[] = [];
-  const flush = (key: string) => {
-    if (!bullets.length) return;
-    blocks.push(
-      <ul key={key} className="list-disc space-y-0.5 pl-4 marker:text-[var(--muted)]">
-        {bullets.map((li, i) => <li key={i}>{renderInline(li, `${key}-${i}`)}</li>)}
-      </ul>,
-    );
-    bullets = [];
-  };
-  lines.forEach((line, idx) => {
-    const bullet = line.match(/^\s*[-*]\s+(.*)$/);
-    if (bullet) {
-      bullets.push(bullet[1]);
-      return;
-    }
-    flush(`ul-${idx}`);
-    if (line.trim() === "") {
-      blocks.push(<div key={`sp-${idx}`} className="h-1" />);
-      return;
-    }
-    blocks.push(<p key={`p-${idx}`} className="leading-relaxed">{renderInline(line, `p-${idx}`)}</p>);
-  });
-  flush("ul-end");
-  return <div className="space-y-1">{blocks}</div>;
-}
 
 function ToolBlock({ block }: { block: { tool: string; status: StepStatus; args?: Record<string, unknown>; result?: unknown } }) {
   const [open, setOpen] = useState(false);

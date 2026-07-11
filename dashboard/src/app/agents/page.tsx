@@ -60,9 +60,9 @@ export default async function AgentsPage() {
                   </span>
                 </div>
                 <div className="flex gap-1 flex-wrap items-center">
-                  {activity.tool_calls.map((tool) => (
+                  {activity.tool_calls.map((tool, ti) => (
                     <code
-                      key={tool}
+                      key={`${tool}-${ti}`}
                       className="rounded-md border border-white/5 bg-white/[0.035] px-1.5 py-1 text-[10px] text-[var(--muted)]"
                     >
                       {tool}
