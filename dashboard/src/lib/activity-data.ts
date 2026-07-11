@@ -1,6 +1,5 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
-import { awsCredentialsProvider } from "@vercel/oidc-aws-credentials-provider";
+import { QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { getDocumentClient } from "@/lib/aws-client";
 
 import {
   mockDeployments,
@@ -34,31 +33,10 @@ export interface ProviderHealthFeed {
   notice?: string;
 }
 
-const DEFAULT_REGION = "us-east-1";
 const DEFAULT_TABLE = "platform-agent-activity";
 
 function isLiveMode() {
   return process.env.DASHBOARD_DATA_SOURCE === "aws";
-}
-
-function createDocumentClient() {
-  const region = process.env.PLATFORM_AWS_REGION ?? DEFAULT_REGION;
-  const roleArn = process.env.AWS_ROLE_ARN;
-
-  if (process.env.VERCEL && !roleArn) {
-    throw new Error("AWS_ROLE_ARN is required for live data on Vercel");
-  }
-
-  const client = new DynamoDBClient({
-    region,
-    credentials: roleArn
-      ? awsCredentialsProvider({ roleArn, clientConfig: { region } })
-      : undefined,
-  });
-
-  return DynamoDBDocumentClient.from(client, {
-    marshallOptions: { removeUndefinedValues: true },
-  });
 }
 
 function getTableName() {
@@ -97,7 +75,7 @@ export async function getDeploymentFeed(): Promise<DeploymentFeed> {
   }
 
   try {
-    const client = createDocumentClient();
+    const client = getDocumentClient();
     const result = await client.send(
       new QueryCommand({
         TableName: getTableName(),
@@ -156,7 +134,7 @@ export async function getAgentActivityFeed(): Promise<AgentActivityFeed> {
   }
 
   try {
-    const client = createDocumentClient();
+    const client = getDocumentClient();
     const result = await client.send(
       new QueryCommand({
         TableName: getTableName(),
@@ -210,7 +188,7 @@ export async function getProviderHealthFeed(): Promise<ProviderHealthFeed> {
   }
 
   try {
-    const client = createDocumentClient();
+    const client = getDocumentClient();
     const result = await client.send(
       new QueryCommand({
         TableName: getTableName(),

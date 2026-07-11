@@ -72,6 +72,25 @@ export class IncidentAgentStack extends cdk.Stack {
       projectionType: dynamodb.ProjectionType.ALL,
     });
 
+    // Dashboard 사용자 역할 관리 테이블 (Auth Phase 2)
+    const usersTable = new dynamodb.Table(this, 'PlatformAgentUsers', {
+      tableName: 'platform-agent-users',
+      partitionKey: { name: 'username', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    // Dashboard 감사 로그 테이블 (Auth Phase 3)
+    const auditTable = new dynamodb.Table(this, 'PlatformAgentAudit', {
+      tableName: 'platform-agent-audit',
+      partitionKey: { name: 'audit_id', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      timeToLiveAttribute: 'ttl',
+      encryption: dynamodb.TableEncryption.AWS_MANAGED,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
     // Vercel Dashboard read path — short-lived OIDC credentials, DynamoDB read-only.
     // Enable with CDK context:
     //   -c vercelTeamSlug=<team> -c vercelProjectName=<project>
@@ -114,6 +133,20 @@ export class IncidentAgentStack extends cdk.Stack {
       });
       incidentTable.grantReadData(vercelDashboardRole);
       activityTable.grantReadData(vercelDashboardRole);
+      usersTable.grantReadWriteData(vercelDashboardRole);
+      auditTable.grantWriteData(vercelDashboardRole);
+
+      // Step Functions SendTaskSuccess/SendTaskFailure permissions.
+      // states:SendTaskSuccess and states:SendTaskFailure require "*" resources because task token
+      // is parsed dynamically by AWS states service and cannot be restricted by resource ARN.
+      vercelDashboardRole.addToPrincipalPolicy(new iam.PolicyStatement({
+        actions: [
+          'states:SendTaskSuccess',
+          'states:SendTaskFailure',
+          'states:DescribeExecution',
+        ],
+        resources: ['*'],
+      }));
     }
 
     // ─────────────────────────────────────────────────────────

@@ -46,12 +46,12 @@
 10. **On-prem K8s** — `make local-cluster` (kind 테스트용) → 3노드 + registry + NGINX ingress.
 11. **Deployment Adapters** — 4 provider (onprem/aws/gcp/azure): Build→Push→Deploy→Validate→Rollback.
 12. **Execution Adapters** — 4 provider: capability → provider-specific action resolution.
-13. **Dashboard** — Next.js 16 + Tailwind 4, 4페이지. AWS incident live/demo/fallback + deployment/activity durable read model (DynamoDB `platform-agent-activity` + GSI1) + Vercel OIDC 최소권한 read role. OG/Twitter image 배포 완료. Auth boundary 설계 완료, GitHub OAuth (Auth.js Phase 1) 연동 완료.
+13. **Dashboard** — Next.js 16 + Tailwind 4, 4페이지. AWS incident live/demo/fallback + deployment/activity durable read model (DynamoDB `platform-agent-activity` + GSI1) + Vercel OIDC 최소권한 read role. OG/Twitter image 배포 완료. Auth boundary 설계 완료, GitHub OAuth (Auth.js Phase 1) 연동 완료, Auth Phase 2/3 (DynamoDB User/Audit Tables, SFN Approval, Deployment Trigger/Rollback API) 구현 완료.
 
 ## Active Focus
 
-- Task 11 [auto] 완료: activity table write path 연결 및 Auth.js Phase 1 구현 완료
-- 다음: Vercel env에 `DASHBOARD_ACTIVITY_TABLE` 설정 주입 및 재배포 (manual), Auth Phase 2/3 및 Write UI 가드 구현
+- Auth Phase 2 (Option 1) & Phase 3 (Option 2) 구현 완료 및 빌드 검증 성공.
+- 다음: Vercel 환경 변수 주입 및 실 AWS CDK 환경 배포.
 
 ## Open Risks / Gaps
 
@@ -59,5 +59,5 @@
 2. **Slack App 미연결** — APPROVE 승인 버튼 코드+가이드+E2E 테스트 완비, 실 Slack App 미생성 (코드 ready).
 3. **GCP/Azure 실 클러스터** — tool calling 검증 완료, 실 인프라(GKE/AKS) 배포는 비용 때문에 필요 시 수행.
 4. **Dashboard live dataset** — AWS live 연결 정상; `incident-history` 0건, `platform-agent-activity` 0건 (write path는 연동됨).
-5. **Dashboard auth** — Auth.js Phase 1 (GitHub OAuth / JWT) 구현 및 컴파일 검증 성공. 쓰기/승인 UI는 구현 전 금지.
+5. **Dashboard auth** — Auth.js Phase 1/2/3 구현 및 로컬 Next.js 컴파일/빌드 검증 성공.
 6. **Dashboard dependency audit** — Next.js 16.2.10 내부 PostCSS 중간등급 취약점 2건; upstream release 대기.

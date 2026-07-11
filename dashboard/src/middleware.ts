@@ -16,5 +16,6 @@ export const config = {
     "/api/dashboard/:path*/rollback",
     "/api/dashboard/deployments/trigger",
     "/api/dashboard/settings",
+    "/api/dashboard/users",
   ],
 };
