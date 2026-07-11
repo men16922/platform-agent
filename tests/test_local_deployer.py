@@ -76,7 +76,11 @@ def test_ops_agent_includes_readonly_tools():
 
 def test_local_deployer_drives_tools_with_test_model(monkeypatch):
     monkeypatch.setattr(ld, "get_deployment_adapters", _fake_adapters)
-    agent = ld.create_local_deployer(model=TestModel())
+    # Limit to deploy tools — the agent also has read-only ops + MUTATING provision
+    # tools (real terraform/kubectl) that must not run in a unit test.
+    agent = ld.create_local_deployer(
+        model=TestModel(call_tools=["build_image", "push_image", "deploy_to_cluster", "validate_deployment"])
+    )
 
     result = agent.run_sync("Deploy orders-api v1.0.0 to the local cluster with 1 replica")
 
@@ -87,6 +91,10 @@ def test_local_deployer_drives_tools_with_test_model(monkeypatch):
         for part in getattr(message, "parts", [])
         if isinstance(part, ToolCallPart)
     }
-    # TestModel exercises every registered tool once — proves the wiring end to end.
     assert "build_image" in called
     assert "deploy_to_cluster" in called
+
+
+def test_platform_agent_includes_provision_tools():
+    names = {t.__name__ for t in ld.ALL_OPS_TOOLS}
+    assert {"provision_cluster", "teardown_cluster"} <= names

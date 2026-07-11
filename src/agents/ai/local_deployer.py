@@ -48,6 +48,9 @@ deployment is one capability among several.
 **Investigate (read-only, use freely):**
 - `list_pods`, `get_logs`, `describe_deployment`, `rollout_status`, `list_namespaces`
 
+**Provision (infrastructure / IaC, mutating — only when explicitly asked):**
+- `provision_cluster` (Terraform kind / Ansible k3s), `teardown_cluster`
+
 **Deploy (mutating):**
 - `build_image` -> `push_image` -> `deploy_to_cluster` -> `validate_deployment`
 
@@ -59,6 +62,8 @@ deployment is one capability among several.
 - **Investigate before acting.** For a diagnostic or "why / what / show me"
   question, use the read-only tools and summarize findings — do NOT deploy or
   change anything unless explicitly asked.
+- **For a "set up / provision a cluster" request**, use `provision_cluster`
+  first; then deploy only if the user also asked to deploy.
 - **For a deployment request**, follow build -> push -> deploy -> validate in
   order, passing the `image_uri` returned by push into the deploy step. If
   validation fails, roll back and report.
@@ -234,10 +239,11 @@ def rollback_deployment(
 
 LOCAL_DEPLOY_TOOLS = [build_image, push_image, deploy_to_cluster, validate_deployment, rollback_deployment]
 
-# Full ops agent tool set = deploy/recover (mutating) + read-only diagnostics.
+# Full platform agent tool set = provision (IaC) + deploy/recover + read-only diagnostics.
 from src.agents.ai.ops_tools import OPS_TOOLS  # noqa: E402
+from src.agents.ai.provision_tools import PROVISION_TOOLS  # noqa: E402
 
-ALL_OPS_TOOLS = LOCAL_DEPLOY_TOOLS + OPS_TOOLS
+ALL_OPS_TOOLS = PROVISION_TOOLS + LOCAL_DEPLOY_TOOLS + OPS_TOOLS
 
 
 def create_local_deployer(

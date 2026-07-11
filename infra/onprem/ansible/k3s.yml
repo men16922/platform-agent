@@ -1,0 +1,58 @@
+---
+# On-prem cluster provisioning as config management (Tier 2: real Linux nodes).
+# Installs k3s (lightweight Kubernetes) on the target host(s). On a Mac, the
+# "nodes" are Multipass VMs (multipass launch --name node1 ...); in production
+# they are bare-metal / VM on-prem hosts. Run with:
+#
+#   ansible-playbook -i inventory.ini infra/onprem/ansible/k3s.yml
+#
+# Terraform provisions the substrate (VMs / network); Ansible configures the
+# node (installs Kubernetes) — the standard on-prem split.
+
+- name: Provision a k3s Kubernetes node
+  hosts: k3s_nodes
+  become: true
+  vars:
+    k3s_version: "v1.31.4+k3s1"
+    registry_mirror_host: "localhost:5001"
+
+  tasks:
+    - name: Ensure prerequisites are present
+      ansible.builtin.apt:
+        name: [curl, ca-certificates]
+        state: present
+        update_cache: true
+
+    - name: Configure containerd registry mirror (private/Harbor registry)
+      ansible.builtin.copy:
+        dest: /etc/rancher/k3s/registries.yaml
+        mode: "0644"
+        content: |
+          mirrors:
+            "{{ registry_mirror_host }}":
+              endpoint:
+                - "http://{{ registry_mirror_host }}"
+
+    - name: Install k3s (idempotent — skips if already installed)
+      ansible.builtin.shell: |
+        set -o pipefail
+        if ! command -v k3s >/dev/null 2>&1; then
+          curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_version }} sh -
+        fi
+      args:
+        executable: /bin/bash
+      register: k3s_install
+      changed_when: "'No change' not in k3s_install.stdout"
+
+    - name: Wait for the node to be Ready
+      ansible.builtin.shell: |
+        k3s kubectl wait --for=condition=Ready node --all --timeout=120s
+      args:
+        executable: /bin/bash
+      changed_when: false
+
+    - name: Fetch kubeconfig to the control host
+      ansible.builtin.fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: "./kubeconfig-{{ inventory_hostname }}.yaml"
+        flat: true
