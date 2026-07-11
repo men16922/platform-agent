@@ -3,6 +3,7 @@ import { ProviderLogo, providerBadgeStyles } from "@/components/provider-logo";
 import { ModelLogo, modelIdFromAgent } from "@/components/model-logo";
 import { DataSourceBadge } from "@/components/data-source-badge";
 import { AgentDeployChat } from "@/components/agent-deploy-chat";
+import { AgentCard } from "@/components/agent-card";
 import { getAgentActivityFeed } from "@/lib/activity-data";
 
 export const dynamic = "force-dynamic";
@@ -84,18 +85,6 @@ export default async function AgentsPage() {
           })}
         </div>
       </section>
-    </div>
-  );
-}
-
-function AgentCard({ name, provider, llm, cloud }: { name: string; provider: string; llm: string; cloud: "aws" | "gcp" | "azure" | "onprem" }) {
-  return (
-    <div className="surface p-4 transition-transform duration-200 hover:-translate-y-0.5">
-      <div className="mb-3 flex items-center gap-2">
-        <span className="flex h-8 w-10 shrink-0 items-center justify-center rounded-lg bg-white p-1"><ProviderLogo provider={cloud} /></span>
-        <span className="font-semibold text-sm">{name}</span>
-      </div>
-      <div className="text-xs text-[var(--muted)]">{provider}</div><div className="mt-1 text-xs text-[var(--muted)]">{llm}</div>
     </div>
   );
 }
