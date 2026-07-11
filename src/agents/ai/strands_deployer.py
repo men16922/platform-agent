@@ -87,7 +87,7 @@ def create_deployer_agent(
     # If provider is onprem and we want to use MLX-LM local server
     if provider == "onprem" and os.getenv("ONPREM_LLM_PROVIDER") == "mlx":
         base_url = os.getenv("ONPREM_LLM_ENDPOINT", "http://localhost:8080/v1")
-        model_id = os.getenv("ONPREM_LLM_MODEL", "mlx-community/Meta-Llama-3-8B-Instruct-4bit")
+        model_id = os.getenv("ONPREM_LLM_MODEL", "mlx-community/Qwen2.5-Coder-32B-Instruct-8bit")
         
         # Instantiate local OpenAIModel pointing to MLX-LM server
         local_model = OpenAIModel(
