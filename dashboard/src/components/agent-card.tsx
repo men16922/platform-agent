@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ProviderLogo } from "@/components/provider-logo";
 import { AGENT_TOOLS, toolCount } from "@/lib/agent-tools";
 
@@ -8,6 +9,8 @@ type Cloud = "aws" | "gcp" | "azure" | "onprem";
 
 export function AgentCard({ name, provider, llm, cloud }: { name: string; provider: string; llm: string; cloud: Cloud }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const groups = AGENT_TOOLS[cloud] ?? [];
   const count = toolCount(cloud);
 
@@ -29,9 +32,9 @@ export function AgentCard({ name, provider, llm, cloud }: { name: string; provid
         🔧 Tools <span className="text-[#8ab4f8]">{count}</span>
       </button>
 
-      {open && (
+      {open && mounted && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
           onClick={() => setOpen(false)}
         >
           <div
@@ -69,7 +72,8 @@ export function AgentCard({ name, provider, llm, cloud }: { name: string; provid
               ))
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
