@@ -19,6 +19,7 @@
 
 - `make check` (pytest) → **569 passed, 1 skipped** (2026-07-11) — AI Model Router / Pydantic AI On-Prem deployer / MLX proxy / deploy recorder 테스트 포함
 - AI Model Router → `/api/models`(환경별 선택지) + `/api/local-deploy`(자연어 배포) live 확인; 대시보드 `tsc`+`next build` 통과
+- **Live E2E (Pydantic AI + MLX Qwen3-Coder-30B)** → 자연어 "Deploy orders-api ..." → build→push→deploy→validate 자율 실행 → kind `orders-api 1/1 Running`(image v1.5.0) 검증 완료 (2026-07-11)
 - Strands + Bedrock 이전 baseline: `make check` 544 passed (2026-07-11, 237.23s)
 - GCP Day2 tests → **28 passed** (Vertex AI mock/heuristic 연동, severity=P2, confidence=0.30)
 - Dashboard → lint/build 성공; 11 routes (OG/Twitter image 포함); Vercel production 배포 완료 (2026-07-11)

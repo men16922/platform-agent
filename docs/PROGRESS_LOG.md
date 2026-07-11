@@ -21,6 +21,7 @@
   - `make check` → **569 passed, 1 skipped** (신규 +22 테스트: router/local_deployer/local_deploy_api/deploy_recorder/proxy).
   - Dashboard `tsc --noEmit` 0 + `next build` 성공(신규 라우트 등록 확인).
   - 라우터 API live: `/api/models?provider=onprem` → local-qwen recommended 최상단, aws → bedrock-claude recommended 확인.
+  - **Live E2E (신규 Pydantic AI 경로)**: MLX Qwen3-Coder-30B(.venv-mlx, :18090) + proxy(:18091) → `route_deploy("Deploy orders-api ... namespace local-llm-smoke", local-qwen, onprem)` → build→push→deploy→validate 자율 4-tool 실행, `ok=True`. kubectl 확인: `orders-api 1/1 Running`, image=`localhost:5001/orders-api:v1.5.0` 롤링 업데이트.
   - Slack simulate: approve/reject E2E(실 HMAC 서명 → SFN send_task_success/failure) 통과.
 - Blockers:
   - ⚠️ 워킹트리에 **세션 외 미커밋 변경** 다수(ruff autofix류). 특히 `src/agents/models.py` 재수출 제거로 `from src.agents.models import ServiceSpec` ImportError(테스트는 통과). 이번 커밋에서 제외함 — 별도 검토 필요.
