@@ -22,6 +22,8 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
+from src.agents.ai.supervisor import Supervisor
+
 
 class TaskState(str, Enum):
     """A2A Task states."""
@@ -62,9 +64,10 @@ class Task:
 class A2AServer:
     """In-memory A2A Server implementing the core protocol operations."""
 
-    def __init__(self):
+    def __init__(self, supervisor: Supervisor | None = None):
         self._tasks: dict[str, Task] = {}
         self._card = self._load_agent_card()
+        self._supervisor = supervisor or Supervisor.from_environment()
 
     def _load_agent_card(self) -> dict:
         """Load the agent card from JSON file."""
@@ -101,8 +104,11 @@ class A2AServer:
         text_parts = [p.get("text", "") for p in message.get("parts", []) if "text" in p]
         user_text = " ".join(text_parts)
 
-        # Process the request (dispatch to appropriate handler)
-        response_text = self._process_request(user_text, task)
+        # Route through the supervisor. It delegates only to explicitly
+        # registered A2A endpoints, so this gateway never silently executes
+        # mutating work on behalf of an unconfigured specialist.
+        outcome = self._supervisor.handle(user_text, context_id=message.get("contextId"))
+        response_text = self._format_supervisor_response(outcome)
 
         # Update task status
         task.status = {
@@ -114,7 +120,10 @@ class A2AServer:
         task.artifacts = [{
             "artifactId": str(uuid.uuid4()),
             "name": "response",
-            "parts": [{"text": response_text}],
+            "parts": [
+                {"text": response_text},
+                {"data": {"route": outcome.decision.role.value, "trace": outcome.trace}},
+            ],
         }]
 
         # Store task
@@ -189,24 +198,14 @@ class A2AServer:
         }
         return {"id": task.id, "contextId": task.context_id, "status": task.status}
 
-    def _process_request(self, text: str, task: Task) -> str:
-        """Process a user request text and return a response.
-
-        This is a simplified dispatcher — in production, this would
-        route to the actual deployer agents.
-        """
-        text_lower = text.lower()
-
-        if "deploy" in text_lower:
-            return f"Deployment request received. Task {task.id} created. Use the deployer agent for execution."
-        elif "validate" in text_lower:
-            return f"Validation request received. Task {task.id} will check deployment health."
-        elif "rollback" in text_lower:
-            return f"Rollback request received. Task {task.id} will revert the deployment."
-        elif "policy" in text_lower or "guard" in text_lower:
-            return f"Policy evaluation request. Task {task.id} will check against deployment rules."
-        else:
-            return f"Request acknowledged. Task {task.id} created for processing."
+    @staticmethod
+    def _format_supervisor_response(outcome: Any) -> str:
+        role = outcome.decision.role
+        if outcome.delegated:
+            return f"Supervisor delegated this request to the {role} A2A agent."
+        if outcome.response and outcome.response.get("error"):
+            return f"Supervisor selected {role}, but A2A delegation failed: {outcome.response['error']}"
+        return f"Supervisor selected {role}; its A2A endpoint is not configured, so no work was executed."
 
 
 def create_a2a_app():

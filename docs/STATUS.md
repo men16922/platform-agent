@@ -22,6 +22,7 @@
 - **On-Prem Provision(① 역할)** → Terraform(kind) IaC `validate/plan` green + Ansible(k3s) 플레이북; `provision_cluster`/`teardown` 에이전트 도구
 - **관측성** → 배포 상세 페이지 `/deployments/[id]`(reasoning/tool args·result/summary) + DynamoDB trace 기록
 - **kagent** → kind에 helm 설치(controller/ui/postgres Running, 에이전트 10 CRD); 로컬 Qwen 연결은 미완(호스트 네트워킹)
+- **Supervisor + A2A** → 자연어 요청을 provision/deploy/kagent로 분류하고 등록된 specialist A2A endpoint에만 `message:send` 위임; Gateway 응답에 route trace 기록. Agent Card는 Gateway가 노출하나 supervisor discovery는 미구현.
 - AI Model Router → `/api/models`(환경별 선택지) + `/api/local-deploy`(자연어 배포) live 확인; 대시보드 `tsc`+`next build` 통과
 - **Live E2E (Pydantic AI + MLX Qwen3-Coder-30B)** → 자연어 "Deploy orders-api ..." → build→push→deploy→validate 자율 실행 → kind `orders-api 1/1 Running`(image v1.5.0) 검증 완료 (2026-07-11)
 - **Deployments Live 추적 배선 완성** → 기록 활성 API 배포 → recorder가 DEPLOY/ACTIVITY(DEP-262AC0A3, v1.6.0) DynamoDB 기록 → 대시보드 `/api/dashboard/deployments`(aws-live)가 최신 배포로 노출 확인 (2026-07-11)
@@ -62,8 +63,8 @@
 ## Active Focus
 
 - 범용 Ops 에이전트 + 관측성 + On-Prem Provision(Terraform/Ansible) + kagent 설치 완료. ARCHITECTURE 통합·최신화(단일 스택 표 + Orchestrator+A2A 타깃).
-- 다음: **Orchestrator(supervisor)+A2A 통합** 착수 (provision/deploy/kagent 에이전트 라우팅) — or kagent↔로컬 Qwen 연결 완성.
-- **미푸시**: origin 대비 ahead 18 (push 필요). kagent 기본 에이전트 10개는 데모 후 `helm uninstall` 정리 가능.
+- 다음: supervisor의 실제 specialist A2A endpoint 연결 + **Agent Card discovery/능력 협상**, 이후 kagent↔로컬 Qwen 연결.
+- **미푸시**: origin 대비 ahead 20 (push 필요). kagent 기본 에이전트 10개는 데모 후 `helm uninstall` 정리 가능.
 
 ## Open Risks / Gaps
 
@@ -71,3 +72,4 @@
 2. **Slack App 미연결** — APPROVE 승인 버튼 코드+가이드+E2E 테스트 완비, 실 Slack App 미생성 (코드 ready). OIDC 연계를 통한 Slack Webhook 송출 정상 작동.
 3. **GCP/Azure 실 클러스터 비용** — 실 배포/Remediation 가동 시 클러스터 리소스 가동 및 WIF OIDC 인증 연동 세부 과금 체크 필요.
 4. **Dashboard dependency audit** — Next.js 16.2.10 내부 PostCSS 중간등급 취약점 2건; upstream release 대기.
+5. **A2A endpoint/card discovery** — supervisor의 환경변수 endpoint 등록은 구현됐지만 실제 kagent endpoint와 Agent Card 기반 discovery/skill 매칭은 아직 연결 전.
