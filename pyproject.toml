@@ -22,6 +22,9 @@ dependencies = ["google-adk>=1.0"]
 [project.optional-dependencies.azure]
 dependencies = ["agent-framework>=1.0", "azure-identity>=1.15"]
 
+[project.optional-dependencies.onprem]
+dependencies = ["pydantic-ai-slim[openai]>=2.9", "mlx-lm>=0.19"]
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.1",

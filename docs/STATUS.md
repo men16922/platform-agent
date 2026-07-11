@@ -17,7 +17,9 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` (pytest) → **542 passed, 1 skipped** (2026-07-11, 207.55s) — GCP Vertex AI mock/heuristic 연동 및 GCP/Azure 실 REST API Failover 러너 테스트 포함
+- `make check` (pytest) → **569 passed, 1 skipped** (2026-07-11) — AI Model Router / Pydantic AI On-Prem deployer / MLX proxy / deploy recorder 테스트 포함
+- AI Model Router → `/api/models`(환경별 선택지) + `/api/local-deploy`(자연어 배포) live 확인; 대시보드 `tsc`+`next build` 통과
+- Strands + Bedrock 이전 baseline: `make check` 544 passed (2026-07-11, 237.23s)
 - GCP Day2 tests → **28 passed** (Vertex AI mock/heuristic 연동, severity=P2, confidence=0.30)
 - Dashboard → lint/build 성공; 11 routes (OG/Twitter image 포함); Vercel production 배포 완료 (2026-07-11)
 - CDK → `platform-agent-activity` 테이블 + GSI1 CREATE_COMPLETE; Vercel OIDC read grant UPDATE_COMPLETE (2026-07-11)
@@ -25,6 +27,7 @@
 - `make local-cluster` → kind 3노드 (v1.34.0) Ready + registry push/pull → Pod Running
 - `python -m src.agents.ai.orchestrator` → E2E pipeline 7-step 성공 (dev/staging)
 - Strands Agent + Bedrock Claude → 자율 4-tool 호출 → 실배포 ✅
+- Strands Agent + Qwen3-Coder (via tool proxy) → 로컬 kind 클러스터 자율 4-tool 배포 E2E 성공 ✅
 - ADK Agent + Vertex AI Gemini 3.5 Flash → tool calling (gcp_build_image) ✅
 - MSFT Agent + Azure OpenAI GPT-5.4 → tool calling (azure_build_image) ✅
 - GCP/Azure 실 REST API 연동 및 OIDC 페더레이션 크레덴셜 자격증명 모듈 구현 & 테스트 완료 (2026-07-11) ✅
@@ -52,10 +55,12 @@
 
 ## Active Focus
 
-- GitHub README 및 고수준 아키텍처 상세 문서의 공개(Public Release) 대비 고도화 완료.
+- **AI Model Router** 완료: 모델↔환경 분리 + 적합도 매트릭스. On-Prem = Pydantic AI + MLX Qwen 독립 에이전트. 대시보드 Agents 채팅으로 자연어 배포 + Deployments 추적.
+- 다음: 세션 외 미커밋 변경(특히 `models.py`) 검토 → 채팅 live 데모(MLX+kind).
 
 ## Open Risks / Gaps
 
+0. **세션 외 미커밋 워킹트리 변경** — ruff autofix류 다수 파일. `src/agents/models.py` 재수출 제거로 `from src.agents.models import ServiceSpec` ImportError(in-repo 소비자 없어 테스트는 통과). 검토/정리 필요.
 1. **CDK 재배포 시 Lambda bundling** — Docker 없이 로컬 pip 번들링 사용 중 (arm64↔amd64 주의).
 2. **Slack App 미연결** — APPROVE 승인 버튼 코드+가이드+E2E 테스트 완비, 실 Slack App 미생성 (코드 ready). OIDC 연계를 통한 Slack Webhook 송출 정상 작동.
 3. **GCP/Azure 실 클러스터 비용** — 실 배포/Remediation 가동 시 클러스터 리소스 가동 및 WIF OIDC 인증 연동 세부 과금 체크 필요.

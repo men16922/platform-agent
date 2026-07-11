@@ -7,6 +7,38 @@
 
 ---
 
+## 2026-07-11 — AI Model Router + 자연어 On-Prem 배포 + 대시보드 Agents 채팅
+
+- Status: 모델(두뇌)과 환경(대상)을 분리하는 **AI Model Router**를 구현하고, On-Prem은 Strands 대신 **Pydantic AI + MLX Qwen** 독립 에이전트로 전환. 대시보드 Agents 페이지에 모델 선택 + 자연어 배포 채팅 추가.
+- Changed:
+  - `model_router.py` — 모델 레지스트리(local-qwen/bedrock-claude/vertex-gemini/azure-gpt) + (model×environment) 적합도 매트릭스 + 라우팅.
+  - `local_deployer.py` — Strands 무의존 Pydantic AI On-Prem 에이전트(완전 오프라인). `local_deploy_api.py` — `/api/models`(셀렉터) + `/api/local-deploy`(실행). `deploy_recorder.py` — DEPLOY+ACTIVITY 기록(executor-writes, env 게이트).
+  - `mlx_qwen_tool_proxy.py` — 클라이언트 `stream` 플래그 존중(SSE/JSON 양쪽) 프레임워크 중립화.
+  - Dashboard: `agents/deploy`·`agents/models` 라우트, `agent-deploy-chat.tsx`(적합도 배지+step trace), `lib/model-router.ts`(정적 fallback), `agents/page.tsx` 연동.
+  - `scripts/slack_live_approval.py` — AWS 배포 없이 Slack 승인 send/simulate/full 하네스.
+  - Docs: `ARCHITECTURE.md`(Model Router 섹션+프레임워크 표+On-Prem 갱신), `local-llm-onprem.md`(프레임워크 분리 기록). `pyproject.toml` `[onprem]` extra.
+- Verified:
+  - `make check` → **569 passed, 1 skipped** (신규 +22 테스트: router/local_deployer/local_deploy_api/deploy_recorder/proxy).
+  - Dashboard `tsc --noEmit` 0 + `next build` 성공(신규 라우트 등록 확인).
+  - 라우터 API live: `/api/models?provider=onprem` → local-qwen recommended 최상단, aws → bedrock-claude recommended 확인.
+  - Slack simulate: approve/reject E2E(실 HMAC 서명 → SFN send_task_success/failure) 통과.
+- Blockers:
+  - ⚠️ 워킹트리에 **세션 외 미커밋 변경** 다수(ruff autofix류). 특히 `src/agents/models.py` 재수출 제거로 `from src.agents.models import ServiceSpec` ImportError(테스트는 통과). 이번 커밋에서 제외함 — 별도 검토 필요.
+  - 실 MLX 서버 기반 채팅→kind 배포 live 스텝은 운영자 수행 필요(로직은 TestModel로 검증).
+- Next: 세션 외 미커밋 변경(특히 models.py) 검토/정리 → 대시보드 채팅 live 데모(MLX+kind).
+
+## 2026-07-11 — 로컬 Qwen3-Coder 모델 기반 On-Premises E2E 자율 배포 검증 완료
+
+- Status: MLX Qwen tool proxy의 이중 호환성(Pass-through 및 XML Fallback) 개선을 적용하고, 로컬 kind 클러스터 및 레지스트리 환경에서 strands 자율 배포 E2E 연동 테스트 통과.
+- Changed:
+  - Tool Proxy: `mlx_qwen_tool_proxy.py`에서 MLX-LM 서버의 네이티브 `tool_calls` JSON 구조를 무손실 중계(Pass-through)하도록 보완하고 XML 마크업 Fallback 로직을 개선.
+  - Documentation: `local-llm-onprem.md`에 proxy 구조와 kind 클러스터 E2E 배포/검증 E2E 실행 결과 수록.
+- Verified:
+  - `make local-cluster` 기동 및 MLX Qwen proxy (:18081) 연동 테스트 완료.
+  - `orders-api` 배포 E2E: 빌드(build_image) -> 푸시(push_image) -> local-llm-smoke 네임스페이스 배포(deploy_to_cluster) -> 검증(validate_deployment, 1/1 Ready) 자율 연동 성공.
+  - 전체 단위/통합 테스트 (`make check`) 실행: 544 passed, 1 skipped (성공).
+- Next: Slack App 대화형 인터랙티브 컴포넌트 실연동 설정 (Task 12).
+
 ## 2026-07-11 — 유저 권한 관리(Users Admin UI) 및 멀티 클라우드 장애 복원력(Failover) 연동 완료
 
 - Status: Admin용 사용자 계정 권한 제어판 구축 및 AWS/GCP/Azure 장애 발생 시 예비 리전/클러스터 우회 복구(Multi-region Failover) 시스템 구현 완료.

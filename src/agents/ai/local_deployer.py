@@ -1,0 +1,260 @@
+"""Pydantic AI deployer for the on-prem / local-LLM path.
+
+Unlike the Strands deployer (AWS/Bedrock-native, see ``strands_deployer``), this
+agent targets a **local MLX-LM server** exposing an OpenAI-compatible endpoint
+(Qwen2.5/3-Coder). It has NO AWS or Strands dependency — the on-prem story runs
+fully offline on the operator's own hardware.
+
+Framework split:
+    aws            -> Strands + Bedrock Claude   (strands_deployer)
+    gcp            -> ADK + Vertex Gemini        (adk_deployer)
+    azure          -> MSFT SDK + Azure OpenAI    (msft_deployer)
+    onprem / local -> Pydantic AI + MLX Qwen     (this module)
+
+MLX-LM does not always emit standard OpenAI ``tool_calls`` for Qwen (it may emit
+``<function=...>`` markup), so this path talks to the ``mlx_qwen_tool_proxy``
+normalizer, which honors the non-streaming request Pydantic AI's ``run_sync``
+issues. Point ``ONPREM_LLM_ENDPOINT`` at the proxy (default ``:18081``), which in
+turn fronts the raw MLX-LM server (default ``:8080``).
+
+Usage:
+    from src.agents.ai.local_deployer import create_local_deployer
+
+    agent = create_local_deployer(provider="onprem")
+    result = agent.run_sync("Deploy orders-api v1.4.2 to the local cluster")
+    print(result.output)
+"""
+
+from __future__ import annotations
+
+import os
+from typing import Any
+
+from pydantic_ai import Agent
+from pydantic_ai.models import Model
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
+
+from src.agents.adapters.deployment import ServiceSpec, get_deployment_adapters
+
+
+DEPLOYER_SYSTEM_PROMPT = """\
+You are a Platform Deployment Agent running fully on-premise via a local LLM.
+Your job is to autonomously deploy container services to Kubernetes clusters
+using the available tools.
+
+## Workflow
+
+When asked to deploy a service, follow this exact sequence:
+
+1. **Build** — Use `build_image` to build the container image from source.
+2. **Push** — Use `push_image` to push the image to the registry.
+3. **Deploy** — Use `deploy_to_cluster` to apply the deployment (pass the
+   `image_uri` returned by the push step).
+4. **Validate** — Use `validate_deployment` to verify the deployment is healthy.
+5. **Rollback** (only if needed) — If validation fails, use `rollback_deployment`.
+
+## Rules
+
+- Always follow the Build -> Push -> Deploy -> Validate sequence.
+- If any step fails, report the error clearly and stop (do NOT proceed).
+- If validation fails after deploy, automatically rollback and report failure.
+- Never skip the validation step.
+- Report a clear summary at the end: what was deployed, where, and success/fail.
+
+## Safety
+
+- You CANNOT delete namespaces, clusters, or infrastructure.
+- You can only deploy, validate, and rollback deployments.
+"""
+
+
+# --- Tools ---------------------------------------------------------------
+# Plain functions (no framework decorator) so the local path stays free of any
+# Strands import. Pydantic AI infers each tool schema from the type hints and
+# the Google-style docstring. Logic mirrors src/agents/ai/tools/* but calls the
+# provider-neutral deployment adapters directly.
+
+
+def build_image(
+    service_name: str,
+    image: str,
+    version: str,
+    provider: str = "onprem",
+    context_path: str = ".",
+) -> dict:
+    """Build a container image for a service.
+
+    Args:
+        service_name: Name of the service to build.
+        image: Image name (without registry prefix).
+        version: Image version/tag.
+        provider: Deployment provider (onprem, aws, gcp, azure).
+        context_path: Docker build context path.
+
+    Returns:
+        Dict with build result (success, image_tag, build_id, error).
+    """
+    spec = ServiceSpec(name=service_name, image=image, version=version, provider=provider)
+    adapters = get_deployment_adapters(provider)
+    result = adapters.build.build(spec, context_path=context_path)
+    return {
+        "success": result.success,
+        "image_tag": result.image_tag,
+        "build_id": result.build_id,
+        "error": result.error,
+    }
+
+
+def push_image(image: str, version: str, provider: str = "onprem") -> dict:
+    """Push a built container image to the provider's registry.
+
+    Args:
+        image: Image name (without registry prefix).
+        version: Image version/tag.
+        provider: Deployment provider (onprem, aws, gcp, azure).
+
+    Returns:
+        Dict with push result (success, image_uri, digest, error).
+    """
+    adapters = get_deployment_adapters(provider)
+    result = adapters.registry.push(image, version)
+    return {
+        "success": result.success,
+        "image_uri": result.image_uri,
+        "digest": result.digest,
+        "error": result.error,
+    }
+
+
+def deploy_to_cluster(
+    service_name: str,
+    image: str,
+    version: str,
+    image_uri: str,
+    provider: str = "onprem",
+    replicas: int = 1,
+    namespace: str = "default",
+    health_path: str = "/healthz",
+    ports: list[int] | None = None,
+) -> dict:
+    """Deploy a service to the target cluster.
+
+    Args:
+        service_name: Name of the service/deployment.
+        image: Image name.
+        version: Image version.
+        image_uri: Full image URI (from the push step).
+        provider: Deployment provider (onprem, aws, gcp, azure).
+        replicas: Number of replicas.
+        namespace: Kubernetes namespace.
+        health_path: Health check endpoint path.
+        ports: Container ports (default [8080]).
+
+    Returns:
+        Dict with deploy result (status, deployment_id, endpoint, error).
+    """
+    spec = ServiceSpec(
+        name=service_name,
+        image=image,
+        version=version,
+        provider=provider,
+        replicas=replicas,
+        namespace=namespace,
+        health_path=health_path,
+        ports=ports or [8080],
+    )
+    adapters = get_deployment_adapters(provider)
+    result = adapters.cluster.deploy(spec, image_uri)
+    return {
+        "status": result.status.value,
+        "deployment_id": result.deployment_id,
+        "namespace": result.namespace,
+        "replicas_desired": result.replicas_desired,
+        "endpoint": result.endpoint,
+        "error": result.error,
+    }
+
+
+def validate_deployment(
+    service_name: str,
+    provider: str = "onprem",
+    namespace: str = "default",
+) -> dict:
+    """Validate a deployed service by checking rollout status and readiness.
+
+    Args:
+        service_name: Name of the deployment to validate.
+        provider: Deployment provider (onprem, aws, gcp, azure).
+        namespace: Kubernetes namespace.
+
+    Returns:
+        Dict with validation result (healthy, checks_passed, checks_total, error).
+    """
+    spec = ServiceSpec(name=service_name, image=service_name, version="", provider=provider, namespace=namespace)
+    adapters = get_deployment_adapters(provider)
+    result = adapters.cluster.validate(spec)
+    return {
+        "healthy": result.healthy,
+        "checks_passed": result.checks_passed,
+        "checks_total": result.checks_total,
+        "details": result.details,
+        "error": result.error,
+    }
+
+
+def rollback_deployment(
+    service_name: str,
+    provider: str = "onprem",
+    namespace: str = "default",
+) -> dict:
+    """Rollback a deployment to its previous version.
+
+    Args:
+        service_name: Name of the deployment to rollback.
+        provider: Deployment provider (onprem, aws, gcp, azure).
+        namespace: Kubernetes namespace.
+
+    Returns:
+        Dict with rollback result (success, rolled_back_to, error).
+    """
+    spec = ServiceSpec(name=service_name, image=service_name, version="", provider=provider, namespace=namespace)
+    adapters = get_deployment_adapters(provider)
+    result = adapters.cluster.rollback(spec)
+    return {
+        "success": result.success,
+        "rolled_back_to": result.rolled_back_to,
+        "error": result.error,
+    }
+
+
+LOCAL_DEPLOY_TOOLS = [build_image, push_image, deploy_to_cluster, validate_deployment, rollback_deployment]
+
+
+def create_local_deployer(
+    provider: str = "onprem",
+    model: Model | str | None = None,
+    **kwargs: Any,
+) -> Agent:
+    """Create a Pydantic AI deployer agent for the local-LLM path.
+
+    Args:
+        provider: Target deployment provider (default "onprem").
+        model: A Pydantic AI ``Model`` (or model-name string) override. If None,
+            an ``OpenAIChatModel`` pointing at the local MLX proxy is built from
+            the ``ONPREM_LLM_*`` environment variables. Pass a ``TestModel`` here
+            to drive the agent without a live LLM.
+        **kwargs: Additional ``Agent`` constructor arguments.
+
+    Returns:
+        Configured Pydantic AI ``Agent`` instance.
+    """
+    system_prompt = DEPLOYER_SYSTEM_PROMPT + f"\n\nCurrent provider: {provider}\n"
+
+    if model is None:
+        base_url = os.getenv("ONPREM_LLM_ENDPOINT", "http://localhost:18081/v1")
+        model_id = os.getenv("ONPREM_LLM_MODEL", "mlx-community/Qwen2.5-Coder-32B-Instruct-8bit")
+        api_key = os.getenv("ONPREM_LLM_API_KEY", "mlx-local")
+        model = OpenAIChatModel(model_id, provider=OpenAIProvider(base_url=base_url, api_key=api_key))
+
+    return Agent(model, system_prompt=system_prompt, tools=LOCAL_DEPLOY_TOOLS, **kwargs)

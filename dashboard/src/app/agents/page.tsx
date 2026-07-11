@@ -1,5 +1,6 @@
 import { ProviderLogo, providerBadgeStyles } from "@/components/provider-logo";
 import { DataSourceBadge } from "@/components/data-source-badge";
+import { AgentDeployChat } from "@/components/agent-deploy-chat";
 import { getAgentActivityFeed } from "@/lib/activity-data";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +28,9 @@ export default async function AgentsPage() {
         <AgentCard name="MS Agent" provider="Microsoft Azure" llm="GPT-5.4" cloud="azure" />
         <AgentCard name="On-Prem Agent" provider="On-Premise" llm="Any LLM" cloud="onprem" />
       </div>
+
+      {/* Deploy via chat — AI Model Router */}
+      <AgentDeployChat />
 
       {/* Activity timeline */}
       <section>
