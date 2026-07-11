@@ -28,7 +28,7 @@ export default async function AuditPage() {
   const source = process.env.DASHBOARD_DATA_SOURCE === "aws" ? ("aws-live" as const) : ("demo" as const);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-7">
+    <div className="mx-auto max-w-[1800px] space-y-7">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div>
           <p className="eyebrow mb-3">Compliance & security registry</p>

@@ -37,7 +37,7 @@ export default async function DeploymentDetailPage({ params }: { params: Promise
 
   if (!deployment && !activity) {
     return (
-      <div className="mx-auto max-w-4xl space-y-6">
+      <div className="mx-auto max-w-5xl space-y-6">
         <Link href="/deployments" className="text-xs text-[var(--muted)] hover:text-white">← Deployments</Link>
         <div className="surface p-8 text-center text-sm text-[var(--muted)]">
           No run found for <code className="text-[#cbd6e9]">{id}</code>.
@@ -60,7 +60,7 @@ export default async function DeploymentDetailPage({ params }: { params: Promise
   const uniqueTools = [...new Set(toolNames.length ? toolNames : activity?.tool_calls ?? [])];
 
   return (
-    <div className="mx-auto max-w-4xl space-y-7">
+    <div className="mx-auto max-w-5xl space-y-7">
       <div className="flex items-center justify-between gap-4">
         <Link href="/deployments" className="text-xs text-[#8ab4f8] hover:underline">← Deployments</Link>
         <DataSourceBadge source={source} />

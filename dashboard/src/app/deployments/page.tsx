@@ -8,7 +8,7 @@ export default async function DeploymentsPage() {
   const { deployments, source } = await getDeploymentFeed();
 
   return (
-    <div className="mx-auto max-w-7xl space-y-7">
+    <div className="mx-auto max-w-[1800px] space-y-7">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div>
         <p className="eyebrow mb-3">Guarded delivery pipeline</p>

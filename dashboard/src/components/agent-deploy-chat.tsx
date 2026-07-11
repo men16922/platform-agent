@@ -240,7 +240,7 @@ export function AgentDeployChat() {
       )}
       {modelsNotice && <p className="text-[10px] text-[var(--warning)]">⚠️ {modelsNotice}</p>}
 
-      <div ref={logRef} className="max-h-[24rem] overflow-y-auto space-y-3 rounded-lg border border-white/6 bg-black/20 p-3">
+      <div ref={logRef} className="max-h-[60vh] min-h-[20rem] overflow-y-auto space-y-3 rounded-lg border border-white/6 bg-black/20 p-3">
         {messages.length === 0 && (
           <p className="text-xs text-[var(--muted)] py-6 text-center">
             Ask the agent. It can investigate (list pods, logs, describe, rollout status) or act (build → push → deploy → validate, rollback) — tool calls stream in live.

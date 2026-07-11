@@ -19,7 +19,7 @@ export default async function OverviewPage() {
   const attentionDeployment = deployments.find((deployment) => deployment.status !== "success");
 
   return (
-    <div className="mx-auto max-w-7xl space-y-7">
+    <div className="mx-auto max-w-[1800px] space-y-7">
       <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
         <div>
           <p className="eyebrow mb-3">Operations command center</p>
