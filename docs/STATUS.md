@@ -46,12 +46,11 @@
 10. **On-prem K8s** — `make local-cluster` (kind 테스트용) → 3노드 + registry + NGINX ingress.
 11. **Deployment Adapters** — 4 provider (onprem/aws/gcp/azure): Build→Push→Deploy→Validate→Rollback.
 12. **Execution Adapters** — 4 provider: capability → provider-specific action resolution.
-13. **Dashboard** — Next.js 16 + Tailwind 4, 4페이지. AWS incident live/demo/fallback + deployment/activity durable read model (DynamoDB `platform-agent-activity` + GSI1) + Vercel OIDC 최소권한 read role. OG/Twitter image 배포 완료. Auth boundary 설계 완료, GitHub OAuth (Auth.js Phase 1) 연동 완료, Auth Phase 2/3 (DynamoDB User/Audit Tables, SFN Approval, Deployment Trigger/Rollback API) 구현 완료.
+13. **Dashboard** — Next.js 16 + Tailwind 4, 4페이지. AWS incident live/demo/fallback + deployment/activity durable read model (DynamoDB `platform-agent-activity` + GSI1) + Vercel OIDC 최소권한 read role. OG/Twitter image 배포 완료. Auth boundary 설계 완료, GitHub OAuth (Auth.js Phase 1) 연동 완료, Auth Phase 2/3 및 사용자 작용 UI 제어판(승인 카드, 배포 트리거 모달, 롤백 실행 버튼) 구현 및 배포 완료.
 
 ## Active Focus
 
-- Auth Phase 2 (Option 1) & Phase 3 (Option 2) 구현 완료 및 빌드 검증 성공.
-- 다음: Vercel 환경 변수 주입 및 실 AWS CDK 환경 배포.
+- Auth Phase 2 & 3 백엔드 API, AWS CDK 배포, Vercel 환경 변수 설정 및 대화형 UI 제어판 전면 구현 및 프로덕션 배포 완료.
 
 ## Open Risks / Gaps
 

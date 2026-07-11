@@ -7,6 +7,19 @@
 
 ---
 
+## 2026-07-11 — Auth Phase 2 & 3 UI Control Panels 구현 및 배포 완료
+
+- Status: 대시보드 내 승인/배포/롤백 수행이 가능한 대화형 UI 구성 요소 개발 및 프로덕션 배포 완료.
+- Changed:
+  - Incidents UI: `PendingApprovals` 카드 컴포포넌트 구현하여 미해결 승인 건 목록 노출 및 즉각적인 승인/거절 기능 제공 (역할 기반 접근 체크 연동).
+  - Deployments UI: `DeploymentsControl` 컴포넌트 추가하여 신규 배포 트리거 모달 양식(`service_name`, `version`, `provider`, `environment`) 및 성공한 배포 건에 대한 롤백(Rollback) 실행 버튼 연동.
+  - Vercel: 로컬 빌드 및 프로덕션 사이트(`https://platform-agent-red.vercel.app`)에 최종 배포 완료.
+- Verified:
+  - `make check` -> 536 passed, 1 skipped (성공).
+  - Dashboard `npm run build` -> Next.js 16 빌드 및 TypeScript 타입 체크 성공.
+- Blockers: 없음.
+- Next: 추가로 요구되는 Slack App 연동 또는 GCP/Azure 클러스터 연동 시 설정 연계.
+
 ## 2026-07-11 — Auth Phase 2 (Option 1) & Phase 3 (Option 2) 완료
 
 - Status: Auth Phase 2 및 Phase 3에 명시된 기능 전체 구현 및 빌드 검증 성공.
