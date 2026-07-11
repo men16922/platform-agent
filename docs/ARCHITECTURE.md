@@ -63,6 +63,7 @@
 | **호스팅 레이어 = 교체 가능** | AWS(EventBridge+Lambda)는 하나의 구현. GCP/Azure/On-Prem도 동일 패턴으로 확장 |
 | **Agent-per-cloud** | 각 클라우드에 네이티브 프레임워크 Agent (Strands/ADK/MSFT/Pydantic AI) |
 | **AI Model Router** | 모델(두뇌) ↔ 환경(대상) 분리 — 어떤 LLM이든 어떤 환경에 배포, 적합도 검증 |
+| **Agent Runtime per environment** | 각 환경을 그 클라우드의 네이티브 매니지드 에이전트 런타임 위에서 실행 (AWS=AgentCore, GCP=Agent Engine, Azure=Foundry, On-Prem=kagent) — [아래](#agent-runtime-레이어-agentcore-레퍼런스--멀티클라우드-로드맵) |
 | **Policy as Code** | Guardian Agent가 모든 배포에 대해 APPROVE/AUTO/REJECT 판정 |
 
 ### 진입 경로 비교
@@ -166,6 +167,39 @@
 - `local-qwen`은 완전 오프라인 실행(MLX). 클라우드 모델은 검증 후 네이티브 deployer로 디스패치(해당 클라우드 credential 필요).
 - HTTP 표면 `src/agents/ai/local_deploy_api.py`: `GET /api/models?provider=`(환경별 선택지, recommended-first) + `POST /api/local-deploy`(model+provider+자연어 instruction → 실행). 대시보드 Agents 채팅이 이 API를 호출한다.
 - 실행부(로컬 API)가 결과를 기록하고 대시보드는 읽기만 한다(read-only 역할 유지).
+
+### Agent Runtime 레이어 (AgentCore 레퍼런스 + 멀티클라우드 로드맵)
+
+> **방향:** "배포 전용"에서 **범용 agentic ops**로. 에이전트에게 자연어로 질의하면 가능한 작업을 tool call로 자율 수행하며(배포는 그중 하나), 각 환경은 그 클라우드의 **네이티브 매니지드 에이전트 런타임** 위에서 돈다. AI Model Router가 **Agent Runtime Router**로 확장된다.
+
+**핵심 발견 (AgentCore):** Amazon Bedrock AgentCore Runtime은 **프레임워크·모델 무관** — Strands / LangGraph / CrewAI / LlamaIndex / ADK / OpenAI Agents SDK / Pydantic AI 등 어떤 OSS 프레임워크든, 어떤 모델(Bedrock / OpenAI / Gemini / Nova)이든 서버리스로 호스팅하고 MCP·A2A 프로토콜을 지원한다. 구성요소를 우리 프로젝트에 매핑하면:
+
+| AgentCore 구성요소 | 역할 | 우리 대응 |
+|---|---|---|
+| **Runtime** | 서버리스 에이전트 호스팅 (any framework/model, HTTP+streaming) | `local_deploy_api` (자체 런타임, SSE) |
+| **Gateway** | API/Lambda → MCP tool 자동 변환 | ✅ MCP Server (kubectl 5 + docker 4 = 9 tool) |
+| **Memory** | 세션/장기 컨텍스트 | 🔲 (현재 stateless) |
+| **Identity** | 에이전트별 신원 (Cognito / Entra / Okta) | 대시보드 RBAC (부분) |
+| **Observability** | OpenTelemetry 트레이스/메트릭 | ✅ DEPLOY/ACTIVITY 트레이스 기록 + 배포 상세 페이지 |
+| **Tools** | Code Interpreter / Browser | 🔲 |
+
+**레퍼런스 (`whchoi98/awsops`):** AgentCore Runtime + Strands + 8 MCP 게이트웨이(125 tools) + route classifier(질의→최적 게이트웨이 라우팅) + Steampipe 데이터 레이어. 우리가 지향하는 패턴과 동일하다.
+
+**환경별 네이티브 에이전트 런타임 매핑:**
+
+| 환경 | 매니지드 런타임 | 프레임워크(개발) | 우리 매핑 | 상태 |
+|---|---|---|---|---|
+| **AWS** | Bedrock AgentCore Runtime | Strands | Strands 보유 → AgentCore 호스팅 | 🔲 로드맵 |
+| **GCP** | Vertex AI Agent Engine | ADK | ADK 보유 → Agent Engine 배포 | 🔲 로드맵 |
+| **Azure** | Foundry Agent Service (hosted agents) | MS Agent Framework / LangGraph | MSFT SDK 보유 → Foundry 호스팅 | 🔲 로드맵 |
+| **On-Prem** | **kagent (CNCF)** — K8s CRD 에이전트, MCP+A2A | AutoGen 기반 (또는 Pydantic AI/LangGraph 컨테이너) | 현재 Pydantic AI 직접 → kagent가 "on-prem AgentCore" 대응물 | 🔲 로드맵 |
+
+- **AgentCore는 AWS 매니지드**라 on-prem엔 못 쓴다 → on-prem 대응물은 **kagent** (클러스터 내부 실행, 에이전트=CRD로 Git 관리, MCP/A2A). "완전 오프라인 K8s" 서사와 정확히 부합한다.
+- **AI Model Router → Agent Runtime Router**: 라우팅 키가 `(model, environment)` → `(model, environment, runtime)`로 확장. 각 환경은 네이티브 런타임에서 실행하고, 도구는 **MCP 게이트웨이**로 통합한다.
+- **현재 구현**은 프레임워크 직접 호출(Strands/ADK/MSFT/Pydantic AI) + 자체 로컬 런타임(`local_deploy_api`). 위 매니지드 런타임 호스팅은 로드맵이다.
+- **범용 ops로 확장:** 도구셋을 배포(build/push/deploy/validate) 밖으로 넓히고(조회/진단/스케일/롤백/비용 등, MCP 게이트웨이 기반), 시스템프롬프트를 일반화하며, 추론(reasoning) 스트리밍을 추가한다.
+
+출처: [Bedrock AgentCore](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/what-is-bedrock-agentcore.html) · [any framework](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/using-any-agent-framework.html) · [Vertex AI Agent Engine](https://google.github.io/adk-docs/deploy/agent-engine/) · [Foundry Agent Service](https://learn.microsoft.com/en-us/azure/foundry/agents/overview) · [kagent (CNCF)](https://kagent.dev/)
 
 ### Pipeline DAG 각 Step 설명
 
