@@ -4,20 +4,41 @@ from src.agents.adapters.provisioning import (
     supported_provisioning_providers,
 )
 from src.agents.adapters.provisioning import onprem as onprem_mod
+from src.agents.adapters.provisioning import aws as aws_mod
 from src.agents.ai import provision_tools
 
 
 def test_registry_resolves_onprem():
-    assert supported_provisioning_providers() == ["onprem"]
+    assert supported_provisioning_providers() == ["onprem", "aws"]
     adapter = get_provisioning_adapter("onprem")
     assert isinstance(adapter, onprem_mod.OnPremProvisionAdapter)
+
+
+def test_registry_resolves_aws():
+    assert isinstance(get_provisioning_adapter("aws"), aws_mod.AwsProvisionAdapter)
+
+
+def test_aws_provision_is_plan_only_without_approval(monkeypatch):
+    calls = []
+    monkeypatch.setattr(aws_mod, "_run", lambda cmd, cwd, timeout=1800: (calls.append(cmd) or (0, "No changes")))
+    result = get_provisioning_adapter("aws").provision_cluster(ProvisionSpec(provider="aws"))
+    assert result.success is True
+    assert calls == [["npx", "cdk", "diff", "IncidentAgentStack"]]
+
+
+def test_aws_provision_deploys_only_when_approved(monkeypatch):
+    calls = []
+    monkeypatch.setattr(aws_mod, "_run", lambda cmd, cwd, timeout=1800: (calls.append(cmd) or (0, "deployed")))
+    result = get_provisioning_adapter("aws").provision_cluster(ProvisionSpec(provider="aws", approved=True))
+    assert result.success is True
+    assert calls == [["npx", "cdk", "deploy", "IncidentAgentStack", "--require-approval", "never"]]
 
 
 def test_unknown_provider_raises():
     import pytest
 
     with pytest.raises(ValueError):
-        get_provisioning_adapter("aws")
+        get_provisioning_adapter("gcp")
 
 
 def test_provision_kind_runs_terraform(monkeypatch):

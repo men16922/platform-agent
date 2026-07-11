@@ -19,6 +19,9 @@ class ProvisionSpec:
     # On-prem modes: "kind" (Terraform + Docker, no VM) | "k3s" (Ansible + VM).
     mode: str = "kind"
     registry_port: int = 5001
+    approved: bool = False
+    stack_name: str = "IncidentAgentStack"
+    region: str | None = None
 
 
 @dataclass
