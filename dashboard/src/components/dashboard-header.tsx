@@ -64,12 +64,14 @@ function UserAvatar({ session, status }: { session: any; status: string }) {
   }
 
   if (!session?.user) {
+    // Local dev bypasses GitHub OAuth (callbacks are bound to the prod domain).
+    const devAuth = process.env.NEXT_PUBLIC_DASHBOARD_DEV_AUTH === "1";
     return (
       <button
-        onClick={() => signIn("github")}
+        onClick={() => signIn(devAuth ? "dev-credentials" : "github", { callbackUrl: "/" })}
         className="flex h-8 items-center gap-2 rounded-lg border border-white/8 bg-white/[0.025] px-3 text-[11px] font-medium text-[var(--muted)] transition-colors hover:text-white"
       >
-        Sign in
+        {devAuth ? "Sign in (Local Dev)" : "Sign in"}
       </button>
     );
   }

@@ -42,7 +42,8 @@ export default async function AgentsPage() {
               className="surface relative overflow-hidden p-4 transition-colors hover:border-[#52647f]"
             >
               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <span className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold ${providerBadgeStyles[activity.provider]}`}>
+                <span className={`inline-flex items-center gap-1.5 rounded border px-1.5 py-0.5 text-[10px] font-semibold ${providerBadgeStyles[activity.provider]}`}>
+                  <ProviderLogo provider={activity.provider} size="sm" />
                   {activity.provider.toUpperCase()}
                 </span>
                 <span className="font-medium text-sm">{activity.agent}</span>
