@@ -4,7 +4,15 @@
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md` / `PROGRESS_LOG.md`를 참조한다. **≤120줄** 유지.
 
-## 다음 작업 리스트
+## 다음 작업 리스트 (2026-07-11 갱신)
+
+- [ ] **origin push** — 현재 main이 origin 대비 ahead 18 (미푸시 커밋 정리)
+- [ ] **Orchestrator(supervisor) + A2A 통합** — 요청→provision/deploy/kagent 에이전트 라우팅. AI Model Router를 supervisor로 확장, Gateway A2A + kagent A2A 연결, MCP 단일 도구 카탈로그 (설계는 ARCHITECTURE "Orchestrator+A2A" 섹션)
+- [ ] **kagent ↔ 로컬 Qwen 연결** — kind pod→host MLX 네트워킹 해결(MLX proxy 0.0.0.0 바인딩 + host.docker.internal), ModelConfig CRD로 OpenAI-compat 연결
+- [ ] 클라우드 Provision 어댑터(CDK/Terraform apply) — 현재 AWS `cdk_generator`(계획 생성)만
+- [ ] kagent 기본 에이전트 10개 정리(`helm uninstall`) 또는 데모용 유지 결정
+
+### (이전 리스트 — 참고)
 
 - [x] ~~세션 외 미커밋 변경 검토/정리~~ — models.py ServiceSpec 재수출 복구(`eaff5ac`), 나머지 chore 커밋(`5035913`) 완료.
 - [x] ~~AI Model Router 채팅 live 데모 + Deployments 추적 실증~~ — MLX Qwen30B→kind 배포 + recorder→DynamoDB→대시보드 aws-live 노출까지 end-to-end 검증 완료(2026-07-11).

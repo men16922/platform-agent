@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-11
 
-> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — (1) 세션 외 미커밋 변경(특히 `models.py` ServiceSpec 재수출 ImportError) 검토, (2) AI Model Router 채팅 live 데모(MLX+kind).
+> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — (1) **origin push**(ahead 18), (2) **Orchestrator(supervisor)+A2A 통합** 착수(provision/deploy/kagent 라우팅) or kagent↔로컬 Qwen 연결 완성.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 
@@ -19,7 +19,7 @@
 ## Snapshot
 
 - **무엇:** AWS-native 플랫폼 에이전트. provision → deploy 검증 → detect → analyze → decide → execute → Slack 리포트.
-- **동작하는 것:** Operations 4단계 + 3-cloud AI Agent (Bedrock+Gemini 3.5 Flash+GPT-5.4) + Capability Runbook Schema + **AI Model Router**(모델↔환경 분리, On-Prem=Pydantic AI+MLX Qwen) + 대시보드 Agents 자연어 배포 채팅.
+- **동작하는 것:** Operations 4단계 + 3-cloud AI Agent + AI Model Router + **범용 On-Prem Ops 에이전트**(provision+deploy+investigate 12도구, reasoning+tool 트레이스) + On-Prem **Provision**(Terraform kind/Ansible k3s) + 대시보드 Agents 채팅(SSE 스트리밍·배포 상세페이지·Tools 팝업). kagent kind 설치됨.
 - **하네스:** overnight-harness 플러그인 기반 (5 engine). `make overnight-kiro-once` 로 smoke.
 - **Kiro 특화:** aws-ops / cdk-dev / overnight-harness 3개 에이전트 + safety hook + AWS MCP Server.
 - **검증:** `make check` → 544 passed, 1 skipped (2026-07-11); Dashboard build + Vercel production + 사용자 권한 관리 UI + 멀티클라우드 우회 복구(Failover) 및 로컬 MLX Qwen2.5/3 프록시 기반 kind E2E 자율 배포 검증 성공.

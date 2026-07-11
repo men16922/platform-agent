@@ -17,7 +17,11 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` (pytest) → **569 passed, 1 skipped** (2026-07-11) — AI Model Router / Pydantic AI On-Prem deployer / MLX proxy / deploy recorder 테스트 포함
+- `make check` (pytest) → **584 passed, 1 skipped** (2026-07-11) — AI Model Router / Pydantic AI On-Prem 에이전트 / MLX proxy / deploy recorder / ops_tools / provisioning 어댑터 테스트 포함
+- **범용 On-Prem Ops 에이전트** → provision(2)+deploy(5)+investigate(5) 12도구, reasoning+tool SSE 스트리밍, "list pods" 질의는 진단만 수행 확인
+- **On-Prem Provision(① 역할)** → Terraform(kind) IaC `validate/plan` green + Ansible(k3s) 플레이북; `provision_cluster`/`teardown` 에이전트 도구
+- **관측성** → 배포 상세 페이지 `/deployments/[id]`(reasoning/tool args·result/summary) + DynamoDB trace 기록
+- **kagent** → kind에 helm 설치(controller/ui/postgres Running, 에이전트 10 CRD); 로컬 Qwen 연결은 미완(호스트 네트워킹)
 - AI Model Router → `/api/models`(환경별 선택지) + `/api/local-deploy`(자연어 배포) live 확인; 대시보드 `tsc`+`next build` 통과
 - **Live E2E (Pydantic AI + MLX Qwen3-Coder-30B)** → 자연어 "Deploy orders-api ..." → build→push→deploy→validate 자율 실행 → kind `orders-api 1/1 Running`(image v1.5.0) 검증 완료 (2026-07-11)
 - **Deployments Live 추적 배선 완성** → 기록 활성 API 배포 → recorder가 DEPLOY/ACTIVITY(DEP-262AC0A3, v1.6.0) DynamoDB 기록 → 대시보드 `/api/dashboard/deployments`(aws-live)가 최신 배포로 노출 확인 (2026-07-11)
@@ -57,8 +61,9 @@
 
 ## Active Focus
 
-- **AI Model Router** 완료: 모델↔환경 분리 + 적합도 매트릭스. On-Prem = Pydantic AI + MLX Qwen 독립 에이전트. 대시보드 Agents 채팅으로 자연어 배포 + Deployments 추적.
-- 다음: 세션 외 미커밋 변경(특히 `models.py`) 검토 → 채팅 live 데모(MLX+kind).
+- 범용 Ops 에이전트 + 관측성 + On-Prem Provision(Terraform/Ansible) + kagent 설치 완료. ARCHITECTURE 통합·최신화(단일 스택 표 + Orchestrator+A2A 타깃).
+- 다음: **Orchestrator(supervisor)+A2A 통합** 착수 (provision/deploy/kagent 에이전트 라우팅) — or kagent↔로컬 Qwen 연결 완성.
+- **미푸시**: origin 대비 ahead 18 (push 필요). kagent 기본 에이전트 10개는 데모 후 `helm uninstall` 정리 가능.
 
 ## Open Risks / Gaps
 

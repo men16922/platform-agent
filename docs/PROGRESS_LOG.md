@@ -7,6 +7,23 @@
 
 ---
 
+## 2026-07-11 — 범용 Ops 에이전트 + 관측성 + On-Prem Provision(Terraform/Ansible) + kagent + 아키텍처 정식화
+
+- Status: AI Model Router 배포 채팅을 **범용 On-Prem Ops 에이전트**로 확장(질의→자율 tool 수행), reasoning+tool 트레이스 스트리밍/기록/상세페이지, On-Prem **Provision 역할**(Terraform kind + Ansible k3s) 구현, kagent 설치, ARCHITECTURE 통합·최신화.
+- Changed:
+  - **범용 Ops**: `ops_tools.py`(read-only kubectl: list_pods/get_logs/describe/rollout_status/list_namespaces) + 시스템프롬프트 일반화. 도구셋 = provision+deploy+investigate(12개).
+  - **Provision(① 역할)**: `adapters/provisioning/`(base/onprem/registry) + `provision_tools.py`(provision_cluster/teardown) + `infra/onprem/terraform`(kind IaC, validate/plan ✅) + `infra/onprem/ansible`(k3s 플레이북).
+  - **관측성**: `model_router.build_trace`(reasoning+tool ordered trace) + SSE `reasoning` 이벤트, `deploy_recorder` trace 저장, 배포 상세 페이지(`/deployments/[id]`) — instruction/reasoning/tool args·result/summary(markdown)/kubectl output.
+  - **대시보드**: 로컬 dev 로그인(GitHub 없이 admin, prod 비활성), Agents 채팅 SSE 스트리밍+인라인 args/result, ModelLogo, Agent 카드 **Tools 팝업**(포털), 배포 상세 진입(Deployments/타임라인), 폭 확대(max-w-[1800px]), 채팅 60vh, 타임라인 10건 페이징.
+  - **kagent**: kind에 helm 설치(controller/ui/postgres Running, 에이전트 10개 CRD). LLM(로컬 Qwen) 연결은 호스트 네트워킹 미해결.
+  - **Make**: `local-llm-up/down/status`, `mlx-serve/mlx-proxy/router-api`.
+  - **Docs**: ARCHITECTURE 통합 스택 표 + Orchestrator+A2A 타깃 + On-Prem "MCP만" 부정확 수정. DECISIONS D9.
+- Verified:
+  - `make check` → **584 passed, 1 skipped**; dashboard `tsc` 0; `terraform validate/plan` green.
+  - **Live E2E (실 MLX Qwen30B → kind)**: NL 배포 build→push→deploy→validate + recorder→DynamoDB→대시보드 aws-live 추적, reasoning/tool SSE, "list pods" 질의는 진단만 수행 확인.
+- Blockers: kagent↔로컬 Qwen 연결(kind pod→host MLX 네트워킹, MLX proxy 0.0.0.0 바인딩 필요). 클라우드 Provision/Agent Runtime 호스팅·Orchestrator+A2A 통합 = 로드맵.
+- Next: (1) Orchestrator(supervisor)+A2A 통합 착수, or (2) kagent↔Qwen 연결 완성, or (3) push(현재 origin 대비 ahead 18).
+
 ## 2026-07-11 — AI Model Router + 자연어 On-Prem 배포 + 대시보드 Agents 채팅
 
 - Status: 모델(두뇌)과 환경(대상)을 분리하는 **AI Model Router**를 구현하고, On-Prem은 Strands 대신 **Pydantic AI + MLX Qwen** 독립 에이전트로 전환. 대시보드 Agents 페이지에 모델 선택 + 자연어 배포 채팅 추가.
