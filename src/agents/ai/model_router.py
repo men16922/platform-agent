@@ -361,6 +361,7 @@ async def route_deploy_stream(
                                 "type": "tool_result",
                                 "tool": getattr(result_part, "tool_name", ""),
                                 "ok": not _step_failed(content),
+                                "result": content,
                             }
         result = run.result
 

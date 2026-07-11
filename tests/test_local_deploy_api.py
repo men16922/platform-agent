@@ -37,7 +37,7 @@ def _fake_adapters(provider):
 
 
 def _test_factory(provider="onprem"):
-    return ld.create_local_deployer(provider=provider, model=TestModel())
+    return ld.create_local_deployer(provider=provider, model=TestModel(call_tools=["build_image", "push_image", "deploy_to_cluster", "validate_deployment"]))
 
 
 def test_health():

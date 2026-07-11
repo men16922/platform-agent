@@ -78,7 +78,7 @@ def test_route_deploy_local_qwen_executes(monkeypatch):
     monkeypatch.setattr(ld, "get_deployment_adapters", _fake_adapters)
 
     def factory(provider="onprem"):
-        return ld.create_local_deployer(provider=provider, model=TestModel())
+        return ld.create_local_deployer(provider=provider, model=TestModel(call_tools=["build_image", "push_image", "deploy_to_cluster", "validate_deployment"]))
 
     outcome = asyncio.run(
         mr.route_deploy("Deploy orders-api v1 to the local cluster", "local-qwen", "onprem", agent_factory=factory)
@@ -109,7 +109,7 @@ def test_route_deploy_stream_emits_tool_events(monkeypatch):
     monkeypatch.setattr(ld, "get_deployment_adapters", _fake_adapters)
 
     def factory(provider="onprem"):
-        return ld.create_local_deployer(provider=provider, model=TestModel())
+        return ld.create_local_deployer(provider=provider, model=TestModel(call_tools=["build_image", "push_image", "deploy_to_cluster", "validate_deployment"]))
 
     async def collect():
         events = []

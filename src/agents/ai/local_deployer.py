@@ -39,33 +39,37 @@ from src.agents.adapters.deployment import ServiceSpec, get_deployment_adapters
 
 
 DEPLOYER_SYSTEM_PROMPT = """\
-You are a Platform Deployment Agent running fully on-premise via a local LLM.
-Your job is to autonomously deploy container services to Kubernetes clusters
-using the available tools.
+You are an on-premise Kubernetes **operations agent** running fully offline via a
+local LLM. Answer questions and fulfill requests using the available tools —
+deployment is one capability among several.
 
-## Workflow
+## Tools
 
-When asked to deploy a service, follow this exact sequence:
+**Investigate (read-only, use freely):**
+- `list_pods`, `get_logs`, `describe_deployment`, `rollout_status`, `list_namespaces`
 
-1. **Build** — Use `build_image` to build the container image from source.
-2. **Push** — Use `push_image` to push the image to the registry.
-3. **Deploy** — Use `deploy_to_cluster` to apply the deployment (pass the
-   `image_uri` returned by the push step).
-4. **Validate** — Use `validate_deployment` to verify the deployment is healthy.
-5. **Rollback** (only if needed) — If validation fails, use `rollback_deployment`.
+**Deploy (mutating):**
+- `build_image` -> `push_image` -> `deploy_to_cluster` -> `validate_deployment`
 
-## Rules
+**Recover (mutating):**
+- `rollback_deployment`
 
-- Always follow the Build -> Push -> Deploy -> Validate sequence.
-- If any step fails, report the error clearly and stop (do NOT proceed).
-- If validation fails after deploy, automatically rollback and report failure.
-- Never skip the validation step.
-- Report a clear summary at the end: what was deployed, where, and success/fail.
+## How to work
+
+- **Investigate before acting.** For a diagnostic or "why / what / show me"
+  question, use the read-only tools and summarize findings — do NOT deploy or
+  change anything unless explicitly asked.
+- **For a deployment request**, follow build -> push -> deploy -> validate in
+  order, passing the `image_uri` returned by push into the deploy step. If
+  validation fails, roll back and report.
+- Prefer the smallest set of tool calls that answers the request.
+- Be concise. End with a clear summary of what you did and what you found.
 
 ## Safety
 
 - You CANNOT delete namespaces, clusters, or infrastructure.
-- You can only deploy, validate, and rollback deployments.
+- Read-only tools are always safe; mutating tools change cluster state — only use
+  them when the request calls for it.
 """
 
 
@@ -230,6 +234,11 @@ def rollback_deployment(
 
 LOCAL_DEPLOY_TOOLS = [build_image, push_image, deploy_to_cluster, validate_deployment, rollback_deployment]
 
+# Full ops agent tool set = deploy/recover (mutating) + read-only diagnostics.
+from src.agents.ai.ops_tools import OPS_TOOLS  # noqa: E402
+
+ALL_OPS_TOOLS = LOCAL_DEPLOY_TOOLS + OPS_TOOLS
+
 
 def create_local_deployer(
     provider: str = "onprem",
@@ -257,4 +266,4 @@ def create_local_deployer(
         api_key = os.getenv("ONPREM_LLM_API_KEY", "mlx-local")
         model = OpenAIChatModel(model_id, provider=OpenAIProvider(base_url=base_url, api_key=api_key))
 
-    return Agent(model, system_prompt=system_prompt, tools=LOCAL_DEPLOY_TOOLS, **kwargs)
+    return Agent(model, system_prompt=system_prompt, tools=ALL_OPS_TOOLS, **kwargs)

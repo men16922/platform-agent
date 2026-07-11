@@ -18,7 +18,7 @@ interface ModelOption {
 
 type Block =
   | { type: "reasoning"; text: string }
-  | { type: "tool"; tool: string; status: StepStatus };
+  | { type: "tool"; tool: string; status: StepStatus; args?: Record<string, unknown>; result?: unknown };
 
 interface ChatMessage {
   id: number;
@@ -154,14 +154,20 @@ export function AgentDeployChat() {
               });
             }
           } else if (ev.type === "tool_call") {
-            patch((m) => ({ ...m, blocks: [...(m.blocks || []), { type: "tool", tool: String(ev.tool), status: "running" }] }));
+            patch((m) => ({
+              ...m,
+              blocks: [
+                ...(m.blocks || []),
+                { type: "tool", tool: String(ev.tool), status: "running", args: ev.args as Record<string, unknown> | undefined },
+              ],
+            }));
           } else if (ev.type === "tool_result") {
             patch((m) => {
               const blocks = [...(m.blocks || [])];
               for (let i = blocks.length - 1; i >= 0; i--) {
                 const b = blocks[i];
                 if (b.type === "tool" && b.tool === ev.tool && b.status === "running") {
-                  blocks[i] = { ...b, status: ev.ok ? "ok" : "fail" };
+                  blocks[i] = { ...b, status: ev.ok ? "ok" : "fail", result: ev.result };
                   break;
                 }
               }
@@ -185,9 +191,9 @@ export function AgentDeployChat() {
     <section className="surface p-5 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h3 className="text-base font-semibold text-[#cbd6e9]">Deploy via chat — AI Model Router</h3>
+          <h3 className="text-base font-semibold text-[#cbd6e9]">Ask the agent — AI Model Router</h3>
           <p className="mt-1 text-xs text-[var(--muted)]">
-            Pick an environment and model, then describe the deploy — tool calls stream in live.
+            Pick an environment and model, then ask — the agent investigates, deploys or recovers via tools, streaming live.
           </p>
         </div>
         {!canDeploy && (
@@ -236,7 +242,7 @@ export function AgentDeployChat() {
       <div ref={logRef} className="max-h-[24rem] overflow-y-auto space-y-3 rounded-lg border border-white/6 bg-black/20 p-3">
         {messages.length === 0 && (
           <p className="text-xs text-[var(--muted)] py-6 text-center">
-            No deploys yet. Describe what to deploy and the selected model will run build → push → deploy → validate.
+            Ask the agent. It can investigate (list pods, logs, describe, rollout status) or act (build → push → deploy → validate, rollback) — tool calls stream in live.
           </p>
         )}
         {messages.map((msg) => (
@@ -251,7 +257,7 @@ export function AgentDeployChat() {
           disabled={!canDeploy || loading}
           onChange={(e) => setInstruction(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}
-          placeholder="e.g. Deploy orders-api v1.4.2 to the local cluster with 2 replicas"
+          placeholder="Ask the agent — e.g. 'list pods in default' or 'deploy orders-api v1.4.2 with 2 replicas'"
           className="flex-1 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-[#cbd6e9] focus:outline-none focus:border-[#8ab4f8] disabled:opacity-50"
         />
         <button
@@ -259,7 +265,7 @@ export function AgentDeployChat() {
           disabled={!canDeploy || loading || !instruction.trim()}
           className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-500 disabled:opacity-50"
         >
-          {loading ? "Deploying…" : "Deploy"}
+          {loading ? "Running…" : "Run"}
         </button>
       </div>
     </section>
@@ -322,6 +328,41 @@ function Markdown({ text }: { text: string }) {
   return <div className="space-y-1">{blocks}</div>;
 }
 
+function ToolBlock({ block }: { block: { tool: string; status: StepStatus; args?: Record<string, unknown>; result?: unknown } }) {
+  const [open, setOpen] = useState(false);
+  const hasArgs = block.args && Object.keys(block.args).length > 0;
+  const hasResult = block.result !== undefined && block.result !== null;
+  const hasDetail = hasArgs || hasResult;
+  const mark = stepMark[block.status];
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => hasDetail && setOpen((o) => !o)}
+        className={`flex items-center gap-2 ${hasDetail ? "cursor-pointer" : "cursor-default"}`}
+      >
+        <span className={mark.cls}>{mark.icon}</span>
+        <code className="rounded border border-white/8 bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-[var(--muted)]">{block.tool}</code>
+        {hasDetail && <span className="text-[9px] text-[var(--muted)]">{open ? "▾" : "▸"}</span>}
+      </button>
+      {open && (
+        <div className="mt-1 ml-6 space-y-1">
+          {hasArgs && (
+            <pre className="overflow-x-auto rounded border border-white/6 bg-black/25 p-1.5 text-[10px] text-[#a9c7ff]">
+              args: {JSON.stringify(block.args)}
+            </pre>
+          )}
+          {hasResult && (
+            <pre className="max-h-44 overflow-auto rounded border border-white/6 bg-black/25 p-1.5 text-[10px] text-[#a9c7ff]">
+              {typeof block.result === "string" ? block.result : JSON.stringify(block.result, null, 2)}
+            </pre>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ChatBubble({ msg }: { msg: ChatMessage }) {
   if (msg.role === "user") {
     return (
@@ -364,12 +405,7 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
                   {block.text}
                 </p>
               ) : (
-                <div key={i} className="flex items-center gap-2">
-                  <span className={stepMark[block.status].cls}>{stepMark[block.status].icon}</span>
-                  <code className="rounded border border-white/8 bg-white/[0.04] px-1.5 py-0.5 text-[10px] text-[var(--muted)]">
-                    {block.tool}
-                  </code>
-                </div>
+                <ToolBlock key={i} block={block} />
               ),
             )}
           </div>

@@ -67,6 +67,13 @@ def test_all_five_tools_registered():
     }
 
 
+def test_ops_agent_includes_readonly_tools():
+    names = {t.__name__ for t in ld.ALL_OPS_TOOLS}
+    # deploy/recover (mutating) + read-only diagnostics
+    assert {"build_image", "rollback_deployment"} <= names
+    assert {"list_pods", "get_logs", "describe_deployment", "rollout_status", "list_namespaces"} <= names
+
+
 def test_local_deployer_drives_tools_with_test_model(monkeypatch):
     monkeypatch.setattr(ld, "get_deployment_adapters", _fake_adapters)
     agent = ld.create_local_deployer(model=TestModel())
