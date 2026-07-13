@@ -19,7 +19,7 @@
 | **Agent Runtime** | Bedrock AgentCore | Vertex AI Agent Engine | Foundry Agent Service | **kagent (CNCF)** |
 | **Day-2 (Event / Orch)** | EventBridge / Step Functions | Pub/Sub / Cloud Workflows | Event Grid / Durable Functions | Webhook / Temporal |
 
-**구현 상태:** Deploy(4-provider) ✅ · On-Prem Provision(Terraform kind + Ansible k3s) ✅ · Day-2(AWS/GCP/Azure) ✅ · 클라우드 Provision·Agent Runtime 호스팅·Orchestrator+A2A 통합 = 🔲 로드맵.
+**구현 상태:** Deploy(4-provider) ✅ · On-Prem Provision(Terraform kind + Ansible k3s) ✅ · Day-2(AWS/GCP/Azure) ✅ · **Orchestrator(supervisor) 라우팅 + A2A Agent Card discovery/위임 ✅**(실 kagent 에이전트 대상 라이브 검증, 아래 "Orchestrator + A2A" 섹션) · 클라우드 Provision·Agent Runtime 매니지드 호스팅·MCP Gateway 단일 카탈로그 통합 = 🔲 로드맵.
 
 > **AI Model Router:** 위 "AI Agent (deploy)"는 각 환경의 *네이티브(recommended)* 조합일 뿐이다. 모델(두뇌)과 환경(대상)은 분리돼 있어 어떤 모델이든 어떤 환경에 배포할 수 있고, 적합도만 표기된다 ([상세](#ai-model-router-모델--환경-분리)).
 
@@ -270,9 +270,11 @@
 | Tier 1 (경량) | **Terraform + kind** (Docker 노드) | ❌ 불필요 |
 | Tier 2 (실 온프렘) | **Multipass VM(Ubuntu) + Ansible → k3s** | ✅ VM 먼저 |
 
-### Orchestrator + A2A (멀티에이전트 통합 — 타깃)
+### Orchestrator + A2A (멀티에이전트 통합 — supervisor/A2A 구현 · MCP 단일 카탈로그 로드맵)
 
 > 지금까지의 조각(2-역할 · Model Router · Agent Runtime · MCP Gateway)을 하나로 수렴시키는 상위 패턴. 요청을 받아 적절한 전문 에이전트에게 위임하는 **Orchestrator(supervisor)** + 에이전트 간 **A2A** 상호운용 + **MCP** 단일 도구 카탈로그.
+>
+> **구현 상태:** supervisor 라우팅(provision/deploy/kagent 분류) + **A2A Agent Card discovery(`/.well-known/agent-card.json`) → skill 매칭(capability 격리) → 위임(HTTP+JSON / JSON-RPC 0.3)** 은 `src/agents/ai/supervisor.py`에 **구현 완료**이고 자체 게이트웨이(Phase 1) 및 **실 kagent 에이전트(Phase 2, local MLX Qwen 백엔드)** 대상으로 **라이브 검증**됨. **잔여 로드맵**: MCP Gateway를 인터랙티브+A2A 공통 **단일 도구 카탈로그**로 수렴, supervisor를 `local_deploy_api` 정면 진입점으로 배선.
 
 ```
         사용자 NL 요청
@@ -289,16 +291,16 @@
         └───── MCP Gateway (단일 도구 카탈로그) ─────┘
 ```
 
-- **Orchestrator = supervisor 라우터**: NL 요청이 provision / deploy / 진단 중 무엇인지 판단 → 해당 전문 에이전트에게 **A2A**로 위임. 현재 `orchestrator.py`(배포 파이프라인 엔진) + AI Model Router를 이 supervisor로 확장한다.
-- **A2A (Agent-to-Agent):** 우리 에이전트 ↔ **kagent 에이전트** 상호운용. Gateway의 A2A Server가 이미 있고, kagent도 A2A 네이티브라 연결 가능.
-- **MCP Gateway = 단일 거버넌스 도구 카탈로그** (AgentCore Gateway 스타일).
+- **Orchestrator = supervisor 라우터 ✅**: NL 요청이 provision / deploy / 진단 중 무엇인지 판단 → 해당 전문 에이전트에게 **A2A**로 위임. `src/agents/ai/supervisor.py`가 이 라우팅/discovery/위임을 구현하며, 엔드포인트는 role별 env(`PLATFORM_{PROVISION,DEPLOY,KAGENT}_A2A_URL`)로 주입한다.
+- **A2A (Agent-to-Agent) ✅:** 우리 supervisor ↔ **실 kagent 에이전트** 상호운용을 라이브 검증. kagent 카드는 `preferredTransport=JSONRPC`, `protocolVersion=0.3` — supervisor가 카드의 transport에 맞춰 JSON-RPC `message/send`로 위임한다(A2A 필수 `messageId` 포함). skill 매칭은 role별 특화어로 **capability 격리**(deploy-only/diagnostic 카드 교차 위임 거부).
+- **MCP Gateway = 단일 거버넌스 도구 카탈로그** (AgentCore Gateway 스타일) — 🔲 로드맵.
 
 **현재 vs 타깃:**
 
 | | 현재 | 타깃 |
 |---|---|---|
-| 라우팅 | AI Model Router (model × env × role) | + Orchestrator supervisor (요청 → 에이전트) |
-| 에이전트 연결 | 각자 독립 실행 | **A2A** 상호운용 (kagent 포함) |
+| 라우팅 | AI Model Router (model × env × role) **+ Orchestrator supervisor (요청 → 에이전트) ✅** | supervisor를 `local_deploy_api` 정면 진입점으로 배선 |
+| 에이전트 연결 | **A2A 상호운용 ✅** (실 kagent 카드 discovery→위임 라이브 검증) | provision/deploy 전문가도 상시 A2A 서버로 노출 |
 | 도구 | in-process(인터랙티브) + MCP(A2A) **분리** | **MCP Gateway 단일 카탈로그** |
 
 **레퍼런스 (`whchoi98/awsops`):** AgentCore Runtime + Strands + 다수 MCP 게이트웨이 + route classifier — 정확히 이 Orchestrator + MCP 패턴이다.
@@ -623,7 +625,7 @@ rules:
 | 컴포넌트 | 역할 | 프로토콜 |
 |---------|------|---------|
 | **MCP Server** | kubectl 5종 + docker 4종 = 9개 tool 노출 | MCP (Model Context Protocol) |
-| **A2A Server** | 외부 agent와 통신, task lifecycle 관리 | A2A v1.0 (HTTP+JSON) |
+| **A2A Server** | 외부 agent와 통신, task lifecycle 관리 | A2A (HTTP+JSON `message:send` · supervisor는 JSON-RPC 0.3 `message/send`도 지원, kagent 카드 호환) |
 | **Bridge** | MCP ↔ A2A 양방향 변환 | 내부 |
 
 ```
