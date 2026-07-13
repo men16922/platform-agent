@@ -109,6 +109,25 @@ def test_uses_discovered_jsonrpc_url_for_kagent():
     assert sent["body"]["method"] == "message/send"
 
 
+def test_jsonrpc_message_includes_required_message_id():
+    # Regression: the spec-compliant a2a SDK (kagent's server) rejects a
+    # message/send whose params.message omits messageId (JSON-RPC -32602).
+    # Verified live against a real kagent A2A agent in Phase 2.
+    sent: dict = {}
+    card = {**KAGENT_CARD, "preferredTransport": "JSONRPC", "url": "http://k8s-agent.kagent:8080"}
+
+    def transport(endpoint: str, body: dict) -> dict:
+        sent["body"] = body
+        return {"jsonrpc": "2.0", "result": {"id": "task-1"}}
+
+    Supervisor(
+        {AgentRole.KAGENT: "http://configured-endpoint"}, transport=transport, card_fetcher=lambda _: card
+    ).handle("Investigate pod status")
+
+    message = sent["body"]["params"]["message"]
+    assert message.get("messageId"), "A2A Message.messageId is required by the spec"
+
+
 def test_gateway_returns_supervisor_route_trace():
     server = A2AServer()
 

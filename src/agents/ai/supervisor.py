@@ -160,6 +160,10 @@ class Supervisor:
         trace.append({"kind": "discovery", "status": "matched", "agent": card["name"], "skills": skills})
 
         message: dict[str, Any] = {
+            # messageId is a required field on the A2A Message object; the
+            # spec-compliant a2a SDK (e.g. kagent's server) rejects a
+            # message/send whose params.message omits it (JSON-RPC -32602).
+            "messageId": str(uuid.uuid4()),
             "role": "ROLE_USER",
             "parts": [{"text": instruction}],
             "metadata": {"supervisorRole": decision.role.value, "matchedSkills": skills},

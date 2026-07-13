@@ -1,0 +1,135 @@
+=== A2A Phase 2 live E2E (in-cluster, real kagent) ===
+INSTRUCTION: Investigate the health of the kagent namespace: list the pods and report if any are not in Running state. Keep it brief.
+DECISION   : kagent - read-only cluster investigation request
+DELEGATED  : True
+TRACE      : [
+  {
+    "kind": "route",
+    "role": "kagent",
+    "reason": "read-only cluster investigation request"
+  },
+  {
+    "kind": "discovery",
+    "status": "matched",
+    "agent": "local_diagnostic_agent",
+    "skills": [
+      "cluster-diagnostics",
+      "observability"
+    ]
+  },
+  {
+    "kind": "delegation",
+    "status": "sent",
+    "role": "kagent"
+  }
+]
+RESPONSE   : {
+  "id": "5b08c3fd-4916-4189-9ac0-a6b8aeb0c1a5",
+  "jsonrpc": "2.0",
+  "result": {
+    "artifacts": [
+      {
+        "artifactId": "931fe31c-d5cb-4e55-9463-18338faadbc5",
+        "parts": [
+          {
+            "kind": "text",
+            "text": "In the `kagent` namespace, the following pods are not in Running state:\n\n- `helm-agent-7bc855d558-jlz2h` (0/1)\n- `istio-agent-7488fc7fbb-7rt7g` (0/1)\n- `promql-agent-5c499cb8df-lj4c6` (0/1)\n\nThese pods have not started correctly and are in a non-ready state. Further investigation into their logs or configuration may be needed to determine the root cause."
+          }
+        ]
+      }
+    ],
+    "contextId": "b358f55f-ade3-44ca-8be7-e2a494713091",
+    "history": [
+      {
+        "contextId": "b358f55f-ade3-44ca-8be7-e2a494713091",
+        "kind": "message",
+        "messageId": "8f8358f6-e4df-4d56-95a1-013e38b99b6d",
+        "metadata": {
+          "supervisorRole": "kagent",
+          "matchedSkills": [
+            "cluster-diagnostics",
+            "observability"
+          ]
+        },
+        "parts": [
+          {
+            "kind": "text",
+            "text": "Investigate the health of the kagent namespace: list the pods and report if any are not in Running state. Keep it brief."
+          }
+        ],
+        "role": "user",
+        "taskId": "fd16385c-3548-4f36-b6c9-adbe7a2f074b"
+      },
+      {
+        "contextId": "b358f55f-ade3-44ca-8be7-e2a494713091",
+        "kind": "message",
+        "messageId": "8f8358f6-e4df-4d56-95a1-013e38b99b6d",
+        "metadata": {
+          "supervisorRole": "kagent",
+          "matchedSkills": [
+            "cluster-diagnostics",
+            "observability"
+          ]
+        },
+        "parts": [
+          {
+            "kind": "text",
+            "text": "Investigate the health of the kagent namespace: list the pods and report if any are not in Running state. Keep it brief."
+          }
+        ],
+        "role": "user",
+        "taskId": "fd16385c-3548-4f36-b6c9-adbe7a2f074b"
+      },
+      {
+        "contextId": "b358f55f-ade3-44ca-8be7-e2a494713091",
+        "kind": "message",
+        "messageId": "d6a3d8a1-58f9-4808-a81e-e52b797316f7",
+        "metadata": {
+          "kagent_adk_partial": false,
+          "kagent_app_name": "kagent__NS__local_diagnostic_agent",
+          "kagent_user_id": "A2A_USER_b358f55f-ade3-44ca-8be7-e2a494713091",
+          "kagent_session_id": "b358f55f-ade3-44ca-8be7-e2a494713091",
+          "kagent_invocation_id": "e-d9f2bf36-246c-4a0f-9cd6-0dcd32007319",
+          "kagent_author": "local_diagnostic_agent"
+        },
+        "parts": [
+          {
+            "data": {
+              "id": "f53ade39-9cb0-44a3-bb38-85b9bd02373e",
+              "args": {
+                "namespace": "kagent",
+                "resource_type": "pod"
+              },
+              "name": "k8s_get_resources"
+            },
+            "kind": "data",
+            "metadata": {
+              "kagent_type": "function_call"
+            }
+          }
+        ],
+        "role": "agent",
+        "taskId": "fd16385c-3548-4f36-b6c9-adbe7a2f074b"
+      },
+      {
+        "contextId": "b358f55f-ade3-44ca-8be7-e2a494713091",
+        "kind": "message",
+        "messageId": "0e144a56-3e9f-48d9-85be-9f90817f0d3d",
+        "metadata": {
+          "kagent_adk_partial": null,
+          "kagent_app_name": "kagent__NS__local_diagnostic_agent",
+          "kagent_user_id": "A2A_USER_b358f55f-ade3-44ca-8be7-e2a494713091",
+          "kagent_session_id": "b358f55f-ade3-44ca-8be7-e2a494713091",
+          "kagent_invocation_id": "e-d9f2bf36-246c-4a0f-9cd6-0dcd32007319",
+          "kagent_author": "local_diagnostic_agent"
+        },
+        "parts": [
+          {
+            "data": {
+              "id": "f53ade39-9cb0-44a3-bb38-85b9bd02373e",
+              "name": "k8s_get_resources",
+              "response": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "NAME                 

@@ -1,6 +1,6 @@
 # STATUS — platform-agent
 
-최종 갱신: 2026-07-13
+최종 갱신: 2026-07-14
 
 > 현재 구현 상태 / 검증 baseline / active focus / open risks. **≤120줄** 유지.
 
@@ -17,6 +17,8 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **602 passed, 1 skipped** (2026-07-14) — A2A Phase 2 회귀 테스트(`test_jsonrpc_message_includes_required_message_id`) 포함.
+- **A2A Phase 2 라이브 E2E(2026-07-14)** → 실 kagent 0.9.11 에이전트(local MLX Qwen 30B) 대상 supervisor HTTP 카드 discovery→skill 매칭→JSON-RPC 위임→실 `k8s_get_resources` 도구 진단 반환. 증거: `docs/evidence/a2a-phase2-live-e2e.log`.
 - `make check` (pytest) → **600 passed, 1 skipped** (2026-07-12) — AI Model Router / Pydantic AI On-Prem 에이전트 / MLX proxy / deploy recorder(+cascade) / ops_tools / provisioning 어댑터 테스트 포함
 - **LinkedIn 데모 비디오 편집(2026-07-12)** → `docs/post/local-onprem.mov` 원본 영상을 18.2초(1.0MB)로 구간 및 배속(타임랩스) 편집하고, 각 7개 주요 구간의 자막(Terraform 등 실제 실행 매핑)을 영상 하단에 병합한 `local-onprem-edited.mp4` 제작 완료.
 - **배포 추적 IA 정리(2026-07-12)** → activity에 `type`(provision/deploy)·`cluster`(연결키)·`environment`(provider와 분리) 저장; 대시보드 **Provisioning/Deployments/History** 3분리 + **통합 중첩 상세**(provisioning⊃deployments); 롤백 **단일-row 승계**, **cluster teardown→deploy cascade**, 자연어 rollback/teardown도 동일 라우팅; `make dev-up` 한 방 기동. tsc0+next build 성공, `/provisioning`·`/history` 200. **라이브 실증 완료(2026-07-13, 자연어 4스텝 브라우저 end-to-end)**.
@@ -78,6 +80,6 @@
 2. **Slack App 미연결** — APPROVE 승인 버튼 코드+가이드+E2E 테스트 완비, 실 Slack App 미생성 (코드 ready). OIDC 연계를 통한 Slack Webhook 송출 정상 작동.
 3. **GCP/Azure 실 클러스터 비용** — 실 배포/Remediation 가동 시 클러스터 리소스 가동 및 WIF OIDC 인증 연동 세부 과금 체크 필요.
 4. **Dashboard dependency audit** — Next.js 16.2.10 내부 번들 PostCSS(<8.5.10) moderate 2건(XSS via `</style>` in CSS stringify). **재검증(2026-07-13)**: 16.2.x 패치 릴리스 없음(최신=현재)·`audit fix --force`는 next@9 다운그레이드 → **upstream 대기 확정**. 빌드타임 경로라 런타임 위험 낮음. 필요 시 `overrides`로 postcss 강제(빌드 파손 리스크) 검토 가능.
-5. **A2A endpoint/card discovery** — **Phase 1 실연결 완료(2026-07-13)**: supervisor가 실행 중인 게이트웨이 A2A 서버 대상으로 `/.well-known/agent-card.json` **HTTP discovery → skill 매칭 → 위임(+trace)** 라이브 E2E 통과(mock 아님). 매칭 규율 강화: KAGENT 매칭어에서 generic `kubernetes/cluster` 제거 → deploy-only 카드는 KAGENT role에서 `capability_mismatch`로 거부(회귀 테스트 추가). **남음(Phase 2)**: 실제 kagent endpoint(kind+kagent+MLX 재프로비저닝 필요, 원커맨드 스크립트 부재; JSON-RPC 진단 task 자체는 과거 실증됨).
+5. ~~**A2A endpoint/card discovery**~~ — **해소(2026-07-14, Phase 2 완결)**: Phase 1(자체 게이트웨이) + **Phase 2 실 kagent 라이브 E2E** 모두 통과. kind+kagent 0.9.11+로컬 MLX Qwen 30B에서 supervisor→**실 kagent 에이전트** 카드 HTTP discovery→skill 매칭→JSON-RPC 위임→**실 `k8s_get_resources` 도구 진단** 반환(증거 `docs/evidence/a2a-phase2-live-e2e.log`). **부산물 버그 수정**: JSON-RPC 페이로드에 A2A 필수 `messageId` 누락(스펙 준수 `a2a` SDK가 `-32602` 거부) 추가 — Phase 1의 관대한 게이트웨이는 못 잡던 갭, 회귀 테스트 추가. 진단 에이전트 매니페스트 `infra/onprem/kagent/local-diagnostic-agent.yaml`. ⚠️ 인프라 실행 중 유지(정리: `make local-cluster-down`).
 6. ~~**추적 IA 라이브 실증 미완**~~ — **해소(2026-07-13)**: 자연어 4스텝(provision+deploy→앱 롤백 단일-row→History 중첩 상세→teardown cascade) 브라우저 end-to-end 실증 완료. 참고: 레거시 activity 행은 `cluster` 없어 롤백 비활성 — 클린슬레이트는 `~/.platform-agent/activity.jsonl` 비우기.
 7. ~~**NEXT_PUBLIC 프로덕션 인라인**~~ — **해소/stale(2026-07-13)**: Next 16.2.10 `next build` 실측 결과 `.env.local`의 `NEXT_PUBLIC_DASHBOARD_DEV_AUTH`가 클라이언트 청크에 **정상 인라인**(`signIn("dev-credentials")`로 상수 폴딩, 원문 env 참조 0). 과거 미인라인은 초기 Turbopack 이슈로 현재 재현 안 됨 → 코드 수정 불필요, `next dev` 우회 불요. (Vercel은 `.env.local` 부재라 미인라인=GitHub OAuth 폴백, 의도대로.)

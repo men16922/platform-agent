@@ -1,8 +1,8 @@
 # AGENT_BRIEF — platform-agent
 
-최종 갱신: 2026-07-13
+최종 갱신: 2026-07-14
 
-> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **actionable 백로그 소진**(origin/main=`686c2f0`). 남은 것은 전부 defer/외부: **A2A Phase 2**(실 kagent endpoint — kind+kagent+MLX 재프로비저닝 필요, 추천=defer), Slack App 실생성, 테크 아티클 배포. ※ 2026-07-13 완료: 추적 IA 라이브 실증·CDK diff 재검증(drift 0)·kagent 정리(MOOT)·feat 브랜치 삭제(local+origin)·**A2A discovery Phase 1 실연결+매칭 강화**·PostCSS 재검증·**NEXT_PUBLIC #7 해소**.
+> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **actionable 코드 백로그 재소진**. 남은 것은 전부 외부/deferred: Slack App 실생성, 테크 아티클 배포. ※ 2026-07-14 완료: **A2A Phase 2 실 kagent 라이브 E2E**(supervisor→실 kagent 카드 discovery→JSON-RPC 위임→실 도구 진단; **A2A 필수 `messageId` 누락 버그 수정**+회귀 테스트, gate 602). ⚠️ Phase 2 인프라(kind `platform-agent`+kagent 18파드+MLX 30B) 실행 중 유지 — 정리 시 `make local-cluster-down`+MLX/proxy pkill. ※ 2026-07-13: 추적 IA 라이브 실증·CDK diff 재검증·kagent 정리(MOOT)·feat 삭제·A2A Phase 1·PostCSS·NEXT_PUBLIC #7.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 
@@ -22,8 +22,8 @@
 - **동작하는 것:** Operations 4단계 + 3-cloud AI Agent + **On-Prem Ops**(12도구, trace) + Terraform kind/실 Multipass VM Ansible k3s Provision + kagent↔Local Qwen A2A + Agents UI. **On-Prem 오프라인 완결**: Local Qwen **7B**로 NL provision→deploy→validate ~39s, 로컬 JSONL 기록 + 대시보드 **hybrid**(AWS+On-Prem 병합) + 실 **롤백**(app/cluster). **추적 IA**: activity에 `type`(provision/deploy)·`cluster` 연결키, 대시보드 **Provisioning/Deployments/History** 분리 + **중첩 상세**(provisioning⊃deploys), 롤백 **단일-row 승계**·**teardown→deploy cascade**, 자연어 rollback/teardown도 동일 라우팅.
 - **하네스:** overnight-harness 플러그인 기반 (5 engine). `make overnight-kiro-once` 로 smoke. `make dev-up`으로 로컬 스택(MLX+proxy+router+dashboard) 한 방 기동.
 - **Kiro 특화:** aws-ops / cdk-dev / overnight-harness 3개 에이전트 + safety hook + AWS MCP Server.
-- **검증:** `make check` → **601 passed, 1 skipped** (2026-07-13); Dashboard `next build` 성공(NEXT_PUBLIC 인라인 실측 확인); Live 7B provision→deploy→validate ~39s·app/cluster 롤백·hybrid 병합·추적 IA 자연어 4스텝 라이브 실증(2026-07-13); **A2A discovery 라이브 E2E**(supervisor→게이트웨이 카드 HTTP discovery→skill 매칭→위임). origin/main=`686c2f0`.
-- **현재 초점:** actionable 백로그 소진. 잔여=A2A Phase 2(실 kagent, 추천 defer)+외부(Slack/아티클).
+- **검증:** `make check` → **602 passed, 1 skipped** (2026-07-14); Dashboard `next build` 성공; Live 7B provision→deploy→validate ~39s·app/cluster 롤백·hybrid 병합·추적 IA 자연어 4스텝 라이브 실증; **A2A 라이브 E2E**: Phase 1(자체 게이트웨이) + **Phase 2 실 kagent 에이전트**(local Qwen 30B) discovery→JSON-RPC 위임→실 `k8s_get_resources` 진단(2026-07-14).
+- **현재 초점:** actionable 코드 백로그 소진(A2A Phase 2 완료). 잔여=외부(Slack App/아티클).
 
 ## Guardrails
 

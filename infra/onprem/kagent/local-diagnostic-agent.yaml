@@ -1,0 +1,57 @@
+# Read-only on-prem diagnostic agent for platform-agent A2A Phase 2.
+# Runs on kagent (CNCF) inside kind, backed by the local MLX Qwen endpoint via
+# the tool-call proxy (host.docker.internal:18091). Exposes an A2A agent card
+# whose skills match the supervisor's KAGENT role terms so the supervisor can
+# discover it (/.well-known/agent-card.json), match a diagnostic skill, and
+# delegate a read-only investigation task over A2A JSON-RPC.
+apiVersion: kagent.dev/v1alpha2
+kind: Agent
+metadata:
+  name: local-diagnostic-agent
+  namespace: kagent
+spec:
+  type: Declarative
+  description: Read-only Kubernetes diagnostic specialist backed by local MLX Qwen.
+  declarative:
+    modelConfig: local-qwen-model-config
+    stream: true
+    a2aConfig:
+      skills:
+        - id: cluster-diagnostics
+          name: Cluster Diagnostics
+          description: Diagnose and troubleshoot Kubernetes cluster and workload issues (read-only investigation).
+          tags: ["diagnostic", "troubleshoot", "investigate", "debug"]
+          examples:
+            - "Why is my pod not starting?"
+            - "Troubleshoot a failing deployment in namespace default."
+            - "Investigate why a service has no endpoints."
+        - id: observability
+          name: Observability & Logs
+          description: Inspect pod logs, events, and cluster state for observability and debugging.
+          tags: ["observability", "logs", "debug", "diagnostic"]
+          examples:
+            - "Show me the logs for the failing pod."
+            - "What events happened for this deployment?"
+    systemMessage: |
+      You are a read-only Kubernetes diagnostic specialist for an on-prem cluster.
+      Your job is to investigate and explain cluster and workload health using
+      read-only tools only. Use k8s_get_resources, k8s_describe_resource,
+      k8s_get_events, k8s_get_pod_logs, k8s_get_cluster_configuration, and
+      k8s_get_resource_yaml to gather evidence, then give a concise diagnosis.
+      NEVER create, patch, delete, label, annotate, apply, or execute commands
+      that change cluster state. If asked to mutate, refuse and explain you are
+      read-only. Keep answers short and evidence-based.
+    tools:
+      - type: McpServer
+        mcpServer:
+          apiGroup: kagent.dev
+          kind: RemoteMCPServer
+          name: kagent-tool-server
+          toolNames:
+            - k8s_get_resources
+            - k8s_describe_resource
+            - k8s_get_events
+            - k8s_get_pod_logs
+            - k8s_get_cluster_configuration
+            - k8s_get_resource_yaml
+            - k8s_get_available_api_resources
