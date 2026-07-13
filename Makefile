@@ -68,6 +68,9 @@ mlx-proxy:  ## start the MLX Qwen tool-call proxy
 router-api:  ## start the AI Model Router API (natural-language deploy)
 	cd $(DEPLOY_WORKDIR) && PYTHONPATH=$(CURDIR) PLATFORM_ACTIVITY_FILE=$(ACTIVITY_FILE) ONPREM_LLM_ENDPOINT=http://127.0.0.1:$(PROXY_PORT)/v1 ONPREM_LLM_MODEL=$(MLX_MODEL) uvicorn src.agents.ai.local_deploy_api:app --host 127.0.0.1 --port $(ROUTER_PORT)
 
+onprem-webhook:  ## start the On-Prem PATH B webhook (Alertmanager -> Day-2 incident pipeline)
+	PLATFORM_ACTIVITY_FILE=$(ACTIVITY_FILE) uvicorn src.agents.ai.onprem_webhook_api:app --host 127.0.0.1 --port 8078
+
 local-llm-up:  ## start MLX + proxy + router API in the background (logs in /tmp/platform-agent)
 	@mkdir -p $(LLM_LOG_DIR)
 	@echo "→ MLX-LM server (:$(MLX_PORT)) — model load takes ~30-60s"
@@ -126,7 +129,7 @@ dev-status:  ## show the whole local stack status
 	@curl -s -m 3 localhost:$(ROUTER_PORT)/health >/dev/null 2>&1 && echo "router    :$(ROUTER_PORT)   up" || echo "router    :$(ROUTER_PORT)   down"
 	@curl -s -m 3 localhost:$(DASHBOARD_PORT) >/dev/null 2>&1 && echo "dashboard :$(DASHBOARD_PORT)   up" || echo "dashboard :$(DASHBOARD_PORT)   down"
 
-.PHONY: mlx-serve mlx-proxy router-api local-llm-up local-llm-down local-llm-status dashboard-dev dev-up dev-down dev-status
+.PHONY: mlx-serve mlx-proxy router-api onprem-webhook local-llm-up local-llm-down local-llm-status dashboard-dev dev-up dev-down dev-status
 
 # ===== overnight harness targets (append to your Makefile) =====
 # The overnight runner + helpers are the Single Source of Truth in the overnight-harness

@@ -104,7 +104,7 @@
 | AWS | EventBridge → Lambda | Step Functions | ✅ 구현 |
 | GCP | Pub/Sub → Cloud Functions | Cloud Workflows | ✅ 구현 |
 | Azure | Event Grid → Azure Functions | Durable Functions | ✅ 구현 |
-| On-Prem | Webhook (FastAPI) | 직접 호출 | 🔲 미구현 |
+| On-Prem | Webhook (FastAPI) | 직접 호출 (in-process 4-step) | ✅ 구현 (`onprem_webhook_api`) |
 
 두 경로 모두 동일한 **AI Orchestrator**로 수렴한다.
 
@@ -405,16 +405,18 @@ Signal (알람/메트릭 이상) → Event Bus → Orchestrator → 4-step Pipel
 
 ### Provider별 구현 매핑
 
-| 컴포넌트 | AWS (✅ 구현) | GCP (✅ 구현) | Azure (✅ 구현) | On-Prem (🔲) |
+| 컴포넌트 | AWS (✅ 구현) | GCP (✅ 구현) | Azure (✅ 구현) | On-Prem (부분 ✅) |
 |---------|-------------|---------|-----------|-------------|
 | **Signal** | CloudWatch Alarm | Cloud Monitoring Alert | Azure Monitor Alert | Prometheus / Alertmanager |
-| **Event Bus** | EventBridge | Pub/Sub | Event Grid | Webhook (FastAPI) |
-| **Orchestration** | Step Functions | Cloud Workflows | Durable Functions | Temporal / Prefect |
+| **Event Bus** | EventBridge | Pub/Sub | Event Grid | **Webhook (FastAPI) ✅** (`onprem_webhook_api`) |
+| **Orchestration** | Step Functions | Cloud Workflows | Durable Functions | **직접 호출 (in-process 4-step) ✅** (`onprem_incident_pipeline`) |
 | **LLM (Analyzer)** | Bedrock Claude | Vertex AI Gemini | Azure OpenAI GPT | Local LLM or API Key |
 | **Executor** | SSM Automation | gcloud / kubectl | az cli / kubectl | kubectl (via MCP) |
 | **Approval Gate** | SQS + Lambda URL + Slack | Cloud Tasks + Cloud Run + Slack | Service Bus + Az Func + Slack | Redis + FastAPI + Slack |
 | **State Store** | DynamoDB | Firestore | Cosmos DB | PostgreSQL / Redis |
 | **Notification** | Slack Webhook | Slack Webhook | Slack Webhook | Slack Webhook |
+
+**On-Prem PATH B 구현(✅):** `src/agents/ai/onprem_webhook_api.py`(FastAPI)가 Alertmanager webhook(`/webhook/alertmanager`) 또는 정규화 신호(`/webhook/incident`)를 수신 → `onprem_incident_pipeline.run_incident_pipeline`이 detector→analyzer→decision→executor **4핸들러를 in-process 체이닝**(클라우드의 Step Functions/Workflows/Durable Functions에 대응하는 "직접 호출"). 완전 오프라인: detector가 이벤트 형태로 provider=onprem 자동감지→onprem SignalAdapter 정규화, analyzer는 Bedrock 미가용 시 heuristic 폴백, on-prem executor 액션은 **로그-only 스텁**(실 kubectl via MCP Gateway는 로드맵), Slack/DynamoDB 기록은 best-effort. **잔여 로드맵**: Alertmanager 실연동·State Store(PostgreSQL/Redis)·실 executor·Approval Flow(Temporal/Redis/PostgreSQL, 아래).
 
 ### AWS 구현 상세 (현재 동작)
 
