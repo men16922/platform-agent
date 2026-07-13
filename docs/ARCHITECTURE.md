@@ -546,13 +546,12 @@ Decision(P2) → Durable Functions external event wait
         → Cosmos DB claim → Durable Functions raise event
 ```
 
-**On-Prem 구현 (🔲 계획):**
+**On-Prem 구현 (부분 ✅):** 코어 게이트 구현 — `onprem_webhook_api`가 P2(APPROVE) 인시던트를 즉시 실행하지 않고 **파일 기반 pending 스토어**(`onprem_approvals`, offline JSONL)에 parking → `/approve`가 저장된 decision을 executor로 **재생 실행**, `/reject`는 실행 없음, `/pending`은 대기 목록. Slack 버튼 프런트엔드 + Temporal/Redis/PostgreSQL substrate는 로드맵.
 ```
-Decision(P2) → Temporal workflow signal wait
-  → Redis queue → Approval FastAPI endpoint
-    → PostgreSQL pending + Slack 버튼 전송
-      → 사용자 클릭 → FastAPI webhook
-        → PostgreSQL claim → Temporal signal
+Decision(P2) → onprem_webhook: park pending (JSONL 스토어) ✅
+  → GET /pending (대기 목록) ✅
+    → POST /approve/{id} → execute_incident(decision) 재생 ✅  |  POST /reject/{id} → 실행 없음 ✅
+  (Slack 버튼 전송·Temporal/Redis/PostgreSQL = 🔲 로드맵)
 ```
 
 ### Severity → Mode 매핑 (모든 provider 공통)

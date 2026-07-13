@@ -7,8 +7,18 @@ this **FastAPI webhook**, which ingests an alert (Prometheus Alertmanager, or an
 already-normalised incident) and drives the 4-step incident pipeline in-process
 (``run_incident_pipeline`` — the "직접 호출" orchestration).
 
+The Guardian severity → mode mapping gates remediation exactly as the cloud
+providers do:
+
+    P1 → AUTO     execute immediately
+    P2 → APPROVE  park a pending approval (offline store) → /approve or /reject
+    P3 → MANUAL   notify only, no execution
+
     POST /webhook/alertmanager   ← Alertmanager webhook (status/alerts/commonLabels)
     POST /webhook/incident       ← generic pre-normalised signal payload
+    GET  /pending                ← list pending approvals
+    POST /approve/{approval_id}  ← approve → replay decision through the executor
+    POST /reject/{approval_id}   ← reject → no execution
     GET  /health
 
 Runs LOCAL by design, next to the on-prem cluster. Fully offline: the analyzer
@@ -28,12 +38,15 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from src.agents.ai.onprem_incident_pipeline import run_incident_pipeline
+from src.agents.ai import onprem_approvals as approvals
+from src.agents.ai.onprem_incident_pipeline import execute_incident, run_incident_pipeline
 
 logger = logging.getLogger(__name__)
 
 
 class PipelineResult(BaseModel):
+    status: str  # executed | pending_approval | notified | approved | rejected
+    approval_id: str | None = None
     incident_id: str | None = None
     provider: str | None = None
     service: str | None = None
@@ -50,9 +63,35 @@ class PipelineResult(BaseModel):
     resolved: bool = False
 
 
-def _summarise(result: dict[str, Any]) -> PipelineResult:
-    # Drop the verbose per-stage payloads; the webhook returns the compact summary.
-    return PipelineResult(**{k: v for k, v in result.items() if k != "stages"})
+def _summary(result: dict[str, Any]) -> dict[str, Any]:
+    # Drop the verbose per-stage payloads; keep the compact summary fields.
+    return {k: v for k, v in result.items() if k != "stages"}
+
+
+def _handle_incident(payload: dict[str, Any]) -> PipelineResult:
+    """Run the pipeline and gate execution on the Guardian remediation mode."""
+    result = run_incident_pipeline(payload, execute=False)
+    summary = _summary(result)
+    mode = result.get("remediation_mode")
+
+    if mode == "AUTO":
+        executor_out = execute_incident(result["stages"]["decision"])
+        summary.update(
+            {
+                "status": "executed",
+                "incident_id": executor_out.get("incident_id"),
+                "executed_actions": executor_out.get("executed_actions", []),
+                "skipped_actions": executor_out.get("skipped_actions", []),
+                "resolved": executor_out.get("resolved", False),
+            }
+        )
+    elif mode == "APPROVE":
+        record = approvals.create_pending(result["stages"]["decision"], summary)
+        summary.update({"status": "pending_approval", "approval_id": record["approval_id"]})
+    else:  # MANUAL — notify only
+        summary["status"] = "notified"
+
+    return PipelineResult(**summary)
 
 
 app = FastAPI(title="platform-agent On-Prem Webhook", version="1.0")
@@ -78,7 +117,7 @@ async def alertmanager_webhook(payload: dict[str, Any]) -> PipelineResult:
             detail="Not an Alertmanager webhook: expected 'alerts' or 'groupLabels'.",
         )
     logger.info("onprem_webhook.alertmanager status=%s", payload.get("status"))
-    return _summarise(run_incident_pipeline(payload))
+    return _handle_incident(payload)
 
 
 @app.post("/webhook/incident", response_model=PipelineResult)
@@ -87,4 +126,58 @@ async def generic_incident_webhook(payload: dict[str, Any]) -> PipelineResult:
     if not payload:
         raise HTTPException(status_code=400, detail="Empty incident payload.")
     logger.info("onprem_webhook.incident")
-    return _summarise(run_incident_pipeline(payload))
+    return _handle_incident(payload)
+
+
+@app.get("/pending")
+async def pending() -> dict[str, Any]:
+    """List Day-2 remediations awaiting human approval."""
+    items = approvals.list_pending()
+    return {"count": len(items), "pending": items}
+
+
+@app.post("/approve/{approval_id}", response_model=PipelineResult)
+async def approve(approval_id: str) -> PipelineResult:
+    """Approve a parked P2 remediation and replay its decision through the executor."""
+    record = approvals.get(approval_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"Unknown approval: {approval_id}")
+    if record.get("status") != "pending":
+        raise HTTPException(status_code=409, detail=f"Already {record.get('status')}: {approval_id}")
+
+    executor_out = execute_incident(record["decision"])
+    approvals.resolve(approval_id, "approved", executor_out=executor_out)
+    logger.info("onprem_webhook.approved id=%s", approval_id)
+    return PipelineResult(
+        status="approved",
+        approval_id=approval_id,
+        severity=record.get("severity"),
+        runbook_id=record.get("runbook_id"),
+        remediation_mode=record.get("remediation_mode"),
+        actions=record.get("actions", []),
+        incident_id=executor_out.get("incident_id"),
+        executed_actions=executor_out.get("executed_actions", []),
+        skipped_actions=executor_out.get("skipped_actions", []),
+        resolved=executor_out.get("resolved", False),
+    )
+
+
+@app.post("/reject/{approval_id}", response_model=PipelineResult)
+async def reject(approval_id: str) -> PipelineResult:
+    """Reject a parked P2 remediation; no execution occurs."""
+    record = approvals.get(approval_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"Unknown approval: {approval_id}")
+    if record.get("status") != "pending":
+        raise HTTPException(status_code=409, detail=f"Already {record.get('status')}: {approval_id}")
+
+    approvals.resolve(approval_id, "rejected")
+    logger.info("onprem_webhook.rejected id=%s", approval_id)
+    return PipelineResult(
+        status="rejected",
+        approval_id=approval_id,
+        severity=record.get("severity"),
+        runbook_id=record.get("runbook_id"),
+        remediation_mode=record.get("remediation_mode"),
+        actions=record.get("actions", []),
+    )

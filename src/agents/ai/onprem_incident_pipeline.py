@@ -14,6 +14,10 @@ SignalAdapter and on-prem ExecutionAdapter. The whole chain runs fully offline:
 the analyzer falls back to a heuristic when Bedrock is unreachable, the on-prem
 executor action is a log-only stub (real kubectl via the MCP Gateway is roadmap),
 and Slack/DynamoDB writes are best-effort and skipped when unconfigured.
+
+Execution is separable from decision: ``run_incident_pipeline(event, execute=False)``
+runs detect → analyze → decide only, so a P2 (APPROVE) incident can be parked for
+human approval and later replayed through the executor via ``execute_incident``.
 """
 
 from __future__ import annotations
@@ -26,20 +30,21 @@ from src.agents.operations.detector.handler import lambda_handler as _detect
 from src.agents.operations.executor.handler import lambda_handler as _execute
 
 
-def run_incident_pipeline(event: dict[str, Any]) -> dict[str, Any]:
-    """Run detect → analyze → decide → execute in-process for one signal.
+def run_incident_pipeline(event: dict[str, Any], *, execute: bool = True) -> dict[str, Any]:
+    """Run detect → analyze → decide (→ execute) in-process for one signal.
 
-    ``event`` is a raw signal payload — e.g. an Alertmanager webhook body. Returns
-    a compact result plus the full per-stage outputs under ``stages`` for tracing.
+    ``event`` is a raw signal payload — e.g. an Alertmanager webhook body. When
+    ``execute`` is False the executor stage is skipped (used to park an
+    approval-gated incident); the returned ``stages.decision`` can be replayed
+    through :func:`execute_incident` once approved.
     """
     detector_out = _detect(event, None)
     analyzer_out = _analyze(detector_out, None)
     decision_out = _decide(analyzer_out, None)
-    executor_out = _execute(decision_out, None)
+    executor_out = _execute(decision_out, None) if execute else None
 
     incident = detector_out.get("normalized_incident") or {}
-    return {
-        "incident_id": executor_out.get("incident_id"),
+    result = {
         "provider": incident.get("provider"),
         "service": incident.get("service"),
         "resource_type": incident.get("resource_type"),
@@ -50,13 +55,28 @@ def run_incident_pipeline(event: dict[str, Any]) -> dict[str, Any]:
         "runbook_id": decision_out.get("runbook_id"),
         "remediation_mode": decision_out.get("remediation_mode"),
         "actions": decision_out.get("actions", []),
-        "executed_actions": executor_out.get("executed_actions", []),
-        "skipped_actions": executor_out.get("skipped_actions", []),
-        "resolved": executor_out.get("resolved", False),
         "stages": {
             "detector": detector_out,
             "analyzer": analyzer_out,
             "decision": decision_out,
             "executor": executor_out,
         },
+    }
+    result.update(_executor_fields(executor_out))
+    return result
+
+
+def execute_incident(decision_out: dict[str, Any]) -> dict[str, Any]:
+    """Replay a parked decision through the executor (used on approval)."""
+    return _execute(decision_out, None)
+
+
+def _executor_fields(executor_out: dict[str, Any] | None) -> dict[str, Any]:
+    """Flatten the executor's summary onto the top-level result."""
+    executor_out = executor_out or {}
+    return {
+        "incident_id": executor_out.get("incident_id"),
+        "executed_actions": executor_out.get("executed_actions", []),
+        "skipped_actions": executor_out.get("skipped_actions", []),
+        "resolved": executor_out.get("resolved", False),
     }
