@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-13 — NEXT_PUBLIC 프로덕션 인라인 이슈 실측 → 해소(stale)
+
+- Status: risk #7(선택) 진단·실측 종결. Next 16.2.10 `next build`가 `.env.local`의 NEXT_PUBLIC를 정상 인라인함을 확인 → 과거 "미인라인" 노트는 현재 재현 안 됨(stale), 코드 수정 불필요.
+- Verified: `dashboard-header.tsx`(`"use client"`)의 `process.env.NEXT_PUBLIC_DASHBOARD_DEV_AUTH`가 빌드 청크에서 `signIn("dev-credentials")`로 **상수 폴딩**(=`"1"` 인라인), `.next/static` 전체에 원문 env 참조 0건. Next 공식 문서로 메커니즘 교차확인(빌드시점 인라인·정적 참조만·/src 사용시 .env는 루트 로드). `.env.local`은 gitignore라 Vercel 빌드엔 부재→prod는 GitHub OAuth 폴백(의도대로).
+- Changed: 코드 변경 없음(진단만). STATUS/NEXT_PLAN #7 해소 표기.
+- Blockers: 없음.
+- Next: 잔여는 A2A Phase 2(kagent, 인프라 무게로 defer 권고) + deferred 외부항목(Slack/아티클).
+
 ## 2026-07-13 — A2A Agent Card discovery 실연결(Phase 1) + 매칭 규율 강화
 
 - Status: risk #5(A2A discovery)의 실체를 **라이브로 실연결**. supervisor의 discovery 코드는 이미 완비돼 있었고(카드 fetch+skill 매칭+HTTP/JSONRPC 위임+trace), 갭은 "살아있는 엔드포인트 대상 실증 부재"였음 → 게이트웨이 A2A 서버를 실기동해 mock 없이 E2E 실증.

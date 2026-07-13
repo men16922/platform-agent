@@ -11,7 +11,7 @@
 - [x] ~~대시보드 UI Rollback 팝업/체인~~ — native prompt→인앱 팝업, app(Deployments)/cluster(Provisioning) 분리, 단일-row 승계·teardown cascade 구현. (라이브 클릭 실증은 위 항목)
 - [x] ~~**`feat/onprem-offline-recording-hybrid-rollback` push/머지 결정**~~ — 완료: `0b9148c`+`930fe98`가 **origin/main에 푸시·머지됨**(서버 main HEAD=`930fe98`). feat 브랜치는 main과 동일 커밋(중복).
 - [x] ~~**중복 `feat` 브랜치 삭제**~~ — 로컬+원격 삭제 완료(2026-07-13). origin에는 `main`(=`a1acfea`)만 존재.
-- [ ] (선택) **NEXT_PUBLIC 프로덕션 인라인** — `next start`에서 `NEXT_PUBLIC_DASHBOARD_DEV_AUTH` 미인라인 → 프로덕션 로컬로그인 필요 시 조사(현재 `next dev`로 회피).
+- [x] ~~(선택) **NEXT_PUBLIC 프로덕션 인라인**~~ — 해소/stale(2026-07-13): 16.2.10 `next build` 실측상 `.env.local` NEXT_PUBLIC 정상 인라인(상수 폴딩 확인). 코드 수정 불필요.
 - [x] ~~**origin push**~~ — 완료: 로컬 main == origin/main == `930fe98` (ahead/behind 0/0).
 - [x] ~~A2A specialist endpoint + Agent Card discovery~~ — kagent Card discovery/skill match + JSON-RPC 0.3 transport 지원 완료.
 - [x] ~~kagent ↔ 로컬 Qwen 연결~~ — local Qwen ModelConfig + A2A read-only task(tool result 반환) 실증 완료.
