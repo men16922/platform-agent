@@ -1,6 +1,6 @@
 # STATUS — platform-agent
 
-최종 갱신: 2026-07-12
+최종 갱신: 2026-07-13
 
 > 현재 구현 상태 / 검증 baseline / active focus / open risks. **≤120줄** 유지.
 
@@ -19,7 +19,7 @@
 
 - `make check` (pytest) → **600 passed, 1 skipped** (2026-07-12) — AI Model Router / Pydantic AI On-Prem 에이전트 / MLX proxy / deploy recorder(+cascade) / ops_tools / provisioning 어댑터 테스트 포함
 - **LinkedIn 데모 비디오 편집(2026-07-12)** → `docs/post/local-onprem.mov` 원본 영상을 18.2초(1.0MB)로 구간 및 배속(타임랩스) 편집하고, 각 7개 주요 구간의 자막(Terraform 등 실제 실행 매핑)을 영상 하단에 병합한 `local-onprem-edited.mp4` 제작 완료.
-- **배포 추적 IA 정리(2026-07-12)** → activity에 `type`(provision/deploy)·`cluster`(연결키)·`environment`(provider와 분리) 저장; 대시보드 **Provisioning/Deployments/History** 3분리 + **통합 중첩 상세**(provisioning⊃deployments); 롤백 **단일-row 승계**, **cluster teardown→deploy cascade**, 자연어 rollback/teardown도 동일 라우팅; `make dev-up` 한 방 기동. tsc0+next build 성공, `/provisioning`·`/history` 200. **라이브 실증은 미완(사용자 테스트 예정)**.
+- **배포 추적 IA 정리(2026-07-12)** → activity에 `type`(provision/deploy)·`cluster`(연결키)·`environment`(provider와 분리) 저장; 대시보드 **Provisioning/Deployments/History** 3분리 + **통합 중첩 상세**(provisioning⊃deployments); 롤백 **단일-row 승계**, **cluster teardown→deploy cascade**, 자연어 rollback/teardown도 동일 라우팅; `make dev-up` 한 방 기동. tsc0+next build 성공, `/provisioning`·`/history` 200. **라이브 실증 완료(2026-07-13, 자연어 4스텝 브라우저 end-to-end)**.
 - **On-Prem 오프라인 완결(2026-07-12)** → Local Qwen **7B**로 NL provision→deploy→validate **~39s** 자율 실증; `deploy_recorder` **로컬 JSONL** 기록 + 대시보드 **hybrid**(AWS DynamoDB + On-Prem JSONL 병합) read; `/api/local-rollback`로 **app 롤백(rollout undo v2→v1)·cluster 롤백(teardown)** 실증. `mlx_qwen_tool_proxy`가 7B의 ```json/Hermes tool-call 파싱, `deploy_service` 복합툴로 LLM 왕복 축소.
 - **범용 On-Prem Ops 에이전트** → provision(2)+deploy(5)+investigate(5) 12도구, reasoning+tool SSE 스트리밍, "list pods" 질의는 진단만 수행 확인
 - **On-Prem Provision(① 역할)** → Terraform(kind) IaC `validate/plan` green + Ansible(k3s) 실 Multipass VM 적용: k3s v1.31.4 node Ready, 재실행 idempotent(`changed=0`); `provision_cluster`/`teardown` 에이전트 도구
@@ -68,9 +68,9 @@
 
 - 범용 Ops 에이전트 + 관측성 + On-Prem Provision(Terraform/Ansible) + kagent 설치 완료. ARCHITECTURE 통합·최신화(단일 스택 표 + Orchestrator+A2A 타깃).
 - On-Prem 오프라인 기록/hybrid 대시보드/실 롤백 + Local Qwen 7B 전환 완료(2026-07-12).
-- **배포 추적 IA 정리 완료(2026-07-12, 미커밋)**: Provisioning/Deployments/History 분리 + 중첩 상세 + 롤백 단일-row/teardown cascade + 자연어 라우팅 + `make dev-up`. gate 600 passed.
-- 다음: 자연어 4스텝(provision+deploy→app rollback→History 상세→teardown cascade) **라이브 실증** → 전체 커밋 → 브랜치 push/머지 결정, 이후 AWS CDK live diff/kagent 정리.
-- **미커밋/미푸시**: 이번 IA 정리분은 워킹트리에만 존재(신규 5파일 포함). 기존 기능은 `0b9148c`(브랜치 `feat/onprem-offline-recording-hybrid-rollback`), origin 미푸시.
+- **배포 추적 IA 정리 완료(2026-07-12, 커밋 `930fe98`)**: Provisioning/Deployments/History 분리 + 중첩 상세 + 롤백 단일-row/teardown cascade + 자연어 라우팅 + `make dev-up`. gate 600 passed. **라이브 실증 완료(2026-07-13, 자연어 4스텝)**.
+- 다음: AWS CDK live diff 재검증 / kagent 기본 에이전트 정리 / (선택) 중복 `feat` 브랜치 삭제.
+- **커밋·푸시·머지 완료**: `0b9148c`+`930fe98`가 **origin/main에 반영됨**(서버 main HEAD=`930fe98`). `feat/onprem-offline-recording-hybrid-rollback`는 main과 **동일 커밋**(중복) — 정리 대상(선택). 이번 세션 doc/스킬 변경분은 워킹트리 미커밋.
 
 ## Open Risks / Gaps
 
@@ -79,5 +79,5 @@
 3. **GCP/Azure 실 클러스터 비용** — 실 배포/Remediation 가동 시 클러스터 리소스 가동 및 WIF OIDC 인증 연동 세부 과금 체크 필요.
 4. **Dashboard dependency audit** — Next.js 16.2.10 내부 PostCSS 중간등급 취약점 2건; upstream release 대기.
 5. **A2A endpoint/card discovery** — supervisor의 환경변수 endpoint 등록은 구현됐지만 실제 kagent endpoint와 Agent Card 기반 discovery/skill 매칭은 아직 연결 전.
-6. **추적 IA 라이브 실증 미완** — Provisioning/Deployments/History·중첩 상세·롤백 단일-row·teardown cascade·자연어 라우팅은 빌드/유닛(600 passed)만 통과. 로그인 후 브라우저에서 자연어 4스텝 end-to-end 클릭/실행 실증 필요(코드·라우트 체인은 준비됨). 레거시 activity 행은 `cluster` 없어 롤백 비활성 — 클린슬레이트는 `~/.platform-agent/activity.jsonl` 비우기.
+6. ~~**추적 IA 라이브 실증 미완**~~ — **해소(2026-07-13)**: 자연어 4스텝(provision+deploy→앱 롤백 단일-row→History 중첩 상세→teardown cascade) 브라우저 end-to-end 실증 완료. 참고: 레거시 activity 행은 `cluster` 없어 롤백 비활성 — 클린슬레이트는 `~/.platform-agent/activity.jsonl` 비우기.
 7. **NEXT_PUBLIC 프로덕션 인라인** — `next start`(Turbopack 빌드)에서 `NEXT_PUBLIC_DASHBOARD_DEV_AUTH`가 인라인 안 됨 → 로컬은 `next dev` 사용 중. 프로덕션 로컬로그인 필요 시 조사 요.

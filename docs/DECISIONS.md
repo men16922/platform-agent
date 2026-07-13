@@ -1,8 +1,11 @@
 # DECISIONS — platform-agent
 
-최종 갱신: 2026-07-12
+최종 갱신: 2026-07-13
 
 > 되돌리기 어려운 결정만. 형식: **Decision / Reason / Impact**. 최신이 위.
+
+> **Future Reference (차용 후보, 결정 아님):**
+> - **enterprise-ai-governance-dashboard** (외부 레포) — 2-Pass Fact NL→SQL 챗봇 + SQL self-heal 루프 + LLM SKU 그룹핑 + 최소권한 Cloud Run SA. 대시보드 챗봇/FinOps 확장 시 검토. 상세 → `docs/reference/enterprise-ai-governance-dashboard.md`. (검토 2026-07-13)
 
 ---
 
