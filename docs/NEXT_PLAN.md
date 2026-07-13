@@ -13,7 +13,8 @@
 - [x] ~~**중복 `feat` 브랜치 삭제**~~ — 로컬+원격 삭제 완료(2026-07-13). origin에는 `main`(=`a1acfea`)만 존재.
 - [x] ~~(선택) **NEXT_PUBLIC 프로덕션 인라인**~~ — 해소/stale(2026-07-13): 16.2.10 `next build` 실측상 `.env.local` NEXT_PUBLIC 정상 인라인(상수 폴딩 확인). 코드 수정 불필요.
 - [x] ~~**origin push**~~ — 완료: 로컬 main == origin/main == `930fe98` (ahead/behind 0/0).
-- [x] ~~A2A specialist endpoint + Agent Card discovery~~ — kagent Card discovery/skill match + JSON-RPC 0.3 transport 지원 완료.
+- [x] ~~A2A specialist endpoint + Agent Card discovery~~ — kagent Card discovery/skill match + JSON-RPC 0.3 transport 지원 완료. **Phase 1 라이브 실연결(2026-07-13)**: supervisor→실행 게이트웨이 카드 HTTP discovery→skill 매칭→위임 E2E(mock 아님) + KAGENT 매칭 규율 강화(deploy-only 카드 거부, 회귀 테스트). 커밋 `6595526`.
+- [ ] (defer, 무거움) **A2A Phase 2 — 실제 kagent endpoint discovery** — kind+kagent+kmesh+MLX 재프로비저닝 필요(원커맨드 스크립트 부재, MLX 미구동). JSON-RPC 진단 task 자체는 과거 실증됨 → 새 가치 대비 인프라 비용 큼. **추천=defer**(필요 시 착수).
 - [x] ~~kagent ↔ 로컬 Qwen 연결~~ — local Qwen ModelConfig + A2A read-only task(tool result 반환) 실증 완료.
 - [x] ~~On-Prem k3s Ansible Provision~~ — 기존 Multipass `k8s-lab`(Ubuntu 24.04)에서 k3s v1.31.4 node Ready 및 재실행 `changed=0` 검증 완료.
 - [x] ~~AWS Provision adapter~~ — AWS CDK diff(기본) / approved deploy / approved destroy guard 구현 및 unit test 완료.
