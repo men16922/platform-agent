@@ -84,7 +84,10 @@ def fetch_agent_card(endpoint: str, *, timeout: float = 10.0) -> dict[str, Any]:
 
 
 ROLE_SKILL_TERMS: dict[AgentRole, tuple[str, ...]] = {
-    AgentRole.PROVISION: ("provision", "terraform", "ansible", "cluster"),
+    # Provisioning-specific terms only. Generic "cluster" is avoided here because
+    # diagnostic/deploy skills also mention "Kubernetes cluster" in their text — a
+    # diagnostic-only Agent Card must not be accepted as an infrastructure provisioner.
+    AgentRole.PROVISION: ("provision", "terraform", "ansible", "infrastructure"),
     AgentRole.DEPLOY: ("deploy", "rollback", "validation", "delivery"),
     # Diagnostic-specific terms only. Generic "kubernetes"/"cluster" are avoided
     # here because deploy skills also carry those tags — a deploy-only Agent Card

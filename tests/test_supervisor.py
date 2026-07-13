@@ -91,6 +91,33 @@ def test_rejects_deploy_only_card_for_kagent_role():
     assert matching_skills(deploy_card, AgentRole.DEPLOY) == ["deploy-aws", "rollback-deployment"]
 
 
+def test_rejects_diagnostic_only_card_for_provision_role():
+    """A read-only diagnostic card mentioning "Kubernetes cluster" must not be
+    accepted as an infrastructure provisioner (generic "cluster" over-match)."""
+    diagnostic_card = {
+        "name": "local_diagnostic_agent",
+        "skills": [
+            {
+                "id": "cluster-diagnostics",
+                "name": "Cluster Diagnostics",
+                "description": "Diagnose and troubleshoot Kubernetes cluster and workload issues.",
+                "tags": ["diagnostic", "troubleshoot"],
+            }
+        ],
+    }
+    assert matching_skills(diagnostic_card, AgentRole.PROVISION) == []
+    # ...but the KAGENT role still accepts it.
+    assert matching_skills(diagnostic_card, AgentRole.KAGENT) == ["cluster-diagnostics"]
+    # ...and a genuine provisioner card still matches PROVISION.
+    provision_card = {
+        "name": "Provisioner",
+        "skills": [
+            {"id": "provision-k3s", "name": "k3s Provisioning", "tags": ["ansible", "infrastructure"]},
+        ],
+    }
+    assert matching_skills(provision_card, AgentRole.PROVISION) == ["provision-k3s"]
+
+
 def test_uses_discovered_jsonrpc_url_for_kagent():
     sent: dict = {}
     card = {**KAGENT_CARD, "preferredTransport": "JSONRPC", "url": "http://k8s-agent.kagent:8080"}

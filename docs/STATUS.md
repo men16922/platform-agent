@@ -17,7 +17,7 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` (pytest) → **602 passed, 1 skipped** (2026-07-14) — A2A Phase 2 회귀 테스트(`test_jsonrpc_message_includes_required_message_id`) 포함.
+- `make check` (pytest) → **603 passed, 1 skipped** (2026-07-14) — A2A Phase 2 회귀 테스트(`test_jsonrpc_message_includes_required_message_id`) + PROVISION 격리 테스트(`test_rejects_diagnostic_only_card_for_provision_role`) 포함.
 - **A2A Phase 2 라이브 E2E(2026-07-14)** → 실 kagent 0.9.11 에이전트(local MLX Qwen 30B) 대상 supervisor HTTP 카드 discovery→skill 매칭→JSON-RPC 위임→실 `k8s_get_resources` 도구 진단 반환. 증거: `docs/evidence/a2a-phase2-live-e2e.log`.
 - `make check` (pytest) → **600 passed, 1 skipped** (2026-07-12) — AI Model Router / Pydantic AI On-Prem 에이전트 / MLX proxy / deploy recorder(+cascade) / ops_tools / provisioning 어댑터 테스트 포함
 - **LinkedIn 데모 비디오 편집(2026-07-12)** → `docs/post/local-onprem.mov` 원본 영상을 18.2초(1.0MB)로 구간 및 배속(타임랩스) 편집하고, 각 7개 주요 구간의 자막(Terraform 등 실제 실행 매핑)을 영상 하단에 병합한 `local-onprem-edited.mp4` 제작 완료.
