@@ -77,7 +77,7 @@
 1. ~~**CDK 재배포 시 Lambda bundling**~~ — **해소(2026-07-13)**: synth "미완"은 stale 1.8GB 재귀 cdk.out 때문이었고 삭제로 해결(synth ~17s). live diff exit 0, 인프라 drift 0. ⚠️ diff/deploy 시 Vercel context 3종(`vercelTeamSlug/vercelProjectName/vercelOidcProviderArn`) 필수 — 없으면 `VercelDashboardReadRole` 가짜 삭제 diff. 로컬 pip 번들링(arm64↔amd64) 주의는 유지.
 2. **Slack App 미연결** — APPROVE 승인 버튼 코드+가이드+E2E 테스트 완비, 실 Slack App 미생성 (코드 ready). OIDC 연계를 통한 Slack Webhook 송출 정상 작동.
 3. **GCP/Azure 실 클러스터 비용** — 실 배포/Remediation 가동 시 클러스터 리소스 가동 및 WIF OIDC 인증 연동 세부 과금 체크 필요.
-4. **Dashboard dependency audit** — Next.js 16.2.10 내부 PostCSS 중간등급 취약점 2건; upstream release 대기.
+4. **Dashboard dependency audit** — Next.js 16.2.10 내부 번들 PostCSS(<8.5.10) moderate 2건(XSS via `</style>` in CSS stringify). **재검증(2026-07-13)**: 16.2.x 패치 릴리스 없음(최신=현재)·`audit fix --force`는 next@9 다운그레이드 → **upstream 대기 확정**. 빌드타임 경로라 런타임 위험 낮음. 필요 시 `overrides`로 postcss 강제(빌드 파손 리스크) 검토 가능.
 5. **A2A endpoint/card discovery** — supervisor의 환경변수 endpoint 등록은 구현됐지만 실제 kagent endpoint와 Agent Card 기반 discovery/skill 매칭은 아직 연결 전.
 6. ~~**추적 IA 라이브 실증 미완**~~ — **해소(2026-07-13)**: 자연어 4스텝(provision+deploy→앱 롤백 단일-row→History 중첩 상세→teardown cascade) 브라우저 end-to-end 실증 완료. 참고: 레거시 activity 행은 `cluster` 없어 롤백 비활성 — 클린슬레이트는 `~/.platform-agent/activity.jsonl` 비우기.
 7. **NEXT_PUBLIC 프로덕션 인라인** — `next start`(Turbopack 빌드)에서 `NEXT_PUBLIC_DASHBOARD_DEV_AUTH`가 인라인 안 됨 → 로컬은 `next dev` 사용 중. 프로덕션 로컬로그인 필요 시 조사 요.
