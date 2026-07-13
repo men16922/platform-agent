@@ -69,12 +69,12 @@
 - 범용 Ops 에이전트 + 관측성 + On-Prem Provision(Terraform/Ansible) + kagent 설치 완료. ARCHITECTURE 통합·최신화(단일 스택 표 + Orchestrator+A2A 타깃).
 - On-Prem 오프라인 기록/hybrid 대시보드/실 롤백 + Local Qwen 7B 전환 완료(2026-07-12).
 - **배포 추적 IA 정리 완료(2026-07-12, 커밋 `930fe98`)**: Provisioning/Deployments/History 분리 + 중첩 상세 + 롤백 단일-row/teardown cascade + 자연어 라우팅 + `make dev-up`. gate 600 passed. **라이브 실증 완료(2026-07-13, 자연어 4스텝)**.
-- 다음: AWS CDK live diff 재검증 / kagent 기본 에이전트 정리 / (선택) 중복 `feat` 브랜치 삭제.
+- 다음: origin `feat` 브랜치 삭제(명시 승인 필요) / (deferred) Slack App 실생성 / 테크 아티클 배포. **완료(2026-07-13)**: CDK live diff 재검증(drift 0)·kagent 정리(MOOT)·feat 로컬 삭제.
 - **커밋·푸시·머지 완료**: `0b9148c`+`930fe98`가 **origin/main에 반영됨**(서버 main HEAD=`930fe98`). `feat/onprem-offline-recording-hybrid-rollback`는 main과 **동일 커밋**(중복) — 정리 대상(선택). 이번 세션 doc/스킬 변경분은 워킹트리 미커밋.
 
 ## Open Risks / Gaps
 
-1. **CDK 재배포 시 Lambda bundling** — Docker 없이 로컬 pip 번들링 사용 중 (arm64↔amd64 주의).
+1. ~~**CDK 재배포 시 Lambda bundling**~~ — **해소(2026-07-13)**: synth "미완"은 stale 1.8GB 재귀 cdk.out 때문이었고 삭제로 해결(synth ~17s). live diff exit 0, 인프라 drift 0. ⚠️ diff/deploy 시 Vercel context 3종(`vercelTeamSlug/vercelProjectName/vercelOidcProviderArn`) 필수 — 없으면 `VercelDashboardReadRole` 가짜 삭제 diff. 로컬 pip 번들링(arm64↔amd64) 주의는 유지.
 2. **Slack App 미연결** — APPROVE 승인 버튼 코드+가이드+E2E 테스트 완비, 실 Slack App 미생성 (코드 ready). OIDC 연계를 통한 Slack Webhook 송출 정상 작동.
 3. **GCP/Azure 실 클러스터 비용** — 실 배포/Remediation 가동 시 클러스터 리소스 가동 및 WIF OIDC 인증 연동 세부 과금 체크 필요.
 4. **Dashboard dependency audit** — Next.js 16.2.10 내부 PostCSS 중간등급 취약점 2건; upstream release 대기.

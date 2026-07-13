@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-13
 
-> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — (1) **AWS CDK live diff 재검증**(번들링 가능 환경), (2) kagent 기본 에이전트 정리, (3) (선택) 중복 `feat` 브랜치 삭제. ※ 추적 IA 라이브 실증·커밋·origin 푸시/머지는 모두 완료(2026-07-13, origin/main=`930fe98`).
+> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — 주요 백로그 대부분 소진. 남은 것: **origin `feat` 브랜치 삭제**(명시 승인 필요) + (deferred) Slack App 실생성 / 테크 아티클 배포. ※ 완료: 추적 IA 라이브 실증·커밋·푸시/머지(origin/main=`930fe98`), AWS CDK live diff 재검증(인프라 drift 0), kagent 정리(MOOT), feat 브랜치 로컬 삭제 — 모두 2026-07-13.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 
