@@ -19,6 +19,9 @@ export interface ApprovalRequest {
   updated_at: string;
   responded_by?: string;
   responded_at?: string;
+  // Which backend owns this approval: AWS (Step Functions task token) or the
+  // on-prem webhook (offline JSONL store). Drives the approve/reject routing.
+  source?: "aws" | "onprem";
 }
 
 const DEFAULT_TABLE = "incident-approval-requests";
@@ -31,8 +34,82 @@ function getTableName() {
   return process.env.DASHBOARD_APPROVAL_TABLE ?? DEFAULT_TABLE;
 }
 
+// ---------------------------------------------------------------------------
+// On-Prem approvals (hybrid) — the on-prem PATH B webhook parks P2 remediations
+// in an offline store and exposes them over HTTP, mirroring how the deployments
+// dashboard merges AWS DynamoDB with the on-prem runtime. Reads/actions go to
+// the webhook over HTTP (like agents/onprem-status), so no file paths leak into
+// the dashboard and Vercel simply sees the webhook as offline.
+// ---------------------------------------------------------------------------
+
+function getOnPremWebhookUrl() {
+  return process.env.ONPREM_WEBHOOK_URL ?? "http://127.0.0.1:8078";
+}
+
+interface OnPremPendingRecord {
+  approval_id: string;
+  status?: string;
+  service?: string;
+  severity?: "P1" | "P2" | "P3";
+  runbook_id?: string;
+  actions?: string[];
+  created_at?: string;
+  updated_at?: string;
+  decision?: { analyzer?: { root_cause?: string; confidence?: number } };
+}
+
+function mapOnPremApproval(record: OnPremPendingRecord): ApprovalRequest {
+  const analyzer = record.decision?.analyzer ?? {};
+  return {
+    approval_id: record.approval_id,
+    status: "PENDING",
+    task_token: "",
+    runbook_id: record.runbook_id ?? "generic-recovery",
+    actions: record.actions ?? [],
+    severity: record.severity ?? "P3",
+    alarm_name: record.service ?? "on-prem incident",
+    root_cause: analyzer.root_cause ?? "On-prem Day-2 remediation awaiting approval.",
+    confidence: typeof analyzer.confidence === "number" ? analyzer.confidence : 0,
+    request_kind: "onprem-incident",
+    request_subject: record.service ?? undefined,
+    request_summary: analyzer.root_cause ?? undefined,
+    created_at: record.created_at ?? new Date().toISOString(),
+    updated_at: record.updated_at ?? record.created_at ?? new Date().toISOString(),
+    source: "onprem",
+  };
+}
+
+async function fetchOnPremPending(): Promise<ApprovalRequest[]> {
+  try {
+    const res = await fetch(`${getOnPremWebhookUrl()}/pending`, { cache: "no-store" });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { pending?: OnPremPendingRecord[] };
+    return (data.pending ?? []).map(mapOnPremApproval);
+  } catch {
+    // The on-prem webhook is a local service; absent on Vercel — treat as none.
+    return [];
+  }
+}
+
+async function getOnPremApproval(approvalId: string): Promise<ApprovalRequest | null> {
+  const pending = await fetchOnPremPending();
+  return pending.find((a) => a.approval_id === approvalId) ?? null;
+}
+
+async function decideOnPrem(approvalId: string, decision: "approve" | "reject"): Promise<boolean> {
+  const res = await fetch(`${getOnPremWebhookUrl()}/${decision}/${approvalId}`, {
+    method: "POST",
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`On-prem webhook ${decision} failed (${res.status}): ${detail}`);
+  }
+  return true;
+}
+
 // In-memory fallback
-let mockApprovals: ApprovalRequest[] = [
+const mockApprovals: ApprovalRequest[] = [
   {
     approval_id: "APR-TEST1234",
     status: "PENDING",
@@ -52,8 +129,13 @@ let mockApprovals: ApprovalRequest[] = [
 ];
 
 export async function listPendingApprovals(): Promise<ApprovalRequest[]> {
+  // On-prem approvals are merged in regardless of the AWS data-source mode, so a
+  // local operator sees on-prem P2 gates even without AWS wired up (hybrid).
+  const onprem = await fetchOnPremPending();
+
   if (!isLiveMode()) {
-    return mockApprovals.filter((a) => a.status === "PENDING");
+    const aws = mockApprovals.filter((a) => a.status === "PENDING").map((a) => ({ ...a, source: "aws" as const }));
+    return [...aws, ...onprem];
   }
 
   try {
@@ -66,16 +148,24 @@ export async function listPendingApprovals(): Promise<ApprovalRequest[]> {
         ExpressionAttributeValues: { ":pending": "PENDING" },
       })
     );
-    return (result.Items as ApprovalRequest[]) || [];
+    const aws = ((result.Items as ApprovalRequest[]) || []).map((a) => ({ ...a, source: "aws" as const }));
+    return [...aws, ...onprem];
   } catch (error) {
     console.error("approval-data.listPendingApprovals.failed", error);
-    return mockApprovals.filter((a) => a.status === "PENDING");
+    const aws = mockApprovals.filter((a) => a.status === "PENDING").map((a) => ({ ...a, source: "aws" as const }));
+    return [...aws, ...onprem];
   }
 }
 
 export async function getApprovalRequest(approvalId: string): Promise<ApprovalRequest | null> {
+  // On-prem approvals live in the webhook's pending list; check there first so
+  // the approve/reject routing knows to call the webhook rather than SFN.
+  const onprem = await getOnPremApproval(approvalId);
+  if (onprem) return onprem;
+
   if (!isLiveMode()) {
-    return mockApprovals.find((a) => a.approval_id === approvalId) || null;
+    const found = mockApprovals.find((a) => a.approval_id === approvalId);
+    return found ? { ...found, source: "aws" } : null;
   }
 
   try {
@@ -86,10 +176,11 @@ export async function getApprovalRequest(approvalId: string): Promise<ApprovalRe
         Key: { approval_id: approvalId },
       })
     );
-    return (result.Item as ApprovalRequest) || null;
+    return result.Item ? { ...(result.Item as ApprovalRequest), source: "aws" } : null;
   } catch (error) {
     console.error("approval-data.getApprovalRequest.failed", error);
-    return mockApprovals.find((a) => a.approval_id === approvalId) || null;
+    const found = mockApprovals.find((a) => a.approval_id === approvalId);
+    return found ? { ...found, source: "aws" } : null;
   }
 }
 
@@ -106,6 +197,11 @@ export async function approveApprovalRequest(
   }
   if (request.status !== "PENDING") {
     throw new Error(`Approval request ${approvalId} is already processed (${request.status})`);
+  }
+
+  // On-prem: replay the parked decision through the executor via the webhook.
+  if (request.source === "onprem") {
+    return decideOnPrem(approvalId, "approve");
   }
 
   if (!isLiveMode()) {
@@ -197,6 +293,11 @@ export async function rejectApprovalRequest(
   }
   if (request.status !== "PENDING") {
     throw new Error(`Approval request ${approvalId} is already processed (${request.status})`);
+  }
+
+  // On-prem: reject the parked decision via the webhook (no execution).
+  if (request.source === "onprem") {
+    return decideOnPrem(approvalId, "reject");
   }
 
   if (!isLiveMode()) {

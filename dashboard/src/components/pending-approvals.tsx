@@ -98,6 +98,16 @@ export function PendingApprovals({ initialApprovals }: PendingApprovalsProps) {
                     <span className="rounded bg-white/5 border border-white/10 px-2 py-0.5 text-[10px] font-mono text-[var(--muted)]">
                       {req.approval_id}
                     </span>
+                    <span
+                      className={`rounded px-2 py-0.5 text-[10px] font-semibold border ${
+                        req.source === "onprem"
+                          ? "bg-sky-500/15 border-sky-400/40 text-sky-200"
+                          : "bg-amber-500/15 border-amber-400/40 text-amber-200"
+                      }`}
+                      title={req.source === "onprem" ? "On-Prem webhook (offline)" : "AWS Step Functions"}
+                    >
+                      {req.source === "onprem" ? "On-Prem" : "AWS"}
+                    </span>
                   </div>
                   <div className="text-[10px] font-semibold text-red-300/80">
                     Confidence: {(req.confidence * 100).toFixed(0)}%
