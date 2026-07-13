@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-13 — A2A Agent Card discovery 실연결(Phase 1) + 매칭 규율 강화
+
+- Status: risk #5(A2A discovery)의 실체를 **라이브로 실연결**. supervisor의 discovery 코드는 이미 완비돼 있었고(카드 fetch+skill 매칭+HTTP/JSONRPC 위임+trace), 갭은 "살아있는 엔드포인트 대상 실증 부재"였음 → 게이트웨이 A2A 서버를 실기동해 mock 없이 E2E 실증.
+- Changed: `supervisor.py` `ROLE_SKILL_TERMS[KAGENT]`에서 generic `kubernetes/cluster` 제거 → 진단 특화어(`diagnostic/troubleshoot/observability/investigat/debug/logs`)로 교체. `test_supervisor.py`에 회귀 테스트(`test_rejects_deploy_only_card_for_kagent_role`) 추가. 코드 외 실증 스크립트는 scratchpad.
+- Verified: uvicorn 게이트웨이(`/.well-known/agent-card.json` = Platform Deployer Agent, 6 skills) 실기동 → supervisor `from_environment`가 **HTTP로 카드 discovery → DEPLOY skill 매칭 → 위임(delegated=True, trace matched→sent)**. 강화 후 **KAGENT role은 deploy-only 카드를 `capability_mismatch`로 거부**(delegated=False) 라이브 확인. `pytest tests/test_supervisor.py tests/test_gateway.py` 41 passed.
+- Blockers: **Phase 2(실제 kagent endpoint)** 미완 — kind+kagent+MLX 재프로비저닝 필요(원커맨드 스크립트 부재, MLX 미구동). JSON-RPC 진단 task 자체는 과거 실증.
+- Next: (선택/무거움) Phase 2 kagent 재프로비저닝 후 실 카드 대상 KAGENT discovery.
+
 ## 2026-07-13 — 잔여 백로그 정리: kagent(MOOT) + feat 브랜치 로컬 삭제
 
 - Status: 남은 우선순위 소진. **kagent 정리는 MOOT**로 검증 종결, 중복 **feat 브랜치 로컬 삭제**.

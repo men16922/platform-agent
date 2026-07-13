@@ -78,6 +78,6 @@
 2. **Slack App 미연결** — APPROVE 승인 버튼 코드+가이드+E2E 테스트 완비, 실 Slack App 미생성 (코드 ready). OIDC 연계를 통한 Slack Webhook 송출 정상 작동.
 3. **GCP/Azure 실 클러스터 비용** — 실 배포/Remediation 가동 시 클러스터 리소스 가동 및 WIF OIDC 인증 연동 세부 과금 체크 필요.
 4. **Dashboard dependency audit** — Next.js 16.2.10 내부 번들 PostCSS(<8.5.10) moderate 2건(XSS via `</style>` in CSS stringify). **재검증(2026-07-13)**: 16.2.x 패치 릴리스 없음(최신=현재)·`audit fix --force`는 next@9 다운그레이드 → **upstream 대기 확정**. 빌드타임 경로라 런타임 위험 낮음. 필요 시 `overrides`로 postcss 강제(빌드 파손 리스크) 검토 가능.
-5. **A2A endpoint/card discovery** — supervisor의 환경변수 endpoint 등록은 구현됐지만 실제 kagent endpoint와 Agent Card 기반 discovery/skill 매칭은 아직 연결 전.
+5. **A2A endpoint/card discovery** — **Phase 1 실연결 완료(2026-07-13)**: supervisor가 실행 중인 게이트웨이 A2A 서버 대상으로 `/.well-known/agent-card.json` **HTTP discovery → skill 매칭 → 위임(+trace)** 라이브 E2E 통과(mock 아님). 매칭 규율 강화: KAGENT 매칭어에서 generic `kubernetes/cluster` 제거 → deploy-only 카드는 KAGENT role에서 `capability_mismatch`로 거부(회귀 테스트 추가). **남음(Phase 2)**: 실제 kagent endpoint(kind+kagent+MLX 재프로비저닝 필요, 원커맨드 스크립트 부재; JSON-RPC 진단 task 자체는 과거 실증됨).
 6. ~~**추적 IA 라이브 실증 미완**~~ — **해소(2026-07-13)**: 자연어 4스텝(provision+deploy→앱 롤백 단일-row→History 중첩 상세→teardown cascade) 브라우저 end-to-end 실증 완료. 참고: 레거시 activity 행은 `cluster` 없어 롤백 비활성 — 클린슬레이트는 `~/.platform-agent/activity.jsonl` 비우기.
 7. **NEXT_PUBLIC 프로덕션 인라인** — `next start`(Turbopack 빌드)에서 `NEXT_PUBLIC_DASHBOARD_DEV_AUTH`가 인라인 안 됨 → 로컬은 `next dev` 사용 중. 프로덕션 로컬로그인 필요 시 조사 요.

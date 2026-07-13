@@ -77,6 +77,20 @@ def test_matches_kagent_card_capabilities():
     assert matching_skills(KAGENT_CARD, AgentRole.KAGENT) == ["cluster-diagnostics"]
 
 
+def test_rejects_deploy_only_card_for_kagent_role():
+    """A deploy specialist's card (kubernetes-tagged) must not satisfy KAGENT."""
+    deploy_card = {
+        "name": "Platform Deployer Agent",
+        "skills": [
+            {"id": "deploy-aws", "name": "AWS Deployment", "tags": ["aws", "eks", "kubernetes", "deployment"]},
+            {"id": "rollback-deployment", "name": "Rollback", "tags": ["rollback", "cluster"]},
+        ],
+    }
+    assert matching_skills(deploy_card, AgentRole.KAGENT) == []
+    # ...but the same card still serves the DEPLOY role.
+    assert matching_skills(deploy_card, AgentRole.DEPLOY) == ["deploy-aws", "rollback-deployment"]
+
+
 def test_uses_discovered_jsonrpc_url_for_kagent():
     sent: dict = {}
     card = {**KAGENT_CARD, "preferredTransport": "JSONRPC", "url": "http://k8s-agent.kagent:8080"}

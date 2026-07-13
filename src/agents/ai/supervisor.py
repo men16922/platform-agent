@@ -86,7 +86,10 @@ def fetch_agent_card(endpoint: str, *, timeout: float = 10.0) -> dict[str, Any]:
 ROLE_SKILL_TERMS: dict[AgentRole, tuple[str, ...]] = {
     AgentRole.PROVISION: ("provision", "terraform", "ansible", "cluster"),
     AgentRole.DEPLOY: ("deploy", "rollback", "validation", "delivery"),
-    AgentRole.KAGENT: ("diagnostic", "troubleshoot", "observability", "kubernetes", "cluster"),
+    # Diagnostic-specific terms only. Generic "kubernetes"/"cluster" are avoided
+    # here because deploy skills also carry those tags — a deploy-only Agent Card
+    # must not be accepted as a read-only kagent diagnostic specialist.
+    AgentRole.KAGENT: ("diagnostic", "troubleshoot", "observability", "investigat", "debug", "logs"),
 }
 
 
