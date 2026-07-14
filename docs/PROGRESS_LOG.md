@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-14 — `make dev-up` 원커맨드 스택에 On-Prem Day-2 webhook 통합
+
+- Status: On-Prem Day-2 vertical을 **운영 완결** — `make dev-up` 한 방에 MLX+proxy+router+**webhook(:8078)**+dashboard가 함께 뜨고, 대시보드(기본 `ONPREM_WEBHOOK_URL=:8078`)가 자동으로 On-Prem 승인·인시던트를 hybrid 표시.
+- Changed: `Makefile` — `WEBHOOK_PORT`/`APPROVALS_FILE`/`INCIDENT_FILE` 변수 추가, `dev-up`에 webhook 기동 스텝(activity/approvals/incidents env), `dev-down`에 종료, `dev-status`에 `:8078/health` 체크. `onprem-webhook` 타깃도 변수화(INCIDENT_FILE 추가).
+- Verified: `make dev-status`에 webhook 라인 표시(down), `make -n dev-up` dry-run에 webhook 스텝·env·포트 정상 파싱. (코드 무변경, gate 영향 없음 — 직전 617 passed 유효.)
+- Blockers: 없음.
+- Next: (외부/deferred) Slack App·아티클. 로드맵(실 executor·MCP Gateway 단일 카탈로그·클라우드 Provision).
+
 ## 2026-07-14 — 대시보드 Incidents 타임라인 On-Prem surfacing: 오프라인 인시던트 스토어 + hybrid 병합
 
 - Status: On-Prem Day-2 인시던트를 대시보드 **Incidents 타임라인**에 표시. 기존엔 승인 카드만 On-Prem을 노출했고 타임라인은 AWS DynamoDB만 읽어(오프라인 On-Prem 인시던트 부재), executor의 DynamoDB write는 오프라인 no-op이었음. webhook 계층에 로컬 인시던트 스토어를 두어 종단 완성.

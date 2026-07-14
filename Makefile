@@ -56,6 +56,9 @@ LLM_LOG_DIR    := /tmp/platform-agent
 # Offline activity store: the router WRITES deploy/rollback rows here and the
 # dashboard READS them (hybrid = this file + AWS). Same path on both sides.
 ACTIVITY_FILE  ?= $(HOME)/.platform-agent/activity.jsonl
+APPROVALS_FILE ?= $(HOME)/.platform-agent/pending-approvals.jsonl
+INCIDENT_FILE  ?= $(HOME)/.platform-agent/incidents.jsonl
+WEBHOOK_PORT   ?= 8078
 DASHBOARD_DIR  ?= dashboard
 DASHBOARD_PORT ?= 3000
 
@@ -69,7 +72,7 @@ router-api:  ## start the AI Model Router API (natural-language deploy)
 	cd $(DEPLOY_WORKDIR) && PYTHONPATH=$(CURDIR) PLATFORM_ACTIVITY_FILE=$(ACTIVITY_FILE) ONPREM_LLM_ENDPOINT=http://127.0.0.1:$(PROXY_PORT)/v1 ONPREM_LLM_MODEL=$(MLX_MODEL) uvicorn src.agents.ai.local_deploy_api:app --host 127.0.0.1 --port $(ROUTER_PORT)
 
 onprem-webhook:  ## start the On-Prem PATH B webhook (Alertmanager -> Day-2 incident pipeline + approval gate)
-	PLATFORM_ACTIVITY_FILE=$(ACTIVITY_FILE) PLATFORM_APPROVALS_FILE=$(HOME)/.platform-agent/pending-approvals.jsonl uvicorn src.agents.ai.onprem_webhook_api:app --host 127.0.0.1 --port 8078
+	PLATFORM_ACTIVITY_FILE=$(ACTIVITY_FILE) PLATFORM_APPROVALS_FILE=$(APPROVALS_FILE) PLATFORM_INCIDENT_FILE=$(INCIDENT_FILE) uvicorn src.agents.ai.onprem_webhook_api:app --host 127.0.0.1 --port $(WEBHOOK_PORT)
 
 local-llm-up:  ## start MLX + proxy + router API in the background (logs in /tmp/platform-agent)
 	@mkdir -p $(LLM_LOG_DIR)
@@ -112,21 +115,26 @@ dev-up:  ## start the whole local stack in one command (reuses a warm MLX/proxy)
 	@echo "→ router   (:$(ROUTER_PORT)) — restart, offline recording → $(ACTIVITY_FILE)"
 	@pkill -f "uvicorn src.agents.ai.local_deploy_api" 2>/dev/null; true
 	@cd $(DEPLOY_WORKDIR) && PYTHONPATH=$(CURDIR) PLATFORM_ACTIVITY_FILE=$(ACTIVITY_FILE) ONPREM_LLM_ENDPOINT=http://127.0.0.1:$(PROXY_PORT)/v1 ONPREM_LLM_MODEL=$(MLX_MODEL) nohup uvicorn src.agents.ai.local_deploy_api:app --host 127.0.0.1 --port $(ROUTER_PORT) > $(LLM_LOG_DIR)/router.log 2>&1 &
+	@echo "→ webhook  (:$(WEBHOOK_PORT)) — restart, On-Prem Day-2 (Alertmanager → pipeline → approval gate)"
+	@pkill -f "uvicorn src.agents.ai.onprem_webhook_api" 2>/dev/null; true
+	@PLATFORM_ACTIVITY_FILE=$(ACTIVITY_FILE) PLATFORM_APPROVALS_FILE=$(APPROVALS_FILE) PLATFORM_INCIDENT_FILE=$(INCIDENT_FILE) nohup uvicorn src.agents.ai.onprem_webhook_api:app --host 127.0.0.1 --port $(WEBHOOK_PORT) > $(LLM_LOG_DIR)/webhook.log 2>&1 &
 	@echo "→ dashboard(:$(DASHBOARD_PORT)) — restart (next dev)"
 	@pkill -f "next-server" 2>/dev/null; pkill -f "next dev" 2>/dev/null; true
 	@cd $(DASHBOARD_DIR) && nohup npm run dev > $(LLM_LOG_DIR)/dashboard.log 2>&1 &
 	@echo ""
 	@echo "stack starting → http://localhost:$(DASHBOARD_PORT)   (check: make dev-status | logs: $(LLM_LOG_DIR)/)"
 
-dev-down:  ## stop the whole local stack (dashboard + MLX + proxy + router)
+dev-down:  ## stop the whole local stack (dashboard + webhook + MLX + proxy + router)
 	-@pkill -f "next-server" 2>/dev/null; pkill -f "next dev" 2>/dev/null; true
+	-@pkill -f "uvicorn src.agents.ai.onprem_webhook_api" 2>/dev/null; true
 	@$(MAKE) local-llm-down
-	@echo "stopped dashboard + local LLM deploy stack"
+	@echo "stopped dashboard + webhook + local LLM deploy stack"
 
 dev-status:  ## show the whole local stack status
 	@curl -s -m 3 localhost:$(MLX_PORT)/v1/models >/dev/null 2>&1 && echo "MLX-LM    :$(MLX_PORT)  up" || echo "MLX-LM    :$(MLX_PORT)  down"
 	@lsof -iTCP:$(PROXY_PORT) -sTCP:LISTEN -n -P >/dev/null 2>&1 && echo "proxy     :$(PROXY_PORT)  up" || echo "proxy     :$(PROXY_PORT)  down"
 	@curl -s -m 3 localhost:$(ROUTER_PORT)/health >/dev/null 2>&1 && echo "router    :$(ROUTER_PORT)   up" || echo "router    :$(ROUTER_PORT)   down"
+	@curl -s -m 3 localhost:$(WEBHOOK_PORT)/health >/dev/null 2>&1 && echo "webhook   :$(WEBHOOK_PORT)   up" || echo "webhook   :$(WEBHOOK_PORT)   down"
 	@curl -s -m 3 localhost:$(DASHBOARD_PORT) >/dev/null 2>&1 && echo "dashboard :$(DASHBOARD_PORT)   up" || echo "dashboard :$(DASHBOARD_PORT)   down"
 
 .PHONY: mlx-serve mlx-proxy router-api onprem-webhook local-llm-up local-llm-down local-llm-status dashboard-dev dev-up dev-down dev-status
