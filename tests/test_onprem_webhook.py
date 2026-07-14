@@ -11,7 +11,10 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.agents.ai import onprem_incident_pipeline as pipeline_mod
+from src.agents.ai import onprem_webhook_api as webhook_mod
 from src.agents.ai.onprem_webhook_api import app
+
+_ = webhook_mod  # used via monkeypatch in readiness tests
 
 ALERTMANAGER_PAYLOAD = {
     "status": "firing",
@@ -224,3 +227,25 @@ def test_health(client):
     resp = client.get("/health")
     assert resp.status_code == 200
     assert resp.json() == {"status": "ok", "service": "onprem-webhook"}
+
+
+def test_health_ready_ok(client):
+    resp = client.get("/health/ready")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "ready"
+    assert body["checks"]["approvals_store"] == "ok"
+    assert body["checks"]["incident_store"] == "ok"
+
+
+def test_health_ready_degraded_returns_503(client, monkeypatch):
+    # a store dependency being unusable must fail readiness (503) but not liveness
+    def _boom():
+        raise OSError("store unreadable")
+
+    monkeypatch.setattr(webhook_mod.approvals, "list_pending", _boom)
+    resp = client.get("/health/ready")
+    assert resp.status_code == 503
+    assert resp.json()["status"] == "degraded"
+    # /health (liveness) stays 200
+    assert client.get("/health").status_code == 200

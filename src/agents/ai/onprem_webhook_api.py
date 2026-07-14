@@ -34,7 +34,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -127,7 +127,30 @@ app.add_middleware(
 
 @app.get("/health")
 async def health() -> dict[str, str]:
+    # Lenient liveness — 200 as long as the process is up (for restart probes).
     return {"status": "ok", "service": "onprem-webhook"}
+
+
+@app.get("/health/ready")
+async def health_ready(response: Response) -> dict[str, Any]:
+    """Strict readiness — 503 when a required dependency (the offline stores) is
+    unusable, so a load balancer stops routing to a degraded instance. The
+    lenient ``/health`` above stays 200 so the process isn't killed."""
+    checks: dict[str, str] = {}
+    ready = True
+    for name, probe in (
+        ("approvals_store", approvals.list_pending),
+        ("incident_store", lambda: incidents.list_incidents(limit=1)),
+    ):
+        try:
+            probe()
+            checks[name] = "ok"
+        except Exception as exc:  # store dir missing / unreadable
+            checks[name] = f"error: {type(exc).__name__}"
+            ready = False
+    if not ready:
+        response.status_code = 503
+    return {"status": "ready" if ready else "degraded", "checks": checks}
 
 
 @app.post("/webhook/alertmanager", response_model=PipelineResult)
