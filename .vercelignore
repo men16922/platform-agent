@@ -11,6 +11,9 @@ examples/
 *.pyc
 __pycache__/
 .venv/
+.venv-mlx/
+.venv*/
+*.metallib
 *.egg-info/
 
 # CDK / stacks
