@@ -54,6 +54,7 @@ def run_incident_pipeline(event: dict[str, Any], *, execute: bool = True) -> dic
         "root_cause": analyzer_out.get("root_cause"),
         "runbook_id": decision_out.get("runbook_id"),
         "remediation_mode": decision_out.get("remediation_mode"),
+        "reconciliation": decision_out.get("reconciliation"),
         "actions": decision_out.get("actions", []),
         "stages": {
             "detector": detector_out,

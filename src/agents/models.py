@@ -82,6 +82,8 @@ class DecisionOutput:
     remediation_mode:  RemediationMode
     actions:           list[str]     = field(default_factory=list)  # SSM doc names / kubectl cmds
     estimated_rto_sec: Optional[int] = None
+    # Reconciliation gate result (deterministic-tool-first grounding check).
+    reconciliation:    Optional[dict] = None
 
 
 @dataclass

@@ -22,6 +22,7 @@ import structlog
 
 from src.agents.adapters.dynamodb_client import paginated_scan
 from src.agents.adapters.registry import get_execution_adapter
+from src.agents.ai.reconciliation import apply_gate, reconcile
 from src.agents.models import (
     AlarmContext,
     AnalyzerOutput,
@@ -56,6 +57,18 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
     runbook_id, actions, rto = _select_runbook(analyzer)
     mode = _determine_mode(analyzer.severity, actions)
+
+    # Reconciliation gate (deterministic-tool-first): never auto-execute a
+    # remediation whose analysis isn't grounded in the detector's real evidence.
+    recon = reconcile(analyzer.detector, analyzer)
+    gated_mode = apply_gate(mode, recon)
+    if gated_mode != mode:
+        log.warning(
+            "decision.reconciliation.downgrade",
+            from_mode=mode.value, to_mode=gated_mode.value, issues=recon.issues,
+        )
+    mode = gated_mode
+
     log.info("decision.runbook", runbook_id=runbook_id, mode=mode, actions=actions, rto=rto)
 
     output = DecisionOutput(
@@ -64,6 +77,7 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         remediation_mode=mode,
         actions=actions,
         estimated_rto_sec=rto,
+        reconciliation=recon.to_dict(),
     )
 
     log.info("decision.done")
