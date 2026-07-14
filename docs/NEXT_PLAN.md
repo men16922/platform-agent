@@ -1,12 +1,17 @@
 # NEXT_PLAN — platform-agent
 
-최종 갱신: 2026-07-14
+최종 갱신: 2026-07-15
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md` / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 즉시 결정 필요
+## 다음 우선순위 — AWSome AI Gateway 레퍼런스 Tier 2 (새 세션 권장)
 
-- [ ] **origin push 결정** — 이번 세션 **로컬 커밋 1개**(main ahead 1, `c6c509c` drain) 미push. gate-green(636 passed) 검증 완료. push 여부 사용자 지정. (앞선 scale·catalog·docs 3커밋은 push 완료.)
+- [x] ~~**Tier 1 반영**~~ — **완료(2026-07-15)**: reconciliation gate(`8f1878f`)·비용 3단계 게이트(`0a18794`)·서킷브레이커+readiness(`de4b92c`)·비용 서브메트릭(`6bc541c`). `docs/ARCHITECTURE.md` "외부 레퍼런스 반영" 표 참조.
+- [ ] **Tier 2** (규모 큼, supervisor/gateway 리팩터 → 새 세션에서 full 컨텍스트로 권장):
+  - [ ] #2 **agents-as-tools 오케스트레이션 + self-consistency** — supervisor를 오케스트레이터+전문가 에이전트 구조로. reconciliation gate + AgentCore와 시너지. (최우선)
+  - [ ] #3 **MCP-over-HTTP 커넥터 + per-tool kill-switch** — 원격 MCP intercept-reinject.
+  - [ ] #4 **cross-account STS AssumeRole + graceful fallback** — AWS 어댑터.
+- 참고: `/tidy-docs` 필요(PROGRESS_LOG 169줄>budget120).
 
 ## 열린 작업 (로드맵 — 성격별)
 
