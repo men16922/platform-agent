@@ -24,6 +24,9 @@ class ProvisionSpec:
     region: str | None = None
     # Managed-cloud (GKE/AKS) node pool size; ignored by on-prem/AWS adapters.
     node_count: int = 2
+    # Optional node VM/machine type (GKE --machine-type, AKS --node-vm-size).
+    # Needed where the provider's default size is restricted in the subscription.
+    node_size: str = ""
 
 
 @dataclass

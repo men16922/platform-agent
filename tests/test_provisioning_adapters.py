@@ -79,6 +79,17 @@ def test_gcp_provision_creates_only_when_approved(monkeypatch):
     assert result.context == "gke_proj-1_asia-northeast3_demo"
 
 
+def test_gcp_node_size_threads_machine_type(monkeypatch):
+    calls = []
+    monkeypatch.setenv("GCP_PROJECT", "proj-1")
+    monkeypatch.setenv("GCP_REGION", "asia-northeast3")
+    monkeypatch.setattr(gcp_mod, "_run", lambda cmd, timeout=1800: (calls.append(cmd) or (0, "Created")))
+    get_provisioning_adapter("gcp").provision_cluster(
+        ProvisionSpec(provider="gcp", cluster_name="demo", approved=True, node_size="e2-small")
+    )
+    assert "--machine-type" in calls[0] and "e2-small" in calls[0]
+
+
 def test_gcp_requires_project(monkeypatch):
     monkeypatch.delenv("GCP_PROJECT", raising=False)
     result = get_provisioning_adapter("gcp").provision_cluster(ProvisionSpec(provider="gcp"))
@@ -143,6 +154,17 @@ def test_azure_provision_creates_only_when_approved(monkeypatch):
         "--location", "koreacentral", "--node-count", "3", "--generate-ssh-keys", "--yes",
     ]]
     assert result.context == "demo"
+
+
+def test_azure_node_size_threads_vm_size(monkeypatch):
+    calls = []
+    monkeypatch.setenv("AZURE_RESOURCE_GROUP", "rg-1")
+    monkeypatch.setenv("AZURE_REGION", "eastus")
+    monkeypatch.setattr(azure_mod, "_run", lambda cmd, timeout=1800: (calls.append(cmd) or (0, "Created")))
+    get_provisioning_adapter("azure").provision_cluster(
+        ProvisionSpec(provider="azure", cluster_name="demo", approved=True, node_size="Standard_D2als_v7")
+    )
+    assert "--node-vm-size" in calls[0] and "Standard_D2als_v7" in calls[0]
 
 
 def test_azure_requires_resource_group(monkeypatch):

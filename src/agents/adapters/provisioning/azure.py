@@ -51,6 +51,8 @@ class AzureProvisionAdapter:
                 "--generate-ssh-keys",
                 "--yes",
             ]
+            if spec.node_size:
+                cmd += ["--node-vm-size", spec.node_size]
         else:
             # Preflight: read-only login/resource-group check; no cluster is created.
             cmd = ["az", "aks", "list", "--resource-group", rg, "--output", "table"]

@@ -50,6 +50,8 @@ class GcpProvisionAdapter:
                 "--num-nodes", str(spec.node_count),
                 "--quiet",
             ]
+            if spec.node_size:
+                cmd += ["--machine-type", spec.node_size]
         else:
             # Preflight: read-only auth/project/region check; no cluster is created.
             cmd = ["gcloud", "container", "clusters", "list", "--project", project, "--region", region]
