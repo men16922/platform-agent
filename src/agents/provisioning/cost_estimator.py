@@ -7,7 +7,99 @@ AWS pricing, which should be sourced separately during real rollout reviews.
 
 from __future__ import annotations
 
+import os
+from dataclasses import dataclass
 from typing import Any
+
+# Budget-gate levels (ref: AWSome AI Gateway HARD_BLOCK / SOFT_WARNING / THROTTLE).
+BUDGET_OK = "OK"
+BUDGET_SOFT_WARNING = "SOFT_WARNING"
+BUDGET_THROTTLE = "THROTTLE"
+BUDGET_HARD_BLOCK = "HARD_BLOCK"
+
+
+@dataclass
+class BudgetGate:
+    """Cost-governance verdict for a provision/deploy request.
+
+    Maps a monthly-cost estimate against a budget into an escalating gate:
+      OK            (< warn)          → auto-allowed
+      SOFT_WARNING  (warn..throttle)  → allowed, surface a warning
+      THROTTLE      (throttle..block) → allowed only with human approval
+      HARD_BLOCK    (>= block)        → blocked
+    """
+
+    level: str
+    allowed: bool
+    require_approval: bool
+    reason: str
+    estimate_usd: float
+    budget_usd: float
+    ratio: float
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "level": self.level,
+            "allowed": self.allowed,
+            "require_approval": self.require_approval,
+            "reason": self.reason,
+            "estimate_usd": self.estimate_usd,
+            "budget_usd": self.budget_usd,
+            "ratio": round(self.ratio, 3),
+        }
+
+
+def evaluate_budget(
+    estimate_usd: float,
+    budget_usd: float | None = None,
+    *,
+    warn_ratio: float = 0.8,
+    throttle_ratio: float = 1.0,
+    block_ratio: float = 1.5,
+) -> BudgetGate:
+    """Gate a cost estimate against a monthly budget (3-level, ref AWSome AI Gateway).
+
+    ``budget_usd`` falls back to the ``PLATFORM_MONTHLY_BUDGET_USD`` env var; when
+    no budget is configured the gate is OK (governance disabled, never blocks).
+    """
+    if budget_usd is None:
+        env = os.getenv("PLATFORM_MONTHLY_BUDGET_USD", "")
+        budget_usd = float(env) if env else 0.0
+
+    if not budget_usd or budget_usd <= 0:
+        return BudgetGate(BUDGET_OK, True, False, "no budget configured", estimate_usd, budget_usd or 0.0, 0.0)
+
+    ratio = estimate_usd / budget_usd
+    if ratio >= block_ratio:
+        return BudgetGate(
+            BUDGET_HARD_BLOCK, False, False,
+            f"estimate ${estimate_usd:.2f} is {ratio:.0%} of ${budget_usd:.2f} budget (>= {block_ratio:.0%} hard cap)",
+            estimate_usd, budget_usd, ratio,
+        )
+    if ratio >= throttle_ratio:
+        return BudgetGate(
+            BUDGET_THROTTLE, True, True,
+            f"estimate ${estimate_usd:.2f} exceeds ${budget_usd:.2f} budget ({ratio:.0%}) — requires approval",
+            estimate_usd, budget_usd, ratio,
+        )
+    if ratio >= warn_ratio:
+        return BudgetGate(
+            BUDGET_SOFT_WARNING, True, False,
+            f"estimate ${estimate_usd:.2f} is {ratio:.0%} of ${budget_usd:.2f} budget (nearing cap)",
+            estimate_usd, budget_usd, ratio,
+        )
+    return BudgetGate(
+        BUDGET_OK, True, False,
+        f"estimate ${estimate_usd:.2f} is {ratio:.0%} of ${budget_usd:.2f} budget",
+        estimate_usd, budget_usd, ratio,
+    )
+
+
+def gate_provision_cost(request: dict[str, Any], budget_usd: float | None = None, **kwargs: Any) -> dict[str, Any]:
+    """Estimate a request's monthly cost and gate it against the budget in one call."""
+    estimate = estimate_monthly_cost(request)
+    gate = evaluate_budget(estimate["monthly_total_usd"], budget_usd, **kwargs)
+    return {"estimate": estimate, "budget_gate": gate.to_dict()}
 
 
 def estimate_monthly_cost(request: dict[str, Any]) -> dict[str, Any]:
