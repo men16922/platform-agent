@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import os
 
+from src.agents.adapters.aws_session import assume_role_arn_from_env, assume_role_session
 from src.agents.adapters.runtime.base import RuntimeResult, RuntimeSpec
 
 _DEFAULT_REGION = "us-east-1"
@@ -25,9 +26,11 @@ _SERVICE = "bedrock-agentcore-control"
 
 
 def _client(region: str):
-    import boto3
-
-    return boto3.client(_SERVICE, region_name=region)
+    # Honor an optional cross-account role (AWS_ASSUME_ROLE_ARN). Unset → the
+    # session is in-account and this is equivalent to boto3.client(...); an
+    # AssumeRole failure degrades gracefully to in-account credentials.
+    session = assume_role_session(assume_role_arn_from_env(), region=region).session
+    return session.client(_SERVICE, region_name=region)
 
 
 def _region(spec: RuntimeSpec) -> str:

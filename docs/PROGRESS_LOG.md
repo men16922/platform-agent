@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-15 — AWSome AI Gateway 레퍼런스 Tier 2 #4: cross-account STS AssumeRole + graceful fallback
+
+- Status: Tier 2 **#4 완료**. 크로스계정 조치를 위한 STS AssumeRole 헬퍼 + **회복탄력성 폴백**(실패/서킷-OPEN 시 in-account 크레덴셜로 우아하게 강등). Tier 1 `CircuitBreaker`를 재사용해 리질리언스 재구현 회피. 어댑터-로컬이라 규모 작음.
+- Changed: (1) 신규 `src/agents/adapters/aws_session.py` — `assume_role_session(role_arn, *, region, external_id, fallback=True, breaker=None) -> SessionResult`: STS `assume_role`로 타깃 계정 임시 크레덴셜→boto3 `Session` 구성, 실패 시 `_in_account_session`으로 **graceful fallback**(`fallback=False`면 raise). 공유 `_BREAKER`(threshold3/60s)로 반복 실패 시 fast-fail. `_sts_client`/`_in_account_session` 모듈-함수 seam(monkeypatch 주입, moto 불요). `SessionResult(assumed/fell_back)`로 트레이스. `assume_role_arn_from_env()`(`AWS_ASSUME_ROLE_ARN`). (2) `adapters/runtime/aws.py` `_client` **옵트인 소비** — 세션을 `assume_role_session(env-role)`로 구성 후 `.client(_SERVICE)`; env 미설정 시 role=""→in-account, `boto3.client(...)`와 동치(무변경). (3) `docs/ARCHITECTURE.md` 표 row#4 → ✅.
+- Verified: 신규 `tests/test_aws_session.py` +9(assume 성공·실패 폴백·`fallback=False` raise·빈 role passthrough(STS 미호출)·external_id 스레딩·반복실패 서킷 OPEN+fast-fail·env 헬퍼·runtime `_client` 옵트인 2종). `make check` → **723 passed, 1 skipped**(714→723). 기존 runtime/circuit_breaker 스위트 무변경 통과=비파괴 확인.
+- Blockers: 없음. (Pyright 신규모듈 stale-index 경고는 런타임/pytest 무관.) 실 크로스계정 라이브(2번째 AWS 계정+trust policy)는 사용자 크레덴셜 필요=자율 범위 밖; 어댑터 경로는 stub으로 완결 검증.
+- Next: 잔여 Tier 2 = **#3 MCP-over-HTTP 커넥터 + per-tool kill-switch**(앵커 `gateway/mcp_server.py` `TOOL_CATALOG`, intercept-reinject). (선택) 다른 크로스계정 소비자 배선(`deployment/aws.py` CodeBuild, executor SSM).
+
 ## 2026-07-15 — AWSome AI Gateway 레퍼런스 Tier 2 #2: agents-as-tools 오케스트레이션 + self-consistency
 
 - Status: Tier 2 최우선 항목 **#2 완료**. 단일-샷 결정론적 라우터(supervisor) 위에 **오케스트레이터 레이어**를 추가 — self-consistency 투표 라우팅 + 전문가-as-tools 체이닝. **비파괴**: 기본 sampler/planner가 결정론적이라 기본 동작은 `Supervisor.handle`과 동일.
