@@ -18,7 +18,7 @@
 - [~] **Agent Runtime 매니지드 호스팅** — **코드/preflight 완료(2026-07-14, `36085fc`)**: `adapters/runtime/` 3종(AgentCore/Agent Engine/Foundry), plan-first/approved-gated. AWS·GCP는 실 클라우드 read-only preflight 라이브 통과. **잔여=실 create(billable)**: 사용자 허락 대기.
   - [x] ~~(billable) AWS AgentCore 실 배포~~ — **완료(2026-07-14, `2079c01`)**: `infra/agentcore/` arm64 이미지+exec role, 어댑터 create→READY(~12s)→invoke(실응답)→teardown 라이브 E2E, 즉시 삭제(<$0.50).
   - [x] ~~(billable) GCP Agent Engine 실 배포~~ — **완료(2026-07-14, `40fa8f6`)**: `infra/agentengine/` custom-template 에이전트, 어댑터 create→DEPLOYED→query(Gemini 실응답)→teardown 라이브 E2E, 즉시 삭제(<$0.50).
-  - [ ] (billable, 승인 필요) Azure Foundry — Foundry 프로젝트 생성(선행)+model deployment+create_agent.
+  - [x] ~~(billable) Azure Foundry 실 배포~~ — **완료(2026-07-14, `4caf7de`+`2231362`)**: 어댑터 v1→v2 결함 수정 후 실 배포. Foundry 계정/프로젝트/gpt-5.4-mini, 어댑터 create_version→Responses API 쿼리(실응답)→delete 라이브 E2E. **3/3 클라우드 완결.** `infra/foundry/README.md`에 gotcha 기록. (Azure 스택은 유휴 ≈$0라 유지 중 — 정리 선택.)
 
 ### 외부/사용자 개입
 - [ ] (deferred) **Slack App 실 생성/토큰** — 코드+하네스(`scripts/slack_live_approval.py`) ready, 실 workspace만 필요. On-Prem 승인 게이트도 Slack 버튼 프런트엔드 연동 가능(현재는 대시보드 버튼으로 대체됨).
