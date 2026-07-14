@@ -1,17 +1,20 @@
-"""Azure agent-runtime hosting adapter — AI Foundry Agents, approval-gated.
+"""Azure agent-runtime hosting adapter — AI Foundry Agents (v2), approval-gated.
 
-Uses the ``azure-ai-projects`` SDK (``AIProjectClient.agents``). Mirrors the AWS
+Uses the ``azure-ai-projects`` v2 API (``AIProjectClient.agents``): agents are
+named, versioned resources created from a declarative definition. Mirrors the AWS
 adapter's plan-first / apply-after-approval contract:
 
-- unapproved ``host_agent`` runs a read-only preflight (``agents.list_agents``)
-  — verifies the Foundry project endpoint + credentials; creates nothing
-- ``approved=True`` runs the real ``agents.create_agent`` (needs a model
-  deployment name in ``spec.extra['model']`` + optional instructions)
-- ``teardown_agent`` requires explicit approval and deletes by agent id
-  (resolved from the agent name when not supplied)
+- unapproved ``host_agent`` runs a read-only preflight (``agents.list``) —
+  verifies the Foundry project endpoint + credentials; creates nothing
+- ``approved=True`` runs the real ``agents.create_version`` with a
+  ``PromptAgentDefinition`` (needs a model deployment name in
+  ``spec.extra['model']`` + optional instructions)
+- ``teardown_agent`` requires explicit approval and deletes the named agent
 
-Config: ``AZURE_AI_PROJECT_ENDPOINT`` (Foundry project endpoint) or
-``spec.extra['endpoint']``; credentials via ``DefaultAzureCredential`` (az login).
+Auth: the Foundry data plane requires Entra ID (``DefaultAzureCredential`` via
+``az login``) with a data-plane role (e.g. "Cognitive Services User") on the
+account — subscription Owner alone is control-plane only. Config:
+``AZURE_AI_PROJECT_ENDPOINT`` (project endpoint) or ``spec.extra['endpoint']``.
 """
 
 from __future__ import annotations
@@ -28,6 +31,12 @@ def _client(endpoint: str):
     from azure.identity import DefaultAzureCredential
 
     return AIProjectClient(endpoint=endpoint, credential=DefaultAzureCredential())
+
+
+def _prompt_definition(model: str, instructions: str):
+    from azure.ai.projects.models import PromptAgentDefinition
+
+    return PromptAgentDefinition(model=model, instructions=instructions or None)
 
 
 def _err(exc: Exception) -> str:
@@ -49,7 +58,7 @@ class FoundryRuntimeAdapter:
 
         if not spec.approved:
             try:
-                existing = list(client.agents.list_agents())
+                existing = list(client.agents.list())
             except Exception as exc:
                 return RuntimeResult(False, spec.agent_name, error=_err(exc))
             names = [getattr(a, "name", None) for a in existing]
@@ -64,19 +73,17 @@ class FoundryRuntimeAdapter:
         if not model:
             return RuntimeResult(False, spec.agent_name, error="extra['model'] (deployment name) required to host")
         try:
-            created = client.agents.create_agent(
-                model=model,
-                name=spec.agent_name,
-                instructions=spec.extra.get("instructions", ""),
-            )
+            definition = _prompt_definition(model, spec.extra.get("instructions", ""))
+            created = client.agents.create_version(agent_name=spec.agent_name, definition=definition)
         except Exception as exc:
             return RuntimeResult(False, spec.agent_name, error=_err(exc))
+        version = getattr(created, "version", None)
         return RuntimeResult(
             success=True,
             agent_name=spec.agent_name,
-            runtime_id=getattr(created, "id", None),
-            status="DEPLOYED",
-            output="foundry agent created",
+            runtime_id=getattr(created, "name", None) or spec.agent_name,
+            status=f"v{version}" if version else "DEPLOYED",
+            output="foundry agent version created",
         )
 
     def teardown_agent(self, spec: RuntimeSpec) -> RuntimeResult:
@@ -90,26 +97,16 @@ class FoundryRuntimeAdapter:
         except Exception as exc:
             return RuntimeResult(False, spec.agent_name, error=_err(exc))
 
-        agent_id = spec.runtime_id or self._resolve(client, spec.agent_name)
-        if not agent_id:
-            return RuntimeResult(False, spec.agent_name, error=f"no agent found for name '{spec.agent_name}'")
+        # v2 agents are identified by name; delete removes the whole agent.
+        name = spec.runtime_id or spec.agent_name
         try:
-            client.agents.delete_agent(agent_id)
+            client.agents.delete(name)
         except Exception as exc:
-            return RuntimeResult(False, spec.agent_name, runtime_id=agent_id, error=_err(exc))
+            return RuntimeResult(False, spec.agent_name, runtime_id=name, error=_err(exc))
         return RuntimeResult(
             success=True,
             agent_name=spec.agent_name,
-            runtime_id=agent_id,
+            runtime_id=name,
             status="DELETING",
             output="foundry agent delete requested",
         )
-
-    def _resolve(self, client, agent_name: str) -> str:
-        try:
-            for a in client.agents.list_agents():
-                if getattr(a, "name", None) == agent_name:
-                    return getattr(a, "id", "") or ""
-        except Exception:
-            return ""
-        return ""

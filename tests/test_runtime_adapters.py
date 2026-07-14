@@ -219,30 +219,32 @@ def test_gcp_teardown_resolves_by_name(monkeypatch):
     assert any(c[0] == "delete" for c in engines.calls)
 
 
-# --- Azure (AI Foundry Agents) ---
+# --- Azure (AI Foundry Agents, azure-ai-projects v2) ---
 
 
 class _Agent:
-    def __init__(self, name, id_):
+    def __init__(self, name, version=1):
         self.name = name
-        self.id = id_
+        self.version = version
 
 
 class FakeAgents:
+    """Stand-in for the v2 AgentsOperations (list / create_version / delete)."""
+
     def __init__(self, agents=None):
         self.calls = []
         self._agents = agents or []
 
-    def list_agents(self):
+    def list(self):
         self.calls.append(("list", None))
         return list(self._agents)
 
-    def create_agent(self, **kw):
-        self.calls.append(("create", kw))
-        return _Agent(kw.get("name"), "asst-123")
+    def create_version(self, agent_name, definition=None, **kw):
+        self.calls.append(("create_version", {"agent_name": agent_name, "definition": definition}))
+        return _Agent(agent_name, version=1)
 
-    def delete_agent(self, agent_id):
-        self.calls.append(("delete", agent_id))
+    def delete(self, name):
+        self.calls.append(("delete", name))
 
 
 class FakeAzureClient:
@@ -253,11 +255,16 @@ class FakeAzureClient:
 def _inject_azure(monkeypatch, client, endpoint="https://foundry.example/api/projects/p"):
     monkeypatch.setenv("AZURE_AI_PROJECT_ENDPOINT", endpoint)
     monkeypatch.setattr(azure_mod, "_client", lambda ep: client)
+    # keep tests independent of the azure-ai-projects SDK models
+    monkeypatch.setattr(
+        azure_mod, "_prompt_definition",
+        lambda model, instructions: {"kind": "prompt", "model": model, "instructions": instructions},
+    )
     return client
 
 
 def test_azure_preflight_only_without_approval(monkeypatch):
-    client = _inject_azure(monkeypatch, FakeAzureClient([_Agent("existing", "asst-9")]))
+    client = _inject_azure(monkeypatch, FakeAzureClient([_Agent("existing")]))
     result = get_runtime_adapter("azure").host_agent(RuntimeSpec(agent_name="demo"))
     assert result.success is True
     assert result.status == "PREFLIGHT"
@@ -272,17 +279,17 @@ def test_azure_requires_endpoint(monkeypatch):
     assert "AZURE_AI_PROJECT_ENDPOINT" in (result.error or "")
 
 
-def test_azure_creates_when_approved(monkeypatch):
+def test_azure_creates_version_when_approved(monkeypatch):
     client = _inject_azure(monkeypatch, FakeAzureClient())
-    spec = RuntimeSpec(agent_name="demo", approved=True, extra={"model": "gpt-4o", "instructions": "deploy things"})
+    spec = RuntimeSpec(agent_name="demo", approved=True, extra={"model": "gpt-mini", "instructions": "deploy things"})
     result = get_runtime_adapter("azure").host_agent(spec)
     assert result.success is True
-    assert result.runtime_id == "asst-123"
+    assert result.runtime_id == "demo"
+    assert result.status == "v1"
     kind, kw = client.agents.calls[0]
-    assert kind == "create"
-    assert kw["model"] == "gpt-4o"
-    assert kw["name"] == "demo"
-    assert kw["instructions"] == "deploy things"
+    assert kind == "create_version"
+    assert kw["agent_name"] == "demo"
+    assert kw["definition"] == {"kind": "prompt", "model": "gpt-mini", "instructions": "deploy things"}
 
 
 def test_azure_approved_requires_model(monkeypatch):
@@ -293,9 +300,17 @@ def test_azure_approved_requires_model(monkeypatch):
     assert client.agents.calls == []
 
 
-def test_azure_teardown_resolves_by_name(monkeypatch):
-    client = _inject_azure(monkeypatch, FakeAzureClient([_Agent("demo", "asst-77")]))
+def test_azure_teardown_deletes_by_name(monkeypatch):
+    client = _inject_azure(monkeypatch, FakeAzureClient([_Agent("demo")]))
     result = get_runtime_adapter("azure").teardown_agent(RuntimeSpec(agent_name="demo", approved=True))
     assert result.success is True
-    assert result.runtime_id == "asst-77"
-    assert ("delete", "asst-77") in client.agents.calls
+    assert result.runtime_id == "demo"
+    assert ("delete", "demo") in client.agents.calls
+
+
+def test_azure_teardown_requires_approval(monkeypatch):
+    client = _inject_azure(monkeypatch, FakeAzureClient())
+    result = get_runtime_adapter("azure").teardown_agent(RuntimeSpec(agent_name="demo"))
+    assert result.success is False
+    assert "approved=True" in (result.error or "")
+    assert client.agents.calls == []
