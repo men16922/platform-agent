@@ -161,6 +161,39 @@ def _infer_cluster(steps: list[dict[str, Any]]) -> str:
     return ""
 
 
+def _cost_metrics(steps: list[dict[str, Any]], trace: list[dict[str, Any]] | None) -> dict[str, Any]:
+    """Per-run cost/usage sub-metrics for the trace (ref AWSome AI Gateway sub-metrics).
+
+    Deterministically aggregates from the trace: tool-call counts (total + by name),
+    reasoning-step count, and token usage summed from any per-entry ``usage`` block
+    (input/output, tolerating openai- or anthropic-style key names). Zeros when the
+    trace carries no usage — the numbers only ever come from recorded execution."""
+    entries = trace if trace is not None else [{"kind": "tool", **s} for s in steps]
+    by_tool: dict[str, int] = {}
+    tool_total = 0
+    reasoning_steps = 0
+    input_tokens = 0
+    output_tokens = 0
+    for entry in entries:
+        if entry.get("kind") == "tool" or entry.get("tool"):
+            name = str(entry.get("tool") or "unknown")
+            by_tool[name] = by_tool.get(name, 0) + 1
+            tool_total += 1
+        elif entry.get("kind") in ("reasoning", "text", "thinking"):
+            reasoning_steps += 1
+        usage = entry.get("usage") or {}
+        input_tokens += int(usage.get("input_tokens") or usage.get("prompt_tokens") or 0)
+        output_tokens += int(usage.get("output_tokens") or usage.get("completion_tokens") or 0)
+    return {
+        "tool_calls_total": tool_total,
+        "tool_calls_by_name": by_tool,
+        "reasoning_steps": reasoning_steps,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "total_tokens": input_tokens + output_tokens,
+    }
+
+
 def _steps_ok(steps: list[dict[str, Any]]) -> bool:
     """A phase succeeded if none of its tool results carry an error / success=False."""
     for step in steps:
@@ -225,6 +258,8 @@ def _write_row(
         "tool_calls": tool_calls,
         # Full ordered trace: reasoning text + tool (args/result), for observability.
         "trace": json.dumps(trace if trace is not None else [{"kind": "tool", **s} for s in steps])[:350000],
+        # Per-run cost/usage sub-metrics derived from the trace (observability).
+        "cost_metrics": _cost_metrics(steps, trace),
         "status": status,
         "created_at": now,
     }
