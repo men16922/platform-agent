@@ -23,11 +23,11 @@ export const AGENT_TOOLS: Record<string, ToolGroup[]> = {
     {
       label: "Deploy (mutating)",
       tools: [
-        { name: "build_image", desc: "docker build the container image" },
-        { name: "push_image", desc: "push to the private registry (Harbor)" },
-        { name: "deploy_to_cluster", desc: "kubectl apply Deployment + Service" },
+        { name: "deploy_service", desc: "preferred — build → push → deploy → validate in ONE call" },
+        { name: "build_image", desc: "build step only (fine-grained control)" },
+        { name: "push_image", desc: "push a built image to the registry (Harbor)" },
+        { name: "deploy_to_cluster", desc: "apply a pre-built image (needs image_uri from push)" },
         { name: "validate_deployment", desc: "rollout status + readiness check" },
-        { name: "rollback_deployment", desc: "revert to the previous version" },
       ],
     },
     {
@@ -38,6 +38,12 @@ export const AGENT_TOOLS: Record<string, ToolGroup[]> = {
         { name: "describe_deployment", desc: "kubectl describe — conditions & events" },
         { name: "rollout_status", desc: "kubectl rollout status" },
         { name: "list_namespaces", desc: "kubectl get namespaces" },
+      ],
+    },
+    {
+      label: "Recover (mutating)",
+      tools: [
+        { name: "rollback_deployment", desc: "roll back a deployment to its previous version" },
       ],
     },
   ],
