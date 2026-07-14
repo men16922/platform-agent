@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -5,6 +6,12 @@ from pydantic_ai.messages import ToolCallPart
 from pydantic_ai.models.test import TestModel
 
 import src.agents.ai.local_deployer as ld
+
+
+def _prompt_advertised_tools() -> set[str]:
+    """Tool names the system prompt tells the LLM it has (the discovery view)."""
+    block = ld.DEPLOYER_SYSTEM_PROMPT.split("## Tools", 1)[1].split("## How to work", 1)[0]
+    return set(re.findall(r"^- `(\w+)`", block, flags=re.MULTILINE))
 
 
 def _fake_adapters(provider):
@@ -115,3 +122,25 @@ def test_local_deployer_drives_tools_with_test_model(monkeypatch):
 def test_platform_agent_includes_provision_tools():
     names = {t.__name__ for t in ld.ALL_OPS_TOOLS}
     assert {"provision_cluster", "teardown_cluster"} <= names
+
+
+def test_single_catalog_is_source_of_truth():
+    """Dispatch (ALL_OPS_TOOLS) and discovery (prompt inventory) derive from one catalog — no drift."""
+    catalog_names = [t.name for t in ld.AGENT_TOOL_CATALOG]
+    assert len(catalog_names) == len(set(catalog_names))  # unique
+    # Dispatch view: registered tools mirror the catalog exactly, in order.
+    assert [t.__name__ for t in ld.ALL_OPS_TOOLS] == catalog_names
+    # Discovery view: the prompt advertises exactly the registered tools — no tool
+    # is hidden from the LLM, and none is advertised that isn't wired.
+    assert _prompt_advertised_tools() == set(catalog_names)
+    # The catalog covers exactly the union of the three source tool lists (nothing dropped/added).
+    from src.agents.ai.ops_tools import OPS_TOOLS
+    from src.agents.ai.provision_tools import PROVISION_TOOLS
+
+    union = {t.__name__ for t in OPS_TOOLS + PROVISION_TOOLS + ld.LOCAL_DEPLOY_TOOLS}
+    assert set(catalog_names) == union
+
+
+def test_catalog_categories_are_known():
+    """Every catalog entry uses a declared category (so the prompt renderer places it)."""
+    assert all(t.category in ld._CATEGORY_BLURBS for t in ld.AGENT_TOOL_CATALOG)

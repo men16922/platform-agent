@@ -28,6 +28,8 @@ Usage:
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
 from pydantic_ai import Agent
@@ -35,29 +37,23 @@ from pydantic_ai.models import Model
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
+
 from src.agents.adapters.deployment import ServiceSpec, get_deployment_adapters
 
 
-DEPLOYER_SYSTEM_PROMPT = """\
+# The ``## Tools`` inventory below is not hand-written — it is rendered from the
+# single ``AGENT_TOOL_CATALOG`` (see bottom of module) via the ``__TOOLS__``
+# sentinel, so the tools the LLM is *told* it has never drift from the tools the
+# agent actually *registers*. Everything else (workflow guidance, safety) stays
+# hand-authored prose.
+_SYSTEM_PROMPT_TEMPLATE = """\
 You are an on-premise Kubernetes **operations agent** running fully offline via a
 local LLM. Answer questions and fulfill requests using the available tools —
 deployment is one capability among several.
 
 ## Tools
 
-**Investigate (read-only, use freely):**
-- `list_pods`, `get_logs`, `describe_deployment`, `rollout_status`, `list_namespaces`
-
-**Provision (infrastructure / IaC, mutating — only when explicitly asked):**
-- `provision_cluster` (Terraform kind / Ansible k3s), `teardown_cluster`
-
-**Deploy (mutating):**
-- `deploy_service` — **preferred**: build -> push -> deploy -> validate in ONE call.
-- `build_image` / `push_image` / `deploy_to_cluster` / `validate_deployment` —
-  the individual steps, only when you need fine-grained control.
-
-**Recover (mutating):**
-- `rollback_deployment`
+__TOOLS__
 
 ## How to work
 
@@ -312,10 +308,80 @@ def deploy_service(
 LOCAL_DEPLOY_TOOLS = [deploy_service, build_image, push_image, deploy_to_cluster, validate_deployment, rollback_deployment]
 
 # Full platform agent tool set = provision (IaC) + deploy/recover + read-only diagnostics.
-from src.agents.ai.ops_tools import OPS_TOOLS  # noqa: E402
-from src.agents.ai.provision_tools import PROVISION_TOOLS  # noqa: E402
+from src.agents.ai.ops_tools import (  # noqa: E402
+    describe_deployment,
+    get_logs,
+    list_namespaces,
+    list_pods,
+    rollout_status,
+)
+from src.agents.ai.provision_tools import (  # noqa: E402
+    provision_cluster,
+    teardown_cluster,
+)
 
-ALL_OPS_TOOLS = PROVISION_TOOLS + LOCAL_DEPLOY_TOOLS + OPS_TOOLS
+
+# ---------------------------------------------------------------------------
+# Single tool catalog for the interactive agent — the ONE place each tool is
+# declared. Both dispatch (``ALL_OPS_TOOLS``, what Pydantic AI registers) and
+# discovery (the ``## Tools`` inventory in the system prompt, what the LLM is
+# told it has) derive from it, so the two never drift. This mirrors the gateway's
+# ``TOOL_CATALOG`` pattern — but note the layer difference: these are the higher-
+# level, adapter-backed, LLM-tuned agent tools, distinct from the gateway's raw
+# kubectl/docker MCP handlers.
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class AgentTool:
+    """One entry in the interactive agent's tool catalog."""
+
+    func: Callable[..., Any]
+    category: str
+    hint: str
+
+    @property
+    def name(self) -> str:
+        return self.func.__name__
+
+
+# Category header -> parenthetical blurb, in the order they appear in the prompt.
+_CATEGORY_BLURBS: dict[str, str] = {
+    "Investigate": "read-only, use freely",
+    "Provision": "infrastructure / IaC, mutating — only when explicitly asked",
+    "Deploy": "mutating",
+    "Recover": "mutating",
+}
+
+AGENT_TOOL_CATALOG: list[AgentTool] = [
+    AgentTool(list_pods, "Investigate", "list pods in a namespace"),
+    AgentTool(get_logs, "Investigate", "recent logs from a deployment's pods"),
+    AgentTool(describe_deployment, "Investigate", "replicas, conditions, recent events"),
+    AgentTool(rollout_status, "Investigate", "rollout status of a deployment"),
+    AgentTool(list_namespaces, "Investigate", "namespaces in the cluster"),
+    AgentTool(provision_cluster, "Provision", "stand up a cluster (Terraform kind / Ansible k3s)"),
+    AgentTool(teardown_cluster, "Provision", "destroy a provisioned cluster"),
+    AgentTool(deploy_service, "Deploy", "**preferred** — build -> push -> deploy -> validate in ONE call"),
+    AgentTool(build_image, "Deploy", "build step only (fine-grained control)"),
+    AgentTool(push_image, "Deploy", "push a built image to the registry"),
+    AgentTool(deploy_to_cluster, "Deploy", "apply a pre-built image (needs image_uri from push)"),
+    AgentTool(validate_deployment, "Deploy", "check rollout status / readiness"),
+    AgentTool(rollback_deployment, "Recover", "roll back a deployment to its previous version"),
+]
+
+
+def _render_tool_inventory() -> str:
+    """Render the ``## Tools`` markdown block from the catalog (discovery view)."""
+    lines: list[str] = []
+    for category, blurb in _CATEGORY_BLURBS.items():
+        lines.append(f"**{category} ({blurb}):**")
+        lines += [f"- `{t.name}` — {t.hint}" for t in AGENT_TOOL_CATALOG if t.category == category]
+        lines.append("")
+    return "\n".join(lines).rstrip()
+
+
+DEPLOYER_SYSTEM_PROMPT = _SYSTEM_PROMPT_TEMPLATE.replace("__TOOLS__", _render_tool_inventory())
+
+# Dispatch view — the tools the agent registers — derived from the same catalog.
+ALL_OPS_TOOLS = [t.func for t in AGENT_TOOL_CATALOG]
 
 
 def create_local_deployer(
