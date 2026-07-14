@@ -11,7 +11,8 @@
 - [x] ~~#3 **MCP-over-HTTP 커넥터 + per-tool/글로벌 kill-switch**~~ — `mcp_server.py` `remote_mcp_tool`(intercept-reinject·전송실패 degrade) + `MCPServer` kill-switch 게이트(`MCP_DISABLED_TOOLS`/`MCP_KILL_SWITCH`), 비파괴. gate 736.
 - [x] ~~#4 **cross-account STS AssumeRole + graceful fallback**~~ — `adapters/aws_session.py`(`CircuitBreaker` 재사용) + `runtime/aws.py` 옵트인. gate 723.
 - **잔여 레퍼런스 = #7(Helm/Terraform 프로덕션)만 = Tier 3**(온프렘/클라우드 프로덕션화 시).
-- (선택) 라이브 실증: 실 로컬 MLX-Qwen sampler로 self-consistency(#2) · 실 원격 MCP 서버 SigV4/IRSA 연동(#3) · 2번째 AWS 계정 assume-role(#4) · 다른 크로스계정 소비자 배선(`deployment/aws.py`, executor SSM) — 모두 사용자 크레덴셜/엔드포인트 필요.
+- [x] ~~#4 **크로스계정 소비자 배선**~~ — **완료(2026-07-15)**: `deployment/aws.py` CodeBuild + `executor/handler.py` SSM(primary+failover `_ssm_client`)이 `assume_role_session(env-role)` 소비, env 미설정=in-account 무변경. +2 test, gate 738.
+- (선택) 라이브 실증(사용자 크레덴셜/엔드포인트 필요): 실 로컬 MLX-Qwen sampler self-consistency(#2) · 실 원격 MCP 서버 SigV4/IRSA(#3) · 2번째 AWS 계정 assume-role(#4).
 
 ## 열린 작업 (로드맵 — 성격별)
 

@@ -19,6 +19,7 @@ from typing import Any
 import boto3
 import structlog
 
+from src.agents.adapters.aws_session import assume_role_arn_from_env, assume_role_session
 from src.agents.adapters.registry import get_execution_adapter
 from src.agents.adapters.slack_client import post_webhook
 from src.agents.models import (
@@ -33,7 +34,13 @@ _REGION         = os.getenv("AWS_REGION", "ap-northeast-2")
 _SLACK_WEBHOOK  = os.getenv("SLACK_WEBHOOK_URL", "")
 _INCIDENT_TABLE = os.getenv("INCIDENT_TABLE", "incident-history")
 
-_SSM    = boto3.client("ssm",      region_name=_REGION)
+def _ssm_client(region: str):
+    # Honor an optional cross-account role (AWS_ASSUME_ROLE_ARN) with graceful
+    # in-account fallback; unset → in-account, equivalent to boto3.client("ssm").
+    return assume_role_session(assume_role_arn_from_env(), region=region).session.client("ssm", region_name=region)
+
+
+_SSM    = _ssm_client(_REGION)
 _DYNAMO = boto3.resource("dynamodb", region_name=_REGION)
 
 
@@ -150,7 +157,7 @@ def _run_ssm_actions(
                 error=str(exc)
             )
             try:
-                ssm_failover = boto3.client("ssm", region_name=failover_region)
+                ssm_failover = _ssm_client(failover_region)
                 resp = ssm_failover.start_automation_execution(
                     DocumentName    = action,
                     DocumentVersion = "$DEFAULT",

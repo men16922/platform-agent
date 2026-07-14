@@ -137,6 +137,65 @@ def test_runtime_client_honors_assume_role_env(monkeypatch):
     assert captured["region"] == "us-east-1"
 
 
+def test_deployment_build_sources_cross_account_session(monkeypatch):
+    """The CodeBuild adapter builds its client through assume_role_session."""
+    from types import SimpleNamespace
+
+    import src.agents.adapters.deployment.aws as dep
+
+    captured: dict = {}
+
+    class FakeCodeBuild:
+        def start_build(self, **kwargs):
+            captured["build_args"] = kwargs
+            return {"build": {"id": "build-123"}}
+
+    class FakeSession:
+        def client(self, service, region_name=None):
+            captured["service"] = service
+            return FakeCodeBuild()
+
+    def fake_assume(role_arn, *, region=None, **_kwargs):
+        captured["role_arn"] = role_arn
+        return SessionResult(FakeSession(), role_arn, assumed=bool(role_arn), fell_back=False)
+
+    monkeypatch.setattr(dep, "assume_role_session", fake_assume)
+    monkeypatch.setenv("AWS_ASSUME_ROLE_ARN", ROLE)
+
+    result = dep.AwsBuildAdapter().build(SimpleNamespace(image="orders-api", version="v1"))
+
+    assert result.success is True
+    assert captured["role_arn"] == ROLE
+    assert captured["service"] == "codebuild"
+
+
+def test_executor_ssm_client_sources_cross_account_session(monkeypatch):
+    """The executor Lambda's SSM client (primary + failover) assumes the role."""
+    import src.agents.operations.executor.handler as executor
+
+    captured: dict = {}
+
+    class FakeSession:
+        def client(self, service, region_name=None):
+            captured["service"] = service
+            captured["region"] = region_name
+            return "SSM_CLIENT"
+
+    def fake_assume(role_arn, *, region=None, **_kwargs):
+        captured["role_arn"] = role_arn
+        return SessionResult(FakeSession(), role_arn, assumed=bool(role_arn), fell_back=False)
+
+    monkeypatch.setattr(executor, "assume_role_session", fake_assume)
+    monkeypatch.setenv("AWS_ASSUME_ROLE_ARN", ROLE)
+
+    client = executor._ssm_client("us-west-2")
+
+    assert client == "SSM_CLIENT"
+    assert captured["role_arn"] == ROLE
+    assert captured["service"] == "ssm"
+    assert captured["region"] == "us-west-2"
+
+
 def test_runtime_client_in_account_when_env_unset(monkeypatch):
     """Env unset → empty role threaded → behaves as a plain in-account client."""
     import src.agents.adapters.runtime.aws as aws_mod

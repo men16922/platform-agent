@@ -10,6 +10,7 @@ import json
 import os
 import subprocess
 
+from src.agents.adapters.aws_session import assume_role_arn_from_env, assume_role_session
 from src.agents.adapters.deployment.base import (
     BuildAdapter,
     BuildResult,
@@ -46,11 +47,13 @@ class AwsBuildAdapter(BuildAdapter):
 
     def build(self, spec: ServiceSpec, context_path: str = ".") -> BuildResult:
         try:
-            import boto3
+            # Honor an optional cross-account role (AWS_ASSUME_ROLE_ARN); unset →
+            # in-account session, equivalent to boto3.client(...). boto3 absence
+            # surfaces as ImportError from the lazy session build below.
+            session = assume_role_session(assume_role_arn_from_env(), region=_REGION).session
+            client = session.client("codebuild", region_name=_REGION)
         except ImportError:
             return BuildResult(success=False, error="boto3 not installed")
-
-        client = boto3.client("codebuild", region_name=_REGION)
         try:
             response = client.start_build(
                 projectName=self._project,

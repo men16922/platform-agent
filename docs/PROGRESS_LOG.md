@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-15 — Tier 2 #4 크로스계정 소비자 배선 + 종합 아키텍처 아티클
+
+- Status: #4 `assume_role_session`을 실 소비자 2곳에 배선(그간 헬퍼+runtime만) + 레퍼런스 반영 스토리를 담은 종합 아키텍처 테크 아티클 작성.
+- Changed: (1) `adapters/deployment/aws.py` `AwsBuildAdapter.build` CodeBuild 클라이언트를 `assume_role_session(env-role).session.client("codebuild")`로 구성(boto3 부재는 ImportError→기존 BuildResult 에러 유지). (2) `operations/executor/handler.py` `_ssm_client(region)` 헬퍼 신설 — 모듈-레벨 `_SSM`(primary) + 리전-페일오버 클라이언트 둘 다 이 헬퍼 경유(assume-role+graceful fallback, env 미설정=in-account 무변경). (3) 신규 `docs/post/platform-agent-architecture.md` — 결정론적 가드레일 중심의 종합 아키텍처 아티클(Tier 1/2 레퍼런스 반영 스토리·설계 원칙·검증 문화). 배포는 사용자 몫.
+- Verified: `tests/test_aws_session.py` +2(deployment build·executor `_ssm_client`이 env-role로 assume_role_session 소비). `make check` → **738 passed, 1 skipped**(736→738). 기존 executor/deployment 스위트 무변경=비파괴.
+- Blockers: 없음. 실 크로스계정(2nd 계정+trust)·아티클 배포는 사용자 개입.
+- Next: main 병합+push. 이후 외부(아티클 배포·OAuth 데모)·라이브 실증만 잔여.
+
 ## 2026-07-15 — AWSome AI Gateway 레퍼런스 Tier 2 #3: MCP-over-HTTP 커넥터 + per-tool/글로벌 kill-switch (Tier 2 완결)
 
 - Status: Tier 2 **#3 완료 → Tier 2(#2·#3·#4) 전체 완결**. MCP 게이트웨이에 (1) 원격 MCP 서버를 카탈로그 도구로 노출하는 intercept-reinject 커넥터, (2) 도구별·글로벌 kill-switch 추가. 모두 기존 단일 카탈로그/디스패치 위에 얹어 비파괴.
