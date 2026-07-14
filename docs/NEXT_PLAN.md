@@ -4,14 +4,14 @@
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md` / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 다음 우선순위 — AWSome AI Gateway 레퍼런스 Tier 2 (새 세션 권장)
+## 다음 우선순위 — AWSome AI Gateway 레퍼런스 Tier 2 잔여 (#3/#4, 각 새 세션 권장)
 
 - [x] ~~**Tier 1 반영**~~ — **완료(2026-07-15)**: reconciliation gate(`8f1878f`)·비용 3단계 게이트(`0a18794`)·서킷브레이커+readiness(`de4b92c`)·비용 서브메트릭(`6bc541c`). `docs/ARCHITECTURE.md` "외부 레퍼런스 반영" 표 참조.
-- [ ] **Tier 2** (규모 큼, supervisor/gateway 리팩터 → 새 세션에서 full 컨텍스트로 권장):
-  - [ ] #2 **agents-as-tools 오케스트레이션 + self-consistency** — supervisor를 오케스트레이터+전문가 에이전트 구조로. reconciliation gate + AgentCore와 시너지. (최우선)
-  - [ ] #3 **MCP-over-HTTP 커넥터 + per-tool kill-switch** — 원격 MCP intercept-reinject.
-  - [ ] #4 **cross-account STS AssumeRole + graceful fallback** — AWS 어댑터.
-- 참고: `/tidy-docs` 필요(PROGRESS_LOG 169줄>budget120).
+- [x] ~~#2 **agents-as-tools 오케스트레이션 + self-consistency**~~ — **완료(2026-07-15)**: `orchestration.py`(`route_with_self_consistency` N-샘플 majority vote·저합의 시 결정론적 폴백 + `Orchestrator` specialists-as-tools 체이닝·short-circuit·shared contextId) + a2a_server 옵트인(`SUPERVISOR_ORCHESTRATION`, 기본 무변경) + +12 test. gate 714.
+- [ ] **Tier 2 잔여** (각 별도 세션 권장):
+  - [ ] #3 **MCP-over-HTTP 커넥터 + per-tool kill-switch** — 원격 MCP intercept-reinject. 앵커=`gateway/mcp_server.py` `TOOL_CATALOG`.
+  - [ ] #4 **cross-account STS AssumeRole + graceful fallback** — AWS 어댑터. 어댑터-로컬이라 규모 작음.
+  - [ ] (선택) 실 로컬 MLX-Qwen sampler로 self-consistency 라이브 실증(#2 머신러리는 sampler-agnostic).
 
 ## 열린 작업 (로드맵 — 성격별)
 

@@ -22,6 +22,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
+from src.agents.ai.orchestration import Orchestrator, OrchestratorOutcome
 from src.agents.ai.supervisor import Supervisor
 
 
@@ -64,10 +65,24 @@ class Task:
 class A2AServer:
     """In-memory A2A Server implementing the core protocol operations."""
 
-    def __init__(self, supervisor: Supervisor | None = None):
+    def __init__(
+        self,
+        supervisor: Supervisor | None = None,
+        *,
+        orchestrator: Orchestrator | None = None,
+    ):
         self._tasks: dict[str, Task] = {}
         self._card = self._load_agent_card()
         self._supervisor = supervisor or Supervisor.from_environment()
+        # Opt-in agents-as-tools orchestration (self-consistency routing +
+        # chained specialist delegation). Default (flag unset, no injection)
+        # keeps the single-shot supervisor path unchanged.
+        if orchestrator is not None:
+            self._orchestrator: Orchestrator | None = orchestrator
+        elif os.getenv("SUPERVISOR_ORCHESTRATION", "").lower() in ("1", "true", "yes"):
+            self._orchestrator = Orchestrator(self._supervisor)
+        else:
+            self._orchestrator = None
 
     def _load_agent_card(self) -> dict:
         """Load the agent card from JSON file."""
@@ -104,10 +119,11 @@ class A2AServer:
         text_parts = [p.get("text", "") for p in message.get("parts", []) if "text" in p]
         user_text = " ".join(text_parts)
 
-        # Route through the supervisor. It delegates only to explicitly
-        # registered A2A endpoints, so this gateway never silently executes
-        # mutating work on behalf of an unconfigured specialist.
-        outcome = self._supervisor.handle(user_text, context_id=message.get("contextId"))
+        # Route through the orchestrator when enabled, else the supervisor. Both
+        # delegate only to explicitly registered A2A endpoints, so this gateway
+        # never silently executes mutating work for an unconfigured specialist.
+        handler = self._orchestrator or self._supervisor
+        outcome = handler.handle(user_text, context_id=message.get("contextId"))
         response_text = self._format_supervisor_response(outcome)
 
         # Update task status
@@ -116,13 +132,22 @@ class A2AServer:
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
-        # Add artifact with response
+        # Add artifact with response. The data block is a backward-compatible
+        # superset: route/trace are always present; consensus/steps are added
+        # only on the orchestrator path.
+        data: dict[str, Any] = {"route": outcome.decision.role.value, "trace": outcome.trace}
+        if isinstance(outcome, OrchestratorOutcome):
+            data["consensus"] = outcome.consensus.to_dict()
+            data["steps"] = [
+                {"role": step.decision.role.value, "delegated": step.delegated}
+                for step in outcome.steps
+            ]
         task.artifacts = [{
             "artifactId": str(uuid.uuid4()),
             "name": "response",
             "parts": [
                 {"text": response_text},
-                {"data": {"route": outcome.decision.role.value, "trace": outcome.trace}},
+                {"data": data},
             ],
         }]
 
