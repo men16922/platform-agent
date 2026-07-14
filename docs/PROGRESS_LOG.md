@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-14 — On-Prem 실 executor 완결: polite node drain(--force 없음, PDB 존중)
+
+- Status: On-Prem Day-2 실 executor의 **되돌리기-가능 조치 세트 완결** — restart/undo/scale에 이어 **마지막(가장 위험)** `ONPREM-DrainNode`→`kubectl drain <node>` 추가. 노드 단위라 blast-radius가 커서 **보수적 "polite drain" 정책**으로 게이팅.
+- Changed: `onprem_runner.py` — DrainNode 전용 분기(`_kubectl_args`): `["drain", <node>, "--ignore-daemonsets", "--timeout=90s"]`, **`--force`·`--delete-emptydir-data` 의도적 미사용**(→ kubectl이 PodDisruptionBudget 존중, 미관리/로컬데이터 파드에선 거부=실패→executor skip; 아웃티지·데이터손실 방지), NodeName 없으면 log-only. `execution/onprem.py` — DrainNode 분기 분리, 워크로드 대신 `NodeName`(라벨 `node`/`instance`) 스레딩. 여전히 `ONPREM_EXECUTOR_LIVE` 기본 OFF. `test_onprem_runner.py` 10→13(drain args·`--force`/`--delete-emptydir-data` 부재 검증·node 누락 log-only), unwired 테스트를 CleanupDiskSpace로 교체. `test_portability_adapters.py` +1(NodeName 스레딩).
+- Verified: `pytest tests/test_onprem_runner.py tests/test_portability_adapters.py` 25 passed. **실 kind 라이브 실증(3노드: control-plane+worker×2)**: nginx web 4 replicas(worker 2/worker2 2 분산) → runner로 worker drain → **노드 cordon(SchedulingDisabled)+파드 evict→worker2 재배치, deployment 4/4 Running 유지(아웃티지 0)** → 클러스터 정리. `make check` → **636 passed, 1 skipped**.
+- Blockers: 없음. 공격적 force-drain은 의도적으로 사람 몫(로드맵도 아님). **On-Prem 로컬-자율 백로그 전부 소진**.
+- Next: 잔여는 전부 외부/클라우드 — (deferred) Slack App·아티클, GCP/Azure Provision·Agent Runtime(크레덴셜 필요).
+
 ## 2026-07-14 — 인터랙티브 에이전트 단일 도구 카탈로그: 프롬프트↔등록 드리프트 제거
 
 - Status: 게이트웨이의 단일-카탈로그 규율을 **인터랙티브 `local_deployer` 에이전트**에도 적용. 기존엔 시스템 프롬프트의 `## Tools` 인벤토리를 **손으로** 적고 `ALL_OPS_TOOLS`(등록)와 수동 동기화 → 게이트웨이가 고쳤던 드리프트 위험 그대로였음. **`AGENT_TOOL_CATALOG` 단일 source-of-truth** 도입: dispatch(`ALL_OPS_TOOLS`, Pydantic AI 등록)와 discovery(프롬프트 인벤토리, LLM이 안다고 듣는 도구)를 **둘 다 카탈로그에서 파생** → 도구 추가=1곳, 드리프트 불가.
