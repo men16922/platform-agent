@@ -17,6 +17,7 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **669 passed, 1 skipped** (2026-07-14) — **Agent Runtime 호스팅 어댑터 3종**(신규 `adapters/runtime/`: AWS AgentCore(boto3)·GCP Agent Engine(vertexai)·Azure Foundry(azure-ai-projects), plan-first/approved-gated·읽기전용 preflight·teardown 승인 강제, +20 test). **라이브 read-only preflight 통과: 실 AWS·GCP**(0 runtimes/engines); Azure는 Foundry 프로젝트 부재로 blocked(과금 선행). billable create 미실행.
 - `make check` (pytest) → **649 passed, 1 skipped** (2026-07-14) — **provisioning 어댑터 4-provider parity**(신규 GCP/Azure GKE·AKS: plan-first/approved-gated·읽기전용 preflight·teardown 승인 강제·tool preflight-only, +13 test) 포함.
 - `make check` (pytest) → **636 passed, 1 skipped** (2026-07-14) — On-Prem 실 executor **scale**(양수 타깃, kind 2→5 라이브) + **polite drain**(--force 없음·PDB 존중, 3노드 kind 라이브 재배치·아웃티지0) + 인터랙티브 에이전트 **단일 카탈로그**(drift-0 불변식) + A2A Phase 2/PROVISION 격리 + On-Prem PATH B webhook/승인 게이트/인시던트 스토어 포함.
 - **On-Prem PATH B webhook + Approval Flow 라이브 스모크(2026-07-14)** → `uvicorn onprem_webhook_api:app :8078`. `POST /webhook/alertmanager`가 in-process 4-step(detect→analyze→decide→execute) 실행; Guardian 게이팅 **P1=즉시 실행·P2=parking·P3=알림만**. P2 라이브 루프: pending_approval→`GET /pending`→`POST /approve/{id}`(decision 재생 실행)→approved+incident_id. 완전 오프라인.

@@ -15,7 +15,10 @@
 
 ### 클라우드 크레덴셜/과금 필요 (자율 불가)
 - [x] ~~**GCP/Azure Provision 어댑터**~~ — **완료(2026-07-14, `6baa6ee`)**: GKE(gcloud)/AKS(az) 어댑터, plan-first/approved-gated, provisioning 4-provider parity. 코드+테스트 완결, 실 create만 크레덴셜 대기.
-- [ ] **Agent Runtime 매니지드 호스팅** — Strands→**AgentCore**(진행 중) / ADK→Agent Engine / MSFT→Foundry. AgentCore는 AWS라 실 배포 테스트 가능성 있음(크레덴셜 보유).
+- [~] **Agent Runtime 매니지드 호스팅** — **코드/preflight 완료(2026-07-14, `36085fc`)**: `adapters/runtime/` 3종(AgentCore/Agent Engine/Foundry), plan-first/approved-gated. AWS·GCP는 실 클라우드 read-only preflight 라이브 통과. **잔여=실 create(billable)**: 사용자 허락 대기.
+  - [ ] (billable, 승인 필요) AWS AgentCore 실 배포 — ECR ARM64 이미지(런타임 컨트랙트 `/invocations`+`/ping`)+exec role+CreateAgentRuntime.
+  - [ ] (billable, 승인 필요) GCP Agent Engine 실 배포 — deployable agent object+staging bucket+create.
+  - [ ] (billable, 승인 필요) Azure Foundry — Foundry 프로젝트 생성(선행)+model deployment+create_agent.
 
 ### 외부/사용자 개입
 - [ ] (deferred) **Slack App 실 생성/토큰** — 코드+하네스(`scripts/slack_live_approval.py`) ready, 실 workspace만 필요. On-Prem 승인 게이트도 Slack 버튼 프런트엔드 연동 가능(현재는 대시보드 버튼으로 대체됨).

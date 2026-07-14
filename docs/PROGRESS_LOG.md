@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-14 — Agent Runtime 호스팅 어댑터 3종(AgentCore/Agent Engine/Foundry) + 라이브 preflight(AWS·GCP)
+
+- Status: **④ Host role** 신설 — 빌드된 에이전트(Strands deployer 등)를 매니지드 런타임에 올리는 어댑터 레이어. provisioning의 plan-first/approved-gated 계약을 3-provider로 미러링. **비용 안 나가는 범위 전부 수행**: 코드+목 테스트 완결 + AWS·GCP는 **실 클라우드 read-only preflight 라이브 통과**, Azure는 설계대로 blocker 보고(과금 없음).
+- Changed: 신규 `src/agents/adapters/runtime/` 패키지 — `base.py`(`RuntimeSpec`/`RuntimeResult`/protocol, provider별 create knobs용 `extra` dict), `aws.py`(AgentCore via boto3 `bedrock-agentcore-control`, **신규 의존성 0**), `gcp.py`(Vertex Agent Engine via `vertexai.agent_engines`), `azure.py`(AI Foundry via `azure-ai-projects`), `registry.py`(`["aws","gcp","azure"]`). 공통: 미승인 host=읽기전용 preflight(list, 생성 0), `approved=True`=실 create(AgentCore=ECR img+role, Agent Engine=agent_object, Foundry=model), teardown=approved 강제+이름으로 id 해석. 클라우드 SDK는 지연 import + gcp/azure extras에 기록(`google-cloud-aiplatform`, `azure-ai-projects`). `test_runtime_adapters.py` 20개.
+- Verified: `pytest tests/test_runtime_adapters.py` 20 passed. `make check` → **669 passed, 1 skipped**. 커밋 `36085fc`. **라이브 read-only preflight**: 실 AWS(acct 908601828278, us-east-1)→0 runtimes / 실 GCP(project-ec7809f7, us-central1 Vertex)→0 engines. Azure=Foundry 프로젝트 부재로 preflight blocked(엔드포인트 없음, graceful). **billable create는 미실행**(승인 대기).
+- Blockers: 실 create는 전부 과금/하드-투-리버스 → 사용자 허락 필요. Azure 라이브 preflight도 Foundry 프로젝트 생성(과금)이 선행이라 대기.
+- Next: (사용자 결정) 3종 중 실 배포할 것 선택 — 비용 견적 제시함. 잔여 외부: Slack App·아티클.
+
 ## 2026-07-14 — GCP/Azure managed-cloud Provision 어댑터(GKE/AKS): provisioning 4-provider parity
 
 - Status: provisioning 어댑터가 deployment/execution 레이어처럼 **4-provider parity**(onprem/aws/**gcp**/**azure**) 달성. 그간 On-Prem(Terraform/Ansible)+AWS(CDK)만 있고 클라우드 Provision이 갭이었음. AWS 어댑터의 **plan-first / approved-gated 계약을 그대로 미러링** — 하드-투-리버스(클러스터 생성/삭제)는 승인 게이팅.

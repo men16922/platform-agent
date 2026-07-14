@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-14
 
-> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **Agent Runtime 호스팅 AgentCore 진행 중**(Strands→Bedrock AgentCore; AWS라 실 배포 테스트 가능성 검토). 방금 완료: **GCP/Azure Provision 어댑터**(GKE/AKS, plan-first/approved-gated, provisioning 4-provider parity, 커밋 `6baa6ee`, gate 649) — 코드+테스트 완결·실 create만 크레덴셜 대기. 잔여 외부: Slack App·아티클(사용자 개입). ※ 앞선 2026-07-14: A2A Phase 2 실 kagent + On-Prem Day-2 전체 vertical(executor 4조치 rollout/undo/scale/drain) + 단일 도구 카탈로그. 인프라(kind/MLX) 정리 완료.
+> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **Agent Runtime 호스팅 3종 코드+preflight 완료**(`adapters/runtime/` AgentCore/Agent Engine/Foundry, plan-first/approved-gated, 커밋 `36085fc`, gate 669; **실 AWS·GCP read-only preflight 라이브 통과**). **잔여=실 create(billable)**: 사용자 허락 대기(비용 견적 제시됨). 앞서 완료: GCP/Azure Provision 어댑터(`6baa6ee`). 잔여 외부: Slack App·아티클. ※ 2026-07-14 앞선: A2A Phase 2 실 kagent + On-Prem Day-2 전체 vertical + 단일 카탈로그. 인프라 정리 완료.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 
@@ -22,8 +22,8 @@
 - **동작하는 것:** Operations 4단계 + 3-cloud AI Agent + **On-Prem Ops**(12도구, trace) + Terraform kind/실 Multipass VM Ansible k3s Provision + kagent↔Local Qwen A2A + Agents UI. **On-Prem 오프라인 완결**: Local Qwen **7B**로 NL provision→deploy→validate ~39s, 로컬 JSONL 기록 + 대시보드 **hybrid**(AWS+On-Prem 병합) + 실 **롤백**(app/cluster). **추적 IA**: activity에 `type`(provision/deploy)·`cluster` 연결키, 대시보드 **Provisioning/Deployments/History** 분리 + **중첩 상세**(provisioning⊃deploys), 롤백 **단일-row 승계**·**teardown→deploy cascade**, 자연어 rollback/teardown도 동일 라우팅.
 - **하네스:** overnight-harness 플러그인 기반 (5 engine). `make overnight-kiro-once` 로 smoke. `make dev-up`으로 로컬 스택(MLX+proxy+router+dashboard) 한 방 기동.
 - **Kiro 특화:** aws-ops / cdk-dev / overnight-harness 3개 에이전트 + safety hook + AWS MCP Server.
-- **검증:** `make check` → **649 passed, 1 skipped** (2026-07-14); **provisioning 4-provider parity**(GCP/Azure GKE·AKS 어댑터, plan-first/approved-gated); **On-Prem Day-2 완결**: `onprem_webhook_api` Alertmanager→in-process 4-step + P1 즉시/P2 승인게이트/P3 알림 + **대시보드 Incidents hybrid**(승인 카드 + 타임라인) + **실 executor**(`onprem_runner`, 기본 OFF·`ONPREM_EXECUTOR_LIVE`로 실 kubectl 되돌리기-가능 4조치 restart/undo/**scale**/**polite drain**, kind 라이브 실증) 라이브 실증; Dashboard `next build` 성공; Live 7B provision→deploy→validate ~39s·app/cluster 롤백·hybrid 병합·추적 IA 자연어 4스텝 라이브 실증; **A2A 라이브 E2E**: Phase 1(자체 게이트웨이) + **Phase 2 실 kagent 에이전트**(local Qwen 30B) discovery→JSON-RPC 위임→실 `k8s_get_resources` 진단(2026-07-14).
-- **현재 초점:** **Agent Runtime 호스팅 AgentCore**(Strands→Bedrock AgentCore). GCP/Azure Provision 어댑터 완료. 잔여 외부=Slack App/아티클(사용자 개입).
+- **검증:** `make check` → **669 passed, 1 skipped** (2026-07-14); **Agent Runtime 호스팅 3종**(AgentCore/Agent Engine/Foundry, 실 AWS·GCP preflight 라이브) + **provisioning 4-provider parity**(GCP/Azure GKE·AKS); **On-Prem Day-2 완결**: `onprem_webhook_api` Alertmanager→in-process 4-step + P1 즉시/P2 승인게이트/P3 알림 + **대시보드 Incidents hybrid**(승인 카드 + 타임라인) + **실 executor**(`onprem_runner`, 기본 OFF·`ONPREM_EXECUTOR_LIVE`로 실 kubectl 되돌리기-가능 4조치 restart/undo/**scale**/**polite drain**, kind 라이브 실증) 라이브 실증; Dashboard `next build` 성공; Live 7B provision→deploy→validate ~39s·app/cluster 롤백·hybrid 병합·추적 IA 자연어 4스텝 라이브 실증; **A2A 라이브 E2E**: Phase 1(자체 게이트웨이) + **Phase 2 실 kagent 에이전트**(local Qwen 30B) discovery→JSON-RPC 위임→실 `k8s_get_resources` 진단(2026-07-14).
+- **현재 초점:** **Agent Runtime 호스팅 3종 코드+preflight 완료**(실 create=billable, 승인 대기). GCP/Azure Provision·Runtime 어댑터 완료. 잔여 외부=Slack App/아티클(사용자 개입).
 
 ## Guardrails
 
