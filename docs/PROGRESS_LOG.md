@@ -7,6 +7,15 @@
 
 ---
 
+## 2026-07-15 — AWSome AI Gateway 레퍼런스 Tier 1 반영(4종) + Vercel 404 수정 + GKE 라이브
+
+- Status: 외부 레퍼런스(aws-samples AWSome AI Gateway) 패턴을 코드로 **Tier 1 4종 반영**. 아울러 Vercel 대시보드 404 진단·수정, GKE 실 provision(어댑터 `node_size`)까지.
+- Changed (Tier 1): (1) **Reconciliation gate**(`8f1878f`) — `reconciliation.py`: analyzer의 severity/root_cause가 detector 증거(firing state·metrics·logs·grounding overlap)에 근거하는지 검증, 미근거 시 decision을 **AUTO→APPROVE 강등**(환각 기반 자율조치 차단). `DecisionOutput.reconciliation` 필드+decision handler 배선+파이프라인 surface. 구조적 evidence 없을 땐 vocabulary 체크 skip(on-prem thin-evidence 오탐 방지). (2) **비용 3단계 게이트**(`0a18794`) — `cost_estimator.evaluate_budget()`: OK<SOFT_WARNING(≥80%)<THROTTLE(≥100%·승인필요)<HARD_BLOCK(≥150%), `PLATFORM_MONTHLY_BUDGET_USD`. (3) **회복탄력성**(`de4b92c`) — `circuit_breaker.py`(CLOSED/OPEN/HALF_OPEN, fail-fast+fallback, injectable clock) + webhook `/health/ready`(strict 503) vs `/health`(lenient 200). (4) **비용 서브메트릭**(`6bc541c`) — `deploy_recorder._cost_metrics()`: 트레이스에서 도구별 호출수·reasoning steps·토큰 usage 집계→ACTIVITY `cost_metrics`. `docs/ARCHITECTURE.md`에 레퍼런스 도입 매핑표+Tier 1 완료 표기.
+- Changed (기타): **Vercel 404 수정**(`3e7762e`) — 원인=프로덕션 alias(`platform-agent-red`) stale 바인딩(404) + 매뉴얼 배포가 `.venv-mlx`의 100MB+ metallib 업로드 실패. `.vercelignore`에 `.venv-mlx/*.metallib` 추가→`vercel --prod` 재배포→alias 재바인딩→**200 공개 접근**(대시보드 정상 렌더 확인). GKE 실 provision(`node_size` 지원 `f3e7952`)→즉시 teardown(비용 정리).
+- Verified: 신규 테스트 — reconciliation 9 + budget 9 + circuit_breaker 6 + readiness 2 + cost_metrics 4 = +30. 부분 스위트 전부 green(회귀 없음, on-prem webhook 4개 gate 강등 반영해 수정). `make check` → (gate 실행 중, 별도 확인). 실 Vercel 200·GKE 삭제·비용 $0 확인.
+- Blockers: 없음. 잔여 레퍼런스 Tier 2(agents-as-tools·MCP-over-HTTP·cross-account STS)는 규모 커 별도 세션.
+- Next: (선택) Tier 2 레퍼런스. 외부: Slack App·아티클.
+
 ## 2026-07-14 — Provision 어댑터 라이브: AKS 실 클러스터 provision→검증→teardown + node_size 지원 추가
 
 - Status: provisioning 어댑터(GKE/AKS)를 **실 클러스터로 라이브 검증**(그간 코드+테스트만). Azure 구독의 기본 VM 크기가 제한돼 create가 실패 → **어댑터에 `node_size` 지원 추가**(실 개선)로 해결 후 AKS 실 provision 성공. teardown까지 어댑터로 실증.

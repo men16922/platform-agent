@@ -703,16 +703,16 @@ Browser → Vercel Next.js Server Component / API route
 
 | # | 레퍼런스 패턴 | 우리 접점 | 반영 계획 | 우선순위 |
 |---|---|---|---|---|
-| 1 | **Reconciliation gate / deterministic-tool-first** — 답변의 숫자·사실은 반드시 도구 실행결과에서만 유도(LLM 추론 금지), Python 검증 게이트가 대조 | `guardian.py` · Day-2 `decide→execute` | Guardian에 "실행결과 근거 강제" 게이트 추가 — analyzer/decision의 값이 detector 도구 출력에서 유도됐는지 대조, 아니면 REJECT/재질의 | 🔥 최우선 |
+| 1 | **Reconciliation gate / deterministic-tool-first** — 답변의 숫자·사실은 반드시 도구 실행결과에서만 유도(LLM 추론 금지), Python 검증 게이트가 대조 | `reconciliation.py` · `decision/handler.py` | **✅ 구현완료(`8f1878f`)** — analyzer의 severity/root_cause가 detector 증거(firing state·metrics·logs·grounding)에 근거하는지 검증, 미근거 시 AUTO→APPROVE 강등 | ✅ Tier 1 |
 | 2 | **agents-as-tools 오케스트레이션** — Orchestrator + 전문가(SQL/Validator/Viz/Report) 에이전트, L3 self-consistency | `supervisor.py` · AgentCore(라이브) | supervisor를 "오케스트레이터+전문가 에이전트" 구조로 확장, self-consistency 검증 스텝 | 높음 |
 | 3 | **MCP over HTTP via AgentCore Gateway** — tool_use 가로채기→원격 MCP 호출(SigV4/IRSA)→결과 재주입, 글로벌 kill-switch | MCP Gateway(`TOOL_CATALOG`) | 원격 MCP 커넥터(웹서치/외부 API) 추가 시 이 intercept-reinject 패턴 + 기능별 kill-switch | 중간 |
 | 4 | **Cross-account STS AssumeRole + graceful fallback** — 계정 넘나드는 호출, 실패 시 in-account 폴백 | 멀티-provider 어댑터 | 크로스계정 배포/조치 시 AssumeRole 경로 + 폴백(회복탄력성) | 중간 |
-| 5 | **예산 3단계 게이팅** — HARD_BLOCK / SOFT_WARNING / THROTTLE | `cost_estimator.py` · Guardian | provision/deploy 전 비용 게이트(이번 세션 클러스터 비용 이슈와 직결): 임계 초과 시 차단/경고/스로틀 | 중간 |
-| 6 | **회복탄력성 패턴** — `/health/ready` 503 게이트 · Redis 서킷브레이커 · in-memory 폴백 · pool 튜닝 | `onprem_webhook_api` · 대시보드 API | readiness 게이트 분리(`/health` lenient vs `/health/ready` strict) · 외부 의존(Redis/DDB) 서킷브레이커 | 중간 |
-| 7 | **프로덕션 배포** — Helm chart(env×substrate values) + Terraform 모듈(EKS/Aurora/Redis/Cognito/IRSA) | CDK + kind/k3s | 온프렘/클라우드 프로덕션화 시 Helm+Terraform 구조 참고 | 낮음 |
-| 8 | **비용 서브메트릭** — reasoning_tokens·web_search_count 등 도구별 세분 집계 | `deploy_recorder` · DEPLOY/ACTIVITY 트레이스 | 트레이스에 도구별 비용/토큰 서브메트릭 기록 | 낮음 |
+| 5 | **예산 3단계 게이팅** — HARD_BLOCK / SOFT_WARNING / THROTTLE | `cost_estimator.py` | **✅ 구현완료(`0a18794`)** — `evaluate_budget()`: OK<SOFT_WARNING(≥80%)<THROTTLE(≥100%, 승인필요)<HARD_BLOCK(≥150%), `PLATFORM_MONTHLY_BUDGET_USD` | ✅ Tier 1 |
+| 6 | **회복탄력성 패턴** — `/health/ready` 503 게이트 · 서킷브레이커 · 폴백 | `circuit_breaker.py` · `onprem_webhook_api` | **✅ 구현완료(`de4b92c`)** — CLOSED/OPEN/HALF_OPEN 서킷브레이커(fail-fast+fallback) + `/health/ready`(strict 503) vs `/health`(lenient 200) 분리 | ✅ Tier 1 |
+| 7 | **프로덕션 배포** — Helm chart(env×substrate values) + Terraform 모듈(EKS/Aurora/Redis/Cognito/IRSA) | CDK + kind/k3s | 온프렘/클라우드 프로덕션화 시 Helm+Terraform 구조 참고 | 낮음 (Tier 3) |
+| 8 | **비용 서브메트릭** — reasoning_tokens·도구별 세분 집계 | `deploy_recorder` · ACTIVITY 트레이스 | **✅ 구현완료(`6bc541c`)** — `_cost_metrics()`: 트레이스에서 도구별 호출수·reasoning steps·토큰 usage(input/output) 집계, ACTIVITY 행에 `cost_metrics` 첨부 | ✅ Tier 1 |
 
-**🔥 최우선 도입 = #1 Reconciliation gate.** 레퍼런스의 핵심 신뢰성 장치이자 우리 **Guardian(policy-as-code)** 철학과 정확히 부합한다. 자율 `decide→execute`에서 "LLM이 지어낸 값이 아니라 **실제 진단 도구 결과에만 근거**하도록 강제"하면, 자동 조치의 안전성이 크게 오른다. Day-2 executor가 `ONPREM_EXECUTOR_LIVE`로 실 kubectl을 치는 지금, 이 게이트가 오판·환각 기반 조치를 차단하는 마지막 방어선이 된다.
+**✅ Tier 1 반영 완료 (2026-07-15):** #1 Reconciliation gate · #5 예산 3단계 게이트 · #6 회복탄력성(서킷브레이커+readiness) · #8 비용 서브메트릭 — 4종 모두 코드+테스트로 구현·커밋. 핵심은 **#1 Reconciliation gate**: 우리 **Guardian(policy-as-code)** 철학과 정확히 부합하며, 자율 `decide→execute`에서 "LLM이 지어낸 값이 아니라 **실제 진단 도구 결과에만 근거**하도록 강제"해 Day-2 executor가 `ONPREM_EXECUTOR_LIVE`로 실 kubectl을 치는 지금 환각 기반 조치를 차단하는 마지막 방어선이 된다. **잔여(Tier 2, 로드맵):** #2 agents-as-tools 오케스트레이션 · #3 MCP-over-HTTP 커넥터 · #4 cross-account AssumeRole — 규모가 커 별도 세션. #7(Helm/Terraform 프로덕션)은 Tier 3.
 
 > **비참고 (성격 차이):** Virtual Key 발급·LLM 프록시 라우팅·코딩에이전트(Claude Code/Codex/Cowork) 클라이언트 관리 — 우리는 LLM 게이트웨이가 아니라 플랫폼 ops 에이전트라 무관.
 
