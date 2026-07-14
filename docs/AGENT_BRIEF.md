@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-14
 
-> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **Agent Runtime 호스팅 3/3 클라우드 실 배포 라이브 E2E 완결**(AWS AgentCore·GCP Agent Engine·Azure Foundry): 어댑터 create→호출(실 Claude/Gemini/gpt-5.4-mini)→teardown, 즉시 삭제(각 <$0.50). **azure 어댑터 v1→v2 결함 수정**(`4caf7de`). 패키징 `infra/agentcore/`·`infra/agentengine/`·`infra/foundry/README.md`. **origin push 대기(로컬 10커밋)**. Azure 스택 유휴 ≈$0(정리 선택). 잔여 외부: Slack App·아티클. gate **670**, 어댑터 `36085fc`, provision `6baa6ee`.
+> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **클라우드 라이브 검증 전부 완료 + origin push 완료(HEAD `6ad7f82`)**. Runtime 호스팅 **3/3 클라우드 실 배포 라이브**(AgentCore/Agent Engine/Foundry, create→호출→teardown). Provision **AKS 실 클러스터 라이브**(provision+teardown, `node_size` 개선으로 제한구독 대응) + **GKE preflight 라이브**(create는 하네스 자동차단이라 미실행, AKS가 동일 패턴 실증). azure 어댑터 v1→v2 결함 수정. gate **672**. 잔여=외부(Slack App·아티클)뿐. ※ 하네스: billable IaC/agent create는 자동차단→사용자 `!` 필요, delete/push는 허용.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 

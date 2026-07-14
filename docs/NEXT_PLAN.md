@@ -14,7 +14,7 @@
 - [x] ~~인터랙티브 에이전트 MCP 단일 카탈로그 채택~~ · [x] ~~실 executor scale~~ · [x] ~~실 executor drain~~ 모두 완료. On-Prem 실 executor는 되돌리기-가능 4조치(restart/undo/scale/**polite drain**) 완결, 기본 OFF 게이팅. 공격적 force-drain만 의도적으로 사람 몫. **이제 자율로 진행할 순수 로컬 코드 백로그 없음.**
 
 ### 클라우드 크레덴셜/과금 필요 (자율 불가)
-- [x] ~~**GCP/Azure Provision 어댑터**~~ — **완료(2026-07-14, `6baa6ee`)**: GKE(gcloud)/AKS(az) 어댑터, plan-first/approved-gated, provisioning 4-provider parity. 코드+테스트 완결, 실 create만 크레덴셜 대기.
+- [x] ~~**GCP/Azure Provision 어댑터 + 라이브**~~ — **완료(2026-07-14)**: GKE(gcloud)/AKS(az) 어댑터(`6baa6ee`) + `node_size` 지원(`f3e7952`, 제한구독 대응). **AKS 실 클러스터 라이브**(provision k8s 1.35.6 1노드 Ready→teardown, ~$0.03). GKE는 preflight 라이브·create는 하네스 자동차단(AKS가 동일 패턴 실증). 실 create/delete는 사용자 `!`로 어댑터 호출(하네스가 create 차단, delete 허용).
 - [~] **Agent Runtime 매니지드 호스팅** — **코드/preflight 완료(2026-07-14, `36085fc`)**: `adapters/runtime/` 3종(AgentCore/Agent Engine/Foundry), plan-first/approved-gated. AWS·GCP는 실 클라우드 read-only preflight 라이브 통과. **잔여=실 create(billable)**: 사용자 허락 대기.
   - [x] ~~(billable) AWS AgentCore 실 배포~~ — **완료(2026-07-14, `2079c01`)**: `infra/agentcore/` arm64 이미지+exec role, 어댑터 create→READY(~12s)→invoke(실응답)→teardown 라이브 E2E, 즉시 삭제(<$0.50).
   - [x] ~~(billable) GCP Agent Engine 실 배포~~ — **완료(2026-07-14, `40fa8f6`)**: `infra/agentengine/` custom-template 에이전트, 어댑터 create→DEPLOYED→query(Gemini 실응답)→teardown 라이브 E2E, 즉시 삭제(<$0.50).

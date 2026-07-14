@@ -17,6 +17,7 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **672 passed, 1 skipped** (2026-07-14) — **Provision 어댑터 `node_size` 지원**(GKE `--machine-type`/AKS `--node-vm-size`, 제한구독 대응, +2 test) + **AKS 실 클러스터 라이브**(어댑터 provision k8s 1.35.6 1노드 Ready→teardown). GKE preflight 라이브(create는 하네스 자동차단, AKS가 동일 패턴 실증). 전 커밋 origin push 완료(HEAD `6ad7f82`).
 - `make check` (pytest) → **670 passed, 1 skipped** (2026-07-14) — **Agent Runtime 호스팅 어댑터 3종**(신규 `adapters/runtime/`: AWS AgentCore(boto3)·GCP Agent Engine(vertexai)·Azure Foundry(azure-ai-projects **v2**), plan-first/approved-gated·읽기전용 preflight·teardown 승인 강제, +21 test). **3/3 클라우드 실 배포 라이브 E2E 완결**: 어댑터 create→READY/DEPLOYED/v1→invoke/query/Responses(실 Claude/Gemini/gpt-5.4-mini 응답)→teardown, 즉시 삭제(각 <$0.50). **azure 어댑터 v1→v2 결함 수정**(설치 SDK 2.3.0 불일치→재작성). 패키징/문서: `infra/agentcore/`(arm64)·`infra/agentengine/`(custom-template)·`infra/foundry/README.md`.
 - `make check` (pytest) → **649 passed, 1 skipped** (2026-07-14) — **provisioning 어댑터 4-provider parity**(신규 GCP/Azure GKE·AKS: plan-first/approved-gated·읽기전용 preflight·teardown 승인 강제·tool preflight-only, +13 test) 포함.
 - `make check` (pytest) → **636 passed, 1 skipped** (2026-07-14) — On-Prem 실 executor **scale**(양수 타깃, kind 2→5 라이브) + **polite drain**(--force 없음·PDB 존중, 3노드 kind 라이브 재배치·아웃티지0) + 인터랙티브 에이전트 **단일 카탈로그**(drift-0 불변식) + A2A Phase 2/PROVISION 격리 + On-Prem PATH B webhook/승인 게이트/인시던트 스토어 포함.
