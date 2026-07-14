@@ -19,7 +19,7 @@
 | **Agent Runtime** | Bedrock AgentCore | Vertex AI Agent Engine | Foundry Agent Service | **kagent (CNCF)** |
 | **Day-2 (Event / Orch)** | EventBridge / Step Functions | Pub/Sub / Cloud Workflows | Event Grid / Durable Functions | Webhook / Temporal |
 
-**구현 상태:** Deploy(4-provider) ✅ · On-Prem Provision(Terraform kind + Ansible k3s) ✅ · Day-2(AWS/GCP/Azure) ✅ · **Orchestrator(supervisor) 라우팅 + A2A Agent Card discovery/위임 ✅**(실 kagent 에이전트 대상 라이브 검증, 아래 "Orchestrator + A2A" 섹션) · 클라우드 Provision·Agent Runtime 매니지드 호스팅·MCP Gateway 단일 카탈로그 통합 = 🔲 로드맵.
+**구현 상태:** Deploy(4-provider) ✅ · Provision(4-provider: On-Prem Terraform/Ansible + AWS CDK + **GCP/Azure GKE·AKS 어댑터, AKS 실 클러스터 라이브**) ✅ · Day-2(AWS/GCP/Azure) ✅ · **Agent Runtime 매니지드 호스팅 어댑터 3/3 클라우드 실 배포 라이브**(AgentCore/Agent Engine/Foundry, create→호출→teardown) ✅ · **MCP Gateway 단일 카탈로그**(게이트웨이+인터랙티브 에이전트, 드리프트-0) ✅ · **Orchestrator(supervisor) 라우팅 + A2A Agent Card discovery/위임 ✅**(실 kagent 에이전트 대상 라이브 검증, 아래 "Orchestrator + A2A" 섹션) · 배포 파이프라인↔매니지드 런타임 정면 배선 = 🔲 로드맵.
 
 > **AI Model Router:** 위 "AI Agent (deploy)"는 각 환경의 *네이티브(recommended)* 조합일 뿐이다. 모델(두뇌)과 환경(대상)은 분리돼 있어 어떤 모델이든 어떤 환경에 배포할 수 있고, 적합도만 표기된다 ([상세](#ai-model-router-모델--환경-분리)).
 
@@ -213,14 +213,15 @@
 
 | 환경 | 매니지드 런타임 | 프레임워크(개발) | 우리 매핑 | 상태 |
 |---|---|---|---|---|
-| **AWS** | Bedrock AgentCore Runtime | Strands | Strands 보유 → AgentCore 호스팅 | 🔲 로드맵 |
-| **GCP** | Vertex AI Agent Engine | ADK | ADK 보유 → Agent Engine 배포 | 🔲 로드맵 |
-| **Azure** | Foundry Agent Service (hosted agents) | MS Agent Framework / LangGraph | MSFT SDK 보유 → Foundry 호스팅 | 🔲 로드맵 |
-| **On-Prem** | **kagent (CNCF)** — K8s CRD 에이전트, MCP+A2A | AutoGen 기반 (또는 Pydantic AI/LangGraph 컨테이너) | 현재 Pydantic AI 직접 → kagent가 "on-prem AgentCore" 대응물 | 🔲 로드맵 |
+| **AWS** | Bedrock AgentCore Runtime | Strands | `adapters/runtime/aws.py`(boto3 `bedrock-agentcore-control`) + `infra/agentcore/`(arm64) | ✅ **라이브 E2E** (create→READY→invoke(Claude)→teardown) |
+| **GCP** | Vertex AI Agent Engine | ADK | `adapters/runtime/gcp.py`(`vertexai.agent_engines`) + `infra/agentengine/` | ✅ **라이브 E2E** (create→DEPLOYED→query(Gemini)→teardown) |
+| **Azure** | Foundry Agent Service (hosted agents) | MS Agent Framework / LangGraph | `adapters/runtime/azure.py`(`azure-ai-projects` v2) + `infra/foundry/` | ✅ **라이브 E2E** (create_version→Responses API(gpt-5.4-mini)→teardown) |
+| **On-Prem** | **kagent (CNCF)** — K8s CRD 에이전트, MCP+A2A | AutoGen 기반 (또는 Pydantic AI/LangGraph 컨테이너) | 현재 Pydantic AI 직접 → kagent가 "on-prem AgentCore" 대응물 | ✅ A2A 라이브 (Phase 2 실 kagent) |
 
+- **Agent Runtime 호스팅 어댑터 (✅ 3/3 클라우드 라이브, 2026-07-14):** 신규 `src/agents/adapters/runtime/` 패키지가 provisioning/deployment/execution과 동일한 **plan-first / approved-gated** 계약으로 3종 매니지드 런타임을 통일한다 — 미승인=읽기전용 preflight(list), `approved=True`=실 create, teardown=승인 강제. **실 클라우드에서 라이프사이클 전체를 라이브 검증**(create→호출→삭제, 각 즉시 삭제로 비용 최소화). azure는 설치 SDK가 v2(2.3.0)라 어댑터를 v1→v2 재작성(`create_version`+`PromptAgentDefinition`).
 - **AgentCore는 AWS 매니지드**라 on-prem엔 못 쓴다 → on-prem 대응물은 **kagent** (클러스터 내부 실행, 에이전트=CRD로 Git 관리, MCP/A2A). "완전 오프라인 K8s" 서사와 정확히 부합한다.
 - **AI Model Router → Agent Runtime Router**: 라우팅 키가 `(model, environment)` → `(model, environment, runtime)`로 확장. 각 환경은 네이티브 런타임에서 실행하고, 도구는 **MCP 게이트웨이**로 통합한다.
-- **현재 구현**은 프레임워크 직접 호출(Strands/ADK/MSFT/Pydantic AI) + 자체 로컬 런타임(`local_deploy_api`). 위 매니지드 런타임 호스팅은 로드맵이다.
+- **현재 구현**은 프레임워크 직접 호출(Strands/ADK/MSFT/Pydantic AI) + 자체 로컬 런타임(`local_deploy_api`) **+ 매니지드 런타임 호스팅 어댑터(3/3 라이브)**. 남은 것은 배포 파이프라인이 이 호스팅 경로를 정면 진입점으로 배선하는 통합.
 - **범용 ops로 확장:** 도구셋을 배포(build/push/deploy/validate) 밖으로 넓히고(조회/진단/스케일/롤백/비용 등, MCP 게이트웨이 기반), 시스템프롬프트를 일반화하며, 추론(reasoning) 스트리밍을 추가한다.
 
 출처: [Bedrock AgentCore](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/what-is-bedrock-agentcore.html) · [any framework](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/using-any-agent-framework.html) · [Vertex AI Agent Engine](https://google.github.io/adk-docs/deploy/agent-engine/) · [Foundry Agent Service](https://learn.microsoft.com/en-us/azure/foundry/agents/overview) · [kagent (CNCF)](https://kagent.dev/)
@@ -691,6 +692,29 @@ Browser → Vercel Next.js Server Component / API route
 - IAM trust 관계는 Vercel team (`men16922`), project (`prj_zvAvIBSR99TCVXhaxeAaXeTCahfp`), production/preview 환경으로 명시적으로 엄격히 제한됩니다.
 - 대시보드의 모든 데모 목업 폴백 데이터셋이 완전히 제거되었으며, 인시던트 피드, 배포 포스처, 에이전트 활동 이력 및 감사 로그(Audit Logs)는 모두 실시간 Live 모드로 DynamoDB에서 직접 조회 및 업데이트를 수행합니다.
 - 상세 연동 절차: [`docs/DASHBOARD_LIVE_DATA.md`](DASHBOARD_LIVE_DATA.md)
+
+---
+
+## 외부 레퍼런스 반영 — AWSome AI Gateway (aws-samples)
+
+> 출처: [`aws-samples/sample-agentic-ai-acceleration-kr/projects/awsome-ai-gateway`](https://github.com/aws-samples/sample-agentic-ai-acceleration-kr/tree/main/projects/awsome-ai-gateway) (MIT-0). 사내 코딩 에이전트용 **LLM 관리 게이트웨이**(Virtual Key·예산·레이트리밋·멀티계정 Bedrock 라우팅·AgentCore BI 어시스턴트). 제품 목적(LLM 프록시)은 우리(플랫폼 ops 에이전트)와 다르지만, **AgentCore·MCP·거버넌스·회복탄력성 패턴**이 겹쳐 도입 가치가 있다.
+
+**도입 매핑 (레퍼런스 → 우리 컴포넌트 → 반영):**
+
+| # | 레퍼런스 패턴 | 우리 접점 | 반영 계획 | 우선순위 |
+|---|---|---|---|---|
+| 1 | **Reconciliation gate / deterministic-tool-first** — 답변의 숫자·사실은 반드시 도구 실행결과에서만 유도(LLM 추론 금지), Python 검증 게이트가 대조 | `guardian.py` · Day-2 `decide→execute` | Guardian에 "실행결과 근거 강제" 게이트 추가 — analyzer/decision의 값이 detector 도구 출력에서 유도됐는지 대조, 아니면 REJECT/재질의 | 🔥 최우선 |
+| 2 | **agents-as-tools 오케스트레이션** — Orchestrator + 전문가(SQL/Validator/Viz/Report) 에이전트, L3 self-consistency | `supervisor.py` · AgentCore(라이브) | supervisor를 "오케스트레이터+전문가 에이전트" 구조로 확장, self-consistency 검증 스텝 | 높음 |
+| 3 | **MCP over HTTP via AgentCore Gateway** — tool_use 가로채기→원격 MCP 호출(SigV4/IRSA)→결과 재주입, 글로벌 kill-switch | MCP Gateway(`TOOL_CATALOG`) | 원격 MCP 커넥터(웹서치/외부 API) 추가 시 이 intercept-reinject 패턴 + 기능별 kill-switch | 중간 |
+| 4 | **Cross-account STS AssumeRole + graceful fallback** — 계정 넘나드는 호출, 실패 시 in-account 폴백 | 멀티-provider 어댑터 | 크로스계정 배포/조치 시 AssumeRole 경로 + 폴백(회복탄력성) | 중간 |
+| 5 | **예산 3단계 게이팅** — HARD_BLOCK / SOFT_WARNING / THROTTLE | `cost_estimator.py` · Guardian | provision/deploy 전 비용 게이트(이번 세션 클러스터 비용 이슈와 직결): 임계 초과 시 차단/경고/스로틀 | 중간 |
+| 6 | **회복탄력성 패턴** — `/health/ready` 503 게이트 · Redis 서킷브레이커 · in-memory 폴백 · pool 튜닝 | `onprem_webhook_api` · 대시보드 API | readiness 게이트 분리(`/health` lenient vs `/health/ready` strict) · 외부 의존(Redis/DDB) 서킷브레이커 | 중간 |
+| 7 | **프로덕션 배포** — Helm chart(env×substrate values) + Terraform 모듈(EKS/Aurora/Redis/Cognito/IRSA) | CDK + kind/k3s | 온프렘/클라우드 프로덕션화 시 Helm+Terraform 구조 참고 | 낮음 |
+| 8 | **비용 서브메트릭** — reasoning_tokens·web_search_count 등 도구별 세분 집계 | `deploy_recorder` · DEPLOY/ACTIVITY 트레이스 | 트레이스에 도구별 비용/토큰 서브메트릭 기록 | 낮음 |
+
+**🔥 최우선 도입 = #1 Reconciliation gate.** 레퍼런스의 핵심 신뢰성 장치이자 우리 **Guardian(policy-as-code)** 철학과 정확히 부합한다. 자율 `decide→execute`에서 "LLM이 지어낸 값이 아니라 **실제 진단 도구 결과에만 근거**하도록 강제"하면, 자동 조치의 안전성이 크게 오른다. Day-2 executor가 `ONPREM_EXECUTOR_LIVE`로 실 kubectl을 치는 지금, 이 게이트가 오판·환각 기반 조치를 차단하는 마지막 방어선이 된다.
+
+> **비참고 (성격 차이):** Virtual Key 발급·LLM 프록시 라우팅·코딩에이전트(Claude Code/Codex/Cowork) 클라이언트 관리 — 우리는 LLM 게이트웨이가 아니라 플랫폼 ops 에이전트라 무관.
 
 ---
 
