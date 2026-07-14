@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-14 — On-Prem 실 executor: 로그-only 스텁 → 실 kubectl 원격조치(기본 OFF 게이팅)
+
+- Status: On-Prem Day-2의 **마지막 조각** — executor가 조치를 로그만 찍던 걸 **실제 kubectl 실행**으로. 안전을 위해 **기본 OFF 플래그**(`ONPREM_EXECUTOR_LIVE`) 뒤에 게이팅(기본 동작=로그-only 무변경), **되돌리기 쉬운 액션(rollout restart/undo)만** 실 실행 배선(scale·drain 등 위험/모호한 건 로그-only 유지).
+- Changed: 신규 `src/agents/operations/executor/onprem_runner.py`(gcp_runner 패턴; `_is_live()`=플래그ON&TESTING≠True, `_LIVE_KUBECTL`={RolloutRestart→`rollout restart`, ArgoRollback→`rollout undo`}, 실패 시 raise→executor가 skip 처리). `executor/handler.py` `_run_external_action`의 onprem 분기를 stub→`run_onprem_action`. `tests/test_onprem_runner.py` 7개(기본 로그-only·live restart/undo kubectl args·unwired/누락 로그-only·TESTING 강제 OFF·실패 raise).
+- Verified: `pytest` 21 passed(runner 7 + webhook 14). **실 kind 라이브 실증**: 단일노드 kind에 `payments/payments-api`(nginx, 2 replicas) 배포 → `ONPREM_EXECUTOR_LIVE=true`로 runner 실행 → `kubectl_ok`("deployment restarted") → **파드 실제 교체**(구 RS `6dc8c9cbd9`→0, 신 RS `86f76b7f49`→2). 테스트 클러스터 정리. `make check` → (아래).
+- Blockers: 없음. 기본 OFF라 프로덕션 안전; scale/drain 등은 desired-state 파라미터 필요로 로드맵.
+- Next: (외부/deferred) Slack App·아티클. (로드맵) MCP Gateway 단일 카탈로그·클라우드 Provision.
+
 ## 2026-07-14 — `make dev-up` 원커맨드 스택에 On-Prem Day-2 webhook 통합
 
 - Status: On-Prem Day-2 vertical을 **운영 완결** — `make dev-up` 한 방에 MLX+proxy+router+**webhook(:8078)**+dashboard가 함께 뜨고, 대시보드(기본 `ONPREM_WEBHOOK_URL=:8078`)가 자동으로 On-Prem 승인·인시던트를 hybrid 표시.

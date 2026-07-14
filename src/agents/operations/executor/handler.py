@@ -428,8 +428,12 @@ def _run_external_action(provider: str, action: str, params: dict[str, list[str]
     elif provider == "azure":
         from src.agents.operations.executor.azure_runner import run_azure_action
         run_azure_action(action, params, log)
+    elif provider == "onprem":
+        # Real kubectl remediation, gated off by default (ONPREM_EXECUTOR_LIVE).
+        from src.agents.operations.executor.onprem_runner import run_onprem_action
+        run_onprem_action(action, params, log)
     else:
-        # Default mock fallback for onprem or other cloud providers
+        # Default mock fallback for other providers.
         log.info(
             "executor.external.pending",
             provider=provider,
