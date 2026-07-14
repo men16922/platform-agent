@@ -8,7 +8,14 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from src.agents.ai.gateway.mcp_server import MCPServer, KubectlTool, DockerTool, ToolResult, MCP_TOOLS
+from src.agents.ai.gateway.mcp_server import (
+    MCPServer,
+    KubectlTool,
+    DockerTool,
+    ToolResult,
+    MCP_TOOLS,
+    TOOL_CATALOG,
+)
 from src.agents.ai.gateway.a2a_server import A2AServer, TaskState
 from src.agents.ai.gateway.bridge import McpA2aBridge
 
@@ -30,6 +37,39 @@ class TestMCPToolDefinitions:
         assert "docker_push" in names
         assert "docker_images" in names
         assert "docker_ps" in names
+
+    def test_single_catalog_is_source_of_truth(self):
+        """Discovery (MCP_TOOLS) and dispatch derive from one catalog — no drift."""
+        catalog_names = [spec.name for spec in TOOL_CATALOG]
+        assert len(catalog_names) == len(set(catalog_names))  # unique
+        # Discovery view mirrors the catalog exactly, in order.
+        assert [t.name for t in MCP_TOOLS] == catalog_names
+        assert all(t.parameters == spec.parameters for t, spec in zip(MCP_TOOLS, TOOL_CATALOG))
+        # Every catalog tool is dispatchable, and dispatch has no extra/missing keys.
+        assert set(MCPServer()._tool_map) == set(catalog_names)
+
+    def test_every_catalog_tool_dispatches_to_its_handler(self):
+        server = MCPServer()
+        ok = MagicMock(returncode=0, stdout="ok", stderr="")
+        with (
+            patch("src.agents.ai.gateway.mcp_server._run_cmd", return_value=ToolResult(success=True, output="ok")),
+            patch("src.agents.ai.gateway.mcp_server.subprocess.run", return_value=ok),
+        ):
+            for spec in TOOL_CATALOG:
+                # Minimal valid args per tool so the handler signature is satisfied.
+                args = {
+                    "kubectl_get": {"resource": "pods"},
+                    "kubectl_apply": {"manifest": "{}"},
+                    "kubectl_rollout_status": {"deployment": "web"},
+                    "kubectl_logs": {"pod": "p"},
+                    "kubectl_describe": {"resource": "pod", "name": "p"},
+                    "docker_build": {"tag": "t"},
+                    "docker_push": {"image": "i"},
+                    "docker_images": {},
+                    "docker_ps": {},
+                }[spec.name]
+                result = server.call_tool(spec.name, args)
+                assert isinstance(result, ToolResult) and result.success
 
 
 class TestMCPServer:

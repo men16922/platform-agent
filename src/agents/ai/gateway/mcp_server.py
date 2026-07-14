@@ -14,6 +14,7 @@ Usage:
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -29,11 +30,29 @@ class ToolResult:
 
 @dataclass
 class ToolDefinition:
-    """MCP tool definition with schema."""
+    """MCP tool definition with schema (the discovery view of a catalog entry)."""
 
     name: str
     description: str
     parameters: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class ToolSpec:
+    """One entry in the single tool catalog — binds discovery schema to its handler.
+
+    The catalog (``TOOL_CATALOG``) is the single source of truth: both the
+    discovery list (``MCP_TOOLS``) and the server's name→handler dispatch derive
+    from it, so a tool is declared in exactly one place.
+    """
+
+    name: str
+    description: str
+    parameters: dict[str, Any]
+    handler: Callable[..., ToolResult]
+
+    def definition(self) -> ToolDefinition:
+        return ToolDefinition(name=self.name, description=self.description, parameters=self.parameters)
 
 
 def _run_cmd(cmd: list[str], timeout: int = 30) -> ToolResult:
@@ -128,54 +147,71 @@ class DockerTool:
         return _run_cmd(cmd)
 
 
-# MCP Tool definitions (schema for discovery)
-MCP_TOOLS: list[ToolDefinition] = [
-    ToolDefinition(
-        name="kubectl_get",
-        description="Get Kubernetes resources (pods, deployments, services, etc.)",
-        parameters={"resource": "string", "namespace": "string", "name": "string", "output": "string"},
+# ---------------------------------------------------------------------------
+# Single tool catalog — the ONE place each gateway tool is declared. Discovery
+# (MCP_TOOLS) and dispatch (MCPServer._tool_map) both derive from this, so
+# kubectl/docker capabilities are governed by a single catalog rather than three
+# hand-synced lists. External A2A/MCP agents and the bridge share this catalog.
+# ---------------------------------------------------------------------------
+TOOL_CATALOG: list[ToolSpec] = [
+    ToolSpec(
+        "kubectl_get",
+        "Get Kubernetes resources (pods, deployments, services, etc.)",
+        {"resource": "string", "namespace": "string", "name": "string", "output": "string"},
+        KubectlTool.get,
     ),
-    ToolDefinition(
-        name="kubectl_apply",
-        description="Apply a Kubernetes manifest",
-        parameters={"manifest": "string", "namespace": "string"},
+    ToolSpec(
+        "kubectl_apply",
+        "Apply a Kubernetes manifest",
+        {"manifest": "string", "namespace": "string"},
+        KubectlTool.apply,
     ),
-    ToolDefinition(
-        name="kubectl_rollout_status",
-        description="Check rollout status of a deployment",
-        parameters={"deployment": "string", "namespace": "string"},
+    ToolSpec(
+        "kubectl_rollout_status",
+        "Check rollout status of a deployment",
+        {"deployment": "string", "namespace": "string"},
+        KubectlTool.rollout_status,
     ),
-    ToolDefinition(
-        name="kubectl_logs",
-        description="Get pod logs",
-        parameters={"pod": "string", "namespace": "string", "tail": "integer"},
+    ToolSpec(
+        "kubectl_logs",
+        "Get pod logs",
+        {"pod": "string", "namespace": "string", "tail": "integer"},
+        KubectlTool.logs,
     ),
-    ToolDefinition(
-        name="kubectl_describe",
-        description="Describe a Kubernetes resource",
-        parameters={"resource": "string", "name": "string", "namespace": "string"},
+    ToolSpec(
+        "kubectl_describe",
+        "Describe a Kubernetes resource",
+        {"resource": "string", "name": "string", "namespace": "string"},
+        KubectlTool.describe,
     ),
-    ToolDefinition(
-        name="docker_build",
-        description="Build a Docker image",
-        parameters={"tag": "string", "context": "string"},
+    ToolSpec(
+        "docker_build",
+        "Build a Docker image",
+        {"tag": "string", "context": "string"},
+        DockerTool.build,
     ),
-    ToolDefinition(
-        name="docker_push",
-        description="Push a Docker image to a registry",
-        parameters={"image": "string"},
+    ToolSpec(
+        "docker_push",
+        "Push a Docker image to a registry",
+        {"image": "string"},
+        DockerTool.push,
     ),
-    ToolDefinition(
-        name="docker_images",
-        description="List Docker images",
-        parameters={"filter_name": "string"},
+    ToolSpec(
+        "docker_images",
+        "List Docker images",
+        {"filter_name": "string"},
+        DockerTool.images,
     ),
-    ToolDefinition(
-        name="docker_ps",
-        description="List running containers",
-        parameters={"all_containers": "boolean"},
+    ToolSpec(
+        "docker_ps",
+        "List running containers",
+        {"all_containers": "boolean"},
+        DockerTool.ps,
     ),
 ]
+
+# Discovery view, derived from the catalog (kept as the module's public schema list).
+MCP_TOOLS: list[ToolDefinition] = [spec.definition() for spec in TOOL_CATALOG]
 
 
 class MCPServer:
@@ -184,21 +220,12 @@ class MCPServer:
     def __init__(self):
         self._kubectl = KubectlTool()
         self._docker = DockerTool()
-        self._tool_map = {
-            "kubectl_get": self._kubectl.get,
-            "kubectl_apply": self._kubectl.apply,
-            "kubectl_rollout_status": self._kubectl.rollout_status,
-            "kubectl_logs": self._kubectl.logs,
-            "kubectl_describe": self._kubectl.describe,
-            "docker_build": self._docker.build,
-            "docker_push": self._docker.push,
-            "docker_images": self._docker.images,
-            "docker_ps": self._docker.ps,
-        }
+        # Dispatch derives from the single catalog — no hand-synced name→handler map.
+        self._tool_map = {spec.name: spec.handler for spec in TOOL_CATALOG}
 
     @property
     def tools(self) -> list[ToolDefinition]:
-        """List available tools."""
+        """List available tools (the catalog's discovery view)."""
         return MCP_TOOLS
 
     def call_tool(self, name: str, arguments: dict[str, Any] | None = None) -> ToolResult:

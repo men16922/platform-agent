@@ -293,7 +293,7 @@
 
 - **Orchestrator = supervisor 라우터 ✅**: NL 요청이 provision / deploy / 진단 중 무엇인지 판단 → 해당 전문 에이전트에게 **A2A**로 위임. `src/agents/ai/supervisor.py`가 이 라우팅/discovery/위임을 구현하며, 엔드포인트는 role별 env(`PLATFORM_{PROVISION,DEPLOY,KAGENT}_A2A_URL`)로 주입한다.
 - **A2A (Agent-to-Agent) ✅:** 우리 supervisor ↔ **실 kagent 에이전트** 상호운용을 라이브 검증. kagent 카드는 `preferredTransport=JSONRPC`, `protocolVersion=0.3` — supervisor가 카드의 transport에 맞춰 JSON-RPC `message/send`로 위임한다(A2A 필수 `messageId` 포함). skill 매칭은 role별 특화어로 **capability 격리**(deploy-only/diagnostic 카드 교차 위임 거부).
-- **MCP Gateway = 단일 거버넌스 도구 카탈로그** (AgentCore Gateway 스타일) — 🔲 로드맵.
+- **MCP Gateway = 단일 거버넌스 도구 카탈로그** (AgentCore Gateway 스타일) — **기반 ✅**: 게이트웨이가 `TOOL_CATALOG`(단일 source-of-truth)에서 discovery+dispatch를 파생(구현/스키마/dispatch 삼중 중복 제거, 드리프트-0 불변식 테스트). 외부 A2A/MCP·bridge가 공유. **잔여 🔲**: 인터랙티브 에이전트(`local_deployer`)의 이 카탈로그 채택(배포 경로 리팩터).
 
 **현재 vs 타깃:**
 
@@ -301,7 +301,7 @@
 |---|---|---|
 | 라우팅 | AI Model Router (model × env × role) **+ Orchestrator supervisor (요청 → 에이전트) ✅** | supervisor를 `local_deploy_api` 정면 진입점으로 배선 |
 | 에이전트 연결 | **A2A 상호운용 ✅** (실 kagent 카드 discovery→위임 라이브 검증) | provision/deploy 전문가도 상시 A2A 서버로 노출 |
-| 도구 | in-process(인터랙티브) + MCP(A2A) **분리** | **MCP Gateway 단일 카탈로그** |
+| 도구 | in-process(인터랙티브) + MCP(A2A) 분리; **게이트웨이 카탈로그는 단일 source-of-truth ✅**(`TOOL_CATALOG`) | 인터랙티브도 **MCP Gateway 단일 카탈로그** 채택 |
 
 **레퍼런스 (`whchoi98/awsops`):** AgentCore Runtime + Strands + 다수 MCP 게이트웨이 + route classifier — 정확히 이 Orchestrator + MCP 패턴이다.
 

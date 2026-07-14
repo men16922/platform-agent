@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-14 — MCP Gateway 단일 도구 카탈로그: 삼중 중복 → 단일 source-of-truth
+
+- Status: ARCHITECTURE "MCP Gateway 단일 카탈로그" 타깃의 **기반 확립**. 게이트웨이가 도구를 **3곳**(구현 static 메서드 + `MCP_TOOLS` 스키마 리스트 + `MCPServer._tool_map` dispatch)에 손으로 동기화하던 걸 **단일 `TOOL_CATALOG`**(name+desc+params+handler)로 수렴 — discovery(`MCP_TOOLS`)와 dispatch를 카탈로그에서 파생. 도구 하나 추가 = 카탈로그 1곳(+구현). 외부 A2A/MCP 에이전트와 bridge가 이 단일 카탈로그를 공유.
+- Changed: `gateway/mcp_server.py` — `ToolSpec`(frozen, handler 포함) + `TOOL_CATALOG` 도입, `MCP_TOOLS`=`[s.definition() for s in TOOL_CATALOG]` 파생, `MCPServer._tool_map`=카탈로그 파생(하드코딩 맵 제거). **공개 API 전부 보존**(MCPServer/KubectlTool/DockerTool/ToolResult/ToolDefinition/MCP_TOOLS/_run_cmd — bridge·테스트 무변경). `test_gateway.py` +2 불변식 테스트(discovery↔dispatch↔catalog 일치·드리프트 0, 전 도구 dispatch 검증).
+- Verified: `pytest tests/test_gateway.py` 32 passed(기존 30 회귀 없음 + 신규 2). `make check` → **626 passed, 1 skipped**.
+- Blockers: 없음.
+- Next: (로드맵) **인터랙티브 에이전트(local_deployer)의 카탈로그 채택** — 지금은 게이트웨이(A2A/MCP)만 단일 카탈로그; 인터랙티브 in-process 도구와의 완전 수렴은 더 큰 후속 단계(배포 경로 리팩터, 리스크 큼). (외부) Slack App·아티클.
+
 ## 2026-07-14 — On-Prem 실 executor: 로그-only 스텁 → 실 kubectl 원격조치(기본 OFF 게이팅)
 
 - Status: On-Prem Day-2의 **마지막 조각** — executor가 조치를 로그만 찍던 걸 **실제 kubectl 실행**으로. 안전을 위해 **기본 OFF 플래그**(`ONPREM_EXECUTOR_LIVE`) 뒤에 게이팅(기본 동작=로그-only 무변경), **되돌리기 쉬운 액션(rollout restart/undo)만** 실 실행 배선(scale·drain 등 위험/모호한 건 로그-only 유지).
