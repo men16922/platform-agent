@@ -17,10 +17,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies.gcp]
-dependencies = ["google-adk>=1.0"]
+dependencies = ["google-adk>=1.0", "google-cloud-aiplatform>=1.90"]
 
 [project.optional-dependencies.azure]
-dependencies = ["agent-framework>=1.0", "azure-identity>=1.15"]
+dependencies = ["agent-framework>=1.0", "azure-identity>=1.15", "azure-ai-projects>=1.0"]
 
 [project.optional-dependencies.onprem]
 dependencies = ["pydantic-ai-slim[openai]>=2.9", "mlx-lm>=0.19"]
