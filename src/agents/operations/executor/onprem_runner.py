@@ -12,12 +12,19 @@ current kubeconfig context points at:
     ONPREM-RolloutRestartWorkload -> kubectl rollout restart deployment/<w> -n <ns>
     ONPREM-ArgoRolloutRollback    -> kubectl rollout undo    deployment/<w> -n <ns>
     ONPREM-ScaleWorkload          -> kubectl scale deployment/<w> --replicas=<n> -n <ns>
+    ONPREM-DrainNode              -> kubectl drain <node> --ignore-daemonsets --timeout=90s
 
 Scale is a desired-state action, so it only runs live when the alert carries a
 positive target replica count (``DesiredReplicas``); a missing/zero/invalid count
 stays log-only — scale-to-zero is a shutdown that needs a human, not automation.
 
-Everything else (node drain, disk/volume ops, …) stays log-only even when live —
+Drain is node-level, so it only runs live when the alert names a node
+(``NodeName``). It is a **polite drain**: deliberately no ``--force`` and no
+``--delete-emptydir-data``, so kubectl honors PodDisruptionBudgets and refuses
+(fails -> executor skips) on unmanaged or local-data pods rather than causing an
+outage or losing data. Aggressive force-drain stays a human decision.
+
+Everything else (disk/volume ops, cert renewal, …) stays log-only even when live —
 those need parameters the alert doesn't carry, so they remain a human/roadmap
 decision.
 """
@@ -67,6 +74,17 @@ def _kubectl_args(action: str, params: dict[str, list[str]], log: Any) -> list[s
         if namespace:
             args += ["-n", namespace]
         return args
+
+    if action == "ONPREM-DrainNode":
+        node = (params.get("NodeName") or [""])[0]
+        if not node:
+            log.info("onprem_runner.live_missing_target", action=action, params=params)
+            return None
+        # Polite drain: cordon + evict only what's safely evictable. Deliberately NO
+        # --force and NO --delete-emptydir-data, so kubectl honors PodDisruptionBudgets
+        # and refuses (fails -> executor skips) on unmanaged or local-data pods rather
+        # than causing an outage or losing data. Aggressive force-drain stays human-only.
+        return ["drain", node, "--ignore-daemonsets", "--timeout=90s"]
 
     verb = _LIVE_KUBECTL.get(action)
     if verb is None:

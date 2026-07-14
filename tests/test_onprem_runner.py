@@ -60,9 +60,30 @@ def test_live_unwired_action_is_log_only(captured, monkeypatch):
     monkeypatch.setenv("ONPREM_EXECUTOR_LIVE", "true")
     monkeypatch.delenv("TESTING", raising=False)
     log = _Log()
-    onprem_runner.run_onprem_action("ONPREM-DrainNode", PARAMS, log)
+    onprem_runner.run_onprem_action("ONPREM-CleanupDiskSpace", PARAMS, log)
     assert captured == []
     assert "onprem_runner.live_unwired" in log.events
+
+
+def test_live_drain_runs_polite_kubectl(captured, monkeypatch):
+    # Polite drain: --ignore-daemonsets + bounded timeout, but NO --force and NO
+    # --delete-emptydir-data, so PDBs are honored and data-risky pods block it.
+    monkeypatch.setenv("ONPREM_EXECUTOR_LIVE", "true")
+    monkeypatch.delenv("TESTING", raising=False)
+    params = {"ClusterName": ["prod"], "NodeName": ["worker-3"]}
+    onprem_runner.run_onprem_action("ONPREM-DrainNode", params, _Log())
+    assert captured == [["drain", "worker-3", "--ignore-daemonsets", "--timeout=90s"]]
+    args = captured[0]
+    assert "--force" not in args and "--delete-emptydir-data" not in args
+
+
+def test_live_drain_missing_node_is_log_only(captured, monkeypatch):
+    monkeypatch.setenv("ONPREM_EXECUTOR_LIVE", "true")
+    monkeypatch.delenv("TESTING", raising=False)
+    log = _Log()
+    onprem_runner.run_onprem_action("ONPREM-DrainNode", {"ClusterName": ["prod"]}, log)
+    assert captured == []
+    assert "onprem_runner.live_missing_target" in log.events
 
 
 def test_live_scale_runs_kubectl(captured, monkeypatch):

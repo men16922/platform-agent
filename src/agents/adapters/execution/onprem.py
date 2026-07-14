@@ -80,10 +80,20 @@ def _parameters_for(action: str, incident: NormalizedIncident) -> dict[str, list
             }
         )
 
+    if action == "ONPREM-DrainNode":
+        # Node-level action: carry the node name (not a workload) from the alert
+        # labels so the runner can `kubectl drain <node>`. Absent a node, the param
+        # is dropped and the runner stays log-only.
+        return _compact(
+            {
+                "ClusterName": [labels.get("cluster", "")],
+                "NodeName": [labels.get("node", labels.get("instance", ""))],
+            }
+        )
+
     if action in {
         "ONPREM-RolloutRestartWorkload",
         "ONPREM-ArgoRolloutRollback",
-        "ONPREM-DrainNode",
     }:
         return _compact(
             {

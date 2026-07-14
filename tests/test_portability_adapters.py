@@ -233,6 +233,19 @@ class TestOnPremAdapter:
         assert action["action"] == "ONPREM-ScaleWorkload"
         assert action["parameters"]["DesiredReplicas"] == ["5"]
 
+    def test_resolve_onprem_drain_carries_node(self):
+        incident = get_signal_adapter("onprem").normalise(
+            {
+                "status": "firing",
+                "commonLabels": {"alertname": "KubeNodeNotReady", "service": "checkout-api", "namespace": "checkout"},
+                "alerts": [{"startsAt": "2026-04-12T01:20:00Z", "labels": {"node": "worker-3", "pod": "checkout-api-x"}}],
+            }
+        )
+        action = get_execution_adapter("onprem").resolve_action("drain_node", incident)
+
+        assert action["action"] == "ONPREM-DrainNode"
+        assert action["parameters"]["NodeName"] == ["worker-3"]
+
     def test_resolve_onprem_scale_without_replicas_omits_param(self):
         incident = get_signal_adapter("onprem").normalise(
             {
