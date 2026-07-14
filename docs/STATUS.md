@@ -17,11 +17,11 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` (pytest) → **617 passed, 1 skipped** (2026-07-14) — A2A Phase 2/PROVISION 격리 + **On-Prem PATH B webhook + 승인 게이트 + 인시던트 스토어 14 테스트**(`test_onprem_webhook.py`) 포함.
+- `make check` (pytest) → **633 passed, 1 skipped** (2026-07-14) — On-Prem 실 executor **scale**(kubectl scale, 양수 타깃 게이팅, kind 2→5 라이브) + 인터랙티브 에이전트 **단일 카탈로그**(drift-0 불변식) + A2A Phase 2/PROVISION 격리 + On-Prem PATH B webhook/승인 게이트/인시던트 스토어 포함.
 - **On-Prem PATH B webhook + Approval Flow 라이브 스모크(2026-07-14)** → `uvicorn onprem_webhook_api:app :8078`. `POST /webhook/alertmanager`가 in-process 4-step(detect→analyze→decide→execute) 실행; Guardian 게이팅 **P1=즉시 실행·P2=parking·P3=알림만**. P2 라이브 루프: pending_approval→`GET /pending`→`POST /approve/{id}`(decision 재생 실행)→approved+incident_id. 완전 오프라인.
 - **대시보드 On-Prem 연동(2026-07-14)** → Incidents 페이지 (1) "Pending Remediation Approvals"가 AWS+On-Prem(webhook `/pending`) **hybrid 병합**(source 배지)·Approve/Reject 소스별 SFN/webhook 라우팅, (2) **인시던트 타임라인**도 On-Prem 인시던트(webhook `/incidents`, offline 스토어 `onprem_incidents`)를 hybrid 병합(ON-PREM 배지). `tsc` 0·`next build` 성공; `next start`+webhook로 승인 카드·타임라인 인시던트 렌더 헤드리스 실증(INC-1121DAB7).
-- **On-Prem 실 executor(2026-07-14)** → `onprem_runner`가 기본 로그-only, `ONPREM_EXECUTOR_LIVE=true` 시 실 kubectl(`rollout restart`/`undo`만; scale/drain 로드맵). **실 kind 라이브 실증**: nginx 워크로드에 rollout restart 실행→파드 실제 교체(구/신 RS 확인). 기본 OFF라 프로덕션 안전.
-- **MCP Gateway 단일 카탈로그(2026-07-14)** → 게이트웨이 도구를 `TOOL_CATALOG`(단일 source-of-truth)로 수렴, `MCP_TOOLS`(discovery)+`_tool_map`(dispatch) 파생(삼중 중복 제거). 공개 API 보존, 불변식 테스트 추가. 인터랙티브 에이전트 카탈로그 채택은 로드맵.
+- **On-Prem 실 executor(2026-07-14)** → `onprem_runner`가 기본 로그-only, `ONPREM_EXECUTOR_LIVE=true` 시 실 kubectl. 되돌리기-쉬운 3조치: `rollout restart`/`undo` + **`scale --replicas=N`**(양수 타깃일 때만; 누락/0/비정수→log-only, scale-to-0=셧다운 가드). **실 kind 라이브 실증**: rollout restart→파드 교체, **scale 2→5 실제 확장**(5/5 ready)·scale-to-0 log-only. drain은 위험→로드맵. 기본 OFF라 프로덕션 안전.
+- **단일 도구 카탈로그(2026-07-14)** → (1) **게이트웨이**: `TOOL_CATALOG`에서 `MCP_TOOLS`(discovery)+`_tool_map`(dispatch) 파생. (2) **인터랙티브 `local_deployer`**: `AGENT_TOOL_CATALOG`에서 `ALL_OPS_TOOLS`(dispatch)+시스템프롬프트 `## Tools` 인벤토리(discovery) 파생, 프롬프트↔등록 drift-0 불변식 테스트. 두 카탈로그는 레이어 구분(raw kubectl/docker MCP vs 어댑터-백드 에이전트 도구)이라 별도 유지.
 - **A2A Phase 2 라이브 E2E(2026-07-14)** → 실 kagent 0.9.11 에이전트(local MLX Qwen 30B) 대상 supervisor HTTP 카드 discovery→skill 매칭→JSON-RPC 위임→실 `k8s_get_resources` 도구 진단 반환. 증거: `docs/evidence/a2a-phase2-live-e2e.log`.
 - `make check` (pytest) → **600 passed, 1 skipped** (2026-07-12) — AI Model Router / Pydantic AI On-Prem 에이전트 / MLX proxy / deploy recorder(+cascade) / ops_tools / provisioning 어댑터 테스트 포함
 - **LinkedIn 데모 비디오 편집(2026-07-12)** → `docs/post/local-onprem.mov` 원본 영상을 18.2초(1.0MB)로 구간 및 배속(타임랩스) 편집하고, 각 7개 주요 구간의 자막(Terraform 등 실제 실행 매핑)을 영상 하단에 병합한 `local-onprem-edited.mp4` 제작 완료.

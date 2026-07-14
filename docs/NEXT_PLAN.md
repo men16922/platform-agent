@@ -6,13 +6,13 @@
 
 ## 즉시 결정 필요
 
-- [ ] **origin push 결정** — 이번 세션 **로컬 커밋 11개**(main ahead 11, `b211ba9`…`938e890`)가 미push. 전부 gate-green(626 passed) 검증 완료. push 여부 사용자 지정.
+- [ ] **origin push 결정** — 이번 세션 **로컬 커밋 2개**(main ahead 2, `bfae1b0` scale·`8f36bb9` catalog) 미push. 전부 gate-green(633 passed) 검증 완료. push 여부 사용자 지정. (세션 시작 시 이전 12커밋은 push 완료.)
 
 ## 열린 작업 (로드맵 — 성격별)
 
 ### 로컬·자율 가능 (리스크 있음)
-- [ ] **인터랙티브 에이전트 MCP 단일 카탈로그 채택** — 게이트웨이는 `TOOL_CATALOG` 단일 source-of-truth 완료(2026-07-14). 잔여: `local_deployer`의 in-process 도구를 이 카탈로그로 수렴(배포 경로 리팩터, 회귀 리스크 큼 → 신중히).
-- [ ] **실 executor scale/drain 확장** — `onprem_runner`가 rollout restart/undo만 실 실행. scale은 desired-state(replica 목표) 파라미터 설계 필요, drain은 위험 → 정책 선행.
+- [x] ~~**인터랙티브 에이전트 MCP 단일 카탈로그 채택**~~ — **완료(2026-07-14)**: `local_deployer`가 `AGENT_TOOL_CATALOG` 단일 source-of-truth에서 dispatch+discovery 파생, 드리프트-0 불변식 테스트. 게이트웨이 `TOOL_CATALOG`와는 레이어 구분(어댑터-백드 에이전트 도구 vs raw kubectl/docker) → 별도 카탈로그. **미수행(의도적)**: 배포 경로를 게이트웨이 raw 카탈로그로 완전 병합하는 건 레이어가 달라 부적절.
+- [x] ~~**실 executor scale 확장**~~ — **완료(2026-07-14)**: `onprem_runner`에 `ONPREM-ScaleWorkload`→`kubectl scale --replicas=N` 배선(양수 타깃일 때만, kind 2→5 라이브 실증). **잔여: drain** — 위험 → 정책 선행 필요, 로드맵 유지.
 
 ### 클라우드 크레덴셜/과금 필요 (자율 불가)
 - [ ] **GCP/Azure Provision 어댑터** — On-Prem(Terraform/Ansible)은 완료, 클라우드 Provision은 미구현. WIF/OIDC 크레덴셜·과금 필요.
@@ -25,7 +25,7 @@
 
 ## 참고 — 2026-07-14 세션 완료 (상세는 PROGRESS_LOG)
 
-A2A Phase 2(실 kagent 라이브+messageId 버그) · PROVISION 격리 · ARCHITECTURE 정합화 · **On-Prem Day-2 전체 vertical**(PATH B webhook→승인 게이트→대시보드 승인/타임라인 hybrid→실 executor kubectl) · MCP Gateway 단일 카탈로그(기반) · docs tidy.
+A2A Phase 2(실 kagent 라이브+messageId 버그) · PROVISION 격리 · ARCHITECTURE 정합화 · **On-Prem Day-2 전체 vertical**(PATH B webhook→승인 게이트→대시보드 승인/타임라인 hybrid→실 executor kubectl **rollout+scale**) · MCP Gateway 단일 카탈로그 · **인터랙티브 에이전트 단일 카탈로그**(drift-0 불변식) · docs tidy.
 
 ## 작업 규칙
 

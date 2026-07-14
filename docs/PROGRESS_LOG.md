@@ -7,6 +7,22 @@
 
 ---
 
+## 2026-07-14 — 인터랙티브 에이전트 단일 도구 카탈로그: 프롬프트↔등록 드리프트 제거
+
+- Status: 게이트웨이의 단일-카탈로그 규율을 **인터랙티브 `local_deployer` 에이전트**에도 적용. 기존엔 시스템 프롬프트의 `## Tools` 인벤토리를 **손으로** 적고 `ALL_OPS_TOOLS`(등록)와 수동 동기화 → 게이트웨이가 고쳤던 드리프트 위험 그대로였음. **`AGENT_TOOL_CATALOG` 단일 source-of-truth** 도입: dispatch(`ALL_OPS_TOOLS`, Pydantic AI 등록)와 discovery(프롬프트 인벤토리, LLM이 안다고 듣는 도구)를 **둘 다 카탈로그에서 파생** → 도구 추가=1곳, 드리프트 불가.
+- Changed: `local_deployer.py` — 프롬프트를 `_SYSTEM_PROMPT_TEMPLATE`(`__TOOLS__` 센티넬)로 분리, `AgentTool`(frozen: func+category+hint)+`AGENT_TOOL_CATALOG`(13개: investigate5/provision2/deploy5/recover1) 도입, `_render_tool_inventory()`가 `## Tools` 마크다운 생성, `ALL_OPS_TOOLS`=`[t.func for t in CATALOG]` 파생. **레이어 구분 명시**: 게이트웨이 `TOOL_CATALOG`(raw kubectl/docker MCP 핸들러)와 달리 이건 상위 어댑터-백드 LLM-튜닝 에이전트 도구 → 별도 카탈로그 유지(병합 아님). `test_local_deployer.py` +2(discovery==dispatch==catalog==source-lists union 불변식·카테고리 유효성).
+- Verified: `pytest tests/test_local_deployer.py` 10 passed. **행위 보존**: 동일 13함수 등록(TestModel drive 테스트 통과), 프롬프트 인벤토리는 등가 내용으로 재생성(도구별 힌트+동일 카테고리). `make check` → **633 passed, 1 skipped**. (라이브 MLX 7B 경로 재실행 안 함 — 프롬프트 변경은 가산적 명료화, 결정론 테스트가 배선 커버.)
+- Blockers: 없음. 잔여(로드맵): 배포 경로 전체 리팩터(어댑터 튜닝 도구를 게이트웨이 raw 카탈로그로 수렴)는 레이어가 달라 의도적으로 미수행.
+- Next: (외부/deferred) Slack App·아티클. (로드맵) GCP/Azure Provision·Agent Runtime(크레덴셜 필요).
+
+## 2026-07-14 — On-Prem 실 executor 확장: kubectl scale(양수 타깃 게이팅)
+
+- Status: On-Prem Day-2 실 executor의 **세 번째 되돌리기-쉬운 조치** 추가 — rollout restart/undo에 이어 `ONPREM-ScaleWorkload`→`kubectl scale --replicas=N`. scale은 desired-state라 알림이 목표 replica를 실어와야 실행되게 게이팅.
+- Changed: `execution/onprem.py` — `ONPREM-ScaleWorkload` 분기 분리, 알림 라벨(`desired_replicas`/`replicas`)에서 `DesiredReplicas` 파라미터 스레딩(없으면 `_compact`가 드롭). `onprem_runner.py` — `_kubectl_args()` 헬퍼로 argv 빌드 분리, scale은 `_positive_int()`로 **양수(≥1)일 때만** 실행(누락/0/비정수→log-only, scale-to-0=셧다운은 사람 필요). 여전히 `ONPREM_EXECUTOR_LIVE` 기본 OFF. `test_onprem_runner.py` 7→10(scale 실행·replicas 누락·scale-to-0 가드), `test_portability_adapters.py` +2(DesiredReplicas 스레딩·라벨 부재 시 생략), unwired 테스트를 DrainNode로 교체.
+- Verified: `pytest tests/test_onprem_runner.py tests/test_portability_adapters.py` 22 passed. **실 kind 라이브 실증**: nginx `payments/payments-api`(2 replicas) 배포 → runner로 scale→**2→5 실제 확장**(5/5 ready) → scale-to-0은 runner가 `live_missing_target`로 log-only(replicas 5 불변) → 클러스터 정리. `make check` → **631 passed, 1 skipped**.
+- Blockers: 없음. drain은 위험(정책 선행) → 로드맵 유지.
+- Next: (외부/deferred) Slack App·아티클. (로드맵) 인터랙티브 에이전트 카탈로그 채택(아래 세션에서 완료).
+
 ## 2026-07-14 — MCP Gateway 단일 도구 카탈로그: 삼중 중복 → 단일 source-of-truth
 
 - Status: ARCHITECTURE "MCP Gateway 단일 카탈로그" 타깃의 **기반 확립**. 게이트웨이가 도구를 **3곳**(구현 static 메서드 + `MCP_TOOLS` 스키마 리스트 + `MCPServer._tool_map` dispatch)에 손으로 동기화하던 걸 **단일 `TOOL_CATALOG`**(name+desc+params+handler)로 수렴 — discovery(`MCP_TOOLS`)와 dispatch를 카탈로그에서 파생. 도구 하나 추가 = 카탈로그 1곳(+구현). 외부 A2A/MCP 에이전트와 bridge가 이 단일 카탈로그를 공유.

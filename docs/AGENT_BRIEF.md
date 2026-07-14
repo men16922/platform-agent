@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-14
 
-> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **① origin push 결정**(로컬 커밋 11개 미push, main ahead 11, 전부 gate-green 626). ② 남은 로드맵은 성격별: 로컬-자율(인터랙티브 MCP 카탈로그 채택·실 executor scale/drain, 리스크有), 클라우드(GCP/Azure Provision·Agent Runtime, 크레덴셜 필요), 외부(Slack App·아티클). ※ 2026-07-14 완료: A2A Phase 2 실 kagent + **On-Prem Day-2 전체 vertical**(PATH B webhook→승인 게이트→대시보드 승인/타임라인 hybrid→실 executor kubectl, kind 라이브 실증) + MCP Gateway 단일 카탈로그(기반). 모든 인프라(kind/MLX) 정리 완료.
+> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **① origin push 결정**(로컬 커밋 2개 미push, main ahead 2 `bfae1b0`+`8f36bb9`, 전부 gate-green 633). ② 남은 로드맵: 로컬-자율(실 executor **drain**만 잔여, 위험→정책 선행), 클라우드(GCP/Azure Provision·Agent Runtime, 크레덴셜 필요), 외부(Slack App·아티클). ※ 2026-07-14 완료: A2A Phase 2 실 kagent + **On-Prem Day-2 전체 vertical**(webhook→승인 게이트→대시보드 hybrid→실 executor kubectl **rollout+scale**, kind 라이브) + **단일 도구 카탈로그**(게이트웨이+인터랙티브 에이전트, drift-0). 모든 인프라(kind/MLX) 정리 완료.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 
@@ -22,8 +22,8 @@
 - **동작하는 것:** Operations 4단계 + 3-cloud AI Agent + **On-Prem Ops**(12도구, trace) + Terraform kind/실 Multipass VM Ansible k3s Provision + kagent↔Local Qwen A2A + Agents UI. **On-Prem 오프라인 완결**: Local Qwen **7B**로 NL provision→deploy→validate ~39s, 로컬 JSONL 기록 + 대시보드 **hybrid**(AWS+On-Prem 병합) + 실 **롤백**(app/cluster). **추적 IA**: activity에 `type`(provision/deploy)·`cluster` 연결키, 대시보드 **Provisioning/Deployments/History** 분리 + **중첩 상세**(provisioning⊃deploys), 롤백 **단일-row 승계**·**teardown→deploy cascade**, 자연어 rollback/teardown도 동일 라우팅.
 - **하네스:** overnight-harness 플러그인 기반 (5 engine). `make overnight-kiro-once` 로 smoke. `make dev-up`으로 로컬 스택(MLX+proxy+router+dashboard) 한 방 기동.
 - **Kiro 특화:** aws-ops / cdk-dev / overnight-harness 3개 에이전트 + safety hook + AWS MCP Server.
-- **검증:** `make check` → **626 passed, 1 skipped** (2026-07-14); **On-Prem Day-2 완결**: `onprem_webhook_api` Alertmanager→in-process 4-step + P1 즉시/P2 승인게이트/P3 알림 + **대시보드 Incidents hybrid**(승인 카드 + 타임라인) + **실 executor**(`onprem_runner`, 기본 OFF·`ONPREM_EXECUTOR_LIVE`로 실 kubectl rollout restart/undo, kind 라이브 실증) 라이브 실증; Dashboard `next build` 성공; Live 7B provision→deploy→validate ~39s·app/cluster 롤백·hybrid 병합·추적 IA 자연어 4스텝 라이브 실증; **A2A 라이브 E2E**: Phase 1(자체 게이트웨이) + **Phase 2 실 kagent 에이전트**(local Qwen 30B) discovery→JSON-RPC 위임→실 `k8s_get_resources` 진단(2026-07-14).
-- **현재 초점:** actionable 코드 백로그 소진(A2A Phase 2 완료). 잔여=외부(Slack App/아티클).
+- **검증:** `make check` → **633 passed, 1 skipped** (2026-07-14); **On-Prem Day-2 완결**: `onprem_webhook_api` Alertmanager→in-process 4-step + P1 즉시/P2 승인게이트/P3 알림 + **대시보드 Incidents hybrid**(승인 카드 + 타임라인) + **실 executor**(`onprem_runner`, 기본 OFF·`ONPREM_EXECUTOR_LIVE`로 실 kubectl rollout restart/undo/**scale**, kind 라이브 실증 2→5) 라이브 실증; Dashboard `next build` 성공; Live 7B provision→deploy→validate ~39s·app/cluster 롤백·hybrid 병합·추적 IA 자연어 4스텝 라이브 실증; **A2A 라이브 E2E**: Phase 1(자체 게이트웨이) + **Phase 2 실 kagent 에이전트**(local Qwen 30B) discovery→JSON-RPC 위임→실 `k8s_get_resources` 진단(2026-07-14).
+- **현재 초점:** actionable 로컬 백로그 소진(executor scale·단일 카탈로그 완료). 잔여=로컬 drain(위험·정책 선행), 클라우드 Provision(크레덴셜), 외부(Slack App/아티클).
 
 ## Guardrails
 
