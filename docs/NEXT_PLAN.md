@@ -14,8 +14,8 @@
 - [x] ~~인터랙티브 에이전트 MCP 단일 카탈로그 채택~~ · [x] ~~실 executor scale~~ · [x] ~~실 executor drain~~ 모두 완료. On-Prem 실 executor는 되돌리기-가능 4조치(restart/undo/scale/**polite drain**) 완결, 기본 OFF 게이팅. 공격적 force-drain만 의도적으로 사람 몫. **이제 자율로 진행할 순수 로컬 코드 백로그 없음.**
 
 ### 클라우드 크레덴셜/과금 필요 (자율 불가)
-- [ ] **GCP/Azure Provision 어댑터** — On-Prem(Terraform/Ansible)은 완료, 클라우드 Provision은 미구현. WIF/OIDC 크레덴셜·과금 필요.
-- [ ] **Agent Runtime 매니지드 호스팅** — Strands→AgentCore / ADK→Agent Engine / MSFT→Foundry. 클라우드 계정 필요.
+- [x] ~~**GCP/Azure Provision 어댑터**~~ — **완료(2026-07-14, `6baa6ee`)**: GKE(gcloud)/AKS(az) 어댑터, plan-first/approved-gated, provisioning 4-provider parity. 코드+테스트 완결, 실 create만 크레덴셜 대기.
+- [ ] **Agent Runtime 매니지드 호스팅** — Strands→**AgentCore**(진행 중) / ADK→Agent Engine / MSFT→Foundry. AgentCore는 AWS라 실 배포 테스트 가능성 있음(크레덴셜 보유).
 
 ### 외부/사용자 개입
 - [ ] (deferred) **Slack App 실 생성/토큰** — 코드+하네스(`scripts/slack_live_approval.py`) ready, 실 workspace만 필요. On-Prem 승인 게이트도 Slack 버튼 프런트엔드 연동 가능(현재는 대시보드 버튼으로 대체됨).

@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-14 — GCP/Azure managed-cloud Provision 어댑터(GKE/AKS): provisioning 4-provider parity
+
+- Status: provisioning 어댑터가 deployment/execution 레이어처럼 **4-provider parity**(onprem/aws/**gcp**/**azure**) 달성. 그간 On-Prem(Terraform/Ansible)+AWS(CDK)만 있고 클라우드 Provision이 갭이었음. AWS 어댑터의 **plan-first / approved-gated 계약을 그대로 미러링** — 하드-투-리버스(클러스터 생성/삭제)는 승인 게이팅.
+- Changed: 신규 `adapters/provisioning/gcp.py`(GKE via `gcloud container clusters create/delete`, 미승인=읽기전용 `clusters list` preflight) + `azure.py`(AKS via `az aks create/delete`, 미승인=`aks list` preflight). `registry.py`→`["onprem","aws","gcp","azure"]` 라우팅. `base.py` `ProvisionSpec`에 `node_count:int=2`. config는 deployment 어댑터와 **동일 env**(`GCP_PROJECT`/`GCP_REGION`, `AZURE_RESOURCE_GROUP`/`AZURE_REGION`). **안전 기본값**: `provision_tools`가 `approved`를 미노출 → LLM 도구 호출은 cloud provider에서 **preflight-only**(과금 인프라 생성 불가), 전용 테스트로 고정. `test_provisioning_adapters.py` 10→23(registry 해결·preflight-only·approved-create argv·teardown 승인 강제·project/RG 누락·CLI-absent·도구 preflight 고정).
+- Verified: `pytest tests/test_provisioning_adapters.py` 23 passed. `make check` → **649 passed, 1 skipped**. 커밋 `6baa6ee`. **라이브 미실행**: 실 GKE/AKS create는 WIF/OIDC 크레덴셜·과금 필요 → argv/게이팅만 결정론 검증, 어댑터는 credential-ready(`ProvisionSpec(...,approved=True)`로 즉시 라이브 가능).
+- Blockers: 라이브 클라우드 create는 크레덴셜·과금 대기(처음부터 크레덴셜-대기 항목).
+- Next: (진행 중) **Agent Runtime 매니지드 호스팅 — AgentCore**(Strands→Bedrock AgentCore, AWS라 실 배포 테스트 가능성 검토). 잔여 외부: Slack App·아티클.
+
 ## 2026-07-14 — On-Prem 실 executor 완결: polite node drain(--force 없음, PDB 존중)
 
 - Status: On-Prem Day-2 실 executor의 **되돌리기-가능 조치 세트 완결** — restart/undo/scale에 이어 **마지막(가장 위험)** `ONPREM-DrainNode`→`kubectl drain <node>` 추가. 노드 단위라 blast-radius가 커서 **보수적 "polite drain" 정책**으로 게이팅.

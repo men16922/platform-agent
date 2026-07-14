@@ -17,6 +17,7 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **649 passed, 1 skipped** (2026-07-14) — **provisioning 어댑터 4-provider parity**(신규 GCP/Azure GKE·AKS: plan-first/approved-gated·읽기전용 preflight·teardown 승인 강제·tool preflight-only, +13 test) 포함.
 - `make check` (pytest) → **636 passed, 1 skipped** (2026-07-14) — On-Prem 실 executor **scale**(양수 타깃, kind 2→5 라이브) + **polite drain**(--force 없음·PDB 존중, 3노드 kind 라이브 재배치·아웃티지0) + 인터랙티브 에이전트 **단일 카탈로그**(drift-0 불변식) + A2A Phase 2/PROVISION 격리 + On-Prem PATH B webhook/승인 게이트/인시던트 스토어 포함.
 - **On-Prem PATH B webhook + Approval Flow 라이브 스모크(2026-07-14)** → `uvicorn onprem_webhook_api:app :8078`. `POST /webhook/alertmanager`가 in-process 4-step(detect→analyze→decide→execute) 실행; Guardian 게이팅 **P1=즉시 실행·P2=parking·P3=알림만**. P2 라이브 루프: pending_approval→`GET /pending`→`POST /approve/{id}`(decision 재생 실행)→approved+incident_id. 완전 오프라인.
 - **대시보드 On-Prem 연동(2026-07-14)** → Incidents 페이지 (1) "Pending Remediation Approvals"가 AWS+On-Prem(webhook `/pending`) **hybrid 병합**(source 배지)·Approve/Reject 소스별 SFN/webhook 라우팅, (2) **인시던트 타임라인**도 On-Prem 인시던트(webhook `/incidents`, offline 스토어 `onprem_incidents`)를 hybrid 병합(ON-PREM 배지). `tsc` 0·`next build` 성공; `next start`+webhook로 승인 카드·타임라인 인시던트 렌더 헤드리스 실증(INC-1121DAB7).
