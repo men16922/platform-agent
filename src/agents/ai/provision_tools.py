@@ -22,12 +22,17 @@ def _clean_tail(output: str, limit: int) -> str:
 
 
 def provision_cluster(cluster_name: str = "platform-agent", mode: str = "kind", provider: str = "onprem") -> dict:
-    """Provision an on-prem Kubernetes cluster (infrastructure, IaC). MUTATING.
+    """Provision a Kubernetes cluster (infrastructure, IaC). MUTATING for onprem.
 
     Args:
         cluster_name: Name of the cluster to create.
         mode: "kind" (Terraform + Docker, no VM) or "k3s" (Ansible + VM/bare-metal).
-        provider: Target environment (onprem).
+        provider: Target environment — "onprem" (default), "gcp" (GKE), or
+            "azure" (AKS). For managed-cloud providers this runs a read-only
+            PREFLIGHT only (verifies auth + project/resource-group); the real
+            `clusters create` requires an approved spec and is not driven from
+            here, so an agent tool call can never accidentally stand up billable
+            cloud infrastructure.
 
     Returns:
         Dict with provisioning result (success, cluster, context, error).

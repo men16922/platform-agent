@@ -22,6 +22,8 @@ class ProvisionSpec:
     approved: bool = False
     stack_name: str = "IncidentAgentStack"
     region: str | None = None
+    # Managed-cloud (GKE/AKS) node pool size; ignored by on-prem/AWS adapters.
+    node_count: int = 2
 
 
 @dataclass
