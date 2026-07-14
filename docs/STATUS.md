@@ -17,6 +17,7 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **736 passed, 1 skipped** (2026-07-15) — **레퍼런스 Tier 2 #3: MCP-over-HTTP 커넥터 + per-tool/글로벌 kill-switch → Tier 2 전체 완결**(#2·#3·#4). `mcp_server.py`에 `remote_mcp_tool()`(원격 MCP 서버 JSON-RPC `tools/call` intercept→reinject, 전송실패 degrade) + `MCPServer` kill-switch(`call_tool` 게이트, `disable_tool`/`set_kill_switch` + `MCP_DISABLED_TOOLS`/`MCP_KILL_SWITCH` env). 원격 커넥터도 동일 kill-switch 지배. +13 test, 비파괴(기존 gateway 29건 무변경). ARCHITECTURE 표 row#3 ✅.
 - `make check` (pytest) → **723 passed, 1 skipped** (2026-07-15) — **레퍼런스 Tier 2 #4: cross-account STS AssumeRole + graceful fallback**(신규 `adapters/aws_session.py`, +9 test). `assume_role_session(role_arn, fallback=True)`: STS assume_role→타깃 계정 세션, 실패/서킷-OPEN 시 in-account 크레덴셜로 우아하게 강등(Tier 1 `CircuitBreaker` 재사용). `runtime/aws.py` `_client`가 `AWS_ASSUME_ROLE_ARN` 옵트인 소비(미설정=무변경). ARCHITECTURE 표 row#4 ✅.
 - `make check` (pytest) → **714 passed, 1 skipped** (2026-07-15) — **레퍼런스 Tier 2 #2: agents-as-tools 오케스트레이션 + self-consistency**(신규 `orchestration.py`, +12 test). `route_with_self_consistency`(N-샘플 majority vote·저합의 시 결정론적 `classify_request` 폴백=reconciliation 철학) + `Orchestrator`(consensus→plan→각 step을 기존 `Supervisor.handle`로 위임=specialists-as-tools·실패 short-circuit·shared contextId). `a2a_server` 옵트인 배선(`SUPERVISOR_ORCHESTRATION`, 기본 무변경). ARCHITECTURE 표 row#2 ✅.
 - `make check` (pytest) → **702 passed, 1 skipped** (2026-07-15) — **AWSome AI Gateway 레퍼런스 Tier 1 반영(4종, +30 test)**: (1) **Reconciliation gate**(`reconciliation.py`, analyzer 결론 미근거 시 AUTO→APPROVE 강등, decision handler 배선), (2) **비용 3단계 게이트**(`cost_estimator.evaluate_budget`, OK/SOFT_WARNING/THROTTLE/HARD_BLOCK), (3) **회복탄력성**(`circuit_breaker.py` + webhook `/health/ready` 503 vs `/health` 200), (4) **비용 서브메트릭**(`deploy_recorder._cost_metrics`). `docs/ARCHITECTURE.md`에 도입 매핑표. **Vercel 대시보드 영구 안정화**: `ssoProtection` 해제 → canonical URL `platform-agent-men16922s-projects.vercel.app` 공개 200(git push 무관). **대시보드 agent tool list** 백엔드 카탈로그(13개)와 정합(`26586b5`).
@@ -78,7 +79,7 @@
 
 ## Active Focus
 
-- **레퍼런스 Tier 2 #2·#4 완료(2026-07-15)**: #2 agents-as-tools 오케스트레이션 + self-consistency(`orchestration.py`) · #4 cross-account STS AssumeRole + graceful fallback(`adapters/aws_session.py`). 둘 다 옵트인·비파괴. 다음 = Tier 2 잔여 **#3 MCP-over-HTTP**(새 세션).
+- **레퍼런스 Tier 2 전체 완결(2026-07-15)**: #2 agents-as-tools 오케스트레이션+self-consistency(`orchestration.py`) · #3 MCP-over-HTTP 커넥터+kill-switch(`mcp_server.py`) · #4 cross-account STS AssumeRole+fallback(`adapters/aws_session.py`). 3종 모두 옵트인·비파괴. 잔여 레퍼런스=#7(Tier 3). 다음 우선순위=외부(Slack App·아티클·OAuth 데모) 또는 라이브 실증.
 - 범용 Ops 에이전트 + 관측성 + On-Prem Provision(Terraform/Ansible) + kagent 설치 완료. ARCHITECTURE 통합·최신화(단일 스택 표 + Orchestrator+A2A 타깃).
 - On-Prem 오프라인 기록/hybrid 대시보드/실 롤백 + Local Qwen 7B 전환 완료(2026-07-12).
 - **배포 추적 IA 정리 완료(2026-07-12, 커밋 `930fe98`)**: Provisioning/Deployments/History 분리 + 중첩 상세 + 롤백 단일-row/teardown cascade + 자연어 라우팅 + `make dev-up`. gate 600 passed. **라이브 실증 완료(2026-07-13, 자연어 4스텝)**.

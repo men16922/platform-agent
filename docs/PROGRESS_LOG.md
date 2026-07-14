@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-15 — AWSome AI Gateway 레퍼런스 Tier 2 #3: MCP-over-HTTP 커넥터 + per-tool/글로벌 kill-switch (Tier 2 완결)
+
+- Status: Tier 2 **#3 완료 → Tier 2(#2·#3·#4) 전체 완결**. MCP 게이트웨이에 (1) 원격 MCP 서버를 카탈로그 도구로 노출하는 intercept-reinject 커넥터, (2) 도구별·글로벌 kill-switch 추가. 모두 기존 단일 카탈로그/디스패치 위에 얹어 비파괴.
+- Changed: `src/agents/ai/gateway/mcp_server.py` — (1) **remote MCP 커넥터**: `post_mcp_call(endpoint, tool, args)`(JSON-RPC `tools/call` over HTTP, stdlib urllib) + `_reinject()`(MCP content/isError/JSON-RPC error→`ToolResult`) + `remote_mcp_tool(name, …, endpoint, remote_tool=…, transport=…)` 팩토리(핸들러가 tool_use 가로채→원격 호출→재주입, 전송 실패 시 raise 대신 error ToolResult로 **degrade**). (2) **kill-switch**: `MCPServer(*, extra_tools, disabled_tools, kill_switch)` — `call_tool`이 존재검사(unknown→ValueError 유지) **후** kill-switch 게이트(글로벌=전 도구 차단, per-tool=해당 도구만 차단, 둘 다 핸들러 미실행 blocked ToolResult). `disable_tool`/`enable_tool`/`set_kill_switch` + `MCP_DISABLED_TOOLS`/`MCP_KILL_SWITCH` env. `tools`/`_tool_map`은 base 카탈로그+`extra_tools` 병합, 원격 커넥터도 동일 kill-switch 지배. `docs/ARCHITECTURE.md` 표 row#3 ✅ + Tier 2 완결 표기.
+- Verified: 신규 `tests/test_mcp_connector.py` +13(글로벌/per-tool kill-switch 핸들러 미실행·enable 되돌림·env 파싱·unknown 우선 raise·base 카탈로그 불변(9)·extra_tools 디스커버리+디스패치·remote forward/reinject·isError·JSON-RPC error·전송실패 degrade·원격도 kill-switch 지배). `make check` → **736 passed, 1 skipped**(723→736). 기존 `test_gateway.py` 29건 무변경 통과=비파괴.
+- Blockers: 없음. 실 원격 MCP 서버(SigV4/IRSA 인증) 라이브 연동은 사용자 엔드포인트 필요=자율 범위 밖; intercept-reinject 경로는 stub transport로 완결 검증. (SigV4 서명은 필요 시 `#4`의 `assume_role_session`/`gcp_auth.py` SigV4 선례 재사용 가능.)
+- Next: **Tier 2 전체 완결.** 잔여 레퍼런스=#7(Helm/Terraform 프로덕션, Tier 3). 외부: Slack App 실 생성·아티클 배포·대시보드 OAuth 로그인 데모. (선택) 실 로컬 MLX-Qwen sampler self-consistency 라이브 실증.
+
 ## 2026-07-15 — AWSome AI Gateway 레퍼런스 Tier 2 #4: cross-account STS AssumeRole + graceful fallback
 
 - Status: Tier 2 **#4 완료**. 크로스계정 조치를 위한 STS AssumeRole 헬퍼 + **회복탄력성 폴백**(실패/서킷-OPEN 시 in-account 크레덴셜로 우아하게 강등). Tier 1 `CircuitBreaker`를 재사용해 리질리언스 재구현 회피. 어댑터-로컬이라 규모 작음.

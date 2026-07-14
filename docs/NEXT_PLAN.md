@@ -4,14 +4,14 @@
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md` / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 다음 우선순위 — AWSome AI Gateway 레퍼런스 Tier 2 잔여 (#3, 새 세션 권장)
+## 다음 우선순위 — AWSome AI Gateway 레퍼런스 **Tier 2 전체 완결(2026-07-15)**
 
-- [x] ~~**Tier 1 반영**~~ — **완료(2026-07-15)**: reconciliation gate(`8f1878f`)·비용 3단계 게이트(`0a18794`)·서킷브레이커+readiness(`de4b92c`)·비용 서브메트릭(`6bc541c`). `docs/ARCHITECTURE.md` "외부 레퍼런스 반영" 표 참조.
-- [x] ~~#2 **agents-as-tools 오케스트레이션 + self-consistency**~~ — **완료(2026-07-15)**: `orchestration.py`(`route_with_self_consistency` N-샘플 majority vote·저합의 시 결정론적 폴백 + `Orchestrator` specialists-as-tools 체이닝·short-circuit·shared contextId) + a2a_server 옵트인(`SUPERVISOR_ORCHESTRATION`, 기본 무변경) + +12 test. gate 714.
-- [x] ~~#4 **cross-account STS AssumeRole + graceful fallback**~~ — **완료(2026-07-15)**: `adapters/aws_session.py`(`assume_role_session` graceful fallback + Tier 1 `CircuitBreaker` 재사용) + `runtime/aws.py` `_client` 옵트인(`AWS_ASSUME_ROLE_ARN`, 미설정=in-account 무변경) + +9 test. gate 723.
-- [ ] **Tier 2 잔여**:
-  - [ ] #3 **MCP-over-HTTP 커넥터 + per-tool kill-switch** — 원격 MCP intercept-reinject. 앵커=`gateway/mcp_server.py` `TOOL_CATALOG`. (별도 세션 권장)
-  - [ ] (선택) 실 로컬 MLX-Qwen sampler로 self-consistency(#2) 라이브 실증 · 다른 크로스계정(#4) 소비자 배선(`deployment/aws.py`, executor SSM).
+- [x] ~~**Tier 1 반영**~~ — reconciliation gate·비용 3단계 게이트·서킷브레이커+readiness·비용 서브메트릭. (상세 `ARCHITECTURE.md` 표)
+- [x] ~~#2 **agents-as-tools 오케스트레이션 + self-consistency**~~ — `orchestration.py`(N-샘플 majority vote·저합의 폴백 + `Orchestrator` 체이닝), a2a_server 옵트인. gate 714.
+- [x] ~~#3 **MCP-over-HTTP 커넥터 + per-tool/글로벌 kill-switch**~~ — `mcp_server.py` `remote_mcp_tool`(intercept-reinject·전송실패 degrade) + `MCPServer` kill-switch 게이트(`MCP_DISABLED_TOOLS`/`MCP_KILL_SWITCH`), 비파괴. gate 736.
+- [x] ~~#4 **cross-account STS AssumeRole + graceful fallback**~~ — `adapters/aws_session.py`(`CircuitBreaker` 재사용) + `runtime/aws.py` 옵트인. gate 723.
+- **잔여 레퍼런스 = #7(Helm/Terraform 프로덕션)만 = Tier 3**(온프렘/클라우드 프로덕션화 시).
+- (선택) 라이브 실증: 실 로컬 MLX-Qwen sampler로 self-consistency(#2) · 실 원격 MCP 서버 SigV4/IRSA 연동(#3) · 2번째 AWS 계정 assume-role(#4) · 다른 크로스계정 소비자 배선(`deployment/aws.py`, executor SSM) — 모두 사용자 크레덴셜/엔드포인트 필요.
 
 ## 열린 작업 (로드맵 — 성격별)
 
