@@ -213,3 +213,35 @@ class TestOnPremAdapter:
 
         assert action["action"] == "ONPREM-ArgoRolloutRollback"
         assert action["parameters"]["ClusterName"] == ["prod-k8s"]
+
+    def test_resolve_onprem_scale_carries_desired_replicas(self):
+        incident = get_signal_adapter("onprem").normalise(
+            {
+                "status": "firing",
+                "commonLabels": {
+                    "alertname": "KubeHPAMaxedOut",
+                    "service": "checkout-api",
+                    "namespace": "checkout",
+                    "cluster": "prod-k8s",
+                    "desired_replicas": "5",
+                },
+                "alerts": [{"startsAt": "2026-04-12T01:20:00Z", "labels": {"pod": "checkout-api-7d9f6b88d8-abcde"}}],
+            }
+        )
+        action = get_execution_adapter("onprem").resolve_action("scale_out", incident)
+
+        assert action["action"] == "ONPREM-ScaleWorkload"
+        assert action["parameters"]["DesiredReplicas"] == ["5"]
+
+    def test_resolve_onprem_scale_without_replicas_omits_param(self):
+        incident = get_signal_adapter("onprem").normalise(
+            {
+                "status": "firing",
+                "commonLabels": {"alertname": "KubeHPAMaxedOut", "service": "checkout-api", "namespace": "checkout"},
+                "alerts": [{"startsAt": "2026-04-12T01:20:00Z", "labels": {"pod": "checkout-api-7d9f6b88d8-abcde"}}],
+            }
+        )
+        action = get_execution_adapter("onprem").resolve_action("scale_out", incident)
+
+        assert action["action"] == "ONPREM-ScaleWorkload"
+        assert "DesiredReplicas" not in action["parameters"]

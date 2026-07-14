@@ -60,9 +60,37 @@ def test_live_unwired_action_is_log_only(captured, monkeypatch):
     monkeypatch.setenv("ONPREM_EXECUTOR_LIVE", "true")
     monkeypatch.delenv("TESTING", raising=False)
     log = _Log()
-    onprem_runner.run_onprem_action("ONPREM-ScaleWorkload", PARAMS, log)
+    onprem_runner.run_onprem_action("ONPREM-DrainNode", PARAMS, log)
     assert captured == []
     assert "onprem_runner.live_unwired" in log.events
+
+
+def test_live_scale_runs_kubectl(captured, monkeypatch):
+    monkeypatch.setenv("ONPREM_EXECUTOR_LIVE", "true")
+    monkeypatch.delenv("TESTING", raising=False)
+    params = {**PARAMS, "DesiredReplicas": ["5"]}
+    onprem_runner.run_onprem_action("ONPREM-ScaleWorkload", params, _Log())
+    assert captured == [["scale", "deployment/payments-api", "--replicas=5", "-n", "payments"]]
+
+
+def test_live_scale_missing_replicas_is_log_only(captured, monkeypatch):
+    # Scale without a target count can't be inferred safely -> stay log-only.
+    monkeypatch.setenv("ONPREM_EXECUTOR_LIVE", "true")
+    monkeypatch.delenv("TESTING", raising=False)
+    log = _Log()
+    onprem_runner.run_onprem_action("ONPREM-ScaleWorkload", PARAMS, log)
+    assert captured == []
+    assert "onprem_runner.live_missing_target" in log.events
+
+
+def test_live_scale_to_zero_is_log_only(captured, monkeypatch):
+    # Scale-to-zero is a shutdown, not a reversible remediation -> needs a human.
+    monkeypatch.setenv("ONPREM_EXECUTOR_LIVE", "true")
+    monkeypatch.delenv("TESTING", raising=False)
+    log = _Log()
+    onprem_runner.run_onprem_action("ONPREM-ScaleWorkload", {**PARAMS, "DesiredReplicas": ["0"]}, log)
+    assert captured == []
+    assert "onprem_runner.live_missing_target" in log.events
 
 
 def test_live_missing_workload_is_log_only(captured, monkeypatch):

@@ -11,10 +11,15 @@ current kubeconfig context points at:
 
     ONPREM-RolloutRestartWorkload -> kubectl rollout restart deployment/<w> -n <ns>
     ONPREM-ArgoRolloutRollback    -> kubectl rollout undo    deployment/<w> -n <ns>
+    ONPREM-ScaleWorkload          -> kubectl scale deployment/<w> --replicas=<n> -n <ns>
 
-Everything else (scale without a desired count, node drain, disk/volume ops, …)
-stays log-only even when live — those need a desired-state/parameters the alert
-doesn't carry, so they remain a human/roadmap decision.
+Scale is a desired-state action, so it only runs live when the alert carries a
+positive target replica count (``DesiredReplicas``); a missing/zero/invalid count
+stays log-only — scale-to-zero is a shutdown that needs a human, not automation.
+
+Everything else (node drain, disk/volume ops, …) stays log-only even when live —
+those need parameters the alert doesn't carry, so they remain a human/roadmap
+decision.
 """
 
 from __future__ import annotations
@@ -39,6 +44,45 @@ def _run_kubectl(args: list[str], timeout: int = 60) -> tuple[int, str, str]:
     return proc.returncode, proc.stdout.strip(), proc.stderr.strip()
 
 
+def _positive_int(value: str) -> int | None:
+    """Parse a replica count; return it only when it's a positive integer (≥1)."""
+    try:
+        count = int(str(value).strip())
+    except (TypeError, ValueError):
+        return None
+    return count if count >= 1 else None
+
+
+def _kubectl_args(action: str, params: dict[str, list[str]], log: Any) -> list[str] | None:
+    """Build the kubectl argv for a live action, or ``None`` (after logging) to stay log-only."""
+    namespace = (params.get("Namespace") or [""])[0]
+    workload = (params.get("WorkloadName") or [""])[0]
+
+    if action == "ONPREM-ScaleWorkload":
+        replicas = _positive_int((params.get("DesiredReplicas") or [""])[0])
+        if not workload or replicas is None:
+            log.info("onprem_runner.live_missing_target", action=action, params=params)
+            return None
+        args = ["scale", f"deployment/{workload}", f"--replicas={replicas}"]
+        if namespace:
+            args += ["-n", namespace]
+        return args
+
+    verb = _LIVE_KUBECTL.get(action)
+    if verb is None:
+        # Live is on, but this action isn't wired for automatic execution.
+        log.info("onprem_runner.live_unwired", action=action, params=params)
+        return None
+    if not workload:
+        log.info("onprem_runner.live_missing_target", action=action, params=params)
+        return None
+
+    args = [*verb, f"deployment/{workload}"]
+    if namespace:
+        args += ["-n", namespace]
+    return args
+
+
 def run_onprem_action(action: str, params: dict[str, list[str]], log: Any) -> None:
     """Execute (or log-only) one on-prem remediation action.
 
@@ -48,21 +92,9 @@ def run_onprem_action(action: str, params: dict[str, list[str]], log: Any) -> No
         log.info("onprem_runner.log_only", action=action, params=params)
         return
 
-    verb = _LIVE_KUBECTL.get(action)
-    if verb is None:
-        # Live is on, but this action isn't wired for automatic execution.
-        log.info("onprem_runner.live_unwired", action=action, params=params)
+    args = _kubectl_args(action, params, log)
+    if args is None:
         return
-
-    namespace = (params.get("Namespace") or [""])[0]
-    workload = (params.get("WorkloadName") or [""])[0]
-    if not workload:
-        log.info("onprem_runner.live_missing_target", action=action, params=params)
-        return
-
-    args = [*verb, f"deployment/{workload}"]
-    if namespace:
-        args += ["-n", namespace]
 
     code, out, err = _run_kubectl(args)
     if code != 0:

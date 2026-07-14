@@ -67,9 +67,21 @@ def _parameters_for(action: str, incident: NormalizedIncident) -> dict[str, list
     metadata = incident.source_metadata or {}
     labels = metadata.get("labels", {}) if isinstance(metadata, dict) else {}
 
+    if action == "ONPREM-ScaleWorkload":
+        # Scale is a desired-state action: carry the target replica count from the
+        # alert labels so the runner can `kubectl scale --replicas=N`. Absent the
+        # count, the param is dropped and the runner stays log-only.
+        return _compact(
+            {
+                "ClusterName": [labels.get("cluster", "")],
+                "Namespace": [labels.get("namespace", "")],
+                "WorkloadName": [incident.service],
+                "DesiredReplicas": [str(labels.get("desired_replicas", labels.get("replicas", "")))],
+            }
+        )
+
     if action in {
         "ONPREM-RolloutRestartWorkload",
-        "ONPREM-ScaleWorkload",
         "ONPREM-ArgoRolloutRollback",
         "ONPREM-DrainNode",
     }:
