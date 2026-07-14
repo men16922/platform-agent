@@ -39,6 +39,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from src.agents.ai import onprem_approvals as approvals
+from src.agents.ai import onprem_incidents as incidents
 from src.agents.ai.onprem_incident_pipeline import execute_incident, run_incident_pipeline
 
 logger = logging.getLogger(__name__)
@@ -85,13 +86,34 @@ def _handle_incident(payload: dict[str, Any]) -> PipelineResult:
                 "resolved": executor_out.get("resolved", False),
             }
         )
+        _record_incident(summary, resolved=executor_out.get("resolved", False), executor_out=executor_out)
     elif mode == "APPROVE":
+        # Parked for approval — surfaced in /pending, recorded to the timeline
+        # only once resolved (approve/reject), so it isn't double-counted.
         record = approvals.create_pending(result["stages"]["decision"], summary)
         summary.update({"status": "pending_approval", "approval_id": record["approval_id"]})
-    else:  # MANUAL — notify only
+    else:  # MANUAL — notify only, unresolved incident for the timeline
         summary["status"] = "notified"
+        _record_incident(summary, resolved=False)
 
     return PipelineResult(**summary)
+
+
+def _record_incident(
+    summary: dict[str, Any], *, resolved: bool, executor_out: dict[str, Any] | None = None
+) -> None:
+    """Persist an on-prem incident to the offline store for the dashboard timeline."""
+    executor_out = executor_out or {}
+    incidents.record_incident(
+        severity=summary.get("severity"),
+        alarm_name=summary.get("service"),
+        root_cause=summary.get("root_cause"),
+        runbook_id=summary.get("runbook_id"),
+        remediation_mode=summary.get("remediation_mode"),
+        resolved=resolved,
+        executed_actions=executor_out.get("executed_actions", []),
+        incident_id=executor_out.get("incident_id"),
+    )
 
 
 app = FastAPI(title="platform-agent On-Prem Webhook", version="1.0")
@@ -147,6 +169,7 @@ async def approve(approval_id: str) -> PipelineResult:
 
     executor_out = execute_incident(record["decision"])
     approvals.resolve(approval_id, "approved", executor_out=executor_out)
+    _record_incident_from_approval(record, resolved=executor_out.get("resolved", False), executor_out=executor_out)
     logger.info("onprem_webhook.approved id=%s", approval_id)
     return PipelineResult(
         status="approved",
@@ -172,6 +195,7 @@ async def reject(approval_id: str) -> PipelineResult:
         raise HTTPException(status_code=409, detail=f"Already {record.get('status')}: {approval_id}")
 
     approvals.resolve(approval_id, "rejected")
+    _record_incident_from_approval(record, resolved=False)
     logger.info("onprem_webhook.rejected id=%s", approval_id)
     return PipelineResult(
         status="rejected",
@@ -181,3 +205,28 @@ async def reject(approval_id: str) -> PipelineResult:
         remediation_mode=record.get("remediation_mode"),
         actions=record.get("actions", []),
     )
+
+
+def _record_incident_from_approval(
+    record: dict[str, Any], *, resolved: bool, executor_out: dict[str, Any] | None = None
+) -> None:
+    """Record a resolved (approved/rejected) P2 approval as a timeline incident."""
+    executor_out = executor_out or {}
+    analyzer = (record.get("decision") or {}).get("analyzer") or {}
+    incidents.record_incident(
+        severity=record.get("severity"),
+        alarm_name=record.get("service"),
+        root_cause=analyzer.get("root_cause"),
+        runbook_id=record.get("runbook_id"),
+        remediation_mode=record.get("remediation_mode"),
+        resolved=resolved,
+        executed_actions=executor_out.get("executed_actions", []),
+        incident_id=executor_out.get("incident_id"),
+    )
+
+
+@app.get("/incidents")
+async def list_onprem_incidents(limit: int = 100) -> dict[str, Any]:
+    """List recorded on-prem incidents for the dashboard timeline (hybrid merge)."""
+    items = incidents.list_incidents(limit=limit)
+    return {"count": len(items), "incidents": items}

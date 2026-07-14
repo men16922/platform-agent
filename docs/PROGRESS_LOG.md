@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-14 — 대시보드 Incidents 타임라인 On-Prem surfacing: 오프라인 인시던트 스토어 + hybrid 병합
+
+- Status: On-Prem Day-2 인시던트를 대시보드 **Incidents 타임라인**에 표시. 기존엔 승인 카드만 On-Prem을 노출했고 타임라인은 AWS DynamoDB만 읽어(오프라인 On-Prem 인시던트 부재), executor의 DynamoDB write는 오프라인 no-op이었음. webhook 계층에 로컬 인시던트 스토어를 두어 종단 완성.
+- Changed: 신규 `src/agents/ai/onprem_incidents.py`(오프라인 JSONL 인시던트 스토어, 대시보드 Incident 필드명 그대로: incident_id/alarm_name/provider/severity/mode/root_cause/runbook_id/resolved/executed_actions/created_at; `PLATFORM_INCIDENT_FILE`). `onprem_webhook_api.py`: 종단 상태에서 인시던트 기록(P1 AUTO=resolved, P3 MANUAL=unresolved, P2는 approve/reject 시점 기록—park 중 중복 방지) + `GET /incidents`. `test_onprem_webhook.py` 11→14. 대시보드: `mock-data.ts` `Incident.provider`에 `onprem` 추가, `incident-data.ts` `isProvider`+`fetchOnPremIncidents`(webhook `/incidents` HTTP)+`getIncidentFeed` hybrid 병합(source=`hybrid`), `incident-row.tsx` 라벨 `ON-PREM`(폴백 버그 수정; provider-logo는 이미 onprem 지원).
+- Verified: `pytest tests/test_onprem_webhook.py` 14 passed. **webhook 라이브**: P2 alert→park(timeline 0)→approve→`/incidents` 1건(onprem/P2/resolved/INC-1121DAB7). **대시보드 라이브 헤드리스**: `next start`(ONPREM_WEBHOOK_URL=:8078)→`GET /incidents`에 On-Prem 인시던트 렌더(INC-1121DAB7·**ON-PREM 배지**·generic-recovery·source "On-prem incidents (live)"). `tsc` 0·`next build` 성공. `make check` → **617 passed, 1 skipped**.
+- Blockers: 없음.
+- Next: (외부/deferred) Slack App·아티클. 로드맵(실 executor·MCP Gateway 단일 카탈로그·클라우드 Provision).
+
 ## 2026-07-14 — 대시보드 On-Prem 승인 연동: Incidents 페이지 hybrid(AWS+On-Prem) + approve/reject 라우팅
 
 - Status: 직전 On-Prem 승인 게이트를 **대시보드 화면에 연동**. Incidents 페이지의 "Pending Remediation Approvals"가 이제 AWS(DynamoDB/SFN) + On-Prem(webhook `/pending`)을 **hybrid 병합** 표시하고, Approve/Reject 클릭이 source에 따라 SFN 또는 webhook으로 라우팅됨. deployments 대시보드의 AWS+On-Prem hybrid 패턴을 승인에도 적용.

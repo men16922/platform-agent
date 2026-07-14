@@ -416,7 +416,7 @@ Signal (알람/메트릭 이상) → Event Bus → Orchestrator → 4-step Pipel
 | **State Store** | DynamoDB | Firestore | Cosmos DB | PostgreSQL / Redis |
 | **Notification** | Slack Webhook | Slack Webhook | Slack Webhook | Slack Webhook |
 
-**On-Prem PATH B 구현(✅):** `src/agents/ai/onprem_webhook_api.py`(FastAPI)가 Alertmanager webhook(`/webhook/alertmanager`) 또는 정규화 신호(`/webhook/incident`)를 수신 → `onprem_incident_pipeline.run_incident_pipeline`이 detector→analyzer→decision→executor **4핸들러를 in-process 체이닝**(클라우드의 Step Functions/Workflows/Durable Functions에 대응하는 "직접 호출"). 완전 오프라인: detector가 이벤트 형태로 provider=onprem 자동감지→onprem SignalAdapter 정규화, analyzer는 Bedrock 미가용 시 heuristic 폴백, on-prem executor 액션은 **로그-only 스텁**(실 kubectl via MCP Gateway는 로드맵), Slack/DynamoDB 기록은 best-effort. **잔여 로드맵**: Alertmanager 실연동·State Store(PostgreSQL/Redis)·실 executor·Approval Flow(Temporal/Redis/PostgreSQL, 아래).
+**On-Prem PATH B 구현(✅):** `src/agents/ai/onprem_webhook_api.py`(FastAPI)가 Alertmanager webhook(`/webhook/alertmanager`) 또는 정규화 신호(`/webhook/incident`)를 수신 → `onprem_incident_pipeline.run_incident_pipeline`이 detector→analyzer→decision→executor **4핸들러를 in-process 체이닝**(클라우드의 Step Functions/Workflows/Durable Functions에 대응하는 "직접 호출"). 완전 오프라인: detector가 이벤트 형태로 provider=onprem 자동감지→onprem SignalAdapter 정규화, analyzer는 Bedrock 미가용 시 heuristic 폴백, on-prem executor 액션은 **로그-only 스텁**(실 kubectl via MCP Gateway는 로드맵), Slack/DynamoDB 기록은 best-effort. **대시보드 타임라인(✅):** 종단 인시던트는 오프라인 스토어(`onprem_incidents`, JSONL)에 기록되고 webhook `GET /incidents`로 노출 → 대시보드 Incidents 타임라인이 AWS(DynamoDB)+On-Prem을 hybrid 병합(ON-PREM 배지). **잔여 로드맵**: Alertmanager 실연동·State Store(PostgreSQL/Redis)·실 executor.
 
 ### AWS 구현 상세 (현재 동작)
 

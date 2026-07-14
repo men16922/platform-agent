@@ -17,9 +17,9 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` (pytest) → **614 passed, 1 skipped** (2026-07-14) — A2A Phase 2/PROVISION 격리 + **On-Prem PATH B webhook + 승인 게이트 11 테스트**(`test_onprem_webhook.py`) 포함.
+- `make check` (pytest) → **617 passed, 1 skipped** (2026-07-14) — A2A Phase 2/PROVISION 격리 + **On-Prem PATH B webhook + 승인 게이트 + 인시던트 스토어 14 테스트**(`test_onprem_webhook.py`) 포함.
 - **On-Prem PATH B webhook + Approval Flow 라이브 스모크(2026-07-14)** → `uvicorn onprem_webhook_api:app :8078`. `POST /webhook/alertmanager`가 in-process 4-step(detect→analyze→decide→execute) 실행; Guardian 게이팅 **P1=즉시 실행·P2=parking·P3=알림만**. P2 라이브 루프: pending_approval→`GET /pending`→`POST /approve/{id}`(decision 재생 실행)→approved+incident_id. 완전 오프라인.
-- **대시보드 On-Prem 승인 연동(2026-07-14)** → Incidents 페이지 "Pending Remediation Approvals"가 AWS+On-Prem(webhook `/pending`) **hybrid 병합**(source 배지), Approve/Reject가 source별 SFN/webhook 라우팅. `tsc` 0·`next build` 성공; `next start`+webhook로 `/incidents`에 On-Prem 승인 카드 렌더 헤드리스 실증.
+- **대시보드 On-Prem 연동(2026-07-14)** → Incidents 페이지 (1) "Pending Remediation Approvals"가 AWS+On-Prem(webhook `/pending`) **hybrid 병합**(source 배지)·Approve/Reject 소스별 SFN/webhook 라우팅, (2) **인시던트 타임라인**도 On-Prem 인시던트(webhook `/incidents`, offline 스토어 `onprem_incidents`)를 hybrid 병합(ON-PREM 배지). `tsc` 0·`next build` 성공; `next start`+webhook로 승인 카드·타임라인 인시던트 렌더 헤드리스 실증(INC-1121DAB7).
 - **A2A Phase 2 라이브 E2E(2026-07-14)** → 실 kagent 0.9.11 에이전트(local MLX Qwen 30B) 대상 supervisor HTTP 카드 discovery→skill 매칭→JSON-RPC 위임→실 `k8s_get_resources` 도구 진단 반환. 증거: `docs/evidence/a2a-phase2-live-e2e.log`.
 - `make check` (pytest) → **600 passed, 1 skipped** (2026-07-12) — AI Model Router / Pydantic AI On-Prem 에이전트 / MLX proxy / deploy recorder(+cascade) / ops_tools / provisioning 어댑터 테스트 포함
 - **LinkedIn 데모 비디오 편집(2026-07-12)** → `docs/post/local-onprem.mov` 원본 영상을 18.2초(1.0MB)로 구간 및 배속(타임랩스) 편집하고, 각 7개 주요 구간의 자막(Terraform 등 실제 실행 매핑)을 영상 하단에 병합한 `local-onprem-edited.mp4` 제작 완료.

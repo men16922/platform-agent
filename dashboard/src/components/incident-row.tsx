@@ -17,7 +17,7 @@ export function IncidentRow({ incident }: { incident: Incident }) {
         </span>
         <span className={`inline-flex items-center gap-1.5 rounded border py-0.5 pl-1 pr-2 text-[10px] font-bold tracking-wide ${providerBadgeStyles[incident.provider]}`}>
           <span className="flex h-5 w-5 items-center justify-center rounded bg-white p-0.5"><ProviderLogo provider={incident.provider} size="sm" /></span>
-          {incident.provider === "gcp" ? "GOOGLE CLOUD" : incident.provider === "azure" ? "MICROSOFT AZURE" : "AWS"}
+          {incident.provider === "gcp" ? "GOOGLE CLOUD" : incident.provider === "azure" ? "MICROSOFT AZURE" : incident.provider === "onprem" ? "ON-PREM" : "AWS"}
         </span>
         <span className="rounded bg-black/15 px-1.5 py-1 text-[10px] font-bold tracking-wide text-[#d8dde5]">{incident.mode}</span>
         <span className="ml-auto text-xs text-[var(--muted)]">

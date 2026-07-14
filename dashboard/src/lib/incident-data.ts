@@ -28,7 +28,27 @@ function isMode(value: unknown): value is Incident["mode"] {
 }
 
 function isProvider(value: unknown): value is Incident["provider"] {
-  return value === "aws" || value === "gcp" || value === "azure";
+  return value === "aws" || value === "gcp" || value === "azure" || value === "onprem";
+}
+
+// On-prem incidents live in the offline webhook store; the dashboard merges them
+// into the timeline over HTTP (same hybrid pattern as pending approvals), so no
+// file paths leak into the UI and Vercel simply sees the webhook as offline.
+function getOnPremWebhookUrl() {
+  return process.env.ONPREM_WEBHOOK_URL ?? "http://127.0.0.1:8078";
+}
+
+async function fetchOnPremIncidents(): Promise<Incident[]> {
+  try {
+    const res = await fetch(`${getOnPremWebhookUrl()}/incidents`, { cache: "no-store" });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { incidents?: Record<string, unknown>[] };
+    return (data.incidents ?? [])
+      .map((item) => mapIncidentRecord(item))
+      .filter((item): item is Incident => item !== null);
+  } catch {
+    return [];
+  }
 }
 
 export function mapIncidentRecord(item: Record<string, unknown>): Incident | null {
@@ -61,14 +81,22 @@ export function mapIncidentRecord(item: Record<string, unknown>): Incident | nul
   };
 }
 
+const byNewest = (left: Incident, right: Incident) =>
+  Date.parse(right.created_at) - Date.parse(left.created_at);
+
 export async function getIncidentFeed(): Promise<IncidentFeed> {
   const syncedAt = new Date().toISOString();
+  // On-prem incidents are merged regardless of the AWS data-source mode (hybrid).
+  const onprem = await fetchOnPremIncidents();
+
   if (!isLiveMode()) {
     return {
-      incidents: mockIncidents,
-      source: "demo",
+      incidents: [...onprem, ...mockIncidents].sort(byNewest),
+      source: onprem.length ? "hybrid" : "demo",
       syncedAt,
-      notice: "Demo dataset. Set DASHBOARD_DATA_SOURCE=aws to enable the read-only AWS feed.",
+      notice: onprem.length
+        ? "On-prem incidents (live) merged with the demo dataset."
+        : "Demo dataset. Set DASHBOARD_DATA_SOURCE=aws to enable the read-only AWS feed.",
     };
   }
 
@@ -84,19 +112,21 @@ export async function getIncidentFeed(): Promise<IncidentFeed> {
       }),
     );
 
-    const incidents = (result.Items ?? [])
+    const awsIncidents = (result.Items ?? [])
       .map((item) => mapIncidentRecord(item))
-      .filter((item): item is Incident => item !== null)
-      .sort((left, right) => Date.parse(right.created_at) - Date.parse(left.created_at));
+      .filter((item): item is Incident => item !== null);
 
-    return { incidents, source: "aws-live", syncedAt };
+    const incidents = [...awsIncidents, ...onprem].sort(byNewest);
+    return { incidents, source: onprem.length ? "hybrid" : "aws-live", syncedAt };
   } catch (error) {
     console.error("dashboard.incidents.live_fetch_failed", error);
     return {
-      incidents: mockIncidents,
-      source: "demo-fallback",
+      incidents: [...onprem, ...mockIncidents].sort(byNewest),
+      source: onprem.length ? "hybrid" : "demo-fallback",
       syncedAt,
-      notice: "AWS feed unavailable. Showing the demo dataset.",
+      notice: onprem.length
+        ? "AWS feed unavailable; showing on-prem incidents + demo dataset."
+        : "AWS feed unavailable. Showing the demo dataset.",
     };
   }
 }

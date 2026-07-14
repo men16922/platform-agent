@@ -5,7 +5,7 @@
 
 export interface Incident {
   id: string;
-  provider: "aws" | "gcp" | "azure";
+  provider: "aws" | "gcp" | "azure" | "onprem";
   alarm_name: string;
   severity: "P1" | "P2" | "P3";
   mode: "AUTO" | "APPROVE" | "MANUAL";

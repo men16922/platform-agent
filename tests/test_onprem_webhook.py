@@ -58,9 +58,10 @@ def _stub_analyze(severity: str):
 
 @pytest.fixture(autouse=True)
 def _isolate(monkeypatch, tmp_path):
-    # Keep executor + approval writes out of the real ~/.platform-agent files.
+    # Keep executor + approval + incident writes out of the real ~/.platform-agent files.
     monkeypatch.setenv("PLATFORM_ACTIVITY_FILE", str(tmp_path / "activity.jsonl"))
     monkeypatch.setenv("PLATFORM_APPROVALS_FILE", str(tmp_path / "approvals.jsonl"))
+    monkeypatch.setenv("PLATFORM_INCIDENT_FILE", str(tmp_path / "incidents.jsonl"))
     # Default: P1 → AUTO. Individual tests re-patch for P2/P3.
     monkeypatch.setattr(pipeline_mod, "_analyze", _stub_analyze("P1"))
 
@@ -162,6 +163,45 @@ def test_p3_manual_notifies_without_execution(client, monkeypatch):
 
 def test_approve_unknown_returns_404(client):
     assert client.post("/approve/APR-DEADBEEF").status_code == 404
+
+
+# ------------------------------------------------------------------
+# On-prem incident timeline store (dashboard hybrid)
+# ------------------------------------------------------------------
+
+def test_p1_auto_records_resolved_incident(client):
+    assert client.get("/incidents").json()["count"] == 0
+    client.post("/webhook/alertmanager", json=ALERTMANAGER_PAYLOAD)
+
+    listing = client.get("/incidents").json()
+    assert listing["count"] == 1
+    inc = listing["incidents"][0]
+    assert inc["provider"] == "onprem"
+    assert inc["severity"] == "P1"
+    assert inc["resolved"] is True
+    assert inc["incident_id"]
+    assert inc["alarm_name"]  # service
+
+
+def test_p3_manual_records_unresolved_incident(client, monkeypatch):
+    monkeypatch.setattr(pipeline_mod, "_analyze", _stub_analyze("P3"))
+    client.post("/webhook/alertmanager", json=ALERTMANAGER_PAYLOAD)
+
+    inc = client.get("/incidents").json()["incidents"][0]
+    assert inc["severity"] == "P3"
+    assert inc["resolved"] is False
+
+
+def test_p2_incident_recorded_only_after_approval(client, monkeypatch):
+    monkeypatch.setattr(pipeline_mod, "_analyze", _stub_analyze("P2"))
+    approval_id = client.post("/webhook/alertmanager", json=ALERTMANAGER_PAYLOAD).json()["approval_id"]
+    # Parked, not yet on the timeline.
+    assert client.get("/incidents").json()["count"] == 0
+
+    client.post(f"/approve/{approval_id}")
+    listing = client.get("/incidents").json()
+    assert listing["count"] == 1
+    assert listing["incidents"][0]["resolved"] is True
 
 
 # ------------------------------------------------------------------
