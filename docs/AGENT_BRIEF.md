@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-14
 
-> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **Agent Runtime 호스팅 3종 코드+preflight 완료**(`adapters/runtime/` AgentCore/Agent Engine/Foundry, plan-first/approved-gated, 커밋 `36085fc`, gate 669; **실 AWS·GCP read-only preflight 라이브 통과**). **잔여=실 create(billable)**: 사용자 허락 대기(비용 견적 제시됨). 앞서 완료: GCP/Azure Provision 어댑터(`6baa6ee`). 잔여 외부: Slack App·아티클. ※ 2026-07-14 앞선: A2A Phase 2 실 kagent + On-Prem Day-2 전체 vertical + 단일 카탈로그. 인프라 정리 완료.
+> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **Agent Runtime 호스팅 AWS·GCP 실 배포 라이브 E2E 완결(2/3)**: 어댑터 create→READY/DEPLOYED→invoke/query(실 Claude/Gemini)→teardown, 즉시 삭제(각 <$0.50). 패키징 `infra/agentcore/`+`infra/agentengine/`, 커밋 `2079c01`·`40fa8f6`. **잔여=Azure Foundry 실 배포**(Foundry 프로젝트 생성 선행, billable) or 외부(Slack App·아티클). **origin push 대기(로컬 8커밋)**. 어댑터 코드 `36085fc`, provision `6baa6ee`, gate 669.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 

@@ -17,7 +17,7 @@
 - [x] ~~**GCP/Azure Provision 어댑터**~~ — **완료(2026-07-14, `6baa6ee`)**: GKE(gcloud)/AKS(az) 어댑터, plan-first/approved-gated, provisioning 4-provider parity. 코드+테스트 완결, 실 create만 크레덴셜 대기.
 - [~] **Agent Runtime 매니지드 호스팅** — **코드/preflight 완료(2026-07-14, `36085fc`)**: `adapters/runtime/` 3종(AgentCore/Agent Engine/Foundry), plan-first/approved-gated. AWS·GCP는 실 클라우드 read-only preflight 라이브 통과. **잔여=실 create(billable)**: 사용자 허락 대기.
   - [x] ~~(billable) AWS AgentCore 실 배포~~ — **완료(2026-07-14, `2079c01`)**: `infra/agentcore/` arm64 이미지+exec role, 어댑터 create→READY(~12s)→invoke(실응답)→teardown 라이브 E2E, 즉시 삭제(<$0.50).
-  - [ ] (billable, 승인 필요) GCP Agent Engine 실 배포 — deployable agent object+staging bucket+create.
+  - [x] ~~(billable) GCP Agent Engine 실 배포~~ — **완료(2026-07-14, `40fa8f6`)**: `infra/agentengine/` custom-template 에이전트, 어댑터 create→DEPLOYED→query(Gemini 실응답)→teardown 라이브 E2E, 즉시 삭제(<$0.50).
   - [ ] (billable, 승인 필요) Azure Foundry — Foundry 프로젝트 생성(선행)+model deployment+create_agent.
 
 ### 외부/사용자 개입
