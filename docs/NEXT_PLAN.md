@@ -1,37 +1,34 @@
 # NEXT_PLAN — platform-agent
 
-최종 갱신: 2026-07-11
+최종 갱신: 2026-07-14
 
-> **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md` / `PROGRESS_LOG.md`를 참조한다. **≤120줄** 유지.
+> **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md` / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 다음 작업 리스트 (2026-07-12 갱신)
+## 즉시 결정 필요
 
-- [x] ~~**추적 IA 라이브 실증(자연어 4스텝)**~~ — LinkedIn 데모 녹화 세션에서 ①provision+deploy(2행) → ②앱 롤백(단일-row 승계) → ③History 중첩 상세 → ④teardown cascade(자동 rolled-back·Rollback 비활성)를 브라우저 end-to-end 실증 완료(2026-07-13). 증거: `docs/post/local-onprem-edited.mp4`.
-- [x] ~~**전체 커밋**~~ — 추적 IA 정리분은 커밋 `930fe98`에 포함 완료.
-- [x] ~~대시보드 UI Rollback 팝업/체인~~ — native prompt→인앱 팝업, app(Deployments)/cluster(Provisioning) 분리, 단일-row 승계·teardown cascade 구현. (라이브 클릭 실증은 위 항목)
-- [x] ~~**`feat/onprem-offline-recording-hybrid-rollback` push/머지 결정**~~ — 완료: `0b9148c`+`930fe98`가 **origin/main에 푸시·머지됨**(서버 main HEAD=`930fe98`). feat 브랜치는 main과 동일 커밋(중복).
-- [x] ~~**중복 `feat` 브랜치 삭제**~~ — 로컬+원격 삭제 완료(2026-07-13). origin에는 `main`(=`a1acfea`)만 존재.
-- [x] ~~(선택) **NEXT_PUBLIC 프로덕션 인라인**~~ — 해소/stale(2026-07-13): 16.2.10 `next build` 실측상 `.env.local` NEXT_PUBLIC 정상 인라인(상수 폴딩 확인). 코드 수정 불필요.
-- [x] ~~**origin push**~~ — 완료: 로컬 main == origin/main == `930fe98` (ahead/behind 0/0).
-- [x] ~~A2A specialist endpoint + Agent Card discovery~~ — kagent Card discovery/skill match + JSON-RPC 0.3 transport 지원 완료. **Phase 1 라이브 실연결(2026-07-13)**: supervisor→실행 게이트웨이 카드 HTTP discovery→skill 매칭→위임 E2E(mock 아님) + KAGENT 매칭 규율 강화(deploy-only 카드 거부, 회귀 테스트). 커밋 `6595526`.
-- [x] ~~**A2A Phase 2 — 실제 kagent endpoint discovery**~~ — **완료(2026-07-14)**. kind+kagent 0.9.11+로컬 MLX Qwen 30B 재프로비저닝 후 supervisor→실 kagent 에이전트 카드 HTTP discovery→skill 매칭→JSON-RPC 위임→실 `k8s_get_resources` 도구 진단 반환 라이브 E2E 성공. **버그 수정**: JSON-RPC 페이로드 A2A 필수 `messageId` 누락 추가(스펙 준수 SDK가 `-32602` 거부 — Phase 1 게이트웨이는 못 잡음)+회귀 테스트. 신규 `infra/onprem/kagent/local-diagnostic-agent.yaml`, 증거 `docs/evidence/a2a-phase2-live-e2e.log`. gate 602 passed. ⚠️ 인프라 실행 중(정리: `make local-cluster-down`+MLX pkill).
-- [x] ~~kagent ↔ 로컬 Qwen 연결~~ — local Qwen ModelConfig + A2A read-only task(tool result 반환) 실증 완료.
-- [x] ~~On-Prem k3s Ansible Provision~~ — 기존 Multipass `k8s-lab`(Ubuntu 24.04)에서 k3s v1.31.4 node Ready 및 재실행 `changed=0` 검증 완료.
-- [x] ~~AWS Provision adapter~~ — AWS CDK diff(기본) / approved deploy / approved destroy guard 구현 및 unit test 완료.
-- [x] ~~**AWS CDK live diff 재검증**~~ — 완료(2026-07-13). **근본원인**: synth "미완"은 stale **1.8GB 재귀 cdk.out**(exclude 추가 전 산출물) 때문 — 삭제 후 synth **~17s 완료**, 새 cdk.out 37M, 템플릿 **99 resources**. `cdk diff IncidentAgentStack --no-change-set` **exit 0**. **진짜 diff = 인프라/IAM 변화 0, Lambda 13개 코드 asset-hash churn만**(재번들링 노이즈). ⚠️ **주의**: diff는 반드시 context를 줘야 함 — `-c vercelTeamSlug=men16922 -c vercelProjectName=platform-agent -c vercelOidcProviderArn=arn:aws:iam::908601828278:oidc-provider/oidc.vercel.com/men16922`. 안 주면 `VercelDashboardReadRole`(조건부, stack `incident_agent_stack.ts:104`)이 빠져 **가짜 삭제 diff**가 남.
-- [x] ~~kagent 기본 에이전트 10개 정리(`helm uninstall`) 또는 데모용 유지 결정~~ — **MOOT(2026-07-13)**: kagent를 호스팅하던 kind 클러스터가 이미 teardown됨. 확인 결과 활성 kube context 없음(kind 0개), Multipass k3s VM `k8s-lab`(Ready, v1.31.4)에도 kagent namespace·helm·비시스템 파드 전무 → 정리 대상 부재, 조치 불필요.
+- [ ] **origin push 결정** — 이번 세션 **로컬 커밋 11개**(main ahead 11, `b211ba9`…`938e890`)가 미push. 전부 gate-green(626 passed) 검증 완료. push 여부 사용자 지정.
 
-### (이전 리스트 — 참고)
+## 열린 작업 (로드맵 — 성격별)
 
-- [x] ~~세션 외 미커밋 변경 검토/정리~~ — models.py ServiceSpec 재수출 복구(`eaff5ac`), 나머지 chore 커밋(`5035913`) 완료.
-- [x] ~~AI Model Router 채팅 live 데모 + Deployments 추적 실증~~ — MLX Qwen30B→kind 배포 + recorder→DynamoDB→대시보드 aws-live 노출까지 end-to-end 검증 완료(2026-07-11).
-- [ ] 대시보드 **브라우저 UI**에서 인증된 배포 클릭 데모 — GitHub OAuth 로그인 필요(사용자 수행). 백엔드/배선/read 경로는 모두 검증됨.
-- [ ] (deferred) Slack App 실 생성/토큰 설정 — 코드+하네스(`scripts/slack_live_approval.py`) ready, 실 workspace만 필요
-- [x] ~~LinkedIn 데모 비디오 편집~~ — `docs/post/local-onprem.mov` 원본 영상을 18.2초 자막(Terraform 등 실제 실행 매핑) 포함된 최적화 mp4로 편집 및 렌더링 완료.
-- [ ] (deferred) 테크 아티클(LinkedIn / Medium) 리뷰 및 소셜 채널 배포
+### 로컬·자율 가능 (리스크 있음)
+- [ ] **인터랙티브 에이전트 MCP 단일 카탈로그 채택** — 게이트웨이는 `TOOL_CATALOG` 단일 source-of-truth 완료(2026-07-14). 잔여: `local_deployer`의 in-process 도구를 이 카탈로그로 수렴(배포 경로 리팩터, 회귀 리스크 큼 → 신중히).
+- [ ] **실 executor scale/drain 확장** — `onprem_runner`가 rollout restart/undo만 실 실행. scale은 desired-state(replica 목표) 파라미터 설계 필요, drain은 위험 → 정책 선행.
+
+### 클라우드 크레덴셜/과금 필요 (자율 불가)
+- [ ] **GCP/Azure Provision 어댑터** — On-Prem(Terraform/Ansible)은 완료, 클라우드 Provision은 미구현. WIF/OIDC 크레덴셜·과금 필요.
+- [ ] **Agent Runtime 매니지드 호스팅** — Strands→AgentCore / ADK→Agent Engine / MSFT→Foundry. 클라우드 계정 필요.
+
+### 외부/사용자 개입
+- [ ] (deferred) **Slack App 실 생성/토큰** — 코드+하네스(`scripts/slack_live_approval.py`) ready, 실 workspace만 필요. On-Prem 승인 게이트도 Slack 버튼 프런트엔드 연동 가능(현재는 대시보드 버튼으로 대체됨).
+- [ ] (deferred) **테크 아티클(LinkedIn/Medium)** 리뷰·배포 — 데모 영상 `docs/post/local-onprem-edited.mp4` ready.
+- [ ] 대시보드 **브라우저 UI 인증 배포 클릭 데모** — GitHub OAuth 로그인(사용자 수행). 백엔드/read 경로는 검증됨.
+
+## 참고 — 2026-07-14 세션 완료 (상세는 PROGRESS_LOG)
+
+A2A Phase 2(실 kagent 라이브+messageId 버그) · PROVISION 격리 · ARCHITECTURE 정합화 · **On-Prem Day-2 전체 vertical**(PATH B webhook→승인 게이트→대시보드 승인/타임라인 hybrid→실 executor kubectl) · MCP Gateway 단일 카탈로그(기반) · docs tidy.
 
 ## 작업 규칙
 
 - 멀티파일 변경 후 `make check` 실행, pass/fail 보고.
 - 묶음 완료 시 `/checkpoint`로 PROGRESS_LOG append + STATUS 갱신.
-- 요청 범위 밖 기능 추가 금지.
+- 요청 범위 밖 기능 추가 금지. 하드-투-리버스(클러스터 변경/클라우드/대규모 리팩터)는 승인 후.

@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-14
 
-> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **actionable 코드 백로그 재소진**. 남은 것은 전부 외부/deferred: Slack App 실생성, 테크 아티클 배포. ※ 2026-07-14 완료: **A2A Phase 2 실 kagent 라이브 E2E**(supervisor→실 kagent 카드 discovery→JSON-RPC 위임→실 도구 진단; **A2A 필수 `messageId` 누락 버그 수정**+회귀 테스트, gate 602). ⚠️ Phase 2 인프라(kind `platform-agent`+kagent 18파드+MLX 30B) 실행 중 유지 — 정리 시 `make local-cluster-down`+MLX/proxy pkill. ※ 2026-07-13: 추적 IA 라이브 실증·CDK diff 재검증·kagent 정리(MOOT)·feat 삭제·A2A Phase 1·PostCSS·NEXT_PUBLIC #7.
+> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **① origin push 결정**(로컬 커밋 11개 미push, main ahead 11, 전부 gate-green 626). ② 남은 로드맵은 성격별: 로컬-자율(인터랙티브 MCP 카탈로그 채택·실 executor scale/drain, 리스크有), 클라우드(GCP/Azure Provision·Agent Runtime, 크레덴셜 필요), 외부(Slack App·아티클). ※ 2026-07-14 완료: A2A Phase 2 실 kagent + **On-Prem Day-2 전체 vertical**(PATH B webhook→승인 게이트→대시보드 승인/타임라인 hybrid→실 executor kubectl, kind 라이브 실증) + MCP Gateway 단일 카탈로그(기반). 모든 인프라(kind/MLX) 정리 완료.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 

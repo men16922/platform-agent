@@ -9,6 +9,12 @@
 
 ---
 
+## D12 — On-Prem Day-2 = PATH B webhook + in-process 4-step + 오프라인 승인 게이트 + 실 executor는 기본 OFF
+
+- **Decision:** On-Prem의 이벤트 진입(PATH B)은 **FastAPI webhook**(`onprem_webhook_api`), 오케스트레이션은 **in-process 4-step 직접 호출**(`onprem_incident_pipeline`이 detector→analyzer→decision→executor 핸들러를 출력→입력 체인 — 클라우드의 Step Functions/Workflows/Durable Functions 대응). 승인은 **오프라인 JSONL pending 스토어**(`onprem_approvals`, deploy_recorder식 single-row 승계) + `/approve`(decision 재생 실행)·`/reject`. 인시던트는 **오프라인 JSONL 스토어**(`onprem_incidents`)에 기록하고 webhook `/incidents`로 노출 → 대시보드가 AWS+On-Prem을 **hybrid HTTP 병합**(승인 카드·타임라인, source 배지). **실 remediation(`onprem_runner`, kubectl)은 `ONPREM_EXECUTOR_LIVE`로 기본 OFF**(TESTING 시 강제 OFF), 켜도 **되돌리기 쉬운 액션(rollout restart/undo)만** 자동 실행.
+- **Reason:** On-Prem은 매니지드 오케스트레이터/DynamoDB/SFN이 없어 완전 오프라인이어야 함 → in-process 체인 + 파일 스토어. 대시보드는 Vercel-호환 위해 파일 경로 대신 webhook HTTP로 읽음(onprem-status 패턴 재사용). 자동 remediation이 임의로 클러스터를 변경하면 위험 → 기본 OFF + 되돌리기 쉬운 액션만이 안전 기본값(프로덕션 사고 방지). scale/drain은 desired-state 파라미터가 알림에 없어 로드맵.
+- **Impact:** 신규 `onprem_webhook_api`/`onprem_incident_pipeline`/`onprem_approvals`/`onprem_incidents`/`operations/executor/onprem_runner`; executor `_run_external_action` onprem 분기가 stub→runner. 대시보드 `approval-data.ts`/`incident-data.ts` hybrid 병합 + `Incident.provider`에 onprem. `make dev-up`에 webhook 통합. 환경변수 `PLATFORM_{APPROVALS,INCIDENT}_FILE`·`ONPREM_WEBHOOK_URL`·`ONPREM_EXECUTOR_LIVE`. 되돌리려면 webhook·스토어·대시보드 hybrid·executor 분기를 함께 되돌려야 함. kind 라이브로 rollout restart 파드 교체 실증(2026-07-14).
+
 ## D11 — 배포 추적 데이터 모델·IA: type/cluster 분류 + 롤백은 status(단일-row 승계) + teardown cascade
 
 - **Decision:** activity 기록에 **`type`(provision/deploy)** 과 **`cluster`(연결키: deploy.cluster == provision.service)** 를 저장하고, **롤백은 별도 type이 아니라 status(`rolled-back`)** 로 표현한다(원본 행을 같은 `deployment_id`로 supersede = 단일-row). **cluster teardown은 그 클러스터의 deploy들을 자동 `rolled-back`으로 cascade**. 자연어(rollback_deployment/teardown_cluster)와 UI 버튼은 **동일 경로**(supersede/cascade)로 기록. 대시보드는 **Provisioning / Deployments / History** 3분리 + **통합 중첩 상세**(provisioning⊃deployments, 한 페이지). `provider`(aws/gcp/azure/onprem)와 `environment`(production/staging/dev)는 직교(더 이상 environment=provider 아님).
