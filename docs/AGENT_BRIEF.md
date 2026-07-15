@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-15
 
-> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **레퍼런스 Tier 2 전체 완결(#2·#3·#4)**: #2 agents-as-tools 오케스트레이션+self-consistency(`orchestration.py`) · #3 MCP-over-HTTP 커넥터+per-tool/글로벌 kill-switch(`mcp_server.py` `remote_mcp_tool`/`MCPServer`) · #4 cross-account STS AssumeRole+graceful fallback(`adapters/aws_session.py`). 3종 모두 비파괴·옵트인, +34 test, gate **736**. Tier 1도 완료. 클라우드 라이브 전부 완료·Vercel 안정화. **잔여 레퍼런스=#7(Helm/Terraform, Tier 3)만.** **다음 우선순위 = 외부**(Slack App 실 생성·아티클 배포·대시보드 OAuth 로그인 데모) 또는 **라이브 실증**(원격 MCP SigV4·2nd AWS 계정 assume-role·MLX sampler self-consistency, 모두 사용자 크레덴셜 필요). 하네스: billable create·보안완화는 사용자 `!` 필요.
+> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **레퍼런스 Tier 2 전체 완결(#2·#3·#4) + #4 소비자 배선 + 종합 아키텍처 아티클 초안, origin/main 반영 완료**(HEAD `fb7af25`, gate **738**). #2 agents-as-tools+self-consistency(`orchestration.py`) · #3 MCP-over-HTTP 커넥터+kill-switch(`mcp_server.py`) · #4 cross-account STS AssumeRole+fallback(`adapters/aws_session.py`, 소비자=runtime/deployment CodeBuild/executor SSM). 3종 비파괴·옵트인. Tier 1도 완료. 클라우드 라이브 전부 완료·Vercel 안정화. **잔여 레퍼런스=#7(Helm/Terraform, Tier 3)만.** **다음 = 외부/사용자 개입만**: 아티클(`docs/post/platform-agent-architecture.md`) 배포·대시보드 OAuth 로그인 데모·(후순위)Slack App·라이브 실증(원격 MCP SigV4·2nd AWS 계정·MLX sampler, 크레덴셜 필요). 하네스: billable create·보안완화는 사용자 `!` 필요.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 
