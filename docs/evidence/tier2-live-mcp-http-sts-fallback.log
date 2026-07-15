@@ -1,0 +1,31 @@
+STS assume_role failed for arn:aws:iam::908601828278:role/nonexistent-cross-account-role (ClientError); falling back to in-account credentials
+
+==============================================================================
+PART C — Tier 2 #3: MCP-over-HTTP connector over a REAL local mock MCP server
+==============================================================================
+  mock MCP server listening on http://127.0.0.1:50935/rpc
+
+[C1 real HTTP round-trip] success=True  output='kubernetes docs: kubectl rollout restart'
+  server received JSON-RPC: method='tools/call' name='search' args={'query': 'how to restart a deployment'}
+
+[C2 remote isError → mapped] success=False  error='upstream 503'
+
+[C3 kill-switch] success=False  error="tool 'web_search' is disabled by per-tool kill-switch"
+  server hit count unchanged: True  (no HTTP call made — kill-switch fired before dispatch)
+
+[C4 transport failure → graceful degrade] success=False  error='remote MCP call to http://127.0.0.1:1/rpc failed: URLError: <urlopen error [Errno 61] Connection refused>'
+
+==============================================================================
+PART D — Tier 2 #4: cross-account STS AssumeRole graceful fallback (REAL STS)
+==============================================================================
+  current account=908601828278
+  attempting AssumeRole into a role that does NOT exist: arn:aws:iam::908601828278:role/nonexistent-cross-account-role
+
+[D1 graceful fallback] assumed=False  fell_back=True
+  returned session identity (proves in-account fallback works): arn:aws:iam::908601828278:user/q-user
+
+[D2 fallback=False → re-raises real STS error] ClientError: An error occurred (AccessDenied) when calling the AssumeRole operation: User: arn:aws:iam::908601828278:user/q-user is n
+
+==============================================================================
+DONE — real HTTP (connector) and real STS (fallback) exercised the shipped code.
+==============================================================================
