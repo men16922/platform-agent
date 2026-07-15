@@ -3,6 +3,16 @@
  * In production, these would be API routes calling the actual cloud SDKs.
  */
 
+// Reconciliation gate result (deterministic grounding check). When the analyzer's
+// LLM conclusions aren't grounded in detector evidence, an AUTO decision is
+// downgraded to APPROVE — this carries the "why".
+export interface Reconciliation {
+  grounded: boolean;
+  issues: string[];
+  grounding_ratio: number;
+  mode_override: string | null; // e.g. "APPROVE" when downgraded
+}
+
 export interface Incident {
   id: string;
   provider: "aws" | "gcp" | "azure" | "onprem";
@@ -14,6 +24,7 @@ export interface Incident {
   resolved: boolean;
   executed_actions: string[];
   created_at: string;
+  reconciliation?: Reconciliation;
 }
 
 // Domain of a row (which page it belongs to). Rollback is a STATUS, not a type,
@@ -34,12 +45,37 @@ export interface Deployment {
   created_at: string;
 }
 
+// One planned specialist step in an agents-as-tools orchestration.
+export interface PlanStepView {
+  role: string;
+  instruction?: string;
+  delegated?: boolean;
+}
+
 export interface TraceItem {
-  kind: "reasoning" | "tool";
+  kind: "reasoning" | "tool" | "consensus" | "plan";
   text?: string; // reasoning
   tool?: string; // tool
   args?: Record<string, unknown>;
   result?: unknown;
+  // consensus (self-consistency routing)
+  role?: string;
+  agreement?: number;
+  votes?: Record<string, number>;
+  fell_back?: boolean;
+  samples?: number;
+  // plan (agents-as-tools chaining)
+  steps?: PlanStepView[];
+}
+
+// Per-run cost/usage sub-metrics aggregated from the execution trace.
+export interface CostMetrics {
+  tool_calls_total: number;
+  tool_calls_by_name: Record<string, number>;
+  reasoning_steps: number;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
 }
 
 export interface AgentActivity {
@@ -56,6 +92,7 @@ export interface AgentActivity {
   instruction?: string;
   summary?: string;
   trace?: TraceItem[];
+  cost_metrics?: CostMetrics;
 }
 
 export interface CloudHealth {

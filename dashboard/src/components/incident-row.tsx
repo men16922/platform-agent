@@ -34,6 +34,33 @@ export function IncidentRow({ incident }: { incident: Incident }) {
         <span className="font-medium text-sm">{incident.alarm_name}</span>
       </div>
       <p className="line-clamp-2 text-sm leading-6 text-[var(--muted)]">{incident.root_cause}</p>
+      {incident.reconciliation && !incident.reconciliation.grounded && (
+        <div className="rounded-lg border border-amber-400/40 bg-amber-400/[0.08] p-2.5 text-[11px] leading-5 text-amber-100">
+          <div className="flex items-center gap-2 font-bold">
+            <span>🛡️ Reconciliation gate</span>
+            <span className="rounded bg-amber-400/20 px-1.5 py-0.5 font-mono text-[10px]">
+              grounding {incident.reconciliation.grounding_ratio.toFixed(2)}
+            </span>
+            {incident.reconciliation.mode_override && (
+              <span className="rounded bg-amber-400/20 px-1.5 py-0.5 font-mono text-[10px]">
+                AUTO → {incident.reconciliation.mode_override}
+              </span>
+            )}
+          </div>
+          {incident.reconciliation.issues.length > 0 && (
+            <ul className="mt-1 list-disc pl-4 text-amber-100/80">
+              {incident.reconciliation.issues.map((issue) => (
+                <li key={issue}>{issue}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+      {incident.reconciliation?.grounded && (
+        <span className="inline-flex w-fit items-center gap-1 rounded bg-emerald-400/12 px-1.5 py-0.5 text-[10px] font-bold text-[var(--success)]">
+          🛡️ grounded {incident.reconciliation.grounding_ratio.toFixed(2)}
+        </span>
+      )}
       {incident.executed_actions.length > 0 && (
         <div className="flex gap-1 flex-wrap">
           {incident.executed_actions.map((action) => (

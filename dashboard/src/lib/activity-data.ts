@@ -365,6 +365,34 @@ function parseTrace(raw: unknown): AgentActivity["trace"] {
         if (s.kind === "reasoning") {
           return { kind: "reasoning" as const, text: typeof s.text === "string" ? s.text : "" };
         }
+        // consensus item (self-consistency routing)
+        if (s.kind === "consensus") {
+          return {
+            kind: "consensus" as const,
+            role: typeof s.role === "string" ? s.role : undefined,
+            agreement: typeof s.agreement === "number" ? s.agreement : undefined,
+            votes:
+              typeof s.votes === "object" && s.votes !== null
+                ? (s.votes as Record<string, number>)
+                : undefined,
+            fell_back: s.fell_back === true,
+            samples: typeof s.samples === "number" ? s.samples : undefined,
+          };
+        }
+        // plan item (agents-as-tools chaining)
+        if (s.kind === "plan") {
+          const rawSteps = Array.isArray(s.steps) ? s.steps : [];
+          return {
+            kind: "plan" as const,
+            steps: rawSteps
+              .filter((p): p is Record<string, unknown> => typeof p === "object" && p !== null)
+              .map((p) => ({
+                role: typeof p.role === "string" ? p.role : "unknown",
+                instruction: typeof p.instruction === "string" ? p.instruction : undefined,
+                delegated: p.delegated === true,
+              })),
+          };
+        }
         // tool item (also the legacy shape, which had no "kind")
         return {
           kind: "tool" as const,
@@ -398,6 +426,27 @@ function mapActivityItem(item: Record<string, unknown>): AgentActivity | null {
     instruction: typeof item.instruction === "string" ? item.instruction : undefined,
     summary: typeof item.summary === "string" ? item.summary : undefined,
     trace: parseTrace(item.trace),
+    cost_metrics: mapCostMetrics(item.cost_metrics),
+  };
+}
+
+function mapCostMetrics(raw: unknown): AgentActivity["cost_metrics"] {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const m = raw as Record<string, unknown>;
+  const num = (v: unknown): number => (typeof v === "number" ? v : 0);
+  const byName =
+    typeof m.tool_calls_by_name === "object" && m.tool_calls_by_name !== null
+      ? Object.fromEntries(
+          Object.entries(m.tool_calls_by_name as Record<string, unknown>).map(([k, v]) => [k, num(v)]),
+        )
+      : {};
+  return {
+    tool_calls_total: num(m.tool_calls_total),
+    tool_calls_by_name: byName,
+    reasoning_steps: num(m.reasoning_steps),
+    input_tokens: num(m.input_tokens),
+    output_tokens: num(m.output_tokens),
+    total_tokens: num(m.total_tokens),
   };
 }
 

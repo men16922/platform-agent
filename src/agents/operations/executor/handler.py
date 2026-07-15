@@ -335,7 +335,7 @@ def _record_incident(
 
     try:
         table = _DYNAMO.Table(_INCIDENT_TABLE)
-        table.put_item(Item={
+        item = {
             "alarm_name":      alarm.alarm_name,
             "incident_id":     incident_id,
             "provider":        provider,
@@ -349,7 +349,12 @@ def _record_incident(
             "created_at":      recorded_at,
             "resolved_at":     recorded_at,
             "ttl":             int(time.time()) + 90 * 86400,  # 90-day retention
-        })
+        }
+        # Surface the reconciliation gate result so the dashboard can show WHY an
+        # AUTO decision was downgraded (parity with the on-prem incident pipeline).
+        if decision.reconciliation:
+            item["reconciliation"] = decision.reconciliation
+        table.put_item(Item=item)
     except Exception as exc:
         logger.error("executor.dynamo.error", error=str(exc))
 

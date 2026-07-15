@@ -174,6 +174,45 @@ function PhaseBody({ activity, toolCalls }: { activity: AgentActivity | null; to
                 </li>
               );
             }
+            if (item.kind === "consensus") {
+              return (
+                <li key={i} className="rounded-xl border-l-2 border-[#c4b5fd]/50 bg-[#c4b5fd]/[0.06] p-3.5">
+                  <div className="mb-1 flex items-center gap-2 text-[9px] font-bold uppercase tracking-wider text-[#c4b5fd]">
+                    <span>🗳️ self-consistency route</span>
+                    {typeof item.agreement === "number" && (
+                      <span className="rounded bg-[#c4b5fd]/15 px-1.5 py-0.5 font-mono text-[9px] text-[#d9ccff]">
+                        {item.role} · agreement {item.agreement.toFixed(2)}
+                      </span>
+                    )}
+                    {item.fell_back && (
+                      <span className="rounded bg-amber-400/20 px-1.5 py-0.5 font-mono text-[9px] text-amber-100">
+                        fell back → deterministic
+                      </span>
+                    )}
+                  </div>
+                  {item.votes && (
+                    <p className="font-mono text-[11px] text-[#cbd6e9]">votes: {JSON.stringify(item.votes)}</p>
+                  )}
+                </li>
+              );
+            }
+            if (item.kind === "plan") {
+              return (
+                <li key={i} className="rounded-xl border-l-2 border-[#8ab4f8]/50 bg-[#8ab4f8]/[0.05] p-3.5">
+                  <div className="mb-1.5 text-[9px] font-bold uppercase tracking-wider text-[#8ab4f8]">🧭 orchestration plan</div>
+                  <ol className="flex flex-wrap items-center gap-1.5">
+                    {(item.steps ?? []).map((step, j) => (
+                      <li key={j} className="flex items-center gap-1.5">
+                        {j > 0 && <span className="text-[#8ab4f8]">→</span>}
+                        <span className={`rounded border px-2 py-0.5 font-mono text-[10px] ${step.delegated ? "border-emerald-400/40 bg-emerald-400/10 text-[var(--success)]" : "border-white/10 bg-white/5 text-[#cbd6e9]"}`}>
+                          {step.role}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </li>
+              );
+            }
             const ok = stepOk(item.result);
             const cmd = asCommandResult(item.result);
             return (
@@ -200,6 +239,30 @@ function PhaseBody({ activity, toolCalls }: { activity: AgentActivity | null; to
             );
           })}
         </ol>
+      )}
+
+      {activity?.cost_metrics && (activity.cost_metrics.tool_calls_total > 0 || activity.cost_metrics.total_tokens > 0) && (
+        <div className="rounded-lg border border-white/6 bg-white/[0.02] p-3">
+          <div className="mb-2 text-[9px] font-bold uppercase tracking-wider text-[var(--muted)]">💰 cost / usage sub-metrics</div>
+          <div className="flex flex-wrap gap-2 text-[11px]">
+            <span className="rounded bg-white/5 px-2 py-1 font-mono text-[#cbd6e9]">tool calls {activity.cost_metrics.tool_calls_total}</span>
+            <span className="rounded bg-white/5 px-2 py-1 font-mono text-[#cbd6e9]">reasoning {activity.cost_metrics.reasoning_steps}</span>
+            {activity.cost_metrics.total_tokens > 0 && (
+              <span className="rounded bg-white/5 px-2 py-1 font-mono text-[#cbd6e9]">
+                tokens {activity.cost_metrics.total_tokens} ({activity.cost_metrics.input_tokens} in / {activity.cost_metrics.output_tokens} out)
+              </span>
+            )}
+          </div>
+          {Object.keys(activity.cost_metrics.tool_calls_by_name).length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {Object.entries(activity.cost_metrics.tool_calls_by_name).map(([name, count]) => (
+                <span key={name} className="rounded border border-white/6 bg-white/[0.035] px-1.5 py-0.5 font-mono text-[10px] text-[#cbd6e9]">
+                  {name} ×{count}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {activity?.summary && (

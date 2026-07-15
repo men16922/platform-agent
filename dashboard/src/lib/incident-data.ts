@@ -78,6 +78,18 @@ export function mapIncidentRecord(item: Record<string, unknown>): Incident | nul
         : typeof item.resolved_at === "string"
           ? item.resolved_at
           : "1970-01-01T00:00:00Z",
+    reconciliation: mapReconciliation(item.reconciliation),
+  };
+}
+
+function mapReconciliation(raw: unknown): Incident["reconciliation"] {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const r = raw as Record<string, unknown>;
+  return {
+    grounded: r.grounded === true,
+    issues: Array.isArray(r.issues) ? r.issues.filter((i): i is string => typeof i === "string") : [],
+    grounding_ratio: typeof r.grounding_ratio === "number" ? r.grounding_ratio : 1,
+    mode_override: typeof r.mode_override === "string" ? r.mode_override : null,
   };
 }
 
