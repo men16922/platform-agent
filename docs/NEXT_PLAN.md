@@ -12,7 +12,8 @@
 - [x] ~~#4 **cross-account STS AssumeRole + graceful fallback**~~ — `adapters/aws_session.py`(`CircuitBreaker` 재사용) + `runtime/aws.py` 옵트인. gate 723.
 - **잔여 레퍼런스 = #7(Helm/Terraform 프로덕션)만 = Tier 3**(온프렘/클라우드 프로덕션화 시).
 - [x] ~~#4 **크로스계정 소비자 배선**~~ — **완료(2026-07-15)**: `deployment/aws.py` CodeBuild + `executor/handler.py` SSM(primary+failover `_ssm_client`)이 `assume_role_session(env-role)` 소비, env 미설정=in-account 무변경. +2 test, gate 738.
-- (선택) 라이브 실증(사용자 크레덴셜/엔드포인트 필요): 실 로컬 MLX-Qwen sampler self-consistency(#2) · 실 원격 MCP 서버 SigV4/IRSA(#3) · 2번째 AWS 계정 assume-role(#4).
+- [x] ~~라이브 실증(#2 self-consistency · #3 MCP-over-HTTP · #4 STS graceful fallback)~~ — **완료(2026-07-15)**: 실 MLX Qwen(#2 reconciliation 포함)·실 HTTP mock MCP(#3)·실 STS(#4 폴백). 증거 `docs/evidence/tier2-live-*.log`, 스크립트 `scripts/live_*_demo.py`.
+- ~~2번째 AWS 계정 cross-account **성공** 경로 라이브~~ — **계획에서 제거(2026-07-15, 사용자 결정)**. #4 코드+폴백/실패 경로는 실 STS로 실증 완료; 실 크로스계정 성공은 하지 않음.
 
 ## 열린 작업 (로드맵 — 성격별)
 
@@ -28,7 +29,7 @@
 
 ### 외부/사용자 개입
 - [ ] (deferred) **Slack App 실 생성/토큰** — 코드+하네스(`scripts/slack_live_approval.py`) ready, 실 workspace만 필요. On-Prem 승인 게이트도 Slack 버튼 프런트엔드 연동 가능(현재는 대시보드 버튼으로 대체됨).
-- [ ] (deferred) **테크 아티클(LinkedIn/Medium)** 리뷰·배포 — 데모 영상 `docs/post/local-onprem-edited.mp4` ready.
+- [ ] **테크 아티클 배포(LinkedIn/Medium)** — **초안 작성 완료**: 종합 아키텍처 글 `docs/post/platform-agent-architecture.md`(신규, 커밋 `fb7af25`) + On-Prem 데모 글 `docs/post/linkedin-onprem-agent-20s-demo.md` + 데모 영상 `docs/post/local-onprem-edited.mp4`. **잔여=배포(사용자)** + (선택) 한국어판/짧은 LinkedIn 컷.
 - [ ] 대시보드 **브라우저 UI 인증 배포 클릭 데모** — GitHub OAuth 로그인(사용자 수행). 백엔드/read 경로는 검증됨.
 
 ## 참고 — 2026-07-14 세션 완료 (상세는 PROGRESS_LOG)
