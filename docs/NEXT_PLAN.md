@@ -4,8 +4,12 @@
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md` / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 다음 우선순위 — AWSome AI Gateway 레퍼런스 **Tier 2 전체 완결(2026-07-15)**
+## 다음 우선순위 — **자율 코드 백로그 소진(2026-07-15). 잔여 = 전부 사용자/인프라.**
 
+> 이번 세션(gate 702→**748**): Tier 2(#2·#3·#4) + 실 LLM/HTTP/STS 라이브 실증 + 대시보드 관측 3종 노출·orchestrator 활동기록 + ARCHITECTURE stale 정정 + **아키텍처 배선 ①②**(supervisor 프론트도어·deploy↔runtime `host` 스텝). 전 커밋 origin/main.
+
+- [x] ~~**아키텍처 배선 ①② (자율 로드맵)**~~ — **완료(2026-07-15)**: ② supervisor 프론트도어(`local_deploy_api` `/api/local-deploy` 분류→A2A 위임/in-process 폴백) + ① deploy↔runtime(DeployPipeline opt-in `host` 스텝, approval-gated). +7 test, gate 748.
+- [x] ~~**대시보드 관측 3종**~~ — **완료(2026-07-15)**: cost_metrics·reconciliation(AWS 파리티)·consensus/steps(orchestrator `record_route_activity` producer 완결). next build 클린.
 - [x] ~~**Tier 1 반영**~~ — reconciliation gate·비용 3단계 게이트·서킷브레이커+readiness·비용 서브메트릭. (상세 `ARCHITECTURE.md` 표)
 - [x] ~~#2 **agents-as-tools 오케스트레이션 + self-consistency**~~ — `orchestration.py`(N-샘플 majority vote·저합의 폴백 + `Orchestrator` 체이닝), a2a_server 옵트인. gate 714.
 - [x] ~~#3 **MCP-over-HTTP 커넥터 + per-tool/글로벌 kill-switch**~~ — `mcp_server.py` `remote_mcp_tool`(intercept-reinject·전송실패 degrade) + `MCPServer` kill-switch 게이트(`MCP_DISABLED_TOOLS`/`MCP_KILL_SWITCH`), 비파괴. gate 736.
