@@ -21,8 +21,10 @@ Run with:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
+import os
 from typing import Any, Callable
 
 from fastapi import Depends, FastAPI, HTTPException
@@ -69,6 +71,11 @@ class DeployResponse(BaseModel):
     steps: list[DeployStep]
     suitability: dict[str, str]
     record: dict[str, str] | None = None
+    # Front-door supervisor: whether the request was delegated to an A2A specialist
+    # and the classified route (present even when it falls through in-process).
+    delegated: bool = False
+    route: str | None = None
+    route_trace: list[dict[str, Any]] | None = None
 
 
 class RollbackRequest(BaseModel):
@@ -93,6 +100,24 @@ def get_deployer_factory() -> Callable[..., Any] | None:
     Returns None in production so the router uses its default pydantic-ai factory.
     """
     return None
+
+
+def get_front_door() -> Any | None:
+    """The supervisor/orchestrator front door — classifies each request and
+    delegates to a registered A2A specialist when one is configured, else the
+    request falls through to the in-process on-prem deployer.
+
+    Dependency seam (overridden in tests). Non-breaking: with no
+    ``PLATFORM_{PROVISION,DEPLOY,KAGENT}_A2A_URL`` set, the supervisor only
+    classifies and never delegates, so behavior is identical to before.
+    """
+    from src.agents.ai.supervisor import Supervisor
+
+    if os.getenv("SUPERVISOR_ORCHESTRATION", "").lower() in ("1", "true", "yes"):
+        from src.agents.ai.orchestration import Orchestrator
+
+        return Orchestrator.from_environment()
+    return Supervisor.from_environment()
 
 
 app = FastAPI(title="platform-agent AI Model Router API", version="1.0")
@@ -121,7 +146,35 @@ async def list_models(provider: str = "onprem") -> dict[str, Any]:
 async def local_deploy(
     req: DeployRequest,
     factory: Callable[..., Any] | None = Depends(get_deployer_factory),
+    front_door: Any | None = Depends(get_front_door),
 ) -> DeployResponse:
+    # Front-door: classify the request and delegate to a registered A2A specialist
+    # when one is configured; otherwise fall through to the in-process deployer.
+    route: str | None = None
+    route_trace: list[dict[str, Any]] | None = None
+    if front_door is not None:
+        try:
+            # handle() may do network I/O when delegating — keep the event loop free.
+            s_outcome = await asyncio.to_thread(front_door.handle, req.instruction)
+            route = s_outcome.decision.role.value
+            route_trace = s_outcome.trace
+            if s_outcome.delegated:
+                return DeployResponse(
+                    ok=True,
+                    model=req.model,
+                    provider=req.provider,
+                    instruction=req.instruction,
+                    summary=f"Supervisor delegated this request to the {route} A2A specialist.",
+                    steps=[],
+                    suitability={},
+                    record=None,
+                    delegated=True,
+                    route=route,
+                    route_trace=route_trace,
+                )
+        except Exception:  # noqa: BLE001 - front door is best-effort; fall through
+            logger.warning("front-door supervisor failed; using in-process deployer", exc_info=True)
+
     try:
         outcome = await route_deploy(req.instruction, req.model, req.provider, agent_factory=factory)
     except ValueError as exc:
@@ -154,6 +207,9 @@ async def local_deploy(
         steps=[DeployStep(**step) for step in outcome.steps],
         suitability=outcome.suitability,
         record=record,
+        delegated=False,
+        route=route,
+        route_trace=route_trace,
     )
 
 

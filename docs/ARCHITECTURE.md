@@ -19,9 +19,9 @@
 | **Agent Runtime** | Bedrock AgentCore | Vertex AI Agent Engine | Foundry Agent Service | **kagent (CNCF)** |
 | **Day-2 (Event / Orch)** | EventBridge / Step Functions | Pub/Sub / Cloud Workflows | Event Grid / Durable Functions | Webhook / Temporal |
 
-**구현 상태:** Deploy(4-provider) ✅ · Provision(4-provider: On-Prem Terraform/Ansible + AWS CDK + **GCP/Azure GKE·AKS 어댑터, AKS 실 클러스터 라이브**) ✅ · Day-2(AWS/GCP/Azure) ✅ · **Agent Runtime 매니지드 호스팅 어댑터 3/3 클라우드 실 배포 라이브**(AgentCore/Agent Engine/Foundry, create→호출→teardown) ✅ · **MCP Gateway 단일 카탈로그**(게이트웨이+인터랙티브 에이전트, 드리프트-0) ✅ · **Orchestrator(supervisor) 라우팅 + A2A Agent Card discovery/위임 ✅**(실 kagent 라이브) · **agents-as-tools 오케스트레이션 + self-consistency ✅**(Tier 2 #2, `orchestration.py`) · **On-Prem Day-2 실 executor(되돌리기-가능 4조치: restart/undo/scale/polite drain) ✅** · **AWSome AI Gateway 레퍼런스 Tier 1(reconciliation·budget·circuit breaker·cost) + Tier 2(#2 agents-as-tools·#3 MCP-over-HTTP+kill-switch·#4 cross-account STS) 전부 반영 ✅**.
+**구현 상태:** Deploy(4-provider) ✅ · Provision(4-provider: On-Prem Terraform/Ansible + AWS CDK + **GCP/Azure GKE·AKS 어댑터, AKS 실 클러스터 라이브**) ✅ · Day-2(AWS/GCP/Azure) ✅ · **Agent Runtime 매니지드 호스팅 어댑터 3/3 클라우드 실 배포 라이브**(AgentCore/Agent Engine/Foundry, create→호출→teardown) ✅ · **MCP Gateway 단일 카탈로그**(게이트웨이+인터랙티브 에이전트, 드리프트-0) ✅ · **Orchestrator(supervisor) 라우팅 + A2A Agent Card discovery/위임 ✅**(실 kagent 라이브) · **agents-as-tools 오케스트레이션 + self-consistency ✅**(Tier 2 #2, `orchestration.py`) · **On-Prem Day-2 실 executor(되돌리기-가능 4조치: restart/undo/scale/polite drain) ✅** · **AWSome AI Gateway 레퍼런스 Tier 1(reconciliation·budget·circuit breaker·cost) + Tier 2(#2 agents-as-tools·#3 MCP-over-HTTP+kill-switch·#4 cross-account STS) 전부 반영 ✅** · **배포 파이프라인↔매니지드 런타임 정면 배선(DeployPipeline `host` 스텝) ✅** · **supervisor를 `local_deploy_api` 정면 진입점으로 배선 ✅**.
 
-> **잔여 로드맵(진짜 미구현만):** ① 배포 파이프라인 ↔ 매니지드 런타임 정면 배선 🔲 · ② supervisor를 `local_deploy_api` 정면 진입점으로 배선 🔲 · ③ Agent Runtime Memory/Code-Interpreter·Browser 도구(AgentCore 패리티, 현재 stateless) 🔲 · ④ On-Prem State Store(PostgreSQL/Redis)·Alertmanager 실연동 🔲 · ⑤ Helm/Terraform 프로덕션(레퍼런스 #7 = Tier 3) 🔲 · ⑥ Slack App 실 생성(사용자) · Harbor substrate 🔲. **그 외 코어 아키텍처는 전부 구현·검증(라이브 또는 유닛) 완료.**
+> **잔여 로드맵:** ~~① 배포 파이프라인 ↔ 매니지드 런타임 정면 배선~~ **✅ 완료(2026-07-15)** — DeployPipeline에 opt-in `host` 스텝(`get_runtime_adapter(provider).host_agent`, approval-gated preflight/create, onprem=kagent라 skip). ~~② supervisor를 `local_deploy_api` 정면 진입점으로 배선~~ **✅ 완료(2026-07-15)** — `/api/local-deploy`가 supervisor/orchestrator로 먼저 분류→A2A 엔드포인트 설정 시 위임, 미설정 시 in-process deployer 폴백(비파괴). **진짜 미구현(전부 인프라/아스피레이셔널/사용자):** ③ Agent Runtime Memory/Code-Interpreter·Browser 도구(AgentCore 패리티, 현재 stateless) 🔲 · ④ On-Prem State Store(PostgreSQL/Redis)·Alertmanager 실연동 🔲 · ⑤ Helm/Terraform 프로덕션(레퍼런스 #7 = Tier 3) 🔲 · ⑥ Slack App 실 생성(사용자) · Harbor substrate 🔲. **그 외 코어 아키텍처는 전부 구현·검증(라이브 또는 유닛) 완료.**
 
 > **AI Model Router:** 위 "AI Agent (deploy)"는 각 환경의 *네이티브(recommended)* 조합일 뿐이다. 모델(두뇌)과 환경(대상)은 분리돼 있어 어떤 모델이든 어떤 환경에 배포할 수 있고, 적합도만 표기된다 ([상세](#ai-model-router-모델--환경-분리)).
 
@@ -277,7 +277,7 @@
 
 > 지금까지의 조각(2-역할 · Model Router · Agent Runtime · MCP Gateway)을 하나로 수렴시키는 상위 패턴. 요청을 받아 적절한 전문 에이전트에게 위임하는 **Orchestrator(supervisor)** + 에이전트 간 **A2A** 상호운용 + **MCP** 단일 도구 카탈로그.
 >
-> **구현 상태:** supervisor 라우팅(provision/deploy/kagent 분류) + **A2A Agent Card discovery(`/.well-known/agent-card.json`) → skill 매칭(capability 격리) → 위임(HTTP+JSON / JSON-RPC 0.3)** 은 `src/agents/ai/supervisor.py`에 **구현 완료**이고 자체 게이트웨이(Phase 1) 및 **실 kagent 에이전트(Phase 2, local MLX Qwen 백엔드)** 대상으로 **라이브 검증**됨. **agents-as-tools 오케스트레이션 + self-consistency(Tier 2 #2) 구현 완료 ✅**(`orchestration.py`: N-샘플 majority vote·저합의 시 결정론적 폴백 + `Orchestrator` 전문가 체이닝, a2a_server 옵트인, 라우팅 런 대시보드 기록). **단일 카탈로그도 해결 ✅**(게이트웨이·인터랙티브 각 단일 source-of-truth, 레이어 분리는 의도적). **잔여 로드맵(단 1건)**: supervisor를 `local_deploy_api` 정면 진입점으로 배선.
+> **구현 상태:** supervisor 라우팅(provision/deploy/kagent 분류) + **A2A Agent Card discovery(`/.well-known/agent-card.json`) → skill 매칭(capability 격리) → 위임(HTTP+JSON / JSON-RPC 0.3)** 은 `src/agents/ai/supervisor.py`에 **구현 완료**이고 자체 게이트웨이(Phase 1) 및 **실 kagent 에이전트(Phase 2, local MLX Qwen 백엔드)** 대상으로 **라이브 검증**됨. **agents-as-tools 오케스트레이션 + self-consistency(Tier 2 #2) 구현 완료 ✅**(`orchestration.py`: N-샘플 majority vote·저합의 시 결정론적 폴백 + `Orchestrator` 전문가 체이닝, a2a_server 옵트인, 라우팅 런 대시보드 기록). **단일 카탈로그도 해결 ✅**(게이트웨이·인터랙티브 각 단일 source-of-truth, 레이어 분리는 의도적). **supervisor 프론트도어 배선도 완료 ✅**: `local_deploy_api`의 `/api/local-deploy`가 supervisor/orchestrator로 먼저 분류 → A2A 엔드포인트 설정 시 위임, 미설정 시 in-process deployer 폴백(비파괴). **이 섹션 로드맵 소진.**
 
 ```
         사용자 NL 요청
@@ -302,7 +302,7 @@
 
 | | 현재 | 타깃 |
 |---|---|---|
-| 라우팅 | AI Model Router (model × env × role) **+ Orchestrator supervisor (요청 → 에이전트) ✅** | supervisor를 `local_deploy_api` 정면 진입점으로 배선 |
+| 라우팅 | AI Model Router (model × env × role) **+ Orchestrator supervisor (요청 → 에이전트) ✅ + `local_deploy_api` 정면 진입점 배선 ✅**(분류→A2A 위임/in-process 폴백) | (완료) |
 | 에이전트 연결 | **A2A 상호운용 ✅** (실 kagent 카드 discovery→위임 라이브 검증) | provision/deploy 전문가도 상시 A2A 서버로 노출 |
 | 도구 | in-process(인터랙티브 `AGENT_TOOL_CATALOG`) + MCP(A2A `TOOL_CATALOG`) **각 단일 source-of-truth ✅**; 원격 MCP 커넥터+kill-switch ✅(Tier 2 #3) | (레이어 분리는 의도적 — 수렴 안 함) |
 
@@ -620,7 +620,7 @@ rules:
 | AWS | Lambda 내 Python | Step Functions에서 직접 호출 | ✅ 구현 |
 | GCP | Cloud Function 내 Python | Workflows에서 HTTP 호출 | ✅ 구현 |
 | Azure | Az Function 내 Python | Durable Functions activity | ✅ 구현 |
-| On-Prem | FastAPI endpoint 또는 직접 import | Orchestrator에서 직접 호출 | 🔲 |
+| On-Prem | FastAPI endpoint (`local_deploy_api`) | supervisor 프론트도어 → A2A 위임/in-process 폴백 | ✅ 구현 |
 
 핵심: Guardian 로직은 동일 코드. 차이는 "어디서 실행되느냐"뿐.
 

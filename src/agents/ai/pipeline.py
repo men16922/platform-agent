@@ -52,6 +52,13 @@ class PipelineSpec:
     image: str = ""
     context_path: str = "."
     health_path: str = "/healthz"
+    # Optional managed-runtime hosting after deploy (AWS AgentCore / GCP Agent
+    # Engine / Azure Foundry). Opt-in; preflight-only until runtime_approved.
+    host_runtime: bool = False
+    runtime_image_uri: str = ""
+    runtime_role_arn: str = ""
+    runtime_env: dict[str, str] = field(default_factory=dict)
+    runtime_approved: bool = False
 
     def __post_init__(self):
         if not self.image:
@@ -110,7 +117,7 @@ class DeployPipeline:
     """Directed Acyclic Graph pipeline for deployment orchestration.
 
     DAG structure:
-        plan → guard → build → push → deploy → validate → report
+        plan → guard → build → push → deploy → validate → report → host
                                                     ↓ (on failure)
                                                  rollback
     """
@@ -124,6 +131,7 @@ class DeployPipeline:
             PipelineNode("deploy", self._step_deploy, depends_on=["push"]),
             PipelineNode("validate", self._step_validate, depends_on=["deploy"]),
             PipelineNode("report", self._step_report, depends_on=["validate"]),
+            PipelineNode("host", self._step_host, depends_on=["report"]),
         ]
 
     @property
@@ -161,6 +169,10 @@ class DeployPipeline:
             if step_result.status == StepStatus.SUCCESS:
                 completed.add(node.name)
                 context[node.name] = step_result.output
+            elif step_result.status == StepStatus.SKIPPED:
+                # An optional step whose handler chose to skip (e.g. host not
+                # requested) — neither completes nor fails the pipeline.
+                continue
             elif step_result.status == StepStatus.BLOCKED:
                 # Pipeline paused for approval
                 result.final_status = StepStatus.BLOCKED
@@ -349,3 +361,47 @@ class DeployPipeline:
         if result.success:
             return StepResult(step_name="rollback", status=StepStatus.SUCCESS, output={"rolled_back_to": result.rolled_back_to})
         return StepResult(step_name="rollback", status=StepStatus.FAILED, error=result.error or "Rollback failed")
+
+    def _step_host(self, spec: PipelineSpec, context: dict) -> StepResult:
+        """Optionally host the deployed agent on a managed runtime.
+
+        Opt-in via ``spec.host_runtime``. Mirrors the runtime adapters' plan-first
+        contract: unapproved requests run a read-only preflight (no billable
+        create) and report ``hosted=False``; ``runtime_approved=True`` performs the
+        real create. On-prem hosts agents on kagent (CNCF), not a cloud managed
+        runtime, so it is skipped there.
+        """
+        if not spec.host_runtime:
+            return StepResult(step_name="host", status=StepStatus.SKIPPED, output={"hosted": False, "reason": "not requested"})
+
+        from src.agents.adapters.runtime.base import RuntimeSpec
+        from src.agents.adapters.runtime.registry import get_runtime_adapter, supported_runtime_providers
+
+        if spec.provider not in supported_runtime_providers():
+            return StepResult(
+                step_name="host",
+                status=StepStatus.SKIPPED,
+                output={"hosted": False, "reason": f"managed runtime not available for provider '{spec.provider}' (on-prem uses kagent)"},
+            )
+
+        adapter = get_runtime_adapter(spec.provider)
+        runtime_spec = RuntimeSpec(
+            agent_name=spec.service_name,
+            provider=spec.provider,
+            image_uri=spec.runtime_image_uri,
+            role_arn=spec.runtime_role_arn,
+            env=dict(spec.runtime_env),
+            approved=spec.runtime_approved,
+        )
+        result = adapter.host_agent(runtime_spec)
+
+        if not result.success:
+            return StepResult(step_name="host", status=StepStatus.FAILED, error=result.error or "host_agent failed")
+        if not spec.runtime_approved:
+            # Preflight only — hosting is billable and needs explicit approval to create.
+            return StepResult(step_name="host", status=StepStatus.SUCCESS, output={"hosted": False, "status": result.status, "preflight": result.output})
+        return StepResult(
+            step_name="host",
+            status=StepStatus.SUCCESS,
+            output={"hosted": True, "runtime_id": result.runtime_id, "runtime_arn": result.runtime_arn, "status": result.status},
+        )

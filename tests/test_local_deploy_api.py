@@ -4,7 +4,24 @@ from fastapi.testclient import TestClient
 from pydantic_ai.models.test import TestModel
 
 import src.agents.ai.local_deployer as ld
-from src.agents.ai.local_deploy_api import app, get_deployer_factory
+from src.agents.ai.local_deploy_api import app, get_deployer_factory, get_front_door
+from src.agents.ai.supervisor import AgentRole, RouteDecision
+
+
+class _FakeFrontDoor:
+    """A stand-in supervisor/orchestrator for the front-door DI seam."""
+
+    def __init__(self, *, delegated, role="deploy"):
+        self._delegated = delegated
+        self._role = role
+
+    def handle(self, instruction, **kwargs):
+        return SimpleNamespace(
+            decision=RouteDecision(AgentRole(self._role), "test"),
+            delegated=self._delegated,
+            trace=[{"kind": "route", "role": self._role}],
+            response={"ok": True},
+        )
 
 
 def _fake_adapters(provider):
@@ -69,6 +86,49 @@ def test_local_deploy_endpoint_drives_tools(monkeypatch):
         # Step trace pairs each call with its adapter result.
         build_step = next(s for s in data["steps"] if s["tool"] == "build_image")
         assert build_step["result"]["image_tag"] == "reg/img:1"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_local_deploy_delegates_to_a2a_specialist():
+    factory_called = {"v": False}
+
+    def _tracking_factory(provider="onprem"):
+        factory_called["v"] = True
+        return _test_factory(provider)
+
+    app.dependency_overrides[get_front_door] = lambda: _FakeFrontDoor(delegated=True, role="deploy")
+    app.dependency_overrides[get_deployer_factory] = lambda: _tracking_factory
+    try:
+        client = TestClient(app)
+        resp = client.post("/api/local-deploy", json={"instruction": "Deploy orders-api"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["delegated"] is True
+        assert data["route"] == "deploy"
+        assert data["steps"] == []
+        # Delegation short-circuits the in-process deployer.
+        assert factory_called["v"] is False
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_local_deploy_falls_through_when_not_delegated(monkeypatch):
+    monkeypatch.setattr(ld, "get_deployment_adapters", _fake_adapters)
+    app.dependency_overrides[get_front_door] = lambda: _FakeFrontDoor(delegated=False, role="deploy")
+    app.dependency_overrides[get_deployer_factory] = lambda: _test_factory
+    try:
+        client = TestClient(app)
+        resp = client.post(
+            "/api/local-deploy",
+            json={"instruction": "Deploy orders-api v1.4.2 to the local cluster"},
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["delegated"] is False
+        assert data["route"] == "deploy"  # classification still surfaced on the fallthrough
+        assert data["ok"] is True
+        assert {s["tool"] for s in data["steps"]}  # the in-process deployer actually ran
     finally:
         app.dependency_overrides.clear()
 

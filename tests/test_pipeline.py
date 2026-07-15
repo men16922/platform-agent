@@ -7,6 +7,8 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 
+import src.agents.adapters.runtime.registry as rt_registry
+from src.agents.adapters.runtime.base import RuntimeResult
 from src.agents.ai.pipeline import (
     DeployPipeline,
     PipelineSpec,
@@ -14,6 +16,61 @@ from src.agents.ai.pipeline import (
     StepResult,
     StepStatus,
 )
+
+
+class _FakeRuntimeAdapter:
+    def __init__(self, result: RuntimeResult):
+        self._result = result
+
+    def host_agent(self, spec) -> RuntimeResult:
+        return self._result
+
+    def teardown_agent(self, spec) -> RuntimeResult:
+        return self._result
+
+
+class TestPipelineHostStep:
+    def test_skipped_when_not_requested(self):
+        step = DeployPipeline()._step_host(PipelineSpec(service_name="web", version="v1"), {})
+        assert step.status == StepStatus.SKIPPED
+        assert step.output["hosted"] is False
+
+    def test_skipped_for_onprem_managed_runtime(self):
+        spec = PipelineSpec(service_name="web", version="v1", provider="onprem", host_runtime=True)
+        step = DeployPipeline()._step_host(spec, {})
+        assert step.status == StepStatus.SKIPPED
+        assert "kagent" in step.output["reason"]
+
+    def test_preflight_success_when_unapproved(self, monkeypatch):
+        fake = _FakeRuntimeAdapter(RuntimeResult(success=True, agent_name="web", status="PREFLIGHT", output="0 existing"))
+        monkeypatch.setattr(rt_registry, "get_runtime_adapter", lambda provider: fake)
+        spec = PipelineSpec(service_name="web", version="v1", provider="aws", host_runtime=True, runtime_approved=False)
+        step = DeployPipeline()._step_host(spec, {})
+        assert step.status == StepStatus.SUCCESS
+        assert step.output["hosted"] is False  # preflight only — nothing created
+        assert step.output["status"] == "PREFLIGHT"
+
+    def test_creates_when_approved(self, monkeypatch):
+        fake = _FakeRuntimeAdapter(
+            RuntimeResult(success=True, agent_name="web", runtime_id="rt-1", runtime_arn="arn:rt", status="CREATING")
+        )
+        monkeypatch.setattr(rt_registry, "get_runtime_adapter", lambda provider: fake)
+        spec = PipelineSpec(
+            service_name="web", version="v1", provider="aws", host_runtime=True,
+            runtime_approved=True, runtime_image_uri="ecr/img:1", runtime_role_arn="arn:role",
+        )
+        step = DeployPipeline()._step_host(spec, {})
+        assert step.status == StepStatus.SUCCESS
+        assert step.output["hosted"] is True
+        assert step.output["runtime_id"] == "rt-1"
+
+    def test_failed_on_adapter_error(self, monkeypatch):
+        fake = _FakeRuntimeAdapter(RuntimeResult(success=False, agent_name="web", error="AccessDenied"))
+        monkeypatch.setattr(rt_registry, "get_runtime_adapter", lambda provider: fake)
+        spec = PipelineSpec(service_name="web", version="v1", provider="aws", host_runtime=True, runtime_approved=True)
+        step = DeployPipeline()._step_host(spec, {})
+        assert step.status == StepStatus.FAILED
+        assert "AccessDenied" in step.error
 
 
 class TestPipelineSpec:
@@ -61,14 +118,14 @@ class TestPipelineResult:
 
 
 class TestDeployPipelineStructure:
-    def test_has_7_nodes(self):
+    def test_has_8_nodes(self):
         pipeline = DeployPipeline()
-        assert len(pipeline.nodes) == 7
+        assert len(pipeline.nodes) == 8
 
     def test_node_order(self):
         pipeline = DeployPipeline()
         names = [n.name for n in pipeline.nodes]
-        assert names == ["plan", "guard", "build", "push", "deploy", "validate", "report"]
+        assert names == ["plan", "guard", "build", "push", "deploy", "validate", "report", "host"]
 
     def test_dependencies(self):
         pipeline = DeployPipeline()
@@ -80,6 +137,7 @@ class TestDeployPipelineStructure:
         assert deps["deploy"] == ["push"]
         assert deps["validate"] == ["deploy"]
         assert deps["report"] == ["validate"]
+        assert deps["host"] == ["report"]
 
 
 class TestDeployPipelineExecution:
@@ -102,8 +160,11 @@ class TestDeployPipelineExecution:
         result = pipeline.run(spec)
 
         assert result.final_status == StepStatus.SUCCESS
-        assert len(result.steps) == 7
-        assert all(s.status == StepStatus.SUCCESS for s in result.steps)
+        assert len(result.steps) == 8
+        # host is opt-in (host_runtime defaults False) → SKIPPED, everything else SUCCESS.
+        by_name = {s.step_name: s.status for s in result.steps}
+        assert by_name["host"] == StepStatus.SKIPPED
+        assert all(s.status == StepStatus.SUCCESS for s in result.steps if s.step_name != "host")
 
     def test_pipeline_prod_blocks_at_guard(self):
         """Production deploy is blocked at guard step (requires approval)."""
