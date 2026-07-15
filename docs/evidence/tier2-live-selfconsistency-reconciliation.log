@@ -1,0 +1,66 @@
+endpoint=http://127.0.0.1:18090/v1  model=mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit
+
+==============================================================================
+PART A — Tier 2 #2: self-consistency routing (REAL MLX Qwen sampler, temp=1.0)
+==============================================================================
+
+[clear intent] 'Deploy orders-api v1.8.0 to the production cluster and confirm it is healthy.'
+  raw LLM votes (5 samples): {'deploy': 5}
+  → decision=deploy  agreement=1.00  fell_back=False
+
+[ambiguous intent] 'The orders cluster looks off — take care of it.'
+  raw LLM votes (5 samples): {'kagent': 5}
+  → decision=kagent  agreement=1.00  fell_back=False
+
+==============================================================================
+PART B — Tier 1 reconciliation gate on REAL LLM analysis
+==============================================================================
+
+[B1 grounded] LLM saw the evidence
+  LLM root_cause: 'The root cause was an expired SSL certificate for the orders.example.com domain that expired on 2023-08-15, causing TLS handshake failures and HTTP 5xx errors.'
+  grounded=True  grounding_ratio=0.62  issues=[]
+  gate: AUTO → AUTO   (grounded → autonomous action allowed)
+
+[B2 hallucination] LLM guessed WITHOUT the evidence
+  LLM root_cause: "The API is experiencing resource exhaustion (memory or CPU) or a database connection pool exhaustion that's causing the service to crash or become unresponsive."
+  grounded=False  grounding_ratio=0.08  issues=['root_cause grounding 0.08 < 0.30 (root cause not supported by evidence — possible hallucination)']
+  gate: AUTO → APPROVE   (ungrounded → DOWNGRADED to human approval)
+
+==============================================================================
+DONE — all paths above executed the shipped orchestration/reconciliation code.
+==============================================================================
+
+------------------------------------------------------------------------------
+PART A addendum — fallback-branch probe (honest finding)
+------------------------------------------------------------------------------
+To exercise the self-consistency FALLBACK (agreement < 0.60 → deterministic
+classify_request), I probed the real MLX Qwen3-Coder-30B with 8 deliberately
+ambiguous / two-action prompts, 7 samples each at temperature=1.0:
+
+  7/7 deploy     "Deploy orders-api v1.8.0 ... confirm healthy"     (clear)
+  7/7 kagent     "The orders cluster looks off — take care of it."
+  7/7 deploy     "Get orders-api running in a brand new environment from scratch."
+  7/7 provision  "Stand up monitoring for the orders service."
+  7/7 deploy     "Something is wrong with orders-api in prod — handle it end to end."
+  7/7 deploy     "Prepare the orders service for next week launch."
+  7/7 deploy     "Check why orders-api is failing and roll it back."
+  7/7 deploy     "Investigate the outage, then redeploy orders-api."
+  7/7 deploy     "orders-api"
+  7/7 provision  "Tear down staging and stand up orders-api fresh."
+
+FINDING: this 30B model is internally consistent — every prompt returned a
+unanimous vote (agreement = 1.00), so the fallback never triggered LIVE. With a
+strong, decisive model, self-consistency functions primarily as a CONFIDENCE
+SIGNAL (agreement=1.0 ⇒ the model is certain), and the deterministic fallback is
+a safety net for weaker/ambiguous models that this one simply doesn't hit here.
+The fallback branch itself (split votes → classify_request) remains covered by
+the deterministic unit test tests/test_orchestration.py::
+test_low_agreement_falls_back_to_deterministic_classifier.
+
+VERDICT
+  - Tier 2 #2 self-consistency: LIVE-PROVEN end-to-end with a real LLM sampler
+    (real model → shipped route_with_self_consistency → real consensus). Fallback
+    not triggered because the real model did not self-disagree.
+  - Tier 1 reconciliation gate: LIVE-PROVEN both ways — grounded LLM analysis
+    stays AUTO (ratio 0.62); hallucinated LLM guess is DOWNGRADED to APPROVE
+    (ratio 0.08). Real hallucination caught by the deterministic gate.

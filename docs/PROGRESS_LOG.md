@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-15 — 라이브 실증: Tier 2 #2 self-consistency + Tier 1 reconciliation (실 MLX Qwen 30B)
+
+- Status: 그간 유닛(스텁)만이던 #2 self-consistency와 reconciliation 게이트를 **실 로컬 LLM(MLX Qwen3-Coder-30B)으로 라이브 실증**. 스텁이 아니라 shipped 코드 경로(`route_with_self_consistency`, `reconcile`/`apply_gate`)를 실 모델 출력으로 구동.
+- Changed: 신규 `scripts/live_tier2_demo.py`(실 LLM sampler=temp1.0 분류기로 self-consistency 구동 + 실 LLM 분석으로 reconciliation 게이트 구동) + 증거 `docs/evidence/tier2-live-selfconsistency-reconciliation.log`. 제품 코드 무변경.
+- Verified (라이브): **(A) self-consistency** — "Deploy orders-api…"→5/5 deploy(agreement1.00), "cluster looks off…"→5/5 kagent. 실 sampler→shipped 라우터→실 consensus 동작. **fallback 브랜치 프로브**: 8개 모호/2액션 프롬프트×7샘플 전부 만장일치(7/7) → 이 30B는 내부 일관성이 강해 fallback 라이브 미발화(=self-consistency가 강한 모델에선 **confidence signal**로 기능, fallback은 약한 모델용 안전망; fallback 자체는 유닛 `test_low_agreement_falls_back…` 커버). **(B) reconciliation** — TLS 만료 증거 있는 실 인시던트에서: grounded(LLM이 증거 봄→root_cause "expired SSL certificate", ratio **0.62**→게이트 **AUTO 유지**) vs hallucination(LLM이 증거 없이 추측→"resource/DB pool exhaustion", ratio **0.08**→게이트 **AUTO→APPROVE 강등**). 실 환각을 결정론 게이트가 포착. 제품 코드 무변경이라 gate 738 유지.
+- Blockers: 없음. #3(원격 MCP SigV4)·#4(2nd AWS 계정) 라이브는 여전히 사용자 엔드포인트/크레덴셜 필요.
+- Next: 외부(아티클 배포·OAuth 데모)·(선택)#3/#4 실 라이브.
+
 ## 2026-07-15 — Tier 2 #4 크로스계정 소비자 배선 + 종합 아키텍처 아티클
 
 - Status: #4 `assume_role_session`을 실 소비자 2곳에 배선(그간 헬퍼+runtime만) + 레퍼런스 반영 스토리를 담은 종합 아키텍처 테크 아티클 작성.
