@@ -26,6 +26,8 @@ export function ActivityTimeline({ activities }: { activities: AgentActivity[] }
         {recentActivities.map((activity) => {
           const model = activity.model ?? modelIdFromAgent(activity.agent);
           const cls = "block surface relative overflow-hidden p-4 transition-colors hover:border-[#52647f]";
+          const consensus = activity.trace?.find((t) => t.kind === "consensus");
+          const plan = activity.trace?.find((t) => t.kind === "plan");
           const body = (
             <>
               <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -56,6 +58,23 @@ export function ActivityTimeline({ activities }: { activities: AgentActivity[] }
                   <span className="ml-auto text-[10px] font-medium text-[#8ab4f8]">View trace →</span>
                 )}
               </div>
+              {consensus && (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px]">
+                  <span className="rounded border border-[#c4b5fd]/30 bg-[#c4b5fd]/10 px-1.5 py-0.5 font-mono text-[#d9ccff]">
+                    🗳️ {consensus.role} · agreement {typeof consensus.agreement === "number" ? consensus.agreement.toFixed(2) : "—"}
+                  </span>
+                  {consensus.fell_back && (
+                    <span className="rounded border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 font-mono text-amber-100">
+                      fell back → deterministic
+                    </span>
+                  )}
+                  {plan?.steps && plan.steps.length > 1 && (
+                    <span className="font-mono text-[#8ab4f8]">
+                      plan: {plan.steps.map((s) => s.role).join(" → ")}
+                    </span>
+                  )}
+                </div>
+              )}
             </>
           );
           return activity.deployment_id ? (

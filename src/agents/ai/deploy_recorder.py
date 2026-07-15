@@ -151,6 +151,58 @@ def _persist(deploy_item: dict[str, Any], activity_item: dict[str, Any], table: 
         _append_local(path, deploy_item, activity_item)
 
 
+def _persist_activity(activity_item: dict[str, Any], table: Any | None) -> None:
+    """Persist a standalone ACTIVITY record (no paired deployment) — same backend
+    selection as ``_persist``."""
+    if table is not None:
+        table.put_item(Item=activity_item)
+    elif os.getenv("PLATFORM_ACTIVITY_TABLE"):
+        _table().put_item(Item=activity_item)
+    elif path := _local_store_path():
+        _append_local(path, activity_item)
+
+
+def record_route_activity(
+    *,
+    instruction: str,
+    trace: list[dict[str, Any]],
+    tool_calls: list[str] | None = None,
+    status: str = "success",
+    provider: str = "onprem",
+    agent: str = "Supervisor",
+    summary: str = "",
+    table: Any | None = None,
+) -> str | None:
+    """Record an orchestration/routing run as an ACTIVITY the dashboard trace view
+    renders — the self-consistency consensus + agents-as-tools plan frames.
+
+    ``trace`` is the orchestrator's trace list (``[{"kind":"consensus",...},
+    {"kind":"plan",...}]``). Activity-only (no paired deployment). Returns the
+    activity_id, or ``None`` when recording is disabled.
+    """
+    if table is None and not recording_enabled():
+        return None
+    now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    activity_id = f"ROUTE-{uuid.uuid4().hex[:8].upper()}"
+    activity_item = {
+        "PK": "ACTIVITY",
+        "SK": f"{now}#{activity_id}",
+        "activity_id": activity_id,
+        "type": "route",
+        "agent": agent,
+        "provider": provider,
+        "action": instruction[:140],
+        "instruction": instruction[:2000],
+        "summary": summary[:4000],
+        "tool_calls": tool_calls or [],
+        "trace": json.dumps(trace, default=str)[:350000],
+        "status": status,
+        "created_at": now,
+    }
+    _persist_activity(activity_item, table)
+    return activity_id
+
+
 def _infer_cluster(steps: list[dict[str, Any]]) -> str:
     """Target cluster for a run — the correlation key that links a deployment to the
     provisioning that created its cluster (deploy.cluster == provision.service)."""

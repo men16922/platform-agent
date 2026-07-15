@@ -212,6 +212,25 @@ def test_gateway_env_flag_enables_orchestration(monkeypatch):
     assert "consensus" in data
 
 
+def test_gateway_orchestrator_records_route_activity(monkeypatch):
+    import src.agents.ai.deploy_recorder as rec
+
+    captured: dict = {}
+
+    def fake_record(**kwargs):
+        captured.update(kwargs)
+        return "ROUTE-TEST"
+
+    monkeypatch.setattr(rec, "record_route_activity", fake_record)
+    server = A2AServer(orchestrator=Orchestrator(Supervisor()))
+
+    server.send_message({"role": "ROLE_USER", "parts": [{"text": "Deploy orders-api"}]})
+
+    assert captured["instruction"] == "Deploy orders-api"
+    # The recorded trace carries the consensus frame the dashboard renders.
+    assert any(frame.get("kind") == "consensus" for frame in captured["trace"])
+
+
 def test_gateway_default_path_omits_consensus():
     server = A2AServer()
 

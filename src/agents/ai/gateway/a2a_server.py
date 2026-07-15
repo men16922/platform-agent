@@ -142,6 +142,21 @@ class A2AServer:
                 {"role": step.decision.role.value, "delegated": step.delegated}
                 for step in outcome.steps
             ]
+            # Record the routing run (consensus + plan frames) as an ACTIVITY the
+            # dashboard trace view renders. Best-effort: a recording failure must
+            # never break the gateway response.
+            try:
+                from src.agents.ai.deploy_recorder import record_route_activity
+
+                record_route_activity(
+                    instruction=user_text,
+                    trace=outcome.trace,
+                    tool_calls=[s.decision.role.value for s in outcome.steps],
+                    status="success" if outcome.delegated else "failed",
+                    summary=response_text,
+                )
+            except Exception:  # noqa: BLE001 - observability side-effect only
+                pass
         task.artifacts = [{
             "artifactId": str(uuid.uuid4()),
             "name": "response",

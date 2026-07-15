@@ -49,6 +49,36 @@ def test_record_deploy_writes_deploy_and_activity_rows():
     assert activity["deployment_id"] == deploy["deployment_id"]
 
 
+def test_record_route_activity_writes_trace_frames():
+    table = _FakeTable()
+    trace = [
+        {"kind": "consensus", "role": "deploy", "agreement": 1.0, "votes": {"deploy": 5}, "fell_back": False},
+        {"kind": "plan", "steps": [{"role": "deploy", "instruction": "deploy orders-api", "delegated": True}]},
+    ]
+    activity_id = rec.record_route_activity(
+        instruction="Deploy orders-api and confirm healthy",
+        trace=trace,
+        tool_calls=["deploy"],
+        status="success",
+        table=table,
+    )
+    assert activity_id and activity_id.startswith("ROUTE-")
+    assert len(table.items) == 1
+    item = table.items[0]
+    assert item["PK"] == "ACTIVITY"
+    assert item["type"] == "route"
+    assert item["tool_calls"] == ["deploy"]
+    # The consensus + plan frames are serialized into the dashboard-rendered trace.
+    assert '"kind": "consensus"' in item["trace"]
+    assert '"kind": "plan"' in item["trace"]
+
+
+def test_record_route_activity_disabled_is_noop(monkeypatch):
+    monkeypatch.delenv("PLATFORM_ACTIVITY_TABLE", raising=False)
+    monkeypatch.delenv("PLATFORM_ACTIVITY_FILE", raising=False)
+    assert rec.record_route_activity(instruction="x", trace=[]) is None
+
+
 def test_record_deploy_failed_status():
     table = _FakeTable()
     rec.record_deploy(
