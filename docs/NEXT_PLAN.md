@@ -29,7 +29,7 @@
 
 ### 외부/사용자 개입
 - [ ] (deferred) **Slack App 실 생성/토큰** — 코드+하네스(`scripts/slack_live_approval.py`) ready, 실 workspace만 필요. On-Prem 승인 게이트도 Slack 버튼 프런트엔드 연동 가능(현재는 대시보드 버튼으로 대체됨).
-- [ ] **테크 아티클 배포(LinkedIn/Medium)** — **초안 작성 완료**: 종합 아키텍처 글 `docs/post/platform-agent-architecture.md`(신규, 커밋 `fb7af25`) + On-Prem 데모 글 `docs/post/linkedin-onprem-agent-20s-demo.md` + 데모 영상 `docs/post/local-onprem-edited.mp4`. **잔여=배포(사용자)** + (선택) 한국어판/짧은 LinkedIn 컷.
+- [ ] **테크 아티클 배포(LinkedIn/Medium)** — **작성 전부 완료(잔여=배포, 사용자)**: 종합 아키텍처 글 EN `docs/post/platform-agent-architecture.md` + **KO 전문판 `-ko.md`** + **짧은 LinkedIn 컷(EN/KO) `platform-agent-linkedin-cut.md`** + On-Prem 데모 글 `linkedin-onprem-agent-20s-demo.md` + 데모 영상 `local-onprem-edited.mp4`.
 - [ ] 대시보드 **브라우저 UI 인증 배포 클릭 데모** — GitHub OAuth 로그인(사용자 수행). 백엔드/read 경로는 검증됨.
 
 ## 참고 — 2026-07-14 세션 완료 (상세는 PROGRESS_LOG)
