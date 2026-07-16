@@ -1,1 +1,0 @@
-"""Approval bridge agent package."""

@@ -1,6 +1,6 @@
 # DOCS_POLICY — platform-agent
 
-최종 갱신: 2026-07-05
+최종 갱신: 2026-07-17
 
 > 문서 운영 규칙(context budget). overnight-harness 기반.
 
@@ -48,6 +48,9 @@ docs/AGENT_BRIEF.md
 | `/sync` | 읽기만 — Read Path 따라 5–10줄 요약 | 기록·정리 |
 | `/checkpoint` | 기록만 — PROGRESS_LOG append + 조건부 STATUS/BRIEF/NEXT 갱신 | 무관한 정리 |
 | `/tidy-docs` | 정리만 — 중복 통합·압축 | 새 작업 기록 |
+| `/overnight-report` | 루프 결과 리포트 + 런별 검수 체크리스트 생성 | 코드 수정 |
+| `/overnight-seed` | 백로그 시드 판단·충전 | 실행 |
+| `/diagnose` | 루프 실패 근본원인 규명(fix 전 evidence) | 성급한 fix |
 
 **추측 금지.** 문서에 없으면 "문서에 없음". 코드를 다시 읽어 docs를 재생성하지 않는다.
 

@@ -1,9 +1,9 @@
 # docs/ — platform-agent 문서 인덱스
 
-최종 갱신: 2026-07-05
+최종 갱신: 2026-07-17
 
 이 디렉토리는 **context budget으로 운영되는 상태/계획/이력 문서** 체계다.
-운영 규칙은 `DOCS_POLICY.md`.
+운영 규칙·라인 예산·skill 경계는 [`DOCS_POLICY.md`](./DOCS_POLICY.md) 단일 소스로 관리한다.
 
 ---
 
@@ -30,12 +30,8 @@
 
 - [`engineering/`](./engineering/) — Harness engineering bibles (loop, verification, context, prompt)
 - [`PRESENTATION.md`](./PRESENTATION.md) — 블로그/아티클 소스
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — 전체 아키텍처
 
-## Overnight Harness Skills
+## Skills
 
-- `/sync` — 상태 복원(읽기 전용)
-- `/checkpoint` — 기록
-- `/tidy-docs` — 정리
-- `/overnight-report` — 루프 결과 리포트
-- `/overnight-seed` — backlog 시드
-- `/diagnose` — 루프 실패 진단
+overnight-harness skill 목록·역할·경계는 [`DOCS_POLICY.md` §5](./DOCS_POLICY.md)를 본다.
