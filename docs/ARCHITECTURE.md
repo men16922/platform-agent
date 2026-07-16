@@ -693,7 +693,6 @@ Browser → Vercel Next.js Server Component / API route
 - Vercel에는 장기 Access Key를 저장하지 않고, OIDC를 활용한 `AWS_ROLE_ARN`만 설정하여 키리스(Keyless) 자격증명 획득을 수행합니다.
 - IAM trust 관계는 Vercel team (`men16922`), project (`prj_zvAvIBSR99TCVXhaxeAaXeTCahfp`), production/preview 환경으로 명시적으로 엄격히 제한됩니다.
 - 대시보드의 모든 데모 목업 폴백 데이터셋이 완전히 제거되었으며, 인시던트 피드, 배포 포스처, 에이전트 활동 이력 및 감사 로그(Audit Logs)는 모두 실시간 Live 모드로 DynamoDB에서 직접 조회 및 업데이트를 수행합니다.
-- 상세 연동 절차: [`docs/DASHBOARD_LIVE_DATA.md`](DASHBOARD_LIVE_DATA.md)
 
 ---
 
@@ -724,5 +723,4 @@ Browser → Vercel Next.js Server Component / API route
 
 - 전체 동작 가이드: [`GUIDE.md`](../GUIDE.md)
 - Slack App 설정: [`docs/SLACK_APP_SETUP.md`](SLACK_APP_SETUP.md)
-- AI Agent 실호출 가이드: [`docs/AI_AGENT_LIVE_CALL_GUIDE.md`](AI_AGENT_LIVE_CALL_GUIDE.md)
 - 구현 상태: [`docs/STATUS.md`](STATUS.md)

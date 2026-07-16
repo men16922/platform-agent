@@ -39,3 +39,6 @@ infra/onprem/terraform/*.tfstate.backup
 
 # Video editing source files
 *.mov
+
+# macOS
+.DS_Store

@@ -1,6 +1,6 @@
 # DECISIONS — platform-agent
 
-최종 갱신: 2026-07-14
+최종 갱신: 2026-07-15
 
 > 되돌리기 어려운 결정만. 형식: **Decision / Reason / Impact**. 최신이 위.
 
@@ -8,6 +8,12 @@
 > - **enterprise-ai-governance-dashboard** (외부 레포) — 2-Pass Fact NL→SQL 챗봇 + SQL self-heal 루프 + LLM SKU 그룹핑 + 최소권한 Cloud Run SA. 대시보드 챗봇/FinOps 확장 시 검토. 상세 → `docs/reference/enterprise-ai-governance-dashboard.md`. (검토 2026-07-13)
 
 ---
+
+## D14 — 대시보드 NL 배포 채팅 = Local Qwen 실행 전용, 클라우드 3종은 "검증만"(미실행), 백엔드는 로컬-only
+
+- **Decision:** 대시보드 Agents 채팅의 배포 경로(`agents/deploy`·`/stream` → 라우터 `/api/local-deploy`)는 (1) **모델과 무관하게 전부 `LOCAL_DEPLOY_API_URL`(기본 127.0.0.1:8077)로 프록시**하고, (2) 라우터 `route_deploy`(`model_router.py`)는 **`framework=="pydantic-ai"`(local-qwen)만 실 실행**(MLX→build/push/deploy/validate→kubectl), strands/adk/msft(bedrock-claude/vertex-gemini/azure-gpt)는 `_cloud_outcome`로 **`ok=False`+"requires {cloud} creds for a live run" 구조화 응답만 반환(미실행)** 한다. 클라우드 3종의 실 배포/tool-calling 실증은 **이 채팅이 아니라** 별도 경로(프레임워크 스크립트·`adapters/deployment/*`·런타임 호스팅 어댑터 AgentCore/Agent Engine/Foundry)에서 수행한다. 이 채팅은 **On-Prem/Local Qwen 오프라인 쇼케이스 전용**으로 유지한다.
+- **Reason:** (a) 라이브 클라우드 배포는 서버측에 해당 클라우드 크레덴셜이 있어야 하고 **실 과금**이 발생 → 채팅에서 조용히 과금하는 대신 "검증+미실행"으로 세워두는 게 안전 기본값. (b) 채팅의 정체성은 완전 오프라인 On-Prem 데모(air-gapped Local Qwen)라, 클라우드 브레인은 suitability 조언(`/api/models` verdict)만 노출하는 게 서사에 맞음. (c) 프록시가 127.0.0.1인 것은 executor-writes(로컬 MLX/kubectl 옆)↔dashboard-reads(Vercel read-only) 분리 설계의 귀결 — 대시보드는 얇은 클라이언트.
+- **Impact:** **Vercel 공개 URL에선 4종 전부 채팅 배포 불가(502)** — local만이 아니라 전체가 로컬 백엔드 의존. 공개 URL에서 채팅 배포를 시연하려면 로컬 스택을 어딘가 호스팅해 `LOCAL_DEPLOY_API_URL`을 그쪽으로 돌려야 함(서버측 크레덴셜+과금 정책 결정 필요=사용자 판단). 채팅에서 클라우드 3종을 실제 실행시키려면 `route_deploy`의 cloud 분기를 어댑터/프레임워크 실호출로 잇는 후속 작업 필요(현재 의도적 미실행). 라이브 재검증 2026-07-15(로컬 스택 E2E, local-qwen→kind `orders-api 1/1 Running`).
 
 ## D13 — 단일 도구 카탈로그는 레이어별로 둘 유지(게이트웨이 raw ↔ 인터랙티브 에이전트) — 병합 안 함
 

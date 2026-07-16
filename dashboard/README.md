@@ -16,7 +16,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-Use `DASHBOARD_DATA_SOURCE=demo` for the public demo dataset. For the read-only AWS incident feed, follow `../docs/DASHBOARD_LIVE_DATA.md` and set `DASHBOARD_DATA_SOURCE=aws`.
+Use `DASHBOARD_DATA_SOURCE=demo` for the public demo dataset, or `DASHBOARD_DATA_SOURCE=aws` for the read-only AWS incident feed (Vercel OIDC → DynamoDB).
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

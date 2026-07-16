@@ -225,7 +225,7 @@ cp .env.example .env
 #   AZURE_AI_PROJECT_ENDPOINT (Azure AI Agent용)
 ```
 
-자세한 설정: [`docs/AI_AGENT_LIVE_CALL_GUIDE.md`](docs/AI_AGENT_LIVE_CALL_GUIDE.md) | [`docs/SLACK_APP_SETUP.md`](docs/SLACK_APP_SETUP.md)
+자세한 설정: [`docs/SLACK_APP_SETUP.md`](docs/SLACK_APP_SETUP.md)
 
 ---
 

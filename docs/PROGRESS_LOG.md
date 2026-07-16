@@ -7,6 +7,16 @@
 
 ---
 
+## 2026-07-15 — AI endpoint 라이브 재검증(풀 스택 E2E) + per-agent 동작 규명 + 클라우드 과금 감사
+
+- Status: 코드 변경 0(순수 검증/사실규명). 문서가 "코드 완료"라 주장하던 AI endpoint 7종을 실제로 띄워 라이브 재현하고, 대시보드 NL 채팅의 per-agent 실행 스코프를 코드로 규명, 클라우드 유휴 과금을 감사.
+- Changed: 없음(git clean, gate 748 유지). `.DS_Store` 노이즈만.
+- Verified (실제 실행): `make dev-up`(MLX 30B+proxy+router+webhook+dashboard) 전 계층 up. **AI endpoint 7종 라이브**: router `/health`·`/api/models`(onprem·aws verdict 로직)·dashboard 프록시 `agents/models`(`source:router-api`=fallback 아님)·`agents/onprem-status`(connected)·LLM 브레인(proxy→MLX `READY`). **`/api/local-deploy` 풀 E2E 24.9s**: local-qwen이 build→push→deploy→validate 자율 실행→kind에 `orders-api 1/1 Running`(image `localhost:5001/orders-api:v1.0.0`, `DEP-AD0FC7B4`)→대시보드 배포 피드 최상단 관통(executor-writes→dashboard-reads). SSE `/api/local-deploy/stream`도 tool_call→result→reasoning→done 정상. 검증 후 전부 teardown(kind down+스택 down+컨텍스트 `pa-aks-live` 복원).
+- 규명(코드 근거): (1) 대시보드 배포 라우트(`agents/deploy`·`/stream`)는 **모델 무관 전부 `LOCAL_DEPLOY_API_URL`(127.0.0.1:8077) 프록시** → Vercel 공개 URL에선 4종 모두 채팅 배포 불가(502), local-only. (2) `route_deploy`(`model_router.py:269`)에서 **pydantic-ai(local-qwen)만 실 실행**; strands/adk/msft는 `_cloud_outcome`(L232)로 `ok=False` "requires {cloud} creds" **미실행**(주석 "routed without live execution"). 클라우드 3종 라이브는 이 채팅이 아니라 별도 어댑터/스크립트/런타임호스팅 경로에서 실증됨. → DECISIONS D14.
+- 과금 감사: **platform-agent 유휴 ≈$0**. AWS(908601828278) NAT/EC2/RDS/LB 0, DynamoDB 18개 전부 PAY_PER_REQUEST, `IncidentAgentStack` 서버리스. Azure `pa-foundry-908601` `gpt-mini`=GlobalStandard(종량제, 유휴$0). GCP GKE/Compute 0. `pa-aks-live`=DNS 미해석(이미 삭제된 유령 컨텍스트). ※ 같은 계정의 `am_*`/`n8n`/roadpilot은 별개 프로젝트(미검토).
+- Blockers: 없음.
+- Next: 자율 백로그 여전히 소진 상태. 대시보드 채팅에서 클라우드 3종을 실행되게 하려면 `route_deploy` cloud 분기를 어댑터 실호출로 잇는 설계 필요(서버측 크레덴셜+과금 정책=사용자 판단).
+
 ## 2026-07-15 — 아키텍처 잔여 로드맵 2건 구현: supervisor 프론트도어 배선 + deploy↔runtime 정면 배선
 
 - Status: ARCHITECTURE 잔여 로드맵 중 자율 가능 2건 구현 → 코어 아키텍처의 명시적 미구현 배선 항목 소진(잔여는 인프라/아스피레이셔널/사용자만).
