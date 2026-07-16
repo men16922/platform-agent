@@ -21,6 +21,11 @@
 
 ## 열린 작업 (로드맵 — 성격별)
 
+### 리팩토링 후속 (선택 — 2026-07-17 구조 패스에서 판단 보류)
+- [ ] **`operations` 그룹핑 축 통일** — AWS=role별 서브패키지(`operations/{executor,detector,...}/`) vs gcp/azure=cloud별 패키지(`operations/{gcp,azure}/{role}.py`). 한 축으로 통일하면 일관성↑이나 import churn(테스트+CDK asset 경로) 반나절, 별도 승인.
+- [ ] **`approval_bridge/handler.py`(604줄) 분리** — slack_interactive + request_store로 응집도 개선 여지. **단 테스트가 내부심볼 12개+를 `handler` 모듈경로에 `@patch` 강결합**해, 분리 시 재import로 patch 경로 보존 필요 → 실익<리스크. 하려면 테스트 patch 타깃 재작성 동반.
+- 참고: `_k8s_rest`는 restart/scale만 공유(rollback은 GKE/AKS 시맨틱 상이라 제외). detector/analyzer/decision은 SDK 90%+ 상이라 DRY 안 함(의도적).
+
 ### 로컬·자율 가능 — ✅ 전부 소진(2026-07-14)
 - [x] ~~인터랙티브 에이전트 MCP 단일 카탈로그 채택~~ · [x] ~~실 executor scale~~ · [x] ~~실 executor drain~~ 모두 완료. On-Prem 실 executor는 되돌리기-가능 4조치(restart/undo/scale/**polite drain**) 완결, 기본 OFF 게이팅. 공격적 force-drain만 의도적으로 사람 몫. **이제 자율로 진행할 순수 로컬 코드 백로그 없음.**
 

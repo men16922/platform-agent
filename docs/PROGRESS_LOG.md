@@ -1,11 +1,21 @@
 # PROGRESS_LOG — platform-agent
 
-최종 갱신: 2026-07-15
+최종 갱신: 2026-07-17
 
 > 최신 3–5개 증분. **최신이 위.** **≤120줄.** 넘치면 `/tidy-docs` 로 압축.
 > 이전 이력: `docs/archive/progress-2026-07.md`
 
 ---
+
+## 2026-07-17 — repo 구조·소스 리팩토링 + docs 병합 (dead code 제거·executor 공통화·post_webhook 버그수정)
+
+- Status: 전체 폴더구조·소스 리팩토링 검토(병렬 3-에이전트 조사: src 구조·cross-cloud 중복·dashboard/tests/infra) 후 안전분만 실행. 커밋 4개, gate 748 유지, push 안 함.
+- Changed: **(구조)** `src/agents/{executor,detector,decision,analyzer,approval_bridge}` 유령 패키지 5개 삭제(빈 `__init__`, import 0, 실구현은 `operations/` 하위); `infra/onprem/terraform/.terraform` **16MB null-provider 바이너리 추적해제**+`.gitignore` 등록(물리 유지). **(docs)** README↔DOCS_POLICY skills 중복(6 vs 3 불일치)→DOCS_POLICY §5 단일소스 통합; stale 문서 10개 제거(직전 커밋 `174d57f`); 미커밋 삭제 2건(linkedin 포스트·`local-llm-onprem.md`) 확정+NEXT_PLAN 참조수선. **(소스)** `operations/_executor_common.py` 추출(gcp/azure executor ~150줄 중복: deserialise/serialise/run_actions/slack, provider-특화는 유지); `operations/executor/_k8s_rest.py` 추출(gcp/azure runner의 byte-identical rollout-restart/scale).
+- Verified: `make check` → **748 passed, 1 skipped**(239s, baseline 유지). gcp/azure day2 + multicloud runner 62 passed. pytest collection 749(import 에러 0). runtime import 확인.
+- Bug fix: gcp/azure executor가 `post_webhook({"blocks":blocks})`로 dict를 URL자리에 넘기고 payload 누락(시그니처 `post_webhook(url,payload)`)+반환 None에 `.get("ts")`→TypeError가 except에 삼켜져 Slack 리포트 **조용히 무전송**이었음. 공통 `post_incident_slack`이 올바른 인자로 수정(테스트는 SLACK_WEBHOOK 미설정 early-return이라 회귀 없음).
+- Deferred(판단): (a) `approval_bridge/handler.py`(604줄) 분리 — 테스트가 내부심볼 12개+를 `handler` 모듈경로에 `@patch` 강결합, 분리시 재import 필요해 실익<리스크→보류. (b) `_k8s_rest`는 restart/scale만(rollback은 GKE `:previous` fallback vs AKS 필수파라미터로 시맨틱 상이). (c) `operations` 그룹핑 축 통일(#3, AWS=role별 vs gcp/azure=cloud별) — 반나절 import churn, 별도 승인. detector/analyzer/decision은 SDK 90%+ 상이라 DRY 안 함(leaky).
+- Blockers: 없음.
+- Next: (선택) push / `operations` 그룹핑 축 통일 / 외부·인프라(아티클 배포·Slack·OAuth 데모).
 
 ## 2026-07-15 — AI endpoint 라이브 재검증(풀 스택 E2E) + per-agent 동작 규명 + 클라우드 과금 감사
 

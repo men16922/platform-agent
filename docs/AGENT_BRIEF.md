@@ -1,8 +1,8 @@
 # AGENT_BRIEF — platform-agent
 
-최종 갱신: 2026-07-15
+최종 갱신: 2026-07-17
 
-> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **자율 코드 백로그 소진(gate **748**, 전 커밋 origin/main HEAD `3dd4d1d`).** 이번 세션 완료: Tier 2(#2·#3·#4) + 실 LLM/HTTP/STS **라이브 실증**(`docs/evidence/tier2-live-*.log`) + **대시보드 관측 3종**(cost_metrics·reconciliation·consensus/steps, orchestrator `record_route_activity` producer) + **ARCHITECTURE stale 마커 정정** + **아키텍처 배선 ①②**(supervisor 프론트도어=`local_deploy_api` 분류→A2A 위임/폴백 · deploy↔runtime=DeployPipeline opt-in `host` 스텝). Tier 1도 완료. **잔여는 전부 사용자/인프라**: 아티클 배포(EN/KO/LinkedIn컷 `docs/post/*` ready)·대시보드 OAuth 데모·Slack App·On-Prem State Store(PG/Redis)/Alertmanager·Helm/Terraform(Tier 3)·AgentCore Memory/Tools 패리티. ※ PROGRESS_LOG 130줄>budget → `/tidy-docs` 필요. 하네스: billable create·보안완화는 사용자 `!` 필요.
+> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **repo 구조·소스 리팩토링 패스 완료(gate **748** 유지, HEAD `47adf0b`, origin보다 4커밋 ahead·미푸시).** 이번 세션: 유령 패키지 5개 삭제 + `.terraform` 16MB 추적해제 + `operations/_executor_common.py`·`_k8s_rest.py` 중복 추출 + **post_webhook 오호출 버그 수정**(gcp/azure Slack 무전송) + docs 병합(README↔DOCS_POLICY)·stale 10개 제거. **보류(판단)**: approval_bridge 분리(테스트 patch-결합)·operations 그룹핑 축 통일(#3)은 별도 승인. 그 전 세션: Tier 1+2 완결·라이브 실증·아키텍처 배선 ①②. **잔여는 전부 사용자/인프라**: push·아티클 배포(`docs/post/*` ready)·OAuth 데모·Slack App·State Store/Alertmanager·Helm/Terraform(Tier 3). 하네스: billable create·보안완화는 사용자 `!` 필요.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 

@@ -1,6 +1,6 @@
 # STATUS — platform-agent
 
-최종 갱신: 2026-07-15
+최종 갱신: 2026-07-17
 
 > 현재 구현 상태 / 검증 baseline / active focus / open risks. **≤120줄** 유지.
 
@@ -17,6 +17,7 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **748 passed, 1 skipped** (2026-07-17) — **repo 구조·소스 리팩토링(런타임 동작 무변경)**: 유령 패키지 5개 삭제(`executor`/`detector`/`decision`/`analyzer`/`approval_bridge`, import 0)·`.terraform` 16MB 추적해제 + `operations/_executor_common.py`(gcp/azure executor ~150줄 중복 추출)·`_executor/_k8s_rest.py`(runner restart/scale 공유) + **post_webhook 오호출 버그 수정**(gcp/azure Slack 리포트 무전송 → 정정). docs: README↔DOCS_POLICY skills 병합·stale 10개 제거. baseline 수치 유지, 커밋 4개 미푸시.
 - **AI endpoint 라이브 재검증(2026-07-15, 풀 스택 E2E, 코드 무변경)** → `make dev-up` 후 endpoint 7종 라이브: router `/health`·`/api/models`(verdict)·대시보드 프록시 `agents/models`(`source:router-api`)·`onprem-status`(connected)·LLM 브레인(MLX 30B). **`/api/local-deploy` 풀 E2E 24.9s**(local-qwen→build/push/deploy/validate→kind `orders-api 1/1 Running` `DEP-AD0FC7B4`→대시보드 피드 관통), SSE 스트림 정상. 검증 후 전량 teardown(유휴 $0 복원). **규명(D14)**: 채팅 배포는 모델 무관 로컬 백엔드(127.0.0.1) 프록시라 **Vercel에선 4종 전부 502**; `route_deploy`는 local-qwen만 실행, 클라우드 3종은 `_cloud_outcome` 미실행(라이브는 별도 어댑터/스크립트/런타임호스팅 경로). **과금 감사**: platform-agent 유휴 ≈$0(AWS NAT/EC2/RDS/LB 0·DynamoDB 18개 PAY_PER_REQUEST·서버리스 스택 / Azure Foundry gpt-mini=종량제 / GCP 0 / kind teardown).
 - `make check` (pytest) → **748 passed, 1 skipped** (2026-07-15) — **아키텍처 잔여 로드맵 2건 구현**: ② supervisor 프론트도어(`local_deploy_api` `/api/local-deploy` 분류→A2A 위임/in-process 폴백, 비파괴) + ① deploy↔runtime 정면 배선(DeployPipeline opt-in `host` 스텝, approval-gated preflight/create, onprem skip). +7 test. 코어 아키텍처 배선 로드맵 소진(잔여=인프라/아스피레이셔널/사용자).
 - `make check` (pytest) → **741 passed, 1 skipped** (2026-07-15) — **대시보드 신규 관측 3종 노출 + orchestrator 활동 기록 배선**: `cost_metrics`(배포상세 패널)·`reconciliation`(인시던트 강등 배지, AWS `_record_incident` 파리티)·`consensus/steps`(activity trace). `record_route_activity`가 orchestrator 라우팅 런을 `type=route` ACTIVITY(consensus/plan trace)로 기록→대시보드 표시. 대시보드 `next build` 성공. 로컬 E2E로 route 활동 기록 확인.

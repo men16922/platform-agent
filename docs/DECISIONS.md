@@ -1,6 +1,6 @@
 # DECISIONS — platform-agent
 
-최종 갱신: 2026-07-15
+최종 갱신: 2026-07-17
 
 > 되돌리기 어려운 결정만. 형식: **Decision / Reason / Impact**. 최신이 위.
 
@@ -8,6 +8,12 @@
 > - **enterprise-ai-governance-dashboard** (외부 레포) — 2-Pass Fact NL→SQL 챗봇 + SQL self-heal 루프 + LLM SKU 그룹핑 + 최소권한 Cloud Run SA. 대시보드 챗봇/FinOps 확장 시 검토. 상세 → `docs/reference/enterprise-ai-governance-dashboard.md`. (검토 2026-07-13)
 
 ---
+
+## D15 — 크로스클라우드 리팩토링 경계: executor/runner 보일러플레이트만 공유, detector/analyzer/decision·rollback은 분리 유지
+
+- **Decision:** 2026-07-17 구조 패스에서 (1) gcp/azure **executor**의 provider-중립 보일러플레이트(deserialise/serialise/action-loop/slack)는 `operations/_executor_common.py`로, (2) gcp/azure **runner**의 byte-identical한 K8s **rollout-restart/scale** 동사는 `operations/executor/_k8s_rest.py`로 추출한다. 그러나 **detector/analyzer/decision**(SDK·쿼리언어·메모리스토어가 90%+ 상이: Pub/Sub vs EventGrid, Cloud Logging vs KQL, Firestore vs Cosmos, Vertex Gemini vs Azure OpenAI)과 **runner rollback**(GKE는 현재 이미지에서 `:previous` 유도 vs AKS는 `RollbackVersion` 필수)은 **의도적으로 각 provider에 분리 유지**한다. `approval_bridge/handler.py`(604줄) 분리도 **하지 않는다**.
+- **Reason:** detector/analyzer/decision을 DRY하면 클라우드별 SDK/시맨틱을 억지로 한 추상으로 눌러 leaky abstraction이 된다(겉만 유사·본질 상이). approval_bridge 분리는 테스트가 내부심볼 12개+를 `handler` 모듈경로에 `@patch`로 강결합해, 옮기면 patch 경로 보존용 재import가 필요→실질 디커플링 이득 없이 15개 patch 타깃 재작성 리스크만 큼(보상<리스크). `_k8s_rest`의 REST 분기는 mock이 앞에서 return해 유닛 커버리지 0이라, 시맨틱이 완전 동일한 restart/scale만 정독-검증 후 이동(rollback 제외).
+- **Impact:** 미래 세션은 "cross-cloud 코드가 비슷해 보인다"는 이유로 detector/analyzer/decision을 통합하거나 approval_bridge를 쪼개지 **말 것**(재작업 방지). 공유 대상 변경 시 `_executor_common.py`/`_k8s_rest.py` 한 곳만 고치면 되고, post_webhook 오호출 버그도 이 공통화로 한 곳에서 수정됨. `operations` 그룹핑 축 통일(AWS=role별 vs gcp/azure=cloud별)은 미결 열린작업(`NEXT_PLAN.md`).
 
 ## D14 — 대시보드 NL 배포 채팅 = Local Qwen 실행 전용, 클라우드 3종은 "검증만"(미실행), 백엔드는 로컬-only
 
