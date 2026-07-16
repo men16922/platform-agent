@@ -15,6 +15,7 @@ from typing import Any
 import requests
 import structlog
 
+from src.agents.operations.executor import _k8s_rest
 from src.agents.operations.executor.gcp_auth import get_gcp_access_token
 
 logger = structlog.get_logger(__name__)
@@ -103,45 +104,24 @@ def _execute_gke_call(
         }
 
         if action == "GCP-RolloutRestartGKEWorkload":
-            log.info("gcp_runner.gke.rollout_restart", workload=workload_name)
-            # Patch deployment template annotation with restart timestamp (Strategic Merge Patch)
-            patch_headers = {**k8s_headers, "Content-Type": "application/strategic-merge-patch+json"}
-            patch_body = {
-                "spec": {
-                  "template": {
-                    "metadata": {
-                      "annotations": {
-                        "kubectl.kubernetes.io/restartedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-                      }
-                    }
-                  }
-                }
-            }
-            k8s_resp = requests.patch(k8s_base_url, headers=patch_headers, json=patch_body, verify=ca_cert_path, timeout=15)
-            if k8s_resp.status_code != 200:
-                raise RuntimeError(f"K8s rollout restart failed (HTTP {k8s_resp.status_code}): {k8s_resp.text}")
-            log.info("gcp_runner.gke.rollout_restart.success", workload=workload_name)
+            _k8s_rest.rollout_restart(
+                base_url=k8s_base_url,
+                headers=k8s_headers,
+                ca_cert_path=ca_cert_path,
+                workload=workload_name,
+                log=log,
+                log_prefix="gcp_runner.gke",
+            )
 
         elif action == "GCP-ScaleGKEWorkload":
-            log.info("gcp_runner.gke.scale", workload=workload_name)
-            # Fetch current replicas count
-            k8s_resp = requests.get(k8s_base_url, headers=k8s_headers, verify=ca_cert_path, timeout=15)
-            if k8s_resp.status_code != 200:
-                raise RuntimeError(f"Failed to fetch deployment details: {k8s_resp.text}")
-            
-            deployment = k8s_resp.json()
-            current_replicas = deployment.get("spec", {}).get("replicas", 1)
-            target_replicas = current_replicas + 1
-            log.info("gcp_runner.gke.scale.target", current=current_replicas, target=target_replicas)
-
-            # Patch deployment replicas count
-            patch_headers = {**k8s_headers, "Content-Type": "application/merge-patch+json"}
-            patch_body = {"spec": {"replicas": target_replicas}}
-            
-            k8s_resp = requests.patch(k8s_base_url, headers=patch_headers, json=patch_body, verify=ca_cert_path, timeout=15)
-            if k8s_resp.status_code != 200:
-                raise RuntimeError(f"K8s scale failed (HTTP {k8s_resp.status_code}): {k8s_resp.text}")
-            log.info("gcp_runner.gke.scale.success", workload=workload_name, replicas=target_replicas)
+            _k8s_rest.scale_up(
+                base_url=k8s_base_url,
+                headers=k8s_headers,
+                ca_cert_path=ca_cert_path,
+                workload=workload_name,
+                log=log,
+                log_prefix="gcp_runner.gke",
+            )
 
         elif action == "GCP-RollbackGKEWorkload":
             # For rollback: patch container image to rollback target if provided
