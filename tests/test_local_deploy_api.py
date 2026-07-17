@@ -133,6 +133,45 @@ def test_local_deploy_falls_through_when_not_delegated(monkeypatch):
         app.dependency_overrides.clear()
 
 
+def _parse_sse(body: str):
+    """Parse SSE frames into (id, data-dict) pairs; skip comment/keepalive lines."""
+    import json as _json
+
+    frames = []
+    for block in body.split("\n\n"):
+        lines = [ln for ln in block.splitlines() if ln and not ln.startswith(":")]
+        data_line = next((ln for ln in lines if ln.startswith("data: ")), None)
+        if not data_line:
+            continue
+        id_line = next((ln for ln in lines if ln.startswith("id: ")), None)
+        frames.append((int(id_line[4:]) if id_line else None, _json.loads(data_line[6:])))
+    return frames
+
+
+def test_stream_emits_ready_sentinel_and_sequenced_event_ids(monkeypatch):
+    monkeypatch.setattr(ld, "get_deployment_adapters", _fake_adapters)
+    app.dependency_overrides[get_deployer_factory] = lambda: _test_factory
+    try:
+        client = TestClient(app)
+        resp = client.post(
+            "/api/local-deploy/stream",
+            json={"instruction": "Deploy orders-api v1.4.2 to the local cluster"},
+        )
+        assert resp.status_code == 200
+        assert resp.headers["content-type"].startswith("text/event-stream")
+
+        frames = _parse_sse(resp.text)
+        # A-2: the first frame is a READY sentinel...
+        assert frames[0][1]["type"] == "ready"
+        # A-1: every frame carries a sequential id (1..N) for dedup on reconnect.
+        ids = [fid for fid, _ in frames]
+        assert ids == list(range(1, len(frames) + 1))
+        # ...and the stream terminates with a 'done' event.
+        assert frames[-1][1]["type"] == "done"
+    finally:
+        app.dependency_overrides.clear()
+
+
 def test_models_endpoint_lists_options_for_environment():
     client = TestClient(app)
     resp = client.get("/api/models", params={"provider": "onprem"})

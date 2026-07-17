@@ -213,8 +213,18 @@ async def local_deploy(
     )
 
 
-def _sse(obj: dict[str, Any]) -> str:
-    return f"data: {json.dumps(obj)}\n\n"
+def _sse(obj: dict[str, Any], *, event_id: int | None = None) -> str:
+    """One SSE frame. An ``event_id`` emits an ``id:`` line so a client can dedup
+    on reconnect via ``Last-Event-ID`` (older clients simply ignore it)."""
+    prefix = f"id: {event_id}\n" if event_id is not None else ""
+    return f"{prefix}data: {json.dumps(obj)}\n\n"
+
+
+# An SSE comment line — ignored by clients, but keeps idle proxies/load balancers
+# from closing a stream that is quiet during a long tool call.
+_SSE_KEEPALIVE = ": keepalive\n\n"
+# Emit a keepalive if no real event arrives within this many seconds.
+_SSE_HEARTBEAT_S = 15.0
 
 
 @app.post("/api/local-deploy/stream")
@@ -228,12 +238,32 @@ async def local_deploy_stream(
     """
 
     async def generate():
+        seq = 0
+
+        def frame(obj: dict[str, Any]) -> str:
+            nonlocal seq
+            seq += 1
+            return _sse(obj, event_id=seq)
+
+        # READY sentinel first: the client confirms the connection and attaches a
+        # live tail before any backfill, closing the initial-render gap.
+        yield frame({"type": "ready"})
         try:
-            async for event in route_deploy_stream(
+            agen = route_deploy_stream(
                 req.instruction, req.model, req.provider, agent_factory=factory
-            ):
+            ).__aiter__()
+            while True:
+                try:
+                    event = await asyncio.wait_for(agen.__anext__(), timeout=_SSE_HEARTBEAT_S)
+                except asyncio.TimeoutError:
+                    # No event for a while — keep the connection warm.
+                    yield _SSE_KEEPALIVE
+                    continue
+                except StopAsyncIteration:
+                    break
+
                 if event["type"] != "result":
-                    yield _sse(event)
+                    yield frame(event)
                     continue
 
                 outcome = event["outcome"]
@@ -252,7 +282,7 @@ async def local_deploy_stream(
                         )
                     except Exception:  # noqa: BLE001
                         logger.warning("deploy recording failed", exc_info=True)
-                yield _sse(
+                yield frame(
                     {
                         "type": "done",
                         "ok": outcome.ok,
@@ -264,10 +294,10 @@ async def local_deploy_stream(
                     }
                 )
         except ValueError as exc:
-            yield _sse({"type": "error", "error": str(exc)})
+            yield frame({"type": "error", "error": str(exc)})
         except Exception as exc:  # noqa: BLE001
             logger.exception("stream deploy failed")
-            yield _sse({"type": "error", "error": str(exc)})
+            yield frame({"type": "error", "error": str(exc)})
 
     return StreamingResponse(
         generate(),

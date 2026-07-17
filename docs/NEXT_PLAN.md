@@ -9,7 +9,7 @@
 > 사용자가 ⑧·⑨ 잔여 + ⑦ 라이브를 **전부 승인**. 설계 2건(`docs/plans/a2a-delegation-hardening.md`·`sse-memory-hardening.md`)은 이제 **승인됨=실행**. 아래 순서(안전→위험)로 진행, 각 묶음마다 `make check`+커밋.
 
 1. [x] ~~**⑧-3 최소권한 힌트**~~ — **완료(gate 796→798)**: `ROLE_ALLOWED_ACTIONS`(supervisor) 위임 `metadata.allowedActions` 힌트(KAGENT=[]) + `action_sink_grader` 기본 정책·`READ_ONLY_ROLES` 파생으로 단일 소스화(드리프트 불가). +2 test.
-2. [ ] **⑨ A-1+A-2 SSE id/dedup + READY/heartbeat** — `_sse`에 `id:`·`ready` 센티넬·keepalive. 비파괴.
+2. [x] ~~**⑨ A-1+A-2 SSE id/dedup + READY/heartbeat**~~ — **완료(gate 798→799)**: `_sse(event_id)` `id:` 라인(Last-Event-ID dedup) + 스트림 오픈 시 `ready` 센티넬 + `asyncio.wait_for` 15s heartbeat(`: keepalive`). 비파괴(구 클라이언트는 id/미지 type 무시). +1 stream test.
 3. [ ] **⑧-1 구조화 위임 디스크립터** — `metadata.task={type,matchedSkills,origin}`(free-text 유지, params 추출 제외). 비파괴 증분.
 4. [ ] **⑨ B-1 시그니처-키드 distilled 메모리** — `deploy_recorder` 트레이스→경량 memory tier(오프라인·injectable·PII 스크럽).
 5. [ ] **⑧-2 저-confidence 폴백→게이트** — `Supervisor(confidence_router=...)` 옵트인 DI, 미주입=무변경.
