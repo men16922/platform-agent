@@ -163,11 +163,14 @@ def test_stream_emits_ready_sentinel_and_sequenced_event_ids(monkeypatch):
         frames = _parse_sse(resp.text)
         # A-2: the first frame is a READY sentinel...
         assert frames[0][1]["type"] == "ready"
+        # A-3: it reserves an `agent` attribution field (the model id here).
+        assert "agent" in frames[0][1]
         # A-1: every frame carries a sequential id (1..N) for dedup on reconnect.
         ids = [fid for fid, _ in frames]
         assert ids == list(range(1, len(frames) + 1))
-        # ...and the stream terminates with a 'done' event.
+        # ...and the stream terminates with a 'done' event carrying the same field.
         assert frames[-1][1]["type"] == "done"
+        assert "agent" in frames[-1][1]
     finally:
         app.dependency_overrides.clear()
 

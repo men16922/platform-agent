@@ -226,12 +226,40 @@ def augment_instruction(instruction: str, store: MemoryStore | None, provider: s
     return f"{block}\n\n{instruction}" if block else instruction
 
 
+# --- periodic consolidation (⑨ B-3) ------------------------------------------
+# The store already dedups per signature on write; consolidation is the *periodic*
+# pass on top: drop transient one-offs, and surface the recurring pain point per
+# service. Both are pure — the caller schedules them (cron/loop); there is no clock
+# or scheduler baked in here.
+
+
+def consolidate(store: MemoryStore, *, min_seen: int = 2) -> MemoryStore:
+    """A new store keeping only *recurring* failures (``seen >= min_seen``) plus all
+    successes — transient one-off failures are pruned so the tier stays long-term."""
+    kept = [m for m in store.all() if m.ok or m.seen >= min_seen]
+    return MemoryStore(kept)
+
+
+def dominant_failures(store: MemoryStore) -> dict[tuple[str, str], DistilledMemory]:
+    """The most-seen failure per ``(provider, service)`` — its recurring pain point."""
+    out: dict[tuple[str, str], DistilledMemory] = {}
+    for m in store.all():
+        if m.ok:
+            continue
+        key = (m.provider, m.service)
+        if key not in out or m.seen > out[key].seen:
+            out[key] = m
+    return out
+
+
 __all__ = [
     "DistilledMemory",
     "MemoryStore",
     "advisory_block",
     "augment_instruction",
+    "consolidate",
     "distill",
+    "dominant_failures",
     "relevant_memories",
     "scrub",
     "signature",

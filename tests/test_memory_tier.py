@@ -4,7 +4,9 @@ from src.agents.ai.memory_tier import (
     DistilledMemory,
     MemoryStore,
     augment_instruction,
+    consolidate,
     distill,
+    dominant_failures,
     relevant_memories,
     scrub,
     signature,
@@ -142,3 +144,30 @@ def test_augment_instruction_prepends_nonbinding_advisory_on_match():
     assert out.endswith("Deploy orders-api now")  # original request preserved at the end
     assert "[Advisory" in out and "non-binding" in out
     assert "orders-api previously failed at validate" in out
+
+
+# --- periodic consolidation (⑨ B-3) ------------------------------------------
+
+
+def test_consolidate_prunes_transient_one_offs_but_keeps_recurring_and_successes():
+    store = MemoryStore()
+    store.record(_fail("onprem", "recurring", "x"))
+    store.record(_fail("onprem", "recurring", "x"))  # seen 2 -> recurring
+    store.record(_fail("onprem", "one-off", "y"))  # seen 1 -> transient
+    store.record({"provider": "onprem", "service": "healthy", "ok": True, "steps": []})
+
+    slim = consolidate(store, min_seen=2)
+    services = {m.service for m in slim.all()}
+    assert "recurring" in services and "healthy" in services
+    assert "one-off" not in services
+    # Recurring failure keeps its consolidated count.
+    assert slim.recall_for("onprem", "recurring", "x").seen == 2
+
+
+def test_dominant_failures_picks_most_seen_per_service():
+    store = MemoryStore()
+    store.record(_fail("onprem", "orders-api", "validate"))
+    store.record(_fail("onprem", "orders-api", "validate"))  # seen 2 at validate
+    store.record(_fail("onprem", "orders-api", "push"))  # seen 1 at push
+    dom = dominant_failures(store)
+    assert dom[("onprem", "orders-api")].failed_step == "validate"

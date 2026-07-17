@@ -246,8 +246,10 @@ async def local_deploy_stream(
             return _sse(obj, event_id=seq)
 
         # READY sentinel first: the client confirms the connection and attaches a
-        # live tail before any backfill, closing the initial-render gap.
-        yield frame({"type": "ready"})
+        # live tail before any backfill, closing the initial-render gap. The
+        # `agent` field is reserved for per-agent attribution (A-3) — today the
+        # deploy stream is single-agent, so it carries the model id.
+        yield frame({"type": "ready", "agent": req.model})
         try:
             agen = route_deploy_stream(
                 req.instruction, req.model, req.provider, agent_factory=factory
@@ -286,6 +288,7 @@ async def local_deploy_stream(
                     {
                         "type": "done",
                         "ok": outcome.ok,
+                        "agent": outcome.model,  # A-3: per-agent attribution field
                         "model": outcome.model,
                         "provider": outcome.provider,
                         "summary": outcome.summary,

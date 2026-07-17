@@ -14,7 +14,7 @@
 4. [x] ~~**⑨ B-1 시그니처-키드 distilled 메모리**~~ — **완료(gate 799→809)**: 신규 `memory_tier.py`(오프라인·결정론) — `signature`(sha256 {provider,service,failed_step})·`scrub`(secret/PII redact)·`distill`(deploy 레코드→lesson, 방어적)·`MemoryStore`(count-consolidating·injectable·to/from_dicts). +9 test.
 5. [x] ~~**⑧-2 저-confidence 폴백→게이트**~~ — **완료(gate 809→812)**: `Supervisor(confidence_router=, min_agreement=0.6)` 옵트인 DI seam(구조적 `RoutingConfidence` Protocol=orchestration cycle 회피). 저-agreement 투표→`delegated=False`+`trace{kind:"gated",reason:"low_confidence"}`(코인플립 위임 차단). 미주입=결정론 무변경. +3 test.
 6. [x] ~~**⑨ B-2 과거 인시던트 주입**~~ — **완료(gate 812→817)**: `memory_tier` recall(`recall_failures`·`relevant_memories`=서비스명 매칭·`advisory_block`·`augment_instruction`) + `route_deploy`/`route_deploy_stream` 옵트인 `memory=` seam(조언적 non-binding 프리펜드, 미주입=무변경). +5 test.
-7. [ ] **⑨ A-3 per-agent 귀속 / ⑨ B-3 consolidation** — Orchestrator 스트리밍·스케줄 선행 후(옵셔널 필드만 예약).
+7. [x] ~~**⑨ A-3 per-agent 귀속 / ⑨ B-3 consolidation**~~ — **완료(gate 817→819)**: B-3 `consolidate`(seen<min_seen one-off 프루닝)·`dominant_failures`(서비스별 최다 실패, 순수 함수·스케줄=caller). A-3 SSE `ready`/`done`에 `agent` 귀속 필드 예약(단일 에이전트=model id). +2 test.
 8. [ ] **⑦ 라이브 모델 스윕** — 실 API 과금. **실행 전 그리드/모델/예상비용 확인**(스캐폴드 `model_sweep.py` ready).
 
 ## 다음 우선순위 — **자율 코드 백로그 소진(2026-07-15). 잔여 = 전부 사용자/인프라.**
