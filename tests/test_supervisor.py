@@ -233,6 +233,33 @@ def test_delegation_omits_sanitize_trace_for_clean_instruction():
     assert not any(step.get("kind") == "sanitize" for step in outcome.trace)
 
 
+def test_delegation_forwards_least_privilege_allowed_actions():
+    """⑧-3: the delegation message carries a role's blast-radius hint — read-only
+    kagent gets an empty list; a mutating role gets its permitted verbs."""
+    sent: dict = {}
+
+    def transport(endpoint: str, body: dict) -> dict:
+        sent["body"] = body
+        return {"task": {"id": "t"}}
+
+    # kagent (read-only) -> empty allowedActions.
+    kagent_sup = Supervisor(
+        {AgentRole.KAGENT: "http://kagent"}, transport=transport, card_fetcher=lambda _: KAGENT_CARD
+    )
+    kagent_sup.handle("Show pod status")
+    assert sent["body"]["message"]["metadata"]["allowedActions"] == []
+
+    # deploy (mutating) -> its permitted verbs, sorted.
+    deploy_card = {"name": "Deployer", "skills": [{"id": "deploy-aws", "tags": ["deploy", "delivery"]}]}
+    deploy_sup = Supervisor(
+        {AgentRole.DEPLOY: "http://deploy"}, transport=transport, card_fetcher=lambda _: deploy_card
+    )
+    deploy_sup.handle("Deploy orders-api to prod")
+    allowed = sent["body"]["message"]["metadata"]["allowedActions"]
+    assert "scale" in allowed and "rollout_restart" in allowed
+    assert allowed == sorted(allowed)  # deterministic, sorted
+
+
 def test_supervisor_never_executes_mutating_work_without_the_a2a_boundary():
     """Delegation-safety invariant (⑧-4 guard): a mutating provision/deploy request
     must go out over the A2A transport — never be executed in-process — and with no

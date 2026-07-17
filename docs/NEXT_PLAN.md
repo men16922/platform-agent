@@ -8,7 +8,7 @@
 
 > 사용자가 ⑧·⑨ 잔여 + ⑦ 라이브를 **전부 승인**. 설계 2건(`docs/plans/a2a-delegation-hardening.md`·`sse-memory-hardening.md`)은 이제 **승인됨=실행**. 아래 순서(안전→위험)로 진행, 각 묶음마다 `make check`+커밋.
 
-1. [ ] **⑧-3 최소권한 힌트** — role별 `ROLE_ALLOWED_ACTIONS` 위임 메타데이터(+`action_sink_grader` 정책 단일화). 순수 additive·비파괴.
+1. [x] ~~**⑧-3 최소권한 힌트**~~ — **완료(gate 796→798)**: `ROLE_ALLOWED_ACTIONS`(supervisor) 위임 `metadata.allowedActions` 힌트(KAGENT=[]) + `action_sink_grader` 기본 정책·`READ_ONLY_ROLES` 파생으로 단일 소스화(드리프트 불가). +2 test.
 2. [ ] **⑨ A-1+A-2 SSE id/dedup + READY/heartbeat** — `_sse`에 `id:`·`ready` 센티넬·keepalive. 비파괴.
 3. [ ] **⑧-1 구조화 위임 디스크립터** — `metadata.task={type,matchedSkills,origin}`(free-text 유지, params 추출 제외). 비파괴 증분.
 4. [ ] **⑨ B-1 시그니처-키드 distilled 메모리** — `deploy_recorder` 트레이스→경량 memory tier(오프라인·injectable·PII 스크럽).

@@ -128,6 +128,18 @@ ENDPOINT_ENV: dict[AgentRole, str] = {
 }
 
 
+# Least-privilege blast radius per specialist role — the action verbs each role
+# is permitted to perform. Forwarded as a `metadata.allowedActions` hint so a
+# specialist knows its own bound, and single-sourced with the eval harness's
+# `action_sink_grader` (which fails a role that acted outside this set). KAGENT is
+# read-only: an empty set means "no mutation permitted".
+ROLE_ALLOWED_ACTIONS: dict[AgentRole, frozenset[str]] = {
+    AgentRole.PROVISION: frozenset({"provision", "teardown"}),
+    AgentRole.DEPLOY: frozenset({"deploy", "rollback", "rollout_restart", "rollout_undo", "scale"}),
+    AgentRole.KAGENT: frozenset(),
+}
+
+
 def post_a2a_message(endpoint: str, body: dict[str, Any], *, timeout: float = 10.0) -> dict[str, Any]:
     """Send one A2A ``message:send`` request using only the standard library."""
     url = endpoint if body.get("jsonrpc") == "2.0" else f"{endpoint.rstrip('/')}/message:send"
@@ -239,7 +251,13 @@ class Supervisor:
             "messageId": str(uuid.uuid4()),
             "role": "ROLE_USER",
             "parts": [{"text": safe_instruction}],
-            "metadata": {"supervisorRole": decision.role.value, "matchedSkills": skills},
+            "metadata": {
+                "supervisorRole": decision.role.value,
+                "matchedSkills": skills,
+                # Least-privilege hint: the blast radius this role is allowed. A
+                # read-only kagent carries an empty list.
+                "allowedActions": sorted(ROLE_ALLOWED_ACTIONS[decision.role]),
+            },
         }
         if context_id:
             message["contextId"] = context_id
