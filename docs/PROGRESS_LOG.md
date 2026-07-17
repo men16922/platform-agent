@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-17 — 레퍼런스 #7-b Terraform 모듈(EKS/Aurora/IRSA) → #7 전체 완결 (gate 834→839, apply 없음·spend 0)
+
+- Status: 레퍼런스 #7 잔여 Terraform 파트 구현·오프라인 검증(사용자 승인 "다음 수행"). apply는 하지 않음(billable=사용자 게이트). 이로써 **레퍼런스 #7 = Helm(#7-a)+Terraform(#7-b) 전체 완결** — AWSome AI Gateway 레퍼런스 8항목 전부 소화(Tier 1 4종+Tier 2 3종+#7).
+- Changed: 신규 `infra/terraform/aws-production/`(7파일) — VPC(2AZ·public/private·NAT 1) + EKS 1.31(managed node group, AWS-managed 정책만 ARN attach) + **Aurora PostgreSQL Serverless v2**(min 0.5 ACU·`database_name=platform_state`=④ `PLATFORM_STATE_DSN` seam 정합·`manage_master_user_password`=Secrets Manager, 평문 무노출) + **IRSA**(OIDC provider+차트 SA 전용 trust[sub+aud]·**유일 grant=DynamoDB activity 테이블 정확 ARN**+index, deploy_recorder가 실 소비자) + outputs(DSN 템플릿·IRSA arn·helm 배선 스니펫 README). Redis/Cognito는 **미소비라 의도적 제외** 명시. `tests/test_terraform_module.py` +5(구성 완비·**bare `"*"` 금지**[주석 제외]·state seam 정합·IRSA trust 스코프·validate[init 시]).
+- Verified: `terraform init`+`fmt -check`+**`validate` Success**(크레덴셜/spend 0). `make check` → **839 passed, 1 skipped**(238.51s, 834→839). ARCHITECTURE 표 #7 ✅.
+- Blockers: `terraform apply`=billable(EKS ~$0.10/h+노드+NAT+Aurora) — 사용자 게이트.
+- Next: 자율 코드/인프라 백로그 재소진 — 잔여는 사용자 몫(아티클 배포·OAuth·Slack·apply류) + 선택 소품(k3s 스모크·차트 DSN values).
+
 ## 2026-07-17 — 로드맵 ④: SQL State Store(옵트인) + 실 Alertmanager 라이브 E2E — 멀티-레플리카 실증 (gate 829→834)
 
 - Status: ARCHITECTURE 잔여 ④(On-Prem State Store·Alertmanager 실연동)를 로컬 docker($0)로 완결. JSONL 단일-writer 제약(Helm 차트 replicas:1의 근거)을 푸는 productionization seam.
