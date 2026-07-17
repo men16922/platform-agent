@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-17
 
-> ▶ NEXT SESSION: `docs/plans/a2a-delegation-hardening.md` — **⑧ A2A 위임 하드닝 안전 서브셋 완료·구조화/게이트/최소권한 3건 승인 대기.** 첫 액션 = **⑧-3 최소권한 힌트**(role별 `allowedActions` 위임 메타데이터, `action_sink_grader` 정책과 단일 소스 공유 = ⑧ 중 가장 안전). 이번 세션(gate 748→758→767→779→790→795): ⑥ 데이터셋+judge 하드닝(over-trigger 갭 2건 `classify_request` precedence 수정) · ⑤ eval 멀티-grader 스코어카드(`Verdict` PASS_SLOW·action-sink·`Scorecard.delta`·`score(trials=N)`) · ⑦ `model_sweep.py` 오프라인 스윕(cost_per_success headline·resumable·실 spend 0) · ⑧ 아웃바운드 `sanitize_instruction`(control-char strip·cap·trace). **커밋 완료**: ⑥`eef7d54`·⑤`011d4f9`·⑦`ec63915`·tidy`04b8cad` 푸시됨. ⑧은 **미커밋**(supervisor+test+plan doc+docs). **자율 코드·설계 백로그 소진**(⑧-4 완료 gate 796; ⑨ 설계 완료=`docs/plans/sse-memory-hardening.md`); 잔여 = 전부 승인/스펜드/인프라: ⑧-1/2/3(승인, `docs/plans/a2a-delegation-hardening.md`)·⑨ A/B(승인)·⑦ 라이브 실행(실 spend=사용자)·인프라/사용자(아티클 배포·OAuth·Slack·State Store·Helm/Terraform). 하네스: billable create·보안완화는 사용자 `!` 필요.
+> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` ★ 큐 — **승인된 실행 큐 소진(사용자 "전부 다"): ⑧-1/2/3 + ⑨ A/B 7묶음 전부 구현·푸시(gate 796→819).** 잔여 큐 = **⑦ 라이브 모델 스윕만(item 8) = 실 API 과금·creds·사용자 router_factory 배선 = 사용자 게이트**(`model_sweep.py` 스캐폴드는 injectable factory라 코드 완비, 실행만). 이번 세션 누적(gate 748→819, +71 test): ⑥ 데이터셋+judge · ⑤ 멀티-grader 스코어카드 · ⑦ 오프라인 스윕 스캐폴드 · ⑧ 전체(sanitize+cap·⑧-4 smell-test·⑧-3 최소권한·⑧-1 구조화·⑧-2 confidence 게이트) · ⑨ 전체(A-1/A-2 SSE·B-1 memory_tier·B-2 recall 주입·B-3 consolidate·A-3 agent 필드). **전 커밋 origin/main**(HEAD `3b4cbd9`). **자율 코드 백로그 완전 소진**; 잔여 = ⑦ 라이브(실 spend)·인프라/사용자(아티클 배포·OAuth·Slack·State Store·Helm/Terraform). 하네스: billable·보안완화는 사용자 `!`.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 
