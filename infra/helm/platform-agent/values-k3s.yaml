@@ -1,0 +1,7 @@
+# Substrate overlay: k3s (e.g. the Multipass VM provisioned by infra/onprem/ansible).
+# host.docker.internal does not resolve on k3s — set the LAN/host IP explicitly.
+llm:
+  endpoint: "http://192.168.64.1:18091/v1"
+
+persistence:
+  storageClass: "local-path"  # k3s built-in provisioner

@@ -16,16 +16,13 @@ dependencies = [
     "strands-agents>=1.0",
 ]
 
-[project.optional-dependencies.gcp]
-dependencies = ["google-adk>=1.0", "google-cloud-aiplatform>=1.90"]
-
-[project.optional-dependencies.azure]
-dependencies = ["agent-framework>=1.0", "azure-identity>=1.15", "azure-ai-projects>=1.0"]
-
-[project.optional-dependencies.onprem]
-dependencies = ["pydantic-ai-slim[openai]>=2.9", "mlx-lm>=0.19"]
-
+# PEP 621: each extra is a plain array under this one table. The previous
+# `[project.optional-dependencies.<name>]` + `dependencies = [...]` shape was
+# invalid metadata — latent until the reference #7 image ran `pip install .`.
 [project.optional-dependencies]
+gcp = ["google-adk>=1.0", "google-cloud-aiplatform>=1.90"]
+azure = ["agent-framework>=1.0", "azure-identity>=1.15", "azure-ai-projects>=1.0"]
+onprem = ["pydantic-ai-slim[openai]>=2.9", "mlx-lm>=0.19"]
 dev = [
     "pytest>=8.1",
     "pytest-asyncio>=0.23",

@@ -1,0 +1,7 @@
+# Substrate overlay: kind (local dev cluster, e.g. `make local-cluster`).
+# Host MLX brain is reached the same way the kagent ModelConfig does.
+llm:
+  endpoint: "http://host.docker.internal:18091/v1"
+
+persistence:
+  storageClass: "standard"  # kind's default StorageClass

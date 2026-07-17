@@ -1,0 +1,71 @@
+{{- if .Values.webhook.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "platform-agent.fullname" . }}-webhook
+  labels:
+    {{- include "platform-agent.labels" . | nindent 4 }}
+    app.kubernetes.io/component: webhook
+spec:
+  replicas: {{ .Values.webhook.replicas }}
+  strategy:
+    type: Recreate  # single-writer JSONL store on a RWO volume
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "platform-agent.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: webhook
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "platform-agent.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: webhook
+    spec:
+      serviceAccountName: {{ include "platform-agent.fullname" . }}
+      containers:
+        - name: webhook
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - uvicorn
+            - src.agents.ai.onprem_webhook_api:app
+            - --host
+            - "0.0.0.0"
+            - --port
+            - {{ .Values.webhook.port | quote }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.webhook.port }}
+          env:
+            {{- include "platform-agent.storeEnv" . | nindent 12 }}
+            - name: ONPREM_EXECUTOR_LIVE
+              value: {{ .Values.webhook.executorLive | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          # Lenient liveness (process alive) vs strict readiness (circuit breaker
+          # aware): /health/ready returns 503 while the breaker is OPEN so the
+          # Service stops routing, without the kubelet killing the pod.
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: {path: /health/ready, port: http}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.webhook.resources | nindent 12 }}
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: store
+              mountPath: {{ .Values.persistence.mountPath }}
+          {{- end }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: store
+          persistentVolumeClaim:
+            claimName: {{ include "platform-agent.fullname" . }}-store
+      {{- end }}
+{{- end }}

@@ -1,0 +1,24 @@
+platform-agent {{ .Chart.Version }} deployed.
+
+Day-2 webhook plane:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "platform-agent.fullname" . }}-webhook {{ .Values.webhook.port }}:{{ .Values.webhook.port }}
+  curl localhost:{{ .Values.webhook.port }}/health          # lenient liveness
+  curl localhost:{{ .Values.webhook.port }}/health/ready    # strict (circuit breaker)
+
+Point Alertmanager's webhook receiver at:
+  http://{{ include "platform-agent.fullname" . }}-webhook.{{ .Release.Namespace }}.svc:{{ .Values.webhook.port }}/webhook/alertmanager
+
+{{- if .Values.webhook.executorLive }}
+Executor mode: LIVE kubectl (restart/undo/scale{{ if .Values.webhook.rbac.allowDrain }}/drain{{ end }})
+{{- else }}
+Executor mode: log-only (set webhook.executorLive=true to arm)
+{{- end }}
+{{- if not .Values.webhook.rbac.allowDrain }}
+Drain RBAC is OFF — the ServiceAccount cannot touch nodes (webhook.rbac.allowDrain=true to grant).
+{{- end }}
+{{- if .Values.router.enabled }}
+
+Deploy router front door:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "platform-agent.fullname" . }}-router {{ .Values.router.port }}:{{ .Values.router.port }}
+  (build/push steps need external tooling — see infra/helm/platform-agent/README.md)
+{{- end }}

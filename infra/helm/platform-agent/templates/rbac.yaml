@@ -1,0 +1,81 @@
+{{- if and .Values.webhook.enabled .Values.webhook.rbac.enabled }}
+# Least-privilege for the Day-2 executor's reversible actions. Verbs and
+# resources are enumerated per action — never "*" (same guardrail as IAM).
+#
+#   restart -> patch deployment (template annotation)
+#   undo    -> get/patch deployment + get/list replicasets
+#   scale   -> get/patch deployments/scale
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "platform-agent.fullname" . }}-remediate
+  labels:
+    {{- include "platform-agent.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale"]
+    verbs: ["get", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["replicasets"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "platform-agent.fullname" . }}-remediate
+  labels:
+    {{- include "platform-agent.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "platform-agent.fullname" . }}-remediate
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "platform-agent.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+{{- if .Values.webhook.rbac.allowDrain }}
+---
+# Polite drain needs cluster scope (cordon nodes, evict pods anywhere). Split
+# out and off by default so the base install cannot touch nodes at all.
+#
+#   drain -> get/patch node (cordon) + list pods + create pods/eviction
+#            + get/list daemonsets (--ignore-daemonsets filtering)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "platform-agent.fullname" . }}-drain
+  labels:
+    {{- include "platform-agent.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "patch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods/eviction"]
+    verbs: ["create"]
+  - apiGroups: ["apps"]
+    resources: ["daemonsets"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "platform-agent.fullname" . }}-drain
+  labels:
+    {{- include "platform-agent.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "platform-agent.fullname" . }}-drain
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "platform-agent.fullname" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}
+{{- end }}

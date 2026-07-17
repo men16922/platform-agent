@@ -1,0 +1,83 @@
+{{- if .Values.router.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "platform-agent.fullname" . }}-router
+  labels:
+    {{- include "platform-agent.labels" . | nindent 4 }}
+    app.kubernetes.io/component: router
+spec:
+  replicas: {{ .Values.router.replicas }}
+  strategy:
+    type: Recreate  # single-writer JSONL store on a RWO volume
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "platform-agent.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: router
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "platform-agent.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: router
+    spec:
+      {{- if and .Values.persistence.enabled .Values.webhook.enabled }}
+      # Both components share one RWO volume, so the router must land on the
+      # webhook's node. The real multi-node answer is the State Store roadmap
+      # item (PostgreSQL/Redis), not RWX gymnastics.
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: {{ include "platform-agent.name" . }}
+                  app.kubernetes.io/instance: {{ .Release.Name }}
+                  app.kubernetes.io/component: webhook
+      {{- end }}
+      containers:
+        - name: router
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - uvicorn
+            - src.agents.ai.local_deploy_api:app
+            - --host
+            - "0.0.0.0"
+            - --port
+            - {{ .Values.router.port | quote }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.router.port }}
+          env:
+            {{- include "platform-agent.storeEnv" . | nindent 12 }}
+            - name: ONPREM_LLM_ENDPOINT
+              value: {{ .Values.llm.endpoint | quote }}
+            - name: ONPREM_LLM_MODEL
+              value: {{ .Values.llm.model | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.router.resources | nindent 12 }}
+          {{- if .Values.persistence.enabled }}
+          volumeMounts:
+            - name: store
+              mountPath: {{ .Values.persistence.mountPath }}
+          {{- end }}
+      {{- if .Values.persistence.enabled }}
+      volumes:
+        - name: store
+          persistentVolumeClaim:
+            claimName: {{ include "platform-agent.fullname" . }}-store
+      {{- end }}
+{{- end }}

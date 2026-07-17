@@ -1,0 +1,11 @@
+apiVersion: v2
+name: platform-agent
+description: >-
+  On-Prem control plane for platform-agent — the Day-2 webhook pipeline
+  (Alertmanager -> detect/analyze/decide/execute with approval gating) and,
+  opt-in, the deploy router front door. Reference #7 production packaging
+  (env x substrate values files).
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords: [platform-agent, day2, onprem, aiops]

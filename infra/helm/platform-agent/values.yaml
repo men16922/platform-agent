@@ -1,0 +1,53 @@
+# Default values — safe-by-default: executor log-only, drain RBAC off, router off.
+# Substrate overlays: values-kind.yaml / values-k3s.yaml (env x substrate axis).
+
+image:
+  repository: platform-agent
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+# External model brain (never in-cluster). The kind overlay points this at the
+# host MLX endpoint, mirroring infra/onprem/kagent/qwen-model-config.yaml.
+llm:
+  endpoint: "http://host.docker.internal:18091/v1"
+  model: "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit"
+
+# Offline JSONL stores (activity / pending approvals / incidents). Single-writer
+# by design: keep replicas at 1 per component. The PostgreSQL/Redis State Store
+# (roadmap item 4) is the multi-replica path; this chart packages what ships.
+persistence:
+  enabled: true
+  size: 1Gi
+  storageClass: ""  # substrate overlays set this (kind: standard, k3s: local-path)
+  mountPath: /data
+
+webhook:
+  enabled: true
+  port: 8078
+  replicas: 1  # single-writer JSONL store — do not scale out (see persistence)
+  # Real kubectl remediation. false = log-only (product default). Flipping this
+  # to true makes the Day-2 executor patch live workloads via the ServiceAccount.
+  executorLive: false
+  rbac:
+    # Namespaced least-privilege for restart/undo/scale (verbs enumerated, no "*").
+    enabled: true
+    # Cluster-scoped drain rights (nodes cordon + pod eviction across namespaces).
+    # Kept separate and off by default — grant only where polite drain is wanted.
+    allowDrain: false
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: "1", memory: 1Gi}
+
+router:
+  # The deploy front door builds/pushes images, which needs build tooling this
+  # image intentionally does not carry (cloud paths use CodeBuild etc.). Enable
+  # only for the SSE/routing/recording surface, or behind an external builder.
+  enabled: false
+  port: 8077
+  replicas: 1
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: "1", memory: 1Gi}
+
+# Extra env for either component, e.g. PLATFORM_MONTHLY_BUDGET_USD.
+extraEnv: []

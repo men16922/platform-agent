@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-17 — 레퍼런스 #7-a: On-Prem Helm 차트 + 컨테이너 이미지 (gate 823→829, pyproject latent 버그 수정)
+
+- Status: ARCHITECTURE 잔여 ⑤(레퍼런스 #7 Helm/Terraform 프로덕션, Tier 3) 중 **Helm 파트** 구현. 로컬·$0·오프라인 검증 가능 범위만 자율 수행(kind 라이브 설치=클러스터 생성이라 승인 게이트).
+- Changed: (1) `infra/onprem/Dockerfile` — python3.11-slim + kubectl v1.31.4(Day-2 runner가 subprocess로 침) + `pip install .` 단일 이미지, 2엔트리포인트(webhook/router). (2) `infra/helm/platform-agent/` — webhook(기본 on, liveness `/health`·readiness `/health/ready`=서킷브레이커 인지 Tier1 #6 반영) + router(opt-in, 빌드툴 부재 명시·PVC 공유 시 podAffinity 핀) + **최소권한 RBAC**(4조치 동사 열거: 네임스페이스 Role=restart/undo/scale, **drain은 별도 ClusterRole·`allowDrain` 기본 off**) + PVC 단일-writer(replicas 1·Recreate, State Store가 멀티 경로임을 명시) + env×substrate values(kind/k3s) + NOTES/README. (3) `tests/test_helm_chart.py` +6 — helm lint·기본=webhook-only+노드 불가침·**RBAC `"*"` 금지**(fully-armed도)·drain 표면 정확성(cordon만, eviction API)·프로브 분리·단일-writer(helm 미설치 시 skip). (4) **`pyproject.toml` latent 버그 수정**: `[project.optional-dependencies.<name>]`+`dependencies=` 형식이 PEP 621 위반 — 아무도 `pip install .` 안 해서 잠복, 이미지 빌드가 표면화 → extras 배열로 정정.
+- Verified: `make check` → **829 passed, 1 skipped**(263.50s, 823→829, +6). helm lint 통과·기본/풀 렌더 검증(기본=ClusterRole 없음, 풀=drain CR+k3s LLM endpoint 배선). **이미지 실빌드 성공(881MB)** + 컨테이너 스모크: kubectl v1.31.4·양 API import OK·webhook 기동→`/health` 200·`/health/ready` 200(checks ok)→정리.
+- Blockers: kind/k3s **라이브 helm install은 클러스터 생성 필요 = 승인 대기**. Terraform 모듈(#7-b, EKS/Aurora)은 클라우드·별도 묶음.
+- Next: (승인 시) kind 라이브 설치 실증 / #7-b Terraform 모듈 / ④ State Store·Alertmanager 실연동(로컬 docker 가능).
+
 ## 2026-07-17 — ⑦ 라이브 모델 스윕 실 실행 완료 (로컬 MLX, spend $0): 프롬프트 결함 발견→수정→가드 (gate 822→823)
 
 - Status: 승인 큐 마지막 잔여였던 ⑦ 라이브 실행을 **A 로컬 MLX 경로**(무과금)로 완료. 신규 `scripts/live_model_sweep.py`가 shipped `live_router_factory`+`run_sweep`을 실 mlx_lm.server(:18090, per-request 동적 모델 로드) 상대로 구동. 총 **160 라이브 호출**(2모델×2 effort×20케이스×프롬프트 v1/v2), 미파싱→backstop 발화 0.

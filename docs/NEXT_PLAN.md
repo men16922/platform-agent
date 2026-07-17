@@ -29,7 +29,7 @@
 - [x] ~~#2 **agents-as-tools 오케스트레이션 + self-consistency**~~ — `orchestration.py`(N-샘플 majority vote·저합의 폴백 + `Orchestrator` 체이닝), a2a_server 옵트인. gate 714.
 - [x] ~~#3 **MCP-over-HTTP 커넥터 + per-tool/글로벌 kill-switch**~~ — `mcp_server.py` `remote_mcp_tool`(intercept-reinject·전송실패 degrade) + `MCPServer` kill-switch 게이트(`MCP_DISABLED_TOOLS`/`MCP_KILL_SWITCH`), 비파괴. gate 736.
 - [x] ~~#4 **cross-account STS AssumeRole + graceful fallback**~~ — `adapters/aws_session.py`(`CircuitBreaker` 재사용) + `runtime/aws.py` 옵트인. gate 723.
-- **잔여 레퍼런스 = #7(Helm/Terraform 프로덕션)만 = Tier 3**(온프렘/클라우드 프로덕션화 시).
+- [~] **잔여 레퍼런스 #7(Helm/Terraform 프로덕션, Tier 3)** — **#7-a Helm 파트 완료(2026-07-17, gate 823→829)**: `infra/helm/platform-agent/`(webhook+opt-in router·최소권한 RBAC·drain 별도 게이트·단일-writer PVC·kind/k3s values) + `infra/onprem/Dockerfile`(실빌드 881MB+컨테이너 스모크) + 가드 6종. 부산물: pyproject optional-deps PEP 621 latent 버그 수정. **잔여**: kind/k3s 라이브 `helm install` 실증(클러스터 생성=승인) · #7-b Terraform 모듈(EKS/Aurora, 클라우드=승인).
 - [x] ~~#4 **크로스계정 소비자 배선**~~ — **완료(2026-07-15)**: `deployment/aws.py` CodeBuild + `executor/handler.py` SSM(primary+failover `_ssm_client`)이 `assume_role_session(env-role)` 소비, env 미설정=in-account 무변경. +2 test, gate 738.
 - [x] ~~라이브 실증(#2 self-consistency · #3 MCP-over-HTTP · #4 STS graceful fallback)~~ — **완료(2026-07-15)**: 실 MLX Qwen(#2 reconciliation 포함)·실 HTTP mock MCP(#3)·실 STS(#4 폴백). 증거 `docs/evidence/tier2-live-*.log`, 스크립트 `scripts/live_*_demo.py`.
 - ~~2번째 AWS 계정 cross-account **성공** 경로 라이브~~ — **계획에서 제거(2026-07-15, 사용자 결정)**. #4 코드+폴백/실패 경로는 실 STS로 실증 완료; 실 크로스계정 성공은 하지 않음.
