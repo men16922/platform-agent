@@ -38,10 +38,24 @@ breaker drains traffic without the kubelet restarting the pod.
   ClusterRole behind `webhook.rbac.allowDrain`**, default off: a base install
   cannot touch nodes at all.
 
-## Known single-writer constraint
+## Single-writer JSONL vs the SQL State Store
 
-Activity/approvals/incidents persist to JSONL on one RWO volume — `replicas: 1`,
-`strategy: Recreate`, and the router (if enabled) is affinity-pinned to the
-webhook's node. Multi-replica needs the State Store roadmap item
-(PostgreSQL/Redis), not RWX workarounds; the chart deliberately packages what
-ships today.
+Default mode persists approvals/incidents to JSONL on one RWO volume —
+`replicas: 1`, `strategy: Recreate`, router affinity-pinned to the webhook's
+node.
+
+Setting `stateStore` routes them through PostgreSQL instead (roadmap ④,
+proven live with two replicas sharing state — see
+`docs/evidence/state-store-alertmanager-live.log`):
+
+```sh
+helm install pa . \
+  --set persistence.enabled=false \
+  --set webhook.replicas=2 \
+  --set stateStore.existingSecret=pa-state-dsn   # Secret key "dsn" holds the DSN
+```
+
+`stateStore.existingSecret` (secretKeyRef) is the production path; a plain
+`stateStore.dsn` value exists for dev/kind. With persistence off the strategy
+flips to RollingUpdate automatically. The `aws-production` Terraform module
+outputs the Aurora endpoint + managed-password secret this DSN is built from.

@@ -22,3 +22,26 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 - name: PLATFORM_INCIDENT_FILE
   value: {{ printf "%s/incidents.jsonl" .Values.persistence.mountPath | quote }}
 {{- end -}}
+
+{{/* Opt-in SQL State Store env (roadmap ④). Secret ref wins over the plain DSN. */}}
+{{- define "platform-agent.stateStoreEnv" -}}
+{{- if .Values.stateStore.existingSecret }}
+- name: PLATFORM_STATE_DSN
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.stateStore.existingSecret }}
+      key: {{ .Values.stateStore.secretKey }}
+{{- else if .Values.stateStore.dsn }}
+- name: PLATFORM_STATE_DSN
+  value: {{ .Values.stateStore.dsn | quote }}
+{{- end }}
+{{- end -}}
+
+{{/* Recreate is only forced by the RWO JSONL volume; DSN-mode rolls normally. */}}
+{{- define "platform-agent.strategy" -}}
+{{- if .Values.persistence.enabled -}}
+type: Recreate
+{{- else -}}
+type: RollingUpdate
+{{- end -}}
+{{- end -}}

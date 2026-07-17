@@ -9,7 +9,7 @@ metadata:
 spec:
   replicas: {{ .Values.router.replicas }}
   strategy:
-    type: Recreate  # single-writer JSONL store on a RWO volume
+    {{- include "platform-agent.strategy" . | nindent 4 }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "platform-agent.name" . }}
@@ -52,6 +52,7 @@ spec:
               containerPort: {{ .Values.router.port }}
           env:
             {{- include "platform-agent.storeEnv" . | nindent 12 }}
+            {{- include "platform-agent.stateStoreEnv" . | nindent 12 }}
             - name: ONPREM_LLM_ENDPOINT
               value: {{ .Values.llm.endpoint | quote }}
             - name: ONPREM_LLM_MODEL

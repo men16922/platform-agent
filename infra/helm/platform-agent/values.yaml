@@ -13,18 +13,28 @@ llm:
   model: "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit"
 
 # Offline JSONL stores (activity / pending approvals / incidents). Single-writer
-# by design: keep replicas at 1 per component. The PostgreSQL/Redis State Store
-# (roadmap item 4) is the multi-replica path; this chart packages what ships.
+# by design: keep replicas at 1 per component. Setting stateStore (below) is the
+# multi-replica path — then persistence can be disabled entirely.
 persistence:
   enabled: true
   size: 1Gi
   storageClass: ""  # substrate overlays set this (kind: standard, k3s: local-path)
   mountPath: /data
 
+# SQL State Store (roadmap ④, PLATFORM_STATE_DSN). Empty = JSONL mode, unchanged.
+# Production: point existingSecret at a Secret holding the DSN (e.g. built from
+# the aws-production Terraform module's Aurora endpoint + managed password) —
+# never put a real DSN in a values file. `dsn` is the dev/kind convenience.
+# With a store configured, set persistence.enabled=false and replicas > 1.
+stateStore:
+  dsn: ""
+  existingSecret: ""
+  secretKey: "dsn"
+
 webhook:
   enabled: true
   port: 8078
-  replicas: 1  # single-writer JSONL store — do not scale out (see persistence)
+  replicas: 1  # JSONL mode is single-writer; scale out only with stateStore set
   # Real kubectl remediation. false = log-only (product default). Flipping this
   # to true makes the Day-2 executor patch live workloads via the ServiceAccount.
   executorLive: false

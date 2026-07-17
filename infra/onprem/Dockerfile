@@ -22,9 +22,11 @@ COPY pyproject.toml README.md ./
 COPY src/ src/
 
 # Project deps (boto3/structlog/requests/pyyaml/strands) + the ASGI stack the two
-# APIs are served with. The MLX/LLM extra is NOT installed — the model brain stays
-# an external endpoint (values: llm.endpoint), never in this container.
-RUN pip install --no-cache-dir . fastapi "uvicorn[standard]" pydantic-ai-slim[openai]
+# APIs are served with, + the [state] extra (psycopg2) so the chart's
+# stateStore.dsn mode works out of the box. The MLX/LLM extra is NOT installed —
+# the model brain stays an external endpoint (values: llm.endpoint), never in
+# this container.
+RUN pip install --no-cache-dir ".[state]" fastapi "uvicorn[standard]" pydantic-ai-slim[openai]
 
 ENV PYTHONPATH=/app
 EXPOSE 8077 8078

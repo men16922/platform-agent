@@ -9,7 +9,7 @@ metadata:
 spec:
   replicas: {{ .Values.webhook.replicas }}
   strategy:
-    type: Recreate  # single-writer JSONL store on a RWO volume
+    {{- include "platform-agent.strategy" . | nindent 4 }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "platform-agent.name" . }}
@@ -39,6 +39,7 @@ spec:
               containerPort: {{ .Values.webhook.port }}
           env:
             {{- include "platform-agent.storeEnv" . | nindent 12 }}
+            {{- include "platform-agent.stateStoreEnv" . | nindent 12 }}
             - name: ONPREM_EXECUTOR_LIVE
               value: {{ .Values.webhook.executorLive | quote }}
             {{- with .Values.extraEnv }}

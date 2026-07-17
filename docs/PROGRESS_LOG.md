@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-17 — 차트 State Store 배선(④↔#7 연결 마무리): stateStore values + DSN 멀티-레플리카 모드 (gate 839→842)
+
+- Status: ④(SQL State Store)와 #7(Helm/Terraform)을 잇는 마지막 소품. 차트가 DSN 모드를 1급 values로 지원 — JSONL 기본값 무변경.
+- Changed: (1) `values.yaml` `stateStore.{dsn,existingSecret,secretKey}` — **existingSecret(secretKeyRef)=프로덕션 경로**(values에 평문 DSN 금지), plain `dsn`=dev/kind 편의, secret이 plain보다 우선. (2) `_helpers.tpl` `stateStoreEnv`+`strategy`(persistence off→**RollingUpdate**, JSONL RWO일 때만 Recreate) — webhook/router 양쪽 주입. (3) **`infra/onprem/Dockerfile` `.[state]` 설치**(psycopg2 — 없으면 DSN 모드 이미지가 실동작 불가, 재빌드+import 검증). (4) README 2종: 차트=DSN 모드 사용법(라이브 증거 링크), Terraform=`kubectl create secret`+`stateStore.existingSecret` 스니펫(extraEnv 핵 대체). (5) 차트 가드 +3: 기본=DSN env 부재·dsn/secret 모드(secret 우선·평문 무노출)·**DSN 모드=PVC 없음+replicas 2+RollingUpdate**.
+- Verified: helm lint 통과, `make check` → **842 passed, 1 skipped**(234.42s, 839→842). 이미지 재빌드 후 `import psycopg2` OK.
+- Blockers: 없음.
+- Next: 자율 백로그 소진. 잔여=사용자(아티클 배포·OAuth·Slack·terraform apply)·선택(k3s 스모크).
+
 ## 2026-07-17 — 레퍼런스 #7-b Terraform 모듈(EKS/Aurora/IRSA) → #7 전체 완결 (gate 834→839, apply 없음·spend 0)
 
 - Status: 레퍼런스 #7 잔여 Terraform 파트 구현·오프라인 검증(사용자 승인 "다음 수행"). apply는 하지 않음(billable=사용자 게이트). 이로써 **레퍼런스 #7 = Helm(#7-a)+Terraform(#7-b) 전체 완결** — AWSome AI Gateway 레퍼런스 8항목 전부 소화(Tier 1 4종+Tier 2 3종+#7).

@@ -32,11 +32,12 @@ Then wire the chart onto it:
 
 ```sh
 aws eks update-kubeconfig --name platform-agent-eks
+kubectl create secret generic pa-state-dsn \
+  --from-literal=dsn="postgresql://platform_agent:<password-from-managed-secret>@<aurora_endpoint>:5432/platform_state"
 helm install pa ../../helm/platform-agent \
   --set persistence.enabled=false \
   --set webhook.replicas=2 \
-  --set extraEnv[0].name=PLATFORM_STATE_DSN \
-  --set extraEnv[0].value="postgresql://platform_agent:<from-secret>@<aurora_endpoint>:5432/platform_state"
+  --set stateStore.existingSecret=pa-state-dsn
 kubectl annotate sa pa-platform-agent eks.amazonaws.com/role-arn=<chart_irsa_role_arn>
 ```
 

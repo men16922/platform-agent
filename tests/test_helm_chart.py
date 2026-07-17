@@ -100,3 +100,42 @@ def test_store_stays_single_writer():
     for dep in [d for d in docs if d["kind"] == "Deployment"]:
         assert dep["spec"]["replicas"] == 1, dep["metadata"]["name"]
         assert dep["spec"]["strategy"]["type"] == "Recreate", dep["metadata"]["name"]
+
+
+def _webhook_env(docs: list[dict]) -> dict[str, dict]:
+    (webhook,) = [d for d in docs if d["kind"] == "Deployment"]
+    return {e["name"]: e for e in webhook["spec"]["template"]["spec"]["containers"][0]["env"]}
+
+
+def test_state_store_absent_by_default():
+    assert "PLATFORM_STATE_DSN" not in _webhook_env(_render())  # JSONL mode
+
+
+def test_state_store_dsn_and_secret_modes():
+    # dev/kind: plain DSN value
+    env = _webhook_env(_render("--set", "stateStore.dsn=postgresql://u:p@h/db"))
+    assert env["PLATFORM_STATE_DSN"]["value"] == "postgresql://u:p@h/db"
+
+    # production: secretKeyRef wins over any plain DSN
+    env = _webhook_env(
+        _render(
+            "--set", "stateStore.dsn=postgresql://ignored",
+            "--set", "stateStore.existingSecret=pa-state-dsn",
+        )
+    )
+    ref = env["PLATFORM_STATE_DSN"]["valueFrom"]["secretKeyRef"]
+    assert ref == {"name": "pa-state-dsn", "key": "dsn"}
+    assert "value" not in env["PLATFORM_STATE_DSN"]
+
+
+def test_dsn_mode_without_pvc_rolls_and_scales():
+    docs = _render(
+        "--set", "persistence.enabled=false",
+        "--set", "stateStore.existingSecret=pa-state-dsn",
+        "--set", "webhook.replicas=2",
+    )
+    assert not any(d["kind"] == "PersistentVolumeClaim" for d in docs)
+    (webhook,) = [d for d in docs if d["kind"] == "Deployment"]
+    assert webhook["spec"]["replicas"] == 2  # multi-replica unlocked by the store
+    assert webhook["spec"]["strategy"]["type"] == "RollingUpdate"
+    assert "volumes" not in webhook["spec"]["template"]["spec"]
