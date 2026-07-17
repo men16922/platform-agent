@@ -22,6 +22,7 @@ so the accuracy number here is the same one the scorecard reports.
 from __future__ import annotations
 
 import math
+import time
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Any, Callable
@@ -29,10 +30,15 @@ from typing import Any, Callable
 from src.agents.ai.eval_harness import (
     ROUTING_EVAL_SET,
     EvalCase,
+    Observation,
     ObservingRouter,
     _majority_observation,
 )
+from src.agents.ai.supervisor import AgentRole, RouteDecision, classify_request
 
+# A plain role router — the deterministic classifier's shape, used as the live
+# adapter's backstop.
+Router = Callable[[str], RouteDecision]
 # A router factory turns one sweep config into a router under test. In tests this
 # is a deterministic mock; in a live run it is a closure that calls the model.
 RouterFactory = Callable[["SweepConfig"], ObservingRouter]
@@ -204,13 +210,72 @@ def scoreboard(points: list[SweepPoint], *, by: str = "cost_per_success") -> lis
     return [p.to_dict() for p in rank(points, by=by)]
 
 
+# --- live router factory (⑦ execution adapter) -------------------------------
+# The scaffold above is backend-agnostic. This turns a real model call into a
+# RouterFactory so the sweep can grade actual models — but the model call is still
+# *injected*: `call_model(config, prompt) -> reply`. No credentials or network live
+# here; a stub drives it offline in tests, a real client (with creds, and real
+# spend) drives it live.
+
+# A model call: given a config and a prompt, return the model's raw reply text.
+ModelCall = Callable[["SweepConfig", str], str]
+
+
+def _classify_prompt(instruction: str) -> str:
+    return (
+        "Classify the request into exactly one specialist and reply with only that "
+        "word: 'provision' (create/tear down infrastructure), 'deploy' (ship or roll "
+        "back an app), or 'kagent' (read-only investigation).\n"
+        f"Request: {instruction}\nSpecialist:"
+    )
+
+
+def _parse_role(reply: str) -> AgentRole | None:
+    text = (reply or "").strip().lower()
+    for role in AgentRole:
+        if role.value in text:
+            return role
+    return None
+
+
+def live_router_factory(call_model: ModelCall, *, backstop: Router | None = None) -> RouterFactory:
+    """Build a :data:`RouterFactory` that classifies via a real model call.
+
+    Each routing pass prompts ``call_model(config, prompt)`` for a role, parses it,
+    and measures latency around the call. An unparseable/failed reply degrades to
+    the deterministic ``backstop`` (default :func:`classify_request`) — the same
+    reconciliation philosophy used elsewhere, so a flaky model never yields a null
+    route. The model call is injected: pass a real client (with credentials) to run
+    live and incur spend; a stub keeps it offline in tests.
+    """
+    fallback = backstop or classify_request
+
+    def factory(config: "SweepConfig") -> ObservingRouter:
+        def router(instruction: str) -> Observation:
+            started = time.monotonic()
+            try:
+                reply = call_model(config, _classify_prompt(instruction))
+            except Exception:
+                reply = ""
+            latency = time.monotonic() - started
+            role = _parse_role(reply)
+            decision = RouteDecision(role, "model") if role else fallback(instruction)
+            return Observation(decision, latency_s=latency)
+
+        return router
+
+    return factory
+
+
 __all__ = [
     "CostModel",
+    "ModelCall",
     "RouterFactory",
     "SweepConfig",
     "SweepPoint",
     "best",
     "grid",
+    "live_router_factory",
     "rank",
     "run_sweep",
     "scoreboard",

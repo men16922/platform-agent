@@ -18,6 +18,7 @@ from src.agents.ai.model_sweep import (
     SweepPoint,
     best,
     grid,
+    live_router_factory,
     rank,
     run_sweep,
     scoreboard,
@@ -144,3 +145,52 @@ def test_scoreboard_is_ranked_serialisable_table():
     board = scoreboard(good + bad, by="cost_per_success")
     assert [row["config"]["model"] for row in board] == ["good", "bad"]
     assert board[0]["pass_rate"] == 1.0
+
+
+# --- live router factory (⑦ execution adapter, offline with a mock model) ----
+
+
+def test_live_router_factory_parses_model_reply_into_a_role():
+    # A stub model that echoes a role word — no network, no spend.
+    calls: list[str] = []
+
+    def call_model(config, prompt):
+        calls.append(config.model)
+        return "kagent"  # the model's verdict
+
+    router = live_router_factory(call_model)(SweepConfig("stub"))
+    obs = router("Why is the pod down?")
+    assert obs.decision.role is AgentRole.KAGENT
+    assert calls == ["stub"]  # the model was actually consulted
+
+
+def test_live_router_factory_backstops_on_unparseable_or_failed_reply():
+    # Unparseable reply -> deterministic classify_request backstop, not a null route.
+    router = live_router_factory(lambda cfg, prompt: "hmm not sure")(SweepConfig("m"))
+    obs = router("Provision an EKS cluster with Terraform")
+    assert obs.decision.role is AgentRole.PROVISION  # from the deterministic backstop
+
+    # A raising model call also degrades to the backstop rather than erroring out.
+    def boom(cfg, prompt):
+        raise RuntimeError("api down")
+
+    obs2 = live_router_factory(boom)(SweepConfig("m"))("Deploy orders-api to staging")
+    assert obs2.decision.role is AgentRole.DEPLOY
+
+
+def test_live_router_factory_feeds_run_sweep_end_to_end():
+    # The live adapter drops straight into run_sweep with a mock model — proving the
+    # execution path works offline; only real credentials + spend are missing.
+    def perfect_model(config, prompt):
+        # Recover the instruction from the prompt and defer to the reference
+        # classifier, standing in for a competent model.
+        instruction = prompt.split("Request:", 1)[1].rsplit("Specialist:", 1)[0].strip()
+        return classify_request(instruction).role.value
+
+    points = run_sweep(
+        [SweepConfig("mock-llm")],
+        live_router_factory(perfect_model),
+        cost_per_call=_fixed_cost(0.0),
+        dataset=_DATASET,
+    )
+    assert points[0].pass_rate == 1.0  # a competent model matches the labels
