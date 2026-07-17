@@ -40,11 +40,13 @@
 - **권고**: `ROLE_ALLOWED_ACTIONS` 상수 신설 → 위임 메타데이터 + `action_sink_grader(allowed=...)` 공유.
   **⑧ 중 가장 안전** — 승인 시 우선 구현 후보.
 
-### ⑧-4. TOOL→SKILL→SUBAGENT smell-test로 A2A 경계 형식화 (문서/가드, 낮은 리스크)
+### ⑧-4. TOOL→SKILL→SUBAGENT smell-test로 A2A 경계 형식화 (문서/가드, 낮은 리스크) — ✅ 완료(2026-07-17)
 - **무엇**: 언제 in-process tool vs A2A skill 위임 vs subagent인지 판단 기준을 `docs/ARCHITECTURE.md`에
   명문화(cwc-workshops smell-test 차용). 경계 회귀 방지 가드 테스트 1~2건.
 - **리스크**: 낮음(문서+테스트). 코드 계약 무변경.
-- **권고**: 승인 무관하게 진행 가능하나, ⑧ 묶음으로 함께.
+- **완료**: `ARCHITECTURE.md` Orchestrator+A2A 섹션에 TOOL→SKILL→SUBAGENT smell-test + 위임 안전 불변식
+  명문화. 가드 테스트 `test_supervisor_never_executes_mutating_work_without_the_a2a_boundary`
+  (configured=transport만 호출·unconfigured=transport 미호출+not_configured). gate 795→796.
 
 ## 권고 실행 순서 (승인 시)
 1. ⑧-3 최소권한 힌트(+정책 단일화) — 가장 안전·즉시 실익.

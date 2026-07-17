@@ -231,3 +231,31 @@ def test_delegation_omits_sanitize_trace_for_clean_instruction():
 
     assert sent["body"]["message"]["parts"][0]["text"] == "Show pod status"
     assert not any(step.get("kind") == "sanitize" for step in outcome.trace)
+
+
+def test_supervisor_never_executes_mutating_work_without_the_a2a_boundary():
+    """Delegation-safety invariant (⑧-4 guard): a mutating provision/deploy request
+    must go out over the A2A transport — never be executed in-process — and with no
+    endpoint configured the supervisor refuses rather than silently acting."""
+    calls: list[str] = []
+
+    def transport(endpoint: str, body: dict) -> dict:
+        calls.append(endpoint)
+        return {"task": {"id": "t"}}
+
+    deploy_card = {"name": "Deployer", "skills": [{"id": "deploy-aws", "tags": ["deploy", "delivery"]}]}
+
+    # Configured: the ONLY side effect is the A2A transport call.
+    configured = Supervisor(
+        {AgentRole.DEPLOY: "http://deploy-agent"}, transport=transport, card_fetcher=lambda _: deploy_card
+    )
+    outcome = configured.handle("Deploy orders-api to prod")
+    assert outcome.delegated is True and calls == ["http://deploy-agent"]
+
+    # Unconfigured: no endpoint -> refuse, and the transport is never invoked
+    # (no in-process execution fallback for a mutating role).
+    calls.clear()
+    unconfigured = Supervisor(transport=transport)
+    refused = unconfigured.handle("Deploy orders-api to prod")
+    assert refused.delegated is False and calls == []
+    assert refused.trace[-1]["status"] == "not_configured"

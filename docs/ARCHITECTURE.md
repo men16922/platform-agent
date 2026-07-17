@@ -298,6 +298,8 @@
 - **A2A (Agent-to-Agent) ✅:** 우리 supervisor ↔ **실 kagent 에이전트** 상호운용을 라이브 검증. kagent 카드는 `preferredTransport=JSONRPC`, `protocolVersion=0.3` — supervisor가 카드의 transport에 맞춰 JSON-RPC `message/send`로 위임한다(A2A 필수 `messageId` 포함). skill 매칭은 role별 특화어로 **capability 격리**(deploy-only/diagnostic 카드 교차 위임 거부).
 - **MCP Gateway = 단일 거버넌스 도구 카탈로그** (AgentCore Gateway 스타일) — **✅**: 게이트웨이가 `TOOL_CATALOG`(단일 source-of-truth)에서 discovery+dispatch를 파생(구현/스키마/dispatch 삼중 중복 제거, 드리프트-0 불변식 테스트). 외부 A2A/MCP·bridge가 공유. **인터랙티브 에이전트도 단일 카탈로그 채택 완료 ✅**(`local_deployer`의 `AGENT_TOOL_CATALOG`→`ALL_OPS_TOOLS`+프롬프트 인벤토리, drift-0 불변식 테스트). **결정**: 두 카탈로그는 레이어가 달라(게이트웨이=raw kubectl/docker MCP vs 인터랙티브=어댑터-백드 에이전트 도구) **의도적으로 분리 유지** — 하나로 강제 수렴하지 않음. Tier 2 #3로 원격 MCP 커넥터 + per-tool/글로벌 kill-switch 추가(`remote_mcp_tool`/`MCPServer`).
 
+**경계 판단 — TOOL → SKILL → SUBAGENT smell-test:** 새 능력을 어디에 두는지 세 층으로 판단한다. **TOOL** = 단일 결정론적 동작(부수효과 좁음)이면 MCP 카탈로그 도구. **SKILL(A2A 위임)** = 별도 시스템프롬프트·별도 권한·독립 배포·라이프사이클이 필요하면 A2A 특화 에이전트로 위임(provision/deploy/kagent). **SUBAGENT** = 다단계 자율 루프가 필요할 때만. 기본은 가장 낮은 층. **위임 안전 불변식**(`supervisor.py` docstring): supervisor는 mutating provision/deploy를 **스스로 실행하지 않고 반드시 A2A 경계로 위임**한다(엔드포인트 미설정 시 `delegated=False`, in-process 실행 없음 — 회귀 가드 테스트). 경계를 건너는 호출자 자유텍스트는 **untrusted** → `sanitize_instruction`으로 아웃바운드 bound/clean(control-char strip·length cap, 분류는 원문). 잔여 하드닝(구조화 페이로드·저-confidence 게이트·최소권한 힌트)은 `docs/plans/a2a-delegation-hardening.md`(승인 대기).
+
 **현재 vs 타깃:**
 
 | | 현재 | 타깃 |

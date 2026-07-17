@@ -7,12 +7,12 @@
 
 ---
 
-## 2026-07-17 — cwc-workshops 후속 ⑧(안전 서브셋): A2A 위임 아웃바운드 sanitize+cap + 설계 제안 (gate 790→795)
+## 2026-07-17 — cwc-workshops 후속 ⑧(안전 서브셋+⑧-4): A2A 위임 sanitize+cap · 경계 smell-test 가드 · 설계 제안 (gate 790→796)
 
 - Status: ⑧(A2A 위임 injection-safe, Tier 3 설계·승인) 중 **비파괴 안전 서브셋**만 자율 구현하고, 계약/동작 변경 4건은 설계 제안서로 분리(승인 대기). supervisor 위임 경계=호출자 자유텍스트가 특화에 raw 전달이던 것을 bounded/cleaned로.
-- Changed: `supervisor.py` — 신규 `sanitize_instruction(text, max_len=4000)`(C0/C1 control-char strip[tab/newline 유지]·length cap+truncation 마커·적용 transform 리스트 반환, 클린 입력=무변경). `handle`이 **아웃바운드** 명령어에 적용(분류는 원문 유지)·적용 시 `trace{kind:"sanitize"}` 기록. `trace` 지역변수 타입 주석 `list[dict[str,Any]]`(기존 latent pyright 경고 동반 수정). 신규 `docs/plans/a2a-delegation-hardening.md`(⑧-1 구조화 페이로드·⑧-2 저-confidence 게이트·⑧-3 최소권한 힌트·⑧-4 경계 smell-test, 각 리스크·권고·순서).
-- Verified: `make check` → **795 passed, 1 skipped**(225.47s, 790→795, +5). sanitize: 클린=무변경·control-char strip·length cap 마커. 위임: 아웃바운드 텍스트 sanitized(`\x07` 제거 확인)+trace 기록·클린 입력은 sanitize trace 없음. 기존 delegation/JSONRPC/messageId 테스트 회귀 0.
-- Blockers: 없음. ⑧ 구조화/게이트/최소권한 3건은 **승인 대기**(`docs/plans/a2a-delegation-hardening.md`).
+- Changed: `supervisor.py` — 신규 `sanitize_instruction(text, max_len=4000)`(C0/C1 control-char strip[tab/newline 유지]·length cap+truncation 마커·적용 transform 리스트 반환, 클린 입력=무변경). `handle`이 **아웃바운드** 명령어에 적용(분류는 원문 유지)·적용 시 `trace{kind:"sanitize"}` 기록. `trace` 지역변수 타입 주석 `list[dict[str,Any]]`(기존 latent pyright 경고 동반 수정). 신규 `docs/plans/a2a-delegation-hardening.md`(⑧-1 구조화 페이로드·⑧-2 저-confidence 게이트·⑧-3 최소권한 힌트·⑧-4 경계 smell-test, 각 리스크·권고·순서). **⑧-4(승인 무관, 완료)**: `ARCHITECTURE.md`에 **TOOL→SKILL→SUBAGENT smell-test** + 위임 안전 불변식 명문화 + **회귀 가드 테스트**(supervisor는 mutating provision/deploy를 in-process 실행 안 함, 반드시 A2A transport로 위임·미설정 시 refuse).
+- Verified: `make check` → **796 passed, 1 skipped**(231.96s, 790→796, +6). sanitize: 클린=무변경·control-char strip·length cap 마커. 위임: 아웃바운드 텍스트 sanitized(`\x07` 제거 확인)+trace 기록·클린 입력은 sanitize trace 없음. ⑧-4 가드: configured=transport만 호출·unconfigured=transport 미호출+not_configured. 기존 delegation/JSONRPC/messageId 회귀 0.
+- Blockers: 없음. ⑧-1/2/3(구조화/게이트/최소권한)은 **승인 대기**(`docs/plans/a2a-delegation-hardening.md`); ⑧-4는 완료.
 - Next: (승인 시) ⑧-3 최소권한 힌트(가장 안전) → ⑧-1 구조화 디스크립터 → ⑧-2 저-confidence 게이트. or ⑨ SSE/메모리(설계) / ⑦ 라이브 스윕(실 spend=사용자).
 
 ## 2026-07-17 — cwc-workshops 후속 ⑦(스캐폴드): 오프라인 모델/파라미터 스윕 러너 (gate 779→790, 실 spend 0)
