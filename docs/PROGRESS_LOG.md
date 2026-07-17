@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-17 — ⑦ 라이브 모델 스윕 실 실행 완료 (로컬 MLX, spend $0): 프롬프트 결함 발견→수정→가드 (gate 822→823)
+
+- Status: 승인 큐 마지막 잔여였던 ⑦ 라이브 실행을 **A 로컬 MLX 경로**(무과금)로 완료. 신규 `scripts/live_model_sweep.py`가 shipped `live_router_factory`+`run_sweep`을 실 mlx_lm.server(:18090, per-request 동적 모델 로드) 상대로 구동. 총 **160 라이브 호출**(2모델×2 effort×20케이스×프롬프트 v1/v2), 미파싱→backstop 발화 0.
+- Changed: (1) `scripts/live_model_sweep.py` 신규 — effort→temperature 매핑(low=0.0/high=1.0), points JSONL resume(모델별 순차 실행 병합 실증), 응답 `model` 에코 검증+오염 시 미기록 가드. (2) **`model_sweep.py` `_classify_prompt` 결함 수정** — 라이브 런이 표면화: v1 프롬프트가 "provision=create/**tear down**"으로 teardown→deploy cascade 제품 시맨틱과 모순 + 진단동사 우선 미명시 → 전 config가 동일 adversarial 2건 미스("Investigate why the terraform apply failed"→provision·"Tear down the staging cluster"→provision). 모델이 아니라 프롬프트가 틀렸음. v2로 재작성. (3) 회귀 가드 `test_classify_prompt_matches_product_routing_semantics` 추가.
+- Verified: `make check` → **823 passed, 1 skipped**(230s, 822→823, +1). 라이브 v1→v2 델타(프롬프트 수정만): 7B/low 0.80→**1.00**·7B/high 0.75→0.90·30B/low 0.80→0.95·30B/high 0.80→0.95. **증거 기반 선택: Qwen2.5-Coder-7B @ temp0 = 20/20(100%)·최속(0.20s/success)** — "라우팅엔 큰 모델" 정적 주석은 측정으로 반증(30B보다 7B가 정확·빠름). 증거: `docs/evidence/model-sweep-live.log` + points JSONL 2종(v1 baseline/v2). MLX 서버는 실행 후 종료(유휴 $0 복원).
+- Blockers: 없음. **승인된 실행 큐 8항목 전부 완료(코드+실행).**
+- Next: 잔여는 전부 인프라/사용자 — 아티클 배포·OAuth 데모·Slack App·State Store·Helm/Terraform(#7 Tier 3).
+
 ## 2026-07-17 — 승인된 실행 큐 8항목 코드 전부 완료: ⑧-1/2/3 + ⑨ A/B + ⑦ 어댑터 (gate 796→822, 사용자 "전부 다")
 
 - Status: 사용자가 ⑧·⑨ 잔여 + ⑦를 전부 승인("전부 다 하자"). 위험 낮은 순 큐로 8개 코드 묶음을 순차 구현·게이트·커밋. ⑦는 어댑터 코드까지 완료, 실 실행(과금)만 사용자 게이트로 잔존.

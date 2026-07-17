@@ -1,0 +1,54 @@
+# ⑦ live model sweep — evidence (2026-07-17)
+
+Runner: scripts/live_model_sweep.py → shipped src/agents/ai/model_sweep.py
+(live_router_factory + run_sweep + resume dedup), local MLX endpoint
+http://127.0.0.1:18090/v1 (mlx_lm.server, per-request dynamic model load).
+Dataset: ROUTING_EVAL_SET (20 cases incl. 5 adversarial). Spend: $0 (local
+inference). effort axis → sampling temperature (low=0.0, high=1.0).
+Total live calls: 160 (4 configs × 20 cases × 2 prompt versions), unparsed
+replies → backstop: 0 in every run (deterministic backstop never fired).
+
+## Run 1 — prompt v1 (as shipped in gate 822)
+points: docs/evidence/model-sweep-live-points-prompt-v1.jsonl
+
+  Qwen2.5-Coder-7B-Instruct-4bit    effort=low   pass=0.90 (18/20)  sec/success=0.22
+  Qwen3-Coder-30B-A3B-Instruct-4bit effort=high  pass=0.80 (16/20)  sec/success=0.26
+  Qwen2.5-Coder-7B-Instruct-4bit    effort=high  pass=0.75 (15/20)  sec/success=0.29
+  Qwen3-Coder-30B-A3B-Instruct-4bit effort=low   pass=0.80 (16/20)  sec/success=0.37
+
+### Live-surfaced defect (discover → fix → guard)
+Every config missed the same two adversarial cases:
+  'Investigate why the terraform apply failed' → provision (want kagent)
+  'Tear down the staging cluster'              → provision (want deploy)
+Root cause: _classify_prompt described provision as "create/tear down
+infrastructure", contradicting the product's teardown→deploy cascade
+(eval_harness.py ROUTING_EVAL_SET note) and omitting diagnostic-verb
+precedence. The models followed the prompt faithfully — the prompt was wrong.
+Fix: _classify_prompt rewritten to match product routing semantics; regression
+guard test_classify_prompt_matches_product_routing_semantics added.
+
+## Run 2 — prompt v2 (fixed)
+points: docs/evidence/model-sweep-live-points.jsonl
+
+  Qwen2.5-Coder-7B-Instruct-4bit    effort=low   pass=1.00 (20/20)  sec/success=0.20
+  Qwen3-Coder-30B-A3B-Instruct-4bit effort=low   pass=0.95 (19/20)  sec/success=0.22
+  Qwen2.5-Coder-7B-Instruct-4bit    effort=high  pass=0.90 (18/20)  sec/success=0.23
+  Qwen3-Coder-30B-A3B-Instruct-4bit effort=high  pass=0.95 (19/20)  sec/success=0.24
+
+Delta v1→v2 (prompt fix only, same models/dataset):
+  7B/low 0.80→1.00 · 7B/high 0.75→0.90 · 30B/low 0.80→0.95 · 30B/high 0.80→0.95
+
+## Evidence-based pick
+Qwen2.5-Coder-7B @ temperature 0 wins outright for routing classification:
+100% on the 20-case set (adversarial included), fastest per success, and ~4×
+smaller than the 30B — the static "bigger model for routing" annotation is not
+supported by measurement. Temperature 0 beats 1.0 on both models for this
+single-token-ish classification task.
+
+Notes:
+- Sweep resume verified live: run 2 per-model invocations merged into one
+  points file via done= dedup (no re-spend on completed configs).
+- served-model guard corrected during the run: mlx_lm.server /v1/models lists
+  all cached models (availability), the request's `model` field selects per
+  call; the script now verifies the response echoes the requested model and
+  refuses to persist a backstop-contaminated run.

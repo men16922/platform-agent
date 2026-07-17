@@ -194,3 +194,19 @@ def test_live_router_factory_feeds_run_sweep_end_to_end():
         dataset=_DATASET,
     )
     assert points[0].pass_rate == 1.0  # a competent model matches the labels
+
+
+def test_classify_prompt_matches_product_routing_semantics():
+    # Regression guard from the first LIVE sweep (2026-07-17): the prompt used to
+    # describe teardown as provisioning, contradicting the teardown→deploy cascade
+    # (see the ROUTING_EVAL_SET adversarial notes), and both live adversarial misses
+    # traced to that line. The prompt must keep teardown under deploy and spell out
+    # that diagnostic intent wins over infrastructure nouns.
+    from src.agents.ai.model_sweep import _classify_prompt
+
+    prompt = _classify_prompt("x")
+    deploy_desc = prompt.split("'deploy'", 1)[1].split("'kagent'", 1)[0]
+    provision_desc = prompt.split("'provision'", 1)[1].split("'deploy'", 1)[0]
+    assert "tear down" in deploy_desc  # teardown is delivery-lifecycle, by design
+    assert "tear down" not in provision_desc
+    assert "investigate" in prompt.lower()  # diagnostic verbs called out for kagent

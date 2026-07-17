@@ -222,10 +222,17 @@ ModelCall = Callable[["SweepConfig", str], str]
 
 
 def _classify_prompt(instruction: str) -> str:
+    # Mirrors the product routing semantics (classify_request / ROUTING_EVAL_SET):
+    # teardown is delivery-lifecycle (teardown→deploy cascade), NOT provisioning,
+    # and diagnostic verbs win over infrastructure nouns. The first live sweep
+    # (2026-07-17) mis-stated teardown under provision and both adversarial misses
+    # traced to exactly that line — keep this text aligned with the dataset notes.
     return (
         "Classify the request into exactly one specialist and reply with only that "
-        "word: 'provision' (create/tear down infrastructure), 'deploy' (ship or roll "
-        "back an app), or 'kagent' (read-only investigation).\n"
+        "word: 'provision' (create new infrastructure or clusters), 'deploy' (ship, "
+        "roll back, or tear down an app or cluster), or 'kagent' (read-only "
+        "investigation — any request asking to investigate, diagnose, or explain "
+        "why something failed, even when it mentions infrastructure).\n"
         f"Request: {instruction}\nSpecialist:"
     )
 
