@@ -1,6 +1,6 @@
 # Plan — A2A 위임 계약 injection-safe 하드닝 (NEXT_PLAN ⑧, Tier 3)
 
-최종 갱신: 2026-07-17 · 상태: **설계 — 구현 승인 대기**
+최종 갱신: 2026-07-17 · 상태: **✅ 승인됨(사용자 "전부 다") — 실행 중** (큐 순서: NEXT_PLAN ★)
 
 > `Supervisor.handle`이 특화 A2A 에이전트로 위임하는 경계를 injection-safe하게 굳힌다.
 > **자율로 이미 반영한 것**: 아웃바운드 명령어 **sanitize + length-cap**(`sanitize_instruction`,

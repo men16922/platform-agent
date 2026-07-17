@@ -4,6 +4,19 @@
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md` / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
+## ★ 승인된 실행 큐 (2026-07-17, 사용자 "전부 다 하자") — 위험 낮은 순
+
+> 사용자가 ⑧·⑨ 잔여 + ⑦ 라이브를 **전부 승인**. 설계 2건(`docs/plans/a2a-delegation-hardening.md`·`sse-memory-hardening.md`)은 이제 **승인됨=실행**. 아래 순서(안전→위험)로 진행, 각 묶음마다 `make check`+커밋.
+
+1. [ ] **⑧-3 최소권한 힌트** — role별 `ROLE_ALLOWED_ACTIONS` 위임 메타데이터(+`action_sink_grader` 정책 단일화). 순수 additive·비파괴.
+2. [ ] **⑨ A-1+A-2 SSE id/dedup + READY/heartbeat** — `_sse`에 `id:`·`ready` 센티넬·keepalive. 비파괴.
+3. [ ] **⑧-1 구조화 위임 디스크립터** — `metadata.task={type,matchedSkills,origin}`(free-text 유지, params 추출 제외). 비파괴 증분.
+4. [ ] **⑨ B-1 시그니처-키드 distilled 메모리** — `deploy_recorder` 트레이스→경량 memory tier(오프라인·injectable·PII 스크럽).
+5. [ ] **⑧-2 저-confidence 폴백→게이트** — `Supervisor(confidence_router=...)` 옵트인 DI, 미주입=무변경.
+6. [ ] **⑨ B-2 과거 인시던트 주입** — 옵트인 DI(`memory_provider`), 조언적(non-binding)·게이트 상충 없게.
+7. [ ] **⑨ A-3 per-agent 귀속 / ⑨ B-3 consolidation** — Orchestrator 스트리밍·스케줄 선행 후(옵셔널 필드만 예약).
+8. [ ] **⑦ 라이브 모델 스윕** — 실 API 과금. **실행 전 그리드/모델/예상비용 확인**(스캐폴드 `model_sweep.py` ready).
+
 ## 다음 우선순위 — **자율 코드 백로그 소진(2026-07-15). 잔여 = 전부 사용자/인프라.**
 
 > 이번 세션(gate 702→**748**): Tier 2(#2·#3·#4) + 실 LLM/HTTP/STS 라이브 실증 + 대시보드 관측 3종 노출·orchestrator 활동기록 + ARCHITECTURE stale 정정 + **아키텍처 배선 ①②**(supervisor 프론트도어·deploy↔runtime `host` 스텝). 전 커밋 origin/main.
