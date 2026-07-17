@@ -1,7 +1,14 @@
 """Supervisor routing and A2A delegation tests."""
 
 from src.agents.ai.gateway.a2a_server import A2AServer
-from src.agents.ai.supervisor import AgentRole, Supervisor, classify_request, matching_skills
+from src.agents.ai.supervisor import (
+    MAX_DELEGATED_INSTRUCTION,
+    AgentRole,
+    Supervisor,
+    classify_request,
+    matching_skills,
+    sanitize_instruction,
+)
 
 
 KAGENT_CARD = {
@@ -163,3 +170,64 @@ def test_gateway_returns_supervisor_route_trace():
     artifact = result["task"]["artifacts"][0]
     assert "deploy" in artifact["parts"][0]["text"]
     assert artifact["parts"][1]["data"]["route"] == "deploy"
+
+
+# --- A2A boundary hardening: untrusted-instruction sanitize/cap (⑧ subset) ----
+
+
+def test_sanitize_instruction_passes_clean_input_unchanged():
+    text = "Deploy orders-api to staging\nwith canary rollout"
+    cleaned, notes = sanitize_instruction(text)
+    assert cleaned == text and notes == []
+
+
+def test_sanitize_instruction_strips_control_chars_but_keeps_tab_newline():
+    text = "Deploy\x07 orders\x00-api\twith\nnewline"
+    cleaned, notes = sanitize_instruction(text)
+    assert "\x07" not in cleaned and "\x00" not in cleaned
+    assert "\t" in cleaned and "\n" in cleaned  # tab/newline preserved
+    assert "stripped_control_chars" in notes
+
+
+def test_sanitize_instruction_caps_length_with_marker():
+    text = "A" * (MAX_DELEGATED_INSTRUCTION + 500)
+    cleaned, notes = sanitize_instruction(text)
+    assert len(cleaned) <= MAX_DELEGATED_INSTRUCTION + len(" …[truncated]")
+    assert cleaned.endswith("…[truncated]")
+    assert "truncated" in notes
+
+
+def test_delegation_forwards_sanitized_instruction_and_traces_it():
+    sent: dict = {}
+
+    def transport(endpoint: str, body: dict) -> dict:
+        sent["body"] = body
+        return {"task": {"id": "t"}}
+
+    supervisor = Supervisor(
+        {AgentRole.KAGENT: "http://kagent-agent"}, transport=transport, card_fetcher=lambda _: KAGENT_CARD
+    )
+    outcome = supervisor.handle("Show pod status\x07 now")
+
+    assert outcome.delegated is True
+    # The control char is stripped from what crosses the boundary...
+    forwarded = sent["body"]["message"]["parts"][0]["text"]
+    assert "\x07" not in forwarded and forwarded == "Show pod status now"
+    # ...and the transform is recorded in the audit trace.
+    assert any(step.get("kind") == "sanitize" and "stripped_control_chars" in step["applied"] for step in outcome.trace)
+
+
+def test_delegation_omits_sanitize_trace_for_clean_instruction():
+    sent: dict = {}
+
+    def transport(endpoint: str, body: dict) -> dict:
+        sent["body"] = body
+        return {"task": {"id": "t"}}
+
+    supervisor = Supervisor(
+        {AgentRole.KAGENT: "http://kagent-agent"}, transport=transport, card_fetcher=lambda _: KAGENT_CARD
+    )
+    outcome = supervisor.handle("Show pod status")
+
+    assert sent["body"]["message"]["parts"][0]["text"] == "Show pod status"
+    assert not any(step.get("kind") == "sanitize" for step in outcome.trace)

@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-17
 
-> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **cwc-workshops 후속 ⑤·⑥·⑦(스캐폴드) 완료(gate 758→767→779→790).** ⑥ 데이터셋+judge 하드닝(over-trigger 갭 2건 `classify_request` precedence 수정+회귀가드·adversarial 네거티브·`calibration_probe`). ⑤ eval 성숙: 단일-judge 무변경 위 **선언적 멀티-grader 스코어카드**(`Grader` code/judge·`Verdict` PASS_SLOW·**action-sink** blast-radius·`Scorecard.delta` pinned-baseline·`score(trials=N)`). ⑦: 신규 `model_sweep.py` **오프라인 스윕 러너**(`grid`·`run_sweep`→cost_per_success/seconds_per_success headline·resumable·`rank/best/scoreboard`, LLM=`router_factory` 주입=실 spend 0). **커밋**: ⑥=`eef7d54`·⑤=`011d4f9` 푸시됨. ⑦은 **미커밋**(model_sweep+test 2파일+docs). **⚠️ PROGRESS_LOG 120줄 임박 → `/tidy-docs` 권장.** **다음 자율 코드 = 소진**; 잔여는 ⑦ 라이브 실행(실 spend=사용자)·⑧ A2A injection-safe(설계·승인)·⑨ SSE/메모리(설계)·인프라/사용자(아티클 배포·OAuth·Slack·State Store·Helm/Terraform). 하네스: billable create·보안완화는 사용자 `!` 필요.
+> ▶ NEXT SESSION: `docs/plans/a2a-delegation-hardening.md` — **⑧ A2A 위임 하드닝 안전 서브셋 완료·구조화/게이트/최소권한 3건 승인 대기.** 첫 액션 = **⑧-3 최소권한 힌트**(role별 `allowedActions` 위임 메타데이터, `action_sink_grader` 정책과 단일 소스 공유 = ⑧ 중 가장 안전). 이번 세션(gate 748→758→767→779→790→795): ⑥ 데이터셋+judge 하드닝(over-trigger 갭 2건 `classify_request` precedence 수정) · ⑤ eval 멀티-grader 스코어카드(`Verdict` PASS_SLOW·action-sink·`Scorecard.delta`·`score(trials=N)`) · ⑦ `model_sweep.py` 오프라인 스윕(cost_per_success headline·resumable·실 spend 0) · ⑧ 아웃바운드 `sanitize_instruction`(control-char strip·cap·trace). **커밋 완료**: ⑥`eef7d54`·⑤`011d4f9`·⑦`ec63915`·tidy`04b8cad` 푸시됨. ⑧은 **미커밋**(supervisor+test+plan doc+docs). **자율 코드 백로그 소진**; 잔여 = ⑧ 구조화/게이트/최소권한(승인)·⑨ SSE/메모리(설계)·⑦ 라이브 실행(실 spend=사용자)·인프라/사용자(아티클 배포·OAuth·Slack·State Store·Helm/Terraform). 하네스: billable create·보안완화는 사용자 `!` 필요.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 
