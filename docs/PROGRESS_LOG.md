@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-17 — 차트 k3s substrate 스모크: env×substrate 양축 실증 완결 (코드 무변경, gate 842 유지)
+
+- Status: 마지막 선택 소품 수행. **기존** Multipass `k8s-lab`(k3s v1.31.4, Ansible 프로비전 자산) 재사용 — 클러스터 생성 없음, 릴리스 설치→검증→제거·반입 이미지 정리로 VM 원상 복원.
+- Changed: `docs/evidence/helm-k3s-substrate-smoke.log`만.
+- Verified (라이브): 이미지 tar 전송→`k3s ctr import`(199MB; exec-stdin 스트림은 EOF라 tar 경로가 정석) → `helm install -f values-k3s.yaml` → pod 1/1 Ready ~29s → **PVC가 `local-path`로 Bound**(k3s 오버레이의 핵심 검증; kind는 `standard`) → `/health/ready` 200 → Alertmanager 페이로드→P2 parking(APR-0515026F)→approve→INC-3219D4A8 resolved → uninstall·이미지 제거. **동일 차트가 kind/k3s 양 substrate에서 오버레이만 바꿔 동일 동작 — 레퍼런스 #7 env×substrate 레이아웃 양축 실증 완결.**
+- Blockers: 없음.
+- Next: **자율 백로그 전면 소진.** 잔여=전부 사용자 게이트(아티클 배포·OAuth 데모·Slack App·terraform apply).
+
 ## 2026-07-17 — 차트 State Store 배선(④↔#7 연결 마무리): stateStore values + DSN 멀티-레플리카 모드 (gate 839→842)
 
 - Status: ④(SQL State Store)와 #7(Helm/Terraform)을 잇는 마지막 소품. 차트가 DSN 모드를 1급 values로 지원 — JSONL 기본값 무변경.

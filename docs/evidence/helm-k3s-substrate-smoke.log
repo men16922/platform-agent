@@ -1,0 +1,31 @@
+# Helm chart k3s substrate smoke — values-k3s.yaml overlay (2026-07-17)
+
+Substrate: EXISTING Multipass VM `k8s-lab` (k3s v1.31.4+k3s1, Ready 6d — the
+Ansible-provisioned box from infra/onprem/ansible). No cluster was created;
+only a helm release was installed and removed. VM left as found (release
+uninstalled, imported image removed from containerd).
+
+Chart: infra/helm/platform-agent @ values-k3s.yaml (same chart the kind smoke
+proved — this run validates the second substrate axis of the env×substrate
+values layout).
+
+## Steps + results
+  kubeconfig: copy of ansible/kubeconfig-k8s-lab.yaml re-pointed at the VM IP
+    (192.168.2.2:6443) — original file untouched
+  image: docker save (199MB tar) → multipass transfer → k3s ctr images import
+    (direct exec-stdin streaming EOF'd; tar transfer is the reliable path)
+  helm install pa -f values-k3s.yaml → deployed
+  webhook pod 1/1 Ready in ~29s (strict /health/ready readiness green)
+  PVC pa-platform-agent-store Bound 1Gi RWO **storageClass local-path**
+    ← the k3s overlay's whole point (kind uses `standard`)
+  E2E through the Service:
+    /health/ready → 200 ready (approvals_store ok, incident_store ok)
+    POST /webhook/alertmanager → pending_approval APR-0515026F (P2)
+    POST /approve/APR-0515026F → approved, INC-3219D4A8, resolved=true
+  helm uninstall pa → PVC Terminating (local-path reclaim Delete)
+  k3s ctr images rm platform-agent:0.1.0 → VM containerd restored
+
+Verdict: the chart is substrate-portable as designed — identical behavior on
+kind and k3s with only the values overlay changing (storageClass + LLM
+endpoint). env×substrate layout of reference #7 is now proven on both
+substrates. No code change (gate 842).
