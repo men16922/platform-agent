@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-17 — cwc-workshops 후속 ⑦(스캐폴드): 오프라인 모델/파라미터 스윕 러너 (gate 779→790, 실 spend 0)
+
+- Status: NEXT_PLAN ⑦(모델 스윕→Model Router 정량화)의 **자율 가능 오프라인 스캐폴드** 구현. 실 API 호출/과금 코드 없음 — LLM 백엔드는 `router_factory` 주입(테스트=결정론 mock), 라이브 모델 배선+실 spend은 사용자 게이트.
+- Changed: 신규 `src/agents/ai/model_sweep.py`(eval_harness 위 증분) — `SweepConfig`(model×thinking×effort)+`grid()` 카테시안, `run_sweep()`(config별 dataset 채점→**cost_per_success/seconds_per_success** headline, `_majority_observation`로 `trials` self-consistency 재사용), **resumable**(`done=` 재투입 시 config.key dedup으로 스킵·기존 포인트 front 보존), `SweepPoint`(pass_rate/cost_per_success/seconds_per_success, 0성공=inf, to/from_dict 영속), `rank()/best()/scoreboard()`(cost/seconds/pass_rate 키, 결정론 tie-break). +11 test(`tests/test_model_sweep.py`, mock 백엔드).
+- Verified: `make check` → **790 passed, 1 skipped**(218.92s, 779→790, +11). 스모크: good 모델(=classify)=20/20·cost_usd=price×calls·trials=3→3N calls·resume는 done config에서 factory 미호출(폭발 팩토리로 확증)·rank best-first.
+- Blockers: 없음. ⑦ 라이브 실행(실 model 호출·과금)만 사용자 판단 잔여.
+- Next: (설계·승인) ⑧ A2A 위임 injection-safe or ⑨ SSE/메모리 tier. **⚠️ PROGRESS_LOG 120줄 초과 임박 → `/tidy-docs` 권장.**
+
 ## 2026-07-17 — cwc-workshops 후속 ⑤: eval 하네스 성숙 — 선언적 멀티 grader 스코어카드 (gate 767→779, 비파괴 증분)
 
 - Status: NEXT_PLAN ⑤(eval 성숙, 자율 코드) 수행. 단일-judge grade()/EvalReport 경로는 무변경으로 두고 그 위에 선언적 멀티-grader 스코어카드 레이어를 증분 추가. cwc eval-멀티메트릭 방법론 반영.
