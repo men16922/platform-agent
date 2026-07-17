@@ -252,11 +252,15 @@ async def route_deploy(
     provider: str,
     *,
     agent_factory: Callable[..., Any] | None = None,
+    memory: Any | None = None,
 ) -> DeployOutcome:
     """Route a natural-language deploy to the model's deployer for the environment.
 
     ``agent_factory`` overrides the pydantic-ai deployer factory (used in tests to
-    inject a TestModel); it is ignored for cloud frameworks.
+    inject a TestModel); it is ignored for cloud frameworks. ``memory`` is an
+    opt-in :class:`~src.agents.ai.memory_tier.MemoryStore`; when given, a
+    non-binding advisory of this service's past failures is prepended to the
+    instruction (default ``None`` = untouched).
     """
     if model_id not in MODELS:
         raise ValueError(f"Unknown model: {model_id}")
@@ -268,10 +272,11 @@ async def route_deploy(
 
     if model.framework == "pydantic-ai":
         from src.agents.ai.local_deployer import create_local_deployer
+        from src.agents.ai.memory_tier import augment_instruction
 
         factory = agent_factory or create_local_deployer
         agent = factory(provider=provider)
-        result = await agent.run(instruction)
+        result = await agent.run(augment_instruction(instruction, memory, provider))
         summary = str(result.output)
         trace = _strip_trailing_summary(build_trace(result.all_messages()), summary)
         steps = _tool_steps(trace)
@@ -297,6 +302,7 @@ async def route_deploy_stream(
     provider: str,
     *,
     agent_factory: Callable[..., Any] | None = None,
+    memory: Any | None = None,
 ):
     """Async generator of deploy events for live UIs (tool-calling progress).
 
@@ -332,11 +338,12 @@ async def route_deploy_stream(
     )
 
     from src.agents.ai.local_deployer import create_local_deployer
+    from src.agents.ai.memory_tier import augment_instruction
 
     factory = agent_factory or create_local_deployer
     agent = factory(provider=provider)
 
-    async with agent.iter(instruction) as run:
+    async with agent.iter(augment_instruction(instruction, memory, provider)) as run:
         async for node in run:
             if PydAgent.is_model_request_node(node):
                 # Stream the model's reasoning / intermediate text as it forms.

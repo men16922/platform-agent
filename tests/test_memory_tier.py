@@ -3,10 +3,17 @@
 from src.agents.ai.memory_tier import (
     DistilledMemory,
     MemoryStore,
+    augment_instruction,
     distill,
+    relevant_memories,
     scrub,
     signature,
 )
+
+
+def _fail(provider, service, step, err="boom"):
+    return {"provider": provider, "service": service, "ok": False,
+            "steps": [{"tool": step, "ok": False, "error": err}]}
 
 
 def test_signature_is_stable_and_case_insensitive():
@@ -93,3 +100,45 @@ def test_store_latest_symptom_wins_but_count_accumulates():
     store.remember(DistilledMemory(signature("p", "s", "x"), "p", "s", False, "x", "old symptom"))
     merged = store.remember(DistilledMemory(signature("p", "s", "x"), "p", "s", False, "x", "new symptom"))
     assert merged.seen == 2 and merged.symptom == "new symptom"
+
+
+# --- recall & advisory injection (⑨ B-2) -------------------------------------
+
+
+def test_recall_failures_filters_by_provider_and_excludes_successes():
+    store = MemoryStore()
+    store.record(_fail("onprem", "a", "x"))
+    store.record(_fail("onprem", "a", "x"))  # -> seen 2
+    store.record(_fail("onprem", "b", "y"))
+    store.record(_fail("aws", "c", "z"))
+    store.record({"provider": "onprem", "service": "d", "ok": True, "steps": []})
+
+    fails = store.recall_failures("onprem")
+    services = [m.service for m in fails]
+    assert "c" not in services  # other provider excluded
+    assert "d" not in services  # success excluded
+    assert services[0] == "a"  # most-seen first
+
+
+def test_relevant_memories_matches_service_named_in_instruction():
+    store = MemoryStore()
+    store.record(_fail("onprem", "orders-api", "validate"))
+    store.record(_fail("onprem", "payments", "deploy"))
+    hits = relevant_memories(store, "onprem", "Deploy orders-api to staging")
+    assert [m.service for m in hits] == ["orders-api"]
+
+
+def test_augment_instruction_is_noop_without_store_or_match():
+    store = MemoryStore()
+    store.record(_fail("onprem", "orders-api", "validate"))
+    assert augment_instruction("Deploy x", None, "onprem") == "Deploy x"  # opt-in off
+    assert augment_instruction("Deploy other-svc", store, "onprem") == "Deploy other-svc"  # no match
+
+
+def test_augment_instruction_prepends_nonbinding_advisory_on_match():
+    store = MemoryStore()
+    store.record(_fail("onprem", "orders-api", "validate", err="probe failed"))
+    out = augment_instruction("Deploy orders-api now", store, "onprem")
+    assert out.endswith("Deploy orders-api now")  # original request preserved at the end
+    assert "[Advisory" in out and "non-binding" in out
+    assert "orders-api previously failed at validate" in out

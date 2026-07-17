@@ -168,6 +168,12 @@ class MemoryStore:
         """Recall by the raw fields, hashing to the signature for the caller."""
         return self.recall(signature(provider, service, failed_step))
 
+    def recall_failures(self, provider: str) -> list[DistilledMemory]:
+        """All recorded *failures* for a provider — the run-start recall query, when
+        the failing step of the new run is not yet known (most-seen first)."""
+        rows = [m for m in self._by_sig.values() if not m.ok and m.provider.lower() == provider.lower()]
+        return sorted(rows, key=lambda m: m.seen, reverse=True)
+
     def all(self) -> list[DistilledMemory]:
         return list(self._by_sig.values())
 
@@ -180,10 +186,53 @@ class MemoryStore:
         return cls([DistilledMemory.from_dict(r) for r in rows])
 
 
+# --- recall & advisory injection (⑨ B-2) -------------------------------------
+# The run-start half: find the failures relevant to a new request and format them
+# as a *non-binding* hint. The hint is advisory only — it never overrides the
+# current run's own checks (the Guardian/reconciliation gates stay authoritative).
+
+
+def relevant_memories(store: MemoryStore, provider: str, instruction: str) -> list[DistilledMemory]:
+    """Past failures for ``provider`` whose service name appears in ``instruction``.
+
+    A substring match on the service name avoids needing to parse the free-text
+    request — a run mentioning "orders-api" surfaces orders-api's prior failures.
+    """
+    text = instruction.lower()
+    return [m for m in store.recall_failures(provider) if m.service.lower() in text]
+
+
+def advisory_block(memories: list[DistilledMemory]) -> str:
+    """Format matching failures as a non-binding advisory block, or ``""`` if none."""
+    if not memories:
+        return ""
+    lines = ["[Advisory — past runs, non-binding; do not override current checks]"]
+    for m in memories:
+        seen = f" (seen {m.seen}x)" if m.seen > 1 else ""
+        symptom = f": {m.symptom}" if m.symptom else ""
+        lines.append(f"- {m.service} previously failed at {m.failed_step}{symptom}{seen}")
+    return "\n".join(lines)
+
+
+def augment_instruction(instruction: str, store: MemoryStore | None, provider: str) -> str:
+    """Prepend the advisory block for matching past failures to ``instruction``.
+
+    Opt-in: with ``store`` ``None`` — or no matching memory — the instruction is
+    returned unchanged, so the default execution path is untouched.
+    """
+    if store is None:
+        return instruction
+    block = advisory_block(relevant_memories(store, provider, instruction))
+    return f"{block}\n\n{instruction}" if block else instruction
+
+
 __all__ = [
     "DistilledMemory",
     "MemoryStore",
+    "advisory_block",
+    "augment_instruction",
     "distill",
+    "relevant_memories",
     "scrub",
     "signature",
 ]

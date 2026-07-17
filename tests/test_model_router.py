@@ -91,6 +91,39 @@ def test_route_deploy_local_qwen_executes(monkeypatch):
     assert "build_image" in tools and "deploy_to_cluster" in tools
 
 
+def test_route_deploy_injects_memory_advisory_when_store_given():
+    """⑨ B-2: an opt-in memory store prepends a non-binding advisory of this
+    service's past failures to the instruction the agent receives; without it the
+    instruction is untouched."""
+    from src.agents.ai.memory_tier import MemoryStore
+
+    store = MemoryStore()
+    store.record({"provider": "onprem", "service": "orders-api", "ok": False,
+                  "steps": [{"tool": "validate_deployment", "ok": False, "error": "probe failed"}]})
+
+    captured: dict = {}
+
+    class _Spy:
+        async def run(self, instruction):
+            captured["instruction"] = instruction
+            return SimpleNamespace(output="done", all_messages=lambda: [])
+
+    def factory(provider="onprem"):
+        return _Spy()
+
+    asyncio.run(mr.route_deploy(
+        "Deploy orders-api to staging", "local-qwen", "onprem", agent_factory=factory, memory=store
+    ))
+    assert "[Advisory" in captured["instruction"]
+    assert "orders-api previously failed at validate_deployment" in captured["instruction"]
+
+    # No memory -> instruction untouched (opt-in off).
+    asyncio.run(mr.route_deploy(
+        "Deploy orders-api to staging", "local-qwen", "onprem", agent_factory=factory
+    ))
+    assert captured["instruction"] == "Deploy orders-api to staging"
+
+
 def test_route_deploy_cloud_model_validates_without_creds():
     outcome = asyncio.run(mr.route_deploy("Deploy orders-api v1 to AWS", "bedrock-claude", "aws"))
     assert outcome.ok is False
