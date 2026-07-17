@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-17 — cwc-workshops 후속 ⑨: SSE 하드닝 + 회수가능 메모리 tier 설계 제안 (문서만, 코드 무변경)
+
+- Status: ⑨(설계 항목)의 설계 제안서 작성. 실 코드(SSE 스트림·deploy_recorder) 근거로 그라운딩, 구현은 승인 대기(런타임 표면 개입이라). 자율 코드 백로그 실질 소진 후 남은 설계 작업.
+- Changed (docs only): 신규 `docs/plans/sse-memory-hardening.md` — (A) SSE: A-1 event-id/dedup·A-2 READY 센티넬+heartbeat·A-3 per-agent 귀속(각 리스크/권고), (B) 메모리: B-1 시그니처-키드 distilled tier·B-2 실행시작 과거 주입(옵트인 DI·조언적)·B-3 주기 consolidation. 근거 file:line(`local_deploy_api.py:216-276`=`data:`만·id/READY 없음, `deploy_recorder`=풀 트레이스 저장하나 미주입). `NEXT_PLAN.md` ⑨ [~]로 갱신·설계 링크.
+- Verified: 코드 무변경(gate 796 유지, 미실행). 권고 1순위=A-1+A-2(비파괴·즉시 UX). 안티: 정적 무조건 주입 금지·SSE replay 버퍼 상한·distilled 메모리 PII/시크릿 스크럽 선행.
+- Blockers: 없음. ⑨ 전 항목 구현=승인 대기.
+- Next: **자율 코드/설계 백로그 소진.** 잔여는 전부 승인/스펜드/인프라: ⑧-1/2/3(승인)·⑨ A/B(승인)·⑦ 라이브(실 spend)·아티클 배포·OAuth·Slack·State Store·Helm/Terraform.
+
 ## 2026-07-17 — cwc-workshops 후속 ⑧(안전 서브셋+⑧-4): A2A 위임 sanitize+cap · 경계 smell-test 가드 · 설계 제안 (gate 790→796)
 
 - Status: ⑧(A2A 위임 injection-safe, Tier 3 설계·승인) 중 **비파괴 안전 서브셋**만 자율 구현하고, 계약/동작 변경 4건은 설계 제안서로 분리(승인 대기). supervisor 위임 경계=호출자 자유텍스트가 특화에 raw 전달이던 것을 bounded/cleaned로.
