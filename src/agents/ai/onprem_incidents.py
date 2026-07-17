@@ -21,6 +21,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from src.agents.ai import state_store
+
 _DEFAULT_STORE = "~/.platform-agent/incidents.jsonl"
 
 
@@ -53,6 +55,11 @@ def record_incident(
         "executed_actions": executed_actions or [],
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
+    sql = state_store.configured_store()
+    if sql is not None:
+        # Opt-in SQL state store (PLATFORM_STATE_DSN) — replica-shareable.
+        sql.append("INCIDENT", record["incident_id"], record)
+        return record
     store = _store_path()
     store.parent.mkdir(parents=True, exist_ok=True)
     with store.open("a", encoding="utf-8") as handle:
@@ -62,6 +69,11 @@ def record_incident(
 
 def list_incidents(limit: int = 100) -> list[dict[str, Any]]:
     """Recorded on-prem incidents, newest first (up to ``limit``)."""
+    sql = state_store.configured_store()
+    if sql is not None:
+        rows = [r for r in sql.rows("INCIDENT") if r.get("PK") == "INCIDENT"]
+        rows.sort(key=lambda r: str(r.get("created_at", "")), reverse=True)
+        return rows[:limit]
     store = _store_path()
     if not store.exists():
         return []

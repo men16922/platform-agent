@@ -1,0 +1,41 @@
+# Roadmap ④ — SQL State Store + real Alertmanager, live E2E (2026-07-17)
+
+Stack (all local docker, $0, torn down after):
+  postgres:16-alpine        :15432  (db platform_state)
+  prom/alertmanager:v0.28.1 :19093  (webhook receiver → host :18079, group_wait 2s)
+  onprem_webhook_api        :18079 / :18080 (TWO replicas, same
+                            PLATFORM_STATE_DSN=postgresql://…/platform_state)
+
+Code: src/agents/ai/state_store.py (opt-in seam; DSN unset = JSONL unchanged),
+wired into onprem_approvals + onprem_incidents. Offline tests via sqlite3.
+
+## 1. Real Alertmanager delivery (not a hand-crafted payload)
+  POST alert to Alertmanager /api/v2/alerts (KubePodCrashLooping, critical,
+  service=payments-api) → 200
+  → Alertmanager grouped and delivered its native webhook payload to
+    /webhook/alertmanager on replica-1
+  → 4-step pipeline → P2 APPROVE → parked APR-47069492 **in PostgreSQL**:
+    platform_state row 1: APPROVAL APR-47069492 (status pending)
+
+## 2. Cross-replica shared state (the reason the store exists)
+  replica-2 (:18080, separate process) GET /pending → 1 [APR-47069492]
+  POST /approve/APR-47069492 **on replica-2**
+    → approved, executed [ONPREM-CreateChangeRequest], INC-FA6F7B43
+  replica-1 (:18079) immediately: /pending → 0, /incidents → [INC-FA6F7B43]
+  (JSONL could never do this across nodes — this unlocks replicas>1 for the
+   Helm chart once the DSN is set.)
+
+## 3. Durability across full process restart
+  killed BOTH replicas → started fresh process → /incidents → [INC-FA6F7B43]
+
+## 4. Ground truth in PostgreSQL (psql)
+  id | kind     | key
+   1 | APPROVAL | APR-47069492   (pending)
+   2 | APPROVAL | APR-47069492   (approved — append-only, latest wins)
+   3 | INCIDENT | INC-FA6F7B43
+  Same append-only lifecycle as the JSONL files, now replica-shareable.
+
+Verdict: real Alertmanager → webhook → approval gate → execute → incident,
+with every state transition living in PostgreSQL and shared live between two
+replicas. Default posture unchanged (no DSN = JSONL, gate suite proves
+non-contamination both ways).

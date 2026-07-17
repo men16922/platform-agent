@@ -23,6 +23,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from src.agents.ai import state_store
+
 _DEFAULT_STORE = "~/.platform-agent/pending-approvals.jsonl"
 
 
@@ -35,6 +37,12 @@ def _now() -> str:
 
 
 def _append(record: dict[str, Any]) -> None:
+    # Opt-in SQL state store (PLATFORM_STATE_DSN) — same append-only lifecycle,
+    # shared across replicas. Unset (the default) keeps the JSONL file.
+    sql = state_store.configured_store()
+    if sql is not None:
+        sql.append("APPROVAL", record["approval_id"], record)
+        return
     store = _store_path()
     store.parent.mkdir(parents=True, exist_ok=True)
     with store.open("a", encoding="utf-8") as handle:
@@ -42,6 +50,9 @@ def _append(record: dict[str, Any]) -> None:
 
 
 def _all_rows() -> list[dict[str, Any]]:
+    sql = state_store.configured_store()
+    if sql is not None:
+        return sql.rows("APPROVAL")
     store = _store_path()
     if not store.exists():
         return []
