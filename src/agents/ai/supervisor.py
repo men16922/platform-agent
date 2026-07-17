@@ -47,7 +47,14 @@ class SupervisorOutcome:
 def classify_request(instruction: str) -> RouteDecision:
     """Choose a specialist without invoking an LLM or executing any tool."""
     text = instruction.lower()
-    if any(term in text for term in ("provision", "terraform", "ansible", "create cluster", "setup cluster", "set up cluster")):
+    provision_terms = ("provision", "terraform", "ansible", "create cluster", "setup cluster", "set up cluster")
+    # A cluster-creation verb with an interpolated cluster name — "create a GKE
+    # cluster", "spin up a kind cluster" — is provisioning even though the literal
+    # "create cluster" bigram is split by the cluster's name.
+    creation_verbs = ("create", "spin up", "spin-up", "stand up", "stand-up", "bootstrap")
+    if any(term in text for term in provision_terms) or (
+        "cluster" in text and any(verb in text for verb in creation_verbs)
+    ):
         return RouteDecision(AgentRole.PROVISION, "explicit infrastructure or cluster provisioning request")
     if any(term in text for term in ("diagnose", "investigate", "debug", "logs", "log ", "pods", "pod ", "namespace", "promql", "istio", "observability", "why is", "why are", "status")):
         return RouteDecision(AgentRole.KAGENT, "read-only cluster investigation request")
