@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-17
 
-> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **gate 829.** 승인 큐 8항목 전부 완료(⑦ 라이브 스윕=로컬 MLX $0, 프롬프트 결함 발견→수정→가드, **증거 기반 선택=7B@temp0 20/20**, `docs/evidence/model-sweep-live.log`) + **레퍼런스 #7-a Helm 차트 완료**(`infra/helm/platform-agent/`+`infra/onprem/Dockerfile` 실빌드·컨테이너 스모크, RBAC 최소권한·drain 게이트, pyproject latent 버그 수정). **다음 후보(승인 게이트)**: kind 라이브 `helm install` 실증(클러스터 생성) · #7-b Terraform 모듈(클라우드) · ④ State Store/Alertmanager 실연동(로컬 docker, 자율 가능성 높음). 잔여 사용자 몫: 아티클 배포·OAuth 데모·Slack App. 누적 gate 748→829. 하네스: billable·보안완화는 사용자 `!`.
+> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **gate 829.** 승인 큐 8항목 전부 완료(⑦ 라이브 스윕=로컬 MLX $0, 프롬프트 결함 발견→수정→가드, **증거 기반 선택=7B@temp0 20/20**, `docs/evidence/model-sweep-live.log`) + **레퍼런스 #7-a Helm 차트 완료**(`infra/helm/platform-agent/`+`infra/onprem/Dockerfile` 실빌드·컨테이너 스모크, RBAC 최소권한·drain 게이트, pyproject latent 버그 수정). **#7-a kind 라이브 실증 완료**(install→RBAC can-i→Alertmanager→P2 승인→execute→incident→PVC 영속, `docs/evidence/helm-kind-live-install.log`). **다음 후보(승인 게이트)**: ④ State Store/Alertmanager 실연동(로컬 docker) · #7-b Terraform 모듈(클라우드) · k3s substrate 스모크(선택). 잔여 사용자 몫: 아티클 배포·OAuth 데모·Slack App. 누적 gate 748→829. 하네스: billable·보안완화는 사용자 `!`.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 

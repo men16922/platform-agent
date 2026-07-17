@@ -1,0 +1,53 @@
+# Reference #7-a Helm chart — live kind install E2E (2026-07-17)
+
+Chart: infra/helm/platform-agent (values-kind.yaml overlay)
+Image: platform-agent:0.1.0 (infra/onprem/Dockerfile, 881MB, kubectl v1.31.4)
+Cluster: dedicated `kind create cluster --name pa-helm` (external GKE context
+untouched — every kubectl call pinned to --context kind-pa-helm). Torn down
+after the run; original context restored. Product code unchanged (gate 829).
+
+## 1. Install
+  kind load docker-image platform-agent:0.1.0 --name pa-helm
+  helm install pa infra/helm/platform-agent -f values-kind.yaml
+  → STATUS: deployed, NOTES render (executor: log-only / drain RBAC OFF)
+
+## 2. Rollout — probes green in-cluster
+  pod/pa-platform-agent-webhook-5d66fd5c7c-m52zr  1/1 Running (Ready in ~12s;
+    readiness = strict /health/ready, liveness = lenient /health)
+  pvc/pa-platform-agent-store  Bound 1Gi RWO (storageClass standard)
+  port-forward:
+    /health        → {"status":"ok","service":"onprem-webhook"}
+    /health/ready  → 200 {"status":"ready","checks":{approvals_store:ok,incident_store:ok}}
+
+## 3. RBAC least-privilege proof (auth can-i --as=system:serviceaccount:default:pa-platform-agent)
+  patch deployments        yes   (restart)
+  get replicasets          yes   (undo)
+  patch deployments/scale  yes   (scale)
+  patch nodes              no    (drain ClusterRole off by default)
+  delete pods              no
+  create pods/eviction     no
+  delete deployments       no    (no verb beyond the four reversible actions)
+
+## 4. Day-2 E2E through the chart Service
+  POST /webhook/alertmanager (real Alertmanager shape: KubePodCrashLooping,
+  severity=critical, service=payments-api)
+  → 4-step pipeline ran in-pod; analyzer heuristic fallback (no Bedrock creds
+    in-cluster, by design: "LLM analysis failed: Unable to locate credentials")
+  → severity P2 → mode APPROVE → status=pending_approval, APR-284A4249
+  GET  /pending             → count 1 (APR-284A4249, generic-recovery)
+  POST /approve/APR-284A4249 → status=approved, executed_actions=
+        [ONPREM-CreateChangeRequest], resolved=true, INC-5D000FBD
+  GET  /incidents           → INC-5D000FBD recorded (provider=onprem, P2, resolved)
+
+## 5. PVC persistence across pod restart
+  kubectl delete pod (webhook) → new pod -nhvxj Ready
+  GET /incidents → ['INC-5D000FBD']   # JSONL store survived on the PVC
+
+## Teardown
+  helm uninstall pa && kind delete cluster --name pa-helm
+  kubectl config use-context gke-sysnet4admin_book_gitaiops  (restored)
+
+Verdict: the chart's full advertised surface held up live — install, probes,
+least-privilege RBAC allow/deny split, Alertmanager→pipeline→approval-gate→
+execute→incident loop, and store persistence. Remaining for #7: k3s substrate
+smoke (same chart, values-k3s.yaml) and the #7-b Terraform module (cloud).
