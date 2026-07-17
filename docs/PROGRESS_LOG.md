@@ -7,13 +7,13 @@
 
 ---
 
-## 2026-07-17 — 승인된 실행 큐 소진: ⑧-1/2/3 + ⑨ A/B 전부 구현 (gate 796→819, 사용자 "전부 다")
+## 2026-07-17 — 승인된 실행 큐 8항목 코드 전부 완료: ⑧-1/2/3 + ⑨ A/B + ⑦ 어댑터 (gate 796→822, 사용자 "전부 다")
 
-- Status: 사용자가 ⑧·⑨ 잔여 + ⑦를 전부 승인("전부 다 하자"). 위험 낮은 순 큐로 7개 코드 묶음을 순차 구현·게이트·커밋. ⑦ 라이브 스윕만 실 API 과금이라 사용자 게이트로 잔존.
-- Changed (7 커밋, 전부 origin/main): **⑧-3**(`e79bf94`) `ROLE_ALLOWED_ACTIONS` 위임 `allowedActions` 힌트+`action_sink_grader` 단일소스. **⑨A-1/A-2**(`0050129`) SSE `id:` dedup·`ready` 센티넬·`asyncio.wait_for` heartbeat. **⑧-1**(`1184ee5`) `metadata.task` 구조화 디스크립터. **⑨B-1**(`1184ee5`) 신규 `memory_tier.py`(signature·scrub·distill·MemoryStore). **⑧-2**(`13d1352`) `Supervisor(confidence_router=)` 옵트인 저-confidence 게이트(구조적 Protocol=cycle 회피). **⑨B-2**(`ccc8a47`) recall+`augment_instruction` 옵트인 `memory=` seam(조언적). **⑨B-3/A-3**(`3b4cbd9`) `consolidate`/`dominant_failures` + SSE `agent` 필드.
-- Verified: `make check` 각 묶음 그린 → **819 passed, 1 skipped**(243s, 796→819, **+23 test**). 전부 비파괴(옵트인 DI·additive 메타데이터·SSE 하위호환). 설계 2건(`docs/plans/a2a-delegation-hardening.md`·`sse-memory-hardening.md`) 승인·실행 반영.
-- Blockers: **⑦ 라이브 모델 스윕만 잔존 = 실 API 과금 + creds + 사용자 router_factory 배선**. `model_sweep.py` 스캐폴드는 injectable factory라 코드 완비, 실행만 사용자.
-- Next: ⑦ 실행(사용자 go-ahead+비용 확인) or 인프라/사용자(아티클 배포·OAuth·Slack·State Store·Helm/Terraform).
+- Status: 사용자가 ⑧·⑨ 잔여 + ⑦를 전부 승인("전부 다 하자"). 위험 낮은 순 큐로 8개 코드 묶음을 순차 구현·게이트·커밋. ⑦는 어댑터 코드까지 완료, 실 실행(과금)만 사용자 게이트로 잔존.
+- Changed (8 커밋, 전부 origin/main): **⑧-3**(`e79bf94`) `ROLE_ALLOWED_ACTIONS` 위임 `allowedActions` 힌트+`action_sink_grader` 단일소스. **⑨A-1/A-2**(`0050129`) SSE `id:` dedup·`ready` 센티넬·`asyncio.wait_for` heartbeat. **⑧-1**(`fdf9e11`) `metadata.task` 구조화 디스크립터. **⑨B-1**(`1184ee5`) 신규 `memory_tier.py`(signature·scrub·distill·MemoryStore). **⑧-2**(`13d1352`) `Supervisor(confidence_router=)` 옵트인 저-confidence 게이트(구조적 Protocol=cycle 회피). **⑨B-2**(`ccc8a47`) recall+`augment_instruction` 옵트인 `memory=` seam(조언적). **⑨B-3/A-3**(`3b4cbd9`) `consolidate`/`dominant_failures` + SSE `agent` 필드. **⑦ 어댑터**(`57d2aa7`) `live_router_factory(call_model, backstop=)`(모델응답→role 파싱·latency 측정·결정론 백스톱, `run_sweep` 드롭인).
+- Verified: `make check` 각 묶음 그린 → **822 passed, 1 skipped**(261s, 796→822, **+26 test**). 전부 비파괴(옵트인 DI·additive 메타데이터·SSE 하위호환·주입식 모델호출). 설계 2건(`docs/plans/a2a-delegation-hardening.md`·`sse-memory-hardening.md`) 승인·실행 반영.
+- Blockers: **⑦ 실 실행만 잔존**(코드 완비) = 실 `call_model`+creds+과금(클라우드), or 로컬 MLX=무과금이나 `make dev-up` 스택 기동 필요. 사용자 결정 대기(A 로컬무과금/B 클라우드~$0.05/C 멈춤).
+- Next: ⑦ 실 실행(사용자 선택) or 인프라/사용자(아티클 배포·OAuth·Slack·State Store·Helm/Terraform).
 
 ## 2026-07-17 — cwc-workshops 후속 ⑨: SSE 하드닝 + 회수가능 메모리 tier 설계 제안 (문서만, 코드 무변경)
 

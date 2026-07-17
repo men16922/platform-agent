@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-17
 
-> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` ★ 큐 — **승인된 실행 큐 소진(사용자 "전부 다"): ⑧-1/2/3 + ⑨ A/B 7묶음 전부 구현·푸시(gate 796→819).** 잔여 큐 = **⑦ 라이브 모델 스윕만(item 8) = 실 API 과금·creds·사용자 router_factory 배선 = 사용자 게이트**(`model_sweep.py` 스캐폴드는 injectable factory라 코드 완비, 실행만). 이번 세션 누적(gate 748→819, +71 test): ⑥ 데이터셋+judge · ⑤ 멀티-grader 스코어카드 · ⑦ 오프라인 스윕 스캐폴드 · ⑧ 전체(sanitize+cap·⑧-4 smell-test·⑧-3 최소권한·⑧-1 구조화·⑧-2 confidence 게이트) · ⑨ 전체(A-1/A-2 SSE·B-1 memory_tier·B-2 recall 주입·B-3 consolidate·A-3 agent 필드). **전 커밋 origin/main**(HEAD `3b4cbd9`). **자율 코드 백로그 완전 소진**; 잔여 = ⑦ 라이브(실 spend)·인프라/사용자(아티클 배포·OAuth·Slack·State Store·Helm/Terraform). 하네스: billable·보안완화는 사용자 `!`.
+> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` ★ 큐 — **승인된 실행 큐 8항목 코드 전부 완료·푸시(gate 796→822, 사용자 "전부 다").** 잔여 = **⑦ 라이브 모델 스윕 실 실행만**(어댑터 `live_router_factory` 코드 완비) = 실 `call_model`+creds+과금(클라우드~$0.05) or 로컬 MLX(무과금·`make dev-up` 필요). 사용자 선택 대기(A 로컬/B 클라우드/C 멈춤). 이번 세션 누적(gate 748→819, +71 test): ⑥ 데이터셋+judge · ⑤ 멀티-grader 스코어카드 · ⑦ 오프라인 스윕 스캐폴드 · ⑧ 전체(sanitize+cap·⑧-4 smell-test·⑧-3 최소권한·⑧-1 구조화·⑧-2 confidence 게이트) · ⑨ 전체(A-1/A-2 SSE·B-1 memory_tier·B-2 recall 주입·B-3 consolidate·A-3 agent 필드). **전 커밋 origin/main**(HEAD `3b4cbd9`). **자율 코드 백로그 완전 소진**; 잔여 = ⑦ 라이브(실 spend)·인프라/사용자(아티클 배포·OAuth·Slack·State Store·Helm/Terraform). 하네스: billable·보안완화는 사용자 `!`.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 
