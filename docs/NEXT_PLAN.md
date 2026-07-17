@@ -10,8 +10,8 @@
 
 1. [x] ~~**⑧-3 최소권한 힌트**~~ — **완료(gate 796→798)**: `ROLE_ALLOWED_ACTIONS`(supervisor) 위임 `metadata.allowedActions` 힌트(KAGENT=[]) + `action_sink_grader` 기본 정책·`READ_ONLY_ROLES` 파생으로 단일 소스화(드리프트 불가). +2 test.
 2. [x] ~~**⑨ A-1+A-2 SSE id/dedup + READY/heartbeat**~~ — **완료(gate 798→799)**: `_sse(event_id)` `id:` 라인(Last-Event-ID dedup) + 스트림 오픈 시 `ready` 센티넬 + `asyncio.wait_for` 15s heartbeat(`: keepalive`). 비파괴(구 클라이언트는 id/미지 type 무시). +1 stream test.
-3. [ ] **⑧-1 구조화 위임 디스크립터** — `metadata.task={type,matchedSkills,origin}`(free-text 유지, params 추출 제외). 비파괴 증분.
-4. [ ] **⑨ B-1 시그니처-키드 distilled 메모리** — `deploy_recorder` 트레이스→경량 memory tier(오프라인·injectable·PII 스크럽).
+3. [x] ~~**⑧-1 구조화 위임 디스크립터**~~ — **완료(gate 809)**: `metadata.task={type,origin,skills,allowedActions}`(free-text `parts` 유지, params 추출 제외). 비파괴(kagent SDK는 미지 metadata 무시). +1 test.
+4. [x] ~~**⑨ B-1 시그니처-키드 distilled 메모리**~~ — **완료(gate 799→809)**: 신규 `memory_tier.py`(오프라인·결정론) — `signature`(sha256 {provider,service,failed_step})·`scrub`(secret/PII redact)·`distill`(deploy 레코드→lesson, 방어적)·`MemoryStore`(count-consolidating·injectable·to/from_dicts). +9 test.
 5. [ ] **⑧-2 저-confidence 폴백→게이트** — `Supervisor(confidence_router=...)` 옵트인 DI, 미주입=무변경.
 6. [ ] **⑨ B-2 과거 인시던트 주입** — 옵트인 DI(`memory_provider`), 조언적(non-binding)·게이트 상충 없게.
 7. [ ] **⑨ A-3 per-agent 귀속 / ⑨ B-3 consolidation** — Orchestrator 스트리밍·스케줄 선행 후(옵셔널 필드만 예약).
