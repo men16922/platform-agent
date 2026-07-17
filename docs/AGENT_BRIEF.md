@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-17
 
-> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **cwc-workshops 후속 ⑥(eval 데이터셋+judge 하드닝) 완료(gate 758→767).** `ROUTING_EVAL_SET` 13→20(카테고리 균형+adversarial 네거티브 5=precision 채점), eval가 over-trigger 갭 2건 표면화("Deploy the observability stack"→KAGENT·"Investigate why terraform failed"→PROVISION) → `classify_request` precedence 재설계(진단동사>provision>delivery-guarded 명사, `observability` 트리거 제거)로 수정+회귀가드. judge 반-관대: 프롬프트 재작성(FAIL-when-unsure)+`calibration_probe` canary+`llm_judge(calibrate=True)` 강등+빈문자열/"모름" 백스톱. +9 test. **미커밋**(eval_harness/supervisor/test_eval_harness 3파일), origin보다 **3 ahead(직전 세션)·미푸시**. **다음 후보(자율)**: ⑤ eval 멀티메트릭(선언적 Grader·PASS-SLOW·pinned baseline) or ⑦ 모델 스윕(실 API spend=사용자 판단). **잔여 인프라/사용자**: 아티클 배포(`docs/post/*` ready)·OAuth 데모·Slack App·State Store/Alertmanager·Helm/Terraform(Tier 3). 하네스: billable create·보안완화는 사용자 `!` 필요.
+> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **cwc-workshops 후속 ⑤·⑥ 완료(gate 758→767→779).** ⑥ eval 데이터셋+judge 하드닝(over-trigger 갭 2건 `classify_request` precedence 수정+회귀가드·adversarial 네거티브·`calibration_probe`+`llm_judge(calibrate=True)`). ⑤ eval 성숙: 단일-judge 경로 무변경 위에 **선언적 멀티-grader 스코어카드** 증분 — `Grader`(kind code/judge)·`Verdict` 3-상태(PASS_SLOW)·**action-sink**(blast-radius 안전)·`Scorecard.delta`(pinned-baseline 회귀)·`score(trials=N)` majority. **커밋 완료**(⑥=`eef7d54` 푸시됨). ⑤는 **미커밋**(eval_harness/test_eval_harness 2파일 + docs). **다음 후보(자율)**: ⑦ 모델/파라미터 스윕(단 실 API spend=사용자 판단) or ⑧ A2A 위임 injection-safe(설계·승인). **잔여 인프라/사용자**: 아티클 배포(`docs/post/*` ready)·OAuth 데모·Slack App·State Store/Alertmanager·Helm/Terraform(Tier 3). 하네스: billable create·보안완화는 사용자 `!` 필요.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 

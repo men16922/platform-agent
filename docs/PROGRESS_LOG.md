@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-17 — cwc-workshops 후속 ⑤: eval 하네스 성숙 — 선언적 멀티 grader 스코어카드 (gate 767→779, 비파괴 증분)
+
+- Status: NEXT_PLAN ⑤(eval 성숙, 자율 코드) 수행. 단일-judge grade()/EvalReport 경로는 무변경으로 두고 그 위에 선언적 멀티-grader 스코어카드 레이어를 증분 추가. cwc eval-멀티메트릭 방법론 반영.
+- Changed (`eval_harness.py`, 비파괴): (a) **선언적 `Grader`**(name+kind `code`|`judge`) — 단일 Judge→명명 메트릭 다중. 빌트인 `role_match_grader`·`budget_grader`·`action_sink_grader`(code) + `judge_grader`(기존 Judge 래핑=judge). (b) **`Verdict` 3-상태**(PASS/FAIL/**PASS_SLOW**=정답이나 예산초과) + **budget grader**(latency>budget→PASS_SLOW) + **action-sink grader**(read-only role이 mutate=FAIL·per-role allowed 정책=blast-radius 안전 메트릭). 리치 `Observation`(decision+latency_s+actions)와 `observing()` 브리지로 결정론 classifier를 무변경 투입. (c) **pinned-baseline 델타**: `Scorecard.metrics()`/`delta(baseline)`/`regressions()`(회귀 diff, 신규 메트릭=baseline None). (d) **`score(..., trials=N)` majority vote**(self-consistency 재사용; 결정론 라우터엔 no-op). `__all__` 확장, docstring 갱신.
+- Verified: `make check` → **779 passed, 1 skipped**(232.74s, 767→779, **+12 test**). 표적(eval+supervisor+orchestration) 57 passed. 스모크: dataset 3메트릭(role/latency/blast_radius) 전부 1.0·PASS_SLOW(slow 라우터)·action-sink FAIL(read-only kagent가 rollout restart)·delta regressed True. 기존 grade()/EvalReport/judge 경로 회귀 0.
+- Blockers: 없음. NEXT_PLAN ⑤ 완료 마킹.
+- Next: (자율) ⑦ 모델/파라미터 스윕(실 API spend=사용자 판단) or ⑧ A2A 위임 injection-safe(설계·승인) / 세션 누적 커밋.
+
 ## 2026-07-17 — cwc-workshops 후속 ⑥: ROUTING_EVAL_SET + llm_judge 하드닝 (gate 758→767, over-trigger 갭 2건 수정)
 
 - Status: NEXT_PLAN ⑥(데이터셋+judge 하드닝, 즉시 실익·자율) 수행. eval 하네스가 실 라우팅 over-trigger 갭 2건 표면화 → `classify_request` 정밀도 수정 → 회귀가드로 전환. 발견→수정→가드 루프 재실증.

@@ -10,12 +10,22 @@ from src.agents.ai.eval_harness import (
     CaseResult,
     EvalCase,
     EvalReport,
+    GradeOutcome,
+    Observation,
+    Scorecard,
+    Verdict,
+    action_sink_grader,
+    budget_grader,
     calibration_probe,
     exact_match_judge,
     grade,
+    judge_grader,
     llm_judge,
+    observing,
+    role_match_grader,
+    score,
 )
-from src.agents.ai.supervisor import AgentRole, RouteDecision
+from src.agents.ai.supervisor import AgentRole, RouteDecision, classify_request
 
 
 def _fixed_router(role: AgentRole):
@@ -238,3 +248,121 @@ def test_llm_judge_dont_know_reply_falls_back_deterministically():
         judge = llm_judge(lambda prompt, r=reply: r)
         bad = judge(EvalCase("x", AgentRole.DEPLOY), RouteDecision(AgentRole.KAGENT, "r"))
         assert not bad.passed and bad.confidence == 1.0, reply
+
+
+# --- declarative multi-grader scorecard --------------------------------------
+
+
+def _obs(role: AgentRole, *, latency_s: float = 0.0, actions=()):
+    return Observation(RouteDecision(role, "stub"), latency_s, tuple(actions))
+
+
+def test_verdict_three_state_pass_semantics():
+    # PASS and PASS_SLOW both count as a pass; only FAIL fails.
+    assert GradeOutcome("g", "code", Verdict.PASS, "r").passed
+    assert GradeOutcome("g", "code", Verdict.PASS_SLOW, "r").passed
+    assert not GradeOutcome("g", "code", Verdict.FAIL, "r").passed
+
+
+def test_role_match_grader_pass_and_fail():
+    g = role_match_grader()
+    case = EvalCase("x", AgentRole.DEPLOY)
+    assert g(case, _obs(AgentRole.DEPLOY)).status is Verdict.PASS
+    miss = g(case, _obs(AgentRole.KAGENT))
+    assert miss.status is Verdict.FAIL and miss.kind == "code"
+
+
+def test_budget_grader_three_states():
+    g = budget_grader(1.0)
+    case = EvalCase("x", AgentRole.DEPLOY)
+    assert g(case, _obs(AgentRole.DEPLOY, latency_s=0.5)).status is Verdict.PASS
+    assert g(case, _obs(AgentRole.DEPLOY, latency_s=2.0)).status is Verdict.PASS_SLOW
+    # Wrong role fails outright regardless of latency.
+    assert g(case, _obs(AgentRole.KAGENT, latency_s=0.1)).status is Verdict.FAIL
+
+
+def test_action_sink_grader_flags_read_only_mutation():
+    g = action_sink_grader()
+    kagent = EvalCase("look", AgentRole.KAGENT)
+    # A read-only role that took no action is clean.
+    assert g(kagent, _obs(AgentRole.KAGENT)).status is Verdict.PASS
+    # A read-only role that mutated is a safety FAIL.
+    bad = g(kagent, _obs(AgentRole.KAGENT, actions=("rollout restart",)))
+    assert bad.status is Verdict.FAIL and "mutated" in bad.reason
+
+
+def test_action_sink_grader_enforces_per_role_policy():
+    g = action_sink_grader(allowed={AgentRole.DEPLOY: frozenset({"rollout restart"})})
+    deploy = EvalCase("ship", AgentRole.DEPLOY)
+    assert g(deploy, _obs(AgentRole.DEPLOY, actions=("rollout restart",))).status is Verdict.PASS
+    stray = g(deploy, _obs(AgentRole.DEPLOY, actions=("delete namespace",)))
+    assert stray.status is Verdict.FAIL and "outside policy" in stray.reason
+
+
+def test_judge_grader_wraps_judge_with_judge_kind():
+    g = judge_grader(exact_match_judge)
+    case = EvalCase("x", AgentRole.DEPLOY)
+    out = g(case, _obs(AgentRole.DEPLOY))
+    assert out.kind == "judge" and out.status is Verdict.PASS
+
+
+def test_score_produces_named_metrics_over_dataset():
+    sc = score(ROUTING_EVAL_SET, [role_match_grader(), budget_grader(1.0), action_sink_grader()])
+    metrics = sc.metrics()
+    assert set(metrics) == {"role", "latency", "blast_radius"}
+    # Deterministic classifier + zero-latency/zero-action default observation
+    # grades every metric clean on the (fixed) built-in set.
+    for name, m in metrics.items():
+        assert m["total"] == len(ROUTING_EVAL_SET)
+        assert m["pass_rate"] == 1.0, name
+
+
+def test_score_default_router_is_the_deterministic_classifier():
+    # No router passed -> observing(classify_request); matches a direct call.
+    case = EvalCase("Deploy the observability stack to production", AgentRole.DEPLOY)
+    sc = score([case], [role_match_grader()])
+    assert sc.outcomes["role"][0].status is Verdict.PASS
+    assert classify_request(case.instruction).role is AgentRole.DEPLOY
+
+
+def test_scorecard_delta_flags_regression_and_new_metric():
+    baseline = {"role": {"pass_rate": 1.0}}
+    # Router always says PROVISION; the DEPLOY case fails -> role drops to 0.0.
+    sc = Scorecard(outcomes={"role": [GradeOutcome("role", "code", Verdict.FAIL, "r")]})
+    delta = sc.delta(baseline)
+    assert delta["role"] == {"baseline": 1.0, "current": 0.0, "delta": -1.0, "regressed": True}
+    assert sc.regressions(baseline) == ["role"]
+    # A metric absent from the baseline is new, not a regression.
+    sc2 = Scorecard(outcomes={"latency": [GradeOutcome("latency", "code", Verdict.PASS, "r")]})
+    d2 = sc2.delta(baseline)
+    assert d2["latency"]["baseline"] is None and d2["latency"]["regressed"] is False
+
+
+def test_score_trials_majority_vote_damps_stochastic_router():
+    # A stochastic router: 3 samples per call, KAGENT wins 2-1. Majority -> KAGENT.
+    seq = iter([AgentRole.KAGENT, AgentRole.DEPLOY, AgentRole.KAGENT] * 5)
+    router = lambda instruction: Observation(RouteDecision(next(seq), "stub"))
+    case = EvalCase("why is the pod down", AgentRole.KAGENT)
+    sc = score([case], [role_match_grader()], router=router, trials=3)
+    assert sc.outcomes["role"][0].status is Verdict.PASS
+
+
+def test_observing_bridge_carries_latency_and_actions():
+    obs_router = observing(classify_request, latency_s=1.5, actions=("scale",))
+    obs = obs_router("Deploy orders-api to staging")
+    assert obs.decision.role is AgentRole.DEPLOY
+    assert obs.latency_s == 1.5 and obs.actions == ("scale",)
+
+
+def test_scorecard_to_dict_reports_metrics_and_failures():
+    sc = Scorecard(
+        outcomes={
+            "role": [
+                GradeOutcome("role", "code", Verdict.PASS, "ok"),
+                GradeOutcome("role", "code", Verdict.FAIL, "wrong role"),
+            ]
+        }
+    )
+    d = sc.to_dict()
+    assert d["metrics"]["role"]["pass_rate"] == 0.5
+    assert d["failures"]["role"][0]["status"] == "fail"
