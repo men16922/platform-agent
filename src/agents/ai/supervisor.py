@@ -257,6 +257,16 @@ class Supervisor:
                 # Least-privilege hint: the blast radius this role is allowed. A
                 # read-only kagent carries an empty list.
                 "allowedActions": sorted(ROLE_ALLOWED_ACTIONS[decision.role]),
+                # Structured delegation descriptor: a single trusted object a
+                # specialist can act on without parsing the free-text instruction.
+                # The free-text `parts` stays for back-compat; params extraction is
+                # a deliberate follow-up (see docs/plans/a2a-delegation-hardening.md).
+                "task": {
+                    "type": decision.role.value,
+                    "origin": "supervisor",
+                    "skills": skills,
+                    "allowedActions": sorted(ROLE_ALLOWED_ACTIONS[decision.role]),
+                },
             },
         }
         if context_id:

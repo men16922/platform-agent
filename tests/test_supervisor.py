@@ -260,6 +260,29 @@ def test_delegation_forwards_least_privilege_allowed_actions():
     assert allowed == sorted(allowed)  # deterministic, sorted
 
 
+def test_delegation_carries_structured_task_descriptor():
+    """⑧-1: a single structured `task` descriptor rides alongside the free-text
+    parts, so a specialist can act on it without parsing the instruction."""
+    sent: dict = {}
+
+    def transport(endpoint: str, body: dict) -> dict:
+        sent["body"] = body
+        return {"task": {"id": "t"}}
+
+    supervisor = Supervisor(
+        {AgentRole.KAGENT: "http://kagent"}, transport=transport, card_fetcher=lambda _: KAGENT_CARD
+    )
+    supervisor.handle("Show pod status")
+
+    msg = sent["body"]["message"]
+    task = msg["metadata"]["task"]
+    assert task["type"] == "kagent" and task["origin"] == "supervisor"
+    assert task["skills"] == ["cluster-diagnostics"]
+    assert task["allowedActions"] == []  # read-only
+    # Free-text parts still present (back-compat, not replaced).
+    assert msg["parts"][0]["text"] == "Show pod status"
+
+
 def test_supervisor_never_executes_mutating_work_without_the_a2a_boundary():
     """Delegation-safety invariant (⑧-4 guard): a mutating provision/deploy request
     must go out over the A2A transport — never be executed in-process — and with no
