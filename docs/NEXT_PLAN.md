@@ -12,7 +12,7 @@
 2. [x] ~~**⑨ A-1+A-2 SSE id/dedup + READY/heartbeat**~~ — **완료(gate 798→799)**: `_sse(event_id)` `id:` 라인(Last-Event-ID dedup) + 스트림 오픈 시 `ready` 센티넬 + `asyncio.wait_for` 15s heartbeat(`: keepalive`). 비파괴(구 클라이언트는 id/미지 type 무시). +1 stream test.
 3. [x] ~~**⑧-1 구조화 위임 디스크립터**~~ — **완료(gate 809)**: `metadata.task={type,origin,skills,allowedActions}`(free-text `parts` 유지, params 추출 제외). 비파괴(kagent SDK는 미지 metadata 무시). +1 test.
 4. [x] ~~**⑨ B-1 시그니처-키드 distilled 메모리**~~ — **완료(gate 799→809)**: 신규 `memory_tier.py`(오프라인·결정론) — `signature`(sha256 {provider,service,failed_step})·`scrub`(secret/PII redact)·`distill`(deploy 레코드→lesson, 방어적)·`MemoryStore`(count-consolidating·injectable·to/from_dicts). +9 test.
-5. [ ] **⑧-2 저-confidence 폴백→게이트** — `Supervisor(confidence_router=...)` 옵트인 DI, 미주입=무변경.
+5. [x] ~~**⑧-2 저-confidence 폴백→게이트**~~ — **완료(gate 809→812)**: `Supervisor(confidence_router=, min_agreement=0.6)` 옵트인 DI seam(구조적 `RoutingConfidence` Protocol=orchestration cycle 회피). 저-agreement 투표→`delegated=False`+`trace{kind:"gated",reason:"low_confidence"}`(코인플립 위임 차단). 미주입=결정론 무변경. +3 test.
 6. [ ] **⑨ B-2 과거 인시던트 주입** — 옵트인 DI(`memory_provider`), 조언적(non-binding)·게이트 상충 없게.
 7. [ ] **⑨ A-3 per-agent 귀속 / ⑨ B-3 consolidation** — Orchestrator 스트리밍·스케줄 선행 후(옵셔널 필드만 예약).
 8. [ ] **⑦ 라이브 모델 스윕** — 실 API 과금. **실행 전 그리드/모델/예상비용 확인**(스캐폴드 `model_sweep.py` ready).

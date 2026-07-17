@@ -1,9 +1,12 @@
 """Supervisor routing and A2A delegation tests."""
 
+from dataclasses import dataclass
+
 from src.agents.ai.gateway.a2a_server import A2AServer
 from src.agents.ai.supervisor import (
     MAX_DELEGATED_INSTRUCTION,
     AgentRole,
+    RouteDecision,
     Supervisor,
     classify_request,
     matching_skills,
@@ -258,6 +261,71 @@ def test_delegation_forwards_least_privilege_allowed_actions():
     allowed = sent["body"]["message"]["metadata"]["allowedActions"]
     assert "scale" in allowed and "rollout_restart" in allowed
     assert allowed == sorted(allowed)  # deterministic, sorted
+
+
+@dataclass
+class _Vote:
+    """A minimal RoutingConfidence: a decision plus an agreement signal."""
+
+    decision: RouteDecision
+    agreement: float
+
+
+def _consensus(role, agreement):
+    return _Vote(decision=RouteDecision(role, "voted"), agreement=agreement)
+
+
+def test_confidence_router_gates_low_agreement_instead_of_delegating():
+    """⑧-2: with a confidence router injected, a low-agreement vote is refused
+    (gated) rather than delegated on a coin-flip. Opt-in — default path unchanged."""
+    calls: list[str] = []
+
+    def transport(endpoint: str, body: dict) -> dict:
+        calls.append(endpoint)
+        return {"task": {"id": "t"}}
+
+    router = lambda instruction: _consensus(AgentRole.KAGENT, 0.4)  # below default 0.6
+    sup = Supervisor(
+        {AgentRole.KAGENT: "http://kagent"},
+        transport=transport,
+        card_fetcher=lambda _: KAGENT_CARD,
+        confidence_router=router,
+    )
+    outcome = sup.handle("ambiguous request")
+
+    assert outcome.delegated is False
+    assert calls == []  # never reached the transport
+    assert outcome.trace[-1]["kind"] == "gated"
+    assert outcome.trace[-1]["reason"] == "low_confidence"
+
+
+def test_confidence_router_high_agreement_delegates_with_agreement_in_trace():
+    sent: dict = {}
+
+    def transport(endpoint: str, body: dict) -> dict:
+        sent["body"] = body
+        return {"task": {"id": "t"}}
+
+    router = lambda instruction: _consensus(AgentRole.KAGENT, 1.0)
+    sup = Supervisor(
+        {AgentRole.KAGENT: "http://kagent"},
+        transport=transport,
+        card_fetcher=lambda _: KAGENT_CARD,
+        confidence_router=router,
+    )
+    outcome = sup.handle("Show pod status")
+
+    assert outcome.delegated is True
+    assert outcome.trace[0]["agreement"] == 1.0
+    assert sent["body"]["message"]["metadata"]["supervisorRole"] == "kagent"
+
+
+def test_no_confidence_router_keeps_deterministic_path():
+    # Without a router injected, handle uses classify_request and emits no
+    # agreement field — the default behavior is untouched.
+    outcome = Supervisor().handle("Deploy orders-api")
+    assert outcome.trace[0]["kind"] == "route"
+    assert "agreement" not in outcome.trace[0]
 
 
 def test_delegation_carries_structured_task_descriptor():

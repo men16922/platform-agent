@@ -14,7 +14,7 @@ import os
 import uuid
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any, Callable
+from typing import Any, Callable, Protocol
 from urllib import request
 
 
@@ -188,6 +188,21 @@ def matching_skills(card: dict[str, Any], role: AgentRole) -> list[str]:
     return matches
 
 
+class RoutingConfidence(Protocol):
+    """Structural type for a self-consistency vote — satisfied by
+    :class:`~src.agents.ai.orchestration.RouteConsensus` without importing it
+    (which would be a cycle: orchestration already imports this module)."""
+
+    decision: RouteDecision
+    agreement: float
+
+
+# An optional confidence router replaces the deterministic classifier with a voted
+# decision carrying an agreement signal. Injected, so the default path stays
+# LLM-free and offline.
+ConfidenceRouter = Callable[[str], RoutingConfidence]
+
+
 class Supervisor:
     """Route requests to registered provision, deploy, or kagent A2A agents."""
 
@@ -197,14 +212,23 @@ class Supervisor:
         *,
         transport: Transport = post_a2a_message,
         card_fetcher: CardFetcher = fetch_agent_card,
+        confidence_router: ConfidenceRouter | None = None,
+        min_agreement: float = 0.6,
     ):
         self._endpoints = endpoints or {}
         self._transport = transport
         self._card_fetcher = card_fetcher
+        self._confidence_router = confidence_router
+        self._min_agreement = min_agreement
 
     @classmethod
     def from_environment(
-        cls, *, transport: Transport = post_a2a_message, card_fetcher: CardFetcher = fetch_agent_card
+        cls,
+        *,
+        transport: Transport = post_a2a_message,
+        card_fetcher: CardFetcher = fetch_agent_card,
+        confidence_router: ConfidenceRouter | None = None,
+        min_agreement: float = 0.6,
     ) -> "Supervisor":
         """Build the production registry from explicit operator-provided URLs."""
         endpoints = {
@@ -212,11 +236,32 @@ class Supervisor:
             for role, variable in ENDPOINT_ENV.items()
             if (endpoint := os.getenv(variable))
         }
-        return cls(endpoints, transport=transport, card_fetcher=card_fetcher)
+        return cls(
+            endpoints,
+            transport=transport,
+            card_fetcher=card_fetcher,
+            confidence_router=confidence_router,
+            min_agreement=min_agreement,
+        )
 
     def handle(self, instruction: str, *, context_id: str | None = None) -> SupervisorOutcome:
-        decision = classify_request(instruction)
-        trace: list[dict[str, Any]] = [{"kind": "route", "role": decision.role.value, "reason": decision.reason}]
+        # Default path: deterministic, LLM-free. With a confidence router injected,
+        # a low-agreement vote is *gated* (refused) rather than delegated on a
+        # coin-flip — the same reconciliation philosophy used elsewhere.
+        if self._confidence_router is not None:
+            consensus = self._confidence_router(instruction)
+            decision = consensus.decision
+            trace: list[dict[str, Any]] = [
+                {"kind": "route", "role": decision.role.value, "reason": decision.reason,
+                 "agreement": round(consensus.agreement, 4)}
+            ]
+            if consensus.agreement < self._min_agreement:
+                trace.append({"kind": "gated", "reason": "low_confidence",
+                              "agreement": round(consensus.agreement, 4), "role": decision.role.value})
+                return SupervisorOutcome(decision=decision, delegated=False, trace=trace)
+        else:
+            decision = classify_request(instruction)
+            trace = [{"kind": "route", "role": decision.role.value, "reason": decision.reason}]
         endpoint = self._endpoints.get(decision.role)
         if not endpoint:
             trace.append({"kind": "delegation", "status": "not_configured", "role": decision.role.value})
