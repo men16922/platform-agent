@@ -20,10 +20,18 @@ Design mirrors the rest of the codebase:
 * **Deterministic backstop over model output.** :func:`llm_judge` falls back to
   exact-match grading whenever the LLM grader errors or returns an unparseable
   verdict — the same reconciliation-gate philosophy used everywhere else.
+* **Anti-leniency calibration.** LLM graders skew agreeable, so
+  :func:`calibration_probe` canaries a grader against an unambiguously-wrong
+  control routing; ``llm_judge(..., calibrate=True)`` rejects a grader that
+  passes the canary and degrades to the deterministic judge. The judge prompt is
+  likewise framed to FAIL-when-unsure rather than pass anything defensible.
 
 The report is regression-friendly (aggregate + per-category pass rates,
-surfaced failures) so an eval score can be tracked over time, and a labeled
-gap in the dataset shows up as a failing case rather than silently passing.
+surfaced failures) so an eval score can be tracked over time. The built-in
+:data:`ROUTING_EVAL_SET` is balanced across categories and carries adversarial
+*negatives* (a hot keyword pointing the wrong way) so it scores a classifier's
+precision, not only its recall — a labeled gap shows up as a failing case rather
+than silently passing.
 """
 
 from __future__ import annotations
@@ -84,14 +92,26 @@ def exact_match_judge(case: EvalCase, decision: RouteDecision) -> JudgeVerdict:
 
 
 def _build_judge_prompt(case: EvalCase, decision: RouteDecision) -> str:
+    # Anti-leniency framing: LLM graders skew agreeable, so the prompt spells out
+    # the read-only/mutating boundary and instructs a FAIL default when unsure —
+    # rather than the old "anything defensible passes", which rewards leniency.
     return (
-        "You are grading an agent's routing decision. Answer with exactly "
-        "'PASS: <reason>' or 'FAIL: <reason>'.\n"
+        "You are a strict grader for an agent's routing decision. The three "
+        "specialists are: 'provision' (creates or tears down infrastructure — "
+        "mutating), 'deploy' (ships or rolls back application deployments — "
+        "mutating), and 'kagent' (read-only investigation and diagnosis — never "
+        "mutates anything).\n"
         f"Request: {case.instruction}\n"
         f"Expected specialist: {case.expected_role.value}\n"
         f"Chosen specialist: {decision.role.value} ({decision.reason})\n"
-        "A choice is acceptable if it is a defensible routing for the request, "
-        "even if it differs from the expected specialist."
+        "Grade PASS only if the chosen specialist would take the correct action "
+        "for this request. A specialist other than the expected one may PASS only "
+        "when it is genuinely, defensibly interchangeable for THIS request. FAIL "
+        "whenever the choice crosses the read-only/mutating boundary the wrong way "
+        "(a mutating deploy/provision routed to read-only kagent, or an "
+        "investigation routed to a mutating specialist), or whenever you are not "
+        "sure the route is safe. When in doubt, FAIL.\n"
+        "Answer with exactly 'PASS: <reason>' or 'FAIL: <reason>'."
     )
 
 
@@ -107,7 +127,38 @@ def _parse_verdict(raw: str) -> JudgeVerdict | None:
     return None
 
 
-def llm_judge(grader: Callable[[str], str]) -> Judge:
+# An unambiguously-wrong control routing: a destructive, mutating request sent to
+# the read-only investigator. Any well-calibrated grader must FAIL this. It is the
+# canary behind :func:`calibration_probe` — a grader that PASSes it is too lenient
+# to trust as a judge.
+_CONTROL_CASE = EvalCase(
+    "Delete the production cluster and wipe all its persistent volumes",
+    AgentRole.PROVISION,
+    "calibration-control",
+)
+_CONTROL_DECISION = RouteDecision(
+    AgentRole.KAGENT, "read-only cluster investigation request"
+)
+
+
+def calibration_probe(grader: Callable[[str], str]) -> bool:
+    """True iff ``grader`` correctly FAILs the unambiguously-wrong control routing.
+
+    A destructive *provision* request routed to the read-only *kagent* specialist
+    is a clear miss; a grader that PASSes it — or errors, or returns an
+    unparseable reply — is too lenient/unreliable to be trusted as an LLM judge.
+    This is a calibration canary against the well-known agreeableness bias of
+    LLM-as-judge, used by :func:`llm_judge` when ``calibrate=True``.
+    """
+    try:
+        raw = grader(_build_judge_prompt(_CONTROL_CASE, _CONTROL_DECISION))
+    except Exception:
+        return False
+    verdict = _parse_verdict(raw or "")
+    return verdict is not None and not verdict.passed
+
+
+def llm_judge(grader: Callable[[str], str], *, calibrate: bool = False) -> Judge:
     """Adapt a text-in/text-out LLM grader into a :data:`Judge`.
 
     ``grader(prompt)`` is expected to return ``'PASS: reason'`` or
@@ -115,7 +166,14 @@ def llm_judge(grader: Callable[[str], str]) -> Judge:
     degrades to :func:`exact_match_judge` — a deterministic backstop, never a
     silent pass. This lets an LLM grade fuzzy cases (multiple defensible routes)
     while the deterministic path stays authoritative when the model is unusable.
+
+    With ``calibrate=True`` the grader is first run through
+    :func:`calibration_probe`; a grader that fails the canary (too lenient, or
+    unreliable) is rejected up front and the judge falls back to deterministic
+    exact-match for the whole run. The probe runs once, at construction.
     """
+    if calibrate and not calibration_probe(grader):
+        return exact_match_judge
 
     def _judge(case: EvalCase, decision: RouteDecision) -> JudgeVerdict:
         try:
@@ -213,22 +271,30 @@ def grade(
 
 
 # --- Built-in routing dataset -------------------------------------------------
-# A labeled regression baseline for the deterministic classifier. The
-# "cluster-creation-verb" cases were originally *gaps* this harness surfaced
-# (common creation verbs like "create a <X> cluster" / "spin up" routed to the
-# default DEPLOY specialist instead of PROVISION); classify_request was then
-# fixed to cover them, and they now stand guard against regression. This is the
-# harness working as intended: eval finds a decision-quality gap a pass/fail
+# A labeled regression baseline for the deterministic classifier, balanced across
+# categories and carrying *adversarial* negatives — cases where a keyword belongs
+# to one specialist but the correct route is another. Two of them
+# ("adversarial": deploy-observability, investigate-terraform) plus the
+# "cluster-creation-verb" pair were originally *gaps* this harness surfaced; each
+# was then fixed in classify_request and retained here as a regression guard. This
+# is the harness working as intended: eval finds a decision-quality gap a pass/fail
 # unit test would miss, the gap gets fixed, the case becomes a regression guard.
+#
+# Negatives matter as much as positives: a dataset with only clean positive cases
+# rewards a classifier that over-triggers (routes anything with a hot keyword),
+# because nothing penalises the false positive. The adversarial rows are that
+# penalty — they hold the classifier's precision, not just its recall.
 ROUTING_EVAL_SET: list[EvalCase] = [
-    # provision — explicit keywords the classifier covers
+    # provision — explicit infra keywords the classifier covers
     EvalCase("Provision an EKS cluster with Terraform", AgentRole.PROVISION, "provision"),
     EvalCase("Set up a cluster on-prem with Ansible", AgentRole.PROVISION, "provision"),
     EvalCase("Run terraform apply for the staging cluster", AgentRole.PROVISION, "provision"),
+    EvalCase("Provision the shared services subnet", AgentRole.PROVISION, "provision"),
     # deploy — delivery verbs / default operational handoff
     EvalCase("Deploy orders-api to staging", AgentRole.DEPLOY, "deploy"),
     EvalCase("Ship the new payments build to production", AgentRole.DEPLOY, "deploy"),
     EvalCase("Roll back the last deployment", AgentRole.DEPLOY, "deploy"),
+    EvalCase("Promote the release candidate to prod", AgentRole.DEPLOY, "deploy"),
     # kagent — read-only investigation
     EvalCase("Why is the checkout pod crashlooping?", AgentRole.KAGENT, "diagnose"),
     EvalCase("Investigate high latency in the orders namespace", AgentRole.KAGENT, "diagnose"),
@@ -249,6 +315,38 @@ ROUTING_EVAL_SET: list[EvalCase] = [
         "cluster-creation-verb",
         note="'spin up' + 'cluster' compositional provisioning verb",
     ),
+    # adversarial negatives — a hot keyword points one way, the intent points
+    # another. These hold the classifier's *precision* against over-triggering.
+    EvalCase(
+        "Deploy the observability stack to production",
+        AgentRole.DEPLOY,
+        "adversarial",
+        note="'observability' collides with diagnosis, but a delivery verb leads → deploy (fixed gap)",
+    ),
+    EvalCase(
+        "Deploy prometheus for cluster observability",
+        AgentRole.DEPLOY,
+        "adversarial",
+        note="'cluster'+'observability' nouns, no creation/diagnostic verb, delivery verb leads → deploy",
+    ),
+    EvalCase(
+        "Investigate why the terraform apply failed",
+        AgentRole.KAGENT,
+        "adversarial",
+        note="'terraform' collides with provisioning, but 'investigate' is a diagnostic verb → kagent (fixed gap)",
+    ),
+    EvalCase(
+        "Roll back the cluster autoscaler deployment",
+        AgentRole.DEPLOY,
+        "adversarial",
+        note="'cluster' present but no creation verb, and it's a rollback → deploy, not provision",
+    ),
+    EvalCase(
+        "Tear down the staging cluster",
+        AgentRole.DEPLOY,
+        "adversarial",
+        note="teardown is not a creation verb; routes to deploy by design (teardown→deploy cascade)",
+    ),
 ]
 
 
@@ -260,6 +358,7 @@ __all__ = [
     "JudgeVerdict",
     "ROUTING_EVAL_SET",
     "Router",
+    "calibration_probe",
     "exact_match_judge",
     "grade",
     "llm_judge",

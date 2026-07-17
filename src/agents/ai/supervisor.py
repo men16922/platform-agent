@@ -45,19 +45,42 @@ class SupervisorOutcome:
 
 
 def classify_request(instruction: str) -> RouteDecision:
-    """Choose a specialist without invoking an LLM or executing any tool."""
+    """Choose a specialist without invoking an LLM or executing any tool.
+
+    Precedence, not first-substring-wins: an explicit *intent verb* beats an
+    incidental keyword that shares the sentence. This resolves two over-triggers
+    the eval harness surfaced — "Investigate why the terraform apply failed" is
+    diagnosis (not provisioning, despite "terraform"), and "Deploy the
+    observability stack" is delivery (not investigation, despite "observability").
+    """
     text = instruction.lower()
+
+    # 1. An explicit diagnostic verb/question is read-only investigation even when
+    #    a provisioning noun (terraform, ansible) shares the sentence — the leading
+    #    intent wins over the incidental keyword.
+    if any(term in text for term in ("diagnose", "investigate", "troubleshoot", "debug", "why is", "why are", "why did")):
+        return RouteDecision(AgentRole.KAGENT, "read-only cluster investigation request")
+
+    # 2. Provisioning: explicit infra terms, or a cluster-creation verb applied to
+    #    a named cluster ("create a GKE cluster", "spin up a kind cluster") where
+    #    the literal "create cluster" bigram is split by the cluster's name.
     provision_terms = ("provision", "terraform", "ansible", "create cluster", "setup cluster", "set up cluster")
-    # A cluster-creation verb with an interpolated cluster name — "create a GKE
-    # cluster", "spin up a kind cluster" — is provisioning even though the literal
-    # "create cluster" bigram is split by the cluster's name.
     creation_verbs = ("create", "spin up", "spin-up", "stand up", "stand-up", "bootstrap")
     if any(term in text for term in provision_terms) or (
         "cluster" in text and any(verb in text for verb in creation_verbs)
     ):
         return RouteDecision(AgentRole.PROVISION, "explicit infrastructure or cluster provisioning request")
-    if any(term in text for term in ("diagnose", "investigate", "debug", "logs", "log ", "pods", "pod ", "namespace", "promql", "istio", "observability", "why is", "why are", "status")):
+
+    # 3. Weaker investigation *nouns* (a resource named without a diagnostic verb)
+    #    still read as a look — unless a delivery verb leads, since deploying an
+    #    observability/logging stack is delivery, not investigation. ("observability"
+    #    was dropped as a standalone trigger: it names deploy and diagnose targets
+    #    alike, so it was a poor routing signal.)
+    delivery_verbs = ("deploy", "ship ", "install", "release", "roll out", "rollout", "promote")
+    investigation_nouns = ("logs", "log ", "pods", "pod ", "namespace", "promql", "istio", "status")
+    if not any(v in text for v in delivery_verbs) and any(n in text for n in investigation_nouns):
         return RouteDecision(AgentRole.KAGENT, "read-only cluster investigation request")
+
     return RouteDecision(AgentRole.DEPLOY, "delivery request or default operational handoff")
 
 

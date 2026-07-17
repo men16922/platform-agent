@@ -10,6 +10,7 @@ from src.agents.ai.eval_harness import (
     CaseResult,
     EvalCase,
     EvalReport,
+    calibration_probe,
     exact_match_judge,
     grade,
     llm_judge,
@@ -137,3 +138,103 @@ def test_builtin_dataset_is_clean_regression_baseline():
     report_dict = report.to_dict()
     assert report_dict["total"] == len(ROUTING_EVAL_SET)
     assert report_dict["failures"] == []
+
+
+# --- dataset hardening: balance + adversarial negatives ----------------------
+
+
+def test_dataset_carries_balanced_adversarial_negatives():
+    # Precision needs negatives: cases where a hot keyword points one way but the
+    # correct route is another. Assert the adversarial bucket exists, is
+    # non-trivial, and mixes target roles (not one-directional).
+    for core in ("provision", "deploy", "diagnose"):
+        n = sum(1 for c in ROUTING_EVAL_SET if c.category == core)
+        assert n >= 4, f"category '{core}' underweight for balance: {n}"
+
+    adversarial = [c for c in ROUTING_EVAL_SET if c.category == "adversarial"]
+    assert len(adversarial) >= 3, "dataset should carry adversarial negatives"
+    target_roles = {c.expected_role for c in adversarial}
+    assert len(target_roles) >= 2, "negatives should not all point one direction"
+
+
+def test_adversarial_keyword_collisions_route_by_intent_not_keyword():
+    # The originally-surfaced gaps, retained as guards: a provisioning/diagnosis
+    # keyword must not override the actual delivery/investigation intent.
+    by_text = {c.instruction: c for c in ROUTING_EVAL_SET}
+    observability = by_text["Deploy the observability stack to production"]
+    terraform = by_text["Investigate why the terraform apply failed"]
+    assert observability.expected_role is AgentRole.DEPLOY
+    assert terraform.expected_role is AgentRole.KAGENT
+    # And they grade clean under the fixed classifier.
+    report = grade([observability, terraform])
+    assert report.pass_rate == 1.0
+
+
+# --- judge anti-leniency: calibration + empty / "don't know" backstop --------
+
+
+def test_calibration_probe_rejects_lenient_grader():
+    # A grader that rubber-stamps everything PASSes the wrong-on-purpose control.
+    always_pass = lambda prompt: "PASS: looks fine to me"
+    assert calibration_probe(always_pass) is False
+
+
+def test_calibration_probe_accepts_discerning_grader():
+    # A grader that FAILs the control (a destructive request routed to read-only
+    # kagent) is trusted, even though it would pass other cases.
+    def discerning(prompt: str) -> str:
+        if "Delete the production cluster" in prompt:
+            return "FAIL: destructive request routed to read-only kagent"
+        return "PASS: acceptable route"
+
+    assert calibration_probe(discerning) is True
+
+
+def test_calibration_probe_rejects_broken_or_unparseable_grader():
+    def broken(prompt: str) -> str:
+        raise RuntimeError("model down")
+
+    assert calibration_probe(broken) is False
+    assert calibration_probe(lambda prompt: "no idea") is False
+
+
+def test_llm_judge_calibrate_degrades_lenient_grader_to_exact_match():
+    # calibrate=True: a lenient grader is rejected up front, so a genuinely-wrong
+    # route is FAILed deterministically instead of being rubber-stamped.
+    always_pass = lambda prompt: "PASS: sure"
+    judge = llm_judge(always_pass, calibrate=True)
+    case = EvalCase("deploy orders-api", AgentRole.DEPLOY)
+    wrong = judge(case, RouteDecision(AgentRole.KAGENT, "r"))
+    right = judge(case, RouteDecision(AgentRole.DEPLOY, "r"))
+    assert not wrong.passed and wrong.confidence == 1.0  # deterministic backstop
+    assert right.passed and right.confidence == 1.0
+
+
+def test_llm_judge_calibrate_trusts_discerning_grader():
+    # A discerning grader survives calibration and still applies its own judgment
+    # on a fuzzy case (accepting a defensible-but-different route).
+    def discerning(prompt: str) -> str:
+        if "Delete the production cluster" in prompt:
+            return "FAIL: destructive to read-only"
+        return "PASS: defensible route"
+
+    judge = llm_judge(discerning, calibrate=True)
+    verdict = judge(EvalCase("ambiguous", AgentRole.PROVISION), RouteDecision(AgentRole.DEPLOY, "r"))
+    assert verdict.passed and verdict.confidence == 0.75
+
+
+def test_llm_judge_empty_reply_falls_back_deterministically():
+    # An empty grader reply is never a silent pass — it degrades to exact match.
+    judge = llm_judge(lambda prompt: "")
+    case = EvalCase("x", AgentRole.DEPLOY)
+    assert judge(case, RouteDecision(AgentRole.DEPLOY, "r")).passed  # roles match
+    bad = judge(case, RouteDecision(AgentRole.KAGENT, "r"))
+    assert not bad.passed and bad.confidence == 1.0  # roles differ -> deterministic fail
+
+
+def test_llm_judge_dont_know_reply_falls_back_deterministically():
+    # "I don't know" / "모름" style non-verdicts must not silently pass.
+    for reply in ("I don't know", "모름", "unsure, could be either"):
+        judge = llm_judge(lambda prompt, r=reply: r)
+        bad = judge(EvalCase("x", AgentRole.DEPLOY), RouteDecision(AgentRole.KAGENT, "r"))
+        assert not bad.passed and bad.confidence == 1.0, reply
