@@ -102,6 +102,20 @@ None of the above is "done" until it's exercised:
 
 ---
 
+## The same thesis, now shipping from the platform vendors
+
+We built these guardrails because they were the only way we'd trust an agent with `kubectl`. It's worth noting that the major agent platforms are converging on the same conclusions.
+
+- **Google's ADK 2.0** introduces "Agentic Workflows" — a directed-graph runtime that reserves the LLM for genuine reasoning and runs routing, conditional branching, and error handling as deterministic code, explicitly to gain reliability and to mitigate prompt injection by decoupling execution control from the model. That is our reconciliation gate and self-consistency fallback restated as a framework primitive: *deterministic control plane, LLM for cognition only.*
+- **The A2A protocol's** "zero context pollution" property — specialist peers manage their own state so the primary agent's context window stays clean — is exactly why our delegation sends each specialist only its own instruction and treats the A2A `contextId` as a correlation key, never a growing context blob.
+- **Google's `agents-cli`** makes an eval loop (dataset + LLM-as-judge + optimize) first-class alongside the build — a useful reminder that deterministic *tests* (our `make check`) and *decision-quality evaluation* are different layers. The latter is on our roadmap.
+
+The point isn't that anyone copied a side project — it's that when independent teams give an LLM real hands, they reach for the same deterministic guardrails. Convergence is a good sign the design is right, not a novelty.
+
+*References: Google Developers Blog — [Why we built ADK 2.0](https://developers.googleblog.com/why-we-built-adk-20/), [How A2A is building a world of collaborative agents](https://developers.googleblog.com/how-a2a-is-building-a-world-of-collaborative-agents/); [`google/agents-cli`](https://github.com/google/agents-cli).*
+
+---
+
 ## Closing
 
 The headline feature of an agentic platform tool is autonomy. The *shippable* feature is trust. Most of the engineering in `platform-agent` went not into teaching the model to call more tools, but into the boundaries around those calls: grounding conclusions in evidence, voting on decisions, gating cost, breaking circuits, killing switches, and always keeping a deterministic path that wins when the model is unsure.

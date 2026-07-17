@@ -1,6 +1,6 @@
 # NEXT_PLAN — platform-agent
 
-최종 갱신: 2026-07-15
+최종 갱신: 2026-07-17
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md` / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
@@ -20,6 +20,25 @@
 - ~~2번째 AWS 계정 cross-account **성공** 경로 라이브~~ — **계획에서 제거(2026-07-15, 사용자 결정)**. #4 코드+폴백/실패 경로는 실 STS로 실증 완료; 실 크로스계정 성공은 하지 않음.
 
 ## 열린 작업 (로드맵 — 성격별)
+
+### Google Agent 생태계 대조 후속 (2026-07-17, `docs/reference/google-agent-ecosystem-2026.md` 근거)
+> ADK 2.0("Agentic Workflows"=deterministic 그래프+LLM은 추론만) + A2A(협업 에이전트 4대 이점) + agents-cli(GCP 에이전트 빌드 메타-툴)를 우리 설계와 대조. **핵심 결론: 철학·기능 대부분 이미 우리가 구현(reconciliation gate·self-consistency 폴백·Guardian·specialists-as-tools·자체 런타임 호스팅 3종)** → 마이그레이션/채택 대상 아님. 아래 4건만 잔여.
+
+- [x] ~~**① 아티클 포지셔닝 (자율, 낮은 리스크)**~~ — **완료(2026-07-17): 프레이밍 작성.** EN `platform-agent-architecture.md` + KO `-ko.md` 맺으며 앞에 "같은 논지, 이제 플랫폼 벤더가 출시하다" 섹션 추가(ADK 2.0 deterministic-workflow·A2A zero-context-pollution·agents-cli eval loop → 우리 reconciliation/self-consistency/최소-페이로드 위임과 수렴, 출처 3링크). ⚠️ **미검증 벤치마크(50%/20%)·버전 수치는 정성적으로만 서술, 인용 안 함.** 실제 **배포**(LinkedIn/Medium)는 여전히 사용자 몫(아래 외부/사용자 참조).
+- [x] ~~**② context 격리 감사**~~ — **완료(2026-07-17): 델타 아님(no-op).** 읽기전용 감사 결과 Orchestrator step은 특화 에이전트에 `parts:[{"text": instruction}]`(그 step instruction만) 전송(`supervisor.py:171`); `context_id`는 A2A 프로토콜 `contextId` 상관관계 UUID(`:174`)지 누적 컨텍스트 페이로드 아님 → 이미 최소 스코프, shared `contextId`는 A2A "Zero Context Pollution" 정석. 초안 프레이밍(docstring 오독) 정정. 코드 무변경.
+- [x] ~~**③ 버전 트래킹**~~ — **규명 완료(2026-07-17): 백로그 노트.** (a) **우리 클라이언트 A2A는 stdlib-only**(`supervisor.py` json/uuid/urllib, `a2a` SDK import 0) → A2A SDK 버전 드리프트는 우리 코드에 **무영향**(SDK는 원격 kagent 서버에만 존재, 의도적 경량 의존). (b) ADK 의존은 `google-adk>=1.0`(`pyproject.toml`), 실사용은 `adk_deployer.py`(Gemini 경로)만. **캘린더 항목**: ADK Python GA **2026-03** 후 workflow-graph API가 Gemini 서브에이전트 경로를 개선 가능한지 재평가(단 우리 Orchestrator는 클라우드-중립, ADK는 GCP라 코어 대체는 아님). 지금 액션 없음.
+- [x] ~~**④ eval 하네스 스파이크**~~ — **완료(2026-07-17): 실익 확인, gate 748→758.** 신규 `src/agents/ai/eval_harness.py`(클라우드-중립·오프라인): 라벨 데이터셋(`EvalCase`)+injectable `Router`/`Judge`, `exact_match_judge`(결정론 기본)+`llm_judge`(LLM-as-judge, 파싱실패/에러 시 exact-match **결정론 백스톱**), `EvalReport`(pass_rate·카테고리별·failures·`meets(threshold)` 회귀 가드), `grade()`, 빌트인 `ROUTING_EVAL_SET`(13케이스). +10 test. **실익 실증 + 루프 완결**: 결정론 classifier 스파이크 → 11/13(84.6%), **실제 라우팅 갭 2건 표면화**("Create a GKE cluster"·"Spin up a kind cluster" → PROVISION이어야 하나 DEPLOY; 키워드가 'create a X cluster'/'spin up' 미커버). → **`classify_request` 수정**(cluster+생성동사 조합 감지, 기존 DEPLOY/KAGENT 케이스 회귀 0) → eval set **13/13**, 갭 케이스는 회귀 가드로 전환. eval 하네스 = 유닛테스트가 못 잡는 결정-품질 갭 발견→수정→회귀가드 루프 실증. 후속(선택): LLM router/judge로 모델 품질 평가 확장.
+- 참고(범위 밖): A2A "Dynamic Autonomy"(수신 에이전트 되묻기/push-back)는 매력적이나 **요청 이상 기능** → 자율 추가 금지, 메모만. agents-cli는 **GCP lock-in + Pre-GA**라 툴 자체 채택 금지(방법론만).
+
+### cwc-workshops 대조 후속 (2026-07-17, `docs/reference/cwc-workshops.md` 근거)
+> Anthropic Code with Claude 워크샵 9개(병렬 3-Explore 조사). **런타임(CMA 베타)은 전이 안 됨(우리 자체 스택 보유), 계약·패턴만 전이.** 방금 만든 ④ eval 하네스와 직결 — 우리 방향 독립검증 + 다음 단계 제시.
+
+- [ ] **⑤ eval 하네스 성숙 (자율 가능 코드 — Tier 1)** — `eval_harness.py`에: (a) 선언적 `Grader` 리스트 + `kind:"code"|"judge"` 분류(단일 Judge→명명 메트릭 다중), (b) **PASS/FAIL/PASS-SLOW 3-상태 + budget/action-sink grader**(에이전트가 클러스터에 한 부수효과 채점), (c) pinned-baseline 델타 스코어카드(회귀 diff), (d) `--trials N` majority vote(self-consistency 재사용). 비파괴·기존 API 위에 증분.
+- [ ] **⑥ `ROUTING_EVAL_SET` + `llm_judge` 하드닝 (자율 가능 코드 — Tier 1 audit)** — 즉시 실익. 현재 데이터셋 결함: 한쪽방향뿐(네거티브 0)·카테고리 불균형·n=13 작음; `llm_judge` 프롬프트 관대편향+알려진 네거티브 캘리브레이션 가드 없음. 네거티브 케이스 추가·카테고리 균형·judge anti-leniency 가드+빈문자열/"모름" 실패 확인 테스트.
+- [ ] **⑦ 모델/파라미터 스윕 → Model Router 정량화 (자율 가능 코드 — Tier 2, 가장 큰 새 갭)** — 우리 Router는 fit 주석만·측정 없음. `model×thinking×effort` 그리드, LLM 호출 1지점 env-var 주입, **`cost_per_success`/`seconds_per_success`** headline을 `ROUTING_EVAL_SET`에 실행 → 정적주석→증거기반 선택. resumable runner. (실 API spend 발생 시 사용자 판단.)
+- [ ] **⑧ A2A 위임 계약 하드닝 (설계·승인 — Tier 3)** — `supervisor.handle`가 특화에 자유텍스트 instruction 그대로 전송. injection-safe화: 특화 시스템프롬프트 서버측 고정·구조화 `{task_type,params}`·untrusted sanitize/cap·최소권한·graceful degradation(낮은 confidence 폴백→게이트). TOOL→SKILL→SUBAGENT smell-test로 A2A 경계 형식화.
+- [ ] **⑨ (부차) 대시보드 SSE 하드닝 + 회수가능 메모리 tier (설계)** — SSE: event-id dedup·라이브 tail 먼저 열고 backfill·READY 센티넬·thread→agent 귀속(per-agent 탭). 메모리: `deploy_recorder` trace→시그니처 키드 distilled memory tier + 실행 시작 시 매칭 과거 인시던트 주입 + Dreaming식 주기 consolidation.
+- 참고(범위 밖/안티): CMA 베타 API·`ant` CLI 채택 금지(계약만); **정적 무조건 fan-out은 우리 self-consistency 라우팅 회귀라 금지**; 자유텍스트 spawn_subagent/cat-files 핵 금지.
 
 ### 리팩토링 후속 (선택 — 2026-07-17 구조 패스에서 판단 보류)
 - [ ] **`operations` 그룹핑 축 통일** — AWS=role별 서브패키지(`operations/{executor,detector,...}/`) vs gcp/azure=cloud별 패키지(`operations/{gcp,azure}/{role}.py`). 한 축으로 통일하면 일관성↑이나 import churn(테스트+CDK asset 경로) 반나절, 별도 승인.

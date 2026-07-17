@@ -7,6 +7,31 @@
 
 ---
 
+## 2026-07-17 — cwc-workshops(Anthropic Code with Claude) 대조 → reference 노트 + NEXT_PLAN 후속 ⑤~⑨ (코드 무변경)
+
+- Status: 사용자 요청으로 `/Users/men1692/Desktop/AI/cwc-workshops`(Anthropic 공식 워크샵 9개) 대조. 병렬 3-Explore(eval 방법론·오케스트레이션/프로덕션·메모리)로 platform-agent 차용 후보만 추출. 방금 만든 ④ eval 하네스와 직결.
+- Changed (docs only): 신규 `docs/reference/cwc-workshops.md`(메타결론: CMA 베타 런타임 전이X·계약만; Tier1 eval 성숙·Tier2 모델스윕·Tier3 A2A 위임계약·Tier4 SSE/메모리, file:line 인용 + `ROUTING_EVAL_SET` 자기비판). `NEXT_PLAN.md` "cwc-workshops 후속" 블록 ⑤~⑨(⑤eval 멀티메트릭/PASS-SLOW/action-sink·⑥데이터셋+llm_judge 하드닝·⑦모델 스윕 정량화=자율가능, ⑧A2A injection-safe 위임·⑨SSE/회수가능 메모리=설계). `AGENT_BRIEF.md` NEXT SESSION 포인터 갱신.
+- Verified: 코드 무변경(gate 758 유지, 미실행). 문서 라인수 NEXT_PLAN 71/120·brief 42/60·cwc-workshops 44. 핵심 규명: 워크샵 전부 CMA 베타 API 위라 런타임 전이 불가(우리 자체 Orchestrator/A2A/MCP 스택), **계약·패턴만** 전이. eval 방법론 워크샵들이 우리 하네스 방향 독립검증+다음단계 제시.
+- Blockers: 없음.
+- Next: (자율) ⑥ 데이터셋+llm_judge 하드닝(즉시 실익) or ⑤ eval 멀티메트릭 or ⑦ 모델 스윕 / 세션 누적분 커밋(문서 다수 + eval_harness/supervisor 코드).
+
+## 2026-07-17 — Google 생태계 후속 ①③④ 완료: 아티클 포지셔닝 + 버전 규명 + eval 하네스 스파이크 (gate 748→758)
+
+- Status: `/goal 나머지 완료시까지 수행`으로 Google Agent 생태계 대조의 잔여 자율 항목을 완결. ②(context 격리)는 직전에 no-op 규명, 이번엔 ①③④ 수행.
+- Changed: **①(docs)** EN `platform-agent-architecture.md` + KO `-ko.md` 맺으며 앞에 "같은 논지, 이제 플랫폼 벤더가 출시하다" 수렴 섹션(ADK 2.0 deterministic-workflow·A2A zero-context-pollution·agents-cli eval loop ↔ 우리 reconciliation/self-consistency/최소-페이로드 위임, 출처 3링크; 미검증 벤치마크는 정성 서술만). **④(code)** 신규 `src/agents/ai/eval_harness.py`: 클라우드-중립·오프라인 decision-quality 평가 계층 — `EvalCase` 라벨 데이터셋 + injectable `Router`/`Judge`, `exact_match_judge`(결정론) + `llm_judge`(LLM-as-judge, 파싱실패/에러 시 exact-match **결정론 백스톱**), `EvalReport`(pass_rate·카테고리별·`meets(threshold)` 회귀 가드), 빌트인 `ROUTING_EVAL_SET`(13). +10 test(`tests/test_eval_harness.py`, 하네스 메커니즘만 검증).
+- Verified: `make check` → **758 passed, 1 skipped**(229.91s, 748→758). **④ 실익 실증 + 루프 완결**: 결정론 classifier 스파이크 → 11/13(84.6%), **실제 라우팅 갭 2건 표면화**("Create a GKE cluster"·"Spin up a kind cluster" → PROVISION이어야 하나 DEPLOY; classifier 키워드가 'create a X cluster'/'spin up' 미커버) → **`supervisor.classify_request` 수정**(cluster+생성동사 조합 감지, 기존 DEPLOY/KAGENT 케이스 회귀 0 확인) → eval set **13/13**, 갭 케이스는 회귀 가드로 전환. 유닛테스트가 못 잡는 결정-품질 갭을 발견→수정→가드로 닫는 루프 실증. **③ 규명**: 우리 클라이언트 A2A=stdlib-only(`a2a` SDK import 0, `supervisor.py`)라 A2A SDK 드리프트 무영향; ADK=`google-adk>=1.0`(`adk_deployer.py` Gemini 경로만), ADK Python GA 2026-03 후 재평가는 캘린더 항목.
+- Blockers: 없음. reference 노트+NEXT_PLAN ①②③④ 전부 완료 마킹.
+- Next: (선택) LLM router/judge로 eval 확장 / 커밋·푸시 / 잔여 인프라·사용자(아티클 배포·Slack·OAuth 데모·State Store·Helm/Terraform).
+
+## 2026-07-17 — Google Agent 생태계 3자료 대조 → reference 노트 + NEXT_PLAN 후속 4건 (코드 무변경)
+
+- Status: ADK 2.0·A2A·agents-cli(구글 developer 블로그+레포) 3자료를 우리 설계와 대조. **핵심 결론: 철학/기능 대부분 이미 구현**(reconciliation gate·self-consistency 폴백·Guardian·specialists-as-tools·자체 런타임 호스팅 3종)이라 마이그레이션/채택 대상 아님. 순수 문서 작업.
+- Changed: 신규 `docs/reference/google-agent-ecosystem-2026.md`(A: ADK 2.0 deterministic-workflow 철학 대조표+유일 델타=context 격리 · B: A2A 4대 이점 vs 우리 상태(Zero Context Pollution=부분·Dynamic Autonomy=갭) · C: agents-cli 레이어차·유일 차용후보=eval 하네스 · 액션 4). `NEXT_PLAN.md`에 "Google 생태계 후속" 블록(①아티클 포지셔닝 ②context 격리 감사 ③버전 트래킹 ④eval 하네스, ①④=자율가능·②=감사→승인게이트).
+- Verified: 코드 무변경(gate 748 유지, 미실행). 문서 라인수 NEXT_PLAN 61/120·reference 82. ⚠️ A2A SDK 버전표·벤치마크 50%/20%는 요약모델 추출값이라 아티클 인용 전 원문 재확인 필요(문서에 명기).
+- Audit(②, 읽기전용 수행): **델타 아님(no-op).** Orchestrator step은 특화 에이전트에 `parts:[{"text": instruction}]`(그 step instruction만) 전송(`supervisor.py:171`), `context_id`는 A2A `contextId` 상관관계 UUID(`:174`)지 누적 컨텍스트 아님 → 이미 최소 스코프, shared `contextId`는 A2A "Zero Context Pollution" 정석. 초안의 "shared context_id=오염" 프레이밍(docstring 오독) 정정. 코드 무변경. reference §A/§B + NEXT_PLAN ② 갱신.
+- Blockers: 없음.
+- Next: 잔여 자율=④eval 하네스 스파이크·①아티클 포지셔닝. ③버전 트래킹(백로그). 인프라/사용자 항목 잔여.
+
 ## 2026-07-17 — repo 구조·소스 리팩토링 + docs 병합 (dead code 제거·executor 공통화·post_webhook 버그수정)
 
 - Status: 전체 폴더구조·소스 리팩토링 검토(병렬 3-에이전트 조사: src 구조·cross-cloud 중복·dashboard/tests/infra) 후 안전분만 실행. 커밋 4개, gate 748 유지, push 안 함.

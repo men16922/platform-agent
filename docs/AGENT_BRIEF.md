@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-17
 
-> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **repo 구조·소스 리팩토링 패스 완료(gate **748** 유지, HEAD `47adf0b`, origin보다 4커밋 ahead·미푸시).** 이번 세션: 유령 패키지 5개 삭제 + `.terraform` 16MB 추적해제 + `operations/_executor_common.py`·`_k8s_rest.py` 중복 추출 + **post_webhook 오호출 버그 수정**(gcp/azure Slack 무전송) + docs 병합(README↔DOCS_POLICY)·stale 10개 제거. **보류(판단)**: approval_bridge 분리(테스트 patch-결합)·operations 그룹핑 축 통일(#3)은 별도 승인. 그 전 세션: Tier 1+2 완결·라이브 실증·아키텍처 배선 ①②. **잔여는 전부 사용자/인프라**: push·아티클 배포(`docs/post/*` ready)·OAuth 데모·Slack App·State Store/Alertmanager·Helm/Terraform(Tier 3). 하네스: billable create·보안완화는 사용자 `!` 필요.
+> ▶ NEXT SESSION: `docs/NEXT_PLAN.md` — **Google Agent 3자료(ADK 2.0·A2A·agents-cli) 대조 + 후속 ①②③④ 전부 완료(gate 748→758).** ①아티클 수렴 섹션(EN+KO) ②context 격리=델타 아님(no-op) ③A2A stdlib-only 규명 ④**eval 하네스 스파이크**(신규 `src/agents/ai/eval_harness.py`, decision-quality 오프라인 평가, 실 라우팅 갭 2건 표면화). 노트=`docs/reference/google-agent-ecosystem-2026.md`. **+cwc-workshops 대조**(Anthropic Code with Claude 9워크샵, 노트=`docs/reference/cwc-workshops.md`): 런타임(CMA 베타) 전이X·계약만, eval 하네스와 직결. NEXT_PLAN 후속 ⑤~⑨(⑤eval 성숙·⑥데이터셋/judge 하드닝·⑦모델 스윕=자율가능, ⑧A2A 위임계약·⑨SSE/메모리=설계). **미커밋 다수**. **다음 후보(자율)**: ⑥ 데이터셋+llm_judge 하드닝(즉시 실익) or ⑤ eval 멀티메트릭 or ⑦ 모델 스윕 / 커밋. **잔여 인프라/사용자**: 아티클 배포(`docs/post/*` ready)·OAuth 데모·Slack App·State Store/Alertmanager·Helm/Terraform(Tier 3). 하네스: billable create·보안완화는 사용자 `!` 필요.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 

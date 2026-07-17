@@ -103,6 +103,20 @@
 
 ---
 
+## 같은 논지, 이제 플랫폼 벤더가 출시하다
+
+우리가 이 가드레일들을 만든 건, 그것만이 에이전트에게 `kubectl`을 맡길 유일한 방법이었기 때문이다. 그런데 주요 에이전트 플랫폼들이 같은 결론으로 수렴하고 있다.
+
+- **Google ADK 2.0**는 "Agentic Workflows"를 도입했다 — LLM은 진짜 추론에만 예약하고 라우팅·조건분기·에러핸들링은 결정론적 코드로 실행하는 directed-graph 런타임으로, 명시적으로 신뢰성을 얻고 실행 제어를 모델에서 분리해 prompt injection을 완화하기 위함이다. 이는 우리의 reconciliation 게이트와 self-consistency 폴백을 프레임워크 기본기로 재진술한 것이다: *결정론적 컨트롤 플레인, LLM은 인지에만.*
+- **A2A 프로토콜**의 "zero context pollution"(특화 피어가 자기 state를 독립 관리해 주 에이전트의 컨텍스트 창이 오염되지 않음)은, 우리 위임이 각 특화 에이전트에 그 자신의 instruction만 보내고 A2A `contextId`를 (커지는 컨텍스트 블롭이 아니라) 상관관계 키로 다루는 이유와 정확히 같다.
+- **Google `agents-cli`**는 빌드와 나란히 eval 루프(데이터셋 + LLM-as-judge + 최적화)를 1급으로 만든다 — 결정론적 *테스트*(우리 `make check`)와 *결정-품질 평가*가 별개 계층임을 상기시킨다. 후자는 우리 로드맵에 있다.
+
+요점은 누가 사이드 프로젝트를 베꼈다는 게 아니라, 독립적인 팀들이 LLM에게 진짜 손을 쥐여줄 때 같은 결정론적 가드레일에 손을 뻗는다는 것이다. 수렴은 설계가 옳다는 좋은 신호지 신기함이 아니다.
+
+*참고: Google Developers Blog — [Why we built ADK 2.0](https://developers.googleblog.com/why-we-built-adk-20/), [How A2A is building a world of collaborative agents](https://developers.googleblog.com/how-a2a-is-building-a-world-of-collaborative-agents/); [`google/agents-cli`](https://github.com/google/agents-cli).*
+
+---
+
 ## 맺으며
 
 에이전틱 플랫폼 도구의 표제 기능은 자율성이다. *출시 가능한* 기능은 신뢰다. `platform-agent` 엔지니어링의 대부분은 모델이 더 많은 도구를 호출하게 가르치는 데가 아니라, 그 호출들 **주변의 경계**에 들어갔다 — 결론을 증거에 근거시키고, 결정을 투표하고, 비용을 게이팅하고, 서킷을 끊고, 스위치를 내리고, 모델이 확신 없을 때 이기는 결정론적 경로를 언제나 남겨두는 것.
