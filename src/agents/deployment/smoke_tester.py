@@ -8,15 +8,19 @@ from typing import Any
 
 
 def build_smoke_test_plan(deployment: dict[str, Any]) -> dict[str, Any]:
-    service_name = deployment["service_name"]
-    base_url = deployment["base_url"].rstrip("/")
+    service_name = deployment.get("service_name", "unknown")
+    # base_url is optional: dashboard-triggered validation runs carry no endpoint,
+    # and a plan with no checks passes vacuously (same as no_canary_data_available).
+    base_url = (deployment.get("base_url") or "").rstrip("/")
     endpoints = deployment.get("core_endpoints", [])
 
-    checks = [
-        {"name": "health", "method": "GET", "url": f"{base_url}{deployment.get('health_path', '/healthz')}"},
-    ]
-    for endpoint in endpoints:
-        checks.append({"name": endpoint["name"], "method": endpoint.get("method", "GET"), "url": f"{base_url}{endpoint['path']}"})
+    checks: list[dict[str, Any]] = []
+    if base_url:
+        checks.append(
+            {"name": "health", "method": "GET", "url": f"{base_url}{deployment.get('health_path', '/healthz')}"}
+        )
+        for endpoint in endpoints:
+            checks.append({"name": endpoint["name"], "method": endpoint.get("method", "GET"), "url": f"{base_url}{endpoint['path']}"})
 
     return {
         "service_name": service_name,

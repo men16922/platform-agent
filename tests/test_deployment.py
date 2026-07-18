@@ -22,6 +22,15 @@ class TestSmokeTester:
         assert plan["checks"][0]["name"] == "health"
         assert plan["checks"][1]["method"] == "POST"
 
+    def test_no_base_url_yields_empty_plan(self):
+        # Dashboard-triggered runs carry no base_url: the plan must pass
+        # vacuously instead of raising KeyError (live regression DEP-612170AC).
+        plan = build_smoke_test_plan({"service_name": "orders-api", "version": "v1.7.0"})
+
+        assert plan["service_name"] == "orders-api"
+        assert plan["checks"] == []
+        assert summarise_smoke_results([])["should_continue"] is True
+
     def test_summarises_failures(self):
         summary = summarise_smoke_results(
             [
