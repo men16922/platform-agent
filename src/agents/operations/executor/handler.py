@@ -107,6 +107,12 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 # SSM Automation
 # ------------------------------------------------------------------
 
+# 알림성 액션은 SSM 문서가 아니라 executor 자신의 Slack 인시던트 리포트로 수행된다.
+# AWS-SendSlackAlert는 실존하는 SSM Automation 문서가 아님 — open_change_request
+# 캐퍼빌리티의 실체는 "사람에게 알리기"이고, 그 전달은 아래 _post_slack_report가 담당.
+_NOTIFICATION_ACTIONS = frozenset({"AWS-SendSlackAlert"})
+
+
 def _run_ssm_actions(
     decision: DecisionOutput, log: Any
 ) -> tuple[list[str], list[str]]:
@@ -117,6 +123,15 @@ def _run_ssm_actions(
     provider = normalized_incident.provider if normalized_incident else "aws"
 
     for action in decision.actions:
+        if action in _NOTIFICATION_ACTIONS:
+            if _SLACK_WEBHOOK:
+                log.info("executor.notify.in_process", action=action)
+                executed.append(action)
+            else:
+                log.warning("executor.notify.no_webhook", action=action)
+                skipped.append(action)
+            continue
+
         params = _build_action_params(action, alarm, normalized_incident, provider)
 
         if provider != "aws":
