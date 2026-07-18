@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-18
 
-> ▶ NEXT SESSION: **gate 842, 자율 백로그 전면 소진 — M8 완결**(상세 `docs/COMPLETED_SUMMARY.md` M8). 승인 큐 8항목(⑦ 라이브 스윕 포함) + **AWSome 레퍼런스 8/8**(#7 Helm+Terraform) + 로드맵 ④ State Store 전부 완료·라이브 실증(증거 `docs/evidence/*-live*.log` 4종, spend $0). **잔여 = 전부 사용자 게이트**: 아티클 배포(원고 완비) · OAuth UI 데모 · Slack App 실 생성 · (billable) `terraform apply`(`infra/terraform/aws-production/`). 하네스: billable·보안완화는 사용자 `!`.
+> ▶ NEXT SESSION: **gate 843 — OAuth 배포 클릭 데모 완료 + 프로덕션 장애 2건 근본수정(2026-07-18)**: `.vercelignore` 404 빌드 결함·**OIDC provider 삭제(07-11) 복구**(대시보드 DEMO FALLBACK→**LIVE·AWS**)·`smoke_tester` base_url 버그, SFN `deploy-dep-1f054864` SUCCEEDED(증거 `docs/evidence/oauth-deploy-trigger-live.log`). M8 완결 상세는 `docs/COMPLETED_SUMMARY.md`. **잔여 = 사용자 게이트**: 아티클 배포(원고 842로 최신화 완비) · Slack App 실 생성 · (billable) `terraform apply`. 하네스: billable·보안완화는 사용자 `!`(cdk deploy는 local allow 해금됨).
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 

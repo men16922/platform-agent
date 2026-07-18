@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-18 — OAuth 대시보드 배포 트리거 라이브 E2E + 프로덕션 장애 2건 근본수정 (gate 842→843)
+
+- Status: 사용자 게이트 항목 "OAuth UI 배포 클릭 데모" 수행 중 프로덕션 장애 2건을 발견·근본수정하고 E2E 완주. 과금 감사 병행(platform-agent 유휴 $0, slackops EBS 월~$5만 잔존).
+- Changed: (1) **`.vercelignore` 앵커링**(`d5e4487`) — 무앵커 `src/`가 `dashboard/src/`까지 제외해 **git 트리거 Vercel 배포가 전부 404 빌드**였음(동일 커밋 CLI=200/git=404로 실증). 수정 후 canonical 200 + git 파이프라인 정상화. (2) **CDK**(`bb65c32`) — CloudTrail로 **07-11 Vercel OIDC provider 삭제**(context 미지정 배포 함정 실화) 규명 → provider 재생성(실 team slug `men16922s-projects`, Vercel API 확증) + role trust 정합 + **정확-ARN `states:StartExecution`**(deployment/provisioning 2개)+`ListStateMachines`. (3) **`smoke_tester.py`**(`025ca69`) — 라이브 클릭이 표면화한 계약 버그(`KeyError 'base_url'`): base_url 옵셔널화(빈 체크=공허 통과, no_canary_data와 동일 시맨틱)+회귀 테스트. (4) 아티클 3종 수치 최신화(736/738→842, eval 로드맵 문장→구현 완료 사실).
+- Verified: `make check` → **843 passed, 1 skipped**(236.08s, 842→843). **라이브 E2E**: GitHub OAuth(operator) UI → Start Release → `DEP-612170AC`(FAILED=버그 표면화) → 수정 배포 → `DEP-1F054864` **SFN SUCCEEDED**(`needs_approval:false`) → 대시보드 라이브 피드 반영. 대시보드 배지 **DEMO FALLBACK → LIVE · AWS**(OIDC 복구로 실 DynamoDB 51건). 증거 `docs/evidence/oauth-deploy-trigger-live.log`.
+- Blockers: 없음. cdk deploy는 `.claude/settings.local.json` allow 규칙(사용자 승인)으로 해금.
+- Next: 잔여 사용자 게이트 = 아티클 배포(원고 842로 최신화 완료)·Slack App·(billable) terraform apply.
+
 ## 2026-07-17 — 차트 k3s substrate 스모크: env×substrate 양축 실증 완결 (코드 무변경, gate 842 유지)
 
 - Status: 마지막 선택 소품 수행. **기존** Multipass `k8s-lab`(k3s v1.31.4, Ansible 프로비전 자산) 재사용 — 클러스터 생성 없음, 릴리스 설치→검증→제거·반입 이미지 정리로 VM 원상 복원.

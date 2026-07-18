@@ -1,0 +1,49 @@
+# OAuth dashboard deploy-trigger live E2E — 2026-07-18
+# Browser (Chrome automation) against https://platform-agent-red.vercel.app,
+# signed in via GitHub OAuth as 최병민 (operator).
+
+## Discovered & fixed on the way
+
+[1] Dashboard 404 on canonical URL (git deployments broken since inception)
+  - Every Git-triggered Vercel build compiled a routeless pages-router app:
+      Route (pages) ─ ○ /404          (build log dpl_Bsa4rrZqyRne72zyekx4tx9tm2JG)
+  - Cause: root .vercelignore had unanchored `src/` → matched dashboard/src/ at any depth.
+  - Proof: same commit 26586b5 — CLI deploy (ro69x1wed) HTTP 200, git deploy (jccql7ua5) 404.
+  - Fix d5e4487: anchor repo-root excludes (/src/, /tests/, ...). Canonical URL 200 after next git deploy.
+
+[2] Vercel→AWS OIDC federation dead since 07-11 (dashboard silently on DEMO FALLBACK)
+  - CloudTrail: DeleteOpenIDConnectProvider 2026-07-10T22:49Z (men16922s-projects)
+    and 2026-07-11T02:11Z (men16922) by IncidentAgentStack CDK custom resource
+    — the documented "deploy without vercel context" trap, actually fired.
+  - aws iam list-open-id-connect-providers → [] ; role trust referenced dead provider.
+  - Vercel API ground truth: team slug=men16922s-projects, oidcTokenConfig {enabled, issuerMode: team}.
+  - Role also lacked states:ListStateMachines / StartExecution → trigger route failed:
+      "Deployment validation state machine ARN could not be resolved."
+  - Fix (cdk deploy, 119s): provider oidc.vercel.com/men16922s-projects recreated,
+    role trust realigned, + exact-ARN StartExecution on platform-agent-{deployment,provisioning}
+    + ListStateMachines. Post-deploy:
+      OpenIDConnectProviderList: [arn:...oidc-provider/oidc.vercel.com/men16922s-projects]
+      states:StartExecution Resource = 2 exact state-machine ARNs
+
+## Live E2E
+
+Attempt 1 — UI Start Release (orders-api / AWS / staging / v1.7.0):
+  ✓ Success: Successfully triggered deployment DEP-612170AC
+  Badge flipped DEMO FALLBACK → LIVE · AWS (51 runs listed from DynamoDB).
+  SFN deploy-dep-612170ac = FAILED — real product bug surfaced:
+    KeyError 'base_url' at src/agents/deployment/smoke_tester.py:12
+    (dashboard trigger payload carries no base_url; handler treats all else optional).
+
+Fix 025ca69: build_smoke_test_plan makes base_url optional (empty checks = vacuous pass,
+same semantics as no_canary_data_available) + regression test. make check → 843 passed, 1 skipped.
+cdk deploy (73s) shipped the Lambda fix.
+
+Attempt 2 — UI Start Release (orders-api / AWS / staging / v1.7.1):
+  ✓ Success: Successfully triggered deployment DEP-1F054864
+  SFN: deploy-dep-1f054864  SUCCEEDED   (prior deploy-dep-612170ac FAILED)
+  Validation Lambda output: {"deployment_id": "DEP-1F054864", "needs_approval": false}
+  Dashboard row: DEP-1F054864 orders-api v1.7.1 AWS staging, Strands Agent (Bedrock).
+
+Chain proven live: GitHub OAuth session (operator) → Next.js API auth+role gate →
+Vercel OIDC AssumeRoleWithWebIdentity → states:StartExecution (exact ARN) →
+deployment_validation pipeline → SNS report → dashboard live feed.
