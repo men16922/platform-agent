@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-19 — 알림성 액션 in-process 1급 처리: generic-recovery 구조적 미해결 근본수정 (gate 844→847)
+
+- Status: 직전 규명한 유령 SSM 문서 결함을 권고안(a)로 수정·라이브 검증 완료. Slack E2E발 후속 3건 전부 소진.
+- Changed(`55de55e`): executor에 `_NOTIFICATION_ACTIONS`(={AWS-SendSlackAlert}) — SSM 호출 없이 executor 자신의 Slack 인시던트 리포트로 수행·executed 집계(웹훅 미설정=skip 유지). `tests/test_executor_notification_action.py` +3(in-process·no-webhook skip·혼합 액션 SSM 디스패치 보존).
+- Verified: `make check` → **847 passed, 1 skipped**(232.55s, 844→847). **라이브**: 알람 트리거 → 실 LLM **P1/AUTO** 판정 → `executor.notify.in_process` → **`resolved=True`**(INC-E15BA62E, DynamoDB `resolved:true` 확증) — generic-recovery 최초 Resolved. 동일 세션에서 P3/MANUAL 강등 경로도 관측(온화한 알람 reason→LLM P3 판정, Guardian 정책상 정상 skip). 실 LLM 심각도 판정이 reason 텍스트에 반응함을 실증(P3/P2/P1 3단 모두 관측).
+- Blockers: 없음.
+- Next: 잔여=사용자 게이트(아티클 배포·terraform apply·push 여부) + 선택(On-Prem 승인 게이트 Slack 버튼 연동).
+
 ## 2026-07-19 — Analyzer Bedrock 무효 모델 ID 근본수정 + 라이브 검증 · SendSlackAlert skip 규명 (gate 844 유지)
 
 - Status: Slack E2E가 표면화한 후속 2건 처리. (1) Bedrock 정정=완료·라이브 검증, (2) executor skip=근본 원인 규명(수정 방향은 사용자 결정 대기).

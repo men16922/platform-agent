@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-19
 
-> ▶ NEXT SESSION: **gate 844 — Slack 인터랙티브 승인 라이브 E2E 완주(2026-07-19)**: 실 Slack App 연결 + **Approve 버튼 클릭→SFN SUCCEEDED**(증거 `docs/evidence/slack-interactive-approval-live.log`). 라이브가 표면화한 버그 2건 근본수정(detector `_SIGNAL_ADAPTER` NameError=AWS 경로 불능·approval_bridge float→Decimal=승인 소실, `0f99420`). **Bedrock 무효 모델 ID도 근본수정**(`9a56949`, `us.` 프로파일+정확-ARN IAM, `analyzer.llm_done` 라이브 검증). **잔여 = 사용자 게이트**: 아티클 배포 · (billable) `terraform apply` · executor `AWS-SendSlackAlert` 방향 결정(유령 SSM 문서 — in-process 알림화 권고). 하네스: billable·보안완화는 사용자 `!`(cdk deploy는 local allow 해금됨).
+> ▶ NEXT SESSION: **gate 847 — Slack 승인 라이브 E2E + 표면화 버그 4건 전부 근본수정(2026-07-19)**: 실 Slack App 연결·Approve 클릭→SFN SUCCEEDED(증거 `docs/evidence/slack-interactive-approval-live.log`) + detector NameError·approval_bridge float→Decimal(`0f99420`)·Bedrock 무효 모델 ID(`9a56949`, 실 LLM 분석 복원)·**유령 SSM 문서→알림 액션 in-process 1급 처리**(`55de55e`, generic-recovery 최초 `resolved=True`, 실 LLM P1/P2/P3 3단 판정 관측). **잔여 = 사용자 게이트**: 아티클 배포 · (billable) `terraform apply` · push 여부(로컬 ahead 6). 하네스: billable·보안완화는 사용자 `!`(cdk deploy는 local allow 해금됨).
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 
