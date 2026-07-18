@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-19 — Analyzer Bedrock 무효 모델 ID 근본수정 + 라이브 검증 · SendSlackAlert skip 규명 (gate 844 유지)
+
+- Status: Slack E2E가 표면화한 후속 2건 처리. (1) Bedrock 정정=완료·라이브 검증, (2) executor skip=근본 원인 규명(수정 방향은 사용자 결정 대기).
+- Changed(`9a56949`): 스택이 `.env` 무시하고 무효 ID `anthropic.claude-sonnet-4-5` 하드코딩(InvokeModel은 인퍼런스 프로파일 필요 → **ValidationException, 매 인시던트 휴리스틱 폴백 강등**되던 latent 결함) → `process.env.BEDROCK_MODEL_ID ?? 'us.anthropic.claude-sonnet-4-6'` + IAM을 프로파일 ARN+라우팅 3리전 하위 모델 정확-ARN으로 재구성(bare `"*"` 없음). analyzer 기본값 정합. `.env`도 `us.` 프로파일로 갱신.
+- Verified: `make check` → **844 passed, 1 skipped**(232.68s). **라이브**: 알람 재트리거 → `analyzer.llm_done`(confidence 0.52, **실 Claude 분석 root cause가 Slack 승인 카드에 문장형 표시**) → Approve 클릭 → SFN SUCCEEDED(APR-A1EA0CD8565E).
+- Blockers: 없음.
+- Next: **executor `AWS-SendSlackAlert` skip 규명 결과 = 수정 방향 결정 필요**: 카탈로그(generic-recovery·`open_change_request` 캐퍼빌리티 전체)가 **실존하지 않는 SSM 문서**를 참조 + Executor role IAM allowlist에도 없음(라이브 에러=AccessDenied, IAM 열어도 NotFound) → generic-recovery는 구조적으로 `resolved=False`. 선택지: (a) 알림성 액션을 in-process Slack 송출로 1급 처리(권고) (b) 실 SSM 문서 작성 (c) 의도된 skip으로 문서화만.
+
 ## 2026-07-19 — Slack App 실 생성 + 인터랙티브 승인 버튼 라이브 E2E 완주 (gate 843→844)
 
 - Status: 사용자 게이트 "Slack App 실 생성/토큰" **해소**. 사용자=App 생성(Incoming Webhook `#platform-test`·Interactivity Request URL=ApprovalBridgeFunctionUrl·Signing Secret→`.env`), 에이전트=cdk deploy env 주입→알람 트리거→**브라우저로 Slack Approve 버튼 클릭**→SFN 완주. 라이브가 프로덕션 버그 2건 표면화→근본수정→가드(발견→수정→가드 루프 재실증).
