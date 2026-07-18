@@ -320,3 +320,49 @@ class TestLambdaHandlerNonAws:
         assert result["alarm"]["alarm_name"] == "checkout-api"
         assert result["log_insights_results"] == []
         assert result["xray_trace_ids"] == []
+
+
+# ─────────────────────────────────────────────────────────────
+# lambda_handler — AWS path (regression: live NameError 2026-07-18)
+# ─────────────────────────────────────────────────────────────
+
+class TestLambdaHandlerAws:
+    """AWS 경로가 실 _normalise_incident + 실 signal adapter로 완주하는지.
+
+    라이브 알람 트리거가 표면화한 NameError(_SIGNAL_ADAPTER 미정의) 회귀 가드 —
+    수집 헬퍼 3종만 patch하고 normalisation은 실 코드로 실행한다.
+    """
+
+    _EVENT = {
+        "id": "test-event-id",
+        "source": "aws.cloudwatch",
+        "detail-type": "CloudWatch Alarm State Change",
+        "resources": ["arn:aws:cloudwatch:us-east-1:111122223333:alarm:checkout-5xx"],
+        "detail": {
+            "alarmName": "checkout-5xx",
+            "state": {"value": "ALARM", "reason": "threshold crossed"},
+            "configuration": {
+                "metrics": [{
+                    "metricStat": {"metric": {
+                        "name": "HTTPCode_Target_5XX_Count",
+                        "namespace": "AWS/ApplicationELB",
+                        "dimensions": [{"name": "LoadBalancer", "value": "app/demo/abc"}],
+                    }},
+                }],
+            },
+        },
+    }
+
+    @patch("src.agents.operations.detector.handler._fetch_related_metrics", return_value={})
+    @patch("src.agents.operations.detector.handler._fetch_xray_traces", return_value=[])
+    @patch("src.agents.operations.detector.handler._query_logs_insights", return_value=[])
+    def test_aws_path_runs_real_normalisation(self, *_mocks):
+        from src.agents.operations.detector.handler import lambda_handler
+
+        result = lambda_handler(self._EVENT, None)
+
+        incident = result["normalized_incident"]
+        assert incident["provider"] == "aws"
+        assert result["alarm"]["alarm_name"] == "checkout-5xx"
+        assert incident["source_metadata"]["alarm_name"] == "checkout-5xx"
+        assert incident["severity_hint"] == "ALARM"

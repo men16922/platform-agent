@@ -108,7 +108,21 @@ class FakeDynamoTable:
         self._items: dict[str, dict] = {}
 
     def put_item(self, *, Item: dict):
+        self._reject_floats(Item)
         self._items[Item["approval_id"]] = Item.copy()
+
+    @classmethod
+    def _reject_floats(cls, value):
+        # 실 DynamoDB(boto3 resource) 시리얼라이저와 동일 계약: float 거부(Decimal만 허용).
+        # 라이브에서 confidence float가 TypeError로 터진 회귀 가드(2026-07-18).
+        if isinstance(value, float):
+            raise TypeError("Float types are not supported. Use Decimal types instead.")
+        if isinstance(value, dict):
+            for v in value.values():
+                cls._reject_floats(v)
+        elif isinstance(value, (list, tuple, set)):
+            for v in value:
+                cls._reject_floats(v)
 
     def get_item(self, *, Key: dict) -> dict:
         item = self._items.get(Key["approval_id"])

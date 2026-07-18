@@ -364,7 +364,7 @@ def _normalise_incident(
     related_metrics: dict[str, float],
     source_event: dict[str, Any],
 ):
-    return _SIGNAL_ADAPTER.from_alarm_context(
+    return get_signal_adapter("aws").from_alarm_context(
         alarm,
         observations={
             "logs": log_results[:10],

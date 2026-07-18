@@ -23,6 +23,7 @@ import hmac
 import json
 import os
 import time
+from decimal import Decimal
 from typing import Any
 from urllib.parse import parse_qs
 
@@ -357,7 +358,8 @@ def _store_pending_request(approval_id: str, payload: dict[str, Any]) -> None:
         "severity": payload["severity"],
         "alarm_name": payload["alarm_name"],
         "root_cause": payload["root_cause"],
-        "confidence": float(payload.get("confidence", 0.0)),
+        # DynamoDB(boto3 resource)는 Python float를 거부한다 — Decimal만 허용.
+        "confidence": Decimal(str(payload.get("confidence", 0.0))),
         "request_kind": _request_kind(payload),
         "request_subject": _request_subject(payload),
         "request_summary": payload.get("request_summary", ""),
