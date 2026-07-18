@@ -1,6 +1,6 @@
 # NEXT_PLAN — platform-agent
 
-최종 갱신: 2026-07-18
+최종 갱신: 2026-07-19
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md` / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
@@ -71,7 +71,7 @@
   - [x] ~~(billable) Azure Foundry 실 배포~~ — **완료(2026-07-14, `4caf7de`+`2231362`)**: 어댑터 v1→v2 결함 수정 후 실 배포. Foundry 계정/프로젝트/gpt-5.4-mini, 어댑터 create_version→Responses API 쿼리(실응답)→delete 라이브 E2E. **3/3 클라우드 완결.** `infra/foundry/README.md`에 gotcha 기록. (Azure 스택은 유휴 ≈$0라 유지 중 — 정리 선택.)
 
 ### 외부/사용자 개입
-- [ ] (deferred) **Slack App 실 생성/토큰** — 코드+하네스(`scripts/slack_live_approval.py`) ready, 실 workspace만 필요. On-Prem 승인 게이트도 Slack 버튼 프런트엔드 연동 가능(현재는 대시보드 버튼으로 대체됨).
+- [x] ~~(deferred) **Slack App 실 생성/토큰**~~ — **완료(2026-07-19, gate 844)**: 실 App 생성(Webhook `#platform-test`+Interactivity+Signing Secret)→cdk env 주입→알람 트리거→**Approve 버튼 클릭 라이브 E2E**(SFN SUCCEEDED, APR-8BC7E7E95B9A). 부산물: 프로덕션 버그 2건 근본수정(detector NameError·approval_bridge float→Decimal, `0f99420`). 증거 `docs/evidence/slack-interactive-approval-live.log`. 후속 후보(선택): Analyzer `BEDROCK_MODEL_ID` invalid 정정 · executor `AWS-SendSlackAlert` skip 의도 확인 · On-Prem 승인 게이트 Slack 버튼 연동.
 - [ ] **테크 아티클 배포(LinkedIn/Medium)** — **작성 전부 완료(잔여=배포, 사용자)**: 종합 아키텍처 글 EN `docs/post/platform-agent-architecture.md` + **KO 전문판 `-ko.md`** + **짧은 LinkedIn 컷(EN/KO) `platform-agent-linkedin-cut.md`** + 데모 영상 `local-onprem-edited.mp4`.
 - [x] ~~대시보드 **브라우저 UI 인증 배포 클릭 데모**~~ — **완료(2026-07-18, gate 843)**: GitHub OAuth(operator)→Start Release→SFN `deploy-dep-1f054864` SUCCEEDED 라이브 E2E. 부산물로 프로덕션 장애 2건 근본수정(`.vercelignore` 404 빌드·OIDC provider 삭제 복구=DEMO FALLBACK→LIVE) + `smoke_tester` base_url 버그 수정. 증거 `docs/evidence/oauth-deploy-trigger-live.log`.
 

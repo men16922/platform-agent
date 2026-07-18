@@ -1,0 +1,43 @@
+# Slack Interactive Approval — Live E2E Evidence (2026-07-19 KST)
+
+목표: 실 Slack App의 Approve/Reject 버튼으로 Step Functions waitForTaskToken 승인 루프를
+라이브로 완주 (STATUS Open Risk #2 "Slack App 미연결" 해소).
+
+## 셋업 (사용자 + 에이전트)
+- 사용자: api.slack.com에서 App 생성(workspace "Platform Agent"), Incoming Webhook(#platform-test),
+  Interactivity Request URL = ApprovalBridgeFunctionUrl(https://kglj7vclmq4sqm7u7ap5ydldyu0yndto.lambda-url.us-east-1.on.aws/),
+  SLACK_SIGNING_SECRET을 .env에 기입.
+- 에이전트: cdk deploy(IncidentAgentStack, Vercel context 지정)로 SLACK_WEBHOOK_URL(전 Lambda) +
+  SLACK_SIGNING_SECRET(approval bridge) 주입. diff에서 IAM/OIDC 무변경 확인 후 배포(80s).
+
+## 라이브 트리거 & 표면화된 프로덕션 버그 2건 (발견→수정→가드)
+1) 17:44Z 알람 slackops-demo-checkout-5xx → ALARM (set-alarm-state, EventBridge → SFN)
+   → 실행 351af55a... **FAILED**: detector NameError `_SIGNAL_ADAPTER is not defined`
+   (handler.py:367 — AWS 경로 전면 불능, 테스트는 non-AWS 경로만 커버라 은닉)
+   → get_signal_adapter("aws") 정합 + AWS 경로 실 normalisation 회귀 테스트 추가.
+2) 17:49Z 재배포 후 재트리거 → WaitForApproval 도달, 그러나 approval bridge
+   **TypeError: Float types are not supported. Use Decimal types instead.**
+   (_store_pending_request가 confidence를 float로 put_item; e2e 페이크 테이블이 타입 무검증이라 은닉)
+   → Decimal 변환 + 페이크에 실 DynamoDB 시리얼라이저와 동일한 float 거부 계약 이식.
+   (부작용: maxReceiveCount=1이라 실패 메시지는 DLQ행 — 재트리거로 신규 실행 사용)
+
+## 완주 (attempt 3, 17:55Z~)
+- stop-execution(스테일) → 알람 OK→ALARM 재트리거
+- 17:56:02Z approval bridge: `approval_bridge.start` → `approval_bridge.done decision=pending` (229ms)
+- Slack #platform-test 수신: "[P2] Approval gate: slackops-demo-checkout-5xx"
+  Approval ID=APR-8BC7E7E95B9A, Requested Actions=[AWS-SendSlackAlert], Approve/Reject 버튼 렌더링
+- **브라우저(Claude in Chrome)로 Approve 클릭** (17:57Z경)
+  → Slack → Lambda Function URL(서명 HMAC 검증) → DynamoDB claim → SendTaskSuccess
+- SFN 실행 fb4492c3... **SUCCEEDED**
+- DynamoDB incident-approval-requests: APR-8BC7E7E95B9A status=**APPROVED**
+- Slack에 최종 인시던트 리포트 게시: INC-2AC4B6C9 (Actions Skipped: AWS-SendSlackAlert)
+
+## 게이트
+- make check → **844 passed, 1 skipped** (234.56s; 843→844, detector AWS-경로 회귀 가드 +1)
+- 커밋 0f99420
+
+## 관찰(후속 후보, 이번 범위 밖)
+- Analyzer Bedrock InvokeModel ValidationException: "The provided model identifier is invalid"
+  (BEDROCK_MODEL_ID=anthropic.claude-sonnet-4-6) → 휴리스틱 폴백으로 파이프라인은 정상 진행.
+  모델 ID 정정(또는 inference profile) 별도 항목.
+- Executor가 AWS-SendSlackAlert 액션을 skip 처리(리포트는 reporting 경로로 게시됨) — 의도 확인 여지.

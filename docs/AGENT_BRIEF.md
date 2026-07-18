@@ -1,8 +1,8 @@
 # AGENT_BRIEF — platform-agent
 
-최종 갱신: 2026-07-18
+최종 갱신: 2026-07-19
 
-> ▶ NEXT SESSION: **gate 843 — OAuth 배포 클릭 데모 완료 + 프로덕션 장애 2건 근본수정(2026-07-18)**: `.vercelignore` 404 빌드 결함·**OIDC provider 삭제(07-11) 복구**(대시보드 DEMO FALLBACK→**LIVE·AWS**)·`smoke_tester` base_url 버그, SFN `deploy-dep-1f054864` SUCCEEDED(증거 `docs/evidence/oauth-deploy-trigger-live.log`). M8 완결 상세는 `docs/COMPLETED_SUMMARY.md`. **잔여 = 사용자 게이트**: 아티클 배포(원고 842로 최신화 완비) · Slack App 실 생성 · (billable) `terraform apply`. 하네스: billable·보안완화는 사용자 `!`(cdk deploy는 local allow 해금됨).
+> ▶ NEXT SESSION: **gate 844 — Slack 인터랙티브 승인 라이브 E2E 완주(2026-07-19)**: 실 Slack App 연결 + **Approve 버튼 클릭→SFN SUCCEEDED**(증거 `docs/evidence/slack-interactive-approval-live.log`). 라이브가 표면화한 버그 2건 근본수정(detector `_SIGNAL_ADAPTER` NameError=AWS 경로 불능·approval_bridge float→Decimal=승인 소실, `0f99420`). **잔여 = 사용자 게이트**: 아티클 배포(원고 842로 최신화 완비) · (billable) `terraform apply`. 후속 후보(선택): Analyzer `BEDROCK_MODEL_ID` invalid 정정·executor `AWS-SendSlackAlert` skip 확인. 하네스: billable·보안완화는 사용자 `!`(cdk deploy는 local allow 해금됨).
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 

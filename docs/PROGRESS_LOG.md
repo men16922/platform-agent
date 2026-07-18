@@ -1,11 +1,19 @@
 # PROGRESS_LOG — platform-agent
 
-최종 갱신: 2026-07-18
+최종 갱신: 2026-07-19
 
 > 최신 3–5개 증분. **최신이 위.** **≤120줄.** 넘치면 `/tidy-docs` 로 압축.
 > 이전 이력: `docs/archive/progress-2026-07.md`
 
 ---
+
+## 2026-07-19 — Slack App 실 생성 + 인터랙티브 승인 버튼 라이브 E2E 완주 (gate 843→844)
+
+- Status: 사용자 게이트 "Slack App 실 생성/토큰" **해소**. 사용자=App 생성(Incoming Webhook `#platform-test`·Interactivity Request URL=ApprovalBridgeFunctionUrl·Signing Secret→`.env`), 에이전트=cdk deploy env 주입→알람 트리거→**브라우저로 Slack Approve 버튼 클릭**→SFN 완주. 라이브가 프로덕션 버그 2건 표면화→근본수정→가드(발견→수정→가드 루프 재실증).
+- Changed(`0f99420`): (1) **detector** — `_normalise_incident`가 미존재 `_SIGNAL_ADAPTER` 전역 참조(NameError로 **AWS 경로 전면 불능**; 기존 테스트는 non-AWS 경로만 커버라 은닉) → `get_signal_adapter("aws")` 정합 + AWS 경로 실 normalisation 회귀 테스트. (2) **approval_bridge** — pending 저장 시 confidence를 float로 `put_item`(boto3 resource=Decimal만 허용, **TypeError로 승인 요청 전량 소실**; e2e 페이크 테이블이 타입 무검증이라 은닉) → `Decimal` 변환 + 페이크에 실 시리얼라이저와 동일한 float 거부 계약 이식. (3) `.claude/settings.local.json` allow 2건(`source .env && npx cdk deploy/diff`).
+- Verified: `make check` → **844 passed, 1 skipped**(234.56s, 843→844). **라이브 E2E**: `set-alarm-state` ALARM→EventBridge→SFN→WaitForApproval→Slack 버튼 메시지(APR-8BC7E7E95B9A)→**Approve 클릭**(서명 HMAC 검증→DynamoDB claim=APPROVED→`SendTaskSuccess`)→SFN **SUCCEEDED**→최종 리포트 INC-2AC4B6C9 게시. 증거 `docs/evidence/slack-interactive-approval-live.log`.
+- Blockers: 없음. (참고: 실패 승인 메시지 1건은 maxReceiveCount=1로 DLQ행 — 정리 선택.)
+- Next: 후속 후보 — Analyzer `BEDROCK_MODEL_ID` invalid(ValidationException, 휴리스틱 폴백 중) 정정 · executor `AWS-SendSlackAlert` skip 의도 확인. 잔여 사용자 게이트 = 아티클 배포·(billable) terraform apply.
 
 ## 2026-07-18 — OAuth 대시보드 배포 트리거 라이브 E2E + 프로덕션 장애 2건 근본수정 (gate 842→843)
 
