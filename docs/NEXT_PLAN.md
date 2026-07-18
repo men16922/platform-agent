@@ -1,6 +1,6 @@
 # NEXT_PLAN — platform-agent
 
-최종 갱신: 2026-07-17
+최종 갱신: 2026-07-18
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md` / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
@@ -73,7 +73,7 @@
 ### 외부/사용자 개입
 - [ ] (deferred) **Slack App 실 생성/토큰** — 코드+하네스(`scripts/slack_live_approval.py`) ready, 실 workspace만 필요. On-Prem 승인 게이트도 Slack 버튼 프런트엔드 연동 가능(현재는 대시보드 버튼으로 대체됨).
 - [ ] **테크 아티클 배포(LinkedIn/Medium)** — **작성 전부 완료(잔여=배포, 사용자)**: 종합 아키텍처 글 EN `docs/post/platform-agent-architecture.md` + **KO 전문판 `-ko.md`** + **짧은 LinkedIn 컷(EN/KO) `platform-agent-linkedin-cut.md`** + 데모 영상 `local-onprem-edited.mp4`.
-- [ ] 대시보드 **브라우저 UI 인증 배포 클릭 데모** — GitHub OAuth 로그인(사용자 수행). 백엔드/read 경로는 검증됨.
+- [x] ~~대시보드 **브라우저 UI 인증 배포 클릭 데모**~~ — **완료(2026-07-18, gate 843)**: GitHub OAuth(operator)→Start Release→SFN `deploy-dep-1f054864` SUCCEEDED 라이브 E2E. 부산물로 프로덕션 장애 2건 근본수정(`.vercelignore` 404 빌드·OIDC provider 삭제 복구=DEMO FALLBACK→LIVE) + `smoke_tester` base_url 버그 수정. 증거 `docs/evidence/oauth-deploy-trigger-live.log`.
 
 ## 참고 — 2026-07-14 세션 완료 (상세는 PROGRESS_LOG)
 

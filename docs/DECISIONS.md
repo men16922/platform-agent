@@ -1,6 +1,6 @@
 # DECISIONS — platform-agent
 
-최종 갱신: 2026-07-17
+최종 갱신: 2026-07-18
 
 > 되돌리기 어려운 결정만. 형식: **Decision / Reason / Impact**. 최신이 위.
 
@@ -8,6 +8,12 @@
 > - **enterprise-ai-governance-dashboard** (외부 레포) — 2-Pass Fact NL→SQL 챗봇 + SQL self-heal 루프 + LLM SKU 그룹핑 + 최소권한 Cloud Run SA. 대시보드 챗봇/FinOps 확장 시 검토. 상세 → `docs/reference/enterprise-ai-governance-dashboard.md`. (검토 2026-07-13)
 
 ---
+
+## D16 — Vercel OIDC = team slug `men16922s-projects` 고정 + cdk deploy 해금은 개인 스코프(local settings)만
+
+- **Decision:** (1) Vercel↔AWS OIDC 페더레이션의 ground truth는 **team slug `men16922s-projects`**(Vercel API `/v2/teams` 확증, issuerMode=team)로 고정하고, CDK diff/deploy는 항상 `-c vercelTeamSlug=men16922s-projects -c vercelProjectName=platform-agent`를 넘긴다. (2) 대시보드 트리거용 SFN 권한은 **정확-ARN `states:StartExecution`**(platform-agent-deployment/provisioning 2개)+`ListStateMachines`("*"는 list 계열 API 제약)만 부여. (3) `npx cdk deploy` 하네스 해금은 **`.claude/settings.local.json`(개인·비커밋)**에만 두고 공용 `settings.json` 경계는 유지한다.
+- **Reason:** (1) 07-11 context 미지정 배포가 provider를 실제 삭제(CloudTrail)해 대시보드가 조용히 DEMO FALLBACK으로 강등된 전례 — slug 후보가 2개(men16922/men16922s-projects) 존재해 재발 위험이 높아 문서로 고정. (2) IAM 최소권한 가드레일(`Resource:"*"` 금지) 준수. (3) overnight 무인 루프에서 클라우드 변경이 자동 허용되면 "billable=사용자 게이트" 설계가 깨짐 — 개인 스코프면 대화형 세션에서만 유효.
+- **Impact:** 미래 세션은 다른 slug로 배포하거나 provider ARN을 하드코딩하지 말 것. 공용 settings.json에 cdk deploy allow를 추가하려면 별도 사용자 결정 필요. provider가 또 사라지면 대시보드는 에러 없이 DEMO FALLBACK 배지만 뜸 — 배지가 곧 헬스 시그널.
 
 ## D15 — 크로스클라우드 리팩토링 경계: executor/runner 보일러플레이트만 공유, detector/analyzer/decision·rollback은 분리 유지
 
