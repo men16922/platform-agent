@@ -1,8 +1,8 @@
 # AGENT_BRIEF — platform-agent
 
-최종 갱신: 2026-07-17
+최종 갱신: 2026-07-18
 
-> ▶ NEXT SESSION: **gate 842, 자율 백로그 전면 소진 — M8 완결**(상세 `docs/COMPLETED_SUMMARY.md` M8). 승인 큐 8항목(⑦ 라이브 스윕 포함) + **AWSome 레퍼런스 8/8**(#7 Helm+Terraform) + 로드맵 ④ State Store 전부 완료·라이브 실증(증거 `docs/evidence/*-live*.log` 4종, spend $0). **잔여 = 전부 사용자 게이트**: 아티클 배포(원고 완비) · OAuth UI 데모 · Slack App 실 생성 · (billable) `terraform apply`(`infra/terraform/aws-production/`). ⚠️ PROGRESS_LOG 128줄>120 — `/tidy-docs` 권장. 하네스: billable·보안완화는 사용자 `!`.
+> ▶ NEXT SESSION: **gate 842, 자율 백로그 전면 소진 — M8 완결**(상세 `docs/COMPLETED_SUMMARY.md` M8). 승인 큐 8항목(⑦ 라이브 스윕 포함) + **AWSome 레퍼런스 8/8**(#7 Helm+Terraform) + 로드맵 ④ State Store 전부 완료·라이브 실증(증거 `docs/evidence/*-live*.log` 4종, spend $0). **잔여 = 전부 사용자 게이트**: 아티클 배포(원고 완비) · OAuth UI 데모 · Slack App 실 생성 · (billable) `terraform apply`(`infra/terraform/aws-production/`). 하네스: billable·보안완화는 사용자 `!`.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 
