@@ -189,7 +189,8 @@ export class IncidentAgentStack extends cdk.Stack {
       ACTIVITY_TABLE:    activityTable.tableName,
       ALERT_TOPIC_ARN:   alertTopic.topicArn,
       APPROVAL_QUEUE_URL: approvalQueue.queueUrl,
-      BEDROCK_MODEL_ID:  'anthropic.claude-sonnet-4-5',
+      // InvokeModel은 인퍼런스 프로파일 ID 필요(bare 모델 ID는 ValidationException).
+      BEDROCK_MODEL_ID:  process.env.BEDROCK_MODEL_ID ?? 'us.anthropic.claude-sonnet-4-6',
       SLACK_WEBHOOK_URL: process.env.SLACK_WEBHOOK_URL ?? '',
       APPROVAL_DEFAULT_DECISION: process.env.APPROVAL_DEFAULT_DECISION ?? 'reject',
     };
@@ -307,7 +308,13 @@ export class IncidentAgentStack extends cdk.Stack {
     });
     analyzerRole.addToPolicy(new iam.PolicyStatement({
       actions:   ['bedrock:InvokeModel'],
-      resources: [`arn:aws:bedrock:${this.region}::foundation-model/anthropic.claude-sonnet-4-5`],
+      // us. 인퍼런스 프로파일 호출은 프로파일 ARN + 라우팅 대상 리전의 하위 모델 ARN 전부 필요.
+      resources: [
+        `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/us.anthropic.claude-sonnet-4-6`,
+        'arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-sonnet-4-6',
+        'arn:aws:bedrock:us-east-2::foundation-model/anthropic.claude-sonnet-4-6',
+        'arn:aws:bedrock:us-west-2::foundation-model/anthropic.claude-sonnet-4-6',
+      ],
     }));
     incidentTable.grantReadData(analyzerRole);
 

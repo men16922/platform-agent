@@ -25,7 +25,7 @@ from src.agents.models import (
 logger = structlog.get_logger(__name__)
 
 _REGION        = os.getenv("AWS_REGION", "ap-northeast-2")
-_MODEL_ID      = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-sonnet-4-5")
+_MODEL_ID      = os.getenv("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
 _INCIDENT_TABLE = os.getenv("INCIDENT_TABLE", "incident-history")
 
 _BEDROCK = boto3.client("bedrock-runtime", region_name=_REGION)
