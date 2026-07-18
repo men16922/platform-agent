@@ -759,6 +759,17 @@ export class IncidentAgentStack extends cdk.Stack {
       },
     });
 
+    // Dashboard deploy/provision triggers: exact-ARN StartExecution only.
+    // states:ListStateMachines is account-scoped and cannot be resource-restricted.
+    if (vercelDashboardRole) {
+      provisioningStateMachine.grantStartExecution(vercelDashboardRole);
+      deploymentStateMachine.grantStartExecution(vercelDashboardRole);
+      vercelDashboardRole.addToPrincipalPolicy(new iam.PolicyStatement({
+        actions: ['states:ListStateMachines'],
+        resources: ['*'],
+      }));
+    }
+
     // ─────────────────────────────────────────────────────────
     // [7] Generic ingress (HTTP/direct → EventBridge custom events)
     // ─────────────────────────────────────────────────────────
