@@ -1,8 +1,8 @@
 # AGENT_BRIEF — platform-agent
 
-최종 갱신: 2026-07-19
+최종 갱신: 2026-07-20
 
-> ▶ NEXT SESSION: **gate 854 — 백로그 완전 소진(2026-07-19)**: Slack 승인 라이브 E2E(+표면화 버그 4건 근본수정) · **On-Prem Slack 버튼 왕복**(`617839b`, DynamoDB 공유 매체·INC-FA2143AF resolved) · **terraform aws-production 실 apply→검증→destroy**(EKS/Aurora/IRSA 확증·잔존 0) 완주. 증거 `docs/evidence/{slack-interactive-approval,onprem-slack-approval,terraform-aws-production-apply}-live.log`. **잔여 = 아티클 배포(원고 854 최신화 완비, 사용자 "나중에") · push 수시** — 코드/인프라 백로그 없음. 하네스: billable·보안완화는 사용자 `!`(cdk deploy는 local allow 해금됨).
+> ▶ NEXT SESSION: **gate 854 — 리팩토링 후속까지 소진(2026-07-20)**: 보류 2건 완료(`8792c9c`) — **operations cloud축 통일**(`operations/aws/`·`operations/runners/` 신설, CDK 핸들러 경로 7종 정합) + **approval_bridge 4모듈 분리**(handler/request_store/slack_interactive/payloads). 순수 구조 개편, gate 854 동일. **잔여 = 아티클 배포(원고 854 최신화 완비, 사용자 "나중에") · push 수시** — 코드/인프라 백로그 없음. 주의: 다음 cdk deploy에 핸들러 경로 변경 반영(Vercel context 필수). 하네스: billable·보안완화는 사용자 `!`(cdk deploy·aws/gcloud/az CLI는 local allow 해금됨).
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 

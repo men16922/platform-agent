@@ -1,11 +1,19 @@
 # PROGRESS_LOG — platform-agent
 
-최종 갱신: 2026-07-19
+최종 갱신: 2026-07-20
 
 > 최신 3–5개 증분. **최신이 위.** **≤120줄.** 넘치면 `/tidy-docs` 로 압축.
 > 이전 이력: `docs/archive/progress-2026-07.md`
 
 ---
+
+## 2026-07-20 — 보류됐던 리팩토링 후속 2건 완료: operations 그룹핑 축 통일 + approval_bridge 분리 (gate 854 유지)
+
+- Status: NEXT_PLAN "리팩토링 후속(선택)" 2건을 사용자 승인으로 수행. 동작 무변경 순수 구조 개편.
+- Changed(`8792c9c`): (1) **그룹핑 축 통일** — AWS Lambda 핸들러 7종을 `operations/aws/{detector,analyzer,decision,executor,reporting,runbook_seed}.py` + `aws/approval_bridge/`로 이동(gcp/azure와 동형), 멀티클라우드 러너 5종(gcp/azure/onprem/_k8s_rest/gcp_auth)을 `operations/runners/`로 분리. CDK 핸들러 문자열 7종·테스트 15파일 임포트 정합. (2) **approval_bridge 분리** — 610줄 handler.py → `handler`(오케스트레이션+SFN 콜백)+`request_store`(DynamoDB pending/claim/finalise)+`slack_interactive`(서명 검증·Block Kit·webhook)+`payloads`(순수 헬퍼). 핸들러가 함수를 unqualified import해 핸들러 경로 함수 패치는 보존, 모듈 전역 패치(웹훅/시크릿/테이블/requests)만 소유 모듈로 재작성.
+- Verified: `make check` → **854 passed, 1 skipped**(256.62s) — baseline 동일(테스트 수 무변경=순수 구조 개편 증명). 직접 영향 테스트 12파일 선행 통과.
+- Blockers: 없음. 주의: 다음 cdk deploy 시 핸들러 경로 변경이 반영됨(Vercel context 필수 규칙 유지).
+- Next: 잔여=아티클 배포(사용자 "나중에")·push. 코드 백로그 없음.
 
 ## 2026-07-19 — terraform aws-production 실 apply→검증→destroy 완주 + 아티클 854 최신화 (코드 무변경, gate 854 유지)
 

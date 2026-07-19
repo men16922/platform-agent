@@ -1,6 +1,6 @@
 # NEXT_PLAN — platform-agent
 
-최종 갱신: 2026-07-19
+최종 갱신: 2026-07-20
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(M9=eval·하드닝 스프린트+라이브 E2E, M8=레퍼런스 8/8) / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
@@ -16,11 +16,11 @@
 - [x] ~~(선택) On-Prem 승인 게이트 Slack 버튼 연동~~ — **완료(2026-07-19, `617839b`, gate 854)**: DynamoDB 공유 매체 + 옵트인 폴러, 라이브 왕복(APR-3E6D2540→INC-FA2143AF resolved). 증거 `docs/evidence/onprem-slack-approval-live.log`.
 - [ ] (선택) **Azure Foundry 스택 정리** — 유휴 ≈$0라 유지 중.
 
-## 리팩토링 후속 (선택 — 2026-07-17 구조 패스에서 판단 보류, 별도 승인)
+## 리팩토링 후속 — 완료(2026-07-20, `8792c9c`, gate 854 유지)
 
-- [ ] **`operations` 그룹핑 축 통일** — AWS=role별 서브패키지 vs gcp/azure=cloud별 패키지. 통일하면 일관성↑이나 import churn(테스트+CDK asset 경로) 반나절.
-- [ ] **`approval_bridge/handler.py`(600줄+) 분리** — slack_interactive + request_store 분리 여지. 단 테스트가 내부심볼 12개+를 `handler` 경로에 `@patch` 강결합 → 실익<리스크, 하려면 patch 타깃 재작성 동반.
-- 참고: `_k8s_rest`는 restart/scale만 공유(rollback은 GKE/AKS 시맨틱 상이). detector/analyzer/decision은 SDK 90%+ 상이라 DRY 안 함(의도적).
+- [x] ~~`operations` 그룹핑 축 통일~~ — `operations/aws/` + `operations/runners/` 신설, gcp/azure와 동형.
+- [x] ~~`approval_bridge/handler.py` 분리~~ — handler/request_store/slack_interactive/payloads 4모듈, 패치 타깃 재작성 완료.
+- 참고(유지): `_k8s_rest`는 restart/scale만 공유(rollback은 GKE/AKS 시맨틱 상이). detector/analyzer/decision은 SDK 90%+ 상이라 DRY 안 함(의도적).
 
 ## 캘린더 / 메모
 
