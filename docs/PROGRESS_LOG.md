@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-20 — 3-클라우드 비용 감사·고아 리소스 정리 + 예산 알림 3종 완비 (코드 무변경, 계정 운영)
+
+- Status: AWS 예산 알림($8.90)발 3-클라우드 전수 감사. 원인=크레딧 차감 전 총사용액(실청구 ~$0.25)이었으나 감사 중 고아 과금원 다수 발견·정리.
+- Changed(계정, repo 코드 무변경): **AWS** 고아 Classic ELB(7/9~, `platform-agent-demo` k8s 잔재, 일$0.60)+전용 SG 삭제. **GCP** `claude-study-501117`의 GKE `notiflex-cluster`+Gateway LB+PVC 2 삭제(월~$20 차단), 타 계정 8프로젝트=청구 미연결 확인. **Azure** ACR `roadpilot-backend` 21→1 이미지(최신만 유지). **예산 알림**: Azure·GCP에 월 ₩14,000(≈$10) 예산+80/100% 이메일(men16922@gmail.com, GCP는 billing.user 부여) — AWS 기존 $10과 3종 완비. `.claude/settings.local.json`에 `aws/gcloud/az` CLI allow 3종(개인 스코프).
+- Verified: 삭제 후 잔존 0 재확인(AWS ap-northeast-2 ELB/NAT/EIP/EC2/EKS=0, GCP claude-study LB/IP/disk=0), Azure 일별 비용 추이로 AKS 잔재 종료 확인. 합산 월 ~$40 유휴 과금 차단.
+- Blockers: 없음. 메모: Azure `acrroadpilot` Basic 고정료(월~₩7,700)는 roadpilot 종료 시 레지스트리 삭제로 정리 가능(프로젝트 범위 밖).
+- Next: 잔여=아티클 배포(사용자 "나중에")·push(로컬 ahead 2).
+
 ## 2026-07-20 — 보류됐던 리팩토링 후속 2건 완료: operations 그룹핑 축 통일 + approval_bridge 분리 (gate 854 유지)
 
 - Status: NEXT_PLAN "리팩토링 후속(선택)" 2건을 사용자 승인으로 수행. 동작 무변경 순수 구조 개편.
