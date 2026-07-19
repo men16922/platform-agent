@@ -38,6 +38,8 @@ infra/onprem/terraform/*.tfstate
 infra/onprem/terraform/*.tfstate.backup
 infra/onprem/terraform/.terraform/
 **/.terraform/
+**/*.tfstate
+**/*.tfstate.backup
 
 # Video editing source files
 *.mov

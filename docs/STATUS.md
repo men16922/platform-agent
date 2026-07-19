@@ -17,6 +17,7 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **854 passed, 1 skipped** (2026-07-19, 232.03s, 847→854) — **On-Prem P2 승인 Slack 버튼 연동**(`617839b`): DynamoDB 공유 매체+옵트인 폴러, 라이브 왕복(P2 parking→Slack ONPREM 카드→Approve 클릭→APPROVED→폴러 실행→INC-FA2143AF resolved, 증거 `docs/evidence/onprem-slack-approval-live.log`). **동일자 terraform aws-production 실 apply→검증→destroy 완주**(코드 무변경): EKS 노드 2 Ready·Aurora `platform_state` available·IRSA trust 재배선 확증 후 29개 destroy·잔존 0·≈$0.5 미만(증거 `docs/evidence/terraform-aws-production-apply-live.log`) — #7-b 전 단계 실증 완결.
 - `make check` (pytest) → **847 passed, 1 skipped** (2026-07-19, 232.55s, 844→847) — **Slack E2E발 후속 2건 근본수정+라이브 검증**: (a) **Bedrock 무효 모델 ID**(`9a56949`) — 스택이 `.env` 무시·무효 ID 하드코딩으로 매 인시던트 휴리스틱 폴백 강등되던 latent 결함 → `us.anthropic.claude-sonnet-4-6` 프로파일+정확-ARN IAM(프로파일+3리전 하위 모델), 라이브 `analyzer.llm_done`(실 Claude root cause가 Slack 카드에 표시). (b) **유령 SSM 문서**(`55de55e`) — `AWS-SendSlackAlert` 미실존으로 generic-recovery 구조적 `resolved=False` → `_NOTIFICATION_ACTIONS` in-process 1급 처리(+3 test), 라이브 실 LLM **P1/AUTO** 판정→`executor.notify.in_process`→**`resolved=True`**(INC-E15BA62E, DynamoDB 확증). 동일 세션에서 P3/MANUAL·P2/APPROVE 경로도 관측(LLM 심각도 3단 실증).
 - `make check` (pytest) → **844 passed, 1 skipped** (2026-07-19, 234.56s) — **Slack App 실 생성 + 인터랙티브 승인 버튼 라이브 E2E 완주**: 알람 ALARM→SFN WaitForApproval→Slack `#platform-test` 버튼 메시지→**Approve 클릭**(브라우저)→서명 검증→DynamoDB claim(APR-8BC7E7E95B9A=APPROVED)→`SendTaskSuccess`→SFN **SUCCEEDED**(INC-2AC4B6C9). 라이브가 표면화한 프로덕션 버그 2건 근본수정(`0f99420`): (a) detector `_SIGNAL_ADAPTER` NameError=AWS 경로 전면 불능→`get_signal_adapter("aws")`+AWS 경로 회귀 가드, (b) approval_bridge confidence float→DynamoDB TypeError=승인 요청 전량 소실→`Decimal`+e2e 페이크에 float 거부 계약. 증거 `docs/evidence/slack-interactive-approval-live.log`.
 - `make check` (pytest) → **843 passed, 1 skipped** (2026-07-18, 236.08s) — **OAuth 대시보드 배포 트리거 라이브 E2E + 프로덕션 장애 2건 근본수정**: (a) `.vercelignore` 무앵커 `src/`가 git 트리거 Vercel 배포를 전부 404 빌드로 만들던 결함 수정(canonical 200 복구), (b) CloudTrail로 07-11 **Vercel OIDC provider 삭제** 규명→CDK로 재생성(실 slug `men16922s-projects`)+정확-ARN `StartExecution` grant→대시보드 **DEMO FALLBACK→LIVE·AWS** 복구, (c) 라이브 클릭이 표면화한 `smoke_tester` `base_url` KeyError 수정+가드(+1 test). **E2E**: GitHub OAuth(operator)→Start Release→SFN `deploy-dep-1f054864` **SUCCEEDED**. 증거 `docs/evidence/oauth-deploy-trigger-live.log`.
@@ -43,8 +44,8 @@
 
 ## Active Focus
 
-- **자율 백로그 전면 소진(2026-07-19)**: Slack 인터랙티브 승인 라이브 E2E 완주 + 표면화 버그 4건 전부 근본수정(gate 847). 이전 마일스톤 상세는 `COMPLETED_SUMMARY.md`(M8)·`docs/archive/` 참조.
-- **잔여 = 전부 사용자 게이트**: 아티클 배포(원고 완비) · (billable) `terraform apply` · push 여부(로컬 main ahead) · (선택) On-Prem 승인 게이트 Slack 버튼 연동.
+- **백로그 완전 소진(2026-07-19, gate 854)**: Slack 승인 E2E·표면화 버그 4건 근본수정·On-Prem Slack 버튼 왕복·terraform 실 apply/destroy까지 전부 완료. 마일스톤 상세는 `COMPLETED_SUMMARY.md`(M8/M9)·`docs/archive/` 참조.
+- **잔여 = 아티클 배포(원고 854 최신화 완료, 사용자 "나중에") · push 수시**. 코드/인프라 백로그 없음.
 
 ## Open Risks / Gaps
 
