@@ -31,7 +31,9 @@ Run with:
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import os
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Response
@@ -40,6 +42,7 @@ from pydantic import BaseModel
 
 from src.agents.ai import onprem_approvals as approvals
 from src.agents.ai import onprem_incidents as incidents
+from src.agents.ai import onprem_slack_approval as slack_approval
 from src.agents.ai.onprem_incident_pipeline import execute_incident, run_incident_pipeline
 
 logger = logging.getLogger(__name__)
@@ -92,6 +95,8 @@ def _handle_incident(payload: dict[str, Any]) -> PipelineResult:
         # only once resolved (approve/reject), so it isn't double-counted.
         record = approvals.create_pending(result["stages"]["decision"], summary)
         summary.update({"status": "pending_approval", "approval_id": record["approval_id"]})
+        # 옵트인 Slack 버튼 프런트엔드 — 실패해도 대시보드 승인 경로는 그대로.
+        slack_approval.announce({**record, **summary})
     else:  # MANUAL — notify only, unresolved incident for the timeline
         summary["status"] = "notified"
         _record_incident(summary, resolved=False)
@@ -181,14 +186,13 @@ async def pending() -> dict[str, Any]:
     return {"count": len(items), "pending": items}
 
 
-@app.post("/approve/{approval_id}", response_model=PipelineResult)
-async def approve(approval_id: str) -> PipelineResult:
-    """Approve a parked P2 remediation and replay its decision through the executor."""
+def _apply_approval(approval_id: str) -> PipelineResult:
+    """Approve 코어 — HTTP 엔드포인트와 Slack 결정 폴러가 공유한다."""
     record = approvals.get(approval_id)
     if record is None:
-        raise HTTPException(status_code=404, detail=f"Unknown approval: {approval_id}")
+        raise KeyError(f"Unknown approval: {approval_id}")
     if record.get("status") != "pending":
-        raise HTTPException(status_code=409, detail=f"Already {record.get('status')}: {approval_id}")
+        raise ValueError(f"Already {record.get('status')}: {approval_id}")
 
     executor_out = execute_incident(record["decision"])
     approvals.resolve(approval_id, "approved", executor_out=executor_out)
@@ -208,14 +212,13 @@ async def approve(approval_id: str) -> PipelineResult:
     )
 
 
-@app.post("/reject/{approval_id}", response_model=PipelineResult)
-async def reject(approval_id: str) -> PipelineResult:
-    """Reject a parked P2 remediation; no execution occurs."""
+def _apply_rejection(approval_id: str) -> PipelineResult:
+    """Reject 코어 — HTTP 엔드포인트와 Slack 결정 폴러가 공유한다."""
     record = approvals.get(approval_id)
     if record is None:
-        raise HTTPException(status_code=404, detail=f"Unknown approval: {approval_id}")
+        raise KeyError(f"Unknown approval: {approval_id}")
     if record.get("status") != "pending":
-        raise HTTPException(status_code=409, detail=f"Already {record.get('status')}: {approval_id}")
+        raise ValueError(f"Already {record.get('status')}: {approval_id}")
 
     approvals.resolve(approval_id, "rejected")
     _record_incident_from_approval(record, resolved=False)
@@ -228,6 +231,58 @@ async def reject(approval_id: str) -> PipelineResult:
         remediation_mode=record.get("remediation_mode"),
         actions=record.get("actions", []),
     )
+
+
+@app.post("/approve/{approval_id}", response_model=PipelineResult)
+async def approve(approval_id: str) -> PipelineResult:
+    """Approve a parked P2 remediation and replay its decision through the executor."""
+    try:
+        return _apply_approval(approval_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc.args[0])) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/reject/{approval_id}", response_model=PipelineResult)
+async def reject(approval_id: str) -> PipelineResult:
+    """Reject a parked P2 remediation; no execution occurs."""
+    try:
+        return _apply_rejection(approval_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc.args[0])) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+# ------------------------------------------------------------------
+# Slack 결정 폴러 (옵트인) — Slack 버튼 클릭이 DynamoDB에 남긴
+# APPROVED/REJECTED를 로컬 승인 흐름으로 되돌린다.
+# ------------------------------------------------------------------
+
+def sync_slack_decisions() -> list[tuple[str, str]]:
+    """로컬 pending 승인들의 Slack 결정을 1회 동기화한다(폴러·테스트 공용)."""
+    pending_ids = [r["approval_id"] for r in approvals.list_pending()]
+    if not pending_ids:
+        return []
+    return slack_approval.sync_decisions(pending_ids, _apply_approval, _apply_rejection)
+
+
+async def _slack_decision_loop() -> None:
+    interval = float(os.getenv("ONPREM_SLACK_POLL_SEC", "5"))
+    while True:
+        try:
+            await asyncio.to_thread(sync_slack_decisions)
+        except Exception as exc:  # 폴러는 어떤 경우에도 죽지 않는다
+            logger.warning("onprem_webhook.slack_poll_error %s", exc)
+        await asyncio.sleep(interval)
+
+
+@app.on_event("startup")
+async def _start_slack_decision_poller() -> None:
+    if slack_approval.enabled():
+        asyncio.create_task(_slack_decision_loop())
+        logger.info("onprem_webhook.slack_poller_started")
 
 
 def _record_incident_from_approval(

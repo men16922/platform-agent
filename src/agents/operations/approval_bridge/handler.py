@@ -148,7 +148,11 @@ def _handle_http_event(event: dict[str, Any]) -> dict[str, Any]:
 
     callback_payload = _request_to_callback_payload(approval_request)
     try:
-        if decision == "approve":
+        # On-prem 승인은 SFN task token이 없다(로컬 webhook API가 DynamoDB의 최종
+        # 상태를 폴링해 실행). finalise만 하면 결정 전달이 완료된다.
+        if _request_kind(approval_request) == "onprem":
+            pass
+        elif decision == "approve":
             _approve(callback_payload)
         else:
             _reject(callback_payload, reason=f"rejected by {actor}")
