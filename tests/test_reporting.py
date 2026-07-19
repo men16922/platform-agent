@@ -143,10 +143,10 @@ class TestCapacityPlanner:
 # ─────────────────────────────────────────────────────────────
 
 class TestReportingHandler:
-    @patch("src.agents.operations.reporting.handler._DYNAMO")
-    @patch("src.agents.operations.reporting.handler._SLACK_WEBHOOK", "")
+    @patch("src.agents.operations.aws.reporting._DYNAMO")
+    @patch("src.agents.operations.aws.reporting._SLACK_WEBHOOK", "")
     def test_daily_slo_dispatch(self, mock_dynamo):
-        from src.agents.operations.reporting.handler import lambda_handler
+        from src.agents.operations.aws.reporting import lambda_handler
 
         event = {
             "report_type": "daily_slo",
@@ -161,10 +161,10 @@ class TestReportingHandler:
         assert report["service_count"] == 2
         assert "status_counts" in report
 
-    @patch("src.agents.operations.reporting.handler._DYNAMO")
-    @patch("src.agents.operations.reporting.handler._SLACK_WEBHOOK", "")
+    @patch("src.agents.operations.aws.reporting._DYNAMO")
+    @patch("src.agents.operations.aws.reporting._SLACK_WEBHOOK", "")
     def test_weekly_oncall_dispatch(self, mock_dynamo):
-        from src.agents.operations.reporting.handler import lambda_handler
+        from src.agents.operations.aws.reporting import lambda_handler
 
         event = {
             "report_type": "weekly_oncall",
@@ -185,11 +185,11 @@ class TestReportingHandler:
         assert report["current"]["total_incidents"] == 1
         assert report["trend"]["incident_delta"] == 1
 
-    @patch("src.agents.operations.reporting.handler._DYNAMO")
-    @patch("src.agents.operations.reporting.handler._CW")
-    @patch("src.agents.operations.reporting.handler._SLACK_WEBHOOK", "")
+    @patch("src.agents.operations.aws.reporting._DYNAMO")
+    @patch("src.agents.operations.aws.reporting._CW")
+    @patch("src.agents.operations.aws.reporting._SLACK_WEBHOOK", "")
     def test_monthly_capacity_dispatch(self, mock_cw, mock_dynamo):
-        from src.agents.operations.reporting.handler import lambda_handler
+        from src.agents.operations.aws.reporting import lambda_handler
 
         event = {
             "report_type": "monthly_capacity",
@@ -212,16 +212,16 @@ class TestReportingHandler:
 
     def test_unknown_report_type_raises(self):
         import pytest
-        from src.agents.operations.reporting.handler import lambda_handler
+        from src.agents.operations.aws.reporting import lambda_handler
 
         with pytest.raises(ValueError, match="Unknown report_type"):
             lambda_handler({"report_type": "quarterly_magic"}, None)
 
-    @patch("src.agents.operations.reporting.handler._DYNAMO")
+    @patch("src.agents.operations.aws.reporting._DYNAMO")
     @patch("src.agents.adapters.slack_client.requests")
     def test_slack_notification_sent_for_slo(self, mock_requests, mock_dynamo):
-        from src.agents.operations.reporting.handler import lambda_handler
-        import src.agents.operations.reporting.handler as rh
+        from src.agents.operations.aws.reporting import lambda_handler
+        import src.agents.operations.aws.reporting as rh
 
         rh._SLACK_WEBHOOK = "https://hooks.slack.com/test"
         mock_requests.post.return_value = MagicMock(status_code=200)

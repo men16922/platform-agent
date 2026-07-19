@@ -24,10 +24,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.agents.operations.analyzer.handler import lambda_handler as _analyze
-from src.agents.operations.decision.handler import lambda_handler as _decide
-from src.agents.operations.detector.handler import lambda_handler as _detect
-from src.agents.operations.executor.handler import lambda_handler as _execute
+from src.agents.operations.aws.analyzer import lambda_handler as _analyze
+from src.agents.operations.aws.decision import lambda_handler as _decide
+from src.agents.operations.aws.detector import lambda_handler as _detect
+from src.agents.operations.aws.executor import lambda_handler as _execute
 
 
 def run_incident_pipeline(event: dict[str, Any], *, execute: bool = True) -> dict[str, Any]:

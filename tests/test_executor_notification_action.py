@@ -10,7 +10,7 @@ from src.agents.models import (
     AlarmContext, AnalyzerOutput, DecisionOutput, DetectorOutput,
     RemediationMode, Severity,
 )
-from src.agents.operations.executor import handler
+from src.agents.operations.aws import executor as handler
 
 
 def _decision(actions: list[str]) -> DecisionOutput:

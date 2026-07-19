@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.agents.operations.executor import onprem_runner
+from src.agents.operations.runners import onprem_runner
 
 
 class _Log:

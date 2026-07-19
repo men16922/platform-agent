@@ -14,7 +14,7 @@ from typing import Any
 import requests
 import structlog
 
-from src.agents.operations.executor import _k8s_rest
+from src.agents.operations.runners import _k8s_rest
 
 logger = structlog.get_logger(__name__)
 

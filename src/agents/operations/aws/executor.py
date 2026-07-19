@@ -450,14 +450,14 @@ def _serialise(output: ExecutorOutput) -> dict[str, Any]:
 
 def _run_external_action(provider: str, action: str, params: dict[str, list[str]], log: Any) -> None:
     if provider == "gcp":
-        from src.agents.operations.executor.gcp_runner import run_gcp_action
+        from src.agents.operations.runners.gcp_runner import run_gcp_action
         run_gcp_action(action, params, log)
     elif provider == "azure":
-        from src.agents.operations.executor.azure_runner import run_azure_action
+        from src.agents.operations.runners.azure_runner import run_azure_action
         run_azure_action(action, params, log)
     elif provider == "onprem":
         # Real kubectl remediation, gated off by default (ONPREM_EXECUTOR_LIVE).
-        from src.agents.operations.executor.onprem_runner import run_onprem_action
+        from src.agents.operations.runners.onprem_runner import run_onprem_action
         run_onprem_action(action, params, log)
     else:
         # Default mock fallback for other providers.

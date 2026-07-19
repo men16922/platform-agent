@@ -1,11 +1,11 @@
 from unittest.mock import MagicMock, patch
 
-from src.agents.operations.runbook_seed.handler import _seed_runbooks, lambda_handler
+from src.agents.operations.aws.runbook_seed import _seed_runbooks, lambda_handler
 from src.agents.runbooks.catalog import BUILTIN_RUNBOOKS
 
 
 class TestRunbookSeedHandler:
-    @patch("src.agents.operations.runbook_seed.handler._seed_runbooks", return_value=len(BUILTIN_RUNBOOKS))
+    @patch("src.agents.operations.aws.runbook_seed._seed_runbooks", return_value=len(BUILTIN_RUNBOOKS))
     def test_create_event_seeds_runbooks(self, seed_runbooks):
         event = {
             "RequestType": "Create",
@@ -41,7 +41,7 @@ class TestSeedRunbooks:
     def test_seed_runbooks_puts_each_builtin_item(self):
         table = MagicMock()
 
-        with patch("src.agents.operations.runbook_seed.handler._DYNAMO") as dynamo:
+        with patch("src.agents.operations.aws.runbook_seed._DYNAMO") as dynamo:
             dynamo.Table.return_value = table
 
             count = _seed_runbooks("incident-runbooks")

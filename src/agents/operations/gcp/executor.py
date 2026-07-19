@@ -124,7 +124,7 @@ def _execute_single_action(
         parameters = resolved.get("parameters", {})
 
         # Call real GKE and Cloud Run action runner
-        from src.agents.operations.executor.gcp_runner import run_gcp_action
+        from src.agents.operations.runners.gcp_runner import run_gcp_action
         run_gcp_action(action, parameters, logger)
 
         return {"success": True, "action": action, "parameters": parameters}

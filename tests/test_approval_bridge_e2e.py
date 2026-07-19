@@ -20,12 +20,12 @@ from urllib.parse import urlencode
 
 import pytest
 
-from src.agents.operations.approval_bridge.handler import (
-    _approval_id,
-    _header_text,
+from src.agents.operations.aws.approval_bridge.handler import lambda_handler
+from src.agents.operations.aws.approval_bridge.payloads import _header_text
+from src.agents.operations.aws.approval_bridge.request_store import _approval_id
+from src.agents.operations.aws.approval_bridge.slack_interactive import (
     _post_slack_request,
     _verify_slack_signature,
-    lambda_handler,
 )
 
 
@@ -203,29 +203,29 @@ class TestE2EApprovalFlow:
         self.sfn_mock = MagicMock()
 
         monkeypatch.setattr(
-            "src.agents.operations.approval_bridge.handler._SLACK_WEBHOOK",
+            "src.agents.operations.aws.approval_bridge.slack_interactive._SLACK_WEBHOOK",
             "https://hooks.slack.com/test",
         )
         monkeypatch.setattr(
-            "src.agents.operations.approval_bridge.handler._SLACK_SIGNING_SECRET",
+            "src.agents.operations.aws.approval_bridge.slack_interactive._SLACK_SIGNING_SECRET",
             SIGNING_SECRET,
         )
         monkeypatch.setattr(
-            "src.agents.operations.approval_bridge.handler._APPROVAL_REQUEST_TABLE",
+            "src.agents.operations.aws.approval_bridge.request_store._APPROVAL_REQUEST_TABLE",
             "test-approval-table",
         )
         monkeypatch.setattr(
-            "src.agents.operations.approval_bridge.handler._SFN",
+            "src.agents.operations.aws.approval_bridge.handler._SFN",
             self.sfn_mock,
         )
 
     def _patch_table(self):
         return patch(
-            "src.agents.operations.approval_bridge.handler._approval_request_table",
+            "src.agents.operations.aws.approval_bridge.request_store._approval_request_table",
             return_value=self.fake_table,
         )
 
-    @patch("src.agents.operations.approval_bridge.handler.requests.post")
+    @patch("src.agents.operations.aws.approval_bridge.slack_interactive.requests.post")
     def test_full_approve_flow(self, mock_post):
         """SQS → store → Slack buttons → approve callback → SFN success."""
         mock_post.return_value = MagicMock(status_code=200, raise_for_status=MagicMock())
@@ -281,7 +281,7 @@ class TestE2EApprovalFlow:
             assert final["status"] == "APPROVED"
             assert final["responded_by"] == "senior-ops"
 
-    @patch("src.agents.operations.approval_bridge.handler.requests.post")
+    @patch("src.agents.operations.aws.approval_bridge.slack_interactive.requests.post")
     def test_full_reject_flow(self, mock_post):
         """SQS → store → Slack buttons → reject callback → SFN failure."""
         mock_post.return_value = MagicMock(status_code=200, raise_for_status=MagicMock())
@@ -325,7 +325,7 @@ class TestSlackSignatureVerification:
     @pytest.fixture(autouse=True)
     def setup_secret(self, monkeypatch):
         monkeypatch.setattr(
-            "src.agents.operations.approval_bridge.handler._SLACK_SIGNING_SECRET",
+            "src.agents.operations.aws.approval_bridge.slack_interactive._SLACK_SIGNING_SECRET",
             SIGNING_SECRET,
         )
 
@@ -385,7 +385,7 @@ class TestSlackSignatureVerification:
 
     def test_empty_secret_fails(self, monkeypatch):
         monkeypatch.setattr(
-            "src.agents.operations.approval_bridge.handler._SLACK_SIGNING_SECRET",
+            "src.agents.operations.aws.approval_bridge.slack_interactive._SLACK_SIGNING_SECRET",
             "",
         )
         body = "payload=test"
@@ -427,32 +427,32 @@ class TestEdgeCases:
     @pytest.fixture(autouse=True)
     def setup_env(self, monkeypatch):
         monkeypatch.setattr(
-            "src.agents.operations.approval_bridge.handler._SLACK_WEBHOOK",
+            "src.agents.operations.aws.approval_bridge.slack_interactive._SLACK_WEBHOOK",
             "https://hooks.slack.com/test",
         )
         monkeypatch.setattr(
-            "src.agents.operations.approval_bridge.handler._SLACK_SIGNING_SECRET",
+            "src.agents.operations.aws.approval_bridge.slack_interactive._SLACK_SIGNING_SECRET",
             SIGNING_SECRET,
         )
         monkeypatch.setattr(
-            "src.agents.operations.approval_bridge.handler._APPROVAL_REQUEST_TABLE",
+            "src.agents.operations.aws.approval_bridge.request_store._APPROVAL_REQUEST_TABLE",
             "test-approval-table",
         )
 
         self.fake_table = FakeDynamoTable()
         self.sfn_mock = MagicMock()
         monkeypatch.setattr(
-            "src.agents.operations.approval_bridge.handler._SFN",
+            "src.agents.operations.aws.approval_bridge.handler._SFN",
             self.sfn_mock,
         )
 
     def _patch_table(self):
         return patch(
-            "src.agents.operations.approval_bridge.handler._approval_request_table",
+            "src.agents.operations.aws.approval_bridge.request_store._approval_request_table",
             return_value=self.fake_table,
         )
 
-    @patch("src.agents.operations.approval_bridge.handler.requests.post")
+    @patch("src.agents.operations.aws.approval_bridge.slack_interactive.requests.post")
     def test_duplicate_click_returns_already_processed(self, mock_post):
         """Second click on same approval returns ephemeral 'already handled' message."""
         mock_post.return_value = MagicMock(status_code=200, raise_for_status=MagicMock())
@@ -476,7 +476,7 @@ class TestEdgeCases:
             body = json.loads(r2["body"])
             assert "already handled" in body.get("text", "").lower() or "already" in json.dumps(body).lower()
 
-    @patch("src.agents.operations.approval_bridge.handler.requests.post")
+    @patch("src.agents.operations.aws.approval_bridge.slack_interactive.requests.post")
     def test_expired_request_not_found(self, mock_post):
         """Clicking a button for a non-existent (expired TTL) request returns not found."""
         mock_post.return_value = MagicMock(status_code=200, raise_for_status=MagicMock())
@@ -489,7 +489,7 @@ class TestEdgeCases:
             body = json.loads(result["body"])
             assert "not found" in body.get("text", "").lower() or "expired" in body.get("text", "").lower()
 
-    @patch("src.agents.operations.approval_bridge.handler.requests.post")
+    @patch("src.agents.operations.aws.approval_bridge.slack_interactive.requests.post")
     def test_sfn_callback_failure_resets_to_pending(self, mock_post):
         """If SFN SendTaskSuccess fails, request is reset to PENDING for retry."""
         mock_post.return_value = MagicMock(status_code=200, raise_for_status=MagicMock())
@@ -512,7 +512,7 @@ class TestEdgeCases:
             assert stored["status"] == "PENDING"
             assert "SFN timeout" in stored.get("last_error", "")
 
-    @patch("src.agents.operations.approval_bridge.handler.requests.post")
+    @patch("src.agents.operations.aws.approval_bridge.slack_interactive.requests.post")
     def test_multiple_sqs_records_each_stored(self, mock_post):
         """Multiple SQS records in one batch are all stored in DDB."""
         mock_post.return_value = MagicMock(status_code=200, raise_for_status=MagicMock())
@@ -544,15 +544,15 @@ class TestEdgeCases:
         with pytest.raises(ValueError, match="Unsupported"):
             lambda_handler({"unexpected": "shape"}, None)
 
-    @patch("src.agents.operations.approval_bridge.handler.requests.post")
+    @patch("src.agents.operations.aws.approval_bridge.slack_interactive.requests.post")
     def test_interactive_disabled_falls_back_to_default(self, mock_post, monkeypatch):
         """When interactive mode is disabled, falls back to default decision."""
         monkeypatch.setattr(
-            "src.agents.operations.approval_bridge.handler._SLACK_SIGNING_SECRET",
+            "src.agents.operations.aws.approval_bridge.slack_interactive._SLACK_SIGNING_SECRET",
             "",
         )
         monkeypatch.setattr(
-            "src.agents.operations.approval_bridge.handler._DEFAULT_DECISION",
+            "src.agents.operations.aws.approval_bridge.handler._DEFAULT_DECISION",
             "approve",
         )
         mock_post.return_value = MagicMock(status_code=200, raise_for_status=MagicMock())
@@ -575,19 +575,19 @@ class TestBlockKitStructure:
     @pytest.fixture(autouse=True)
     def setup_env(self, monkeypatch):
         monkeypatch.setattr(
-            "src.agents.operations.approval_bridge.handler._SLACK_WEBHOOK",
+            "src.agents.operations.aws.approval_bridge.slack_interactive._SLACK_WEBHOOK",
             "https://hooks.slack.com/test",
         )
         monkeypatch.setattr(
-            "src.agents.operations.approval_bridge.handler._SLACK_SIGNING_SECRET",
+            "src.agents.operations.aws.approval_bridge.slack_interactive._SLACK_SIGNING_SECRET",
             SIGNING_SECRET,
         )
         monkeypatch.setattr(
-            "src.agents.operations.approval_bridge.handler._APPROVAL_REQUEST_TABLE",
+            "src.agents.operations.aws.approval_bridge.request_store._APPROVAL_REQUEST_TABLE",
             "test-approval-table",
         )
 
-    @patch("src.agents.operations.approval_bridge.handler.requests.post")
+    @patch("src.agents.operations.aws.approval_bridge.slack_interactive.requests.post")
     def test_interactive_message_has_action_buttons(self, mock_post):
         """Interactive message includes Approve (primary) and Reject (danger) buttons."""
         mock_post.return_value = MagicMock(status_code=200, raise_for_status=MagicMock())
@@ -633,7 +633,7 @@ class TestBlockKitStructure:
         assert reject_btn["action_id"] == "reject_approval"
         assert "confirm" in reject_btn  # Reject has confirmation dialog
 
-    @patch("src.agents.operations.approval_bridge.handler.requests.post")
+    @patch("src.agents.operations.aws.approval_bridge.slack_interactive.requests.post")
     def test_non_interactive_message_has_no_buttons(self, mock_post):
         """Without approval_id, message has context note but no action buttons."""
         mock_post.return_value = MagicMock(status_code=200, raise_for_status=MagicMock())

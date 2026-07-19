@@ -190,11 +190,11 @@ class TestExecutorIntegration:
     """Verify executor handler calls record_agent_activity."""
 
     @patch("src.agents.operations.activity_writer._get_table")
-    @patch("src.agents.operations.executor.handler._DYNAMO")
-    @patch("src.agents.operations.executor.handler._SSM")
+    @patch("src.agents.operations.aws.executor._DYNAMO")
+    @patch("src.agents.operations.aws.executor._SSM")
     def test_executor_records_activity_on_auto(self, mock_ssm, mock_dynamo, mock_activity_table):
         """Executor in AUTO mode records agent activity after execution."""
-        from src.agents.operations.executor.handler import lambda_handler
+        from src.agents.operations.aws.executor import lambda_handler
 
         # Mock SSM
         mock_ssm.start_automation_execution.return_value = {

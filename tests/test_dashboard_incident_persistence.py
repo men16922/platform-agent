@@ -9,7 +9,7 @@ from src.agents.models import (
     RemediationMode,
     Severity,
 )
-from src.agents.operations.executor.handler import _record_incident
+from src.agents.operations.aws.executor import _record_incident
 
 
 def _decision(provider: str = "aws") -> DecisionOutput:
@@ -50,7 +50,7 @@ def _decision(provider: str = "aws") -> DecisionOutput:
 def test_incident_record_contains_dashboard_read_model_fields():
     table = MagicMock()
 
-    with patch("src.agents.operations.executor.handler._DYNAMO") as dynamo:
+    with patch("src.agents.operations.aws.executor._DYNAMO") as dynamo:
         dynamo.Table.return_value = table
         _record_incident(
             incident_id="INC-12345678",

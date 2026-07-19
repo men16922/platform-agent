@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.agents.operations.approval_bridge.handler import (
+from src.agents.operations.aws.approval_bridge.handler import (
     _approval_id,
     _decision_from_action_id,
     _normalise_decision,
@@ -58,9 +58,9 @@ class TestDecisionPolicy:
 
 
 class TestLambdaHandler:
-    @patch("src.agents.operations.approval_bridge.handler._post_slack_request")
-    @patch("src.agents.operations.approval_bridge.handler._approve")
-    @patch("src.agents.operations.approval_bridge.handler._DEFAULT_DECISION", "approve")
+    @patch("src.agents.operations.aws.approval_bridge.handler._post_slack_request")
+    @patch("src.agents.operations.aws.approval_bridge.handler._approve")
+    @patch("src.agents.operations.aws.approval_bridge.handler._DEFAULT_DECISION", "approve")
     def test_auto_approve_path(self, approve, post_slack):
         result = lambda_handler({"Records": [SAMPLE_RECORD]}, None)
 
@@ -68,9 +68,9 @@ class TestLambdaHandler:
         approve.assert_called_once()
         post_slack.assert_called_once()
 
-    @patch("src.agents.operations.approval_bridge.handler._post_slack_request")
-    @patch("src.agents.operations.approval_bridge.handler._reject")
-    @patch("src.agents.operations.approval_bridge.handler._DEFAULT_DECISION", "reject")
+    @patch("src.agents.operations.aws.approval_bridge.handler._post_slack_request")
+    @patch("src.agents.operations.aws.approval_bridge.handler._reject")
+    @patch("src.agents.operations.aws.approval_bridge.handler._DEFAULT_DECISION", "reject")
     def test_default_reject_path(self, reject, post_slack):
         result = lambda_handler({"Records": [SAMPLE_RECORD]}, None)
 
@@ -78,9 +78,9 @@ class TestLambdaHandler:
         reject.assert_called_once()
         post_slack.assert_called_once()
 
-    @patch("src.agents.operations.approval_bridge.handler._post_slack_request")
-    @patch("src.agents.operations.approval_bridge.handler._store_pending_request")
-    @patch("src.agents.operations.approval_bridge.handler._interactive_dispatch_enabled", return_value=True)
+    @patch("src.agents.operations.aws.approval_bridge.handler._post_slack_request")
+    @patch("src.agents.operations.aws.approval_bridge.handler._store_pending_request")
+    @patch("src.agents.operations.aws.approval_bridge.handler._interactive_dispatch_enabled", return_value=True)
     def test_interactive_queue_path_stores_request(self, interactive_enabled, store_pending, post_slack):
         result = lambda_handler({"Records": [SAMPLE_RECORD]}, None)
 
@@ -90,12 +90,12 @@ class TestLambdaHandler:
         store_pending.assert_called_once()
         post_slack.assert_called_once()
 
-    @patch("src.agents.operations.approval_bridge.handler._interactive_callback_enabled", return_value=True)
-    @patch("src.agents.operations.approval_bridge.handler._verify_slack_signature", return_value=True)
-    @patch("src.agents.operations.approval_bridge.handler._finalise_request")
-    @patch("src.agents.operations.approval_bridge.handler._approve")
+    @patch("src.agents.operations.aws.approval_bridge.handler._interactive_callback_enabled", return_value=True)
+    @patch("src.agents.operations.aws.approval_bridge.handler._verify_slack_signature", return_value=True)
+    @patch("src.agents.operations.aws.approval_bridge.handler._finalise_request")
+    @patch("src.agents.operations.aws.approval_bridge.handler._approve")
     @patch(
-        "src.agents.operations.approval_bridge.handler._claim_request",
+        "src.agents.operations.aws.approval_bridge.handler._claim_request",
         return_value=(
             "claimed",
             {
@@ -122,12 +122,12 @@ class TestLambdaHandler:
         approve.assert_called_once()
         finalise_request.assert_called_once_with("APR-123", "approve", "platform-user")
 
-    @patch("src.agents.operations.approval_bridge.handler._interactive_callback_enabled", return_value=True)
-    @patch("src.agents.operations.approval_bridge.handler._verify_slack_signature", return_value=True)
-    @patch("src.agents.operations.approval_bridge.handler._finalise_request")
-    @patch("src.agents.operations.approval_bridge.handler._reject")
+    @patch("src.agents.operations.aws.approval_bridge.handler._interactive_callback_enabled", return_value=True)
+    @patch("src.agents.operations.aws.approval_bridge.handler._verify_slack_signature", return_value=True)
+    @patch("src.agents.operations.aws.approval_bridge.handler._finalise_request")
+    @patch("src.agents.operations.aws.approval_bridge.handler._reject")
     @patch(
-        "src.agents.operations.approval_bridge.handler._claim_request",
+        "src.agents.operations.aws.approval_bridge.handler._claim_request",
         return_value=(
             "claimed",
             {
@@ -153,8 +153,8 @@ class TestLambdaHandler:
         reject.assert_called_once()
         finalise_request.assert_called_once_with("APR-123", "reject", "platform-user")
 
-    @patch("src.agents.operations.approval_bridge.handler._interactive_callback_enabled", return_value=True)
-    @patch("src.agents.operations.approval_bridge.handler._verify_slack_signature", return_value=False)
+    @patch("src.agents.operations.aws.approval_bridge.handler._interactive_callback_enabled", return_value=True)
+    @patch("src.agents.operations.aws.approval_bridge.handler._verify_slack_signature", return_value=False)
     def test_http_rejects_invalid_signature(self, verify_sig, interactive_enabled):
         result = lambda_handler(_slack_action_event("approve_approval", "APR-123"), None)
 
@@ -162,9 +162,9 @@ class TestLambdaHandler:
         body = json.loads(result["body"])
         assert body["error"] == "Invalid Slack signature"
 
-    @patch("src.agents.operations.approval_bridge.handler._post_slack_request")
-    @patch("src.agents.operations.approval_bridge.handler._approve")
-    @patch("src.agents.operations.approval_bridge.handler._DEFAULT_DECISION", "approve")
+    @patch("src.agents.operations.aws.approval_bridge.handler._post_slack_request")
+    @patch("src.agents.operations.aws.approval_bridge.handler._approve")
+    @patch("src.agents.operations.aws.approval_bridge.handler._DEFAULT_DECISION", "approve")
     def test_provisioning_payload_keeps_generic_request_metadata(self, approve, post_slack):
         payload = {
             "taskToken": "token-456",
@@ -188,7 +188,7 @@ class TestLambdaHandler:
 
 class TestMessageFormatting:
     def test_provisioning_header_uses_request_kind(self):
-        from src.agents.operations.approval_bridge.handler import _decision_message
+        from src.agents.operations.aws.approval_bridge.handler import _decision_message
 
         body = _decision_message(
             {

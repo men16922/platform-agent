@@ -289,7 +289,7 @@ export class IncidentAgentStack extends cdk.Stack {
     const detectorFn = new lambda.Function(this, 'DetectorFunction', {
       ...lambdaDefaults,
       functionName: 'incident-agent-detector',
-      handler:      'src.agents.operations.detector.handler.lambda_handler',
+      handler:      'src.agents.operations.aws.detector.lambda_handler',
       code:         lambdaCode,
       role:         detectorRole,
       logGroup:     makeLogGroup('DetectorFunction'),
@@ -321,7 +321,7 @@ export class IncidentAgentStack extends cdk.Stack {
     const analyzerFn = new lambda.Function(this, 'AnalyzerFunction', {
       ...lambdaDefaults,
       functionName: 'incident-agent-analyzer',
-      handler:      'src.agents.operations.analyzer.handler.lambda_handler',
+      handler:      'src.agents.operations.aws.analyzer.lambda_handler',
       code:         lambdaCode,
       role:         analyzerRole,
       logGroup:     makeLogGroup('AnalyzerFunction'),
@@ -344,7 +344,7 @@ export class IncidentAgentStack extends cdk.Stack {
     const decisionFn = new lambda.Function(this, 'DecisionFunction', {
       ...lambdaDefaults,
       functionName: 'incident-agent-decision',
-      handler:      'src.agents.operations.decision.handler.lambda_handler',
+      handler:      'src.agents.operations.aws.decision.lambda_handler',
       code:         lambdaCode,
       role:         decisionRole,
       logGroup:     makeLogGroup('DecisionFunction'),
@@ -370,7 +370,7 @@ export class IncidentAgentStack extends cdk.Stack {
     const approvalBridgeFn = new lambda.Function(this, 'ApprovalBridgeFunction', {
       ...lambdaDefaults,
       functionName: 'incident-agent-approval-bridge',
-      handler:      'src.agents.operations.approval_bridge.handler.lambda_handler',
+      handler:      'src.agents.operations.aws.approval_bridge.handler.lambda_handler',
       code:         lambdaCode,
       role:         approvalBridgeRole,
       logGroup:     makeLogGroup('ApprovalBridgeFunction'),
@@ -406,7 +406,7 @@ export class IncidentAgentStack extends cdk.Stack {
     const runbookSeedFn = new lambda.Function(this, 'RunbookSeedFunction', {
       ...lambdaDefaults,
       functionName: 'incident-agent-runbook-seed',
-      handler: 'src.agents.operations.runbook_seed.handler.lambda_handler',
+      handler: 'src.agents.operations.aws.runbook_seed.lambda_handler',
       code: lambdaCode,
       role: runbookSeedRole,
       logGroup: makeLogGroup('RunbookSeedFunction'),
@@ -453,7 +453,7 @@ export class IncidentAgentStack extends cdk.Stack {
     const executorFn = new lambda.Function(this, 'ExecutorFunction', {
       ...lambdaDefaults,
       functionName: 'incident-agent-executor',
-      handler:      'src.agents.operations.executor.handler.lambda_handler',
+      handler:      'src.agents.operations.aws.executor.lambda_handler',
       code:         lambdaCode,
       role:         executorRole,
       logGroup:     makeLogGroup('ExecutorFunction'),
@@ -874,7 +874,7 @@ export class IncidentAgentStack extends cdk.Stack {
     const reportingFn = new lambda.Function(this, 'ReportingFunction', {
       ...lambdaDefaults,
       functionName: 'incident-agent-reporting',
-      handler:      'src.agents.operations.reporting.handler.lambda_handler',
+      handler:      'src.agents.operations.aws.reporting.lambda_handler',
       code:         lambdaCode,
       role:         reportingRole,
       logGroup:     makeLogGroup('ReportingFunction'),

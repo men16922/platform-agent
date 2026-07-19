@@ -122,7 +122,7 @@ class TestSyncDecisions:
 class TestBridgeOnpremKind:
     def test_onprem_claim_skips_sfn_and_finalises(self):
         """Lambda 회귀 가드: onprem kind 클레임은 SendTaskSuccess를 호출하지 않는다."""
-        from src.agents.operations.approval_bridge import handler as bridge
+        from src.agents.operations.aws.approval_bridge import handler as bridge
 
         record = {
             "approval_id": "APR-DEADBEEF",

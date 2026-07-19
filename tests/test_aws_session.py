@@ -171,7 +171,7 @@ def test_deployment_build_sources_cross_account_session(monkeypatch):
 
 def test_executor_ssm_client_sources_cross_account_session(monkeypatch):
     """The executor Lambda's SSM client (primary + failover) assumes the role."""
-    import src.agents.operations.executor.handler as executor
+    import src.agents.operations.aws.executor as executor
 
     captured: dict = {}
 

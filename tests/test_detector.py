@@ -9,7 +9,7 @@ import json
 import pytest
 from unittest.mock import patch
 
-from src.agents.operations.detector.handler import (
+from src.agents.operations.aws.detector import (
     _parse_alarm,
     _namespace_to_log_group,
     _resolve_log_groups,
@@ -125,7 +125,7 @@ class TestResolveLogGroups:
 
         assert _resolve_log_groups(alarm) == ["/aws/lambda/my-fn"]
 
-    @patch("src.agents.operations.detector.handler._LOGS_CLIENT")
+    @patch("src.agents.operations.aws.detector._LOGS_CLIENT")
     def test_namespace_prefix_discovers_log_groups(self, logs_client):
         logs_client.describe_log_groups.return_value = {
             "logGroups": [
@@ -150,7 +150,7 @@ class TestResolveLogGroups:
         ]
         logs_client.describe_log_groups.assert_called_once()
 
-    @patch("src.agents.operations.detector.handler._LOGS_CLIENT")
+    @patch("src.agents.operations.aws.detector._LOGS_CLIENT")
     def test_unknown_namespace_returns_empty_without_lookup(self, logs_client):
         alarm = AlarmContext(
             alarm_name="unknown",
@@ -295,10 +295,10 @@ class TestSyntheticAlarm:
 # ─────────────────────────────────────────────────────────────
 
 class TestLambdaHandlerNonAws:
-    @patch("src.agents.operations.detector.handler.get_signal_adapter")
+    @patch("src.agents.operations.aws.detector.get_signal_adapter")
     def test_gcp_event_skips_aws_collection(self, mock_registry):
         from unittest.mock import MagicMock
-        from src.agents.operations.detector.handler import lambda_handler
+        from src.agents.operations.aws.detector import lambda_handler
 
         mock_adapter = MagicMock()
         mock_adapter.normalise.return_value = NormalizedIncident(
@@ -353,11 +353,11 @@ class TestLambdaHandlerAws:
         },
     }
 
-    @patch("src.agents.operations.detector.handler._fetch_related_metrics", return_value={})
-    @patch("src.agents.operations.detector.handler._fetch_xray_traces", return_value=[])
-    @patch("src.agents.operations.detector.handler._query_logs_insights", return_value=[])
+    @patch("src.agents.operations.aws.detector._fetch_related_metrics", return_value={})
+    @patch("src.agents.operations.aws.detector._fetch_xray_traces", return_value=[])
+    @patch("src.agents.operations.aws.detector._query_logs_insights", return_value=[])
     def test_aws_path_runs_real_normalisation(self, *_mocks):
-        from src.agents.operations.detector.handler import lambda_handler
+        from src.agents.operations.aws.detector import lambda_handler
 
         result = lambda_handler(self._EVENT, None)
 

@@ -7,7 +7,7 @@ DynamoDB / SNS 호출은 mock 처리.
 
 from unittest.mock import patch, MagicMock
 
-from src.agents.operations.decision.handler import (
+from src.agents.operations.aws.decision import (
     _lookup_dynamo,
     _match_builtin,
     _match_runbook_registry,
@@ -15,7 +15,7 @@ from src.agents.operations.decision.handler import (
     _select_runbook,
     _determine_mode,
 )
-from src.agents.operations.executor.handler import _build_ssm_params
+from src.agents.operations.aws.executor import _build_ssm_params
 from src.agents.models import (
     AlarmContext,
     AnalyzerOutput,
@@ -78,8 +78,8 @@ class TestMatchBuiltin:
         assert len(rb["actions"]) > 0
         assert rb["capabilities"] == ["restart_workload", "scale_out"]
 
-    @patch("src.agents.operations.decision.handler._scan_dynamo_candidates", return_value=[])
-    @patch("src.agents.operations.decision.handler._lookup_dynamo", return_value=None)
+    @patch("src.agents.operations.aws.decision._scan_dynamo_candidates", return_value=[])
+    @patch("src.agents.operations.aws.decision._lookup_dynamo", return_value=None)
     def test_select_runbook_resolves_capabilities_to_actions(self, lookup_dynamo, scan_candidates):
         alarm = make_alarm(
             "AWS/EKS",
@@ -116,8 +116,8 @@ class TestMatchBuiltin:
         assert rto == 180
         lookup_dynamo.assert_called_once_with("test-alarm")
 
-    @patch("src.agents.operations.decision.handler._scan_dynamo_candidates")
-    @patch("src.agents.operations.decision.handler._lookup_dynamo", return_value=None)
+    @patch("src.agents.operations.aws.decision._scan_dynamo_candidates")
+    @patch("src.agents.operations.aws.decision._lookup_dynamo", return_value=None)
     def test_select_runbook_uses_seeded_dynamo_catalog_when_exact_lookup_misses(
         self,
         lookup_dynamo,
@@ -287,7 +287,7 @@ class TestScanDynamoCandidates:
             },
         ]
 
-        with patch("src.agents.operations.decision.handler._DYNAMO") as dynamo:
+        with patch("src.agents.operations.aws.decision._DYNAMO") as dynamo:
             dynamo.Table.return_value = table
 
             items = _scan_dynamo_candidates()
@@ -302,7 +302,7 @@ class TestScanDynamoCandidates:
         table = MagicMock()
         table.scan.side_effect = [{"Items": [valid, invalid]}]
 
-        with patch("src.agents.operations.decision.handler._DYNAMO") as dynamo:
+        with patch("src.agents.operations.aws.decision._DYNAMO") as dynamo:
             dynamo.Table.return_value = table
 
             items = _scan_dynamo_candidates()
@@ -319,7 +319,7 @@ class TestScanDynamoCandidates:
         table = MagicMock()
         table.get_item.return_value = {"Item": override}
 
-        with patch("src.agents.operations.decision.handler._DYNAMO") as dynamo:
+        with patch("src.agents.operations.aws.decision._DYNAMO") as dynamo:
             dynamo.Table.return_value = table
 
             result = _lookup_dynamo("MyService-5xx")
@@ -331,7 +331,7 @@ class TestScanDynamoCandidates:
         table = MagicMock()
         table.get_item.return_value = {"Item": {"alarm_name": "MyService-5xx", "runbook_id": "broken"}}
 
-        with patch("src.agents.operations.decision.handler._DYNAMO") as dynamo:
+        with patch("src.agents.operations.aws.decision._DYNAMO") as dynamo:
             dynamo.Table.return_value = table
 
             result = _lookup_dynamo("MyService-5xx")
@@ -342,7 +342,7 @@ class TestScanDynamoCandidates:
         table = MagicMock()
         table.get_item.return_value = {}
 
-        with patch("src.agents.operations.decision.handler._DYNAMO") as dynamo:
+        with patch("src.agents.operations.aws.decision._DYNAMO") as dynamo:
             dynamo.Table.return_value = table
 
             assert _lookup_dynamo("Nope") is None

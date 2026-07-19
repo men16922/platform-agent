@@ -8,13 +8,13 @@ import os
 from unittest import mock
 
 
-from src.agents.operations.executor.gcp_auth import get_gcp_access_token
-from src.agents.operations.executor.gcp_runner import run_gcp_action
-from src.agents.operations.executor.azure_runner import run_azure_action
+from src.agents.operations.runners.gcp_auth import get_gcp_access_token
+from src.agents.operations.runners.gcp_runner import run_gcp_action
+from src.agents.operations.runners.azure_runner import run_azure_action
 
 
 class TestGcpAuth:
-    @mock.patch("src.agents.operations.executor.gcp_auth._get_token_via_wif")
+    @mock.patch("src.agents.operations.runners.gcp_auth._get_token_via_wif")
     def test_wif_preferred_when_env_vars_set(self, mock_wif):
         mock_wif.return_value = "mock-wif-token"
         
@@ -29,7 +29,7 @@ class TestGcpAuth:
             assert token == "mock-wif-token"
             mock_wif.assert_called_once_with("12345678", "pool-id", "provider-id", "agent@project.iam.gserviceaccount.com")
 
-    @mock.patch("src.agents.operations.executor.gcp_auth._get_token_via_sa_key")
+    @mock.patch("src.agents.operations.runners.gcp_auth._get_token_via_sa_key")
     def test_sa_key_fallback_when_wif_missing(self, mock_sa_key):
         mock_sa_key.return_value = "mock-sa-token"
         
@@ -63,7 +63,7 @@ class TestGcpRunner:
                 params=params
             )
 
-    @mock.patch("src.agents.operations.executor.gcp_runner.get_gcp_access_token")
+    @mock.patch("src.agents.operations.runners.gcp_runner.get_gcp_access_token")
     @mock.patch("requests.get")
     @mock.patch("requests.patch")
     def test_run_gke_rollout_restart_real_api_call(self, mock_patch, mock_get, mock_token):
@@ -111,7 +111,7 @@ class TestGcpRunner:
             assert kwargs["headers"]["Authorization"] == "Bearer fake-gcp-token"
             assert "kubectl.kubernetes.io/restartedAt" in kwargs["json"]["spec"]["template"]["metadata"]["annotations"]
 
-    @mock.patch("src.agents.operations.executor.gcp_runner.get_gcp_access_token")
+    @mock.patch("src.agents.operations.runners.gcp_runner.get_gcp_access_token")
     @mock.patch("requests.get")
     @mock.patch("requests.patch")
     def test_run_gke_failover_retry(self, mock_patch, mock_get, mock_token):

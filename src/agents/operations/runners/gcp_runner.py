@@ -15,8 +15,8 @@ from typing import Any
 import requests
 import structlog
 
-from src.agents.operations.executor import _k8s_rest
-from src.agents.operations.executor.gcp_auth import get_gcp_access_token
+from src.agents.operations.runners import _k8s_rest
+from src.agents.operations.runners.gcp_auth import get_gcp_access_token
 
 logger = structlog.get_logger(__name__)
 
