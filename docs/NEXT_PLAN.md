@@ -13,7 +13,7 @@
 - [ ] **push 여부** — 로컬 main이 origin 대비 ahead(Slack E2E~tidy 커밋들). 승인 시 `git push`.
 - [ ] **테크 아티클 배포(LinkedIn/Medium)** — **작성 전부 완료(잔여=배포)**: EN `docs/post/platform-agent-architecture.md` + KO `-ko.md` + LinkedIn 컷(EN/KO) `platform-agent-linkedin-cut.md` + 데모 영상 `local-onprem-edited.mp4`.
 - [ ] (billable) **`terraform apply`** — `infra/terraform/aws-production/`(EKS+Aurora+NAT, init/fmt/validate 완료). 시간당 과금 — apply→검증→즉시 destroy 권장.
-- [ ] (선택) **On-Prem 승인 게이트 Slack 버튼 연동** — 현재는 대시보드 버튼으로 대체 중; AWS 경로용 Slack App/서명 검증 인프라는 07-19 완비라 프런트 배선만 남음.
+- [x] ~~(선택) On-Prem 승인 게이트 Slack 버튼 연동~~ — **완료(2026-07-19, `617839b`, gate 854)**: DynamoDB 공유 매체 + 옵트인 폴러, 라이브 왕복(APR-3E6D2540→INC-FA2143AF resolved). 증거 `docs/evidence/onprem-slack-approval-live.log`.
 - [ ] (선택) **Azure Foundry 스택 정리** — 유휴 ≈$0라 유지 중.
 
 ## 리팩토링 후속 (선택 — 2026-07-17 구조 패스에서 판단 보류, 별도 승인)

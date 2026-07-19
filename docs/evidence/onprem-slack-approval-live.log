@@ -1,0 +1,28 @@
+# On-Prem P2 승인 게이트 Slack 버튼 — Live E2E Evidence (2026-07-19 KST)
+
+목표: 로컬(비공개) webhook API의 P2 승인을 실 Slack Approve 버튼으로 라이브 완주.
+아키텍처: 로컬 API는 공개 URL이 없으므로 AWS approval bridge(Lambda Function URL)와
+DynamoDB `incident-approval-requests`를 공유 매체로 사용(커밋 `617839b`, 전부 옵트인).
+
+## 흐름 (전부 라이브)
+1. cdk deploy — bridge의 onprem 분기(SFN 콜백 생략) 배포 (73s)
+2. 로컬 기동: `ONPREM_SLACK_APPROVAL=true APPROVAL_REQUEST_TABLE=incident-approval-requests
+   ONPREM_SLACK_POLL_SEC=3 uvicorn src.agents.ai.onprem_webhook_api:app :8078`
+3. Alertmanager P2 페이로드(KubePodHighMemory, severity=warning, payments-api) POST
+   → `pending_approval`, approval_id=**APR-3E6D2540**
+   → DynamoDB: status=PENDING, request_kind=**onprem**, task_token=`onprem:APR-3E6D2540`(센티넬)
+   → Slack `#platform-test`: "[P2] On-Prem approval gate: payments-api" 카드
+     (Request Type=ONPREM · 실 Bedrock LLM root cause 문장형 표시 — 모델 ID 수정의
+      부수 효과로 로컬 분석도 실 LLM · Approve/Reject 버튼)
+4. **브라우저로 Approve 클릭** → Slack → Lambda(서명 검증) → 클레임
+   → SFN 미호출(onprem 분기) → DynamoDB **APPROVED** (responded_by=yeongsigchoe7)
+5. 로컬 폴러(3s)가 결정 회수 → `_apply_approval` 실행 → `/pending` **0**
+   → `/incidents`: **INC-FA2143AF**, resolved=**true**,
+     executed_actions=[ONPREM-CreateChangeRequest]
+
+## 검증 요점
+- 버튼 계약(action_id/value)·저장 스키마(Decimal confidence)가 AWS 경로와 동일 —
+  Lambda 코드는 kind 분기 5줄만으로 양 경로 지원.
+- 옵트인 미설정 시 완전 no-op(오프라인 완결 유지) — 게이트/스키마/부분실패 격리
+  +7 test, `make check` 854 passed(847→854).
+- 서버 teardown 완료.

@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-19 — On-Prem P2 승인 게이트 Slack 버튼 연동 + 라이브 왕복 완주 (gate 847→854)
+
+- Status: 잔여 선택 항목 "On-Prem 승인 게이트 Slack 버튼" 구현·라이브 검증 완료. terraform apply(3번)는 분류기 차단으로 **사용자 `!` 실행 대기**.
+- Changed(`617839b`): 로컬 API는 공개 URL이 없어 버튼 콜백 직수신 불가 → **DynamoDB 승인 테이블을 공유 매체**로: 신규 `onprem_slack_approval.py`(P2 parking 시 bridge 스키마·버튼 계약으로 PENDING 기록+Slack 송출, `sync_decisions` 결정 회수) + bridge onprem kind=SFN 콜백 생략 + webhook API approve/reject 코어 추출·startup 폴러. 전부 옵트인(`ONPREM_SLACK_APPROVAL`), 기본=오프라인 무변경. +7 test.
+- Verified: `make check` → **854 passed, 1 skipped**(232.03s, 847→854). **라이브**: P2 페이로드→APR-3E6D2540 parking→DynamoDB PENDING(kind=onprem)→Slack ONPREM 카드(실 LLM root cause)→**Approve 클릭**→APPROVED→폴러 회수→실행→`/pending` 0·INC-FA2143AF resolved=true. 증거 `docs/evidence/onprem-slack-approval-live.log`.
+- Blockers: terraform apply/destroy는 분류기+settings 자기수정 차단 — 사용자 `!` 또는 `/permissions` allow 필요.
+- Next: (사용자) terraform apply→검증→destroy · 아티클 배포(나중) · push는 수시.
+
 ## 2026-07-19 — 알림성 액션 in-process 1급 처리: generic-recovery 구조적 미해결 근본수정 (gate 844→847)
 
 - Status: 직전 규명한 유령 SSM 문서 결함을 권고안(a)로 수정·라이브 검증 완료. Slack E2E발 후속 3건 전부 소진.
