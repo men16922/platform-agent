@@ -305,7 +305,7 @@ class Supervisor:
                 # Structured delegation descriptor: a single trusted object a
                 # specialist can act on without parsing the free-text instruction.
                 # The free-text `parts` stays for back-compat; params extraction is
-                # a deliberate follow-up (see docs/plans/a2a-delegation-hardening.md).
+                # a deliberate follow-up (see docs/archive/plans/a2a-delegation-hardening.md).
                 "task": {
                     "type": decision.role.value,
                     "origin": "supervisor",
