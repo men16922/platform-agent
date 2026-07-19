@@ -1,0 +1,31 @@
+# Terraform aws-production 실 apply→검증→destroy — Live Evidence (2026-07-19 KST)
+
+목표: 레퍼런스 #7-b 모듈(`infra/terraform/aws-production/`)의 마지막 사용자 게이트
+"(billable) terraform apply"를 실 실행으로 완주. 사용자 명시 승인, 검증 후 즉시 destroy.
+
+## 실행 타임라인
+1. `terraform apply` 1차 — 21개 리소스 생성 진행 중 **로컬 DNS 블립**으로
+   EKS 생성 폴링 실패("lookup eks.us-east-1.amazonaws.com: no such host", exit 1).
+   실제 클러스터는 AWS에서 ACTIVE — terraform만 tainted 처리.
+2. `terraform apply` 재개 — tainted 클러스터 replace(-/+) 포함 수렴:
+   **Apply complete! 8 added, 0 changed, 1 destroyed** (exit 0).
+3. 검증(아래) 후 `terraform destroy` — **Destroy complete! 29 destroyed** (exit 0).
+
+## 검증 (전부 라이브)
+- **EKS** `platform-agent-eks` v1.31: 노드 2개 **Ready**(v1.31.14-eks, private subnet
+  10.80.10.x/11.x — 전용 kubeconfig로 `kubectl get nodes` 확증).
+- **Aurora Serverless v2** `platform-agent-state`: status=**available**,
+  engine=aurora-postgresql, database=**platform_state**(④ `PLATFORM_STATE_DSN` seam 정합),
+  min 0.5 ACU. `manage_master_user_password` 마스터 시크릿 Secrets Manager 존재.
+- **IRSA**: `platform-agent-chart-irsa` trust가 **재생성된 클러스터의 OIDC id로 정확히
+  재배선**됨 — sub=`system:serviceaccount:default:pa-platform-agent`(차트 SA 한정),
+  aud=`sts.amazonaws.com`. 최소권한 trust 계약이 replace를 넘어 유지됨을 실증.
+- **outputs**: aurora_endpoint·master_secret_arn·chart_irsa_role_arn·cluster_endpoint·
+  `state_dsn_template`(postgresql://…/platform_state) 전부 채워짐.
+
+## 잔존/과금
+- destroy 후 계정 확인: EKS 클러스터 0 · RDS 클러스터 0 · NAT 게이트웨이 0 ·
+  terraform state 0. 가동 시간 기준 추정 비용 **≈$0.5 미만**(EKS ~1h·노드 2×t3.medium
+  ~40m·NAT ~1h·Aurora 0.5ACU ~25m).
+- 이로써 M8의 잔여였던 "(billable) terraform apply" 사용자 게이트 소진 —
+  레퍼런스 #7-b는 코드·validate·**실 apply/destroy**까지 전 단계 실증 완료.

@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-19 — terraform aws-production 실 apply→검증→destroy 완주 + 아티클 854 최신화 (코드 무변경, gate 854 유지)
+
+- Status: 마지막 billable 사용자 게이트 "(billable) terraform apply" 소진(사용자 허용 규칙 추가로 해금). 레퍼런스 #7-b = 코드·validate·**실 apply/destroy** 전 단계 실증 완료.
+- Changed: `docs/evidence/terraform-aws-production-apply-live.log` + 아티클 3종 854 최신화·승인 게이트 Slack 라이브 사실 보강(`0f19d12`). `.claude/settings.local.json`에 terraform apply/destroy/output/state list/show allow 5종(개인 스코프 — apply/destroy는 사용 후 제거 권장).
+- Verified (라이브): 1차 apply가 로컬 DNS 블립으로 EKS 폴링 실패(실 클러스터는 ACTIVE, terraform만 tainted)→재개 apply가 replace 포함 수렴(**8 added/1 destroyed**). 검증: EKS 노드 2 **Ready**(v1.31.14)·Aurora `platform_state` **available**(0.5 ACU)+마스터 시크릿·**IRSA trust가 재생성 클러스터 OIDC로 정확 재배선**(차트 SA 한정)·outputs/DSN 템플릿 정합 → **destroy 29개 완료**, 계정 잔존 0(EKS/RDS/NAT). 비용 ≈$0.5 미만.
+- Blockers: 없음.
+- Next: 잔여 = 아티클 **배포**(원고는 854로 최신화 완료·사용자 "나중에") · push 수시 · (선택) settings의 terraform allow 정리.
+
 ## 2026-07-19 — On-Prem P2 승인 게이트 Slack 버튼 연동 + 라이브 왕복 완주 (gate 847→854)
 
 - Status: 잔여 선택 항목 "On-Prem 승인 게이트 Slack 버튼" 구현·라이브 검증 완료. terraform apply(3번)는 분류기 차단으로 **사용자 `!` 실행 대기**.
