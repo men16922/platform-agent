@@ -1,6 +1,6 @@
 # DECISIONS — platform-agent
 
-최종 갱신: 2026-07-18
+최종 갱신: 2026-07-19
 
 > 되돌리기 어려운 결정만. 형식: **Decision / Reason / Impact**. 최신이 위.
 
@@ -8,6 +8,12 @@
 > - **enterprise-ai-governance-dashboard** (외부 레포) — 2-Pass Fact NL→SQL 챗봇 + SQL self-heal 루프 + LLM SKU 그룹핑 + 최소권한 Cloud Run SA. 대시보드 챗봇/FinOps 확장 시 검토. 상세 → `docs/reference/enterprise-ai-governance-dashboard.md`. (검토 2026-07-13)
 
 ---
+
+## D17 — 알림성 액션은 SSM 문서가 아니라 executor in-process로 실행 (`_NOTIFICATION_ACTIONS`)
+
+- **Decision:** `open_change_request` 캐퍼빌리티류 알림성 액션(현재 `AWS-SendSlackAlert` 1종)은 SSM Automation 문서 디스패치가 아니라 **executor 자신의 Slack 인시던트 리포트로 수행**하고 executed로 집계한다(웹훅 미설정 시 skip 유지). 실 SSM 문서 작성(b)·의도된-skip 문서화(c)는 기각.
+- **Reason:** `AWS-SendSlackAlert`는 실존하는 AWS 관리 문서가 아님(라이브 E2E가 표면화; AccessDenied 이면에 NotFound 이중 결함) → generic-recovery가 구조적으로 `resolved=False`. 알림의 실체는 "사람에게 알리기"이고 그 전달 경로(post_webhook)는 executor에 이미 존재 — 별도 SSM 문서는 유지비만 늘림.
+- **Impact:** 새 알림성 액션은 `_NOTIFICATION_ACTIONS`에 등록하면 provider 무관 동일 처리. 인시던트 resolved 시맨틱 = "모든 액션이 실행됨"이며 알림도 실행으로 침. 라이브 검증: 실 LLM P1/AUTO→`resolved=True`(INC-E15BA62E, gate 847).
 
 ## D16 — Vercel OIDC = team slug `men16922s-projects` 고정 + cdk deploy 해금은 개인 스코프(local settings)만
 
