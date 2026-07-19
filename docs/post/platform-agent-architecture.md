@@ -8,7 +8,7 @@
 
 `platform-agent` is an AWS-native (but cloud-neutral) agent that handles both **Day 1** (provision → build → deploy → validate) and **Day 2** (detect → analyze → decide → execute → report) for Kubernetes platforms across **AWS, GCP, Azure, and on-prem**. A single natural-language sentence — *"provision an on-prem cluster, then deploy orders-api and confirm it's healthy"* — becomes a planned, traced, approval-gated sequence of real infrastructure actions.
 
-The interesting part isn't that an LLM can call tools. It's the **guardrails**: a reconciliation gate that refuses to act on facts the model can't ground in tool output, a self-consistency vote on routing, budget gates, circuit breakers, per-tool kill-switches, and graceful cross-account fallback. This post walks through the architecture and the engineering principles behind it, verified by **842 passing tests** and live end-to-end runs on three real clouds.
+The interesting part isn't that an LLM can call tools. It's the **guardrails**: a reconciliation gate that refuses to act on facts the model can't ground in tool output, a self-consistency vote on routing, budget gates, circuit breakers, per-tool kill-switches, and graceful cross-account fallback. This post walks through the architecture and the engineering principles behind it, verified by **854 passing tests** and live end-to-end runs on three real clouds.
 
 ---
 
@@ -85,9 +85,9 @@ The subtle part is the **fallback**: when the sampled votes disagree too much to
 Strip away the feature names and the same handful of principles recur:
 
 - **Deterministic backstop over model output.** The reconciliation gate and the self-consistency fallback both encode the same rule: when the model is unsupported or self-inconsistent, a deterministic path decides. LLMs propose; verified logic disposes.
-- **Approval gates for hard-to-reverse actions.** Anything `Delete / Drop / Terminate / teardown` — cluster provisioning, runtime hosting, scale-to-zero — is forced through explicit approval. The autonomous path is deliberately the *reversible* subset (restart, rollback, scale-up, polite drain that respects PodDisruptionBudgets).
+- **Approval gates for hard-to-reverse actions.** Anything `Delete / Drop / Terminate / teardown` — cluster provisioning, runtime hosting, scale-to-zero — is forced through explicit approval. The autonomous path is deliberately the *reversible* subset (restart, rollback, scale-up, polite drain that respects PodDisruptionBudgets). The human side of the gate is live too: a P2 incident parks a signed **Slack Approve/Reject card**, and one click resumes the paused Step Functions execution — the same button contract also serves the on-prem pipeline through a shared DynamoDB decision store, because the local API has no public callback URL.
 - **Opt-in, non-breaking.** Every Tier 1/2 feature ships dark by default. New behavior engages only behind an env flag or an injected dependency, so adoption never risks the existing path — and the regression tests prove the default is unchanged.
-- **Injectable seams, offline-testable.** Transports, STS clients, samplers, clocks, and card-fetchers are all injectable. There's no moto, no live-cloud requirement in the unit suite — a fake is monkeypatched into a module-level seam. That's why 842 tests run in minutes.
+- **Injectable seams, offline-testable.** Transports, STS clients, samplers, clocks, and card-fetchers are all injectable. There's no moto, no live-cloud requirement in the unit suite — a fake is monkeypatched into a module-level seam. That's why 854 tests run in minutes.
 - **Reuse over reimplement.** The circuit breaker written for Tier 1 resilience is the *same* object that powers Tier 2's cross-account fallback. Patterns compound instead of duplicating.
 
 ---
@@ -96,7 +96,7 @@ Strip away the feature names and the same handful of principles recur:
 
 None of the above is "done" until it's exercised:
 
-- **`make check` → 842 passed, 1 skipped.** Every feature lands with tests, and the gate runs on every multi-file change.
+- **`make check` → 854 passed, 1 skipped.** Every feature lands with tests, and the gate runs on every multi-file change.
 - **Live, on real clouds.** Managed agent-runtime hosting was proven end-to-end on all three clouds — AgentCore, Vertex Agent Engine, and Azure AI Foundry each did a real `create → invoke/query → teardown` with genuine model responses, then immediate deletion (each under \$0.50). Provisioning parity was proven with a real AKS cluster (create → Ready → teardown).
 - **A2A against a real peer.** The supervisor discovers and delegates to a real kagent agent (local MLX Qwen) over A2A — Agent Card discovery → skill match → JSON-RPC delegation → a real `k8s_get_resources` diagnostic came back. That live run even surfaced a spec-compliance bug (a missing required `messageId`) that the lenient in-house gateway had masked.
 

@@ -15,7 +15,7 @@ The hard part was never "can an LLM call tools." It was: how do you keep it from
 • Self-consistency voting on routing, with a deterministic fallback when the model self-disagrees.
 • A remote-MCP connector with a per-tool + global kill-switch, and cross-account STS with graceful in-account fallback — both demonstrated over real HTTP and real STS.
 
-The lesson: the headline feature of an agentic tool is autonomy, but the shippable feature is trust. LLMs propose; verified, deterministic logic disposes. 842 tests, live end-to-end on three real clouds.
+The lesson: the headline feature of an agentic tool is autonomy, but the shippable feature is trust. LLMs propose; verified, deterministic logic disposes. 854 tests, live end-to-end on three real clouds.
 
 Full write-up 👇 [link]
 
@@ -33,7 +33,7 @@ Full write-up 👇 [link]
 • 라우팅에 대한 **자기일관성 투표**, 모델이 자기모순일 땐 결정론적 폴백.
 • 도구별·전역 **kill-switch**를 가진 원격 MCP 커넥터, 그리고 우아한 in-account 폴백을 갖춘 **크로스계정 STS** — 둘 다 실제 HTTP·실제 STS로 실증.
 
-교훈은 이렇습니다. 에이전틱 도구의 표제 기능은 자율성이지만, **출시 가능한 기능은 신뢰**입니다. LLM은 제안하고, 검증된 결정론적 로직이 처분합니다. 테스트 842개, 세 개의 실제 클라우드에서 라이브 E2E.
+교훈은 이렇습니다. 에이전틱 도구의 표제 기능은 자율성이지만, **출시 가능한 기능은 신뢰**입니다. LLM은 제안하고, 검증된 결정론적 로직이 처분합니다. 테스트 854개, 세 개의 실제 클라우드에서 라이브 E2E.
 
 전체 글은 👇 [링크]
 
