@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-20 — On-Prem 애드온 스택 Phase 5(로깅): Loki + Fluent Bit → Grafana 데이터소스 라이브 실증 (gate 867→870)
+
+- Status: `docs/plans/2026-07-20-onprem-platform-addons.md` Phase 5(선택) 중 **Loki/Fluent Bit 증분 완료** — 관측성 삼각 완성(metrics=Prometheus 기존 + logs=Loki 신규). 잔여 Phase 5 = k3s 패리티·Gateway API(선택).
+- Changed: 신규 `logging.tf`(grafana/loki **7.1.0**=v3.6.8 SingleBinary + fluent/fluent-bit **0.57.9**=v5.0.9 DaemonSet, fluent-bit가 loki `depends_on`) + 저사양 `values/loki.yaml`(SingleBinary·filesystem·**chunks/results 캐시 off**=멀티-Gi 풋프린트 함정 회피·backend/read/write replicas 0)·`values/fluent-bit.yaml`(tail→k8s 필터→loki 출력, Auto_Kubernetes_Labels). `values/kube-prometheus-stack.yaml` grafana에 **Loki additionalDataSources** 배선. 가드 +3(SingleBinary+캐시off·fluent-bit→loki gateway·grafana Loki 데이터소스), 핀 계약 3→5.
+- Verified: `terraform validate` Success · `make check` → **870 passed, 1 skipped**(867→870). **라이브($0, kind)**: apply(2 added+kps 1 changed)→loki-0 2/2·loki-gateway 1/1·fluent-bit DaemonSet 2/2 Ready. **로그 적재 확증**: Loki query API가 argocd/monitoring/default/kube-system 네임스페이스 라인 반환(k8s 레이블 enrich), 그중 **`pa-platform-agent-webhook` 자체 로그** 포함. Grafana 데이터소스 목록에 Loki 등록 확인(Alertmanager/Loki/Prometheus 3종). 증거 `docs/evidence/onprem-addons-logging-e2e.log`.
+- Blockers: 없음. 메모: Grafana `/resources` 프록시 프로브가 404(프로브 URL 경로 이슈)였으나 데이터소스 등록·게이트웨이 직접 쿼리로 적재는 이미 입증 — 데이터소스 결함 아님.
+- Next: (선택) Phase 5 잔여(k3s 패리티·Gateway API) · 잔여 사용자 게이트(아티클 배포).
+
 ## 2026-07-20 — On-Prem 애드온 스택 Phase 4: Argo Rollouts canary promote/abort 라이브 실증 (gate 865→867)
 
 - Status: `docs/plans/2026-07-20-onprem-platform-addons.md` Phase 4 = IaC+라이브 증거 완결. 애드온 스택 Phase 1~4 전부 완료(Phase 5 선택만 잔여).

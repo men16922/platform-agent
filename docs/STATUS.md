@@ -17,6 +17,7 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **870 passed, 1 skipped** (2026-07-20, 867→870) — **On-Prem 애드온 스택 Phase 5(로깅)**: `logging.tf`(loki 7.1.0 SingleBinary+캐시off + fluent-bit 0.57.9 DaemonSet) + grafana Loki 데이터소스. 가드 +3, 핀 3→5. **라이브($0)**: 파드 Ready→Loki query API가 `pa-platform-agent-webhook` 포함 다수 네임스페이스 로그 반환→Grafana Loki 데이터소스 등록 확인. 증거 `docs/evidence/onprem-addons-logging-e2e.log`.
 - `make check` (pytest) → **867 passed, 1 skipped** (2026-07-20, 865→867) — **On-Prem 애드온 스택 Phase 4(Argo Rollouts)**: `rollouts.tf`(argo-rollouts 2.41.1 컨트롤러 + 데모 canary, 무기한 pause 수동게이트). 가드 +2, 핀 2→3. DECISIONS D19(러너 vs Rollouts 병존). **라이브($0)**: promote(blue→yellow, 게이트 60s→75%→100% stable)·abort(yellow→red 25%→Degraded, yellow stable 유지) 양경로. 증거 `docs/evidence/onprem-addons-rollouts-e2e.log`.
 - `make check` (pytest) → **865 passed, 1 skipped** (2026-07-20, 233.46s, 861→865) — **On-Prem 애드온 스택 Phase 3(GitOps)**(`fafacc6`): `gitops.tf`가 ArgoCD `Application`(로컬 래퍼 차트, argocd depends_on)로 platform-agent 차트를 GitHub origin main에서 auto-sync·selfHeal 관리. `application.resourceTrackingMethod=annotation`으로 instance 라벨 추적 충돌 근본 회피, `releaseName=pa`로 Phase 2 접점 보존. 가드 +4. **라이브($0)**: apply→Synced/Healthy(rev=git HEAD)→6 리소스 무중단 채택→drift(scale 1→3)→selfHeal ~16s 복원. 증거 `docs/evidence/onprem-addons-gitops-e2e.log`.
 - `make check` (pytest) → **861 passed, 1 skipped** (2026-07-20, 229.27s, 854→861) — **On-Prem 플랫폼 애드온 스택 Phase 1+2**: 신규 `infra/onprem/addons/` root(argo-cd 10.1.4·kps 87.17.0 핀, 저사양 values, kind·k3s 양기판) apply→전 파드 Ready→UI 3종 200 + Alertmanager receiver→in-cluster webhook 배선 라이브 E2E(crashme 크래시루프→룰 발화→배달→4-step→P2 승인→INC-96D41C2B resolved, $0). 가드 +7. 증거 `docs/evidence/onprem-addons-{phase1,alertmanager-e2e}.log`.
@@ -48,7 +49,7 @@
 
 ## Active Focus
 
-- **On-Prem 플랫폼 애드온 스택(JOURNEY 범위 로컬 확장)** — `docs/plans/2026-07-20-onprem-platform-addons.md`. Phase 1(addons IaC)·2(Alertmanager→4-step)·3(ArgoCD GitOps)·**4(Argo Rollouts canary)** 전부 완료(gate 867, 라이브 실증 포함). **코드 완결** — 잔여는 Phase 5(선택: Loki/Fluent Bit·k3s 패리티·Gateway API)뿐.
+- **On-Prem 플랫폼 애드온 스택(JOURNEY 범위 로컬 확장)** — `docs/plans/2026-07-20-onprem-platform-addons.md`. Phase 1~4 + **Phase 5 로깅(Loki/Fluent Bit)** 완료(gate 870, 라이브 실증 포함). 관측성 삼각(metrics+logs) 완성. 잔여 = Phase 5 선택 항목(k3s 패리티·Gateway API)뿐.
 - 기존 잔여 = 아티클 배포(원고 854 기준 작성 완료, 사용자 "나중에") · push 수시.
 
 ## Open Risks / Gaps

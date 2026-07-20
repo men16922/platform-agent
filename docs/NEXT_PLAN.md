@@ -25,7 +25,7 @@ JOURNEY.md 범위(GitOps·관측성·점진 배포)를 로컬 On-Prem($0)으로 
 - [x] ~~**Phase 2**~~ — **완료(2026-07-20)**: Alertmanager receiver→in-cluster `webhook-service`(templatefile 주입) + 데모 룰. 라이브: crashme 크래시루프→룰 발화(~3분)→배달→4-step→P2 parking(APR-6C9CD1F2)→approve→INC-96D41C2B resolved. 증거 `docs/evidence/onprem-addons-alertmanager-e2e.log`. (analyzer 휴리스틱 폴백=설계된 오프라인 경로.)
 - [x] ~~**Phase 3**~~ — **완료(2026-07-20, `fafacc6`, gate 865)**: `gitops.tf`가 ArgoCD `Application`(로컬 래퍼 차트, argocd depends_on)로 platform-agent 차트를 GitHub origin main에서 auto-sync·selfHeal 관리. annotation 추적으로 instance 라벨 충돌 회피·`releaseName=pa`로 Phase 2 접점 보존. 라이브: Synced/Healthy→6 리소스 채택→drift selfHeal ~16s. 증거 `docs/evidence/onprem-addons-gitops-e2e.log`.
 - [x] ~~**Phase 4**~~ — **완료(2026-07-20, gate 867)**: `rollouts.tf`(argo-rollouts 2.41.1 컨트롤러 + 데모 canary, 무기한 pause 수동게이트). 라이브 promote(→yellow stable)·abort(→yellow 롤백 유지) 양경로. 위치 정리 = **DECISIONS D19**(러너 무변경, k8s 전용 병존). 증거 `docs/evidence/onprem-addons-rollouts-e2e.log`.
-- [ ] (선택) **Phase 5**: Loki/Fluent Bit · k3s 패리티 · Gateway API 로컬 등가물.
+- [~] **Phase 5**(선택) — **Loki/Fluent Bit 증분 완료(2026-07-20, gate 870)**: `logging.tf`(loki 7.1.0 SingleBinary·캐시off + fluent-bit 0.57.9 DaemonSet) + grafana Loki 데이터소스. 라이브: 파드 Ready→Loki API가 `pa-platform-agent-webhook` 포함 다수 NS 로그 반환→Grafana 등록 확인. 증거 `docs/evidence/onprem-addons-logging-e2e.log`. **잔여**: k3s 패리티 스모크·Gateway API 로컬 등가물(필요성 재평가 후).
 
 ## 리팩토링 후속 — 완료(2026-07-20, `8792c9c`, gate 854 유지)
 
