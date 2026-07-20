@@ -9,6 +9,12 @@
 
 ---
 
+## D19 — Argo Rollouts는 기존 deployment 러너를 대체하지 않고 **k8s 전용 옵트인 점진배포**로 병존
+
+- **Decision:** On-Prem addons에 Argo Rollouts를 추가하되(Phase 4), 기존 `deployment/` 어댑터의 canary/rollback(cloud-neutral, 4-provider)은 그대로 둔다. Rollouts는 addons 스택에 들어오는 워크로드용 **인프라 레벨** 점진배포 메커니즘, 러너는 에이전트가 provider별로 구동하는 **애플리케이션 레벨** 배포 파이프라인 — 둘은 다른 층.
+- **Reason:** 러너는 onprem/aws/gcp/azure 4곳에서 동일 계약으로 동작하는 클라우드-중립 코어라 k8s 전용 CRD(Rollout)로 대체하면 이식성 회귀. 반대로 Rollouts는 트래픽 가중 canary·자동 분석·수동 게이트 등 러너가 재구현할 이유 없는 k8s 네이티브 기능을 제공. 그래서 대체가 아니라 **선택적 병존**(addons를 GitOps로 배포받는 클러스터에서만 opt-in).
+- **Impact:** 러너 코드 무변경. Rollouts는 `infra/onprem/addons/rollouts.tf`(컨트롤러 2.41.1 핀) + `charts/rollouts-demo`(canary 데모)에 격리. 라이브 실증: promote/abort 양경로(`docs/evidence/onprem-addons-rollouts-e2e.log`). 프로덕션 워크로드를 Rollout으로 승격할지는 별도 결정(현재는 데모만).
+
 ## D18 — On-Prem ArgoCD는 label이 아니라 **annotation** 리소스 추적 (`application.resourceTrackingMethod=annotation`)
 
 - **Decision:** addons ArgoCD를 annotation 기반 추적으로 고정(`values/argocd.yaml` `configs.cm`). 워크로드 Application은 `releaseName=pa`로 렌더.

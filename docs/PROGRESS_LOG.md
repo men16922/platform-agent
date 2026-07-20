@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-20 — On-Prem 애드온 스택 Phase 4: Argo Rollouts canary promote/abort 라이브 실증 (gate 865→867)
+
+- Status: `docs/plans/2026-07-20-onprem-platform-addons.md` Phase 4 = IaC+라이브 증거 완결. 애드온 스택 Phase 1~4 전부 완료(Phase 5 선택만 잔여).
+- Changed: 신규 `rollouts.tf`(argo-rollouts **2.41.1**=v1.9.1 컨트롤러 helm_release + 데모 canary `charts/rollouts-demo`가 컨트롤러 `depends_on`) + 저사양 `values/argo-rollouts.yaml`(대시보드 on). 데모 Rollout=weighted canary(25→50→75)에 **무기한 `pause: {}` 수동 게이트**(50%) — promote/abort 구동점. 가드 +2(데모 차트 존재·canary 수동게이트), 핀 계약 2→3. **위치 정리: DECISIONS D19**(러너=cloud-neutral 애플리케이션 레벨, Rollouts=k8s 전용 인프라 레벨 → 대체 아닌 병존, 러너 무변경).
+- Verified: `terraform validate` Success · `make check` → **867 passed, 1 skipped**(865→867). **라이브($0, kind)**: 컨트롤러 Ready+Rollout Healthy(blue). **경로 A(promote)**: blue→yellow canary가 수동 게이트(50%)에서 ~60s 정지→promote→75%→100%→yellow stable. **경로 B(abort)**: yellow→red canary 25%→abort→Degraded/RolloutAborted, red 축소, **yellow stable 유지**(롤백 시맨틱)→spec 복원 후 Healthy. 증거 `docs/evidence/onprem-addons-rollouts-e2e.log`.
+- Blockers: 없음.
+- Next: 애드온 스택 코드 완결. (선택) Phase 5(Loki/Fluent Bit·k3s 패리티·Gateway API) · 잔여 사용자 게이트(아티클 배포).
+
 ## 2026-07-20 — On-Prem 애드온 스택 Phase 3: ArgoCD GitOps로 platform-agent 차트 관리 + 라이브 실증 (gate 861→865)
 
 - Status: `docs/plans/2026-07-20-onprem-platform-addons.md` Phase 3 = IaC+라이브 증거 완결. Phase 4(Argo Rollouts) 대기.

@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-20
 
-> ▶ NEXT SESSION: **gate 865 — On-Prem 애드온 스택 Phase 1·2·3 완료(2026-07-20)**: `docs/plans/2026-07-20-onprem-platform-addons.md` — Phase 3(ArgoCD GitOps)까지 라이브 실증 완결(Application Synced/Healthy·6 리소스 채택·drift selfHeal ~16s, $0). **다음 = Phase 4**(Argo Rollouts canary 승격/abort + 러너 위치 정리 DECISIONS 1건) → Phase 5 선택. 잔여 사용자 게이트: 아티클 배포·push. 주의: 다음 cdk deploy에 핸들러 경로 변경 반영(Vercel context 필수).
+> ▶ NEXT SESSION: **gate 867 — On-Prem 애드온 스택 Phase 1~4 전부 완료(2026-07-20)**: `docs/plans/2026-07-20-onprem-platform-addons.md` — GitOps(Phase 3)+Argo Rollouts canary(Phase 4)까지 라이브 실증 완결(promote→yellow stable·abort→롤백 유지, $0). **애드온 스택 코드 완결** — 잔여 = Phase 5(선택: Loki/Fluent Bit·k3s 패리티·Gateway API)뿐. 잔여 사용자 게이트: 아티클 배포·push. 주의: 다음 cdk deploy에 핸들러 경로 변경 반영(Vercel context 필수).
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 

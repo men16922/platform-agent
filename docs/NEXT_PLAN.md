@@ -24,7 +24,7 @@ JOURNEY.md 범위(GitOps·관측성·점진 배포)를 로컬 On-Prem($0)으로 
 - [x] ~~**Phase 1**~~ — **완료(2026-07-20)**: `infra/onprem/addons/` root(helm provider, argo-cd 10.1.4=앱 v3.4.5·kps 87.17.0 핀, 저사양 values) apply→전 파드 Ready→UI 3종 200. 가드 +7. 증거 `docs/evidence/onprem-addons-phase1.log`.
 - [x] ~~**Phase 2**~~ — **완료(2026-07-20)**: Alertmanager receiver→in-cluster `webhook-service`(templatefile 주입) + 데모 룰. 라이브: crashme 크래시루프→룰 발화(~3분)→배달→4-step→P2 parking(APR-6C9CD1F2)→approve→INC-96D41C2B resolved. 증거 `docs/evidence/onprem-addons-alertmanager-e2e.log`. (analyzer 휴리스틱 폴백=설계된 오프라인 경로.)
 - [x] ~~**Phase 3**~~ — **완료(2026-07-20, `fafacc6`, gate 865)**: `gitops.tf`가 ArgoCD `Application`(로컬 래퍼 차트, argocd depends_on)로 platform-agent 차트를 GitHub origin main에서 auto-sync·selfHeal 관리. annotation 추적으로 instance 라벨 충돌 회피·`releaseName=pa`로 Phase 2 접점 보존. 라이브: Synced/Healthy→6 리소스 채택→drift selfHeal ~16s. 증거 `docs/evidence/onprem-addons-gitops-e2e.log`.
-- [ ] **Phase 4**: Argo Rollouts canary 데모 + 기존 러너와의 위치 정리(DECISIONS 1건).
+- [x] ~~**Phase 4**~~ — **완료(2026-07-20, gate 867)**: `rollouts.tf`(argo-rollouts 2.41.1 컨트롤러 + 데모 canary, 무기한 pause 수동게이트). 라이브 promote(→yellow stable)·abort(→yellow 롤백 유지) 양경로. 위치 정리 = **DECISIONS D19**(러너 무변경, k8s 전용 병존). 증거 `docs/evidence/onprem-addons-rollouts-e2e.log`.
 - [ ] (선택) **Phase 5**: Loki/Fluent Bit · k3s 패리티 · Gateway API 로컬 등가물.
 
 ## 리팩토링 후속 — 완료(2026-07-20, `8792c9c`, gate 854 유지)
