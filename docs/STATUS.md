@@ -1,6 +1,6 @@
 # STATUS — platform-agent
 
-최종 갱신: 2026-07-20
+최종 갱신: 2026-07-21
 
 > 현재 구현 상태 / 검증 baseline / active focus / open risks. **≤120줄** 유지.
 
@@ -49,7 +49,7 @@
 
 ## Active Focus
 
-- **On-Prem 플랫폼 애드온 스택(JOURNEY 범위 로컬 확장)** — `docs/plans/2026-07-20-onprem-platform-addons.md`. Phase 1~4 + **Phase 5 로깅(Loki/Fluent Bit)** 완료(gate 870, 라이브 실증 포함). 관측성 삼각(metrics+logs) 완성. 잔여 = Phase 5 선택 항목(k3s 패리티·Gateway API)뿐.
+- **On-Prem 플랫폼 애드온 스택(JOURNEY 범위 로컬 확장)** — `docs/plans/2026-07-20-onprem-platform-addons.md`. Phase 1~4 + **Phase 5(로깅 + k3s 기판 패리티)** 완료(gate 870, 라이브 실증 포함). 관측성 삼각(metrics+logs) 완성 + 동일 root의 kind·k3s 양기판 이식성 실증. 잔여 = Phase 5 선택 1건(Gateway API 로컬 등가물, 필요성 재평가 후)뿐.
 - 기존 잔여 = 아티클 배포(원고 854 기준 작성 완료, 사용자 "나중에") · push 수시.
 
 ## Open Risks / Gaps

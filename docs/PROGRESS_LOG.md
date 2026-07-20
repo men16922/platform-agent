@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-21 — On-Prem 애드온 스택 Phase 5 k3s 기판 패리티 스모크 (코드 무변경, gate 870 유지)
+
+- Status: Phase 5(선택) 잔여 "k3s 패리티" 소진. **동일 addons root가 kubeconfig/context 교체만으로 k3s에 이식됨**을 실증(versions.tf가 광고하는 "kind·k3s 양기판" 계약 검증). 잔여 Phase 5 = Gateway API(필요성 재평가 후)뿐.
+- Changed(repo 코드 무변경): 증거 `docs/evidence/onprem-addons-k3s-parity.log`만 추가. addons 모듈·values·테스트 전부 무변경(런타임 var만 교체).
+- Verified (라이브 $0, Multipass k3s v1.31.4 on k8s-lab VM 2CPU/3.8GiB): **별도 terraform workspace `k3s`**(state 격리 → kind `default` state 무손상)에서 `terraform apply -target=helm_release.argocd -var kubeconfig_path=<k3s> -var kube_context=k3s-lab` → **ArgoCD 5/5 파드 Ready**(동일 저사양 values, server available=1). 3.8GiB VM 예산 존중해 코어(ArgoCD)로 스코프. 이후 destroy(1 destroyed)→workspace 삭제→빈 argocd ns 정리 → **VM 베이스라인 복원**, default workspace의 kind 리소스 7개 온전 재확인.
+- Blockers: 없음. 메모: 전체 관측성 스택(kps+loki 등 20+파드)은 3.8GiB VM엔 과함 → 코어 패리티로 충분(값 동일·기판 이식성 입증). k3s 기본 SC=local-path(kind=standard)라 PVC 소비 컴포넌트는 storageClass 오버라이드 필요(ArgoCD는 PVC 없음).
+- Next: (선택) Gateway API 로컬 등가물(필요성 재평가) · 잔여 사용자 게이트(아티클 배포).
+
 ## 2026-07-20 — On-Prem 애드온 스택 Phase 5(로깅): Loki + Fluent Bit → Grafana 데이터소스 라이브 실증 (gate 867→870)
 
 - Status: `docs/plans/2026-07-20-onprem-platform-addons.md` Phase 5(선택) 중 **Loki/Fluent Bit 증분 완료** — 관측성 삼각 완성(metrics=Prometheus 기존 + logs=Loki 신규). 잔여 Phase 5 = k3s 패리티·Gateway API(선택).

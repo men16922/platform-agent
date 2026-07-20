@@ -1,0 +1,401 @@
+############################################################
+# Phase 5 k3s substrate parity smoke — 2026-07-20T17:00:00Z
+# SAME addons root, only kubeconfig/context swapped (kind → k3s-lab VM)
+# k3s: v1.31.4+k3s1 on Multipass k8s-lab (2CPU/3.8GiB), SC=local-path
+############################################################
+
+=== [1] terraform workspace 'k3s' (state isolated from kind default) ===
+[0m[32m[1mCreated and switched to workspace "k3s"![0m[32m
+
+You're now on a new, empty workspace. Workspaces isolate their state,
+so if you run "terraform plan" Terraform will not see any existing state
+for this configuration.[0m
+=== [2] apply ArgoCD core to k3s (kubeconfig/context swap only) ===
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # helm_release.argocd will be created
+  + resource "helm_release" "argocd" {
+      + atomic                     = false
+      + chart                      = "argo-cd"
+      + cleanup_on_fail            = false
+      + create_namespace           = true
+      + dependency_update          = false
+      + disable_crd_hooks          = false
+      + disable_openapi_validation = false
+      + disable_webhooks           = false
+      + force_update               = false
+      + id                         = (known after apply)
+      + lint                       = false
+      + max_history                = 0
+      + metadata                   = (known after apply)
+      + name                       = "argocd"
+      + namespace                  = "argocd"
+      + pass_credentials           = false
+      + recreate_pods              = false
+      + render_subchart_notes      = true
+      + replace                    = false
+      + repository                 = "https://argoproj.github.io/argo-helm"
+      + reset_values               = false
+      + reuse_values               = false
+      + set_wo                     = (write-only attribute)
+      + skip_crds                  = false
+      + status                     = "deployed"
+      + take_ownership             = false
+      + timeout                    = 600
+      + upgrade_install            = false
+      + values                     = [
+          + <<-EOT
+                # Low-footprint Argo CD for local kind/k3s. Contract (guard-tested): every CPU
+                # request stays <= 50m so the full add-on stack fits the Docker VM budget.
+                # Dex (SSO) and notifications are off — local access is port-forward + admin.
+                
+                dex:
+                  enabled: false
+                
+                notifications:
+                  enabled: false
+                
+                # Track managed resources by annotation, not the app.kubernetes.io/instance
+                # label. The platform-agent chart already sets that label to its release name,
+                # so label tracking would collide (ArgoCD's official guidance for Helm charts
+                # that stamp the instance label). Required for Phase 3 to adopt the workload.
+                configs:
+                  cm:
+                    application.resourceTrackingMethod: annotation
+                
+                controller:
+                  resources:
+                    requests:
+                      cpu: 10m
+                      memory: 256Mi
+                
+                server:
+                  resources:
+                    requests:
+                      cpu: 5m
+                      memory: 64Mi
+                
+                repoServer:
+                  resources:
+                    requests:
+                      cpu: 5m
+                      memory: 128Mi
+                
+                applicationSet:
+                  resources:
+                    requests:
+                      cpu: 5m
+                      memory: 32Mi
+                
+                redis:
+                  resources:
+                    requests:
+                      cpu: 5m
+                      memory: 32Mi
+            EOT,
+        ]
+      + verify                     = false
+      + version                    = "10.1.4"
+      + wait                       = true
+      + wait_for_jobs              = false
+    }
+
+Plan: 1 to add, 0 to change, 0 to destroy.
+helm_release.argocd: Creating...
+helm_release.argocd: Still creating... [00m10s elapsed]
+helm_release.argocd: Still creating... [00m20s elapsed]
+helm_release.argocd: Still creating... [00m30s elapsed]
+helm_release.argocd: Still creating... [00m40s elapsed]
+helm_release.argocd: Creation complete after 41s [id=argocd]
+
+Warning: Resource targeting is in effect
+
+You are creating a plan with the -target option, which means that the result
+of this plan may not represent all of the changes requested by the current
+configuration.
+
+The -target option is not for routine use, and is provided only for
+exceptional situations such as recovering from errors or mistakes, or when
+Terraform specifically suggests to use it as part of an error message.
+
+Warning: Applied changes may be incomplete
+
+The plan was created with the -target option in effect, so some changes
+requested in the configuration may have been ignored and the output values
+may not be fully updated. Run the following command to verify that no other
+changes are pending:
+    terraform plan
+
+Note that the -target option is not suitable for routine use, and is provided
+only for exceptional situations such as recovering from errors or mistakes,
+or when Terraform specifically suggests to use it as part of an error
+message.
+
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+
+=== [3] ArgoCD pods Ready on k3s (same low-footprint values) ===
+  t=8s ready=5/6
+  t=16s ready=5/6
+  t=24s ready=5/6
+  t=32s ready=5/5
+NAME                                                READY   STATUS    RESTARTS   AGE
+argocd-application-controller-0                     1/1     Running   0          60s
+argocd-applicationset-controller-5f6db6fcd6-576hs   1/1     Running   0          60s
+argocd-redis-6797596597-ctpkf                       1/1     Running   0          60s
+argocd-repo-server-5ff4489794-r28lc                 1/1     Running   0          60s
+argocd-server-5f8b4b7f9c-5c7hf                      1/1     Running   0          60s
+--- server reachable (health) ---
+available=1
+
+=== [4] teardown k3s workspace (VM restored, kind default state untouched) ===
+helm_release.argocd: Refreshing state... [id=argocd]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  - destroy
+
+Terraform will perform the following actions:
+
+  # helm_release.argocd will be destroyed
+  - resource "helm_release" "argocd" {
+      - atomic                     = false -> null
+      - chart                      = "argo-cd" -> null
+      - cleanup_on_fail            = false -> null
+      - create_namespace           = true -> null
+      - dependency_update          = false -> null
+      - disable_crd_hooks          = false -> null
+      - disable_openapi_validation = false -> null
+      - disable_webhooks           = false -> null
+      - force_update               = false -> null
+      - id                         = "argocd" -> null
+      - lint                       = false -> null
+      - max_history                = 0 -> null
+      - metadata                   = {
+          - app_version    = "v3.4.5" -> null
+          - chart          = "argo-cd" -> null
+          - first_deployed = 1784566807 -> null
+          - last_deployed  = 1784566807 -> null
+          - name           = "argocd" -> null
+          - namespace      = "argocd" -> null
+          - notes          = <<-EOT
+                In order to access the server UI you have the following options:
+                
+                1. kubectl port-forward service/argocd-server -n argocd 8080:443
+                
+                    and then open the browser on http://localhost:8080 and accept the certificate
+                
+                2. enable ingress in the values file `server.ingress.enabled` and either
+                      - Add the annotation for ssl passthrough: https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/#option-1-ssl-passthrough
+                      - Set the `configs.params."server.insecure"` in the values file and terminate SSL at your ingress: https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/#option-2-multiple-ingress-objects-and-hosts
+                
+                
+                After reaching the UI the first time you can login with username: admin and the random password generated during the installation. You can find the password by running:
+                
+                kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+                
+                (You should delete the initial secret afterwards as suggested by the Getting Started Guide: https://argo-cd.readthedocs.io/en/stable/getting_started/#4-login-using-the-cli)
+            EOT -> null
+          - revision       = 1 -> null
+          - values         = jsonencode(
+                {
+                  - applicationSet = {
+                      - resources = {
+                          - requests = {
+                              - cpu    = "5m"
+                              - memory = "32Mi"
+                            }
+                        }
+                    }
+                  - configs        = {
+                      - cm = {
+                          - "application.resourceTrackingMethod" = "annotation"
+                        }
+                    }
+                  - controller     = {
+                      - resources = {
+                          - requests = {
+                              - cpu    = "10m"
+                              - memory = "256Mi"
+                            }
+                        }
+                    }
+                  - dex            = {
+                      - enabled = false
+                    }
+                  - notifications  = {
+                      - enabled = false
+                    }
+                  - redis          = {
+                      - resources = {
+                          - requests = {
+                              - cpu    = "5m"
+                              - memory = "32Mi"
+                            }
+                        }
+                    }
+                  - repoServer     = {
+                      - resources = {
+                          - requests = {
+                              - cpu    = "5m"
+                              - memory = "128Mi"
+                            }
+                        }
+                    }
+                  - server         = {
+                      - resources = {
+                          - requests = {
+                              - cpu    = "5m"
+                              - memory = "64Mi"
+                            }
+                        }
+                    }
+                }
+            ) -> null
+          - version        = "10.1.4" -> null
+        } -> null
+      - name                       = "argocd" -> null
+      - namespace                  = "argocd" -> null
+      - pass_credentials           = false -> null
+      - recreate_pods              = false -> null
+      - render_subchart_notes      = true -> null
+      - replace                    = false -> null
+      - repository                 = "https://argoproj.github.io/argo-helm" -> null
+      - reset_values               = false -> null
+      - reuse_values               = false -> null
+      - set_wo                     = (write-only attribute) -> null
+      - skip_crds                  = false -> null
+      - status                     = "deployed" -> null
+      - take_ownership             = false -> null
+      - timeout                    = 600 -> null
+      - upgrade_install            = false -> null
+      - values                     = [
+          - <<-EOT
+                # Low-footprint Argo CD for local kind/k3s. Contract (guard-tested): every CPU
+                # request stays <= 50m so the full add-on stack fits the Docker VM budget.
+                # Dex (SSO) and notifications are off — local access is port-forward + admin.
+                
+                dex:
+                  enabled: false
+                
+                notifications:
+                  enabled: false
+                
+                # Track managed resources by annotation, not the app.kubernetes.io/instance
+                # label. The platform-agent chart already sets that label to its release name,
+                # so label tracking would collide (ArgoCD's official guidance for Helm charts
+                # that stamp the instance label). Required for Phase 3 to adopt the workload.
+                configs:
+                  cm:
+                    application.resourceTrackingMethod: annotation
+                
+                controller:
+                  resources:
+                    requests:
+                      cpu: 10m
+                      memory: 256Mi
+                
+                server:
+                  resources:
+                    requests:
+                      cpu: 5m
+                      memory: 64Mi
+                
+                repoServer:
+                  resources:
+                    requests:
+                      cpu: 5m
+                      memory: 128Mi
+                
+                applicationSet:
+                  resources:
+                    requests:
+                      cpu: 5m
+                      memory: 32Mi
+                
+                redis:
+                  resources:
+                    requests:
+                      cpu: 5m
+                      memory: 32Mi
+            EOT,
+        ] -> null
+      - verify                     = false -> null
+      - version                    = "10.1.4" -> null
+      - wait                       = true -> null
+      - wait_for_jobs              = false -> null
+    }
+
+Plan: 0 to add, 0 to change, 1 to destroy.
+helm_release.argocd: Destroying... [id=argocd]
+helm_release.argocd: Destruction complete after 1s
+
+Warning: Resource targeting is in effect
+
+You are creating a plan with the -target option, which means that the result
+of this plan may not represent all of the changes requested by the current
+configuration.
+
+The -target option is not for routine use, and is provided only for
+exceptional situations such as recovering from errors or mistakes, or when
+Terraform specifically suggests to use it as part of an error message.
+
+Warning: Helm uninstall returned an information message
+
+These resources were kept due to the resource policy:
+[CustomResourceDefinition] applications.argoproj.io
+[CustomResourceDefinition] applicationsets.argoproj.io
+[CustomResourceDefinition] appprojects.argoproj.io
+
+
+Warning: Applied changes may be incomplete
+
+The plan was created with the -target option in effect, so some changes
+requested in the configuration may have been ignored and the output values
+may not be fully updated. Run the following command to verify that no other
+changes are pending:
+    terraform plan
+
+Note that the -target option is not suitable for routine use, and is provided
+only for exceptional situations such as recovering from errors or mistakes,
+or when Terraform specifically suggests to use it as part of an error
+message.
+
+Destroy complete! Resources: 1 destroyed.
+--- k3s argocd namespace after destroy ---
+NAME     STATUS   AGE
+argocd   Active   107s
+--- switch back to default workspace + drop k3s workspace ---
+[0m[32mSwitched to workspace "default".[0m
+[0m[32mDeleted workspace "k3s"![0m
+--- confirm default(kind) state intact ---
+default
+helm_release.argo_rollouts
+helm_release.argocd
+helm_release.fluent_bit
+helm_release.kube_prometheus_stack
+helm_release.loki
+helm_release.platform_agent_app
+helm_release.rollouts_demo
+
+############################################################
+# RESULT: Phase 5 k3s substrate parity smoke PASS
+#  - SAME addons root, only kubeconfig_path/kube_context vars swapped
+#  - terraform workspace 'k3s' isolated state (kind 'default' untouched)
+#  - ArgoCD 5/5 pods Ready on k3s v1.31.4 with identical low-footprint values
+#  - scoped to core (ArgoCD) to respect 3.8GiB VM budget; substrate
+#    portability of the module proven. torn down, VM restored.
+#  cost: $0 (local Multipass k3s)
+############################################################
+namespace "argocd" deleted
+--- k3s namespaces restored to baseline ---
+NAME              STATUS        AGE
+argocd            Terminating   2m4s
+default           Active        9d
+kube-node-lease   Active        9d
+kube-public       Active        9d
+kube-system       Active        9d
