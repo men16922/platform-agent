@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-20
 
-> ▶ NEXT SESSION: **gate 854 — 리팩토링 후속까지 소진(2026-07-20)**: 보류 2건 완료(`8792c9c`) — **operations cloud축 통일**(`operations/aws/`·`operations/runners/` 신설, CDK 핸들러 경로 7종 정합) + **approval_bridge 4모듈 분리**(handler/request_store/slack_interactive/payloads). 순수 구조 개편, gate 854 동일. **잔여 = 아티클 배포(원고 854 최신화 완비, 사용자 "나중에") · push 수시** — 코드/인프라 백로그 없음. 주의: 다음 cdk deploy에 핸들러 경로 변경 반영(Vercel context 필수). 하네스: billable·보안완화는 사용자 `!`(cdk deploy·aws/gcloud/az CLI는 local allow 해금됨).
+> ▶ NEXT SESSION: **gate 861 — On-Prem 애드온 스택 Phase 1·2 완료(2026-07-20)**: 신규 백로그(JOURNEY 로컬 확장, `docs/plans/2026-07-20-onprem-platform-addons.md`) — `infra/onprem/addons/` root(ArgoCD 10.1.4+kps 87.17.0, kind·k3s 양기판) apply→Ready→UI 200 + Alertmanager→in-cluster webhook 4-step 라이브 E2E(INC-96D41C2B resolved, $0). **다음 = Phase 3**(ArgoCD Application 차트 GitOps — ⚠️ 선행: push(사용자 게이트) 또는 로컬 gitea) → Phase 4(Argo Rollouts canary). 잔여 사용자 게이트: 아티클 배포·push. 주의: 다음 cdk deploy에 핸들러 경로 변경 반영(Vercel context 필수).
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 

@@ -1,0 +1,50 @@
+=== onprem addons Phase 2 — Alertmanager → platform-agent 4-step live E2E (2026-07-20) ===
+
+--- chain: IaC rule → crashme crash-loop → alert firing → Alertmanager route → in-cluster webhook → detect/analyze/decide → P2 parking → approve → executor(log-only) → incident resolved ---
+
+--- alertmanager active alerts ---
+PlatformDemoCrashLoop | crashme-7989b7cdcb-wnjsz | active
+Watchdog |  | active
+
+--- webhook 4-step logs ---
+2026-07-20 10:00:01 [info     ] detector.start                 event_id=unknown
+2026-07-20 10:00:01 [info     ] detector.non_aws.normalised    event_id=unknown provider=onprem resource_type=kubernetes-workload service=monitoring-kube-state
+2026-07-20 10:00:01 [info     ] detector.done                  event_id=unknown provider=onprem
+2026-07-20 10:00:01 [info     ] analyzer.start                 alarm_name=monitoring-kube-state
+2026-07-20 10:00:01 [error    ] analyzer.llm.error             error='Unable to locate credentials'
+2026-07-20 10:00:01 [info     ] analyzer.llm_done              alarm_name=monitoring-kube-state confidence=0.0 severity=P2
+2026-07-20 10:00:01 [warning  ] analyzer.dynamo.error          error='Unable to locate credentials'
+2026-07-20 10:00:01 [info     ] analyzer.similar_done          alarm_name=monitoring-kube-state count=0
+2026-07-20 10:00:01 [info     ] analyzer.done                  alarm_name=monitoring-kube-state
+2026-07-20 10:00:01 [info     ] decision.start                 alarm_name=monitoring-kube-state severity=P2
+2026-07-20 10:00:01 [warning  ] decision.dynamo.error          error='Unable to locate credentials'
+2026-07-20 10:00:01 [warning  ] decision.dynamo.scan_error     error='Unable to locate credentials'
+2026-07-20 10:00:01 [info     ] decision.runbook               actions=['ONPREM-CreateChangeRequest'] alarm_name=monitoring-kube-state mode=APPROVE rto=None runbook_id=generic-recovery severity=P2
+2026-07-20 10:00:01 [info     ] decision.done                  alarm_name=monitoring-kube-state severity=P2
+INFO:     10.244.1.8:41044 - "POST /webhook/alertmanager HTTP/1.1" 200 OK
+2026-07-20 10:01:13 [info     ] executor.start                 alarm_name=monitoring-kube-state mode=APPROVE runbook_id=generic-recovery
+2026-07-20 10:01:13 [warning  ] executor.slack.skip            reason='SLACK_WEBHOOK_URL not set'
+2026-07-20 10:01:13 [error    ] executor.dynamo.error          error='Unable to locate credentials'
+2026-07-20 10:01:15 [info     ] executor.done                  alarm_name=monitoring-kube-state incident_id=INC-96D41C2B mode=APPROVE resolved=True runbook_id=generic-recovery
+INFO:     127.0.0.1:36788 - "POST /approve/APR-6C9CD1F2 HTTP/1.1" 200 OK
+
+--- payload provenance: pending mentioned crashme=True PlatformDemoCrashLoop=True (checked via /pending before approve) ---
+
+--- final incident ---
+{
+ "PK": "INCIDENT",
+ "incident_id": "INC-96D41C2B",
+ "alarm_name": "monitoring-kube-state",
+ "provider": "onprem",
+ "severity": "P2",
+ "mode": "APPROVE",
+ "root_cause": "LLM analysis failed: Unable to locate credentials",
+ "runbook_id": "generic-recovery",
+ "resolved": true,
+ "executed_actions": [
+  "ONPREM-CreateChangeRequest"
+ ],
+ "created_at": "2026-07-20T10:01:15.658395+00:00"
+}
+
+--- note: analyzer LLM fallback('Unable to locate credentials'→heuristic P2) is the DESIGNED offline path (onprem_incident_pipeline docstring); chart llm.endpoint feeds the deploy-plane router only ---

@@ -16,6 +16,17 @@
 - [x] ~~(선택) On-Prem 승인 게이트 Slack 버튼 연동~~ — **완료(2026-07-19, `617839b`, gate 854)**: DynamoDB 공유 매체 + 옵트인 폴러, 라이브 왕복(APR-3E6D2540→INC-FA2143AF resolved). 증거 `docs/evidence/onprem-slack-approval-live.log`.
 - [ ] (선택) **Azure Foundry 스택 정리** — 유휴 ≈$0라 유지 중.
 
+## 신규 백로그 — On-Prem 플랫폼 애드온 스택 IaC (2026-07-20 시드, 승인 대기)
+
+JOURNEY.md 범위(GitOps·관측성·점진 배포)를 로컬 On-Prem($0)으로 확장.
+상세: `docs/plans/2026-07-20-onprem-platform-addons.md` (Phase 1~5, DoD/리스크 포함).
+
+- [x] ~~**Phase 1**~~ — **완료(2026-07-20)**: `infra/onprem/addons/` root(helm provider, argo-cd 10.1.4=앱 v3.4.5·kps 87.17.0 핀, 저사양 values) apply→전 파드 Ready→UI 3종 200. 가드 +7. 증거 `docs/evidence/onprem-addons-phase1.log`.
+- [x] ~~**Phase 2**~~ — **완료(2026-07-20)**: Alertmanager receiver→in-cluster `webhook-service`(templatefile 주입) + 데모 룰. 라이브: crashme 크래시루프→룰 발화(~3분)→배달→4-step→P2 parking(APR-6C9CD1F2)→approve→INC-96D41C2B resolved. 증거 `docs/evidence/onprem-addons-alertmanager-e2e.log`. (analyzer 휴리스틱 폴백=설계된 오프라인 경로.)
+- [ ] **Phase 3**: ArgoCD Application으로 platform-agent 차트 GitOps(⚠️ 선행: push 또는 로컬 gitea).
+- [ ] **Phase 4**: Argo Rollouts canary 데모 + 기존 러너와의 위치 정리(DECISIONS 1건).
+- [ ] (선택) **Phase 5**: Loki/Fluent Bit · k3s 패리티 · Gateway API 로컬 등가물.
+
 ## 리팩토링 후속 — 완료(2026-07-20, `8792c9c`, gate 854 유지)
 
 - [x] ~~`operations` 그룹핑 축 통일~~ — `operations/aws/` + `operations/runners/` 신설, gcp/azure와 동형.

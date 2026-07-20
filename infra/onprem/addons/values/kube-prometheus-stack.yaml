@@ -1,0 +1,90 @@
+# Low-footprint kube-prometheus-stack for local kind/k3s. Contract
+# (guard-tested): every CPU request stays <= 50m. Storage is ephemeral
+# (emptyDir) and retention short — this is a demo/ops-loop substrate, not a
+# long-term TSDB. Control-plane component scrapes that are unreachable on
+# kind/k3s (etcd/scheduler/controller-manager/kube-proxy) are disabled so the
+# default rules don't fire permanent false-positive alerts.
+
+kubeEtcd:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeProxy:
+  enabled: false
+
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 5m
+      memory: 64Mi
+
+prometheus:
+  prometheusSpec:
+    retention: 12h
+    resources:
+      requests:
+        cpu: 10m
+        memory: 384Mi
+
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 5m
+        memory: 32Mi
+  # Route every alert into the platform-agent Day-2 loop (in-cluster webhook →
+  # detect→analyze→decide→execute). The Watchdog heartbeat is dropped — it is a
+  # meta-alert that always fires and would spam the incident pipeline.
+  config:
+    route:
+      receiver: platform-agent
+      group_by: ["alertname", "namespace"]
+      group_wait: 10s
+      group_interval: 1m
+      repeat_interval: 12h
+      routes:
+        - receiver: "null"
+          matchers:
+            - alertname = "Watchdog"
+    receivers:
+      - name: "null"
+      - name: platform-agent
+        webhook_configs:
+          - url: ${webhook_url}
+            send_resolved: false
+
+# Demo rule for the live E2E: fires within ~2-3 min once a pod in the default
+# namespace crash-loops (much faster than the stock KubePodCrashLooping's 15m).
+additionalPrometheusRulesMap:
+  platform-agent-demo:
+    groups:
+      - name: platform-agent.demo
+        rules:
+          - alert: PlatformDemoCrashLoop
+            expr: increase(kube_pod_container_status_restarts_total{namespace="default"}[5m]) > 2
+            for: 1m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Pod {{ $labels.pod }} in {{ $labels.namespace }} is crash-looping"
+              description: "Container {{ $labels.container }} restarted more than twice in 5m."
+
+grafana:
+  resources:
+    requests:
+      cpu: 5m
+      memory: 96Mi
+
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 5m
+      memory: 32Mi
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 5m
+      memory: 16Mi

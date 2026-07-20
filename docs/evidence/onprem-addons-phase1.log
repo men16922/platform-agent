@@ -1,0 +1,56 @@
+=== onprem addons Phase 1 — apply + Ready + UI smoke (2026-07-20) ===
+
+--- terraform state (infra/onprem/addons) ---
+helm_release.argocd
+helm_release.kube_prometheus_stack
+
+--- chart pins ---
+  default = "10.1.4"
+  default = "87.17.0"
+
+--- nodes ---
+NAME                           STATUS   ROLES           AGE     VERSION
+platform-agent-control-plane   Ready    control-plane   5m33s   v1.34.0
+platform-agent-worker          Ready    <none>          5m19s   v1.34.0
+platform-agent-worker2         Ready    <none>          5m19s   v1.34.0
+
+--- argocd pods ---
+NAME                                                READY   STATUS    RESTARTS   AGE
+argocd-application-controller-0                     1/1     Running   0          4m3s
+argocd-applicationset-controller-667cc6cccc-9m665   1/1     Running   0          4m3s
+argocd-redis-677c5fc985-snfsc                       1/1     Running   0          4m3s
+argocd-repo-server-65f8bbf444-rfmbw                 1/1     Running   0          4m3s
+argocd-server-689c87877c-lpwmc                      1/1     Running   0          4m3s
+
+--- monitoring pods ---
+NAME                                                     READY   STATUS    RESTARTS   AGE
+alertmanager-monitoring-kube-prometheus-alertmanager-0   2/2     Running   0          3m58s
+monitoring-grafana-6767ff997d-t5f7c                      3/3     Running   0          119s
+monitoring-kube-prometheus-operator-7d6bfb7859-4xppr     1/1     Running   0          4m9s
+monitoring-kube-state-metrics-d7b9757d-gpr82             1/1     Running   0          4m9s
+monitoring-prometheus-node-exporter-bdxrf                1/1     Running   0          4m9s
+monitoring-prometheus-node-exporter-wkrxq                1/1     Running   0          4m9s
+monitoring-prometheus-node-exporter-x6lcj                1/1     Running   0          4m9s
+prometheus-monitoring-kube-prometheus-prometheus-0       2/2     Running   0          3m59s
+
+--- UI smoke: argocd=200 grafana=200 prometheus=200 (port-forward curl) ---
+
+--- alertmanager rendered config (receiver wiring, url line) ---
+receivers:
+- name: "null"
+- name: platform-agent
+  webhook_configs:
+  - send_resolved: false
+    url: http://pa-platform-agent-webhook.default.svc:8078/webhook/alertmanager
+route:
+  group_by:
+  - alertname
+  - namespace
+  group_interval: 1m
+  group_wait: 10s
+  receiver: platform-agent
+  repeat_interval: 12h
+  routes:
+  - matchers:
+    - alertname = "Watchdog"
+    receiver: "null"

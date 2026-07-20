@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-20 — On-Prem 플랫폼 애드온 스택 Phase 1+2: addons IaC + Alertmanager→4-step 라이브 E2E (gate 854→861)
+
+- Status: 신규 백로그(JOURNEY 범위 로컬 확장, `docs/plans/2026-07-20-onprem-platform-addons.md`) Phase 1·2 완료. Phase 3(GitOps)·4(Rollouts) 대기.
+- Changed: 신규 `infra/onprem/addons/` terraform root — helm provider(~>3.0), kubeconfig/context 변수로 kind·k3s 양기판 적용, **argo-cd 10.1.4**(앱 v3.4.5=JOURNEY 동일)+**kube-prometheus-stack 87.17.0** 정확 핀, 저사양 values(CPU requests ≤50m 계약, kind 불가 컨트롤플레인 스크랩 4종 off). Alertmanager receiver→in-cluster `pa-platform-agent-webhook`(templatefile `webhook_url` 주입, Watchdog은 null 라우트) + 데모 룰 `PlatformDemoCrashLoop`(restarts>2/5m, for 1m). 가드 `tests/test_onprem_addons_module.py` +7(핀·저사양 계약·receiver 배선·룰 존재·validate).
+- Verified: `make check` → **861 passed, 1 skipped**(229.27s, 854→861). **라이브($0)**: kind 3노드 apply→ArgoCD 5파드+모니터링 8파드 전부 Ready→UI 3종(ArgoCD/Grafana/Prometheus) 200. **E2E**: crashme 크래시루프→룰 발화(~3분)→Alertmanager 배달→webhook 4-step→P2 parking(APR-6C9CD1F2)→approve→executor(log-only)→**INC-96D41C2B resolved=true**. 증거 `docs/evidence/onprem-addons-phase1.log`·`onprem-addons-alertmanager-e2e.log`.
+- Blockers: 없음. 규명 메모: 인클러스터 analyzer의 휴리스틱 폴백(Bedrock 자격증명 없음)은 설계된 오프라인 경로(`onprem_incident_pipeline` docstring) — 차트 `llm.endpoint`는 배포 플레인 router 전용, 버그 아님.
+- Next: Phase 3(ArgoCD Application으로 차트 GitOps — ⚠️ 선행: push 또는 로컬 gitea) · Phase 4(Argo Rollouts canary) · Phase 5 선택.
+
 ## 2026-07-20 — 3-클라우드 비용 감사·고아 리소스 정리 + 예산 알림 3종 완비 (코드 무변경, 계정 운영)
 
 - Status: AWS 예산 알림($8.90)발 3-클라우드 전수 감사. 원인=크레딧 차감 전 총사용액(실청구 ~$0.25)이었으나 감사 중 고아 과금원 다수 발견·정리.

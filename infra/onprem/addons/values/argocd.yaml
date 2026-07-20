@@ -1,0 +1,39 @@
+# Low-footprint Argo CD for local kind/k3s. Contract (guard-tested): every CPU
+# request stays <= 50m so the full add-on stack fits the Docker VM budget.
+# Dex (SSO) and notifications are off — local access is port-forward + admin.
+
+dex:
+  enabled: false
+
+notifications:
+  enabled: false
+
+controller:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 256Mi
+
+server:
+  resources:
+    requests:
+      cpu: 5m
+      memory: 64Mi
+
+repoServer:
+  resources:
+    requests:
+      cpu: 5m
+      memory: 128Mi
+
+applicationSet:
+  resources:
+    requests:
+      cpu: 5m
+      memory: 32Mi
+
+redis:
+  resources:
+    requests:
+      cpu: 5m
+      memory: 32Mi
