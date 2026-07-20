@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-21
 
-> ▶ NEXT SESSION: **gate 870 — On-Prem 애드온 스택 Phase 1~5(로깅+k3s 패리티) 완료**: `docs/plans/2026-07-20-onprem-platform-addons.md` — GitOps·Argo Rollouts·Loki/Fluent Bit 로깅·**동일 root의 k3s 기판 패리티**까지 라이브 실증 완결($0). 잔여 = Phase 5 선택 1건(Gateway API, 필요성 재평가 후)뿐. 잔여 사용자 게이트: 아티클 배포·push. 주의: 다음 cdk deploy에 핸들러 경로 변경 반영(Vercel context 필수).
+> ▶ NEXT SESSION: **멀티테넌트/멀티클라우드 플랫폼 Phase 0 착수** — 설계 **S(93.5)** 확정(`docs/plans/2026-07-21-multi-tenant-env-addons.md` v5 + `-mad-history.md`). 첫 액션 = `platform/` 레지스트리 스키마(per-tenant 파티션) + 공용 로더(py/ts) + 어댑터 계약 + `NormalizedAddonStatus`(2축) 타입(동작 무변경). 이어 Phase 1a=자격증명 격리 seam(`_run_external_action→run_onprem_action` scope 관통·in-cluster 러너·broker provenance). **직전 완료**: 애드온 스택 Phase 1~5(gate 870) + 대시보드 Qwen 분석·상세뷰·스택링크·AWS데모 제거(gate 876). 주의: cdk deploy에 핸들러 경로 변경 반영(Vercel context 필수). 로컬 kind 애드온 스택 유지 중($0).
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 

@@ -7,6 +7,35 @@
 
 ---
 
+## 2026-07-21 — 멀티테넌트/멀티클라우드 플랫폼 설계 확정 — S(93.5) via MAD (코드 무변경, 문서)
+
+- Status: 사용자 방향(on-prem이라도 멀티-env·env별 add-on·클라우드 무관)을 플랫폼 설계로 확정. **코드 착수 전**.
+- Changed(`95f1381`): 설계 v5 `docs/plans/2026-07-21-multi-tenant-env-addons.md` + 의사결정·MAD 히스토리
+  `-mad-history.md` + NEXT_PLAN 백로그. 아키텍처=**capability, implementation-pluggable**(cloud-neutral DNA 확장):
+  Tenant=격리 티어 정책(soft/vcluster/dedicated), Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux 어댑터,
+  SSOT=per-tenant git 레지스트리. 최우선 불변식=에이전트 실행 blast radius 1 tenant/env(자격증명이 경계 —
+  in-cluster 러너·incident-provenance broker·read push로 봉인).
+- Verified: **등급 확정 파이프라인** — 원칙-아키텍트 rubric(8기준·보안16 최대) → **MAD(Advocate/Critic/Judge)**
+  A+(92) → **평가 에이전트 ground-truth 재리뷰**(코드 주장 2건 오류 적발: NormalizedIncident namespace 부재·
+  resolve_action seam 오인) → v4 정정 Fable5 A+(91) → S-델타 3건 소진 v5 → **Fable5 재평가 = S(93.5)**. 목표 A+~S 초과.
+- Blockers: 없음. 2차 잔여(Phase 1a 진입 시): agent→hub push 인증·승인레코드 one-time nonce·push heartbeat.
+- Next: Phase 0(레지스트리 스키마+어댑터 계약+NormalizedAddonStatus 2축) → Phase 1a(자격증명 격리 seam).
+
+## 2026-07-21 — 대시보드: On-Prem 분석 Qwen 우선 + 인시던트 상세뷰 + 스택 링크 + AWS데모 제거 (gate 876)
+
+- Status: 애드온 스택 라이브 데모 중 표면화한 대시보드 개선 4건. 사용자 요청 기반.
+- Changed(`4aef387`·`74d7a9d`·`7ca72ed`): (1) **analyzer LLM 백엔드 pluggable**(`ANALYZER_LLM_ENDPOINT` 있으면
+  OpenAI 호환 로컬 Qwen, 없으면 Bedrock; AWS 무변경·역호환) + 파서 견고화(Qwen 트레일링 텍스트) + onprem 어댑터
+  per-alert annotations 캡처 + 프롬프트 alert detail 주입 + 인시던트 confidence 영속화. Makefile onprem-webhook Qwen 배선.
+  (2) **인시던트 상세 페이지** `incidents/[id]`(LLM root-cause·confidence 미터·분석 모델 귀속), 카드 클릭 링크.
+  (3) **스택 바로가기**를 Provisioning "Platform add-ons"로 이관(IaC 메타·env 기반 URL, prod-safe 가드).
+  (4) **AWS 데모 제거**(mock 승인/인시던트 병합 중단) + 배지 정직화(hybrid→local, 거짓 LIVE·AWS 제거).
+- Verified: `make check` → **876 passed, 1 skipped**(870→876, +6). tsc 클린. **라이브($0, 로컬 Qwen 7B)**:
+  OOMKilled alert → 호스트 webhook(Qwen) → confidence **0.95** + 정확한 OOM root cause → approve → INC-95C55A19
+  상세뷰 렌더. DECISIONS 후보=analyzer Qwen 백엔드.
+- Blockers: 없음.
+- Next: (설계) 위 플랫폼 Phase 0.
+
 ## 2026-07-21 — On-Prem 애드온 스택 Phase 5 k3s 기판 패리티 스모크 (코드 무변경, gate 870 유지)
 
 - Status: Phase 5(선택) 잔여 "k3s 패리티" 소진. **동일 addons root가 kubeconfig/context 교체만으로 k3s에 이식됨**을 실증(versions.tf가 광고하는 "kind·k3s 양기판" 계약 검증). 잔여 Phase 5 = Gateway API(필요성 재평가 후)뿐.

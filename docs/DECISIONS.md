@@ -1,6 +1,6 @@
 # DECISIONS — platform-agent
 
-최종 갱신: 2026-07-20
+최종 갱신: 2026-07-21
 
 > 되돌리기 어려운 결정만. 형식: **Decision / Reason / Impact**. 최신이 위.
 
@@ -8,6 +8,12 @@
 > - **enterprise-ai-governance-dashboard** (외부 레포) — 2-Pass Fact NL→SQL 챗봇 + SQL self-heal 루프 + LLM SKU 그룹핑 + 최소권한 Cloud Run SA. 대시보드 챗봇/FinOps 확장 시 검토. 상세 → `docs/reference/enterprise-ai-governance-dashboard.md`. (검토 2026-07-13)
 
 ---
+
+## D20 — 인시던트 analyzer LLM 백엔드는 env-게이트 pluggable (On-Prem=로컬 Qwen 우선, Cloud=Bedrock)
+
+- **Decision:** `analyzer._invoke_llm`이 `ANALYZER_LLM_ENDPOINT` 설정 시 OpenAI 호환 엔드포인트(로컬 Qwen/MLX)를, 없으면 Bedrock을 호출. On-Prem webhook은 Qwen 기본 배선(Makefile). AWS 경로 무변경·역호환. 인시던트 레코드에 confidence 영속화.
+- **Reason:** On-Prem의 정체성은 오프라인 로컬 LLM인데 인시던트 analyzer가 Bedrock만 불러 인클러스터(자격증명 없음)에서 휴리스틱 폴백(신뢰도 0%)됐음. env 게이트로 On-Prem은 Qwen, Cloud는 Bedrock을 쓰게 분리. (파서는 Qwen이 JSON 뒤 붙이는 설명 텍스트 내성, onprem 어댑터는 per-alert annotations 캡처로 프롬프트 구체화.)
+- **Impact:** On-Prem 인시던트가 로컬 Qwen으로 실제 root cause+신뢰도 산출(라이브: OOMKilled conf 0.95). `analyzer.py`(공용)에 백엔드 분기 추가, AWS/GCP/Azure 무영향. `4aef387`, gate 876.
 
 ## D19 — Argo Rollouts는 기존 deployment 러너를 대체하지 않고 **k8s 전용 옵트인 점진배포**로 병존
 

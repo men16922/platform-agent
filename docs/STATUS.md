@@ -17,6 +17,7 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **876 passed, 1 skipped** (2026-07-21, 870→876) — **대시보드 On-Prem 분석 Qwen 우선 + 인시던트 상세뷰 + 스택링크 + AWS데모 제거**(`4aef387`·`74d7a9d`·`7ca72ed`): analyzer LLM 백엔드 pluggable(ANALYZER_LLM_ENDPOINT=로컬 Qwen, 없으면 Bedrock·역호환) + 파서 견고화·어댑터 annotations·프롬프트 detail·confidence 영속화(+6). **라이브($0)**: OOMKilled→Qwen confidence 0.95+정확 root cause→INC-95C55A19 상세뷰. 인시던트 상세페이지 신설, 스택링크 Provisioning 이관(prod-safe).
 - `make check` (pytest) → **870 passed, 1 skipped** (2026-07-20, 867→870) — **On-Prem 애드온 스택 Phase 5(로깅)**: `logging.tf`(loki 7.1.0 SingleBinary+캐시off + fluent-bit 0.57.9 DaemonSet) + grafana Loki 데이터소스. 가드 +3, 핀 3→5. **라이브($0)**: 파드 Ready→Loki query API가 `pa-platform-agent-webhook` 포함 다수 네임스페이스 로그 반환→Grafana Loki 데이터소스 등록 확인. 증거 `docs/evidence/onprem-addons-logging-e2e.log`.
 - `make check` (pytest) → **867 passed, 1 skipped** (2026-07-20, 865→867) — **On-Prem 애드온 스택 Phase 4(Argo Rollouts)**: `rollouts.tf`(argo-rollouts 2.41.1 컨트롤러 + 데모 canary, 무기한 pause 수동게이트). 가드 +2, 핀 2→3. DECISIONS D19(러너 vs Rollouts 병존). **라이브($0)**: promote(blue→yellow, 게이트 60s→75%→100% stable)·abort(yellow→red 25%→Degraded, yellow stable 유지) 양경로. 증거 `docs/evidence/onprem-addons-rollouts-e2e.log`.
 - `make check` (pytest) → **865 passed, 1 skipped** (2026-07-20, 233.46s, 861→865) — **On-Prem 애드온 스택 Phase 3(GitOps)**(`fafacc6`): `gitops.tf`가 ArgoCD `Application`(로컬 래퍼 차트, argocd depends_on)로 platform-agent 차트를 GitHub origin main에서 auto-sync·selfHeal 관리. `application.resourceTrackingMethod=annotation`으로 instance 라벨 추적 충돌 근본 회피, `releaseName=pa`로 Phase 2 접점 보존. 가드 +4. **라이브($0)**: apply→Synced/Healthy(rev=git HEAD)→6 리소스 무중단 채택→drift(scale 1→3)→selfHeal ~16s 복원. 증거 `docs/evidence/onprem-addons-gitops-e2e.log`.
@@ -49,8 +50,9 @@
 
 ## Active Focus
 
-- **On-Prem 플랫폼 애드온 스택(JOURNEY 범위 로컬 확장)** — `docs/plans/2026-07-20-onprem-platform-addons.md`. Phase 1~4 + **Phase 5(로깅 + k3s 기판 패리티)** 완료(gate 870, 라이브 실증 포함). 관측성 삼각(metrics+logs) 완성 + 동일 root의 kind·k3s 양기판 이식성 실증. 잔여 = Phase 5 선택 1건(Gateway API 로컬 등가물, 필요성 재평가 후)뿐.
-- 기존 잔여 = 아티클 배포(원고 854 기준 작성 완료, 사용자 "나중에") · push 수시.
+- **멀티테넌트/멀티클라우드 플랫폼 — 설계 S(93.5) 확정, 구현 대기** — `docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5) + `-mad-history.md`. capability, implementation-pluggable(cloud-neutral DNA 확장). **다음 = Phase 0**(레지스트리 스키마 + 어댑터 계약 + NormalizedAddonStatus 2축) → Phase 1a(자격증명 격리 seam).
+- **완료(참고)**: On-Prem 애드온 스택 Phase 1~5(`docs/plans/2026-07-20-onprem-platform-addons.md`, gate 870) · 대시보드 Qwen 분석·상세뷰·스택링크·AWS데모 제거(gate 876).
+- 기존 잔여 = 아티클 배포(원고 854, 사용자 "나중에").
 
 ## Open Risks / Gaps
 
