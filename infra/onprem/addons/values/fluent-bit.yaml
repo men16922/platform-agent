@@ -1,0 +1,42 @@
+# Fluent Bit DaemonSet: tail container logs, enrich with k8s metadata, ship to
+# Loki's gateway (in-cluster). Low-footprint for local kind/k3s — guard-tested
+# CPU request <= 50m. Pairs with values/loki.yaml.
+resources:
+  requests:
+    cpu: 5m
+    memory: 32Mi
+
+# No test connection pod on a local stack.
+testFramework:
+  enabled: false
+
+config:
+  inputs: |
+    [INPUT]
+        Name tail
+        Path /var/log/containers/*.log
+        multiline.parser docker, cri
+        Tag kube.*
+        Mem_Buf_Limit 5MB
+        Skip_Long_Lines On
+
+  filters: |
+    [FILTER]
+        Name kubernetes
+        Match kube.*
+        Merge_Log On
+        Keep_Log Off
+        K8S-Logging.Parser On
+        K8S-Logging.Exclude On
+
+  # Ship to Loki. The kubernetes filter adds namespace/pod/container as record
+  # keys; expose them as Loki labels so Grafana can filter by them.
+  outputs: |
+    [OUTPUT]
+        Name loki
+        Match kube.*
+        Host loki-gateway.monitoring.svc
+        Port 80
+        Labels job=fluent-bit
+        Label_keys $kubernetes['namespace_name'],$kubernetes['pod_name'],$kubernetes['container_name']
+        Auto_Kubernetes_Labels On

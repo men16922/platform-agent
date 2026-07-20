@@ -41,6 +41,20 @@ variable "argo_rollouts_namespace" {
   default = "argo-rollouts"
 }
 
+# Phase 5 logging: Loki (log store) + Fluent Bit (shipper), installed alongside
+# the kube-prometheus-stack in the monitoring namespace so Grafana can add Loki
+# as a datasource (metrics + logs in one pane). loki 7.1.0 ships Loki 3.6.8;
+# fluent-bit 0.57.9 ships Fluent Bit 5.0.9.
+variable "loki_chart_version" {
+  type    = string
+  default = "7.1.0"
+}
+
+variable "fluent_bit_chart_version" {
+  type    = string
+  default = "0.57.9"
+}
+
 # Where Alertmanager delivers alerts: the platform-agent chart's in-cluster
 # webhook Service (Day-2 detect→analyze→decide→execute entrypoint). Default
 # matches `helm install pa infra/helm/platform-agent` in the default namespace.

@@ -40,17 +40,20 @@ def test_module_ships_the_advertised_pieces():
     names = set(_tf_sources())
     assert {
         "versions.tf", "variables.tf", "argocd.tf", "monitoring.tf",
-        "gitops.tf", "rollouts.tf", "outputs.tf",
+        "gitops.tf", "rollouts.tf", "logging.tf", "outputs.tf",
     } <= names
-    assert {"argocd.yaml", "kube-prometheus-stack.yaml", "argo-rollouts.yaml"} <= set(_values_files())
+    assert {
+        "argocd.yaml", "kube-prometheus-stack.yaml", "argo-rollouts.yaml",
+        "loki.yaml", "fluent-bit.yaml",
+    } <= set(_values_files())
 
 
 def test_chart_versions_are_pinned_exactly():
     variables = _tf_sources()["variables.tf"]
     pins = re.findall(r'default\s*=\s*"(\d+\.\d+\.\d+)"', variables)
-    assert len(pins) == 3, "expected exactly three exact-semver chart pins (argocd, kps, rollouts)"
+    assert len(pins) == 5, "expected exactly five exact-semver chart pins (argocd, kps, rollouts, loki, fluent-bit)"
     # …and every remote release actually consumes a pin (no floating chart versions).
-    for release_file in ("argocd.tf", "monitoring.tf", "rollouts.tf"):
+    for release_file in ("argocd.tf", "monitoring.tf", "rollouts.tf", "logging.tf"):
         assert "version" in _tf_sources()[release_file]
 
 
@@ -162,6 +165,33 @@ def test_rollouts_demo_is_a_canary_with_a_manual_gate():
     assert "canary:" in manifest and "setWeight:" in manifest, "must use a weighted canary strategy"
     # An indefinite `pause: {}` is the promote/abort gate the live demo drives.
     assert "pause: {}" in manifest, "canary must pause indefinitely for a manual promote/abort gate"
+
+
+# --- Phase 5: logging (Loki + Fluent Bit) ----------------------------------
+
+
+def test_loki_is_single_binary_and_caches_are_off():
+    loki = _values_files()["loki.yaml"]
+    assert loki["deploymentMode"] == "SingleBinary"
+    # Scalable targets off — SingleBinary owns everything on the local budget.
+    for target in ("backend", "read", "write"):
+        assert loki[target]["replicas"] == 0, f"{target} must be scaled to 0 in SingleBinary mode"
+    # memcached caches default to multi-Gi requests — the local footprint trap.
+    assert loki["chunksCache"]["enabled"] is False
+    assert loki["resultsCache"]["enabled"] is False
+
+
+def test_fluent_bit_ships_to_the_loki_gateway():
+    outputs = _values_files()["fluent-bit.yaml"]["config"]["outputs"]
+    assert "Name loki" in outputs, "fluent-bit must have a loki output"
+    assert "loki-gateway.monitoring.svc" in outputs, "must target the in-cluster Loki gateway"
+
+
+def test_grafana_registers_loki_as_a_datasource():
+    kps = _values_files()["kube-prometheus-stack.yaml"]
+    sources = kps["grafana"]["additionalDataSources"]
+    (loki_ds,) = [d for d in sources if d["type"] == "loki"]
+    assert "loki-gateway.monitoring.svc" in loki_ds["url"]
 
 
 @pytest.mark.skipif(

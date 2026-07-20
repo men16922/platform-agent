@@ -76,6 +76,15 @@ grafana:
     requests:
       cpu: 5m
       memory: 96Mi
+  # Phase 5: register Loki so metrics (Prometheus) and logs (Loki) share one
+  # Grafana. URL is the in-cluster Loki gateway from values/loki.yaml.
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      uid: loki
+      access: proxy
+      url: http://loki-gateway.monitoring.svc
+      isDefault: false
 
 kube-state-metrics:
   resources:

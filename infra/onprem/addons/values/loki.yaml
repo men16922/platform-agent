@@ -1,0 +1,71 @@
+# Low-footprint Loki for local kind/k3s (Phase 5 logging). SingleBinary mode +
+# filesystem storage; every microservice/cache component is off so the whole
+# add-on stack still fits the Docker VM budget. Contract (guard-tested): CPU
+# requests stay <= 50m. Not for production scale — local log aggregation only.
+deploymentMode: SingleBinary
+
+loki:
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: filesystem
+  schemaConfig:
+    configs:
+      - from: "2024-04-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: loki_index_
+          period: 24h
+  limits_config:
+    retention_period: 72h
+    reject_old_samples: false
+  # Silence the ruler/analytics extras that assume a hosted backend.
+  rulerConfig:
+    storage:
+      type: local
+  analytics:
+    reporting_enabled: false
+
+singleBinary:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 20m
+      memory: 128Mi
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: standard
+
+# Scalable/microservice targets off — SingleBinary owns everything.
+backend: { replicas: 0 }
+read: { replicas: 0 }
+write: { replicas: 0 }
+
+# memcached caches default to multi-Gi requests — the classic local footprint
+# trap. Off for local; SingleBinary serves queries directly.
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+
+gateway:
+  enabled: true
+  resources:
+    requests:
+      cpu: 5m
+      memory: 16Mi
+
+# Extras that pull more pods/charts — all off for a minimal local stack.
+lokiCanary:
+  enabled: false
+test:
+  enabled: false
+monitoring:
+  selfMonitoring:
+    enabled: false
+    grafanaAgent:
+      installOperator: false
