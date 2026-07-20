@@ -118,6 +118,7 @@ def _record_incident(
         resolved=resolved,
         executed_actions=executor_out.get("executed_actions", []),
         incident_id=executor_out.get("incident_id"),
+        confidence=summary.get("confidence"),
     )
 
 
@@ -300,6 +301,7 @@ def _record_incident_from_approval(
         resolved=resolved,
         executed_actions=executor_out.get("executed_actions", []),
         incident_id=executor_out.get("incident_id"),
+        confidence=analyzer.get("confidence"),
     )
 
 

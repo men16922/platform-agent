@@ -71,8 +71,8 @@ mlx-proxy:  ## start the MLX Qwen tool-call proxy
 router-api:  ## start the AI Model Router API (natural-language deploy)
 	cd $(DEPLOY_WORKDIR) && PYTHONPATH=$(CURDIR) PLATFORM_ACTIVITY_FILE=$(ACTIVITY_FILE) ONPREM_LLM_ENDPOINT=http://127.0.0.1:$(PROXY_PORT)/v1 ONPREM_LLM_MODEL=$(MLX_MODEL) uvicorn src.agents.ai.local_deploy_api:app --host 127.0.0.1 --port $(ROUTER_PORT)
 
-onprem-webhook:  ## start the On-Prem PATH B webhook (Alertmanager -> Day-2 incident pipeline + approval gate)
-	PLATFORM_ACTIVITY_FILE=$(ACTIVITY_FILE) PLATFORM_APPROVALS_FILE=$(APPROVALS_FILE) PLATFORM_INCIDENT_FILE=$(INCIDENT_FILE) uvicorn src.agents.ai.onprem_webhook_api:app --host 127.0.0.1 --port $(WEBHOOK_PORT)
+onprem-webhook:  ## start the On-Prem PATH B webhook (Alertmanager -> Day-2 incident pipeline + approval gate). Analyzer prioritises local Qwen (offline); set ANALYZER_LLM_ENDPOINT= to force Bedrock.
+	PLATFORM_ACTIVITY_FILE=$(ACTIVITY_FILE) PLATFORM_APPROVALS_FILE=$(APPROVALS_FILE) PLATFORM_INCIDENT_FILE=$(INCIDENT_FILE) ANALYZER_LLM_ENDPOINT=http://127.0.0.1:$(PROXY_PORT)/v1 ANALYZER_LLM_MODEL=$(MLX_MODEL) uvicorn src.agents.ai.onprem_webhook_api:app --host 127.0.0.1 --port $(WEBHOOK_PORT)
 
 local-llm-up:  ## start MLX + proxy + router API in the background (logs in /tmp/platform-agent)
 	@mkdir -p $(LLM_LOG_DIR)

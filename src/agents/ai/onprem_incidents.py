@@ -40,6 +40,7 @@ def record_incident(
     resolved: bool,
     executed_actions: list[str] | None = None,
     incident_id: str | None = None,
+    confidence: float | None = None,
 ) -> dict[str, Any]:
     """Append one on-prem incident (dashboard Incident shape); returns the record."""
     record = {
@@ -53,6 +54,9 @@ def record_incident(
         "runbook_id": runbook_id or "generic-recovery",
         "resolved": bool(resolved),
         "executed_actions": executed_actions or [],
+        # LLM analysis confidence (Qwen on-prem / Bedrock cloud) — preserved on the
+        # timeline record so the dashboard incident detail can show the analysis.
+        "confidence": confidence if isinstance(confidence, (int, float)) else None,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     sql = state_store.configured_store()

@@ -79,6 +79,7 @@ export function mapIncidentRecord(item: Record<string, unknown>): Incident | nul
           ? item.resolved_at
           : "1970-01-01T00:00:00Z",
     reconciliation: mapReconciliation(item.reconciliation),
+    confidence: typeof item.confidence === "number" ? item.confidence : undefined,
   };
 }
 
@@ -95,6 +96,13 @@ function mapReconciliation(raw: unknown): Incident["reconciliation"] {
 
 const byNewest = (left: Incident, right: Incident) =>
   Date.parse(right.created_at) - Date.parse(left.created_at);
+
+export async function getIncidentById(
+  id: string,
+): Promise<{ incident: Incident | null; source: IncidentDataSource }> {
+  const feed = await getIncidentFeed();
+  return { incident: feed.incidents.find((i) => i.id === id) ?? null, source: feed.source };
+}
 
 export async function getIncidentFeed(): Promise<IncidentFeed> {
   const syncedAt = new Date().toISOString();

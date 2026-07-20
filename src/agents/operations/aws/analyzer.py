@@ -83,21 +83,9 @@ Return ONLY the JSON. No markdown fences.
 
 def _analyse(detector: DetectorOutput) -> tuple[str, Severity, float]:
     prompt = _build_prompt(detector)
-    body = json.dumps({
-        "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 1024,
-        "system": _SYSTEM_PROMPT,
-        "messages": [{"role": "user", "content": prompt}],
-    })
 
     try:
-        resp   = _BEDROCK.invoke_model(
-            modelId=_MODEL_ID,
-            contentType="application/json",
-            accept="application/json",
-            body=body,
-        )
-        text   = json.loads(resp["body"].read())["content"][0]["text"]
+        text   = _invoke_llm(_SYSTEM_PROMPT, prompt)
         parsed = _parse_llm_response(text)
         return (
             parsed["root_cause"],
@@ -108,6 +96,59 @@ def _analyse(detector: DetectorOutput) -> tuple[str, Severity, float]:
         logger.error("analyzer.llm.error", error=str(exc))
         # Safe default: treat as P2 to avoid silent under-reaction
         return (f"LLM analysis failed: {exc}", Severity.P2, 0.0)
+
+
+def _invoke_llm(system: str, user: str) -> str:
+    """Return the model's raw JSON text from the configured backend.
+
+    On-prem prioritises a local OpenAI-compatible model (Qwen via the MLX proxy)
+    when ``ANALYZER_LLM_ENDPOINT`` is set; otherwise the cloud path uses Bedrock.
+    Either backend returns the same ``{root_cause, severity, confidence}`` JSON,
+    so the caller parses it identically.
+    """
+    endpoint = os.getenv("ANALYZER_LLM_ENDPOINT")
+    if endpoint:
+        return _invoke_openai_compatible(endpoint, system, user)
+    return _invoke_bedrock(system, user)
+
+
+def _invoke_openai_compatible(endpoint: str, system: str, user: str) -> str:
+    """Local/offline path — OpenAI-compatible chat endpoint (e.g. Qwen on MLX)."""
+    import requests
+
+    model = os.getenv("ANALYZER_LLM_MODEL", "local-qwen")
+    resp = requests.post(
+        f"{endpoint.rstrip('/')}/chat/completions",
+        json={
+            "model": model,
+            "max_tokens": 1024,
+            "temperature": 0,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+        },
+        timeout=float(os.getenv("ANALYZER_LLM_TIMEOUT", "60")),
+    )
+    resp.raise_for_status()
+    return resp.json()["choices"][0]["message"]["content"]
+
+
+def _invoke_bedrock(system: str, user: str) -> str:
+    """Cloud path — Bedrock (Claude)."""
+    body = json.dumps({
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": 1024,
+        "system": system,
+        "messages": [{"role": "user", "content": user}],
+    })
+    resp = _BEDROCK.invoke_model(
+        modelId=_MODEL_ID,
+        contentType="application/json",
+        accept="application/json",
+        body=body,
+    )
+    return json.loads(resp["body"].read())["content"][0]["text"]
 
 
 def _build_prompt(detector: DetectorOutput) -> str:
@@ -131,6 +172,15 @@ def _build_prompt(detector: DetectorOutput) -> str:
             f"Signal:     {normalized.signal_type}\n"
             f"Capabilities: {', '.join(normalized.recommended_capabilities) or '(none)'}"
         )
+        # The alert's own summary/description is often the single richest piece of
+        # evidence (e.g. "OOMKilled, memory limit 256Mi exceeded") — surface it so
+        # the model can reason about the actual failure, not just the signal type.
+        observations = normalized.observations or {}
+        alert_text = " ".join(
+            str(observations.get(k, "")) for k in ("summary", "description")
+        ).strip()
+        if alert_text:
+            normalized_summary += f"\nAlert detail: {alert_text}"
 
     return f"""\
 ## Alarm
@@ -160,12 +210,29 @@ Analyse and return the JSON object described in the system prompt.
 def _parse_llm_response(text: str) -> dict[str, Any]:
     # Strip accidental markdown fences
     text = re.sub(r"```json?\s*", "", text).strip(" `\n")
-    parsed = json.loads(text)
+    parsed = _extract_first_json_object(text)
     # Validate keys
     for key in ("root_cause", "severity", "confidence"):
         if key not in parsed:
             raise ValueError(f"LLM response missing key: {key}")
     return parsed
+
+
+def _extract_first_json_object(text: str) -> dict[str, Any]:
+    """Parse the first JSON object in ``text``, tolerating prose around it.
+
+    Bedrock/Claude returns bare JSON (system prompt: "Return ONLY the JSON"), but
+    local coder models (Qwen) often wrap it in commentary — ``raw_decode`` from
+    the first brace consumes exactly one object and ignores any trailing text,
+    which plain ``json.loads`` rejects with "Extra data".
+    """
+    start = text.find("{")
+    if start == -1:
+        raise ValueError("no JSON object found in LLM response")
+    obj, _ = json.JSONDecoder().raw_decode(text[start:])
+    if not isinstance(obj, dict):
+        raise ValueError("LLM response is not a JSON object")
+    return obj
 
 
 # ------------------------------------------------------------------

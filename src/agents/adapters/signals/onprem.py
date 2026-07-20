@@ -20,11 +20,17 @@ class OnPremAlertmanagerSignalAdapter(SignalAdapter):
         first_alert = alerts[0] if alerts else {}
         labels = first_alert.get("labels", {}) if isinstance(first_alert, dict) else {}
         merged_labels = {**common_labels, **labels}
+        # Alertmanager only lifts annotations into commonAnnotations when every
+        # grouped alert shares the same value; a single alert (or varying ones)
+        # keeps them per-alert. Fall back to the first alert so the summary and
+        # description — the richest analysis signal — are never dropped.
+        first_annotations = first_alert.get("annotations", {}) if isinstance(first_alert, dict) else {}
+        annotations = {**first_annotations, **common_annotations}
 
         resource_type = _resource_type(merged_labels)
         service = merged_labels.get("service") or merged_labels.get("job") or merged_labels.get("pod") or "onprem-incident"
         resource_id = merged_labels.get("pod") or merged_labels.get("instance") or merged_labels.get("service") or service
-        signal_type = _signal_type(merged_labels.get("alertname", ""), common_annotations.get("summary", ""))
+        signal_type = _signal_type(merged_labels.get("alertname", ""), annotations.get("summary", ""))
 
         return NormalizedIncident(
             provider="onprem",
@@ -34,8 +40,8 @@ class OnPremAlertmanagerSignalAdapter(SignalAdapter):
             signal_type=signal_type,
             severity_hint=merged_labels.get("severity"),
             observations={
-                "summary": common_annotations.get("summary", ""),
-                "description": common_annotations.get("description", ""),
+                "summary": annotations.get("summary", ""),
+                "description": annotations.get("description", ""),
                 "status": event.get("status", ""),
             },
             recommended_capabilities=_capabilities(resource_type),

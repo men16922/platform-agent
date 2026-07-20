@@ -25,6 +25,7 @@ export interface Incident {
   executed_actions: string[];
   created_at: string;
   reconciliation?: Reconciliation;
+  confidence?: number; // LLM analysis confidence 0..1 (Qwen on-prem / Bedrock cloud)
 }
 
 // Domain of a row (which page it belongs to). Rollback is a STATUS, not a type,

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Incident } from "@/lib/mock-data";
 import { ProviderLogo, providerBadgeStyles } from "@/components/provider-logo";
 
@@ -8,7 +9,9 @@ const severityColors = {
 };
 
 export function IncidentRow({ incident }: { incident: Incident }) {
+  const confidencePct = typeof incident.confidence === "number" ? Math.round(incident.confidence * 100) : null;
   return (
+    <Link href={`/incidents/${incident.id}`} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8ab4f8]/60 rounded-xl">
     <article className={`group relative flex flex-col gap-3 overflow-hidden rounded-xl border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_rgba(0,0,0,0.28)] ${incident.severity === "P1" ? "border-red-400/45 bg-[linear-gradient(110deg,rgba(127,29,29,0.38),rgba(48,49,52,0.96)_38%)]" : incident.severity === "P2" ? "border-yellow-400/40 bg-[linear-gradient(110deg,rgba(113,82,10,0.30),rgba(48,49,52,0.96)_38%)]" : "border-blue-400/35 bg-[linear-gradient(110deg,rgba(30,64,175,0.22),rgba(48,49,52,0.96)_38%)]"}`}>
       <div className={`absolute bottom-0 left-0 top-0 w-0.5 ${incident.severity === "P1" ? "bg-[var(--danger)]" : incident.severity === "P2" ? "bg-[var(--warning)]" : "bg-[var(--accent)]"}`} />
       <div className="flex items-center gap-2 flex-wrap">
@@ -20,6 +23,9 @@ export function IncidentRow({ incident }: { incident: Incident }) {
           {incident.provider === "gcp" ? "GOOGLE CLOUD" : incident.provider === "azure" ? "MICROSOFT AZURE" : incident.provider === "onprem" ? "ON-PREM" : "AWS"}
         </span>
         <span className="rounded bg-black/15 px-1.5 py-1 text-[10px] font-bold tracking-wide text-[#d8dde5]">{incident.mode}</span>
+        {confidencePct !== null && (
+          <span className="rounded bg-[#c4b5fd]/15 px-1.5 py-1 text-[10px] font-bold text-[#d9ccff]" title="LLM analysis confidence">🧠 {confidencePct}%</span>
+        )}
         <span className="ml-auto text-xs text-[var(--muted)]">
           {new Date(incident.created_at).toLocaleString()}
         </span>
@@ -73,6 +79,10 @@ export function IncidentRow({ incident }: { incident: Incident }) {
           ))}
         </div>
       )}
+      <span className="pointer-events-none absolute bottom-3 right-4 text-xs text-[var(--muted)] opacity-0 transition-opacity group-hover:opacity-100">
+        View analysis →
+      </span>
     </article>
+    </Link>
   );
 }
