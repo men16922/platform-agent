@@ -1,6 +1,6 @@
 # DECISIONS — platform-agent
 
-최종 갱신: 2026-07-19
+최종 갱신: 2026-07-20
 
 > 되돌리기 어려운 결정만. 형식: **Decision / Reason / Impact**. 최신이 위.
 
@@ -8,6 +8,12 @@
 > - **enterprise-ai-governance-dashboard** (외부 레포) — 2-Pass Fact NL→SQL 챗봇 + SQL self-heal 루프 + LLM SKU 그룹핑 + 최소권한 Cloud Run SA. 대시보드 챗봇/FinOps 확장 시 검토. 상세 → `docs/reference/enterprise-ai-governance-dashboard.md`. (검토 2026-07-13)
 
 ---
+
+## D18 — On-Prem ArgoCD는 label이 아니라 **annotation** 리소스 추적 (`application.resourceTrackingMethod=annotation`)
+
+- **Decision:** addons ArgoCD를 annotation 기반 추적으로 고정(`values/argocd.yaml` `configs.cm`). 워크로드 Application은 `releaseName=pa`로 렌더.
+- **Reason:** platform-agent 차트가 `app.kubernetes.io/instance={{ .Release.Name }}`를 직접 찍는데, ArgoCD 기본 **label 추적**은 같은 라벨을 Application명으로 덮어써 selector 불변식과 충돌한다(Helm 차트용 Argo 공식 권장이 annotation). annotation 추적은 `argocd.argoproj.io/tracking-id`로 소유권을 표기해 라벨을 건드리지 않으므로 기존 `pa` 릴리스 리소스를 **무중단 채택** 가능.
+- **Impact:** GitOps가 관리하는 워크로드는 instance 라벨 자유(차트가 소유). ArgoCD 재설치/버전업 시 이 cm 값 유지 필수. 라이브 실증: 6 리소스 채택·drift selfHeal ~16s(`docs/evidence/onprem-addons-gitops-e2e.log`).
 
 ## D17 — 알림성 액션은 SSM 문서가 아니라 executor in-process로 실행 (`_NOTIFICATION_ACTIONS`)
 

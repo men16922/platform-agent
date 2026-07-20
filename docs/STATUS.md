@@ -17,6 +17,7 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **865 passed, 1 skipped** (2026-07-20, 233.46s, 861→865) — **On-Prem 애드온 스택 Phase 3(GitOps)**(`fafacc6`): `gitops.tf`가 ArgoCD `Application`(로컬 래퍼 차트, argocd depends_on)로 platform-agent 차트를 GitHub origin main에서 auto-sync·selfHeal 관리. `application.resourceTrackingMethod=annotation`으로 instance 라벨 추적 충돌 근본 회피, `releaseName=pa`로 Phase 2 접점 보존. 가드 +4. **라이브($0)**: apply→Synced/Healthy(rev=git HEAD)→6 리소스 무중단 채택→drift(scale 1→3)→selfHeal ~16s 복원. 증거 `docs/evidence/onprem-addons-gitops-e2e.log`.
 - `make check` (pytest) → **861 passed, 1 skipped** (2026-07-20, 229.27s, 854→861) — **On-Prem 플랫폼 애드온 스택 Phase 1+2**: 신규 `infra/onprem/addons/` root(argo-cd 10.1.4·kps 87.17.0 핀, 저사양 values, kind·k3s 양기판) apply→전 파드 Ready→UI 3종 200 + Alertmanager receiver→in-cluster webhook 배선 라이브 E2E(crashme 크래시루프→룰 발화→배달→4-step→P2 승인→INC-96D41C2B resolved, $0). 가드 +7. 증거 `docs/evidence/onprem-addons-{phase1,alertmanager-e2e}.log`.
 - `make check` (pytest) → **854 passed, 1 skipped** (2026-07-20, 256.62s, 수 무변경) — **리팩토링 후속 2건**(`8792c9c`): operations 그룹핑 cloud축 통일(`aws/`·`runners/` 신설, CDK 핸들러 경로 7종 정합) + approval_bridge 610줄 handler → 4모듈 분리(handler/request_store/slack_interactive/payloads). 순수 구조 개편(동작·테스트 수 무변경).
 - `make check` (pytest) → **854 passed, 1 skipped** (2026-07-19, 232.03s, 847→854) — **On-Prem P2 승인 Slack 버튼 연동**(`617839b`): DynamoDB 공유 매체+옵트인 폴러, 라이브 왕복(P2 parking→Slack ONPREM 카드→Approve 클릭→APPROVED→폴러 실행→INC-FA2143AF resolved, 증거 `docs/evidence/onprem-slack-approval-live.log`). **동일자 terraform aws-production 실 apply→검증→destroy 완주**(코드 무변경): EKS 노드 2 Ready·Aurora `platform_state` available·IRSA trust 재배선 확증 후 29개 destroy·잔존 0·≈$0.5 미만(증거 `docs/evidence/terraform-aws-production-apply-live.log`) — #7-b 전 단계 실증 완결.
@@ -46,8 +47,8 @@
 
 ## Active Focus
 
-- **On-Prem 플랫폼 애드온 스택(JOURNEY 범위 로컬 확장)** — `docs/plans/2026-07-20-onprem-platform-addons.md`. Phase 1(addons IaC)·2(Alertmanager→4-step E2E) 완료(gate 861). **다음 = Phase 3**(ArgoCD Application 차트 GitOps, ⚠️ 선행: push 또는 로컬 gitea) → Phase 4(Argo Rollouts).
-- 기존 잔여 = 아티클 배포(원고 854 기준 작성 완료, 사용자 "나중에") · push 수시.
+- **On-Prem 플랫폼 애드온 스택(JOURNEY 범위 로컬 확장)** — `docs/plans/2026-07-20-onprem-platform-addons.md`. Phase 1(addons IaC)·2(Alertmanager→4-step)·**3(ArgoCD GitOps)** 완료(gate 865, 라이브 실증 포함). **다음 = Phase 4**(Argo Rollouts canary 승격/abort + 러너 위치 정리 DECISIONS 1건) → Phase 5 선택.
+- 기존 잔여 = 아티클 배포(원고 854 기준 작성 완료, 사용자 "나중에") · push(로컬 ahead — Phase 3 커밋 후 push 예정).
 
 ## Open Risks / Gaps
 

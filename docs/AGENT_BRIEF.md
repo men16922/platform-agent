@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-20
 
-> ▶ NEXT SESSION: **gate 861 — On-Prem 애드온 스택 Phase 1·2 완료(2026-07-20)**: 신규 백로그(JOURNEY 로컬 확장, `docs/plans/2026-07-20-onprem-platform-addons.md`) — `infra/onprem/addons/` root(ArgoCD 10.1.4+kps 87.17.0, kind·k3s 양기판) apply→Ready→UI 200 + Alertmanager→in-cluster webhook 4-step 라이브 E2E(INC-96D41C2B resolved, $0). **다음 = Phase 3**(ArgoCD Application 차트 GitOps — ⚠️ 선행: push(사용자 게이트) 또는 로컬 gitea) → Phase 4(Argo Rollouts canary). 잔여 사용자 게이트: 아티클 배포·push. 주의: 다음 cdk deploy에 핸들러 경로 변경 반영(Vercel context 필수).
+> ▶ NEXT SESSION: **gate 865 — On-Prem 애드온 스택 Phase 1·2·3 완료(2026-07-20)**: `docs/plans/2026-07-20-onprem-platform-addons.md` — Phase 3(ArgoCD GitOps)까지 라이브 실증 완결(Application Synced/Healthy·6 리소스 채택·drift selfHeal ~16s, $0). **다음 = Phase 4**(Argo Rollouts canary 승격/abort + 러너 위치 정리 DECISIONS 1건) → Phase 5 선택. 잔여 사용자 게이트: 아티클 배포·push. 주의: 다음 cdk deploy에 핸들러 경로 변경 반영(Vercel context 필수).
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 

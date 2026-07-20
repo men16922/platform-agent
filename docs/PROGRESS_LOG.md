@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-07-20 — On-Prem 애드온 스택 Phase 3: ArgoCD GitOps로 platform-agent 차트 관리 + 라이브 실증 (gate 861→865)
+
+- Status: `docs/plans/2026-07-20-onprem-platform-addons.md` Phase 3 = IaC+라이브 증거 완결. Phase 4(Argo Rollouts) 대기.
+- Changed(`fafacc6`): 신규 `gitops.tf`(helm_release `platform_agent_app`, argocd `depends_on`) — Application CR을 로컬 래퍼 차트 `charts/platform-agent-app`로 배포해 **plan-time argoproj.io CRD 불필요**. Application은 repoURL/path/rev/valueFiles를 values 주입, automated **selfHeal+prune**, cascade-delete finalizer. `releaseName=pa`로 Phase 2 webhook Service명(`pa-platform-agent-webhook`) 보존 → Alertmanager receiver URL 무변경. `values/argocd.yaml`에 **`application.resourceTrackingMethod=annotation`**(차트가 찍는 `app.kubernetes.io/instance` 라벨과 ArgoCD label 추적의 충돌 근본 회피, Argo 공식 권장). `variables.tf` gitops_* 6종(기본=GitHub origin main). 가드 +4.
+- Verified: `terraform validate` Success · `make check` → **865 passed, 1 skipped**(861→865). **라이브($0, kind)**: apply→Application `platform-agent` **Synced/Healthy**(revision=git HEAD `25d8e89`)→기존 **6 리소스 무중단 채택**(webhook·svc·SA·PVC·Role·RB)→drift(`scale 1→3`)→**selfHeal ~16s 내 replicas=1 복원**→Alertmanager接点 보존. 증거 `docs/evidence/onprem-addons-gitops-e2e.log`.
+- Blockers: 없음. 규명·해결: instance 라벨 추적 충돌 → annotation 추적 전환으로 근본 해결(DECISIONS 기록).
+- Next: Phase 4(Argo Rollouts canary 승격/abort + 러너 위치 정리 DECISIONS 1건) · Phase 5 선택.
+
 ## 2026-07-20 — On-Prem 플랫폼 애드온 스택 Phase 1+2: addons IaC + Alertmanager→4-step 라이브 E2E (gate 854→861)
 
 - Status: 신규 백로그(JOURNEY 범위 로컬 확장, `docs/plans/2026-07-20-onprem-platform-addons.md`) Phase 1·2 완료. Phase 3(GitOps)·4(Rollouts) 대기.
