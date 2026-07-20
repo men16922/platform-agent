@@ -1,55 +1,71 @@
-// Platform add-on stack UIs (ArgoCD / Grafana / Prometheus / Alertmanager /
-// Argo Rollouts). URLs are env-driven so the SAME dashboard points at local
-// port-forwards in dev and at cluster ingress hosts in a real deployment —
-// nothing is hard-coded. Set NEXT_PUBLIC_<STACK>_URL to override a default.
+// Platform add-ons — the cluster tooling provisioned by infra/onprem/addons
+// (Terraform). These are provisioning OUTPUT, so the dashboard surfaces them on
+// the Provisioning screen with the IaC metadata (pinned chart version, the
+// namespace they land in) alongside a link to each UI.
 //
-// NEXT_PUBLIC_* are inlined at build time, so each must be referenced literally
-// (a dynamic process.env[key] lookup would not be replaced).
+// URLs are env-driven so the SAME dashboard points at local port-forwards in dev
+// and at cluster ingress hosts in a real deployment — nothing is hard-coded.
+// NEXT_PUBLIC_* are inlined at build time, so each must be referenced literally.
+
+export type StackCategory = "GitOps" | "Observability" | "Progressive delivery";
 
 export interface StackLink {
   key: string;
   label: string;
-  icon: string;
+  category: StackCategory;
+  accent: string; // category accent color
+  chart: string; // Helm chart + pinned version (the IaC contract)
+  namespace: string;
   url: string;
-  hint: string;
 }
 
 export function getStackLinks(): StackLink[] {
-  return [
+  const links: StackLink[] = [
     {
       key: "argocd",
       label: "ArgoCD",
-      icon: "🔁",
-      hint: "GitOps",
+      category: "GitOps",
+      accent: "#ef7b4d",
+      chart: "argo-cd 10.1.4",
+      namespace: "argocd",
       url: process.env.NEXT_PUBLIC_ARGOCD_URL || "https://localhost:8090",
     },
     {
       key: "grafana",
       label: "Grafana",
-      icon: "📊",
-      hint: "Metrics + logs",
+      category: "Observability",
+      accent: "#8ab4f8",
+      chart: "kube-prometheus-stack 87.17.0",
+      namespace: "monitoring",
       url: process.env.NEXT_PUBLIC_GRAFANA_URL || "http://localhost:3001",
     },
     {
       key: "prometheus",
       label: "Prometheus",
-      icon: "🔥",
-      hint: "Metrics",
+      category: "Observability",
+      accent: "#8ab4f8",
+      chart: "kube-prometheus-stack 87.17.0",
+      namespace: "monitoring",
       url: process.env.NEXT_PUBLIC_PROMETHEUS_URL || "http://localhost:9090",
     },
     {
       key: "alertmanager",
       label: "Alertmanager",
-      icon: "🔔",
-      hint: "Alerts",
+      category: "Observability",
+      accent: "#8ab4f8",
+      chart: "kube-prometheus-stack 87.17.0",
+      namespace: "monitoring",
       url: process.env.NEXT_PUBLIC_ALERTMANAGER_URL || "http://localhost:9093",
     },
     {
       key: "rollouts",
       label: "Argo Rollouts",
-      icon: "🚦",
-      hint: "Progressive delivery",
+      category: "Progressive delivery",
+      accent: "#69d3a7",
+      chart: "argo-rollouts 2.41.1",
+      namespace: "argo-rollouts",
       url: process.env.NEXT_PUBLIC_ROLLOUTS_URL || "http://localhost:3101/rollouts",
     },
-  ].filter((link) => Boolean(link.url));
+  ];
+  return links.filter((link) => Boolean(link.url));
 }

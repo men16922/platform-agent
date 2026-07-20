@@ -1,6 +1,7 @@
 import { DataSourceBadge } from "@/components/data-source-badge";
 import { getDeploymentFeed } from "@/lib/activity-data";
 import { ProvisioningControl } from "@/components/provisioning-control";
+import { PlatformAddons } from "@/components/platform-addons";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,10 @@ export default async function ProvisioningPage() {
       </div>
 
       <ProvisioningControl initialDeployments={deployments} />
+
+      {/* Platform layer stood up on top of the cluster (GitOps / observability /
+          progressive delivery) — provisioning output, so it lives here. */}
+      <PlatformAddons />
     </div>
   );
 }

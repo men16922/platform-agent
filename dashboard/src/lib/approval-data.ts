@@ -108,34 +108,19 @@ async function decideOnPrem(approvalId: string, decision: "approve" | "reject"):
   return true;
 }
 
-// In-memory fallback
-const mockApprovals: ApprovalRequest[] = [
-  {
-    approval_id: "APR-TEST1234",
-    status: "PENDING",
-    task_token: "token-1234",
-    runbook_id: "generic-recovery",
-    actions: ["GCP-RolloutRestartGKEWorkload", "GCP-ScaleGKEWorkload"],
-    severity: "P2",
-    alarm_name: "pod-oom-alert",
-    root_cause: "GKE pod memory utilization above 90% due to traffic spike.",
-    confidence: 0.85,
-    request_kind: "incident",
-    request_subject: "pod-oom-alert",
-    request_summary: "GKE pod memory utilization above 90% due to traffic spike.",
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-];
+// No demo/seed approvals — the queue reflects only genuinely pending
+// remediations (on-prem webhook, or a real AWS feed when wired). Kept as an
+// empty list so the AWS-live fallbacks below stay type-safe.
+const mockApprovals: ApprovalRequest[] = [];
 
 export async function listPendingApprovals(): Promise<ApprovalRequest[]> {
-  // On-prem approvals are merged in regardless of the AWS data-source mode, so a
-  // local operator sees on-prem P2 gates even without AWS wired up (hybrid).
+  // On-prem approvals come from the local webhook. AWS approvals are only added
+  // when a real AWS feed is wired (DASHBOARD_DATA_SOURCE=aws) — no demo rows, so
+  // the queue reflects only genuinely pending remediations.
   const onprem = await fetchOnPremPending();
 
   if (!isLiveMode()) {
-    const aws = mockApprovals.filter((a) => a.status === "PENDING").map((a) => ({ ...a, source: "aws" as const }));
-    return [...aws, ...onprem];
+    return [...onprem];
   }
 
   try {
@@ -152,8 +137,7 @@ export async function listPendingApprovals(): Promise<ApprovalRequest[]> {
     return [...aws, ...onprem];
   } catch (error) {
     console.error("approval-data.listPendingApprovals.failed", error);
-    const aws = mockApprovals.filter((a) => a.status === "PENDING").map((a) => ({ ...a, source: "aws" as const }));
-    return [...aws, ...onprem];
+    return [...onprem];
   }
 }
 

@@ -1,7 +1,7 @@
 import { ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { getDocumentClient } from "@/lib/aws-client";
 
-import { mockIncidents, type Incident } from "@/lib/mock-data";
+import { type Incident } from "@/lib/mock-data";
 
 export type IncidentDataSource = "aws-live" | "local" | "hybrid" | "demo" | "demo-fallback";
 
@@ -110,13 +110,15 @@ export async function getIncidentFeed(): Promise<IncidentFeed> {
   const onprem = await fetchOnPremIncidents();
 
   if (!isLiveMode()) {
+    // No AWS wired up — the only real feed is the on-prem webhook. Report the
+    // source honestly as ON-PREM (don't claim a hybrid AWS feed that isn't there).
     return {
-      incidents: [...onprem, ...mockIncidents].sort(byNewest),
-      source: onprem.length ? "hybrid" : "demo",
+      incidents: [...onprem].sort(byNewest),
+      source: "local",
       syncedAt,
       notice: onprem.length
-        ? "On-prem incidents (live) merged with the demo dataset."
-        : "Demo dataset. Set DASHBOARD_DATA_SOURCE=aws to enable the read-only AWS feed.",
+        ? undefined
+        : "No on-prem incidents yet — fire an Alertmanager alert to populate the timeline.",
     };
   }
 
@@ -141,12 +143,10 @@ export async function getIncidentFeed(): Promise<IncidentFeed> {
   } catch (error) {
     console.error("dashboard.incidents.live_fetch_failed", error);
     return {
-      incidents: [...onprem, ...mockIncidents].sort(byNewest),
-      source: onprem.length ? "hybrid" : "demo-fallback",
+      incidents: [...onprem].sort(byNewest),
+      source: "local",
       syncedAt,
-      notice: onprem.length
-        ? "AWS feed unavailable; showing on-prem incidents + demo dataset."
-        : "AWS feed unavailable. Showing the demo dataset.",
+      notice: "AWS feed unavailable — showing on-prem incidents only.",
     };
   }
 }
