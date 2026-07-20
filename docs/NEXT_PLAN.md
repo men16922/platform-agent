@@ -28,6 +28,24 @@ JOURNEY.md 범위(GitOps·관측성·점진 배포)를 로컬 On-Prem($0)으로 
 - [~] **Phase 5**(선택) — **Loki/Fluent Bit + k3s 패리티 완료(2026-07-20~21, gate 870)**: (a) `logging.tf`(loki 7.1.0 SingleBinary·캐시off + fluent-bit 0.57.9) + grafana Loki 데이터소스 라이브(`pa-platform-agent-webhook` 로그까지 Loki 적재). (b) **k3s 기판 패리티 스모크**: 동일 root를 별도 workspace+kubeconfig 교체로 k3s(v1.31.4)에 apply→ArgoCD 5/5 Ready→destroy·VM 복원(`docs/evidence/onprem-addons-k3s-parity.log`, kind default state 무손상).
   - **Gateway API 로컬 등가물 = 보류(2026-07-21 재평가)**: platform-agent 워크로드는 in-cluster ClusterIP 서비스만 소비하고 외부 라우팅 소비처가 없음 → 데모용 envoy-gateway 설치는 소비처 없는 스코프-크립+kind 풋프린트 부담. 실 소비처(외부 노출 필요) 생기면 재개. → **애드온 스택 백로그 소진.**
 
+## 신규 백로그 — 멀티테넌트/멀티-클라우드 플랫폼 + per-env Add-on (2026-07-21 설계 v4 확정, 착수 대기)
+
+사용자 방향: on-prem이라도 여러 env에 동시 배포, env마다 add-on·격리·GitOps엔진 상이(어느 클라우드든 동일).
+**설계 문서**: `docs/plans/2026-07-21-multi-tenant-env-addons.md` (v5) · **의사결정·MAD 히스토리**: `docs/plans/2026-07-21-multi-tenant-env-addons-mad-history.md`. **등급 확정 파이프라인**: 원칙-아키텍트
+rubric(8기준) → **MAD(Advocate/Critic, Judge)** 수렴 A+(92) → **평가 에이전트 ground-truth 재리뷰**(코드 주장 2건
+오류 적발) → v4 정정 → Fable 5 A+(91) → **S-델타 3건(실행위치·broker 인가·read push) 소진 v5** → **Fable 5 재평가 = S (93.5/100)**. 목표 A+~S **초과 달성(S)**.
+확정 아키텍처: **capability, implementation-pluggable**(cloud-neutral DNA 확장) — Tenant=격리 티어 정책
+(soft/vcluster/dedicated), Env=cluster(멀티클라우드), Delivery=ArgoCD|Fl|Config Sync 어댑터, SSOT=per-tenant git 레지스트리.
+**최우선 불변식**: 에이전트 실행 blast radius=1 tenant/env(자격증명이 경계, 실행 경로 코드 seam으로 강제).
+
+- [ ] **Phase 0**: `platform/` 레지스트리 스키마(파티션) + 로더(py/ts) + 어댑터 계약 + NormalizedAddonStatus(2축) 타입.
+- [ ] **Phase 1a**: 실행 자격증명 격리(최소 증명) — `_run_external_action→run_onprem_action` scope 관통, ambient 삭제,
+  인시던트당 단기 토큰, 크로스테넌트 액션 Forbidden 라이브 증명. (S 잔여: broker 인가·kubectl 실행위치 결정)
+- [ ] **Phase 1b**: Delivery 어댑터 2개 실제(argocd+flux) + TF↔GitOps no-churn 핸드오프.
+- [ ] **Phase 2**: Capsule(soft)+RBAC + 대시보드 tenant/env 스위처 + 라이브 상태 폴러(2축 drift).
+- [ ] Phase 3(인가 강화)·4(managed 어댑터, billable)·5(레지스트리 PR 쓰기) = 후속.
+- **S 달성(93.5)** = ①실행위치=in-cluster 러너 ②token broker=incident provenance 바인딩 ③read=push(허브 read 자격증명 0). Phase 1a 진입 시 명시할 2차 잔여: agent→hub push 인증·승인레코드 one-time nonce·push heartbeat(staleness).
+
 ## 리팩토링 후속 — 완료(2026-07-20, `8792c9c`, gate 854 유지)
 
 - [x] ~~`operations` 그룹핑 축 통일~~ — `operations/aws/` + `operations/runners/` 신설, gcp/azure와 동형.
