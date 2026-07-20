@@ -20,6 +20,12 @@ export interface StackLink {
 }
 
 export function getStackLinks(): StackLink[] {
+  // In dev, fall back to the local port-forward URLs so the demo works out of the
+  // box. In production, only surface a link if its NEXT_PUBLIC_*_URL is explicitly
+  // set (cluster ingress) — otherwise omit it, so prod never shows dead localhost
+  // links. Env values are referenced literally so NEXT_PUBLIC inlining applies.
+  const dev = process.env.NODE_ENV !== "production";
+  const at = (envUrl: string | undefined, localDefault: string) => envUrl || (dev ? localDefault : "");
   const links: StackLink[] = [
     {
       key: "argocd",
@@ -28,7 +34,7 @@ export function getStackLinks(): StackLink[] {
       accent: "#ef7b4d",
       chart: "argo-cd 10.1.4",
       namespace: "argocd",
-      url: process.env.NEXT_PUBLIC_ARGOCD_URL || "https://localhost:8090",
+      url: at(process.env.NEXT_PUBLIC_ARGOCD_URL, "https://localhost:8090"),
     },
     {
       key: "grafana",
@@ -37,7 +43,7 @@ export function getStackLinks(): StackLink[] {
       accent: "#8ab4f8",
       chart: "kube-prometheus-stack 87.17.0",
       namespace: "monitoring",
-      url: process.env.NEXT_PUBLIC_GRAFANA_URL || "http://localhost:3001",
+      url: at(process.env.NEXT_PUBLIC_GRAFANA_URL, "http://localhost:3001"),
     },
     {
       key: "prometheus",
@@ -46,7 +52,7 @@ export function getStackLinks(): StackLink[] {
       accent: "#8ab4f8",
       chart: "kube-prometheus-stack 87.17.0",
       namespace: "monitoring",
-      url: process.env.NEXT_PUBLIC_PROMETHEUS_URL || "http://localhost:9090",
+      url: at(process.env.NEXT_PUBLIC_PROMETHEUS_URL, "http://localhost:9090"),
     },
     {
       key: "alertmanager",
@@ -55,7 +61,7 @@ export function getStackLinks(): StackLink[] {
       accent: "#8ab4f8",
       chart: "kube-prometheus-stack 87.17.0",
       namespace: "monitoring",
-      url: process.env.NEXT_PUBLIC_ALERTMANAGER_URL || "http://localhost:9093",
+      url: at(process.env.NEXT_PUBLIC_ALERTMANAGER_URL, "http://localhost:9093"),
     },
     {
       key: "rollouts",
@@ -64,7 +70,7 @@ export function getStackLinks(): StackLink[] {
       accent: "#69d3a7",
       chart: "argo-rollouts 2.41.1",
       namespace: "argo-rollouts",
-      url: process.env.NEXT_PUBLIC_ROLLOUTS_URL || "http://localhost:3101/rollouts",
+      url: at(process.env.NEXT_PUBLIC_ROLLOUTS_URL, "http://localhost:3101/rollouts"),
     },
   ];
   return links.filter((link) => Boolean(link.url));
