@@ -1,0 +1,10 @@
+apiVersion: v2
+name: rollouts-demo
+description: >-
+  Canary demo workload for Argo Rollouts (Phase 4). A single Rollout that pauses
+  indefinitely at 50% weight so promote/abort can be driven live, plus its
+  Service. Deployed after the argo-rollouts controller (depends_on) so the
+  Rollout CRD exists.
+type: application
+version: 0.1.0
+appVersion: "1.9.1"

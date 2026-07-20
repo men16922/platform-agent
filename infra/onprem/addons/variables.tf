@@ -30,6 +30,17 @@ variable "kube_prometheus_stack_chart_version" {
   default = "87.17.0"
 }
 
+# argo-rollouts 2.41.1 ships Argo Rollouts v1.9.1 (Phase 4 progressive delivery).
+variable "argo_rollouts_chart_version" {
+  type    = string
+  default = "2.41.1"
+}
+
+variable "argo_rollouts_namespace" {
+  type    = string
+  default = "argo-rollouts"
+}
+
 # Where Alertmanager delivers alerts: the platform-agent chart's in-cluster
 # webhook Service (Day-2 detect→analyze→decide→execute entrypoint). Default
 # matches `helm install pa infra/helm/platform-agent` in the default namespace.

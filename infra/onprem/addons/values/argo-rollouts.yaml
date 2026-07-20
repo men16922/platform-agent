@@ -1,0 +1,15 @@
+# Low-footprint Argo Rollouts controller for local kind/k3s. Contract
+# (guard-tested): every CPU request stays <= 50m so the full add-on stack fits
+# the Docker VM budget. Dashboard is enabled for the canary promote/abort demo.
+controller:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+
+dashboard:
+  enabled: true
+  resources:
+    requests:
+      cpu: 5m
+      memory: 32Mi

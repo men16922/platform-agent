@@ -1,0 +1,7 @@
+replicas: 4
+
+# argoproj/rollouts-demo renders a solid color per tag (blue/yellow/red/…), so an
+# update (blue→yellow) makes the canary weight visually obvious in the dashboard.
+image:
+  repository: argoproj/rollouts-demo
+  tag: blue

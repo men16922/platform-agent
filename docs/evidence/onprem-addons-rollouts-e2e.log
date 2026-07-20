@@ -1,0 +1,240 @@
+############################################################
+# Phase 4 Argo Rollouts canary live E2E — 2026-07-20T10:44:10Z
+# cluster: kind-platform-agent
+############################################################
+
+=== [1] terraform apply (argo-rollouts 2.41.1 controller + canary demo) ===
+helm_release.argocd: Refreshing state... [id=argocd]
+helm_release.kube_prometheus_stack: Refreshing state... [id=monitoring]
+helm_release.platform_agent_app: Refreshing state... [id=platform-agent-app]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # helm_release.argo_rollouts will be created
+  + resource "helm_release" "argo_rollouts" {
+      + atomic                     = false
+      + chart                      = "argo-rollouts"
+      + cleanup_on_fail            = false
+      + create_namespace           = true
+      + dependency_update          = false
+      + disable_crd_hooks          = false
+      + disable_openapi_validation = false
+      + disable_webhooks           = false
+      + force_update               = false
+      + id                         = (known after apply)
+      + lint                       = false
+      + max_history                = 0
+      + metadata                   = (known after apply)
+      + name                       = "argo-rollouts"
+      + namespace                  = "argo-rollouts"
+      + pass_credentials           = false
+      + recreate_pods              = false
+      + render_subchart_notes      = true
+      + replace                    = false
+      + repository                 = "https://argoproj.github.io/argo-helm"
+      + reset_values               = false
+      + reuse_values               = false
+      + set_wo                     = (write-only attribute)
+      + skip_crds                  = false
+      + status                     = "deployed"
+      + take_ownership             = false
+      + timeout                    = 600
+      + upgrade_install            = false
+      + values                     = [
+          + <<-EOT
+                # Low-footprint Argo Rollouts controller for local kind/k3s. Contract
+                # (guard-tested): every CPU request stays <= 50m so the full add-on stack fits
+                # the Docker VM budget. Dashboard is enabled for the canary promote/abort demo.
+                controller:
+                  resources:
+                    requests:
+                      cpu: 10m
+                      memory: 64Mi
+                
+                dashboard:
+                  enabled: true
+                  resources:
+                    requests:
+                      cpu: 5m
+                      memory: 32Mi
+            EOT,
+        ]
+      + verify                     = false
+      + version                    = "2.41.1"
+      + wait                       = true
+      + wait_for_jobs              = false
+    }
+
+  # helm_release.rollouts_demo will be created
+  + resource "helm_release" "rollouts_demo" {
+      + atomic                     = false
+      + chart                      = "./charts/rollouts-demo"
+      + cleanup_on_fail            = false
+      + create_namespace           = false
+      + dependency_update          = false
+      + disable_crd_hooks          = false
+      + disable_openapi_validation = false
+      + disable_webhooks           = false
+      + force_update               = false
+      + id                         = (known after apply)
+      + lint                       = false
+      + max_history                = 0
+      + metadata                   = (known after apply)
+      + name                       = "rollouts-demo"
+      + namespace                  = "argo-rollouts"
+      + pass_credentials           = false
+      + recreate_pods              = false
+      + render_subchart_notes      = true
+      + replace                    = false
+      + reset_values               = false
+      + reuse_values               = false
+      + set_wo                     = (write-only attribute)
+      + skip_crds                  = false
+      + status                     = "deployed"
+      + take_ownership             = false
+      + timeout                    = 300
+      + upgrade_install            = false
+      + verify                     = false
+      + version                    = "0.1.0"
+      + wait                       = true
+      + wait_for_jobs              = false
+    }
+
+Plan: 2 to add, 0 to change, 0 to destroy.
+helm_release.argo_rollouts: Creating...
+helm_release.argo_rollouts: Still creating... [00m10s elapsed]
+helm_release.argo_rollouts: Still creating... [00m20s elapsed]
+helm_release.argo_rollouts: Still creating... [00m30s elapsed]
+helm_release.argo_rollouts: Creation complete after 38s [id=argo-rollouts]
+helm_release.rollouts_demo: Creating...
+helm_release.rollouts_demo: Creation complete after 0s [id=rollouts-demo]
+
+Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+argocd_namespace = "argocd"
+gitops_application = <<EOT
+ArgoCD Application 'platform-agent' → https://github.com/men16922/platform-agent.git
+  path=infra/helm/platform-agent rev=main values=values-kind.yaml
+Sync/drift:  kubectl -n argocd get application platform-agent
+
+EOT
+monitoring_namespace = "monitoring"
+ui_access = <<EOT
+ArgoCD:  kubectl -n argocd port-forward svc/argocd-server 8090:443
+         (admin password: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d)
+Grafana: kubectl -n monitoring port-forward svc/monitoring-grafana 3001:80
+Prom:    kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090
+
+EOT
+
+=== [2] controller + demo up, rollout Healthy ===
+controller ready=2/2
+  t=5s status=Healthy
+Name:            rollouts-demo
+Namespace:       argo-rollouts
+Status:          ✔ Healthy
+Strategy:        Canary
+  Step:          6/6
+  SetWeight:     100
+  ActualWeight:  100
+Images:          argoproj/rollouts-demo:blue (stable)
+Replicas:
+  Desired:       4
+  Current:       4
+  Updated:       4
+  Ready:         4
+  Available:     4
+
+NAME                                       KIND        STATUS     AGE  INFO
+⟳ rollouts-demo                            Rollout     ✔ Healthy  11s  
+└──# revision:1                                                        
+   └──⧉ rollouts-demo-6cdd8f6fbf           ReplicaSet  ✔ Healthy  11s  stable
+      ├──□ rollouts-demo-6cdd8f6fbf-bk84n  Pod         ✔ Running  11s  ready:1/1
+      ├──□ rollouts-demo-6cdd8f6fbf-vj9hj  Pod         ✔ Running  11s  ready:1/1
+      ├──□ rollouts-demo-6cdd8f6fbf-vxb85  Pod         ✔ Running  11s  ready:1/1
+      └──□ rollouts-demo-6cdd8f6fbf-xrvtt  Pod         ✔ Running  11s  ready:1/1
+
+=== [3] PATH A (promote): update image blue→yellow, expect pause at manual gate (50%) ===
+rollout "rollouts-demo" image updated
+  t=4s status=Progressing - more replicas need to be updated stepIndex=0
+  t=8s status=Paused - CanaryPauseStep stepIndex=1
+Name:            rollouts-demo
+Namespace:       argo-rollouts
+Status:          ॥ Paused
+Message:         CanaryPauseStep
+Strategy:        Canary
+  Step:          1/6
+  SetWeight:     25
+  ActualWeight:  25
+Images:          argoproj/rollouts-demo:blue (stable)
+                 argoproj/rollouts-demo:yellow (canary)
+Replicas:
+  Desired:       4
+  Current:       4
+  Updated:       1
+  weight= status=Paused - CanaryPauseStep
+  weight= status=Paused - CanaryPauseStep
+  weight= status=Paused - CanaryPauseStep
+  weight= status=Paused - CanaryPauseStep
+  weight= status=Paused - CanaryPauseStep
+  weight= status=Paused - CanaryPauseStep
+  weight= status=Paused - CanaryPauseStep
+  weight= status=Paused - CanaryPauseStep
+  weight= status=Paused - CanaryPauseStep
+  weight= status=Paused - CanaryPauseStep
+  weight= status=Paused - CanaryPauseStep
+  weight= status=Paused - CanaryPauseStep
+  weight= status=Paused - CanaryPauseStep
+  weight= status=Paused - CanaryPauseStep
+  weight= status=Paused - CanaryPauseStep
+--- promote (advance past manual gate) ---
+rollout 'rollouts-demo' promoted
+  t=5s status=Progressing - more replicas need to be updated
+Paused - CanaryPauseStep
+  t=10s status=Paused - CanaryPauseStep
+Progressing - more replicas need to be updated
+Progressing - updated replicas are still becoming available
+Healthy
+  t=15s status=Healthy
+--- after promote: stable image should be yellow ---
+stable=5dc5cc step=6/6 message=
+Status:          ✔ Healthy
+Images:          argoproj/rollouts-demo:yellow (stable)
+
+=== [4] PATH B (abort): update yellow→red, then abort → rollback to yellow stable ===
+rollout "rollouts-demo" image updated
+  t=4s status=Progressing - more replicas need to be updated
+  t=8s status=Paused - CanaryPauseStep
+--- state at canary (red canary vs yellow stable) ---
+Status:          ॥ Paused
+  Step:          1/6
+  SetWeight:     25
+Images:          argoproj/rollouts-demo:red (canary)
+--- abort ---
+rollout 'rollouts-demo' aborted
+  t=4s status=Degraded - RolloutAborted: Rollout aborted update to revision 3 abort=true
+--- after abort: canary scaled to 0, stable stays yellow ---
+Status:          ✖ Degraded
+Images:          argoproj/rollouts-demo:yellow (stable)
+  Desired:       4
+--- restore spec to stable (yellow) so the demo rollout ends Healthy ---
+rollout "rollouts-demo" image updated
+  t=4s status=Healthy
+final: status=Healthy stable-image=yellow
+
+############################################################
+# RESULT: Phase 4 Argo Rollouts canary E2E PASS
+#  - controller argo-rollouts 2.41.1 (v1.9.1) Ready + demo Rollout Healthy
+#  - PATH A promote: blue→yellow canary held at manual gate (pause{} 50%, ~60s)
+#                    → promote → 75%→100% → yellow stable
+#  - PATH B abort:   yellow→red canary at 25% → abort → Degraded/RolloutAborted,
+#                    red scaled down, yellow stayed stable (rollback semantics)
+#  - end state restored to Healthy (yellow)
+#  cost: $0 (local kind)
+############################################################

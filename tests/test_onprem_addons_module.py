@@ -38,16 +38,19 @@ def _values_files() -> dict[str, dict]:
 
 def test_module_ships_the_advertised_pieces():
     names = set(_tf_sources())
-    assert {"versions.tf", "variables.tf", "argocd.tf", "monitoring.tf", "gitops.tf", "outputs.tf"} <= names
-    assert {"argocd.yaml", "kube-prometheus-stack.yaml"} <= set(_values_files())
+    assert {
+        "versions.tf", "variables.tf", "argocd.tf", "monitoring.tf",
+        "gitops.tf", "rollouts.tf", "outputs.tf",
+    } <= names
+    assert {"argocd.yaml", "kube-prometheus-stack.yaml", "argo-rollouts.yaml"} <= set(_values_files())
 
 
 def test_chart_versions_are_pinned_exactly():
     variables = _tf_sources()["variables.tf"]
     pins = re.findall(r'default\s*=\s*"(\d+\.\d+\.\d+)"', variables)
-    assert len(pins) == 2, "expected exactly two exact-semver chart pins"
-    # …and both releases actually consume a pin (no floating chart versions).
-    for release_file in ("argocd.tf", "monitoring.tf"):
+    assert len(pins) == 3, "expected exactly three exact-semver chart pins (argocd, kps, rollouts)"
+    # …and every remote release actually consumes a pin (no floating chart versions).
+    for release_file in ("argocd.tf", "monitoring.tf", "rollouts.tf"):
         assert "version" in _tf_sources()[release_file]
 
 
@@ -138,6 +141,27 @@ def test_gitops_repo_url_default_is_a_git_remote():
     variables = _tf_sources()["variables.tf"]
     (repo_url,) = re.findall(r'gitops_repo_url"\s*\{[^}]*?default\s*=\s*"([^"]+)"', variables, re.DOTALL)
     assert repo_url.endswith(".git"), "gitops_repo_url must point at a git remote"
+
+
+# --- Phase 4: progressive delivery (Argo Rollouts) -------------------------
+
+ROLLOUTS_DEMO = MODULE / "charts" / "rollouts-demo"
+
+
+def test_rollouts_demo_chart_is_shipped():
+    assert (ROLLOUTS_DEMO / "Chart.yaml").is_file()
+    assert (ROLLOUTS_DEMO / "templates" / "rollout.yaml").is_file()
+    assert "helm_release.argo_rollouts" in _tf_sources()["rollouts.tf"], (
+        "the demo release must depend_on the rollouts controller (Rollout CRD ordering)"
+    )
+
+
+def test_rollouts_demo_is_a_canary_with_a_manual_gate():
+    manifest = (ROLLOUTS_DEMO / "templates" / "rollout.yaml").read_text(encoding="utf-8")
+    assert "kind: Rollout" in manifest
+    assert "canary:" in manifest and "setWeight:" in manifest, "must use a weighted canary strategy"
+    # An indefinite `pause: {}` is the promote/abort gate the live demo drives.
+    assert "pause: {}" in manifest, "canary must pause indefinitely for a manual promote/abort gate"
 
 
 @pytest.mark.skipif(
