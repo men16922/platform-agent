@@ -1,0 +1,305 @@
+############################################################
+# Phase 3 GitOps live E2E — 2026-07-20T10:34:17Z
+# cluster: kind-platform-agent (context kind-platform-agent)
+############################################################
+
+=== [1] terraform apply (argocd annotation-tracking + Application) ===
+helm_release.kube_prometheus_stack: Refreshing state... [id=monitoring]
+helm_release.argocd: Refreshing state... [id=argocd]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+  ~ update in-place
+
+Terraform will perform the following actions:
+
+  # helm_release.argocd will be updated in-place
+  ~ resource "helm_release" "argocd" {
+      ~ id                         = "argocd" -> (known after apply)
+      ~ metadata                   = {
+          ~ app_version    = "v3.4.5" -> (known after apply)
+          ~ chart          = "argo-cd" -> (known after apply)
+          ~ first_deployed = 1784541126 -> (known after apply)
+          ~ last_deployed  = 1784541126 -> (known after apply)
+          ~ name           = "argocd" -> (known after apply)
+          ~ namespace      = "argocd" -> (known after apply)
+          ~ notes          = <<-EOT
+                In order to access the server UI you have the following options:
+                
+                1. kubectl port-forward service/argocd-server -n argocd 8080:443
+                
+                    and then open the browser on http://localhost:8080 and accept the certificate
+                
+                2. enable ingress in the values file `server.ingress.enabled` and either
+                      - Add the annotation for ssl passthrough: https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/#option-1-ssl-passthrough
+                      - Set the `configs.params."server.insecure"` in the values file and terminate SSL at your ingress: https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/#option-2-multiple-ingress-objects-and-hosts
+                
+                
+                After reaching the UI the first time you can login with username: admin and the random password generated during the installation. You can find the password by running:
+                
+                kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+                
+                (You should delete the initial secret afterwards as suggested by the Getting Started Guide: https://argo-cd.readthedocs.io/en/stable/getting_started/#4-login-using-the-cli)
+            EOT -> (known after apply)
+          ~ revision       = 1 -> (known after apply)
+          ~ values         = jsonencode(
+                {
+                  - applicationSet = {
+                      - resources = {
+                          - requests = {
+                              - cpu    = "5m"
+                              - memory = "32Mi"
+                            }
+                        }
+                    }
+                  - controller     = {
+                      - resources = {
+                          - requests = {
+                              - cpu    = "10m"
+                              - memory = "256Mi"
+                            }
+                        }
+                    }
+                  - dex            = {
+                      - enabled = false
+                    }
+                  - notifications  = {
+                      - enabled = false
+                    }
+                  - redis          = {
+                      - resources = {
+                          - requests = {
+                              - cpu    = "5m"
+                              - memory = "32Mi"
+                            }
+                        }
+                    }
+                  - repoServer     = {
+                      - resources = {
+                          - requests = {
+                              - cpu    = "5m"
+                              - memory = "128Mi"
+                            }
+                        }
+                    }
+                  - server         = {
+                      - resources = {
+                          - requests = {
+                              - cpu    = "5m"
+                              - memory = "64Mi"
+                            }
+                        }
+                    }
+                }
+            ) -> (known after apply)
+          ~ version        = "10.1.4" -> (known after apply)
+        } -> (known after apply)
+        name                       = "argocd"
+      ~ values                     = [
+          ~ <<-EOT
+                # Low-footprint Argo CD for local kind/k3s. Contract (guard-tested): every CPU
+                # request stays <= 50m so the full add-on stack fits the Docker VM budget.
+                # Dex (SSO) and notifications are off — local access is port-forward + admin.
+                
+                dex:
+                  enabled: false
+                
+                notifications:
+                  enabled: false
+                
+              + # Track managed resources by annotation, not the app.kubernetes.io/instance
+              + # label. The platform-agent chart already sets that label to its release name,
+              + # so label tracking would collide (ArgoCD's official guidance for Helm charts
+              + # that stamp the instance label). Required for Phase 3 to adopt the workload.
+              + configs:
+              +   cm:
+              +     application.resourceTrackingMethod: annotation
+              + 
+                controller:
+                  resources:
+                    requests:
+                      cpu: 10m
+                      memory: 256Mi
+                
+                server:
+                  resources:
+                    requests:
+                      cpu: 5m
+                      memory: 64Mi
+                
+                repoServer:
+                  resources:
+                    requests:
+                      cpu: 5m
+                      memory: 128Mi
+                
+                applicationSet:
+                  resources:
+                    requests:
+                      cpu: 5m
+                      memory: 32Mi
+                
+                redis:
+                  resources:
+                    requests:
+                      cpu: 5m
+                      memory: 32Mi
+            EOT,
+        ]
+        # (29 unchanged attributes hidden)
+    }
+
+  # helm_release.platform_agent_app will be created
+  + resource "helm_release" "platform_agent_app" {
+      + atomic                     = false
+      + chart                      = "./charts/platform-agent-app"
+      + cleanup_on_fail            = false
+      + create_namespace           = false
+      + dependency_update          = false
+      + disable_crd_hooks          = false
+      + disable_openapi_validation = false
+      + disable_webhooks           = false
+      + force_update               = false
+      + id                         = (known after apply)
+      + lint                       = false
+      + max_history                = 0
+      + metadata                   = (known after apply)
+      + name                       = "platform-agent-app"
+      + namespace                  = "argocd"
+      + pass_credentials           = false
+      + recreate_pods              = false
+      + render_subchart_notes      = true
+      + replace                    = false
+      + reset_values               = false
+      + reuse_values               = false
+      + set                        = [
+          + {
+              + name  = "argocdNamespace"
+              + value = "argocd"
+                # (1 unchanged attribute hidden)
+            },
+          + {
+              + name  = "repoURL"
+              + value = "https://github.com/men16922/platform-agent.git"
+                # (1 unchanged attribute hidden)
+            },
+          + {
+              + name  = "targetRevision"
+              + value = "main"
+                # (1 unchanged attribute hidden)
+            },
+          + {
+              + name  = "chartPath"
+              + value = "infra/helm/platform-agent"
+                # (1 unchanged attribute hidden)
+            },
+          + {
+              + name  = "valuesFile"
+              + value = "values-kind.yaml"
+                # (1 unchanged attribute hidden)
+            },
+          + {
+              + name  = "destNamespace"
+              + value = "default"
+                # (1 unchanged attribute hidden)
+            },
+          + {
+              + name  = "releaseName"
+              + value = "pa"
+                # (1 unchanged attribute hidden)
+            },
+        ]
+      + set_wo                     = (write-only attribute)
+      + skip_crds                  = false
+      + status                     = "deployed"
+      + take_ownership             = false
+      + timeout                    = 300
+      + upgrade_install            = false
+      + verify                     = false
+      + version                    = "0.1.0"
+      + wait                       = true
+      + wait_for_jobs              = false
+    }
+
+Plan: 1 to add, 1 to change, 0 to destroy.
+
+Changes to Outputs:
+  + gitops_application   = <<-EOT
+        ArgoCD Application 'platform-agent' → https://github.com/men16922/platform-agent.git
+          path=infra/helm/platform-agent rev=main values=values-kind.yaml
+        Sync/drift:  kubectl -n argocd get application platform-agent
+    EOT
+helm_release.argocd: Modifying... [id=argocd]
+helm_release.argocd: Still modifying... [id=argocd, 00m10s elapsed]
+helm_release.argocd: Still modifying... [id=argocd, 00m20s elapsed]
+helm_release.argocd: Still modifying... [id=argocd, 00m30s elapsed]
+helm_release.argocd: Modifications complete after 33s [id=argocd]
+helm_release.platform_agent_app: Creating...
+helm_release.platform_agent_app: Creation complete after 0s [id=platform-agent-app]
+
+Apply complete! Resources: 1 added, 1 changed, 0 destroyed.
+
+Outputs:
+
+argocd_namespace = "argocd"
+gitops_application = <<EOT
+ArgoCD Application 'platform-agent' → https://github.com/men16922/platform-agent.git
+  path=infra/helm/platform-agent rev=main values=values-kind.yaml
+Sync/drift:  kubectl -n argocd get application platform-agent
+
+EOT
+monitoring_namespace = "monitoring"
+ui_access = <<EOT
+ArgoCD:  kubectl -n argocd port-forward svc/argocd-server 8090:443
+         (admin password: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d)
+Grafana: kubectl -n monitoring port-forward svc/monitoring-grafana 3001:80
+Prom:    kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090
+
+EOT
+
+=== [2] ArgoCD Application sync status (poll) ===
+  t=10s  sync/health=Synced/Healthy
+--- Application detail ---
+NAME             SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+platform-agent   Synced        Healthy         25d8e8995090b03f3d9da64f53a4e1c7ba66dada   default
+
+=== [3] ArgoCD manages the workload (adoption) ===
+--- resources tracked by Application ---
+PersistentVolumeClaim/pa-platform-agent-store Synced
+Service/pa-platform-agent-webhook Synced
+ServiceAccount/pa-platform-agent Synced
+Deployment/pa-platform-agent-webhook Synced
+Role/pa-platform-agent-remediate Synced
+RoleBinding/pa-platform-agent-remediate Synced
+--- webhook deployment now carries ArgoCD tracking annotation ---
+tracking-id=platform-agent:apps/Deployment:default/pa-platform-agent-webhook
+--- current webhook replicas (git desired = 1) ---
+replicas=1 ready=1
+
+=== [4] Drift → selfHeal restore ===
+--- inject drift: kubectl scale replicas 1→3 (manual, off-git) ---
+deployment.apps/pa-platform-agent-webhook scaled
+immediately after scale: replicas=3
+--- poll for ArgoCD selfHeal to revert to git desired (1) ---
+  t=8s  sync=OutOfSync  replicas=3
+  t=16s  sync=Synced  replicas=1
+  -> selfHeal reverted drift to git desired (1)
+
+=== [5] Alertmanager接点 intact + auto-sync polling live ===
+--- webhook Service name unchanged (Phase 2 receiver URL still resolves) ---
+pa-platform-agent-webhook.default.svc:8078
+--- Application tracks git HEAD (auto-sync source of truth) ---
+app revision : 25d8e8995090b03f3d9da64f53a4e1c7ba66dada
+git HEAD     : 25d8e8995090b03f3d9da64f53a4e1c7ba66dada
+automated    : selfHeal=true prune=true
+
+############################################################
+# RESULT: Phase 3 GitOps E2E PASS
+#  - IaC Application created (helm_release, depends_on argocd)
+#  - annotation tracking adopted 6 workload resources (Synced/Healthy)
+#  - auto-sync pulls github origin main @ HEAD
+#  - drift (replicas 1->3) selfHealed back to 1 within ~16s
+#  - Phase 2 Alertmanager webhook Service name preserved
+#  cost: $0 (local kind)
+############################################################

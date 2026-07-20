@@ -1,0 +1,9 @@
+apiVersion: v2
+name: platform-agent-app
+description: >-
+  Wraps the ArgoCD Application that manages the platform-agent workload chart.
+  Rendered client-side by Helm so the Application CR is created only after the
+  argo-cd release (depends_on) has installed its CRDs — no plan-time CRD needed.
+type: application
+version: 0.1.0
+appVersion: "1.0"

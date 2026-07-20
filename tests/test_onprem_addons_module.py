@@ -38,7 +38,7 @@ def _values_files() -> dict[str, dict]:
 
 def test_module_ships_the_advertised_pieces():
     names = set(_tf_sources())
-    assert {"versions.tf", "variables.tf", "argocd.tf", "monitoring.tf", "outputs.tf"} <= names
+    assert {"versions.tf", "variables.tf", "argocd.tf", "monitoring.tf", "gitops.tf", "outputs.tf"} <= names
     assert {"argocd.yaml", "kube-prometheus-stack.yaml"} <= set(_values_files())
 
 
@@ -103,6 +103,41 @@ def test_demo_crashloop_rule_is_present_and_fast():
     (rule,) = [r for r in rules if r["alert"] == "PlatformDemoCrashLoop"]
     assert "kube_pod_container_status_restarts_total" in rule["expr"]
     assert rule["for"] == "1m"  # demo latency contract — not the stock 15m
+
+
+# --- Phase 3: GitOps -------------------------------------------------------
+
+APP_CHART = MODULE / "charts" / "platform-agent-app"
+
+
+def test_gitops_application_chart_is_shipped():
+    assert (APP_CHART / "Chart.yaml").is_file()
+    assert (APP_CHART / "templates" / "application.yaml").is_file()
+
+
+def test_gitops_release_is_ordered_after_argocd():
+    # The Application CRD is installed by the argo-cd release, so the wrapper
+    # release must depend_on it — otherwise apply races the CRD registration.
+    gitops = _tf_sources()["gitops.tf"]
+    assert "helm_release.argocd" in gitops, "gitops release must depend_on the argo-cd release"
+    assert "charts/platform-agent-app" in gitops
+
+
+def test_gitops_application_targets_repo_and_self_heals():
+    manifest = (APP_CHART / "templates" / "application.yaml").read_text(encoding="utf-8")
+    assert "kind: Application" in manifest
+    # Source is git-driven (values-injected repo/path/revision, not hard-coded).
+    for field in (".Values.repoURL", ".Values.targetRevision", ".Values.chartPath", ".Values.valuesFile"):
+        assert field in manifest, f"Application source must be driven by {field}"
+    # The drift-restore demo relies on both automation switches being on.
+    for policy in ("selfHeal: true", "prune: true"):
+        assert policy in manifest, f"syncPolicy must set {policy}"
+
+
+def test_gitops_repo_url_default_is_a_git_remote():
+    variables = _tf_sources()["variables.tf"]
+    (repo_url,) = re.findall(r'gitops_repo_url"\s*\{[^}]*?default\s*=\s*"([^"]+)"', variables, re.DOTALL)
+    assert repo_url.endswith(".git"), "gitops_repo_url must point at a git remote"
 
 
 @pytest.mark.skipif(

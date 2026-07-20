@@ -8,6 +8,14 @@ dex:
 notifications:
   enabled: false
 
+# Track managed resources by annotation, not the app.kubernetes.io/instance
+# label. The platform-agent chart already sets that label to its release name,
+# so label tracking would collide (ArgoCD's official guidance for Helm charts
+# that stamp the instance label). Required for Phase 3 to adopt the workload.
+configs:
+  cm:
+    application.resourceTrackingMethod: annotation
+
 controller:
   resources:
     requests:

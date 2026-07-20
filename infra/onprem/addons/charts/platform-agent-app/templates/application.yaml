@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-agent
+  namespace: {{ .Values.argocdNamespace }}
+  # Let ArgoCD cascade-delete managed resources when the Application is removed
+  # (e.g. terraform destroy). argo-cd is still running at that point because the
+  # helm_release depends_on it, so the finalizer is processed cleanly.
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: {{ .Values.repoURL | quote }}
+    targetRevision: {{ .Values.targetRevision | quote }}
+    path: {{ .Values.chartPath | quote }}
+    helm:
+      releaseName: {{ .Values.releaseName | quote }}
+      valueFiles:
+        - {{ .Values.valuesFile | quote }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.destNamespace | quote }}
+  syncPolicy:
+    automated:
+      # prune removes drifted-away resources; selfHeal reverts manual kubectl
+      # edits back to git — the Phase 3 drift-restore demo relies on both.
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

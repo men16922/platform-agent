@@ -14,3 +14,11 @@ output "ui_access" {
     Prom:    kubectl -n ${var.monitoring_namespace} port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090
   EOT
 }
+
+output "gitops_application" {
+  value = <<-EOT
+    ArgoCD Application 'platform-agent' → ${var.gitops_repo_url}
+      path=${var.gitops_chart_path} rev=${var.gitops_target_revision} values=${var.gitops_values_file}
+    Sync/drift:  kubectl -n ${var.argocd_namespace} get application platform-agent
+  EOT
+}
