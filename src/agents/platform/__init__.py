@@ -15,6 +15,11 @@ from src.agents.platform.addon_status import (
     from_flux,
     from_managed,
 )
+from src.agents.platform.adapters import (
+    ArgoCDDeliveryAdapter,
+    FluxDeliveryAdapter,
+    get_delivery_adapter,
+)
 from src.agents.platform.delivery import DeliveryAdapter, DesiredAddon
 from src.agents.platform.registry import (
     Environment,
@@ -27,7 +32,9 @@ from src.agents.platform.registry import (
 )
 
 __all__ = [
+    "ArgoCDDeliveryAdapter",
     "DeliveryAdapter",
+    "FluxDeliveryAdapter",
     "DesiredAddon",
     "Environment",
     "HealthState",
@@ -40,6 +47,7 @@ __all__ = [
     "from_argocd",
     "from_flux",
     "from_managed",
+    "get_delivery_adapter",
     "load_registry",
     "validate_registry",
 ]
