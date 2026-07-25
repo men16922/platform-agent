@@ -61,6 +61,13 @@ spec:
             - name: ANALYZER_LLM_MODEL
               value: {{ .Values.llm.model | quote }}
             {{- end }}
+            {{- if .Values.canaryGate.alertSource }}
+            # Where the canary gate looks for alerts actually firing against the
+            # canary. Unset means the gate cannot observe it, which returns
+            # `unknown` (never `pass`) — an unobserved canary is not a quiet one.
+            - name: CANARY_ALERT_SOURCE
+              value: {{ .Values.canaryGate.alertSource | quote }}
+            {{- end }}
             {{- with .Values.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}

@@ -19,8 +19,13 @@ payload is for humans reading the AnalysisRun afterwards.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from typing import Any
+
+#: Where to look for alerts actually firing against the canary. Empty means the
+#: gate has no way to observe the canary — which is `unknown`, never `pass`.
+ALERT_SOURCE_ENV = "CANARY_ALERT_SOURCE"
 
 #: Returned when the agent cannot form an opinion. Treated as a FAILURE by the
 #: AnalysisTemplate's successCondition: a gate that cannot judge must not promote.
@@ -128,6 +133,106 @@ def judge_from_analysis(
         severity=severity,
         runbook_id=runbook_id,
         details=details,
+    )
+
+
+def fetch_canary_alerts(
+    namespace: str,
+    pod_prefix: str,
+    *,
+    alert_source: str = "",
+    http_get: Any = None,
+    timeout: float = 10.0,
+) -> list[dict[str, Any]] | None:
+    """Return the alerts actually firing against this canary.
+
+    ``None`` means "could not look" (no source configured, or it was
+    unreachable) — deliberately distinct from ``[]``, which means "looked and
+    the canary is quiet". Collapsing the two is how a gate starts approving
+    releases it never observed.
+    """
+    source = alert_source or os.getenv(ALERT_SOURCE_ENV, "")
+    if not source:
+        return None
+
+    fetch = http_get
+    if fetch is None:  # pragma: no cover - exercised live, injected in tests
+        import requests
+
+        def fetch(url, timeout):
+            resp = requests.get(url, timeout=timeout)
+            resp.raise_for_status()
+            return resp.json()
+
+    try:
+        alerts = fetch(f"{source.rstrip('/')}/api/v2/alerts?active=true", timeout=timeout)
+    except Exception:
+        return None
+    if not isinstance(alerts, list):
+        return None
+
+    matched = []
+    for alert in alerts:
+        labels = (alert or {}).get("labels") or {}
+        if labels.get("namespace") != namespace:
+            continue
+        # Rollouts gives us the canary ReplicaSet's pod-template-hash; stable pods
+        # live under a different hash, so prefix matching is what keeps a stable-pod
+        # alert from aborting a healthy canary.
+        pod = str(labels.get("pod") or "")
+        if pod_prefix and not pod.startswith(pod_prefix):
+            continue
+        matched.append(alert)
+    return matched
+
+
+def judge_observed_canary(
+    namespace: str,
+    pod_prefix: str,
+    *,
+    run_pipeline: Any,
+    alert_source: str = "",
+    http_get: Any = None,
+    min_confidence: float = DEFAULT_MIN_CONFIDENCE,
+) -> CanaryVerdict:
+    """
+    Judge a canary from what is ACTUALLY firing against it.
+
+    The bug this exists to fix: the AnalysisTemplate used to post a synthetic
+    "CanaryUnderJudgement" alert and ask the analyzer what it thought. But that
+    payload asserts a problem, so the analyzer — correctly — reported one. Live,
+    a perfectly healthy canary came back ``fail`` with confidence 0.80 and a
+    fluent explanation. The "no signal → pass" rule was unreachable, because the
+    gate manufactured the signal it then judged.
+
+    So the caller now supplies IDENTITY, not a verdict-shaped claim, and the
+    gate goes and looks.
+    """
+    alerts = fetch_canary_alerts(
+        namespace, pod_prefix, alert_source=alert_source, http_get=http_get
+    )
+
+    if alerts is None:
+        return CanaryVerdict(
+            verdict=VERDICT_UNKNOWN,
+            confidence=0.0,
+            reason=(
+                "no reachable alert source — cannot tell a quiet canary from an "
+                "unobserved one, so refusing to promote"
+            ),
+        )
+
+    if not alerts:
+        return CanaryVerdict(
+            verdict=VERDICT_PASS,
+            confidence=1.0,
+            reason=f"no alerts firing for {pod_prefix}* in {namespace}",
+        )
+
+    return judge_canary(
+        {"status": "firing", "alerts": alerts},
+        run_pipeline=run_pipeline,
+        min_confidence=min_confidence,
     )
 
 

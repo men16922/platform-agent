@@ -43,7 +43,7 @@ from pydantic import BaseModel
 from src.agents.ai import onprem_approvals as approvals
 from src.agents.ai import onprem_incidents as incidents
 from src.agents.ai import onprem_slack_approval as slack_approval
-from src.agents.ai.canary_judge import judge_canary
+from src.agents.ai.canary_judge import judge_canary, judge_observed_canary
 from src.agents.ai.onprem_incident_pipeline import execute_incident, run_incident_pipeline
 
 logger = logging.getLogger(__name__)
@@ -185,7 +185,21 @@ async def canary_judge(payload: dict[str, Any]) -> dict[str, Any]:
     """
     if not payload:
         raise HTTPException(status_code=400, detail="Empty canary payload.")
-    verdict = judge_canary(payload, run_pipeline=run_incident_pipeline)
+
+    canary = payload.get("canary")
+    if isinstance(canary, dict):
+        # Identity form: the gate goes and looks for itself. Preferred, because a
+        # caller-supplied "this canary is under judgement" alert asserts a problem
+        # and the analyzer will duly find one — a healthy release then fails the
+        # gate with a confident-sounding reason.
+        verdict = judge_observed_canary(
+            str(canary.get("namespace") or ""),
+            str(canary.get("podPrefix") or ""),
+            run_pipeline=run_incident_pipeline,
+        )
+    else:
+        # Alert form: the caller already holds REAL alerts and passes them through.
+        verdict = judge_canary(payload, run_pipeline=run_incident_pipeline)
     logger.info(
         "onprem_webhook.canary_judge verdict=%s confidence=%.2f",
         verdict.verdict, verdict.confidence,

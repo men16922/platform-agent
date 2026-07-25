@@ -19,8 +19,10 @@ from src.agents.ai.canary_judge import (
     VERDICT_FAIL,
     VERDICT_PASS,
     VERDICT_UNKNOWN,
+    fetch_canary_alerts,
     judge_canary,
     judge_from_analysis,
+    judge_observed_canary,
 )
 
 CHART = Path(__file__).resolve().parents[1] / "infra" / "onprem" / "addons" / "charts" / "rollouts-demo"
@@ -206,3 +208,93 @@ class TestTerraformWiring:
         rollouts = (self._module() / "rollouts.tf").read_text(encoding="utf-8")
         assert "var.rollouts_demo_analysis_enabled" in rollouts
         assert "var.rollouts_demo_agent_analysis_enabled" in rollouts
+
+
+class TestObservedCanary:
+    """The gate must observe the canary, not take the caller's word for it.
+
+    Live defect this encodes: the AnalysisTemplate posted a synthetic
+    "CanaryUnderJudgement" FIRING alert and asked the analyzer for an opinion.
+    That payload asserts a problem, so the analyzer reported one — a healthy
+    canary came back `fail` at confidence 0.80. "No signal → pass" could never
+    fire, because the gate manufactured the signal it judged.
+    """
+
+    @staticmethod
+    def _pipeline(_signal, execute=False):
+        return {"severity": "P1", "confidence": 0.9, "root_cause": "real outage"}
+
+    def test_quiet_canary_passes(self):
+        verdict = judge_observed_canary(
+            "argo-rollouts", "rollouts-demo-abc",
+            run_pipeline=self._pipeline,
+            alert_source="http://am",
+            http_get=lambda url, timeout: [],
+        )
+        assert verdict.verdict == VERDICT_PASS
+
+    def test_no_alert_source_is_unknown_not_pass(self, monkeypatch):
+        """An unobserved canary is not a quiet one."""
+        monkeypatch.delenv("CANARY_ALERT_SOURCE", raising=False)
+        verdict = judge_observed_canary(
+            "argo-rollouts", "rollouts-demo-abc", run_pipeline=self._pipeline
+        )
+        assert verdict.verdict == VERDICT_UNKNOWN
+
+    def test_unreachable_alert_source_is_unknown(self):
+        def boom(url, timeout):
+            raise OSError("connection refused")
+
+        verdict = judge_observed_canary(
+            "argo-rollouts", "rollouts-demo-abc",
+            run_pipeline=self._pipeline,
+            alert_source="http://am",
+            http_get=boom,
+        )
+        assert verdict.verdict == VERDICT_UNKNOWN
+
+    def test_real_alert_reaches_the_analyzer_and_fails(self):
+        alerts = [{"labels": {"namespace": "argo-rollouts", "pod": "rollouts-demo-abc-1"}}]
+        verdict = judge_observed_canary(
+            "argo-rollouts", "rollouts-demo-abc",
+            run_pipeline=self._pipeline,
+            alert_source="http://am",
+            http_get=lambda url, timeout: alerts,
+        )
+        assert verdict.verdict == VERDICT_FAIL
+
+    def test_stable_pod_alerts_do_not_abort_the_canary(self):
+        """Prefix match on the canary pod-template-hash is what separates the two."""
+        alerts = [
+            {"labels": {"namespace": "argo-rollouts", "pod": "rollouts-demo-STABLE-9"}},
+            {"labels": {"namespace": "other-ns", "pod": "rollouts-demo-abc-1"}},
+        ]
+        verdict = judge_observed_canary(
+            "argo-rollouts", "rollouts-demo-abc",
+            run_pipeline=self._pipeline,
+            alert_source="http://am",
+            http_get=lambda url, timeout: alerts,
+        )
+        assert verdict.verdict == VERDICT_PASS
+
+    def test_looked_and_empty_differs_from_could_not_look(self):
+        assert fetch_canary_alerts("ns", "p", alert_source="", http_get=None) is None
+        assert fetch_canary_alerts(
+            "ns", "p", alert_source="http://am", http_get=lambda url, timeout: []
+        ) == []
+
+
+class TestTemplateSendsIdentityNotAClaim:
+    def test_body_carries_identity(self):
+        template = (CHART / "templates" / "analysis.yaml").read_text(encoding="utf-8")
+        # Only the request body matters here; the comments above it explain why.
+        body = [
+            line for line in template.splitlines()
+            if line.strip().startswith("{") and "canary" in line
+        ]
+        assert body, "the web provider must post a JSON body"
+        joined = "\n".join(body)
+        assert '"canary"' in joined and "podPrefix" in joined
+        assert "alertname" not in joined, (
+            "a synthetic firing alert asserts the problem it asks about"
+        )

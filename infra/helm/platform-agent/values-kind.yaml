@@ -3,5 +3,9 @@
 llm:
   endpoint: "http://host.docker.internal:18091/v1"
 
+# kube-prometheus-stack's Alertmanager, installed by infra/onprem/addons.
+canaryGate:
+  alertSource: "http://monitoring-kube-prometheus-alertmanager.monitoring.svc:9093"
+
 persistence:
   storageClass: "standard"  # kind's default StorageClass

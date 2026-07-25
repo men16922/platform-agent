@@ -64,6 +64,15 @@ router:
     requests: {cpu: 100m, memory: 256Mi}
     limits: {cpu: "1", memory: 1Gi}
 
+# ① stage 2 — the agent as an Argo Rollouts release gate (POST /canary/judge).
+#
+# The gate observes the canary itself rather than trusting the caller's claim
+# about it. Empty = no alert source, and the gate then answers `unknown` for
+# every canary, which BLOCKS promotion. That is the intended safe default: it
+# fails visibly instead of approving releases it never looked at.
+canaryGate:
+  alertSource: ""   # e.g. http://monitoring-kube-prometheus-alertmanager.monitoring.svc:9093
+
 # ⑥ Pod Security Standards `restricted` compliance for every workload this
 # chart ships. ON by default: unlike the other opt-ins here, leaving this off is
 # not a neutral choice — it is the state in which a namespace that later gets

@@ -87,9 +87,13 @@ spec:
           headers:
             - key: Content-Type
               value: application/json
-          # The detector normalises this shape; `alerts` carries the canary under
-          # judgement so the analyzer reasons about the right workload.
+          # IDENTITY, not a claim. An earlier version posted a synthetic
+          # "CanaryUnderJudgement" firing alert — which asserts a problem, so the
+          # analyzer found one: live, a healthy canary came back `fail` with
+          # confidence 0.80 and a fluent explanation. The gate was manufacturing
+          # the signal it then judged, and "no signal → pass" was unreachable.
+          # Now the endpoint goes and looks at what is actually firing.
           body: |
-            {"status":"firing","alerts":[{"status":"firing","labels":{"alertname":"CanaryUnderJudgement","namespace":"{{ "{{args.namespace}}" }}","pod":"{{ .Chart.Name }}-{{ "{{args.canary-hash}}" }}","severity":"warning"},"annotations":{"description":"Canary {{ "{{args.canary-hash}}" }} of {{ .Chart.Name }} is under release judgement"}}]}
+            {"canary":{"namespace":"{{ "{{args.namespace}}" }}","podPrefix":"{{ .Chart.Name }}-{{ "{{args.canary-hash}}" }}"}}
           jsonPath: "{$.verdict}"
 {{- end }}
