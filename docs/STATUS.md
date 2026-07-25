@@ -1,6 +1,6 @@
 # STATUS — platform-agent
 
-최종 갱신: 2026-07-21
+최종 갱신: 2026-07-25
 
 > 현재 구현 상태 / 검증 baseline / active focus / open risks. **≤120줄** 유지.
 
@@ -17,6 +17,7 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **983 passed, 1 skipped** (2026-07-25, 876→983, +107) — **GitAIOps 실습서 대조 갭 6건 + 멀티테넌트 Phase 0**(`5fba0af`~`7b4231a`, 8커밋): ③런북 `verify` 슬롯+`resolution_verdict` 2축(검증 없으면 verified=None, 역호환) · ④권한통제 3단(포괄 `gcloud:*`→조회 allow 104+billable ask 30) + GKE TTL 워치독 · ①Rollouts AnalysisTemplate(수동 게이트에 가산, 기본 OFF) · ②OTel 4단계 span + `tracing.tf`(무-의존 폴백) · **Phase 0**(`platform/` 레지스트리+로더+`DeliveryAdapter` 계약+`NormalizedAddonStatus` 2축, py+ts) · ⑦고아 클러스터 스위퍼 · ⑥NetworkPolicy+CNI 집행 검증기(기본 OFF). `tsc` 클린 · `terraform validate` Success · **라이브 read-only**: 2 GCP 프로젝트 방치 클러스터 0건 확증. `helm template`이 Tempo 버그 2건 적발(포트 3100→3200, `resources` 위치). 상세 → `PROGRESS_LOG` 2026-07-25.
 - `make check` (pytest) → **876 passed, 1 skipped** (2026-07-21, 870→876) — **대시보드 On-Prem 분석 Qwen 우선 + 인시던트 상세뷰 + 스택링크 + AWS데모 제거**(`4aef387`·`74d7a9d`·`7ca72ed`): analyzer LLM 백엔드 pluggable(ANALYZER_LLM_ENDPOINT=로컬 Qwen, 없으면 Bedrock·역호환) + 파서 견고화·어댑터 annotations·프롬프트 detail·confidence 영속화(+6). **라이브($0)**: OOMKilled→Qwen confidence 0.95+정확 root cause→INC-95C55A19 상세뷰. 인시던트 상세페이지 신설, 스택링크 Provisioning 이관(prod-safe).
 - `make check` (pytest) → **870 passed, 1 skipped** (2026-07-20, 867→870) — **On-Prem 애드온 스택 Phase 5(로깅)**: `logging.tf`(loki 7.1.0 SingleBinary+캐시off + fluent-bit 0.57.9 DaemonSet) + grafana Loki 데이터소스. 가드 +3, 핀 3→5. **라이브($0)**: 파드 Ready→Loki query API가 `pa-platform-agent-webhook` 포함 다수 네임스페이스 로그 반환→Grafana Loki 데이터소스 등록 확인. 증거 `docs/evidence/onprem-addons-logging-e2e.log`.
 - `make check` (pytest) → **867 passed, 1 skipped** (2026-07-20, 865→867) — **On-Prem 애드온 스택 Phase 4(Argo Rollouts)**: `rollouts.tf`(argo-rollouts 2.41.1 컨트롤러 + 데모 canary, 무기한 pause 수동게이트). 가드 +2, 핀 2→3. DECISIONS D19(러너 vs Rollouts 병존). **라이브($0)**: promote(blue→yellow, 게이트 60s→75%→100% stable)·abort(yellow→red 25%→Degraded, yellow stable 유지) 양경로. 증거 `docs/evidence/onprem-addons-rollouts-e2e.log`.
@@ -50,9 +51,10 @@
 
 ## Active Focus
 
-- **멀티테넌트/멀티클라우드 플랫폼 — 설계 S(93.5) 확정, 구현 대기** — `docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5) + `-mad-history.md`. capability, implementation-pluggable(cloud-neutral DNA 확장). **다음 = Phase 0**(레지스트리 스키마 + 어댑터 계약 + NormalizedAddonStatus 2축) → Phase 1a(자격증명 격리 seam).
-- **완료(참고)**: On-Prem 애드온 스택 Phase 1~5(`docs/plans/2026-07-20-onprem-platform-addons.md`, gate 870) · 대시보드 Qwen 분석·상세뷰·스택링크·AWS데모 제거(gate 876).
-- 기존 잔여 = 아티클 배포(원고 854, 사용자 "나중에").
+- **멀티테넌트/멀티클라우드 플랫폼 — Phase 0 완료, 다음 = Phase 1a(자격증명 격리 seam)** — `docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5, S 93.5). Phase 0(`platform/` 레지스트리·로더·어댑터 계약·2축 상태)은 의도적으로 inert(동작 무변경). **Phase 1a와 함께 처리할 것**: 런북 `verify`의 provider측 실행부 — 같은 `_run_external_action` 경로라 단독 착수 시 충돌.
+- **라이브 검증 대기 3건(Docker/kind 기동 선행)**: ①Rollouts auto-abort · ②Tempo 실 적재 · ⑥CNI NetworkPolicy 집행 판정. ①⑥은 그래서 기본 OFF(미검증 동작을 기본값으로 넣지 않음).
+- **완료(참고)**: On-Prem 애드온 스택 Phase 1~5(gate 870) · 대시보드 Qwen/상세뷰(gate 876) · GitAIOps 대조 갭 6건(gate 983).
+- 아티클: **발행 완료**(2026-07-25). GitAIOps 후속편은 `NEXT_PLAN`에 논지만 남기고 착수 보류(사용자 지시).
 
 ## Open Risks / Gaps
 

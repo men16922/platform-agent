@@ -10,6 +10,18 @@
 
 ---
 
+## D22 — billable 클라우드 명령은 권한 3단으로 게이팅 + 과금 가드는 2중(로컬 TTL 워치독 ⊕ 인벤토리 스위퍼)
+
+- **Decision:** (1) `.claude/settings.local.json`에서 `Bash(gcloud:*)`·`Bash(aws:*)`·`Bash(az:*)` **포괄 allow를 폐기**하고 조회 동사만 allow(104건), billable 생성/삭제·`terraform apply|destroy`·`helm install|upgrade`는 `ask`(30건). (2) 과금 가드를 두 층으로 둔다 — **로컬 TTL 워치독**(`scripts/provision_gke_live.py`: try/finally + 시그널 + create 이전 무장 detached 프로세스)은 *생성 이후*를, **고아 클러스터 스위퍼**(`orphan_sweeper.py` + `make sweep-orphans`)는 *머신이 죽은 이후*를 담당. 스위퍼는 **보고만** 하고 삭제 명령은 출력만(D5 준수, 삭제 권한 불요).
+- **Reason:** D16이 "overnight 무인 루프에서 클라우드 변경이 자동 허용되면 billable=사용자 게이트 설계가 깨진다"고 못박았는데, **포괄 allow가 그 결론을 로컬 설정에서 우회**하고 있었다 — `gcloud container clusters create`가 승인 없이 실행 가능했고 이것이 06-07·06-24(~9h 방치)·07-06·07-14 GKE 생성의 경로다. 워치독만으로는 부족한 이유: 세 층 전부 **이 머신에서** 돌아 머신이 자면/죽으면 같이 죽는다. 스위퍼는 프로세스 생존을 신뢰하는 대신 매 실행마다 클라우드 인벤토리에서 고아 여부를 **재도출**하므로 며칠 뒤 실행해도 올바른 판정.
+- **Impact:** 미래 세션은 포괄 `gcloud:*`류를 되살리지 말 것(D16 우회 재발). 조회 동사가 부족해 오버나이트 루프가 막히면 **동사 단위로만** allow 추가. 스위퍼는 활성 gcloud 프로젝트만 훑으므로 `GCP_PROJECT`로 **과금 프로젝트를 명시**해야 함(라이브 실행 중 활성 프로젝트가 공부용이라 정작 과금 프로젝트를 안 훑는 함정을 발견 — Makefile 주석에 명기). `--json`의 `cluster_count`가 "0건 클린"과 "조용한 실패"를 구분하는 신호.
+
+## D21 — 라이브 미검증 보안·자동화 기능은 **기본 OFF**, 켜는 조건은 경험적 검증기 통과
+
+- **Decision:** 동작을 라이브로 증명하지 못한 보안/자동화 기능은 기본값을 OFF로 두고, 켜는 조건을 **문서가 아니라 실행 가능한 검증기**로 둔다. 적용 2건: (1) Rollouts **AnalysisTemplate**(canary 메트릭 자동 abort) = `analysis.enabled: false`, 켜는 것 자체가 라이브 검증 단계. (2) soft 티어 **NetworkPolicy** = `enabled: false`, 선행 조건은 `scripts/verify_netpol_enforcement.py`가 **ENFORCED**를 반환하는 것. 검증기는 대조군(정책 없이 연결 성공)이 실패하면 PASS가 아니라 **INCONCLUSIVE(exit 2)** 를 반환한다.
+- **Reason:** 두 기능의 실패 모드가 "안 켜짐"이 아니라 **거짓 초록**이다. 미검증 auto-abort를 기본으로 넣으면 라이브 실증된 Phase 4 수동 promote/abort 데모를 미검증 동작으로 덮어쓴다. 더 심한 건 NetworkPolicy — 집행하지 않는 CNI에 올리면 오브젝트는 존재하고 `kubectl get netpol`은 건강해 보이고 감사·대시보드는 "격리됨"으로 읽는데 트래픽은 그대로 흐른다(= 보안 컨트롤의 거짓 초록, 아무것도 안 한 것보다 나쁨). CNI 집행 여부는 기판·버전마다 달라(kindnet은 과거 미집행, 최근 kindnetd는 지원) **버전 표를 믿지 않고 눈앞의 클러스터에 실험**해야 한다.
+- **Impact:** 미래 세션은 이 두 플래그를 **검증 없이 true로 바꾸지 말 것**. ①은 `enabled: true` + canary 재실행으로, ⑥은 검증기 ENFORCED + namespace에 `platform-agent.io/tenant` 라벨 부여(Phase 2 Capsule 담당) 후에 켠다. 검증기가 NOT ENFORCED면 켜는 대신 policy-enforcing CNI(kind `disableDefaultCNI`+Calico) 또는 vcluster/dedicated 티어로 승격. 같은 원칙이 앞으로 추가되는 보안 기능에도 적용된다.
+
 ## D20 — 인시던트 analyzer LLM 백엔드는 env-게이트 pluggable (On-Prem=로컬 Qwen 우선, Cloud=Bedrock)
 
 - **Decision:** `analyzer._invoke_llm`이 `ANALYZER_LLM_ENDPOINT` 설정 시 OpenAI 호환 엔드포인트(로컬 Qwen/MLX)를, 없으면 Bedrock을 호출. On-Prem webhook은 Qwen 기본 배선(Makefile). AWS 경로 무변경·역호환. 인시던트 레코드에 confidence 영속화.
