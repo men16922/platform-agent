@@ -107,3 +107,96 @@ Available=True     (AvailableReason)
   promote/abort demo is unchanged.
 
 === end ===
+
+
+================================================================================
+=== FOLLOW-UP (same day): the pass path — and the defect it exposed ===
+================================================================================
+
+The run above could only show the gate BLOCKING, because every verdict was
+`unknown`. Closing that gap turned out to require three fixes, each only visible
+once the previous one was done. Recorded in order, because the order is the
+point: each fix revealed the next problem.
+
+--- fix 1: the analyzer never had a model ---
+`llm.endpoint` was in values.yaml from the start, pointing at the host MLX
+proxy. Only the router consumed it — and the router is off by default. The
+webhook, which runs both the incident analyzer and this release gate, never
+received it, so it silently ran the heuristic fallback: confidence 0.0, verdict
+`unknown`, every time.
+
+So "the in-cluster analyzer has no model" was wrong. The chart simply never told
+it where the model was. Also re-measured: pods DO reach the host
+(host.docker.internal -> 200); the earlier "behind the Docker VM gateway,
+unreachable" note was incorrect. Real blockers were a stopped MLX and a
+127.0.0.1 bind.
+
+After wiring ANALYZER_LLM_ENDPOINT into the webhook (delivered through GitOps,
+ArgoCD synced), judgements became real: 2.8s, confidence 0.80.
+
+--- fix 2: the gate was manufacturing the signal it judged ---
+And the first real judgement was WRONG:
+
+  POST /canary/judge  (healthy canary)
+  {"verdict": "fail", "confidence": 0.8,
+   "reason": "P2: The rollouts-demo service is experiencing availability issues
+              with its Canary probe, indicating potential deployment problems"}
+
+The AnalysisTemplate had been posting a synthetic `CanaryUnderJudgement` FIRING
+alert. That payload asserts a problem, so the analyzer found one — fluently, and
+with high confidence. The judge's "no signal → pass" rule was unreachable,
+because the gate fabricated the signal before judging it.
+
+A gate that confidently blocks every healthy release is worse than one that
+says `unknown`: it looks like it is working, so people stop reading it.
+
+Fix: the caller now sends IDENTITY, not a claim —
+  {"canary":{"namespace":"...","podPrefix":"rollouts-demo-<canary-hash>"}}
+and the gate queries Alertmanager for what is actually firing against those
+pods. `None` (no source / unreachable) and `[]` (looked, quiet) are kept
+strictly apart: unobserved is `unknown`, quiet is `pass`.
+
+  POST /canary/judge  (healthy canary, after the fix)
+  {"verdict": "pass", "confidence": 1.0,
+   "reason": "no alerts firing for rollouts-demo-7ff988b864* in argo-rollouts"}
+  0.0s — no inference needed when there is nothing to reason about.
+
+--- fix 3: the alerts it reads were on the wrong timescale ---
+With the gate now reading real alerts, a crashlooping canary would STILL have
+passed: kube-prometheus-stack's `KubePodCrashLooping` has `for: 15m`, and a
+canary lives two or three minutes. The gate would read "no alerts firing" for a
+canary that was broken its entire life.
+
+A gate is only as fast as the signals it reads. So the chart now ships a
+canary-timescale rule (`CanaryPodRestarting`, for: 30s, interval: 15s, scoped to
+the rollout's namespace, `severity: warning` so it stays off the paging path).
+It carries `release: monitoring` — without that label kps never loads the rule,
+and it would sit there looking installed.
+
+--- LIVE: healthy canary (red), gate ON ---
+[15s..180s] phase=Paused step=3   ar=rollouts-demo-5c8c95968d-11 Running
+  measurements: value="pass" Successful  x3
+  NOT aborted. Held at the indefinite `pause: {}` manual gate — the Phase 4
+  demo path is intact — then promoted by hand.
+
+--- LIVE: crashlooping canary (command: exit 1), gate ON ---
+[165s] phase=Degraded  ar=rollouts-demo-f84fd685d-12 Failed  -> ABORTED
+  measurements:
+    value="pass" Successful  20:05:07   <- alert had not fired yet
+    value="fail" Failed      20:06:08   <- rule fired, gate read the REAL alert
+    value="fail" Failed      20:07:08
+  message=Metric "agent-verdict" assessed Failed due to failed (2) > failureLimit (1)
+  stable rs (red) 4/4 throughout, Available=True.
+
+  That first `pass` is worth keeping in the record: it shows the gate reading
+  state that takes time to develop, not asserting a conclusion up front.
+
+--- what this now proves ---
+The gate DISCRIMINATES, which the earlier run could not show:
+  healthy      -> pass    -> promotion proceeds to the human gate
+  crashlooping -> fail    -> auto-abort, stable preserved
+  unobservable -> unknown -> blocked (no alert source, or no model)
+
+--- restored ---
+Gate back to default OFF (terraform apply, no -var), PrometheusRule removed with
+it, rollout back to stable red 4/4.

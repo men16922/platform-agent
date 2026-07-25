@@ -298,3 +298,49 @@ class TestTemplateSendsIdentityNotAClaim:
         assert "alertname" not in joined, (
             "a synthetic firing alert asserts the problem it asks about"
         )
+
+
+class TestCanaryTimescaleRule:
+    """A gate is only as fast as the alerts it reads.
+
+    kube-prometheus-stack's pod rules are written for steady-state ops —
+    `KubePodCrashLooping` uses `for: 15m`. A canary lives two or three minutes,
+    so with only the stock rules a canary that crashloops its entire life fires
+    nothing, the gate honestly reports "no alerts firing", and the bad release
+    is promoted. The chart therefore ships a canary-timescale rule.
+    """
+
+    @staticmethod
+    def _rule() -> str:
+        return (CHART / "templates" / "prometheusrule.yaml").read_text(encoding="utf-8")
+
+    @staticmethod
+    def _values() -> dict:
+        return yaml.safe_load((CHART / "values.yaml").read_text(encoding="utf-8"))
+
+    def test_rule_ships_with_the_gate(self):
+        rule = self._rule()
+        assert "kind: PrometheusRule" in rule
+        assert ".Values.agentAnalysis.enabled" in rule, "the rule is an input to the gate"
+
+    def test_window_is_shorter_than_a_canary(self):
+        for_seconds = self._values()["agentAnalysis"]["ruleFor"]
+        assert for_seconds.endswith("s"), "a minutes-long `for` outlives the canary it guards"
+        assert int(for_seconds.rstrip("s")) <= 60
+
+    def test_rule_carries_the_kps_selector_label(self):
+        """Without it the rule is created, looks installed, and is never loaded."""
+        assert "release: {{ .Values.agentAnalysis.ruleReleaseLabel }}" in self._rule()
+
+    def test_rule_exposes_the_labels_the_gate_matches_on(self):
+        rule = self._rule()
+        assert "kube_pod_container_status_restarts_total" in rule
+        assert 'namespace="{{ .Release.Namespace }}"' in rule, "must not alert on other namespaces"
+
+    def test_rule_is_not_a_paging_rule(self):
+        assert "severity: warning" in self._rule(), "a gate input must stay off the on-call path"
+
+    def test_name_does_not_collide_with_the_stage_one_template(self):
+        rule = self._rule()
+        stage_one = self._values()["analysis"]["templateName"]
+        assert stage_one not in rule, "two objects answering to one name invites the wrong deletion"

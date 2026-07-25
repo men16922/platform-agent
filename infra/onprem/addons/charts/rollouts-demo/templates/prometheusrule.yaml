@@ -1,0 +1,52 @@
+{{- if .Values.agentAnalysis.enabled }}
+# A canary-timescale alert rule.
+#
+# WHY THIS HAS TO EXIST: the agent gate judges a canary by reading the alerts
+# actually firing against it. But kube-prometheus-stack's pod rules are written
+# for steady-state operations — `KubePodCrashLooping` has `for: 15m`. A canary
+# lives for two or three minutes. So with only the stock rules, a canary that is
+# crashlooping the whole time it exists fires NOTHING, the gate correctly reports
+# "no alerts firing", and the bad release sails through.
+#
+# A gate is only as fast as the signals it reads. Pairing a minutes-long release
+# window with a quarter-hour alert window is how you build something that looks
+# like a safety net and catches nothing.
+#
+# Deliberately narrow: this namespace only, restart-based, short window. It is a
+# release-gate input, not a paging rule — `severity: warning` keeps it out of the
+# on-call path while still reaching the gate through Alertmanager.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  # Not `-canary-health`: that name already belongs to the stage 1
+  # AnalysisTemplate, and two different objects answering to one name is how the
+  # wrong thing gets deleted during cleanup.
+  name: {{ .Chart.Name }}-canary-alerts
+  namespace: {{ .Values.agentAnalysis.ruleNamespace }}
+  labels:
+    # kube-prometheus-stack's Prometheus selects rules by this label
+    # (ruleSelector matchLabels release=<kps release>). Without it the rule is
+    # created, looks fine in `kubectl get prometheusrule`, and is never loaded.
+    release: {{ .Values.agentAnalysis.ruleReleaseLabel }}
+spec:
+  groups:
+    - name: {{ .Chart.Name }}-canary
+      # Evaluate faster than the default 30s so a short canary gets more than one
+      # look before the AnalysisRun makes up its mind.
+      interval: 15s
+      rules:
+        - alert: CanaryPodRestarting
+          expr: >-
+            increase(kube_pod_container_status_restarts_total{
+              namespace="{{ .Release.Namespace }}"
+            }[2m]) > 0
+          for: {{ .Values.agentAnalysis.ruleFor }}
+          labels:
+            severity: warning
+          annotations:
+            summary: "Canary pod {{ "{{ $labels.pod }}" }} restarted"
+            description: >-
+              Container {{ "{{ $labels.container }}" }} in pod
+              {{ "{{ $labels.pod }}" }} ({{ "{{ $labels.namespace }}" }})
+              restarted within the last 2 minutes, during a canary rollout.
+{{- end }}

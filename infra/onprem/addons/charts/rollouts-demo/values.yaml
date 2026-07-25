@@ -50,3 +50,10 @@ agentAnalysis:
   initialDelay: 30s
   interval: 60s
   failureLimit: 1
+  # A canary-timescale alert rule ships with the gate (templates/prometheusrule.yaml).
+  # kps's own pod rules use `for: 15m`, which never fires inside a canary window —
+  # the gate would then read "no alerts" for a canary that is crashlooping and
+  # promote it. See that file for the full reasoning.
+  ruleFor: 30s
+  ruleNamespace: monitoring          # where the kps Prometheus looks for rules
+  ruleReleaseLabel: monitoring       # kps ruleSelector matchLabels release=<this>
