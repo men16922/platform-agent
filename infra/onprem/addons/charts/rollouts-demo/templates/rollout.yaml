@@ -26,13 +26,22 @@ spec:
               memory: 16Mi
   strategy:
     canary:
-      {{- if .Values.analysis.enabled }}
+      {{- if or .Values.analysis.enabled .Values.agentAnalysis.enabled }}
       # Background analysis: runs alongside the steps below for as long as the
       # canary is live, aborting the rollout on its own if the canary is unhealthy.
       # Additive to the manual gate — `pause: {}` still holds for promote/abort.
+      #
+      # Two independent judges when both are on: Prometheus answers "is it
+      # crashing" and the agent answers "what does the incident pipeline think of
+      # this release". Either failing aborts, which is the safe composition.
       analysis:
         templates:
+          {{- if .Values.analysis.enabled }}
           - templateName: {{ .Values.analysis.templateName }}
+          {{- end }}
+          {{- if .Values.agentAnalysis.enabled }}
+          - templateName: {{ .Values.agentAnalysis.templateName }}
+          {{- end }}
         args:
           # Rollouts injects the canary ReplicaSet's pod-template-hash so the query
           # scores ONLY canary pods, never the stable ones.

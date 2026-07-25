@@ -47,3 +47,49 @@ spec:
               pod=~"{{ .Chart.Name }}-{{ "{{args.canary-hash}}" }}-.*"
             }) or vector(0)
 {{- end }}
+{{- if .Values.agentAnalysis.enabled }}
+---
+# Stage 2: the AGENT as the release gate.
+#
+# Stage 1 (above) asks Prometheus "is it crashing" — a single threshold on a raw
+# metric. This asks the platform-agent's own detect→analyze→decide pipeline, so
+# the gate inherits the LLM's root-cause reasoning and confidence.
+#
+# D19 layering is unchanged: Argo Rollouts is still the k8s-native progressive
+# delivery mechanism and the cloud-neutral deployment runner is untouched —
+# Rollouts merely CONSUMES the agent as an AnalysisRun provider.
+#
+# The endpoint runs analysis only (execute=False). A gate that could remediate
+# would turn every canary check into an unreviewed remediation.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ .Values.agentAnalysis.templateName }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  args:
+    - name: canary-hash
+    - name: namespace
+  metrics:
+    - name: agent-verdict
+      initialDelay: {{ .Values.agentAnalysis.initialDelay }}
+      interval: {{ .Values.agentAnalysis.interval }}
+      failureLimit: {{ .Values.agentAnalysis.failureLimit }}
+      # Only an explicit "pass" promotes. "unknown" (low confidence / analyzer
+      # unreachable) is NOT success — a gate that cannot judge must not approve,
+      # or an offline analyzer would silently rubber-stamp every release.
+      successCondition: result == "pass"
+      provider:
+        web:
+          url: {{ .Values.agentAnalysis.url }}
+          method: POST
+          timeoutSeconds: {{ .Values.agentAnalysis.timeoutSeconds }}
+          headers:
+            - key: Content-Type
+              value: application/json
+          # The detector normalises this shape; `alerts` carries the canary under
+          # judgement so the analyzer reasons about the right workload.
+          body: |
+            {"status":"firing","alerts":[{"status":"firing","labels":{"alertname":"CanaryUnderJudgement","namespace":"{{ "{{args.namespace}}" }}","pod":"{{ .Chart.Name }}-{{ "{{args.canary-hash}}" }}","severity":"warning"},"annotations":{"description":"Canary {{ "{{args.canary-hash}}" }} of {{ .Chart.Name }} is under release judgement"}}]}
+          jsonPath: "{$.verdict}"
+{{- end }}

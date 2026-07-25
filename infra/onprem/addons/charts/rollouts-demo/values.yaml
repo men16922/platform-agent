@@ -32,3 +32,21 @@ analysis:
   interval: 30s
   # Consecutive failed measurements tolerated before the rollout aborts.
   failureLimit: 2
+
+# Stage 2 — the AGENT as the release gate (AnalysisTemplate `web` provider calling
+# the platform-agent canary judge). Complements, does not replace, the Prometheus
+# metric above: one asks "is it crashing", the other asks the pipeline that
+# handles incidents what it thinks of this release.
+#
+# Default OFF like stage 1, and additionally because it needs the webhook to be
+# reachable FROM the cluster — set `url` to wherever the agent runs.
+agentAnalysis:
+  enabled: false
+  templateName: rollouts-demo-agent-verdict
+  url: http://pa-platform-agent-webhook.default.svc:8078/canary/judge
+  # Deliberately generous: the judgement includes an LLM call (on the live run the
+  # analyze span was ~4-5s), and a timeout here reads as a failed gate.
+  timeoutSeconds: 30
+  initialDelay: 30s
+  interval: 60s
+  failureLimit: 1
