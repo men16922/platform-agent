@@ -169,3 +169,40 @@ class TestChartWiring:
         rollout = (CHART / "templates" / "rollout.yaml").read_text(encoding="utf-8")
         assert "or .Values.analysis.enabled .Values.agentAnalysis.enabled" in rollout
         assert rollout.count("templateName:") == 2, "each judge is listed independently"
+
+
+class TestTerraformWiring:
+    """Enabling the gate must be an IaC change, not a hand-edit of chart values.
+
+    Stage 1 is exposed through the addons module; stage 2 shipped without that
+    wiring, which left `helm upgrade --set` as the only way to turn it on — and
+    that drifts the release out from under the Terraform state that owns it.
+    """
+
+    @staticmethod
+    def _module() -> Path:
+        return CHART.parents[1]
+
+    def test_enabling_is_a_module_variable(self):
+        variables = (self._module() / "variables.tf").read_text(encoding="utf-8")
+        assert 'variable "rollouts_demo_agent_analysis_enabled"' in variables
+        assert 'variable "rollouts_demo_agent_analysis_url"' in variables
+
+    def test_release_passes_both_values_through(self):
+        rollouts = (self._module() / "rollouts.tf").read_text(encoding="utf-8")
+        assert "agentAnalysis.enabled" in rollouts
+        assert "agentAnalysis.url" in rollouts, (
+            "the judge address is deployment-specific — hardcoding it strands non-default installs"
+        )
+
+    def test_terraform_default_matches_the_chart_default(self):
+        """A module default of `true` would enable the gate on the next apply."""
+        variables = (self._module() / "variables.tf").read_text(encoding="utf-8")
+        block = variables.split('variable "rollouts_demo_agent_analysis_enabled"')[1].split("}")[0]
+        assert "default = false" in block
+
+    def test_the_two_judges_stay_independently_switchable(self):
+        """Either judge alone is a valid configuration — one flag for both would erase that."""
+        rollouts = (self._module() / "rollouts.tf").read_text(encoding="utf-8")
+        assert "var.rollouts_demo_analysis_enabled" in rollouts
+        assert "var.rollouts_demo_agent_analysis_enabled" in rollouts

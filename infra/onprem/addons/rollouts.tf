@@ -34,6 +34,18 @@ resource "helm_release" "rollouts_demo" {
       name  = "analysis.prometheusAddress"
       value = var.rollouts_demo_prometheus_address
     },
+    # Stage 2 — the agent as the release gate. Exposed the same way as stage 1 so
+    # the two judges are independently switchable: the metric judge and the
+    # pipeline judge answer different questions, and either one alone is a valid
+    # configuration.
+    {
+      name  = "agentAnalysis.enabled"
+      value = var.rollouts_demo_agent_analysis_enabled
+    },
+    {
+      name  = "agentAnalysis.url"
+      value = var.rollouts_demo_agent_analysis_url
+    },
   ]
 
   wait    = true

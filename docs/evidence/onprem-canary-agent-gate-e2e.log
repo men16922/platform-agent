@@ -1,0 +1,109 @@
+=== ① stage 2: agent-as-release-gate live E2E (2026-07-26, kind, $0) ===
+
+WHAT THIS PROVES
+  The platform-agent's own detect->analyze->decide pipeline runs as an Argo
+  Rollouts AnalysisTemplate (`web` provider). The in-cluster analyzer has no
+  model, so every judgement is `unknown` -- and `successCondition: result ==
+  "pass"` does not hold for `unknown`. The rollout therefore aborts WITH NO
+  HUMAN ACTION. "Cannot judge" != "approved".
+
+  This is the asymmetry the gate is built around: wrongly aborting a good
+  release costs a retry, wrongly promoting a bad one ships it.
+
+TERRAFORM WIRING (new this run)
+  Stage 2 shipped with chart values but no module variables, which left
+  `helm upgrade --set` as the only way to enable it -- and that drifts the
+  release out from under the Terraform state that owns it. Now:
+    terraform apply -var rollouts_demo_agent_analysis_enabled=true
+  plan = 0 to add, 1 to change, 0 to destroy (only helm_release.rollouts_demo).
+
+  Independently switchable, verified live: with stage 1 (`analysis.enabled`)
+  left false, only ONE template is installed --
+    $ kubectl get analysistemplate -n argo-rollouts
+    NAME                          AGE
+    rollouts-demo-agent-verdict   69s
+  and the Rollout lists only that judge under canary.analysis.templates.
+
+--- before ---
+phase=Healthy image=argoproj/rollouts-demo:red
+judges wired: rollouts-demo-agent-verdict   (stage 1 metric judge OFF)
+
+--- the gate endpoint, called from INSIDE the cluster ---
+HTTP 200 {"verdict": "unknown", "confidence": 0.0,
+          "reason": "analysis confidence 0.00 below 0.40 -- refusing to promote
+                     on an untrustworthy judgment",
+          "severity": "P2", "runbook_id": "generic-recovery",
+          "details": {"actions": ["ONPREM-CreateChangeRequest"],
+                      "remediation_mode": "APPROVE", "trace_id": ""}}
+
+  200 with a verdict body => the gate is REACHABLE. Everything below is a
+  JUDGEMENT failure, not a connectivity failure. (That distinction is the whole
+  point: an unreachable judge and an unsure judge must both block, but they are
+  different defects and the evidence has to tell them apart.)
+
+--- trigger a canary (red -> blue) ---
+rollout.argoproj.io/rollouts-demo patched
+
+--- watch (abort expected ~90s: initialDelay 30s + interval 60s, failureLimit 1) ---
+[15s] phase=Paused    step=3 ar=rollouts-demo-58d7456779-8 Running
+[30s] phase=Paused    step=3 ar=rollouts-demo-58d7456779-8 Running
+[45s] phase=Paused    step=3 ar=rollouts-demo-58d7456779-8 Running
+[60s] phase=Paused    step=3 ar=rollouts-demo-58d7456779-8 Running
+[75s] phase=Paused    step=3 ar=rollouts-demo-58d7456779-8 Running
+[90s] phase=Degraded  step=0 ar=rollouts-demo-58d7456779-8 Failed   -> ABORTED
+
+--- AnalysisRun detail (rollouts-demo-58d7456779-8) ---
+phase: Failed
+metric=agent-verdict phase=Failed failed=2 successful=None count=2
+measurements:
+  value="unknown" phase=Failed finishedAt=2026-07-25T17:27:16Z
+  value="unknown" phase=Failed finishedAt=2026-07-25T17:28:16Z
+
+  The measured value is literally the verdict string, extracted by
+  `jsonPath: "{$.verdict}"` from a 200 response. Not an HTTP error, not a
+  timeout -- the agent said "I don't know" and the release stopped.
+
+--- Rollout after abort ---
+phase=Degraded
+Healthy=False      (RolloutHealthy)
+Completed=False    (RolloutCompleted)
+Paused=True        (RolloutPaused)
+Progressing=False  (RolloutAborted)
+  message=Rollout aborted update to revision 8: Background analysis phase
+          error/failed: Metric "agent-verdict" assessed Failed due to
+          failed (2) > failureLimit (1)
+Available=True     (AvailableReason)
+
+--- stable preserved? (rollback semantics) ---
+  rs=rollouts-demo-58d7456779 desired=0 current=0 ready=0 image=...:blue   <- canary, scaled away
+  rs=rollouts-demo-5dc5cc     desired=0 current=0 ready=0 image=...:yellow
+  rs=rollouts-demo-66c5686467 desired=0 current=0 ready=0 image=...:yellow
+  rs=rollouts-demo-7ff988b864 desired=4 current=4 ready=4 image=...:red    <- stable, still serving
+
+  Available=True throughout: the abort never dropped capacity.
+
+--- NOT SHOWN: the pass path ---
+  Every verdict in this cluster is `unknown` because the in-cluster analyzer has
+  no model, so this run cannot demonstrate that a HEALTHY release is promoted.
+  Read honestly: this proves the gate BLOCKS, not that it discriminates. The
+  unit suite covers the pass branch (tests/test_canary_judge.py), but a live
+  pass needs a model the cluster can reach.
+
+  Reachability re-measured this run, from inside the pa webhook pod:
+    host.docker.internal -> 192.168.65.254   HTTP 200
+    192.168.65.254       -> 192.168.65.254   HTTP 200
+    host.lima.internal   -> DNS-FAIL
+  So the earlier note that the host is "behind the Docker VM gateway and
+  unreachable" is WRONG -- pods do reach the host. The actual blockers are:
+    (1) MLX is not running (`make local-llm-status` -> MLX-LM :18090 down), and
+    (2) MLX and the tool-call proxy bind to 127.0.0.1, so reaching them from the
+        cluster needs a bind change (0.0.0.0 = LAN exposure, a user decision).
+  With those resolved, ANALYZER_LLM_ENDPOINT=http://host.docker.internal:18091/v1
+  on the webhook deployment should light up the pass path.
+
+--- restored ---
+  Gate returned to its default-OFF state (terraform apply with no -var) and the
+  rollout returned to the stable image, so the documented Phase 4 manual
+  promote/abort demo is unchanged.
+
+=== end ===

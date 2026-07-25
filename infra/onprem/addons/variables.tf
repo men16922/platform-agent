@@ -71,6 +71,22 @@ variable "rollouts_demo_prometheus_address" {
   default = "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090"
 }
 
+# Stage 2 of the canary judgment: the platform-agent itself as the release gate
+# (AnalysisTemplate `web` provider → POST /canary/judge). Same default-false
+# reasoning as stage 1, plus it needs the agent webhook reachable FROM the
+# cluster — which is deployment-specific, hence the address variable below.
+variable "rollouts_demo_agent_analysis_enabled" {
+  type    = bool
+  default = false
+}
+
+# Where the canary judge lives. Default matches the platform-agent chart
+# installed as `pa` in the default namespace (`helm install pa infra/helm/platform-agent`).
+variable "rollouts_demo_agent_analysis_url" {
+  type    = string
+  default = "http://pa-platform-agent-webhook.default.svc:8078/canary/judge"
+}
+
 # Phase 6 tracing: Grafana Tempo (single binary) in the monitoring namespace so
 # the kps Grafana adds it as a third datasource (metrics + logs + traces).
 # tempo 1.24.4 ships Tempo 2.9.0 (verified: helm search repo grafana/tempo --versions).
