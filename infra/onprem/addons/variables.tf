@@ -163,3 +163,20 @@ variable "gitops_release_name" {
   type    = string
   default = "pa"
 }
+
+# Phase 2 — Capsule (soft isolation tier). Default OFF: it installs webhooks that
+# intercept namespace creation cluster-wide, which must be a deliberate act.
+variable "capsule_enabled" {
+  type    = bool
+  default = false
+}
+
+variable "capsule_chart_version" {
+  type    = string
+  default = "0.13.10"
+}
+
+variable "capsule_namespace" {
+  type    = string
+  default = "capsule-system"
+}

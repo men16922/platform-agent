@@ -40,23 +40,24 @@ def test_module_ships_the_advertised_pieces():
     names = set(_tf_sources())
     assert {
         "versions.tf", "variables.tf", "argocd.tf", "monitoring.tf",
-        "gitops.tf", "rollouts.tf", "logging.tf", "tracing.tf", "outputs.tf",
+        "gitops.tf", "rollouts.tf", "logging.tf", "tracing.tf", "tenancy.tf", "outputs.tf",
     } <= names
     assert {
         "argocd.yaml", "kube-prometheus-stack.yaml", "argo-rollouts.yaml",
-        "loki.yaml", "fluent-bit.yaml", "tempo.yaml",
+        "loki.yaml", "fluent-bit.yaml", "tempo.yaml", "capsule.yaml",
     } <= set(_values_files())
 
 
 def test_chart_versions_are_pinned_exactly():
     variables = _tf_sources()["variables.tf"]
     pins = re.findall(r'default\s*=\s*"(\d+\.\d+\.\d+)"', variables)
-    assert len(pins) == 6, (
-        "expected exactly six exact-semver chart pins "
-        "(argocd, kps, rollouts, loki, fluent-bit, tempo)"
+    assert len(pins) == 7, (
+        "expected exactly seven exact-semver chart pins "
+        "(argocd, kps, rollouts, loki, fluent-bit, tempo, capsule)"
     )
     # …and every remote release actually consumes a pin (no floating chart versions).
-    for release_file in ("argocd.tf", "monitoring.tf", "rollouts.tf", "logging.tf", "tracing.tf"):
+    for release_file in ("argocd.tf", "monitoring.tf", "rollouts.tf", "logging.tf", "tracing.tf",
+                         "tenancy.tf"):
         assert "version" in _tf_sources()[release_file]
 
 
@@ -380,4 +381,48 @@ def test_netpol_tenants_match_the_platform_registry_prefixes():
     chart_prefixes = {t["prefix"] for t in _netpol_values()["tenants"]}
     assert chart_prefixes <= registry_prefixes, (
         f"chart prefixes {chart_prefixes - registry_prefixes} are not in the registry"
+    )
+
+
+# --- Phase 2: Capsule (soft isolation tier) --------------------------------
+
+
+def test_capsule_is_off_by_default():
+    """It installs webhooks intercepting every namespace create on the cluster."""
+    variables = _tf_sources()["variables.tf"]
+    block = variables.split('variable "capsule_enabled"')[1].split("}")[0]
+    assert "default = false" in block
+
+
+def test_capsule_chart_version_is_pinned():
+    variables = _tf_sources()["variables.tf"]
+    assert 'default = "0.13.10"' in variables.split('variable "capsule_chart_version"')[1]
+
+
+def test_capsule_protects_the_platforms_own_namespaces():
+    """Without this the tenancy operator can arbitrate argocd/monitoring/default —
+    a tenancy layer turning into a cluster-wide outage."""
+    values = _values_files()["capsule.yaml"]
+    pattern = values["manager"]["options"]["protectedNamespaceRegex"]
+    for namespace in ("kube-system", "argocd", "monitoring", "default"):
+        assert namespace.split("-")[0] in pattern, f"{namespace} must be protected"
+
+
+def test_capsule_does_not_require_cert_manager():
+    """The chart defaults to cert-manager, which would be a hidden prerequisite."""
+    values = _values_files()["capsule.yaml"]
+    assert values["certManager"]["generateCertificates"] is False
+    assert values["tls"]["create"] is True
+    # Without the controller the cert exists but nothing injects the CA bundle,
+    # and every namespace create fails.
+    assert values["tls"]["enableController"] is True
+
+
+def test_capsule_registers_an_administrator_for_the_iac_flow():
+    """Capsule refuses to adopt an admin-created namespace unless the applying
+    identity is a declared administrator — verified live by the refusal
+    ("namespace can not be patched into a tenant")."""
+    values = _values_files()["capsule.yaml"]
+    assert values["manager"]["options"]["administrators"], (
+        "an IaC flow applies as an admin identity, not as each tenant"
     )

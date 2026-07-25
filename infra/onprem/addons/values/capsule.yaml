@@ -1,0 +1,55 @@
+# Capsule on a local kind/k3s budget.
+#
+# The manager is the admission path for every namespace create on the cluster, so
+# it is sized to be dependable rather than minimal — a webhook that is slow or
+# evicted turns "create a namespace" into an outage for everyone, not just the
+# tenant that triggered it.
+manager:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  options:
+    # Namespaces Capsule must never claim. Without this the operator can start
+    # arbitrating the platform's own namespaces (argocd, monitoring, default),
+    # which is how a tenancy layer turns into a cluster-wide outage.
+    forceTenantPrefix: false
+
+    # Identities that may put an EXISTING namespace into a tenant by setting the
+    # `capsule.clastix.io/tenant` label. Without this, tenancy can only be
+    # created by the tenant owner calling `create namespace` itself — Capsule
+    # refuses to adopt an admin-created namespace ("namespace can not be patched
+    # into a tenant"). That refusal is the whole reason this list exists: an IaC
+    # flow applies manifests as an admin identity, not as each tenant.
+    #
+    # Substrate-specific by nature (kind's admin user is `kubernetes-admin`);
+    # override per environment rather than assuming.
+    administrators:
+      - kind: "User"
+        name: "kubernetes-admin"
+    protectedNamespaceRegex: "^(kube-.*|argocd|monitoring|argo-rollouts|default)$"
+
+# One replica is enough locally; production would raise this because the
+# webhook is in the critical path of namespace admission.
+replicaCount: 1
+
+crds:
+  install: true
+
+# Webhook TLS without cert-manager.
+#
+# The chart defaults to cert-manager-issued certificates, which would make a
+# tenancy add-on drag in a cluster-wide certificate operator as a hidden
+# prerequisite. Capsule can generate and rotate its own webhook certificate;
+# `tls.enableController` is what keeps the CA bundle injected into the webhook
+# and CRD conversion configs afterwards — without it the certificate exists but
+# nothing points the API server at it, and every namespace create fails.
+certManager:
+  generateCertificates: false
+tls:
+  create: true
+  enableController: true

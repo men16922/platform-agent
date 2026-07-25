@@ -1,0 +1,81 @@
+=== Phase 2 첫 슬라이스 — soft-tier tenancy (2026-07-26, kind, $0) ===
+
+WHY THIS FIRST
+  ⑥의 NetworkPolicy 차트와 PSS 작업이 둘 다 `<prefix>-<env>-<capability>`
+  네임스페이스와 `platform-agent.io/tenant` 라벨을 기다리며 기본 OFF였다.
+  존재하지 않는 네임스페이스에 걸린 정책은 아무것도 보호하지 않으면서 감사에는
+  "격리됨"으로 읽힌다. 그 산출물을 만드는 게 이 슬라이스다.
+
+--- 렌더 결과 (acme/dev) ---
+  Namespace    acme-dev-{logging,observability,progressive,tracing}
+  Tenant       acme-dev                    (capsule.clastix.io/v1beta2)
+  Role/RoleBinding  acme-agent × 4 네임스페이스 (네임스페이스 스코프, 와일드카드 0)
+
+  prod는 의도적으로 부분집합(observability 1개) — 부분 add-on 구독은 정상이다.
+
+================================================================================
+라이브가 잡은 것 3건 — 전부 "그럴듯한 구현이 조용히 거짓 보증을 만드는" 자리
+================================================================================
+
+--- 1. 소유자 표기 (유닛 테스트가 못 잡음) ---
+  Error from server (Forbidden): admission webhook
+  "tenants.validating.projectcapsule.dev" denied the request:
+  Username must be in the form system:serviceaccount:namespace:name
+
+  내 렌더러는 `{"name": "platform-agent", "kind": "ServiceAccount"}`를 냈다.
+  유닛 테스트는 **내가 지어낸 형태**만 단언했으니 초록이었다. 첫 apply가 잡음.
+  → `service_account_owner(ns, name)`으로 정규화.
+
+--- 2. Capsule은 admin이 만든 네임스페이스를 채택하지 않는다 ---
+  네임스페이스를 만들고 라벨을 붙이려 하자:
+  Error from server (Forbidden): admission webhook
+  "namespaces.validating.projectcapsule.dev" denied the request:
+  namespace can not be patched into a tenant
+
+  그리고 Tenant는 NAMESPACE COUNT = 0으로 Active/reconciled였다.
+  **테넌트는 살아 있고 쿼터는 아무것도 묶지 않는 상태** — 정확히 이 모듈이
+  막으려던 거짓 보증이고, 상태 화면만 보면 정상으로 보인다.
+
+  해결: `capsule.clastix.io/tenant` 라벨 + Capsule 설정의 `administrators`에
+  적용 identity 등록(IaC는 각 테넌트가 아니라 admin으로 apply하므로 필수).
+  → NAMESPACE COUNT = 4.
+
+--- 3. 쿼터 합산: 정적으로 읽으면 "고장", 소비해보면 "정상" ---
+  네 네임스페이스 각각에 `limits.cpu: 16`짜리 ResourceQuota가 생긴다.
+  겉보기엔 테넌트가 4×16=64를 쓸 수 있는 그 버그로 보인다. 나도 그렇게 판단했다.
+
+  반증 테스트:
+    observability에 limits.cpu=10 배포 → used=10
+    logging의 used는 여전히 0            → "합산 안 됨"으로 읽힘
+    logging에 limits.cpu=10 배포 시도 →
+      forbidden: exceeded quota: capsule-acme-dev-0,
+      requested: limits.cpu=10, used: limits.cpu=0, limited: limits.cpu=6
+
+  `limited: 6` = 16 − 10. Capsule은 **각 네임스페이스의 hard를 테넌트 잔여로
+  다시 쓴다**. 두 번째 10 요청은 거부됐다. 워크로드를 지우니 양쪽 다 16으로 복원.
+
+  → 설계 결정(scope: Tenant)은 옳았고, **내 첫 결론이 틀렸다**. 정지 상태 조회가
+    아니라 소비 실험만이 사실을 말해줬다.
+
+--- 네임스페이스 라벨 (⑥이 기다리던 것) ---
+  capsule.clastix.io/tenant: acme-dev
+  platform-agent.io/tenant: acme
+  platform-agent.io/env: dev
+  platform-agent.io/capability: observability
+  pod-security.kubernetes.io/enforce: restricted
+
+--- 렌더러의 정직성 규율 ---
+  scripts/render_tenancy.py 는 Capsule CRD 부재를 감지하면 exit 1:
+    "QUOTA WILL NOT BE ENFORCED: CRD tenants.capsule.clastix.io is not installed.
+     kubectl apply would create the namespaces and RBAC and leave the tenant
+     unbounded on a shared cluster, while the registry and every view still show
+     the declared quota."
+  Capsule 설치 후 같은 명령이 exit 0. (스위퍼·서명 게이트·핸드오프 프리플라이트와
+  같은 규율: 확인 못 한 것을 통과로 보고하지 않는다.)
+
+--- 아직 아닌 것 ---
+  ⑥ NetworkPolicy/PSS를 실제로 켜는 것 · 대시보드 tenant/env 스위처 ·
+  push 기반 2축 drift 수집기 · faked managed 디스크립터(applicable=false) ·
+  DR 재구축 확인. Phase 2의 나머지다.
+
+gate: 1191 → 1216 (+25)
