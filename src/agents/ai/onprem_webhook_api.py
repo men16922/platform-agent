@@ -119,6 +119,7 @@ def _record_incident(
         executed_actions=executor_out.get("executed_actions", []),
         incident_id=executor_out.get("incident_id"),
         confidence=summary.get("confidence"),
+        trace_id=summary.get("trace_id"),
     )
 
 

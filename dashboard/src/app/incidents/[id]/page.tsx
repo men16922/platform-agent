@@ -3,6 +3,7 @@ import { getIncidentById } from "@/lib/incident-data";
 import { ProviderLogo, providerBadgeStyles } from "@/components/provider-logo";
 import { DataSourceBadge } from "@/components/data-source-badge";
 import type { Incident } from "@/lib/mock-data";
+import { getTraceUrl, shortTraceId } from "@/lib/trace-links";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,10 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
   }
 
   const hasConfidence = typeof incident.confidence === "number";
+  // null when tracing was off or Grafana is not configured — we then render
+  // nothing rather than a link that 404s (a dead link reads as "the trace is
+  // missing" instead of "tracing was off").
+  const traceUrl = getTraceUrl(incident.trace_id);
   const confidencePct = hasConfidence ? Math.round((incident.confidence as number) * 100) : null;
 
   return (
@@ -93,6 +98,20 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
               <span className="font-mono text-[11px] text-[var(--muted)]">confidence n/a</span>
             )}
           </div>
+
+          {traceUrl && (
+            <a
+              href={traceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-md border border-white/12 bg-white/5 px-2.5 py-1.5 text-[11px] text-[var(--muted)] transition-colors hover:border-white/25 hover:text-white"
+              title="Open the detect → analyze → decide → execute span breakdown in Grafana Tempo"
+            >
+              <span aria-hidden>🔍</span>
+              <span>View trace</span>
+              <span className="font-mono text-[10px] opacity-70">{shortTraceId(incident.trace_id)}</span>
+            </a>
+          )}
 
           {hasConfidence && (
             <div className="space-y-1">

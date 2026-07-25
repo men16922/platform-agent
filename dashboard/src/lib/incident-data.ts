@@ -80,6 +80,7 @@ export function mapIncidentRecord(item: Record<string, unknown>): Incident | nul
           : "1970-01-01T00:00:00Z",
     reconciliation: mapReconciliation(item.reconciliation),
     confidence: typeof item.confidence === "number" ? item.confidence : undefined,
+    trace_id: typeof item.trace_id === "string" && item.trace_id ? item.trace_id : undefined,
   };
 }
 

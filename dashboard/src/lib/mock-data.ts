@@ -26,6 +26,9 @@ export interface Incident {
   created_at: string;
   reconciliation?: Reconciliation;
   confidence?: number; // LLM analysis confidence 0..1 (Qwen on-prem / Bedrock cloud)
+  // OTel trace id when tracing was on; absent when it was off (so the UI shows
+  // no link rather than a dead one).
+  trace_id?: string;
 }
 
 // Domain of a row (which page it belongs to). Rollback is a STATUS, not a type,

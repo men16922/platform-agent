@@ -36,3 +36,18 @@ spans: ['onprem.detect', 'onprem.analyze', 'onprem.decide', 'onprem.incident_pip
 
 CONFIRMED: values-driven `prometheusAddress` default in the AnalysisTemplate matches reality —
 the module's own Grafana datasource is http://monitoring-kube-prometheus-prometheus.monitoring:9090/
+
+--- incident → trace deep link (2026-07-26) ---
+The incident record now carries the OTel trace id, so the detail page can link
+straight to the span breakdown instead of the reader eyeballing timestamps.
+
+pipeline trace_id : a9a67fac504eb0d327b9d4516116e40e
+record   trace_id : a9a67fac504eb0d327b9d4516116e40e   (same id survives persistence)
+record            : INC-5F8D26FF severity=P2 runbook=eks-pod-oom confidence=0.82
+tempo lookup      : GET /api/traces/<id> = HTTP 200
+spans             : detect 0.3ms | analyze 5323.2ms | decide 913.6ms | root 6237.3ms
+                    (analyze = 85% of wall clock on this run — local Qwen inference)
+
+Link is prod-safe by the same rule as stack-links.ts: localhost only in dev, and
+`getTraceUrl` returns null when tracing was off or Grafana is unconfigured — the
+UI then renders nothing rather than a link that 404s.
