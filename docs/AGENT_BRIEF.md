@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-25
 
-> ▶ NEXT SESSION: **멀티테넌트 Phase 1a(자격증명 격리 seam) 착수** — 계획 `docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5, S 93.5) Phase 1a. 첫 액션 = `NormalizedIncident`에 `tenant`/`env` 필드 추가 → `_run_external_action`에 `incident_scope` 관통 → onprem 러너의 **ambient kubeconfig 경로 삭제**(현재 fail-OPEN) → per-tenant SA kubeconfig. DoD=tenant-A 승인 레코드로 tenant-B 액션이 `Forbidden`. 통과 전까지 `ONPREM_EXECUTOR_LIVE=false` 유지. **같이 처리**: 런북 `verify`의 provider측 실행부(동일 경로라 단독 착수 시 충돌). **직전 완료**: GitAIOps 대조 갭 6건 + Phase 0(gate **983**). **라이브 대기 3건**(Docker/kind 기동 시 일괄): ①Rollouts auto-abort ②Tempo 실 적재 ⑥CNI 집행 판정 — ①⑥은 미검증이라 기본 OFF. 주의: cdk deploy에 Vercel context 필수. 로컬 kind는 현재 **정지** 상태.
+> ▶ NEXT SESSION: **멀티테넌트 Phase 1a(자격증명 격리 seam) 착수** — 계획 `docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5, S 93.5) Phase 1a. 첫 액션 = `NormalizedIncident`에 `tenant`/`env` 필드 추가 → `_run_external_action`에 `incident_scope` 관통 → onprem 러너의 **ambient kubeconfig 경로 삭제**(현재 fail-OPEN) → per-tenant SA kubeconfig. DoD=tenant-A 승인 레코드로 tenant-B 액션이 `Forbidden`. 통과 전까지 `ONPREM_EXECUTOR_LIVE=false` 유지. **같이 처리**: 런북 `verify`의 provider측 실행부(동일 경로라 단독 착수 시 충돌). **직전 완료**: GitAIOps 대조 갭 6건 + Phase 0(gate **983**). **라이브 3건 실증 완료**(2026-07-26): ①canary auto-abort 양방향 ②Tempo 트레이스(**MTTR의 82%가 LLM 추론**) ⑥kindnet=ENFORCED+테넌트 시맨틱. ①⑥은 검증 후에도 기본 OFF(①=수동 데모 보존, ⑥=대상 ns가 Phase 2 산출물). **신규 발견**: capability 런북이 decision에서 사용 불가(NEXT_PLAN 별도 백로그). 주의: cdk deploy에 Vercel context 필수. 로컬 kind **가동 중**.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 

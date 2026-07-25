@@ -59,12 +59,17 @@ rubric(8기준) → **MAD(Advocate/Critic, Judge)** 수렴 A+(92) → **평가 �
 
 상세·근거·안티패턴: `docs/reference/gitaiops-notiflex-book.md`. 멀티테넌트 Phase 0과 **독립**이라 끼워넣기 가능.
 
-- [ ] **① Rollouts AnalysisTemplate** — 데모 canary의 무기한 수동 pause를 메트릭 자동판정으로. 1단계=Prometheus
-  provider(에러율 임계 abort), 2단계=`web` provider가 **platform-agent decision 엔드포인트**를 호출해 LLM
-  confidence를 canary 게이트로(D19 층 유지: 러너 무변경, Rollouts가 에이전트를 판정자로 소비). 라이브 $0 kind.
-- [ ] **② OTel → Tempo (대상=우리 4-step 파이프라인)** — `tracing.tf`(grafana/tempo 단일바이너리 + kps grafana
-  데이터소스, `logging.tf`와 동형) + detect/analyze(LLM 백엔드 속성)/decide/execute span. 기존 `trace_id`를
-  OTel TraceID와 정렬 → 인시던트 상세에서 Tempo 딥링크. "39초가 어디서 쓰였나"를 측정 가능하게.
+- [x] ~~**① Rollouts AnalysisTemplate**(1단계)~~ — **라이브 실증 완료(2026-07-26, `b07523b`)**: 양방향 —
+  나쁜 canary는 `failed(3)>failureLimit(2)`로 **사람 개입 0, ~105초 auto-abort**(stable 4/4 유지), 좋은 canary는
+  3연속 Successful로 **abort 안 됨**(false-negative 기계 아님). `var.rollouts_demo_analysis_enabled`로 IaC 토글.
+  기본 OFF 유지(Phase 4 수동 데모가 문서화된 walkthrough라서). 증거 `docs/evidence/onprem-addons-rollouts-analysis-e2e.log`.
+  - [ ] **2단계(잔여)**: `web` provider가 **platform-agent decision 엔드포인트**를 호출해 LLM confidence를 canary
+    게이트로(D19 층 유지: 러너 무변경, Rollouts가 에이전트를 판정자로 소비).
+- [x] ~~**② OTel → Tempo**~~ — **라이브 실증 완료(2026-07-26, `b07523b`)**: Tempo query API·Grafana 프록시 양쪽에서
+  트레이스 조회, Grafana 4 데이터소스(Alertmanager/Loki/Prometheus/**Tempo**). **결과: 인시던트 5026ms 중
+  analyze 4136ms = MTTR의 82%가 로컬 LLM 추론** — 이전엔 답할 수 없던 질문이 측정값이 됨.
+  증거 `docs/evidence/onprem-tracing-tempo-e2e.log`. 함정: `-target=tempo`만 apply하면 데이터소스가 안 생김(kps도 필요).
+  - [ ] **잔여(선택)**: 인시던트 상세 페이지에서 `trace_id`로 Tempo 딥링크 · executor span(현재 parking 경로만 실증).
 - [~] **③ 런북 사후검증** — **계약+판정 seam 완료(2026-07-25, `5fba0af`, gate 892)**: `RunbookStep.verify`
   (`StepVerification`) + `resolution_verdict()` 2축 판정(resolved/dispatched/**verified**, 검증 없으면
   verified=None="모름"이고 판정은 기존 규칙과 동일=역호환) + executor `resolved` 배선 + 카탈로그 4스텝. **잔여**:
@@ -74,8 +79,22 @@ rubric(8기준) → **MAD(Advocate/Critic, Judge)** 수렴 A+(92) → **평가 �
   `gcloud:*`/`aws:*`/`az:*` 포괄 allow 제거 → 조회 동사 allow(104건) + billable 생성/삭제·terraform apply/destroy·
   helm install/upgrade를 `ask`(30건). D16의 "billable=사용자 게이트"를 로컬 설정이 우회하던 상태 차단.
   짝: `scripts/provision_gke_live.py` 3중 TTL 워치독 커밋(워치독=생성 이후, 권한게이트=생성 자체).
-- [ ] **⑥ NetworkPolicy + PSS restricted** (승인 필요) — soft 티어의 data-plane non-guarantee 좁히기.
-  **선행**: 기판 CNI가 NetworkPolicy를 실제 집행하는지 실측(미집행 CNI에 정책만 올리면 거짓 격리 신호).
+- [~] **⑥ NetworkPolicy** — **집행·시맨틱 라이브 실증 완료(2026-07-26, `b07523b`)**: kind(k8s v1.34.0, 기본
+  kindnet) = **ENFORCED**, 차트 렌더 정책으로 같은 테넌트 REACHABLE / 크로스테넌트 BLOCKED 실증(적용 전엔 둘 다
+  REACHABLE). 검증기 자체 버그 2건도 라이브가 적발(agnhost `connect`는 http/URL 불가 · 파드 Ready≠포트 바인딩).
+  증거 `docs/evidence/onprem-netpol-tenancy-e2e.log`. **차트는 기본 OFF 유지 — 이유 변경**: 집행 불명이 아니라
+  대상 namespace·tenant 라벨이 **Phase 2 Capsule 산출물**이라서. Phase 2에서 함께 켠다.
+  - [ ] **잔여**: PSS `restricted` 프로파일 · 이미지 서명(Cosign) — 별도 승인 필요. k3s(flannel)는 집행이
+    전이되지 않으므로 그 기판에서 검증기 재실행 필요.
+
+## 신규 백로그 — 라이브 실행이 표면화한 별도 결함 (2026-07-26)
+
+- [ ] **capability 런북이 decision 단계에서 사용 불가** — 라이브 인시던트에서 `decision.candidate.invalid` 4건
+  관측 후 `generic-recovery`(알림만)로 폴백. 원인 2겹: (a) DynamoDB `incident-runbooks` 시드 행이 `alarm_name`
+  없이 저장돼 `require_alarm_name=True` 검증 탈락, (b) **`CAPABILITY_RUNBOOKS` 9개 전부** base `validate_runbook`
+  미통과(`steps`만 있고 `actions`/`capabilities` 키 없음 — `capabilities`는 dataclass 파생 property).
+  즉 capability 런북은 현재 **장식**이고 `capability_schema.py`는 테스트만 소비. OOMKilled가 restart+rollback
+  런북이 아니라 알림으로 처리되는 실질 영향. 시드 계약과 스키마 접점을 함께 고쳐야 함(단독 수정 시 회귀 위험).
 - [ ] **⑦ TTL 스위퍼 CronJob** (승인 필요) — 로컬 워치독이 못 지키는 케이스(머신 자체 사망) 보완. 라벨/생성시각
   기준 TTL 초과 클라우드 리소스 **신고**(삭제는 승인 게이트).
 

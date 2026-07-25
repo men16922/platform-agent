@@ -1,6 +1,6 @@
 # STATUS — platform-agent
 
-최종 갱신: 2026-07-25
+최종 갱신: 2026-07-26
 
 > 현재 구현 상태 / 검증 baseline / active focus / open risks. **≤120줄** 유지.
 
@@ -31,6 +31,7 @@
 - `make check` (pytest) → **842 passed, 1 skipped** (2026-07-17, 234.42s) — **차트 stateStore 배선(④↔#7 마무리)**: `stateStore.{dsn,existingSecret}` values(secretKeyRef=프로덕션·plain=dev, secret 우선), persistence off→RollingUpdate·replicas>1 해금, Dockerfile `.[state]`(psycopg2) 재빌드 검증. 차트 가드 +3. JSONL 기본값 무변경. **k3s substrate 스모크(동일자, 코드 무변경)**: 기존 k8s-lab VM에 helm install→`local-path` PVC Bound→P2 승인 루프→원상 복원 — env×substrate 양축(kind/k3s) 실증 완결(`docs/evidence/helm-k3s-substrate-smoke.log`).
 - `make check` (pytest) → **839 passed, 1 skipped** (2026-07-17, 238.51s) — **레퍼런스 #7-b Terraform 모듈 → #7 전체 완결(Helm+Terraform)**: 신규 `infra/terraform/aws-production/`(VPC·EKS 1.31·**Aurora Serverless v2 `platform_state`**=④ DSN seam 정합·**IRSA**=차트 SA 전용 trust+DynamoDB activity 테이블 정확-ARN 유일 grant). Redis/Cognito=미소비 의도적 제외. `terraform init+fmt+validate` Success(spend 0, **apply 안 함**=사용자 게이트). 가드 +5(bare `"*"` 금지 등). 이로써 AWSome 레퍼런스 8항목 전부 소화.
 - `make check` (pytest) → **834 passed, 1 skipped** (2026-07-17, 242.90s) — **로드맵 ④ SQL State Store(옵트인)+실 Alertmanager 라이브**: 신규 `state_store.py`(`PLATFORM_STATE_DSN` 옵트인, DB-API 주입식, append-only+latest-wins=JSONL 시맨틱 동일, sqlite 오프라인 테스트 +5) + approvals/incidents 양방향 배선. **라이브(docker $0)**: 실 Alertmanager grouping→배달→P2 parking→PostgreSQL, **레플리카 2개 상태 공유**(replica-2 승인→replica-1 즉시 반영=JSONL 불가), 전 프로세스 재기동 생존, psql ground-truth 3 rows. 증거 `docs/evidence/state-store-alertmanager-live.log`. JSONL 기본값 무변경(비오염 테스트 양방향).
+- **라이브 실증(2026-07-26, `b07523b`, 수 무변경)** — 기본 OFF로 남겨둔 3건 완주: ①canary 자동판정 **양방향**(나쁜 canary=`failed(3)>limit(2)`→사람 개입 0으로 ~105s auto-abort·stable 4/4 유지 / 좋은 canary=3연속 Successful→abort 안 됨) · ②Tempo 트레이스(query API·Grafana 프록시 양쪽 200, **5026ms 중 analyze 4136ms=MTTR의 82%가 로컬 LLM 추론**) · ⑥kindnet=**ENFORCED**+차트 정책 테넌트 시맨틱(same 통과/cross 차단). 증거 `docs/evidence/onprem-{addons-rollouts-analysis,tracing-tempo,netpol-tenancy}-e2e.log`. 라이브가 검증기 자체 버그 2건도 적발(agnhost `connect` http/URL 불가 · 파드 Ready≠포트 바인딩).
 - (이전 이력 2026-07-10~17, gate 829 이하 → `docs/archive/status-baseline-2026-07.md`)
 
 ## 동작하는 영역 (요약)
@@ -52,7 +53,7 @@
 ## Active Focus
 
 - **멀티테넌트/멀티클라우드 플랫폼 — Phase 0 완료, 다음 = Phase 1a(자격증명 격리 seam)** — `docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5, S 93.5). Phase 0(`platform/` 레지스트리·로더·어댑터 계약·2축 상태)은 의도적으로 inert(동작 무변경). **Phase 1a와 함께 처리할 것**: 런북 `verify`의 provider측 실행부 — 같은 `_run_external_action` 경로라 단독 착수 시 충돌.
-- **라이브 검증 대기 3건(Docker/kind 기동 선행)**: ①Rollouts auto-abort · ②Tempo 실 적재 · ⑥CNI NetworkPolicy 집행 판정. ①⑥은 그래서 기본 OFF(미검증 동작을 기본값으로 넣지 않음).
+- **라이브 실증 완료(2026-07-26)**: ①canary auto-abort 양방향(~105s, stable 유지 / 정상 canary는 통과) · ②Tempo 트레이스(**5026ms 중 analyze 4136ms = MTTR의 82%가 로컬 LLM**) · ⑥kindnet ENFORCED + 테넌트 시맨틱(same=통과, cross=차단). 증거 `docs/evidence/onprem-{addons-rollouts-analysis,tracing-tempo,netpol-tenancy}-e2e.log`. ①⑥은 검증 후에도 기본 OFF(①=문서화된 수동 데모 보존, ⑥=대상 ns/라벨이 Phase 2 Capsule 산출물).
 - **완료(참고)**: On-Prem 애드온 스택 Phase 1~5(gate 870) · 대시보드 Qwen/상세뷰(gate 876) · GitAIOps 대조 갭 6건(gate 983).
 - 아티클: **발행 완료**(2026-07-25). GitAIOps 후속편은 `NEXT_PLAN`에 논지만 남기고 착수 보류(사용자 지시).
 
