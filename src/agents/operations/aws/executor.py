@@ -62,19 +62,22 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     executed: list[str] = []
     skipped:  list[str] = []
 
+    verifications: list[Any] = []
     if decision.remediation_mode in (RemediationMode.AUTO, RemediationMode.APPROVE):
-        executed, skipped = _run_ssm_actions(decision, log)
+        executed, skipped, verifications = _run_ssm_actions(decision, log)
     else:
         skipped = decision.actions
         log.info("executor.manual_mode", skipped=skipped)
 
-    # Resolution goes through the shared verdict so the "dispatched" axis and the
-    # (future) verification axis have one definition. No verifications are wired
-    # into this path yet, so the verdict is identical to the historical rule
-    # `bool(executed) and not skipped` — and `verified` reports None ("unknown")
-    # rather than silently claiming the recovery was proven.
-    verdict  = resolution_verdict(executed, skipped)
+    # Resolution goes through the shared verdict so both axes have one definition.
+    # With no verifications (AWS/GCP/Azure paths, or actions with nothing declared
+    # to check) this is exactly the historical rule `bool(executed) and not skipped`
+    # and `verified` reports None ("unknown") rather than claiming proof. Where a
+    # check DID run, a required failure now withholds resolution.
+    verdict  = resolution_verdict(executed, skipped, verifications)
     resolved = verdict.resolved
+    if verifications:
+        log.info("executor.verified", **verdict.to_dict())
 
     slack_ts = _post_slack_report(
         incident_id=incident_id,
@@ -165,9 +168,12 @@ def _resolve_incident_scope(normalized_incident: NormalizedIncident | None, log:
 
 def _run_ssm_actions(
     decision: DecisionOutput, log: Any
-) -> tuple[list[str], list[str]]:
+) -> tuple[list[str], list[str], list[Any]]:
     executed: list[str] = []
     skipped:  list[str] = []
+    # Post-execution evidence: "dispatched" and "actually helped" are different
+    # facts, and only the second justifies calling an incident resolved.
+    verifications: list[Any] = []
     alarm = decision.analyzer.detector.alarm
     normalized_incident = decision.analyzer.detector.normalized_incident
     provider = normalized_incident.provider if normalized_incident else "aws"
@@ -189,6 +195,14 @@ def _run_ssm_actions(
             try:
                 _run_external_action(provider, action, params, log, incident_scope)
                 executed.append(action)
+                if provider == "onprem":
+                    # Verify with the SAME scoped credential as the action, so a
+                    # check can never reach further than the remediation it proves.
+                    from src.agents.operations.runners.onprem_verify import verify_onprem_action
+
+                    result = verify_onprem_action(action, params, log, incident_scope)
+                    if result is not None:
+                        verifications.append(result)
             except Exception as exc:
                 log.error("executor.external.failed", provider=provider, action=action, error=str(exc))
                 skipped.append(action)
@@ -245,7 +259,7 @@ def _run_ssm_actions(
                 )
                 skipped.append(action)
 
-    return executed, skipped
+    return executed, skipped, verifications
 
 
 def _build_action_params(

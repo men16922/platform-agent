@@ -1,0 +1,24 @@
+=== ③ post-execution verification live E2E (2026-07-25T16:04:37Z) ===
+context: kind-platform-agent | scope: per-tenant kubeconfig (SA token, 1h)
+setup: deploy/good = healthy(2 replicas); deploy/bad = broken image + progressDeadlineSeconds=30
+       (so a restart DISPATCHES fine but never converges — the exact case that used
+        to be reported as resolved)
+
+=== HEALTHY workload: restart deployment/good ===
+  dispatch: OK
+  verify : passed=True detail=deployment "good" successfully rolled out
+  VERDICT: resolved=True dispatched=True verified=True (dispatched and verified)
+
+=== BROKEN workload: restart deployment/bad ===
+  dispatch: OK
+  verify : passed=False detail=Waiting for deployment "bad" rollout to finish: 1 old replicas are pending termination...
+  VERDICT: resolved=False dispatched=True verified=False (verification failed: ONPREM-RolloutRestartWorkload)
+
+BEFORE this change both rows would read resolved=True: the executor only knew the
+action had been dispatched, and inferred recovery from that. "verified" is now a
+separate, evidenced axis — a restart that dispatches cleanly and leaves the
+workload broken no longer counts as a resolved incident.
+
+Note: log-only mode (ONPREM_EXECUTOR_LIVE=false, the default) records NO
+verification at all. Nothing was executed, so a failed check there would turn
+"we chose not to act" into "we acted and it did not work".
