@@ -57,11 +57,11 @@
 
 ## Active Focus
 
-- **Phase 1b 핸드오프 = 사용자 1개 명령만 남음** — push로 `source-reachable` 블로커가 해소돼 프리플라이트
-  **4검사 전부 통과(SAFE TO PROCEED)**, 배선(범용 `argocd-app` 래퍼 차트 + `rollouts_demo_gitops_owned`
-  count 토글)도 완료. 남은 단계 `terraform state rm helm_release.rollouts_demo`가 **권한 정책에 차단**돼
-  사용자가 직접 실행해야 한다(순서 중요: state rm이 먼저, 안 그러면 apply가 helm uninstall을 한다).
-  그 뒤 `terraform apply -var rollouts_demo_gitops_owned=true`. stateful 3건(loki/tempo/pa)은 스냅샷 수단 선행.
+- **Phase 1b 핸드오프 = rollouts-demo 이관 완료(2026-07-26)** — TF는 Application 1개(소유 기록)만 보유, 워크로드는
+  ArgoCD 소유. helm rev 8 불변 · Rollout/Service UID 불변 · selfHeal 4→2→4 ~40s. 채택이 no-op이 아니었는데
+  원인은 핸드오프가 아니라 라이브 드리프트(`--type=merge`가 컨테이너 배열을 통째 교체해 ports/resources 소실)였고,
+  ArgoCD가 그걸 **복구**한 것 → 프리플라이트에 5번째 검사 `live-matches-rendered`(non-blocking) 추가.
+  **잔여**: loki/tempo/pa는 데이터 보유 → 스냅샷 수단 선행(kind엔 CSI 스냅샷터 부재).
 - **멀티테넌트/멀티클라우드 플랫폼 — Phase 0·1a·1b(어댑터+프리플라이트) 완료** — `docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5, S 93.5). Phase 1a로 **최우선 불변식(자격증명이 경계)이 코드 seam+라이브 RBAC로 강제됨**. Phase 1b = delivery 어댑터 2개(argocd+flux) + TF↔GitOps no-churn 핸드오프 + **순서 보장 이관**(sync-wave/dependsOn). ③ provider측 verify는 Phase 1a가 `incident_scope`를 이미 관통시켜 **차단 해소**.
 - **라이브 실증 완료(2026-07-26)**: ①canary auto-abort 양방향(~105s, stable 유지 / 정상 canary는 통과) · ②Tempo 트레이스(**5026ms 중 analyze 4136ms = MTTR의 82%가 로컬 LLM**) · ⑥kindnet ENFORCED + 테넌트 시맨틱(same=통과, cross=차단). 증거 `docs/evidence/onprem-{addons-rollouts-analysis,tracing-tempo,netpol-tenancy}-e2e.log`. ①⑥은 검증 후에도 기본 OFF(①=문서화된 수동 데모 보존, ⑥=대상 ns/라벨이 Phase 2 Capsule 산출물).
 - **완료(참고)**: On-Prem 애드온 스택 Phase 1~5(gate 870) · 대시보드 Qwen/상세뷰(gate 876) · GitAIOps 대조 갭 6건(gate 983).

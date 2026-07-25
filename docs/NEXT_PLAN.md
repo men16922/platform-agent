@@ -4,19 +4,17 @@
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(M9=eval·하드닝 스프린트+라이브 E2E, M8=레퍼런스 8/8) / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 현재 상태 (2026-07-26, gate 1159)
+## 현재 상태 (2026-07-26, gate 1168)
 
 **GitAIOps 대조 7/7 완료**(①②③④⑤⑥⑦) + **멀티테넌트 Phase 0·1a·1b 배선 완료**.
 ① 릴리스 게이트는 3종 판별(pass/fail/unknown)까지 라이브 실증, ⑥ PSS restricted·Cosign, ⑦ 스위퍼 CronJob.
-**다음 = Phase 1b 핸드오프 실행** — 사용자 `terraform state rm` 1개만 남음(아래 게이트).
+**Phase 1b 핸드오프 실행 완료**(rollouts-demo). **다음 = Phase 2**(Capsule+RBAC+대시보드 스위처).
 이전 마일스톤(M8 레퍼런스 8/8, M9 eval·하드닝) → `COMPLETED_SUMMARY.md`.
 
 ## 사용자 게이트
 
-- [ ] **(대기 중) `terraform state rm`** — Phase 1b 핸드오프의 마지막 단계. 에이전트가 권한 정책상 실행
-  못 함. `cd infra/onprem/addons && terraform state rm helm_release.rollouts_demo` → `terraform apply
-  -var rollouts_demo_gitops_owned=true`. **순서 필수**(state rm이 먼저, 안 그러면 apply가 helm uninstall).
-  롤백 `terraform import helm_release.rollouts_demo argo-rollouts/rollouts-demo`.
+- [x] ~~**`terraform state rm`**~~ — **완료(2026-07-26 사용자 실행)**. 이어서 apply까지 마쳐
+  rollouts-demo 소유권이 ArgoCD로 이관됨(`7033db3`). 다음 대상(loki/tempo/pa)은 **스냅샷 수단이 선행**.
 - [x] ~~**push 여부**~~ — **완료(2026-07-26 승인)**. `c7aba29..5015810` 반영, ArgoCD가 자동 동기화해
   24커밋치 차트 변경을 무중단 채택(Synced/Healthy 유지). 이로써 핸드오프의 `source-reachable` 블로커 해소.
 - [x] ~~**테크 아티클 배포(LinkedIn/Medium)**~~ — **발행 완료(2026-07-25 사용자 확인)**. 원고·LinkedIn 컷·편집
@@ -38,7 +36,7 @@ ArgoCD GitOps·kube-prometheus-stack·Argo Rollouts·Loki/Fluent Bit + k3s 기�
 상세·라이브 증거: `docs/plans/2026-07-20-onprem-platform-addons.md` · `docs/evidence/onprem-addons-*.log` ·
 `docs/archive/progress-2026-07.md`. Gateway API는 소비처 부재로 **의도적 보류**(실 외부 노출 요구 생기면 재개).
 
-## 진행 중 — 멀티테넌트/멀티-클라우드 플랫폼 + per-env Add-on (설계 v5 = S 93.5, Phase 0·1a 완료)
+## 진행 중 — 멀티테넌트/멀티-클라우드 플랫폼 + per-env Add-on (설계 v5 = S 93.5, Phase 0·1a·1b 완료)
 
 사용자 방향: on-prem이라도 여러 env에 동시 배포, env마다 add-on·격리·GitOps엔진 상이(어느 클라우드든 동일).
 **설계 문서**: `docs/plans/2026-07-21-multi-tenant-env-addons.md` (v5) · **의사결정·MAD 히스토리**: `docs/plans/2026-07-21-multi-tenant-env-addons-mad-history.md`. **등급 확정 파이프라인**: 원칙-아키텍트
@@ -55,7 +53,7 @@ rubric(8기준) → **MAD(Advocate/Critic, Judge)** 수렴 A+(92) → **평가 �
   **라이브 DoD 통과**(`docs/evidence/phase1a-credential-isolation.log`): acme→acme 실행 성공 / acme→globex
   거부 / **advisory 가드를 끄면 API 서버가 `Forbidden`**(자격증명이 경계임을 RBAC로 증명) / 위조 tenant 발급
   거부 / scope 없는 live 거부. 잔여(2차): agent→hub push 인증 · 서명키 custody·rotation · push heartbeat.
-- [~] **Phase 1b** — **어댑터 2개 + 순서 보장 + 핸드오프 프리플라이트 완료(`738c812`·`e48c5f6`, gate 1079)**: `argocd`/`flux`가
+- [x] ~~**Phase 1b**~~ — **어댑터 2개 + 순서 보장 + 핸드오프 프리플라이트 완료(`738c812`·`e48c5f6`, gate 1079)**: `argocd`/`flux`가
   계약의 세 압박점(순서 원시형·상태 어휘·객체 형태)을 각자 방식으로 만족. wave→`sync-wave`(문자열) /
   `dependsOn`(객체 참조)로 **TF `depends_on` 대체물** 확보. render 결정론·tenant 접두사·라벨 질의성·
   Flux `releaseName` 안정을 가드로 고정. **프리플라이트**(`scripts/preflight_gitops_handoff.py`)가
@@ -64,9 +62,11 @@ rubric(8기준) → **MAD(Advocate/Critic, Judge)** 수렴 A+(92) → **평가 �
   (a) loki/tempo/pa가 데이터 보유 → **스냅샷 수단 선행**(kind엔 CSI 스냅샷터 기본 부재),
   (b) 로컬이 origin ahead → 지금 채택하면 **옛 차트 내용**이 적용됨(push는 사용자 게이트).
   `rollouts-demo`가 데이터 위험 0이라 push 후 첫 대상. 증거 `docs/evidence/gitops-handoff-preflight.log`.
-  **갱신(2026-07-26)**: push로 (b) 해소 → 프리플라이트 **4검사 전부 통과(SAFE TO PROCEED)**. 배선도 완료 —
-  범용 `argocd-app` 래퍼 차트(adopt 대상이라 `cascadeDelete=false`: 소유 기록 삭제가 워크로드를 지우면 안 됨)
-  + `rollouts_demo_gitops_owned` count 토글(두 소유자 방지). **남은 건 사용자 `terraform state rm` 1개**.
+  **실행 완료(2026-07-26, `7033db3`)**: `state rm` → `apply -var rollouts_demo_gitops_owned=true`
+  (plan = 1 to add, **0 to destroy**). TF는 Application 1개(소유 기록)만 보유, 워크로드는 ArgoCD.
+  helm rev 8 불변 · Rollout/Service UID 불변 · selfHeal 4→2→4 ~40s. **채택이 no-op이 아니었는데** 원인은
+  핸드오프가 아니라 라이브 드리프트였고(`--type=merge`가 컨테이너 배열을 통째 교체 → ports/resources 소실),
+  ArgoCD가 그걸 **복구**한 것 → 프리플라이트에 5번째 검사 `live-matches-rendered`(non-blocking) 추가.
 - [ ] **Phase 2**: Capsule(soft)+RBAC + 대시보드 tenant/env 스위처 + 라이브 상태 폴러(2축 drift).
 - [ ] Phase 3(인가 강화)·4(managed 어댑터, billable)·5(레지스트리 PR 쓰기) = 후속.
 - **S 달성(93.5)** = ①실행위치=in-cluster 러너 ②token broker=incident provenance 바인딩 ③read=push(허브 read 자격증명 0). Phase 1a 진입 시 명시할 2차 잔여: agent→hub push 인증·승인레코드 one-time nonce·push heartbeat(staleness).

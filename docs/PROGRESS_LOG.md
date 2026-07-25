@@ -7,6 +7,30 @@
 
 ---
 
+## 2026-07-26 — Phase 1b 핸드오프 실행 + 프리플라이트 5번째 검사 (gate 1159→1168)
+
+- Status: 사용자가 `terraform state rm`을 실행해 마지막 블로커가 풀렸고, rollouts-demo 소유권을
+  **Terraform → ArgoCD로 이관 완료**. 그 과정에서 프리플라이트의 실제 갭이 드러나 검사 1개를 추가.
+- Changed(`7033db3`): `check_live_matches_rendered` + `diff_live_against_rendered`(단방향 비교 —
+  라이브의 추가 필드는 서버 기본값이고, 엔진 자신의 `tracking-id`는 제외. 매번 발화하는 체커는 무시당한다) +
+  스크립트가 `helm get manifest`와 라이브 객체를 대조해 drift를 수집.
+- Verified: `make check` **1168**(+9). 라이브 — plan `1 to add, 0 to change, **0 to destroy**`(helm uninstall
+  없음) · ArgoCD **Synced/Healthy** · TF 소유는 `rollouts_demo_app[0]`(소유 기록)뿐 · **helm rev 8 불변**
+  (baseline 검사가 요구한 그것) · **Rollout/Service UID·clusterIP 불변**(재생성 아님) · **selfHeal 4→2→4 ~40s**.
+- Blockers: loki/tempo/pa는 데이터 보유 → **스냅샷 수단 선행**(kind엔 CSI 스냅샷터 부재). 미이관.
+- 품질 메모: **4검사가 다 통과했는데 채택이 no-op이 아니었다** — canary가 돌고 새 RS가 생겼다. 파보니
+  핸드오프 잘못이 아니라 라이브 Rollout이 `ports`·`resources.requests`를 잃은 상태였고 ArgoCD가 그걸
+  **복구**한 것. 범인은 이 세션의 내 `kubectl patch --type=merge` — JSON merge patch라 **배열을 통째
+  교체**해서 name+image만 남기고 나머지를 날린다(strategic merge였다면 name 키로 병합). 티도 안 났다:
+  readinessProbe가 없어 파드는 Ready였고 Service의 `targetPort: http`는 해석 대상이 없었다.
+  새 검사를 **non-blocking**으로 둔 이유 — 채택은 어차피 매니페스트를 다시 주장하므로 드리프트 자체는
+  위험하지 않다. 위험한 건 예상 못 한 churn이 "핸드오프가 망가뜨렸다"로 읽혀 롤백을 부르는 것.
+  라이브 시연을 시도했더니 몇 초 만에 드리프트가 사라졌는데, 그건 검사 실패가 아니라 **selfHeal이 먼저
+  고친 것**(= 채택 성공의 증거). 검사가 의미 있는 시점은 프리플라이트를 실제로 도는 상태(TF 소유,
+  연속 조정 없음)라 유닛 가드로 고정했다. 증거 `docs/evidence/gitops-handoff-preflight.log`.
+- Next: Phase 2(Capsule+RBAC+대시보드 tenant/env 스위처+2축 drift 폴러) 또는 capability step 런북을
+  executor가 실제 소비. `/tidy-docs` 시점(LOG 예산 초과).
+
 ## 2026-07-26 — ① 게이트 완결(3종 판별) + ⑥ PSS/Cosign + ⑦ 스위퍼 CronJob (gate 1114→1159)
 
 - Status: 승인받은 잔여 4건을 한 세션에 소진. **origin push 완료**(4커밋, `5015810`). ①은 "막는다"만
