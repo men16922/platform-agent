@@ -41,10 +41,32 @@ rubric(8기준) → **MAD(Advocate/Critic, Judge)** 수렴 A+(92) → **평가 �
 - [ ] **Phase 0**: `platform/` 레지스트리 스키마(파티션) + 로더(py/ts) + 어댑터 계약 + NormalizedAddonStatus(2축) 타입.
 - [ ] **Phase 1a**: 실행 자격증명 격리(최소 증명) — `_run_external_action→run_onprem_action` scope 관통, ambient 삭제,
   인시던트당 단기 토큰, 크로스테넌트 액션 Forbidden 라이브 증명. (S 잔여: broker 인가·kubectl 실행위치 결정)
-- [ ] **Phase 1b**: Delivery 어댑터 2개 실제(argocd+flux) + TF↔GitOps no-churn 핸드오프.
+- [ ] **Phase 1b**: Delivery 어댑터 2개 실제(argocd+flux) + TF↔GitOps no-churn 핸드오프 + **순서 보장 이관**
+  (핸드오프로 사라지는 TF `depends_on`의 대체 = ArgoCD `sync-wave` / Flux `dependsOn`, 2026-07-25 추가).
 - [ ] **Phase 2**: Capsule(soft)+RBAC + 대시보드 tenant/env 스위처 + 라이브 상태 폴러(2축 drift).
 - [ ] Phase 3(인가 강화)·4(managed 어댑터, billable)·5(레지스트리 PR 쓰기) = 후속.
 - **S 달성(93.5)** = ①실행위치=in-cluster 러너 ②token broker=incident provenance 바인딩 ③read=push(허브 read 자격증명 0). Phase 1a 진입 시 명시할 2차 잔여: agent→hub push 인증·승인레코드 one-time nonce·push heartbeat(staleness).
+
+## 신규 백로그 — GitAIOps 실습서 대조 후속 (2026-07-25 시드)
+
+상세·근거·안티패턴: `docs/reference/gitaiops-notiflex-book.md`. 멀티테넌트 Phase 0과 **독립**이라 끼워넣기 가능.
+
+- [ ] **① Rollouts AnalysisTemplate** — 데모 canary의 무기한 수동 pause를 메트릭 자동판정으로. 1단계=Prometheus
+  provider(에러율 임계 abort), 2단계=`web` provider가 **platform-agent decision 엔드포인트**를 호출해 LLM
+  confidence를 canary 게이트로(D19 층 유지: 러너 무변경, Rollouts가 에이전트를 판정자로 소비). 라이브 $0 kind.
+- [ ] **② OTel → Tempo (대상=우리 4-step 파이프라인)** — `tracing.tf`(grafana/tempo 단일바이너리 + kps grafana
+  데이터소스, `logging.tf`와 동형) + detect/analyze(LLM 백엔드 속성)/decide/execute span. 기존 `trace_id`를
+  OTel TraceID와 정렬 → 인시던트 상세에서 Tempo 딥링크. "39초가 어디서 쓰였나"를 측정 가능하게.
+- [ ] **③ 런북 precheck/verify** — `RunbookStep`(`capability_schema.py`)에 사후검증 슬롯. 현재 `condition`/
+  `on_failure`/`timeout_sec`만 있어 executor가 "실행됨"까지만 알고 "나아졌나"를 모름(D17 `resolved` 시맨틱의
+  구조적 귀결). 검증 capability를 돌려 `resolved`를 증거 기반으로. 클러스터 불요.
+- [ ] **④ 권한 통제 3단 분리** — `settings.local.json`의 `gcloud:*`/`aws:*`/`az:*` 포괄 allow를 조회 동사만
+  allow로 축소하고 billable 생성/삭제는 승인 경유. **D16이 못박은 "billable=사용자 게이트"를 로컬 설정이
+  우회하던 상태 차단**(06-24 ~9h GKE 방치의 경로). 오버나이트 루프 read-only가 막히지 않게 조회 동사 먼저 확보.
+- [ ] **⑥ NetworkPolicy + PSS restricted** (승인 필요) — soft 티어의 data-plane non-guarantee 좁히기.
+  **선행**: 기판 CNI가 NetworkPolicy를 실제 집행하는지 실측(미집행 CNI에 정책만 올리면 거짓 격리 신호).
+- [ ] **⑦ TTL 스위퍼 CronJob** (승인 필요) — 로컬 워치독이 못 지키는 케이스(머신 자체 사망) 보완. 라벨/생성시각
+  기준 TTL 초과 클라우드 리소스 **신고**(삭제는 승인 게이트).
 
 ## 리팩토링 후속 — 완료(2026-07-20, `8792c9c`, gate 854 유지)
 

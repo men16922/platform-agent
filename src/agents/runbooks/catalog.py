@@ -88,6 +88,11 @@ CAPABILITY_RUNBOOKS: dict[str, dict[str, Any]] = {
                 "description": "Restart the OOMKilled pod with grace period",
                 "parameters": {"grace_period_sec": 30},
                 "on_failure": "continue",
+                "verify": {
+                    "capability": "assert_workload_ready",
+                    "description": "Restarted workload reaches Ready before we call it recovered",
+                    "parameters": {"timeout_sec": 120},
+                },
             },
             {
                 "name": "scale_nodes",
@@ -96,6 +101,11 @@ CAPABILITY_RUNBOOKS: dict[str, dict[str, Any]] = {
                 "condition": {"previous_step_failed": True},
                 "parameters": {"increment": 1, "max_nodes": 10},
                 "on_failure": "abort",
+                "verify": {
+                    "capability": "assert_replica_count",
+                    "description": "Node group actually reports the higher desired count",
+                    "parameters": {"timeout_sec": 300},
+                },
             },
         ],
     },
@@ -111,6 +121,11 @@ CAPABILITY_RUNBOOKS: dict[str, dict[str, Any]] = {
                 "description": "Bump reserved concurrency by increment",
                 "parameters": {"increment": 50, "max_concurrency": 1000},
                 "on_failure": "abort",
+                "verify": {
+                    "capability": "assert_concurrency_applied",
+                    "description": "Reserved concurrency read-back matches the requested bump",
+                    "parameters": {"timeout_sec": 60},
+                },
             },
         ],
     },
@@ -210,6 +225,11 @@ CAPABILITY_RUNBOOKS: dict[str, dict[str, Any]] = {
                 "description": "Restart unhealthy workload instances",
                 "parameters": {"grace_period_sec": 15},
                 "on_failure": "continue",
+                "verify": {
+                    "capability": "assert_health_check_passing",
+                    "description": "Health check must pass after the restart, not merely be dispatched",
+                    "parameters": {"timeout_sec": 180},
+                },
             },
             {
                 "name": "rollback",

@@ -308,8 +308,16 @@ drifted, health=degraded}`. AMP → `{sync=n/a, applicable=false, health=healthy
   - **Delivery 어댑터 2개 실제**(Flux 스텁 금지): 레지스트리→(ApplicationSet | Flux Kustomization+HelmRelease)
     env×addon 팬아웃.
   - **TF↔GitOps no-churn 핸드오프**(state rm + 라벨/오너십 annotation 매칭 채택 + PVC 스냅샷 + import 롤백) 라이브 검증.
+  - **⚠️ 순서 보장 메커니즘 이관**(2026-07-25 추가, 출처 `docs/reference/gitaiops-notiflex-book.md` 갭 ⑥):
+    현재 애드온 설치 순서는 **Terraform `depends_on`** 이 보장한다(fluent-bit→loki, rollouts-demo→controller,
+    gitops→argocd). `state rm`으로 소유권을 GitOps에 넘기면 **그 보장이 함께 사라진다** — 원안은 팬아웃만
+    명시하고 순서 메커니즘이 공백이었다. 대체물을 어댑터별로 1급 명시한다:
+    **ArgoCD = `argocd.argoproj.io/sync-wave`**(0=CRD/네임스페이스, 1=플랫폼 add-on, 2=워크로드),
+    **Flux = `spec.dependsOn`**(Kustomization/HelmRelease). 레지스트리 카탈로그의 능력별 `wave` 필드를
+    두 어댑터가 각자 시맨틱으로 렌더한다(no-churn 채택과 독립 축).
   - DoD(라이브 $0): kind"dev"(argocd, add-on 전체) vs k3s"prod"(**flux**, 부분집합) 각각 정확히 sync·Healthy;
-    핸드오프 시 add-on revision 무증가(no-churn).
+    핸드오프 시 add-on revision 무증가(no-churn); **CRD 의존 리소스가 CRD보다 먼저 sync되어 실패하지 않음**
+    (빈 클러스터에서 처음부터 재조정해 순서 보장을 실증 — `depends_on` 없이도 동일 결과).
 - **Phase 2 — Tenancy + Dashboard read model** (3~4세션): Capsule(soft)+per-tenant Role/RoleBinding +
   ResourceQuota/LimitRange + 대시보드 tenant/env 스위처 + **push 기반 상태 수집**(in-cluster agent→컨트롤플레인,
   허브 스포크 자격증명 0개; 정규화 read model, 2축 drift) +

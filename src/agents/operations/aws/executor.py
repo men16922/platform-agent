@@ -27,6 +27,7 @@ from src.agents.models import (
     ExecutorOutput, NormalizedIncident, RemediationMode, Severity
 )
 from src.agents.operations.activity_writer import record_agent_activity
+from src.agents.runbooks.capability_schema import resolution_verdict
 
 logger = structlog.get_logger(__name__)
 
@@ -67,7 +68,13 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         skipped = decision.actions
         log.info("executor.manual_mode", skipped=skipped)
 
-    resolved = bool(executed) and not skipped
+    # Resolution goes through the shared verdict so the "dispatched" axis and the
+    # (future) verification axis have one definition. No verifications are wired
+    # into this path yet, so the verdict is identical to the historical rule
+    # `bool(executed) and not skipped` — and `verified` reports None ("unknown")
+    # rather than silently claiming the recovery was proven.
+    verdict  = resolution_verdict(executed, skipped)
+    resolved = verdict.resolved
 
     slack_ts = _post_slack_report(
         incident_id=incident_id,
