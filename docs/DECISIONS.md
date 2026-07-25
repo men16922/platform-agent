@@ -1,6 +1,6 @@
 # DECISIONS — platform-agent
 
-최종 갱신: 2026-07-21
+최종 갱신: 2026-07-26
 
 > 되돌리기 어려운 결정만. 형식: **Decision / Reason / Impact**. 최신이 위.
 
@@ -9,6 +9,30 @@
 > - **GitAIOps 실습서(Notiflex)** (외부 학습 레포) — Rollouts **AnalysisTemplate 메트릭 자동판정**(우리 무기한 pause 게이트의 미완점) · **OTel→Tempo로 4-step 파이프라인 자체 트레이싱** · 런북 **사전확인/사후검증 3단**(우리 `RunbookStep`엔 없음) · **allow/ask/deny 권한통제** · **Sync Wave**. 안티패턴=Kafka·멀티 노드풀·GKE 종속 시크릿·`--dangerously-skip-permissions`. 상세 → `docs/reference/gitaiops-notiflex-book.md`. (검토 2026-07-25)
 
 ---
+
+## D24 — 릴리스 게이트는 호출자의 **주장**이 아니라 **신원**을 받고, 신호는 스스로 관측한다
+
+- **Decision / Reason:** canary AnalysisTemplate이 `CanaryUnderJudgement` firing 알럿을 **합성**해
+  보내던 것을 폐기하고, `{"canary":{namespace, podPrefix}}`만 보낸 뒤 게이트가 Alertmanager를 직접
+  조회한다. 합성 알럿은 그 자체가 "문제가 있다"는 주장이라 analyzer가 당연히 문제를 찾았고(라이브에서
+  정상 canary가 confidence 0.80으로 `fail`), 판정 규칙 "신호 없음 → pass"가 **도달 불가능**이었다.
+  게이트가 판정할 신호를 자기가 만들고 있었다.
+- **Impact:** `None`(알럿 소스 없음/도달 불가)과 `[]`(봤는데 조용함)을 엄격히 구분 — 전자는 `unknown`
+  (차단), 후자만 `pass`. **관측 안 된 canary는 조용한 canary가 아니다.** 더불어 게이트는 자기가 읽는
+  알럿보다 빠를 수 없으므로, 차트가 canary 시간 스케일 룰(`for: 30s`)을 동봉한다 — kps 기본 파드 룰은
+  `for: 15m`이라 2~3분 사는 canary엔 영영 발화하지 않아 크래시 중인 canary도 통과시킨다.
+
+## D23 — 파드 보안은 **기본 ON**, 공급망 서명은 **다이제스트** 기준
+
+- **Decision / Reason:** PSS `restricted`(runAsNonRoot·seccomp·capabilities drop)를 차트 기본값으로
+  켠다. 다른 옵트인들과 달리 여기서 OFF는 중립이 아니라, 네임스페이스에 `enforce: restricted` 라벨이
+  붙는 순간 롤아웃이 거부되기 시작하는 상태다(= 원인과 증상이 멀어지는 실패). 이를 위해 이미지도
+  `USER 10001`로 바꿨다 — 차트가 runAsUser로 덮어써서 맞추는 건 이미지가 규격을 못 지킨다는 뜻이다.
+- **Impact:** 차트 `securityContext.runAsUser`와 Dockerfile `USER`가 어긋나면 런타임(PVC 쓰기)에서만
+  드러나므로 가드로 고정. Cosign 서명은 **태그가 아니라 다이제스트**에 붙는다(라이브로 확인: 같은
+  다이제스트의 미서명 태그도 통과, 다른 이미지를 같은 태그로 밀면 실패) → 차트 `image.digest`가 태그보다
+  우선한다. **어드미션 집행은 도입하지 않음** — policy controller는 새 클러스터 의존성이고, 지금 있는
+  것은 CI/사람용 검증 게이트일 뿐임을 문서에 명시(보증을 과대 해석하지 않기 위해).
 
 ## D22 — billable 클라우드 명령은 권한 3단으로 게이팅 + 과금 가드는 2중(로컬 TTL 워치독 ⊕ 인벤토리 스위퍼)
 

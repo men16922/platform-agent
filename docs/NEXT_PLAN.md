@@ -4,16 +4,21 @@
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(M9=eval·하드닝 스프린트+라이브 E2E, M8=레퍼런스 8/8) / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 현재 상태 (2026-07-26, gate 1017)
+## 현재 상태 (2026-07-26, gate 1159)
 
-**멀티테넌트 플랫폼 Phase 0·1a 완료** — 최우선 불변식(자격증명이 경계)이 코드 seam + 라이브 RBAC로 강제됨.
-GitAIOps 대조 갭 6건 소진 + 라이브 실증 3건 + 런북 전량 무력화 Decimal 결함 근본수정.
-**다음 = Phase 1b**(delivery 어댑터 2개 · 순서 보장 이관 · no-churn 핸드오프).
+**GitAIOps 대조 7/7 완료**(①②③④⑤⑥⑦) + **멀티테넌트 Phase 0·1a·1b 배선 완료**.
+① 릴리스 게이트는 3종 판별(pass/fail/unknown)까지 라이브 실증, ⑥ PSS restricted·Cosign, ⑦ 스위퍼 CronJob.
+**다음 = Phase 1b 핸드오프 실행** — 사용자 `terraform state rm` 1개만 남음(아래 게이트).
 이전 마일스톤(M8 레퍼런스 8/8, M9 eval·하드닝) → `COMPLETED_SUMMARY.md`.
 
 ## 사용자 게이트
 
-- [ ] **push 여부** — 로컬 main이 origin 대비 ahead(Slack E2E~tidy 커밋들). 승인 시 `git push`.
+- [ ] **(대기 중) `terraform state rm`** — Phase 1b 핸드오프의 마지막 단계. 에이전트가 권한 정책상 실행
+  못 함. `cd infra/onprem/addons && terraform state rm helm_release.rollouts_demo` → `terraform apply
+  -var rollouts_demo_gitops_owned=true`. **순서 필수**(state rm이 먼저, 안 그러면 apply가 helm uninstall).
+  롤백 `terraform import helm_release.rollouts_demo argo-rollouts/rollouts-demo`.
+- [x] ~~**push 여부**~~ — **완료(2026-07-26 승인)**. `c7aba29..5015810` 반영, ArgoCD가 자동 동기화해
+  24커밋치 차트 변경을 무중단 채택(Synced/Healthy 유지). 이로써 핸드오프의 `source-reachable` 블로커 해소.
 - [x] ~~**테크 아티클 배포(LinkedIn/Medium)**~~ — **발행 완료(2026-07-25 사용자 확인)**. 원고·LinkedIn 컷·편집
   영상은 발행 후 `docs/post/`에서 제거(git 이력에 잔존, 필요 시 `git show <sha>:docs/post/…`로 복구).
   미추적 원본 녹화 `docs/post/local-onprem.mov`(22MB, gitignore)는 재편집 마스터로 **보존**.
@@ -59,28 +64,39 @@ rubric(8기준) → **MAD(Advocate/Critic, Judge)** 수렴 A+(92) → **평가 �
   (a) loki/tempo/pa가 데이터 보유 → **스냅샷 수단 선행**(kind엔 CSI 스냅샷터 기본 부재),
   (b) 로컬이 origin ahead → 지금 채택하면 **옛 차트 내용**이 적용됨(push는 사용자 게이트).
   `rollouts-demo`가 데이터 위험 0이라 push 후 첫 대상. 증거 `docs/evidence/gitops-handoff-preflight.log`.
+  **갱신(2026-07-26)**: push로 (b) 해소 → 프리플라이트 **4검사 전부 통과(SAFE TO PROCEED)**. 배선도 완료 —
+  범용 `argocd-app` 래퍼 차트(adopt 대상이라 `cascadeDelete=false`: 소유 기록 삭제가 워크로드를 지우면 안 됨)
+  + `rollouts_demo_gitops_owned` count 토글(두 소유자 방지). **남은 건 사용자 `terraform state rm` 1개**.
 - [ ] **Phase 2**: Capsule(soft)+RBAC + 대시보드 tenant/env 스위처 + 라이브 상태 폴러(2축 drift).
 - [ ] Phase 3(인가 강화)·4(managed 어댑터, billable)·5(레지스트리 PR 쓰기) = 후속.
 - **S 달성(93.5)** = ①실행위치=in-cluster 러너 ②token broker=incident provenance 바인딩 ③read=push(허브 read 자격증명 0). Phase 1a 진입 시 명시할 2차 잔여: agent→hub push 인증·승인레코드 one-time nonce·push heartbeat(staleness).
 
-## GitAIOps 실습서 대조 후속 — 6/7 완료, 잔여만 (근거: `docs/reference/gitaiops-notiflex-book.md`)
+## GitAIOps 실습서 대조 후속 — **7/7 완료** (근거: `docs/reference/gitaiops-notiflex-book.md`)
 
-**완료**: ①Rollouts AnalysisTemplate(라이브 양방향, `b07523b`) · ②OTel→Tempo(MTTR의 82%가 로컬 LLM 추론) ·
-③런북 사후검증(provider 실행부까지, `d68fe6b`) · ④권한 통제 3단(비커밋 개인 스코프) · ⑤Sync Wave(Phase 1b로
-흡수, `738c812`) · ⑥NetworkPolicy 집행·시맨틱 실증 · ⑦고아 클러스터 스위퍼. 증거 `docs/evidence/*`.
+**완료**: ①Rollouts AnalysisTemplate + **에이전트 릴리스 게이트 3종 판별**(`5015810`) · ②OTel→Tempo(MTTR의
+82%가 로컬 LLM 추론) · ③런북 사후검증(provider 실행부까지, `d68fe6b`) · ④권한 통제 3단(비커밋 개인 스코프) ·
+⑤Sync Wave(Phase 1b로 흡수, `738c812`) · ⑥NetworkPolicy + **PSS restricted·Cosign**(`d96b888`) ·
+⑦고아 클러스터 스위퍼 + **CronJob·coverage 정직성**(`d96b888`). 증거 `docs/evidence/*`.
 
-- [~] **① 2단계** — **코드·차트·테스트 완료(2026-07-26, `b9eafb0`, gate 1114)**: `canary_judge` +
-  `POST /canary/judge` + `web` provider 템플릿. 판정 3규칙 전부 안전한 방향 기본값(저신뢰→unknown이 P1보다
-  우선, unknown은 승격 안 됨), 게이트는 **분석만**(execute=False). 인클러스터 엔드포인트 200 실증.
-  **잔여**: canary 전체 E2E(AnalysisRun→abort). 주의 — 인클러스터 analyzer에 모델이 없어 현재 모든 판정이
-  `unknown`이라 **pass 경로 라이브 확인엔 클러스터 도달 가능한 LLM 엔드포인트가 필요**.
+- [x] ~~**① 2단계**~~ — **완료(2026-07-26, `8e549bf`~`5015810`, gate 1159)**: TF 변수로 노출 + **3종 판별
+  라이브**(정상→`pass`x3 abort 없음 / 크래시→`pass→fail→fail` **165s auto-abort**, stable 4/4·Available=True
+  내내 / 관측 불가→`unknown` 차단). pass 경로를 여는 과정에서 **연쇄 결함 3건** 근본수정: (a) `llm.endpoint`를
+  router만 소비해 webhook이 모델 위치를 못 받던 것(모델 부재가 아니라 배선 부재), (b) 템플릿이 firing 알럿을
+  **합성**해 보내 정상 canary가 conf 0.80으로 `fail`이던 것 → 호출자는 **신원만**, 게이트가 Alertmanager를
+  직접 조회(`None`=못 봄 ≠ `[]`=조용함), (c) kps 룰이 `for: 15m`이라 canary 수명 내 발화가 없어 크래시
+  canary도 pass이던 것 → canary 시간 스케일 룰 동봉. 기본 OFF 유지(수동 데모 보존).
 - [x] ~~**② 잔여 — Tempo 딥링크**~~ — **완료(2026-07-26, `90a92ba`, gate 1095)**: `trace_id`를 파이프라인→
   레코드→대시보드까지 관통, 상세 페이지에서 Grafana Explore로 딥링크. prod-safe(`stack-links` 규칙:
   미설정이면 **링크 없음** — 죽은 링크는 "트레이싱 꺼짐"을 "트레이스 없음"으로 오독시킴).
   라이브: record trace_id로 Tempo 200 + span 4개.
   - [ ] 잔여(선택): executor span(현재 parking 경로만 실증 — 승인 후 실행 경로는 미측정).
-- [ ] **⑥ 잔여(승인 필요)**: PSS `restricted` · 이미지 서명(Cosign). 차트 자체는 Phase 2(Capsule이 대상
-  namespace·tenant 라벨을 만듦)에서 켠다. k3s(flannel)는 집행이 전이되지 않으므로 검증기 재실행 필요.
+- [x] ~~**⑥ 잔여**~~ — **완료(2026-07-26, `d96b888`)**: PSS `restricted`가 3 워크로드 공통(기본 ON —
+  여기서 OFF는 중립이 아니라 "나중에 라벨이 붙는 순간 깨지는 상태"). 이미지가 root였고 `scripts/`가 아예
+  없어 **Dockerfile 변경이 선행**이었다(`USER 10001`). 라이브 양방향 + PVC 조합 확인. Cosign은 검증
+  게이트(`scripts/verify_image_signature.py`, 0/1/2) + 차트 `image.digest` — 라이브가 대조군을 정정했다:
+  서명은 **태그가 아니라 다이제스트**에 붙는다. **어드미션 집행은 미도입**(policy controller = 새 클러스터
+  의존성, Phase 2 네임스페이스 작업과 함께) — 증거·STATUS에 한계 명시.
+  - [ ] 잔여(선택): k3s(flannel)는 NetworkPolicy 집행이 전이되지 않으므로 ⑥ 검증기 재실행 필요.
 
 ## 신규 백로그 — 라이브 실행이 표면화한 별도 결함 (2026-07-26)
 
@@ -92,8 +108,11 @@ rubric(8기준) → **MAD(Advocate/Critic, Judge)** 수렴 A+(92) → **평가 �
   `docs/evidence/runbook-decimal-rto-fix.log`(1/5 → **5/5** 유효, generic-recovery → **eks-pod-oom**).
 - [ ] **(잔여) capability step 런북을 executor가 실제로 사용** — `capability_schema.py`(steps·`verify`)는 아직
   테스트만 소비하고 executor는 flat `actions`를 돈다. ③의 provider측 verify 실행부와 같은 작업.
-- [ ] **⑦ TTL 스위퍼 CronJob** (승인 필요) — 로컬 워치독이 못 지키는 케이스(머신 자체 사망) 보완. 라벨/생성시각
-  기준 TTL 초과 클라우드 리소스 **신고**(삭제는 승인 게이트).
+- [x] ~~**⑦ TTL 스위퍼 CronJob**~~ — **완료(2026-07-26, `d96b888`)**. 차트에 기본 OFF·report-only CronJob
+  (넘길 `--delete` 플래그 자체가 없음, D5). **핵심은 CronJob이 아니라 그 전에 발견한 결함**: `_run_json`이
+  CLI 실패를 None으로 삼켜 gcloud 부재가 **`clean` + exit 0**이 됐다 — 컨테이너에서 돌리면 영원히 녹색인데
+  한 번도 안 본 것. `ProviderUnavailable` + **exit 2(coverage incomplete)** 로 수정, 컨테이너 안에서 실증.
+  list 성공 후 describe 실패 시 클러스터를 버리지 않고 생성시각 unknown으로 남기는 것도 같이 고침.
 
 ## 유지 규약 (완료된 리팩토링에서 나온 "하지 말 것")
 

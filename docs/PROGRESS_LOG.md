@@ -7,6 +7,43 @@
 
 ---
 
+## 2026-07-26 — ① 게이트 완결(3종 판별) + ⑥ PSS/Cosign + ⑦ 스위퍼 CronJob (gate 1114→1159)
+
+- Status: 승인받은 잔여 4건을 한 세션에 소진. **origin push 완료**(4커밋, `5015810`). ①은 "막는다"만
+  증명된 상태였는데, pass 경로를 여는 과정에서 **연쇄 결함 3건**이 드러나 전부 근본수정 → 이제 게이트가
+  실제로 **가려낸다**. 각 결함은 앞 결함을 고쳐야 보이는 종류라 순서대로 기록(증거 로그가 그 순서를 보존).
+- Changed(`8e549bf`): stage 2를 addons 모듈 변수로 노출(`rollouts_demo_agent_analysis_enabled`/`_url`).
+  차트 값만 있고 TF 배선이 없어 `helm --set`이 유일한 경로였고 그건 state 밖 드리프트였다.
+  (`d96b888`): **analyzer 모델 배선** — `llm.endpoint`를 router(기본 OFF)만 소비하고 webhook은 못 받아
+  조용히 휴리스틱 폴백(confidence 0.0=모든 판정 unknown)이던 것. **⑦ 스위퍼 정직성** — `_run_json`이
+  실패를 None으로 삼켜 CLI 부재가 "clean(exit 0)"이 되던 것 → `ProviderUnavailable`+**exit 2**.
+  **⑥ PSS** — Dockerfile `USER 10001`+`scripts/` COPY(없어서 CronJob이 깨질 뻔) + 3 워크로드 공통
+  securityContext. **⑥ Cosign** — `verify_image_signature.py`(0/1/2) + 차트 `image.digest`.
+  (`69f149d`): **게이트가 판정할 신호를 스스로 만들던 문제** — 템플릿이 `CanaryUnderJudgement` firing
+  알럿을 **합성**해 보내 analyzer가 당연히 문제를 찾음(정상 canary가 conf 0.80으로 `fail`).
+  호출자는 **신원만**(namespace+podPrefix), 게이트가 Alertmanager를 직접 조회. `None`(못 봄)과
+  `[]`(봤는데 조용함)을 엄격히 분리. (`5015810`): **알럿 시간 스케일** — kps 파드 룰이 `for: 15m`이라
+  2~3분짜리 canary엔 영영 발화 안 함 → 크래시 canary도 pass. 차트가 `CanaryPodRestarting`(for 30s,
+  interval 15s, ns 한정, warning) 동봉. Chart.yaml 0.2.0(helm provider는 파일이 아니라 메타데이터를 diff).
+- Verified: `make check` **1114 → 1118 → 1146 → 1159**(+45). `terraform validate` Success · `helm template` ·
+  `helm lint`. **라이브(kind, $0)** — ① 3종 판별: 정상 canary `pass`x3 → abort 안 됨(수동 게이트 대기) /
+  크래시 canary `pass→fail→fail` → **165s auto-abort**, stable 4/4·Available=True 내내 / 관측 불가 →
+  `unknown` 차단. 판정자 독립 스위치(stage1 OFF일 때 템플릿 1개만 설치)도 확인.
+  **⑥ 양방향**: 비준수 설치 → API 서버가 4개 위반 적시하며 `forbidden`(Replicas 0/1) / 준수 설치 →
+  Running `uid=10001(app)`; PVC 조합 별도 확인(WRITE OK). **⑥ Cosign**: 서명→VERIFIED / 다른 이미지를
+  같은 repo:tag → `no signatures found`. **⑦**: 컨테이너 안에서 `COVERAGE INCOMPLETE … exit 2`.
+  증거 `docs/evidence/onprem-{canary-agent-gate,pss-restricted-and-sweeper}-e2e.log`.
+- Blockers: **Phase 1b 핸드오프 미완** — 프리플라이트는 push 후 **4검사 전부 통과(SAFE TO PROCEED)**,
+  배선(범용 `argocd-app` 래퍼 차트 + `rollouts_demo_gitops_owned` count 토글)도 완료. 남은 단계
+  `terraform state rm helm_release.rollouts_demo`가 **권한 정책에 차단**돼 사용자가 직접 실행해야 함
+  (우회 시도 안 함). 그 뒤 `terraform apply -var rollouts_demo_gitops_owned=true`.
+- 품질 메모: 세 결함이 전부 **"체커가 확인 못 한 것을 통과로 보고"** 같은 형태였다 — 모델 없이 `unknown`,
+  CLI 없이 `clean`, cosign 없이 pass. 반대로 ①의 두 번째 결함은 **확인 못 한 걸 실패로 보고**하는 형태라
+  더 위험했다: 정상 릴리스를 그럴듯한 이유로 전부 막는 게이트는 사람이 곧 무시하고, 그게 게이트가 없는
+  것보다 나쁘다. Cosign에선 도구가 내 대조군을 정정했다 — 서명은 태그가 아니라 **다이제스트**에 붙는다.
+- Next: (사용자) `terraform state rm` → 핸드오프 라이브. 그 외 Phase 2(Capsule+대시보드 스위처) ·
+  capability step 런북을 executor가 실제 소비 · ② executor span.
+
 ## 2026-07-26 — ① 2단계: 에이전트를 릴리스 게이트로 (gate 1095→1114)
 
 - Status: 다음 우선순위였던 Phase 1b 핸드오프가 **사용자 게이트(push)+스냅샷 부재로 차단**이라, 막힌 데 없는
