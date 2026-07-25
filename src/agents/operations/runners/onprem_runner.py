@@ -33,7 +33,10 @@ from __future__ import annotations
 
 import os
 import subprocess
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:  # avoid a runtime import cycle through the platform package
+    from src.agents.platform.scope import IncidentScope
 
 # Actions that are safe + reversible to run automatically when live.
 _LIVE_KUBECTL: dict[str, list[str]] = {
@@ -46,8 +49,22 @@ def _is_live() -> bool:
     return os.getenv("ONPREM_EXECUTOR_LIVE", "false").lower() == "true" and os.getenv("TESTING") != "True"
 
 
-def _run_kubectl(args: list[str], timeout: int = 60) -> tuple[int, str, str]:
-    proc = subprocess.run(["kubectl", *args], capture_output=True, text=True, timeout=timeout)
+def _run_kubectl(args: list[str], scope: "IncidentScope", timeout: int = 60) -> tuple[int, str, str]:
+    """
+    Run kubectl pinned to the incident's scoped credential.
+
+    The ambient-context path is GONE on purpose (Phase 1a). Previously this ran
+    `kubectl <args>` against whatever kubeconfig context happened to be current,
+    so blast radius was whatever that context could reach and a routing bug failed
+    **open**. Now the credential is always explicit; a caller with no scope cannot
+    reach this function at all.
+    """
+    proc = subprocess.run(
+        ["kubectl", *scope.kubectl_prefix(), *args],
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
     return proc.returncode, proc.stdout.strip(), proc.stderr.strip()
 
 
@@ -101,8 +118,18 @@ def _kubectl_args(action: str, params: dict[str, list[str]], log: Any) -> list[s
     return args
 
 
-def run_onprem_action(action: str, params: dict[str, list[str]], log: Any) -> None:
+def run_onprem_action(
+    action: str,
+    params: dict[str, list[str]],
+    log: Any,
+    scope: "IncidentScope | None" = None,
+) -> None:
     """Execute (or log-only) one on-prem remediation action.
+
+    ``scope`` is the per-incident credential handle minted by the token broker.
+    A live run without one is **refused**, not silently downgraded to the ambient
+    context — that downgrade is exactly the fail-open this phase removes. Log-only
+    mode still works without a scope, since it touches nothing.
 
     Raises on a failed live kubectl call so the executor marks the action skipped.
     """
@@ -110,12 +137,41 @@ def run_onprem_action(action: str, params: dict[str, list[str]], log: Any) -> No
         log.info("onprem_runner.log_only", action=action, params=params)
         return
 
+    if scope is None:
+        # Fail closed: an unresolved credential means we do not know whose cluster
+        # this would touch, which is precisely when acting is least safe.
+        log.error("onprem_runner.no_scope", action=action)
+        raise RuntimeError(
+            f"refusing live action {action!r} without a scoped credential "
+            "(ambient kubeconfig execution was removed in Phase 1a)"
+        )
+
+    namespace = (params.get("Namespace") or [""])[0]
+    if not scope.permits_namespace(namespace):
+        # Advisory short-circuit — RBAC would also refuse, but skipping here keeps
+        # a clear, attributable log line instead of an opaque Forbidden.
+        log.warning(
+            "onprem_runner.out_of_scope",
+            action=action,
+            namespace=namespace,
+            scope=scope.redacted(),
+        )
+        raise RuntimeError(
+            f"namespace {namespace!r} is outside the scope of tenant {scope.tenant!r}"
+        )
+
     args = _kubectl_args(action, params, log)
     if args is None:
         return
 
-    code, out, err = _run_kubectl(args)
+    code, out, err = _run_kubectl(args, scope)
     if code != 0:
-        log.error("onprem_runner.kubectl_failed", action=action, args=args, stderr=err)
+        log.error(
+            "onprem_runner.kubectl_failed",
+            action=action, args=args, stderr=err, scope=scope.redacted(),
+        )
         raise RuntimeError(f"kubectl {' '.join(args)} failed ({code}): {err}")
-    log.info("onprem_runner.kubectl_ok", action=action, args=args, stdout=out)
+    log.info(
+        "onprem_runner.kubectl_ok",
+        action=action, args=args, stdout=out, scope=scope.redacted(),
+    )

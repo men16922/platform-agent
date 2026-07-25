@@ -39,6 +39,12 @@ class OnPremAlertmanagerSignalAdapter(SignalAdapter):
             resource_id=str(resource_id),
             signal_type=signal_type,
             severity_hint=merged_labels.get("severity"),
+            # Tenancy scope (Phase 1a). Taken from alert labels because that is
+            # where a multi-tenant Prometheus/Alertmanager carries it. Absent =>
+            # empty, which fails closed for live remediation rather than letting
+            # an unattributed incident act on someone's cluster.
+            tenant=str(merged_labels.get("tenant", "")),
+            env=str(merged_labels.get("env", "")),
             observations={
                 "summary": annotations.get("summary", ""),
                 "description": annotations.get("description", ""),

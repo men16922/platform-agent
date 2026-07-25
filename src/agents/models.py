@@ -51,6 +51,13 @@ class NormalizedIncident:
     resource_id: str
     signal_type: str
     severity_hint: str | None = None
+    # Multi-tenant scope (Phase 1a). These decide which credential a remediation
+    # runs with, so they are first-class fields rather than labels in
+    # ``source_metadata`` — the executor must not have to guess whose cluster it
+    # is about to touch. Empty = single-tenant/legacy, which fails closed for
+    # live on-prem actions instead of falling back to an ambient context.
+    tenant: str = ""
+    env: str = ""
     observations: dict[str, Any] = field(default_factory=dict)
     recommended_capabilities: list[str] = field(default_factory=list)
     source_metadata: dict[str, Any] = field(default_factory=dict)
