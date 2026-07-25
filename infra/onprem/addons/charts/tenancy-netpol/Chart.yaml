@@ -1,0 +1,11 @@
+apiVersion: v2
+name: tenancy-netpol
+description: >-
+  Per-tenant NetworkPolicy for the soft isolation tier: default-deny ingress with
+  a same-tenant allowance, so the soft tier's documented "no data-plane
+  isolation" non-guarantee is narrowed. Renders one policy per tenant namespace
+  from the platform registry's naming_prefix. OFF by default — a NetworkPolicy on
+  a CNI that does not enforce it is a false isolation signal, so
+  scripts/verify_netpol_enforcement.py must pass on the target substrate first.
+type: application
+version: 0.1.0

@@ -1,0 +1,40 @@
+# Per-tenant NetworkPolicy for the soft isolation tier.
+#
+# Default OFF, and this is not timidity: a NetworkPolicy applied to a CNI that
+# does not enforce NetworkPolicy is *worse than nothing* — the objects exist, the
+# dashboard/audit reads "isolated", and traffic flows anyway. kind's default
+# kindnet historically did not enforce policies (newer kindnetd added support),
+# so the enforcing-ness of the target substrate is an empirical question:
+#
+#   python scripts/verify_netpol_enforcement.py     # must report ENFORCED
+#
+# Only then flip `enabled: true`. On k3s (flannel) the same probe applies.
+enabled: false
+
+# Tenants to isolate. `prefix` must match the registry's `naming_prefix`
+# (platform/tenants/<name>.yaml) — that prefix is what makes namespaces
+# attributable to a tenant in the first place.
+tenants:
+  - name: acme
+    prefix: acme
+  - name: globex
+    prefix: globex
+
+# Environments whose namespaces get a policy. Namespace naming follows
+# Tenant.namespace_for(): "<prefix>-<env>-<capability>".
+environments:
+  - dev
+  - prod
+
+# Capabilities whose namespaces exist per tenant/env (mirrors the catalog).
+capabilities:
+  - observability
+  - logging
+  - tracing
+  - progressive
+
+# Namespaces every tenant must still reach regardless of tenant isolation.
+# kube-system is required for DNS: a bare default-deny breaks name resolution,
+# which looks like an application bug rather than a policy effect.
+allowedSharedNamespaces:
+  - kube-system

@@ -1,0 +1,43 @@
+{{- if .Values.enabled }}
+{{- $root := . }}
+{{- range $tenant := .Values.tenants }}
+{{- range $env := $root.Values.environments }}
+{{- range $capability := $root.Values.capabilities }}
+{{- $namespace := printf "%s-%s-%s" $tenant.prefix $env $capability }}
+---
+# Default-deny ingress for one tenant namespace, then allow back only:
+#   1. traffic from namespaces belonging to the SAME tenant, and
+#   2. DNS (kube-system) — a bare default-deny breaks name resolution and the
+#      symptom looks like an app bug, not a policy effect.
+#
+# Selection is by the `platform-agent.io/tenant` label rather than by namespace
+# name pattern: NetworkPolicy peers cannot match names by prefix, only by label,
+# so the label is what makes "same tenant" expressible at all. The namespace must
+# therefore carry it (Capsule sets it in Phase 2; label manually before enabling).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-cross-tenant
+  namespace: {{ $namespace }}
+  labels:
+    app.kubernetes.io/managed-by: {{ $root.Release.Service }}
+    platform-agent.io/tenant: {{ $tenant.name }}
+spec:
+  # Empty selector = every pod in this namespace.
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              platform-agent.io/tenant: {{ $tenant.name }}
+    {{- range $shared := $root.Values.allowedSharedNamespaces }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $shared }}
+    {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
