@@ -7,6 +7,24 @@
 
 ---
 
+## 2026-07-26 — ① 2단계: 에이전트를 릴리스 게이트로 (gate 1095→1114)
+
+- Status: 다음 우선순위였던 Phase 1b 핸드오프가 **사용자 게이트(push)+스냅샷 부재로 차단**이라, 막힌 데 없는
+  ①-2단계를 선택해 진행. 코드·차트·테스트 완료, **canary 전체 E2E는 미실행**(사용자 중단).
+- Changed(`b9eafb0`): `ai/canary_judge.py` + `POST /canary/judge`(webhook) + 차트 `agentAnalysis` 값 ·
+  `web` provider AnalysisTemplate · Rollout이 두 판정자를 독립 나열(둘 중 하나만 실패해도 abort).
+- Verified: `make check` → **1114 passed, 1 skipped**(+19) · `helm template` 3조합(off/agent-only/both).
+  **라이브 부분**: 이미지 재빌드→`kind load`→`pa-platform-agent-webhook` 롤아웃→**인클러스터 파드에서
+  `POST /canary/judge` 200**, `verdict=unknown confidence=0.00`("refusing to promote on an untrustworthy
+  judgment") — 인클러스터엔 모델이 없어 휴리스틱 폴백이고 **"판단 불가 ≠ 승인"이 실제로 동작**함을 보여줌.
+- Blockers: canary 전체 E2E 미실행(중단). 재개 시 `helm upgrade --set agentAnalysis.enabled=true` 후 canary를
+  돌리면 AnalysisRun이 unknown→실패→abort하는 경로를 볼 수 있음. 단 **인클러스터 analyzer에 모델이 없어
+  현재는 모든 판정이 unknown** — pass 경로를 라이브로 보려면 클러스터에서 도달 가능한 LLM 엔드포인트 필요.
+- 설계 메모: 판정 3규칙이 전부 안전한 방향 기본값 — 신호없음→pass, **저신뢰→unknown(P1보다 우선)**, P1/P2→fail.
+  `successCondition: result == "pass"`라 unknown은 승격시키지 않는다. 게이트는 **분석만**(execute=False):
+  remediation 가능한 릴리스 게이트는 곧 리뷰 없는 remediation.
+- Next: push 승인 시 Phase 1b 핸드오프(rollouts-demo) · 그 전엔 canary E2E 재개 또는 Phase 2.
+
 ## 2026-07-26 — 핸드오프 프리플라이트 + 인시던트→트레이스 딥링크 (gate 1058→1095)
 
 - Status: Phase 1b 잔여(no-churn 핸드오프)를 **안전하게** 진행하기 위한 프리플라이트를 먼저 만들고,
@@ -85,29 +103,3 @@
   (데이터소스는 kps values 소유) → kps도 apply. (b) `kubectl set image rollout/...`은 Rollout CRD를 모름 → patch 사용.
 - Next: Phase 1a(자격증명 격리). **신규 백로그**: capability 런북이 decision에서 사용 불가(시드 `alarm_name` 누락 +
   `CAPABILITY_RUNBOOKS` 9개 전부 base 스키마 미통과 → OOMKilled가 알림으로 폴백). 내 변경과 무관한 기존 결함.
-
-## 2026-07-25 — GitAIOps 실습서 대조 → 갭 6건 소진 + 멀티테넌트 Phase 0 (gate 876→983, +107)
-
-- Status: 외부 학습 레포(GitAIOps/Notiflex) 대조로 **우리에게 구멍인 운영 계층**을 특정해 전부 소진.
-  두 프로젝트는 층이 다름(운영 대상 ↔ 운영 에이전트)이라 아키텍처 차용이 아니라 갭 메우기.
-  레퍼런스: `docs/reference/gitaiops-notiflex-book.md`.
-- Changed(8커밋, `5fba0af`~`7b4231a`): **③런북 사후검증**(`RunbookStep.verify` +
-  `resolution_verdict` 2축 — 검증 없으면 verified=None="모름"이라 역호환) · **④권한통제 3단**
-  (`gcloud:*`/`aws:*`/`az:*` 포괄 allow → 조회 allow 104 + billable ask 30; D16의 로컬 우회 차단) +
-  GKE TTL 워치독 커밋 · **①AnalysisTemplate**(canary 메트릭 자동 abort, 수동 게이트에 **가산**,
-  기본 OFF) · **②OTel→Tempo**(파이프라인 4단계 span + `tracing.tf`; 무-의존 폴백, 엔드포인트 옵트인) ·
-  **멀티테넌트 Phase 0**(`platform/` 레지스트리 + 로더 + `DeliveryAdapter` 계약 + `NormalizedAddonStatus`
-  2축; TS 반쪽 포함) · **⑦고아 클러스터 스위퍼**(워치독이 못 지키는 머신-사망 구멍) ·
-  **⑥soft티어 NetworkPolicy + CNI 집행 검증기**(기본 OFF) · **⑤Sync Wave 설계 구멍**을 Phase 1b DoD에 명문화.
-- Verified: `make check` → **983 passed, 1 skipped**(876→983, +107) · `tsc --noEmit` 클린 ·
-  `terraform validate` Success · `helm template`로 신규 차트 3종 양쪽(off/on) 렌더 확인 ·
-  **라이브 read-only**: 고아 스위퍼로 2개 GCP 프로젝트 방치 클러스터 **0건 확증**(ground truth 교차확인).
-  **`helm template`이 Tempo 버그 2건 적발**: 데이터소스 포트 3100→**3200**(차트가 3100 미노출),
-  최상위 `resources:`가 조용히 무시돼 `{}` 렌더→`tempo.resources`로 이동. 검증 없이 넘겼으면 거짓 주장.
-- Blockers: **Docker/kind 정지로 라이브 미검증 3건** — ①auto-abort 실증 · ②Tempo 실 적재 ·
-  ⑥CNI 집행 판정(그래서 ①⑥은 기본 OFF, 검증기는 클러스터 없을 때 exit 2=INCONCLUSIVE로 사칭 안 함).
-- Next: Phase 1a(자격증명 격리 seam) — ③의 provider측 verify 실행부가 같은 `_run_external_action`
-  경로라 **함께** 해야 안전. 클러스터 기동 시 위 라이브 3건 일괄 소진 가능.
-- 메모: 아티클 **발행 완료**(사용자 확인) → `docs/post/` 추적 4파일 제거(git 이력 잔존), 미추적 원본
-  `local-onprem.mov`(22MB)는 복구 불가라 재편집 마스터로 보존. GitAIOps 후속편은 `NEXT_PLAN`에
-  논지·소재만 남기고 **착수 보류**(사용자 지시).

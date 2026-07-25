@@ -69,8 +69,11 @@ rubric(8기준) → **MAD(Advocate/Critic, Judge)** 수렴 A+(92) → **평가 �
 ③런북 사후검증(provider 실행부까지, `d68fe6b`) · ④권한 통제 3단(비커밋 개인 스코프) · ⑤Sync Wave(Phase 1b로
 흡수, `738c812`) · ⑥NetworkPolicy 집행·시맨틱 실증 · ⑦고아 클러스터 스위퍼. 증거 `docs/evidence/*`.
 
-- [ ] **① 2단계**: AnalysisTemplate `web` provider가 **platform-agent decision 엔드포인트**를 호출해 LLM
-  confidence를 canary 게이트로(D19 층 유지: 러너 무변경, Rollouts가 에이전트를 판정자로 소비).
+- [~] **① 2단계** — **코드·차트·테스트 완료(2026-07-26, `b9eafb0`, gate 1114)**: `canary_judge` +
+  `POST /canary/judge` + `web` provider 템플릿. 판정 3규칙 전부 안전한 방향 기본값(저신뢰→unknown이 P1보다
+  우선, unknown은 승격 안 됨), 게이트는 **분석만**(execute=False). 인클러스터 엔드포인트 200 실증.
+  **잔여**: canary 전체 E2E(AnalysisRun→abort). 주의 — 인클러스터 analyzer에 모델이 없어 현재 모든 판정이
+  `unknown`이라 **pass 경로 라이브 확인엔 클러스터 도달 가능한 LLM 엔드포인트가 필요**.
 - [x] ~~**② 잔여 — Tempo 딥링크**~~ — **완료(2026-07-26, `90a92ba`, gate 1095)**: `trace_id`를 파이프라인→
   레코드→대시보드까지 관통, 상세 페이지에서 Grafana Explore로 딥링크. prod-safe(`stack-links` 규칙:
   미설정이면 **링크 없음** — 죽은 링크는 "트레이싱 꺼짐"을 "트레이스 없음"으로 오독시킴).
