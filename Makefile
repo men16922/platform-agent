@@ -8,7 +8,7 @@
 PY := $(shell for p in python python3 /opt/anaconda3/bin/python3.13; do "$$p" -c 'import pytest' >/dev/null 2>&1 && echo "$$p" && break; done)
 PY := $(if $(PY),$(PY),python3)
 
-.PHONY: help install test check lint synth
+.PHONY: help install test check lint synth sweep-orphans
 
 help:  ## show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
@@ -24,6 +24,12 @@ check: test  ## gate command (overnight harness uses this)
 
 lint:  ## run ruff
 	ruff check src/ tests/
+
+sweep-orphans:  ## report over-budget cloud clusters (read-only; deletion stays approval-gated)
+	@# Complements the local TTL watchdog, which dies with the machine. Exit 1 =
+	@# orphans found, so this is usable as a cron/CI signal. GCP_PROJECT selects
+	@# the project — the active gcloud config may not be the one that bills.
+	python scripts/sweep_orphan_clusters.py --max-age-min $${SWEEP_MAX_AGE_MIN:-1440}
 
 synth:  ## CDK synth
 	cd src/stacks && npx cdk synth
