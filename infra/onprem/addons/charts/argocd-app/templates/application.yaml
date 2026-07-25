@@ -1,0 +1,42 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ required "name is required" .Values.name }}
+  namespace: {{ .Values.argocdNamespace }}
+  {{- if .Values.cascadeDelete }}
+  # Let ArgoCD cascade-delete managed resources when the Application is removed
+  # (e.g. terraform destroy). argo-cd is still running at that point because the
+  # helm_release depends_on it, so the finalizer is processed cleanly.
+  #
+  # Deliberately OFF for an adopted release: the Application did not create those
+  # objects, and removing an ownership record must never be able to delete the
+  # workload the record merely points at.
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  {{- end }}
+spec:
+  project: default
+  source:
+    repoURL: {{ required "repoURL is required" .Values.repoURL | quote }}
+    targetRevision: {{ .Values.targetRevision | quote }}
+    path: {{ required "chartPath is required" .Values.chartPath | quote }}
+    helm:
+      # Must equal the name of the release being adopted. Rendered object names
+      # come from this, so a mismatch makes adoption create a SECOND copy of
+      # every object instead of taking over the existing one.
+      releaseName: {{ required "releaseName is required" .Values.releaseName | quote }}
+      {{- if .Values.valuesFile }}
+      valueFiles:
+        - {{ .Values.valuesFile | quote }}
+      {{- end }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.destNamespace | quote }}
+  syncPolicy:
+    automated:
+      # prune removes drifted-away resources; selfHeal reverts manual kubectl
+      # edits back to git — the Phase 3 drift-restore demo relies on both.
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

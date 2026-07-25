@@ -4,6 +4,11 @@
 image:
   repository: platform-agent
   tag: "0.1.0"
+  # Set to "sha256:..." to deploy by digest instead of tag; it wins over `tag`.
+  # A cosign signature covers a digest, so verifying a tag and deploying that
+  # tag leaves a gap where the tag can move. Verify and pin the same digest:
+  #   python scripts/verify_image_signature.py REPO@sha256:... --key cosign.pub
+  digest: ""
   pullPolicy: IfNotPresent
 
 # External model brain (never in-cluster). The kind overlay points this at the
@@ -58,6 +63,48 @@ router:
   resources:
     requests: {cpu: 100m, memory: 256Mi}
     limits: {cpu: "1", memory: 1Gi}
+
+# ⑥ Pod Security Standards `restricted` compliance for every workload this
+# chart ships. ON by default: unlike the other opt-ins here, leaving this off is
+# not a neutral choice — it is the state in which a namespace that later gets
+# `pod-security.kubernetes.io/enforce: restricted` starts rejecting our pods.
+# The namespace LABEL itself is Phase 2's job (Capsule creates those namespaces);
+# this is the half that has to be true first.
+#
+# runAsUser/fsGroup match the UID/GID baked into infra/onprem/Dockerfile.
+securityContext:
+  enabled: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+
+# ⑦ TTL sweeper CronJob — report-only backstop for the local watchdog, which
+# cannot survive the machine it runs on. Default OFF: it needs provider CLIs and
+# read-only cloud credentials that this chart deliberately does not assume.
+#
+# The honest failure mode is built in — with no credentials the sweeper exits 2
+# ("coverage incomplete"), so the Job goes RED. It never reports a green
+# all-clear it did not earn. Scope `providers` to the clouds you have actually
+# wired up; leaving all three on a single-cloud install is a permanent red.
+orphanSweeper:
+  enabled: false
+  schedule: "0 * * * *"
+  # Age budget in minutes. A per-cluster `ttl-min` label overrides it.
+  maxAgeMin: 1440
+  providers: []          # e.g. ["gcp"] — empty means all three
+  protect: []            # exact cluster names never to report
+  # Defaults to the agent image, which carries no cloud CLIs. Point this at an
+  # image that has the ones matching `providers`.
+  image:
+    repository: ""
+    tag: ""
+  env: []                # e.g. GCP_PROJECT / AWS_REGION, or credential mounts
+  backoffLimit: 1
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {cpu: 500m, memory: 512Mi}
 
 # Extra env for either component, e.g. PLATFORM_MONTHLY_BUDGET_USD.
 extraEnv: []

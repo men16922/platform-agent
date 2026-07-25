@@ -20,6 +20,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
 WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src/ src/
+# The ⑦ TTL sweeper CronJob runs `python scripts/sweep_orphan_clusters.py`, so
+# the scripts tree has to be in the image — without it the Job fails on a
+# missing file, which at least stays visibly red rather than silently green.
+COPY scripts/ scripts/
 
 # Project deps (boto3/structlog/requests/pyyaml/strands) + the ASGI stack the two
 # APIs are served with, + the [state] extra (psycopg2) so the chart's
@@ -30,6 +34,13 @@ RUN pip install --no-cache-dir ".[state]" fastapi "uvicorn[standard]" pydantic-a
 
 ENV PYTHONPATH=/app
 EXPOSE 8077 8078
+
+# Pod Security Standards `restricted` requires a non-root runtime, and a policy
+# label is not worth much if the image can only satisfy it by having the chart
+# override runAsUser. Fixed UID/GID so the chart's fsGroup can match it for the
+# JSONL volume. Nothing here needs to write inside /app at runtime.
+RUN groupadd --gid 10001 app && useradd --uid 10001 --gid 10001 --no-create-home app
+USER 10001:10001
 
 # Default to the Day-2 webhook plane; the chart overrides args per component.
 CMD ["uvicorn", "src.agents.ai.onprem_webhook_api:app", "--host", "0.0.0.0", "--port", "8078"]

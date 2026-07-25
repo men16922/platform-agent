@@ -1,0 +1,72 @@
+{{- if .Values.orphanSweeper.enabled }}
+# ⑦ TTL sweeper — the backstop for the local watchdog.
+#
+# provision_gke_live.py's watchdog protects the window after a cluster is
+# created, but every layer of it dies with the machine. This re-derives orphan
+# status from the cloud's own inventory on a schedule, from somewhere that is
+# not the laptop.
+#
+# REPORT-ONLY. No delete flag exists to pass: destructive actions are
+# force-APPROVE (D5), and a CronJob that could delete clusters is a CronJob that
+# eventually deletes the wrong one at 3am with nobody reading.
+#
+# It needs the provider CLIs and read-only credentials. When it has neither, the
+# sweeper exits 2 rather than 0 — a failed Job is visible in `kubectl get jobs`,
+# whereas a green all-clear from a container that never looked is invisible and
+# actively harmful. Set image.repository to an image carrying the CLIs you
+# actually want swept, and scope --provider to those.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "platform-agent.fullname" . }}-orphan-sweeper
+  labels:
+    {{- include "platform-agent.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.orphanSweeper.schedule | quote }}
+  concurrencyPolicy: Forbid
+  # Keep enough history that a human arriving in the morning can see whether the
+  # overnight runs were green, red, or never ran at all.
+  successfulJobsHistoryLimit: {{ .Values.orphanSweeper.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.orphanSweeper.failedJobsHistoryLimit }}
+  startingDeadlineSeconds: 300
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .Values.orphanSweeper.backoffLimit }}
+      template:
+        metadata:
+          labels:
+            {{- include "platform-agent.labels" . | nindent 12 }}
+        spec:
+          restartPolicy: Never
+          serviceAccountName: {{ include "platform-agent.fullname" . }}
+          {{- if .Values.securityContext.enabled }}
+          securityContext:
+            {{- include "platform-agent.podSecurityContext" . | nindent 12 }}
+          {{- end }}
+          containers:
+            - name: sweeper
+              image: "{{ .Values.orphanSweeper.image.repository | default .Values.image.repository }}:{{ .Values.orphanSweeper.image.tag | default .Values.image.tag }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              {{- if .Values.securityContext.enabled }}
+              securityContext:
+                {{- include "platform-agent.containerSecurityContext" . | nindent 16 }}
+              {{- end }}
+              command: ["python", "scripts/sweep_orphan_clusters.py"]
+              args:
+                - --max-age-min
+                - {{ .Values.orphanSweeper.maxAgeMin | quote }}
+                {{- range .Values.orphanSweeper.providers }}
+                - --provider
+                - {{ . | quote }}
+                {{- end }}
+                {{- range .Values.orphanSweeper.protect }}
+                - --protect
+                - {{ . | quote }}
+                {{- end }}
+              env:
+                {{- with .Values.orphanSweeper.env }}
+                {{- toYaml . | nindent 16 }}
+                {{- end }}
+              resources:
+                {{- toYaml .Values.orphanSweeper.resources | nindent 16 }}
+{{- end }}

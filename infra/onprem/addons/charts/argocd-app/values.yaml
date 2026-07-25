@@ -1,0 +1,18 @@
+# Generic ArgoCD Application wrapper. Every field is required in practice —
+# the defaults exist so `helm template` works standalone, not as a useful config.
+name: ""
+argocdNamespace: argocd
+repoURL: ""
+targetRevision: main
+chartPath: ""
+# Optional. A chart whose own values.yaml is the desired state (the handoff case)
+# passes no values file; rendering `valueFiles: [""]` would make ArgoCD fail to
+# resolve a nonexistent path.
+valuesFile: ""
+releaseName: ""
+destNamespace: default
+# Adoption of an ALREADY-RUNNING release (Phase 1b handoff) must not be able to
+# cascade-delete the workload it just adopted, so the finalizer is opt-in.
+# For greenfield Applications (created by, and only by, this module) it is
+# correct — `terraform destroy` then cleans up what it made.
+cascadeDelete: false

@@ -1,0 +1,128 @@
+=== ⑥ PSS `restricted` + ⑦ TTL sweeper honesty — live (2026-07-26, kind, $0) ===
+
+Run in a throwaway namespace (pss-test) so the ArgoCD-managed `pa` release was
+never touched. Namespace labelled:
+  pod-security.kubernetes.io/enforce=restricted
+  pod-security.kubernetes.io/enforce-version=latest
+
+WHY BOTH DIRECTIONS
+  "Our pods start" proves nothing on its own — they would also start in a
+  namespace that is not enforcing anything. So the control is a deliberately
+  NON-compliant install that the API server must refuse.
+
+--- CONTROL: non-compliant install (securityContext.enabled=false) ---
+Error creating: pods "pa-bad-platform-agent-webhook-589b6b6454-hw57c" is
+forbidden: violates PodSecurity "restricted:latest":
+  allowPrivilegeEscalation != false (container "webhook" must set
+    securityContext.allowPrivilegeEscalation=false),
+  unrestricted capabilities (container "webhook" must set
+    securityContext.capabilities.drop=["ALL"]),
+  runAsNonRoot != true (pod or container "webhook" must set
+    securityContext.runAsNonRoot=true),
+  seccompProfile (pod or container "webhook" must set
+    securityContext.seccompProfile.type to "RuntimeDefault" or "Localhost")
+
+  helm install FAILED, Replicas 0/1. The namespace really is enforcing, and it
+  names all four violations our securityContext exists to satisfy.
+
+--- COMPLIANT install (chart defaults) ---
+NAME                                            READY   STATUS    RESTARTS   AGE
+pa-pss-platform-agent-webhook-d9b4d6587-jm5k4   1/1     Running   0          7s
+
+  running as: uid=10001(app) gid=10001(app) groups=10001(app)
+
+  Admitted AND actually running as the non-root user baked into
+  infra/onprem/Dockerfile (USER 10001:10001). Chart runAsUser/fsGroup and the
+  image USER are now guarded against drifting apart — a mismatch there only
+  surfaces at runtime, on the PVC write.
+
+  Note this required a real image change, not just chart YAML: the image ran as
+  root and had no `scripts/` tree at all.
+
+--- ⑦ sweeper: the fix that made the CronJob safe to ship ---
+The sweeper shells out to `gcloud`/`aws`/`az`. If a CLI is missing or
+unauthenticated it used to yield zero clusters — indistinguishable from a
+healthy empty cloud. As a CronJob in a container without those CLIs that is a
+green all-clear, forever, while the clusters it exists to catch keep billing.
+
+Run inside the newly built container (which carries no cloud CLIs):
+
+  $ python scripts/sweep_orphan_clusters.py --provider gcp
+  COVERAGE INCOMPLETE — 1 of 1 provider(s) were not inventoried.
+  This report cannot mean 'clean':
+    - gcp: gcloud failed: [Errno 2] No such file or directory: 'gcloud'
+  exit code: 2
+
+  Exit 2 = "could not evaluate", matching the handoff preflight's discipline.
+  A failed Job is visible in `kubectl get jobs`; a green one that never looked
+  is not. Unreachable is now louder than empty, which is the only ordering that
+  makes an unattended sweeper worth having.
+
+  Exit codes: 0 = full coverage and nothing over budget, 1 = orphans found,
+  2 = coverage incomplete. Scope with --provider to earn a real green.
+
+  Also fixed one level down: an `eks describe-cluster` that fails AFTER a
+  successful list no longer discards the cluster — it keeps the row with an
+  unknown creation time, which find_orphans reports rather than skips.
+
+CronJob is default OFF (needs provider CLIs + read-only credentials this chart
+does not assume) and report-only — there is no --delete flag to pass, because
+destructive actions are approval-gated (D5).
+
+--- cleanup ---
+pa-pss uninstalled, pss-test namespace deleted. `pa` release untouched
+throughout (ArgoCD still Synced/Healthy).
+
+=== end ===
+
+=== ⑥ second half — Cosign image signing (live, local kind registry, $0) ===
+
+Setup: image pushed to the kind registry (localhost:5001), ephemeral key pair
+generated in a scratch dir (never committed), `cosign sign --key`.
+
+--- what verifies ---
+  $ cosign verify --key cosign.pub localhost:5001/platform-agent:0.1.0
+  - The signatures were verified against the specified public key      exit 0
+
+--- THE FINDING: a signature covers a DIGEST, not a tag ---
+The first control was wrong and the tool corrected it. Pushing the same image
+under a second tag `:unsigned` — never signed by that name — still VERIFIED,
+because both tags resolve to the same digest:
+
+  localhost:5001/platform-agent:unsigned -> sha256:7cfc8a4d...  exit 0
+
+So "this tag is signed" is not a property of the tag. The real control is a
+DIFFERENT image pushed under our repo:tag:
+
+  $ docker tag alpine:3.20 localhost:5001/platform-agent:tampered && push
+  $ cosign verify --key cosign.pub localhost:5001/platform-agent:tampered
+  Error: no signatures found                                           exit 1
+
+Consequence, now in the chart: `image.digest` deploys `repo@sha256:...` and wins
+over `tag`. Verifying a tag and then deploying that tag leaves a window where
+the tag can be moved between the two steps; pinning the digest closes it.
+Guarded by test_digest_pin_wins_over_tag (a digest-pinned ref must not also
+carry the mutable tag).
+
+--- the gate script, all three exits ---
+  scripts/verify_image_signature.py
+
+  signed, by digest      -> VERIFIED: ...@sha256:7cfc8a4d...            exit 0
+  substituted image      -> NOT SIGNED: ...:tampered carries no
+                            signature from this identity                exit 1
+  no --key / identity    -> refused: verifying against "any signature"
+                            accepts a signature from anyone             exit 2
+
+  cosign missing also exits 2, not 0: a CI step that passes because the verifier
+  was absent is worse than no step, since everything downstream then believes
+  the image was checked. Same rule as the sweeper's COVERAGE INCOMPLETE and the
+  handoff preflight's "could not evaluate".
+
+NOT DONE (deliberate): admission-time enforcement. Rejecting unsigned images at
+the API server needs a policy controller (sigstore policy-controller / Kyverno),
+which is a new cluster dependency and belongs with Phase 2's namespace work.
+What exists today is a verifiable gate for CI and for a human, not an in-cluster
+guarantee — stated plainly so nobody reads more assurance into it than it has.
+
+Local registry still holds the throwaway `:unsigned` and `:tampered` tags from
+this run (dev registry, recreated by `make local-cluster`).

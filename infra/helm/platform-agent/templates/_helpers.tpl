@@ -37,6 +37,51 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 {{- end -}}
 
+{{/*
+Image reference. `image.digest` wins over `image.tag` when set.
+
+A tag is a mutable pointer; a cosign signature covers a DIGEST. Verified live:
+re-pointing a tag at a different image makes `cosign verify` fail with "no
+signatures found", and two tags on one digest both verify. So verifying a tag
+and then deploying that tag leaves a window where they are no longer the same
+bytes. Pin the digest and the thing you verified is the thing that runs.
+*/}}
+{{- define "platform-agent.image" -}}
+{{- if .Values.image.digest -}}
+{{ .Values.image.repository }}@{{ .Values.image.digest }}
+{{- else -}}
+{{ .Values.image.repository }}:{{ .Values.image.tag }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Pod Security Standards `restricted` — the pod half.
+
+Kept as helpers rather than inlined so every workload this chart ships (webhook,
+router, sweeper CronJob) is provably identical. A single uncovered pod is enough
+to make a namespace-level `enforce: restricted` label reject the release at the
+worst possible moment, i.e. the next rollout rather than the change that broke it.
+
+fsGroup matches the image's UID/GID so the JSONL PVC stays writable by a
+non-root process. Drop the image's USER and this silently breaks instead.
+*/}}
+{{- define "platform-agent.podSecurityContext" -}}
+runAsNonRoot: true
+runAsUser: {{ .Values.securityContext.runAsUser }}
+runAsGroup: {{ .Values.securityContext.runAsGroup }}
+fsGroup: {{ .Values.securityContext.fsGroup }}
+seccompProfile:
+  type: RuntimeDefault
+{{- end -}}
+
+{{/* PSS `restricted` — the container half. */}}
+{{- define "platform-agent.containerSecurityContext" -}}
+allowPrivilegeEscalation: false
+capabilities:
+  drop:
+    - ALL
+{{- end -}}
+
 {{/* Recreate is only forced by the RWO JSONL volume; DSN-mode rolls normally. */}}
 {{- define "platform-agent.strategy" -}}
 {{- if .Values.persistence.enabled -}}

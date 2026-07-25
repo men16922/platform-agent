@@ -1,0 +1,9 @@
+apiVersion: v2
+name: argocd-app
+description: >-
+  A one-object wrapper chart that declares an ArgoCD Application for a chart
+  already living in this git repo. Shipped as a chart (not kubernetes_manifest)
+  so `terraform plan` never needs the argoproj.io CRDs to exist yet.
+type: application
+version: 0.1.0
+appVersion: "1.0"

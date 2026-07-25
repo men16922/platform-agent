@@ -13,7 +13,12 @@ Usage:
   python scripts/sweep_orphan_clusters.py [--max-age-min 1440] [--provider gcp|aws|azure]
                                           [--protect NAME ...] [--json]
 
-Exit codes: 0 = clean, 1 = orphans found (usable as a CI/cron signal), 2 = usage error.
+Exit codes:
+  0 = every requested provider was inventoried and nothing is over budget
+  1 = orphans found (usable as a CI/cron signal)
+  2 = coverage incomplete — at least one provider could not be inventoried, so
+      "nothing found" cannot be read as "nothing there". Scope the run
+      (--provider gcp) when only some clouds are configured.
 """
 
 from __future__ import annotations
@@ -36,25 +41,35 @@ from src.agents.operations.orphan_sweeper import (  # noqa: E402
 )
 
 
-def _run_json(cmd: list[str]) -> object | None:
-    """Run a read-only CLI command and parse JSON, or return None on any failure.
+class ProviderUnavailable(Exception):
+    """A provider could not be inventoried at all (CLI missing, unauthenticated, timeout).
 
-    A provider that is not configured must not abort the whole sweep — the other
-    providers still need reporting.
+    This is NOT the same as "the provider has no clusters", and conflating the
+    two is how a sweeper becomes dangerous: a container without `gcloud` would
+    inventory nothing, find nothing, and report a green all-clear forever while
+    the clusters it was supposed to catch keep billing. Unreachable must be
+    louder than empty, not quieter.
+    """
+
+
+def _run_json(cmd: list[str]) -> object | None:
+    """Run a read-only CLI command and parse JSON.
+
+    Raises ProviderUnavailable on any failure so the caller can tell "looked and
+    saw nothing" apart from "never got to look".
     """
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
     except (OSError, subprocess.TimeoutExpired) as exc:
-        print(f"WARN: {cmd[0]} failed: {exc}", file=sys.stderr)
-        return None
+        raise ProviderUnavailable(f"{cmd[0]} failed: {exc}") from exc
     if proc.returncode != 0:
-        print(f"WARN: {' '.join(cmd[:3])} exited {proc.returncode}", file=sys.stderr)
-        return None
+        detail = (proc.stderr or "").strip().splitlines()
+        hint = detail[-1] if detail else f"exited {proc.returncode}"
+        raise ProviderUnavailable(f"{' '.join(cmd[:3])}: {hint}")
     try:
         return json.loads(proc.stdout or "null")
-    except json.JSONDecodeError:
-        print(f"WARN: {' '.join(cmd[:3])} returned non-JSON", file=sys.stderr)
-        return None
+    except json.JSONDecodeError as exc:
+        raise ProviderUnavailable(f"{' '.join(cmd[:3])} returned non-JSON") from exc
 
 
 def _parse_ts(raw: object) -> datetime | None:
@@ -95,9 +110,17 @@ def _aws_clusters() -> list[ClusterRecord]:
     names = listing.get("clusters", []) if isinstance(listing, dict) else []
     records = []
     for name in names:
-        described = _run_json(
-            ["aws", "eks", "describe-cluster", "--name", name, "--region", region]
-        ) or {}
+        # A describe that fails after a successful list (racing deletion, or a
+        # per-cluster permission hole) must not discard the cluster — keep it
+        # with an unknown creation time, which find_orphans reports rather than
+        # skips. Losing the row would be the silent-skip bug one level down.
+        try:
+            described = _run_json(
+                ["aws", "eks", "describe-cluster", "--name", name, "--region", region]
+            ) or {}
+        except ProviderUnavailable as exc:
+            print(f"WARN: eks describe-cluster {name}: {exc}", file=sys.stderr)
+            described = {}
         cluster = described.get("cluster", {}) if isinstance(described, dict) else {}
         records.append(
             ClusterRecord(
@@ -144,8 +167,16 @@ def main() -> int:
 
     providers = args.provider or sorted(_COLLECTORS)
     clusters: list[ClusterRecord] = []
+    swept: list[str] = []
+    unswept: dict[str, str] = {}
     for provider in providers:
-        clusters.extend(_COLLECTORS[provider]())
+        try:
+            clusters.extend(_COLLECTORS[provider]())
+        except ProviderUnavailable as exc:
+            unswept[provider] = str(exc)
+            print(f"WARN: {provider} not swept — {exc}", file=sys.stderr)
+        else:
+            swept.append(provider)
 
     now = datetime.now(timezone.utc)
     findings = find_orphans(
@@ -157,6 +188,8 @@ def main() -> int:
             {
                 "swept_at": now.isoformat(),
                 "providers": providers,
+                "swept": swept,
+                "unswept": unswept,
                 "cluster_count": len(clusters),
                 "findings": [f.to_dict() for f in findings],
                 "delete_commands": delete_commands(findings),
@@ -165,12 +198,24 @@ def main() -> int:
         ))
     else:
         print(format_report(findings, now=now))
+        if unswept:
+            print(
+                f"\nCOVERAGE INCOMPLETE — {len(unswept)} of {len(providers)} provider(s) "
+                "were not inventoried. This report cannot mean 'clean':"
+            )
+            for provider, reason in unswept.items():
+                print(f"  - {provider}: {reason}")
         if findings:
             print("\nSuggested (NOT executed) delete commands:")
             for command in delete_commands(findings):
                 print(f"  {command}")
 
-    return 1 if findings else 0
+    if findings:
+        return 1
+    # No findings, but we did not look everywhere we were asked to. Saying 0
+    # here is the whole failure mode this guards against. Scope the run
+    # (--provider gcp) to get a green that actually means something.
+    return 2 if unswept else 0
 
 
 if __name__ == "__main__":

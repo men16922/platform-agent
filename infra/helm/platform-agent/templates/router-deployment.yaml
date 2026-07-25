@@ -36,10 +36,18 @@ spec:
                   app.kubernetes.io/instance: {{ .Release.Name }}
                   app.kubernetes.io/component: webhook
       {{- end }}
+      {{- if .Values.securityContext.enabled }}
+      securityContext:
+        {{- include "platform-agent.podSecurityContext" . | nindent 8 }}
+      {{- end }}
       containers:
         - name: router
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: {{ include "platform-agent.image" . | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.securityContext.enabled }}
+          securityContext:
+            {{- include "platform-agent.containerSecurityContext" . | nindent 12 }}
+          {{- end }}
           args:
             - uvicorn
             - src.agents.ai.local_deploy_api:app

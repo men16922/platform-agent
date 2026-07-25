@@ -108,6 +108,29 @@ variable "platform_agent_webhook_url" {
 # repo that describes the add-on stack also drives the workload ArgoCD syncs.
 # Defaults target the GitHub origin (public after push); swap repo_url for a
 # local gitea remote to run fully offline.
+# Phase 1b — TF -> GitOps ownership handoff for the rollouts demo.
+#
+# TWO owners for one release is the failure mode this flag exists to prevent:
+# Terraform would keep reconciling a release ArgoCD is also reconciling. So the
+# flag is a TOGGLE, not an addition — flipping it to true drops the helm_release
+# and creates the Application in its place.
+#
+# ORDER MATTERS. Flipping this alone would make Terraform run `helm uninstall`,
+# destroying exactly what the handoff is supposed to preserve. The release must
+# leave Terraform's state FIRST:
+#
+#   python scripts/preflight_gitops_handoff.py rollouts-demo -n argo-rollouts \
+#     --terraform-address helm_release.rollouts_demo   # must exit 0
+#   terraform state rm 'helm_release.rollouts_demo[0]'
+#   terraform apply -var rollouts_demo_gitops_owned=true
+#
+# Rollback is `terraform import` back to the same address (the preflight prints
+# the exact command, including the revision baseline to compare against).
+variable "rollouts_demo_gitops_owned" {
+  type    = bool
+  default = false
+}
+
 variable "gitops_repo_url" {
   type    = string
   default = "https://github.com/men16922/platform-agent.git"

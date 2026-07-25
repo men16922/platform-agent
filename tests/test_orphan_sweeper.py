@@ -164,3 +164,89 @@ class TestDeleteCommands:
         )
         (command,) = delete_commands(findings)
         assert command.startswith("#"), "must not guess a delete command for an unknown provider"
+
+
+# --- CLI collection boundary: "could not look" != "nothing there" -----------
+#
+# The core rules above already fail toward reporting. The dangerous gap was one
+# level up, at the shell-out: a provider whose CLI is missing or unauthenticated
+# used to yield zero clusters, which reads identically to a healthy empty cloud.
+# Run that as a CronJob in a container without `gcloud` and it reports a green
+# all-clear forever while the clusters keep billing.
+
+
+def _script():
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "scripts" / "sweep_orphan_clusters.py"
+    spec = importlib.util.spec_from_file_location("sweep_orphan_clusters", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class TestSweepCoverage:
+    def test_unreachable_provider_does_not_report_clean(self, monkeypatch, capsys):
+        sweep = _script()
+
+        def boom():
+            raise sweep.ProviderUnavailable("gcloud: not authenticated")
+
+        monkeypatch.setattr(sweep, "_COLLECTORS", {"gcp": boom})
+        monkeypatch.setattr("sys.argv", ["sweep", "--provider", "gcp"])
+        assert sweep.main() == 2, "no coverage must not exit 0"
+        assert "COVERAGE INCOMPLETE" in capsys.readouterr().out
+
+    def test_full_coverage_with_nothing_found_is_a_real_green(self, monkeypatch, capsys):
+        sweep = _script()
+        monkeypatch.setattr(sweep, "_COLLECTORS", {"gcp": lambda: []})
+        monkeypatch.setattr("sys.argv", ["sweep", "--provider", "gcp"])
+        assert sweep.main() == 0
+        assert "COVERAGE INCOMPLETE" not in capsys.readouterr().out
+
+    def test_findings_outrank_a_coverage_gap(self, monkeypatch):
+        """Both problems at once: the actionable one owns the exit code."""
+        sweep = _script()
+
+        def boom():
+            raise sweep.ProviderUnavailable("az: not logged in")
+
+        monkeypatch.setattr(
+            sweep,
+            "_COLLECTORS",
+            {"azure": boom, "gcp": lambda: [_cluster(created_at=None)]},
+        )
+        monkeypatch.setattr("sys.argv", ["sweep", "--provider", "gcp", "--provider", "azure"])
+        assert sweep.main() == 1
+
+    def test_json_output_names_what_was_not_swept(self, monkeypatch, capsys):
+        import json as _json
+
+        sweep = _script()
+
+        def boom():
+            raise sweep.ProviderUnavailable("aws: no credentials")
+
+        monkeypatch.setattr(sweep, "_COLLECTORS", {"aws": boom, "gcp": lambda: []})
+        monkeypatch.setattr("sys.argv", ["sweep", "--provider", "gcp", "--provider", "aws", "--json"])
+        sweep.main()
+        payload = _json.loads(capsys.readouterr().out)
+        assert payload["swept"] == ["gcp"]
+        assert "aws" in payload["unswept"], "a consumer must be able to see the hole in the data"
+
+    def test_run_json_raises_instead_of_swallowing(self, monkeypatch):
+        sweep = _script()
+
+        class _Proc:
+            returncode = 1
+            stdout = ""
+            stderr = "ERROR: (gcloud) not authenticated"
+
+        monkeypatch.setattr(sweep.subprocess, "run", lambda *a, **k: _Proc())
+        try:
+            sweep._run_json(["gcloud", "container", "clusters", "list"])
+        except sweep.ProviderUnavailable as exc:
+            assert "not authenticated" in str(exc), "the reason must survive to the report"
+        else:
+            raise AssertionError("a failed CLI call must not look like an empty result")

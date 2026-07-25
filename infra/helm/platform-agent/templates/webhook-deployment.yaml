@@ -23,9 +23,17 @@ spec:
         app.kubernetes.io/component: webhook
     spec:
       serviceAccountName: {{ include "platform-agent.fullname" . }}
+      {{- if .Values.securityContext.enabled }}
+      securityContext:
+        {{- include "platform-agent.podSecurityContext" . | nindent 8 }}
+      {{- end }}
       containers:
         - name: webhook
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: {{ include "platform-agent.image" . | quote }}
+          {{- if .Values.securityContext.enabled }}
+          securityContext:
+            {{- include "platform-agent.containerSecurityContext" . | nindent 12 }}
+          {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - uvicorn
@@ -42,6 +50,17 @@ spec:
             {{- include "platform-agent.stateStoreEnv" . | nindent 12 }}
             - name: ONPREM_EXECUTOR_LIVE
               value: {{ .Values.webhook.executorLive | quote }}
+            {{- if .Values.llm.endpoint }}
+            # The analyzer's model backend. Without this the webhook silently runs
+            # the heuristic fallback — which returns confidence 0.0, so every
+            # canary judgement comes back `unknown` and the release gate can only
+            # ever block. The value was already declared in values.yaml; only the
+            # router consumed it, and the router is off by default.
+            - name: ANALYZER_LLM_ENDPOINT
+              value: {{ .Values.llm.endpoint | quote }}
+            - name: ANALYZER_LLM_MODEL
+              value: {{ .Values.llm.model | quote }}
+            {{- end }}
             {{- with .Values.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
