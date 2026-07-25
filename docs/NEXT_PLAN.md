@@ -5,10 +5,10 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(M10=GitAIOps 7/7+멀티테넌트 Phase 0·1a·1b+공급망,
 > M9=eval·하드닝, M8=레퍼런스 8/8) / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 현재 상태 (2026-07-26, gate 1191)
+## 현재 상태 (2026-07-26, gate 1216)
 
 **GitAIOps 대조 7/7 · 멀티테넌트 Phase 0·1a·1b 완료**(rollouts-demo 소유권 TF→ArgoCD 이관까지 실행).
-런북은 이제 선언한 순서·조건·검증대로 실행된다. **다음 = Phase 2**.
+런북은 이제 선언한 순서·조건·검증대로 실행된다. **Phase 2 진행 중**(첫 슬라이스=tenancy 완료).
 
 ## 사용자 게이트 (열린 것만)
 
@@ -28,8 +28,16 @@
 Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSOT=per-tenant git 레지스트리.
 **최우선 불변식**: 에이전트 실행 blast radius=1 tenant/env(자격증명이 경계) — Phase 1a에서 강제 완료.
 
-- [ ] **Phase 2**: Capsule(soft)+RBAC + 대시보드 tenant/env 스위처 + 라이브 상태 폴러(2축 drift).
-  - ⑥ NetworkPolicy·PSS의 대상 ns/tenant 라벨이 **Phase 2 산출물**이라, 그 두 개를 실제로 켜는 것도 여기서.
+- [~] **Phase 2**: Capsule(soft)+RBAC + 대시보드 tenant/env 스위처 + 라이브 상태 폴러(2축 drift).
+  - [x] ~~첫 슬라이스: soft-tier tenancy~~ — **완료(`440f3a0`, gate 1216)**: `platform/tenancy.py`가
+    레지스트리에서 Namespace(tenant/env/capability+PSS 라벨)·Capsule Tenant·네임스페이스 스코프 RBAC를
+    렌더. Capsule 애드온(기본 OFF·cert-manager 비의존). 라이브 acme-dev 4 네임스페이스 + 쿼터 합산 실증.
+    증거 `docs/evidence/phase2-tenancy-capsule.log`.
+  - [ ] **⑥ 실제 활성화** — 이제 대상 네임스페이스와 tenant 라벨이 존재하므로 `tenancy-netpol` 차트를
+    켤 수 있다(k3s는 flannel이라 검증기 재실행 선행).
+  - [ ] 대시보드 tenant/env 스위처.
+  - [ ] **push 기반 2축 drift 수집기**(in-cluster agent→컨트롤플레인, 허브는 스포크 read 자격증명 0).
+  - [ ] faked managed 디스크립터로 `applicable=false` 검증 · DR 재구축 라이브 확인.
 - [ ] Phase 3(인가 강화)·4(managed 어댑터, billable)·5(레지스트리 PR 쓰기) = 후속.
 - [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 수단 선행**(kind엔 CSI 스냅샷터 기본 부재).
   rollouts-demo는 데이터 위험 0이라 먼저 했고, 나머지 셋은 실패 비용이 가용성이 아니라 데이터다.

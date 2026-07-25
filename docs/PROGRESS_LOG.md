@@ -7,6 +7,27 @@
 
 ---
 
+## 2026-07-26 — Phase 2 첫 슬라이스: soft-tier tenancy + Capsule (gate 1191→1216)
+
+- Status: ⑥(NetworkPolicy·PSS)이 기다리던 산출물 — tenant 라벨이 붙은 `<prefix>-<env>-<capability>`
+  네임스페이스 — 를 레지스트리에서 렌더·적용. 문서 정리(`/tidy-docs`) 선행 완료.
+- Changed(`440f3a0`): `platform/tenancy.py`(Namespace+Capsule Tenant+네임스페이스 스코프 RBAC,
+  soft 티어만) · `scripts/render_tenancy.py`(CRD 부재를 exit 1로 신고) · 애드온 모듈에 Capsule
+  추가(기본 OFF·0.13.10 핀·cert-manager 비의존). 앞서 `/tidy-docs`로 LOG 188→91, PLAN 138→65.
+- Verified: `make check` **1216**(+25). **라이브(kind, $0)**: Tenant NAMESPACE COUNT=4 ·
+  네임스페이스에 `platform-agent.io/tenant`+PSS restricted 라벨 · 쿼터 합산 실증.
+  증거 `docs/evidence/phase2-tenancy-capsule.log`.
+- Blockers: 없음. Phase 2 잔여 = ⑥ 실제 활성화 · 대시보드 tenant/env 스위처 · push 기반 2축 drift
+  수집기 · faked managed 디스크립터(applicable=false) · DR 재구축 확인.
+- 품질 메모: 라이브가 3건을 잡았고 셋 다 "그럴듯한 구현이 조용히 거짓 보증을 만드는" 자리였다.
+  (1) 소유자 표기 — 유닛 테스트는 **내가 지어낸 형태**만 단언해 초록이었다. (2) **Capsule은 admin이
+  만든 네임스페이스를 채택하지 않는다** → Tenant는 Active/reconciled인데 NAMESPACE COUNT=0, 즉
+  테넌트는 살아 있고 쿼터는 아무것도 안 묶는데 상태 화면은 정상으로 보인다. (3) **쿼터 합산은 정적
+  조회로는 "고장"으로 보인다** — 네 네임스페이스 각각 16이라 4배로 읽히고 나도 그렇게 결론냈다.
+  소비 실험을 하니 `limited: 6`(=16−10)으로 잔여가 재기록되고 두 번째 요청이 거부됐다.
+  **설계는 옳았고 내 첫 결론이 틀렸다 — 정지 상태 조회가 아니라 소비가 사실을 말한다.**
+- Next: Phase 2 잔여(⑥ 활성화 → 대시보드 스위처 → push 수집기).
+
 ## 2026-07-26 — capability step을 executor가 실제로 소비 (gate 1168→1191)
 
 - Status: `capability_schema`가 표현할 수 있던 순서·조건·on_failure·per-step verify를 **아무도 읽지 않던**
