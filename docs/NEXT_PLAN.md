@@ -57,12 +57,15 @@ rubric(8기준) → **MAD(Advocate/Critic, Judge)** 수렴 A+(92) → **평가 �
 - [ ] **② OTel → Tempo (대상=우리 4-step 파이프라인)** — `tracing.tf`(grafana/tempo 단일바이너리 + kps grafana
   데이터소스, `logging.tf`와 동형) + detect/analyze(LLM 백엔드 속성)/decide/execute span. 기존 `trace_id`를
   OTel TraceID와 정렬 → 인시던트 상세에서 Tempo 딥링크. "39초가 어디서 쓰였나"를 측정 가능하게.
-- [ ] **③ 런북 precheck/verify** — `RunbookStep`(`capability_schema.py`)에 사후검증 슬롯. 현재 `condition`/
-  `on_failure`/`timeout_sec`만 있어 executor가 "실행됨"까지만 알고 "나아졌나"를 모름(D17 `resolved` 시맨틱의
-  구조적 귀결). 검증 capability를 돌려 `resolved`를 증거 기반으로. 클러스터 불요.
-- [ ] **④ 권한 통제 3단 분리** — `settings.local.json`의 `gcloud:*`/`aws:*`/`az:*` 포괄 allow를 조회 동사만
-  allow로 축소하고 billable 생성/삭제는 승인 경유. **D16이 못박은 "billable=사용자 게이트"를 로컬 설정이
-  우회하던 상태 차단**(06-24 ~9h GKE 방치의 경로). 오버나이트 루프 read-only가 막히지 않게 조회 동사 먼저 확보.
+- [~] **③ 런북 사후검증** — **계약+판정 seam 완료(2026-07-25, `5fba0af`, gate 892)**: `RunbookStep.verify`
+  (`StepVerification`) + `resolution_verdict()` 2축 판정(resolved/dispatched/**verified**, 검증 없으면
+  verified=None="모름"이고 판정은 기존 규칙과 동일=역호환) + executor `resolved` 배선 + 카탈로그 4스텝. **잔여**:
+  provider측 verify 실행부(`assert_workload_ready` 등을 실제 read로 해결) — Phase 1a의 `_run_external_action`
+  시그니처 변경과 같은 경로라 **Phase 1a와 함께** 하는 것이 안전(단독 착수 시 충돌).
+- [x] ~~**④ 권한 통제 3단 분리**~~ — **완료(2026-07-25, 비커밋 개인 스코프)**: `settings.local.json`의
+  `gcloud:*`/`aws:*`/`az:*` 포괄 allow 제거 → 조회 동사 allow(104건) + billable 생성/삭제·terraform apply/destroy·
+  helm install/upgrade를 `ask`(30건). D16의 "billable=사용자 게이트"를 로컬 설정이 우회하던 상태 차단.
+  짝: `scripts/provision_gke_live.py` 3중 TTL 워치독 커밋(워치독=생성 이후, 권한게이트=생성 자체).
 - [ ] **⑥ NetworkPolicy + PSS restricted** (승인 필요) — soft 티어의 data-plane non-guarantee 좁히기.
   **선행**: 기판 CNI가 NetworkPolicy를 실제 집행하는지 실측(미집행 CNI에 정책만 올리면 거짓 격리 신호).
 - [ ] **⑦ TTL 스위퍼 CronJob** (승인 필요) — 로컬 워치독이 못 지키는 케이스(머신 자체 사망) 보완. 라벨/생성시각
