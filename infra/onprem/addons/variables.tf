@@ -55,6 +55,14 @@ variable "fluent_bit_chart_version" {
   default = "0.57.9"
 }
 
+# Phase 6 tracing: Grafana Tempo (single binary) in the monitoring namespace so
+# the kps Grafana adds it as a third datasource (metrics + logs + traces).
+# tempo 1.24.4 ships Tempo 2.9.0 (verified: helm search repo grafana/tempo --versions).
+variable "tempo_chart_version" {
+  type    = string
+  default = "1.24.4"
+}
+
 # Where Alertmanager delivers alerts: the platform-agent chart's in-cluster
 # webhook Service (Day-2 detect→analyze→decide→execute entrypoint). Default
 # matches `helm install pa infra/helm/platform-agent` in the default namespace.

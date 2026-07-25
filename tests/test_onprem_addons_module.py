@@ -40,20 +40,23 @@ def test_module_ships_the_advertised_pieces():
     names = set(_tf_sources())
     assert {
         "versions.tf", "variables.tf", "argocd.tf", "monitoring.tf",
-        "gitops.tf", "rollouts.tf", "logging.tf", "outputs.tf",
+        "gitops.tf", "rollouts.tf", "logging.tf", "tracing.tf", "outputs.tf",
     } <= names
     assert {
         "argocd.yaml", "kube-prometheus-stack.yaml", "argo-rollouts.yaml",
-        "loki.yaml", "fluent-bit.yaml",
+        "loki.yaml", "fluent-bit.yaml", "tempo.yaml",
     } <= set(_values_files())
 
 
 def test_chart_versions_are_pinned_exactly():
     variables = _tf_sources()["variables.tf"]
     pins = re.findall(r'default\s*=\s*"(\d+\.\d+\.\d+)"', variables)
-    assert len(pins) == 5, "expected exactly five exact-semver chart pins (argocd, kps, rollouts, loki, fluent-bit)"
+    assert len(pins) == 6, (
+        "expected exactly six exact-semver chart pins "
+        "(argocd, kps, rollouts, loki, fluent-bit, tempo)"
+    )
     # …and every remote release actually consumes a pin (no floating chart versions).
-    for release_file in ("argocd.tf", "monitoring.tf", "rollouts.tf", "logging.tf"):
+    for release_file in ("argocd.tf", "monitoring.tf", "rollouts.tf", "logging.tf", "tracing.tf"):
         assert "version" in _tf_sources()[release_file]
 
 
@@ -272,3 +275,49 @@ def test_terraform_validate_passes():
         text=True,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
+
+
+# --- Phase 6: tracing (Tempo) ----------------------------------------------
+#
+# What is traced is the agent's own 4-step pipeline, so the contract here is the
+# ingest/query port pair — both were wrong on the first attempt and only
+# `helm template` caught it.
+
+
+def test_tempo_ingests_otlp_grpc_only():
+    tempo = _values_files()["tempo.yaml"]["tempo"]
+    protocols = tempo["receivers"]["otlp"]["protocols"]
+    assert "grpc" in protocols and protocols["grpc"]["endpoint"].endswith(":4317")
+    # Jaeger/Zipkin/OpenCensus stay out of the *config* (the chart's Service
+    # publishes those legacy ports regardless — config-level narrowing only).
+    assert set(tempo["receivers"]) == {"otlp"}
+
+
+def test_tempo_resources_are_nested_under_the_tempo_key():
+    """A top-level `resources:` is silently dropped by this chart (renders {})."""
+    values = _values_files()["tempo.yaml"]
+    assert "resources" not in values, "top-level resources is ignored — must be tempo.resources"
+    assert values["tempo"]["resources"]["requests"]["cpu"].endswith("m")
+
+
+def test_tempo_storage_is_local_and_bounded():
+    tempo = _values_files()["tempo.yaml"]["tempo"]
+    assert tempo["storage"]["trace"]["backend"] == "local"
+    assert tempo["retention"], "traces are the most voluminous signal — retention must be bounded"
+    assert _values_files()["tempo.yaml"]["persistence"]["enabled"] is False
+
+
+def test_grafana_registers_tempo_on_the_query_port_not_the_ingest_port():
+    kps = _values_files()["kube-prometheus-stack.yaml"]
+    (tempo_ds,) = [d for d in kps["grafana"]["additionalDataSources"] if d["type"] == "tempo"]
+    # 3200 = Tempo 2.x http_listen_port. 3100 is the pre-2.x default and is NOT
+    # exposed by this chart's Service; 4317 is OTLP ingest.
+    assert tempo_ds["url"].endswith(":3200"), "must point at the query API port"
+    assert "4317" not in tempo_ds["url"] and "3100" not in tempo_ds["url"]
+
+
+def test_grafana_has_all_three_signals():
+    kps = _values_files()["kube-prometheus-stack.yaml"]
+    types = {d["type"] for d in kps["grafana"]["additionalDataSources"]}
+    # Prometheus is the chart's own default datasource; Loki + Tempo are ours.
+    assert {"loki", "tempo"} <= types, "metrics + logs + traces must share one Grafana"

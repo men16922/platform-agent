@@ -76,14 +76,24 @@ grafana:
     requests:
       cpu: 5m
       memory: 96Mi
-  # Phase 5: register Loki so metrics (Prometheus) and logs (Loki) share one
-  # Grafana. URL is the in-cluster Loki gateway from values/loki.yaml.
+  # Phase 5/6: register Loki and Tempo so metrics (Prometheus), logs (Loki) and
+  # traces (Tempo) share one Grafana. URLs are the in-cluster Services from
+  # values/loki.yaml and values/tempo.yaml.
   additionalDataSources:
     - name: Loki
       type: loki
       uid: loki
       access: proxy
       url: http://loki-gateway.monitoring.svc
+      isDefault: false
+    - name: Tempo
+      type: tempo
+      uid: tempo
+      access: proxy
+      # 3200 is Tempo 2.x's http_listen_port (query API + metrics). NOT 3100 —
+      # that is the pre-2.x default and this chart's Service does not expose it
+      # (verified with `helm template`); 4317 is OTLP ingest, also not this.
+      url: http://tempo.monitoring.svc:3200
       isDefault: false
 
 kube-state-metrics:

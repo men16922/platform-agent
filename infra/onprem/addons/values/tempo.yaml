@@ -1,0 +1,40 @@
+# Low-footprint Grafana Tempo for local kind/k3s (Phase 6 tracing). Single
+# binary + local storage, OTLP gRPC ingest. Contract (guard-tested): CPU
+# requests stay <= 50m. Not for production scale — local trace aggregation only.
+# The chart itself warns it is deprecated; `tempo-distributed` is the production
+# answer (same trade-off the logging stack makes with Loki SingleBinary).
+tempo:
+  # OTLP gRPC (4317) is the one receiver the agent needs: the tracing seam
+  # exports OTLP and nothing else. Declaring only otlp here keeps the *config*
+  # free of Jaeger/Zipkin/OpenCensus receivers. (The chart's Service still
+  # publishes those legacy ports unconditionally — this is a config-level
+  # narrowing, not a network one.)
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+  # 24h is enough to debug an incident that just happened; traces are the most
+  # voluminous signal and this is a laptop-sized cluster.
+  retention: 24h
+  storage:
+    trace:
+      backend: local
+      local:
+        path: /var/tempo/traces
+      wal:
+        path: /var/tempo/wal
+  # MUST be nested under `tempo:` — a top-level `resources:` is silently ignored
+  # by this chart and renders `resources: {}` (caught by `helm template`).
+  resources:
+    requests:
+      cpu: 25m
+      memory: 128Mi
+
+persistence:
+  enabled: false
+
+# The single-binary chart runs one replica by design; leave scraping to the
+# kube-prometheus-stack's normal pod discovery.
+serviceMonitor:
+  enabled: false
