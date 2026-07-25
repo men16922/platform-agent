@@ -24,9 +24,16 @@ import os
 import subprocess
 import sys
 
+import yaml
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.agents.platform.handoff import preflight, rollback_commands  # noqa: E402
+
+from src.agents.platform.handoff import (  # noqa: E402
+    diff_live_against_rendered,
+    preflight,
+    rollback_commands,
+)
 
 
 def _run(cmd: list[str], timeout: int = 120) -> tuple[int, str, str]:
@@ -90,6 +97,38 @@ def _release_resources(release: str, namespace: str) -> list[dict]:
     return resources
 
 
+def _drift(release: str, namespace: str, resources: list[dict]) -> list[str]:
+    """Fields the live objects no longer carry from the manifest Helm recorded.
+
+    Adoption re-applies that manifest, so anything listed here WILL change on
+    handoff — and a rollout you did not expect is exactly what makes people
+    reach for the rollback and blame the handoff.
+    """
+    code, manifest, _ = _run(["helm", "get", "manifest", release, "-n", namespace])
+    if code != 0:
+        return []
+
+    live_by_key = {
+        (r.get("kind"), (r.get("metadata") or {}).get("name")): r for r in resources
+    }
+    differences: list[str] = []
+    try:
+        docs = list(yaml.safe_load_all(manifest))
+    except yaml.YAMLError:
+        return []
+    for doc in docs:
+        if not isinstance(doc, dict):
+            continue
+        key = (doc.get("kind"), (doc.get("metadata") or {}).get("name"))
+        live = live_by_key.get(key)
+        if live is None:
+            continue
+        differences.extend(
+            f"{key[0]}/{key[1]} {d}" for d in diff_live_against_rendered(doc, live)
+        )
+    return differences
+
+
 def _commits_ahead() -> tuple[int, bool]:
     code, out, _ = _run(["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"])
     if code != 0:
@@ -131,6 +170,7 @@ def main() -> int:
         commits_ahead=commits_ahead,
         remote_configured=remote_configured,
         snapshot_taken=args.snapshot_taken,
+        drift=_drift(args.release, args.namespace, resources),
     )
     commands = rollback_commands(args.terraform_address, args.release, args.namespace)
 

@@ -11,6 +11,8 @@ positives gets ignored, which is worse than not having one.
 from __future__ import annotations
 
 from src.agents.platform.handoff import (
+    check_live_matches_rendered,
+    diff_live_against_rendered,
     check_ownership,
     check_source_reachable,
     check_stateful,
@@ -155,7 +157,8 @@ class TestVerdict:
         payload = self._run().to_dict()
         assert payload["safe"] is True
         assert payload["revision_before"] == 3
-        assert len(payload["findings"]) == 4
+        # baseline, ownership, stateful, source-reachable, live-matches-rendered
+        assert len(payload["findings"]) == 5
 
 
 class TestRollback:
@@ -167,3 +170,89 @@ class TestRollback:
         """Partial adoption leaves dual ownership, which drifts silently."""
         commands = rollback_commands("helm_release.loki", "loki", "monitoring")
         assert any("helm history" in c for c in commands)
+
+
+class TestLiveMatchesRendered:
+    """The check added after the first real handoff churned anyway.
+
+    Every other check passed, the preflight said SAFE TO PROCEED, and adoption
+    still rolled a canary — because the live Rollout had silently lost its
+    container `ports` and `resources.requests`, so re-asserting git was a real
+    change. Cause: `kubectl patch --type=merge` on a container list is a JSON
+    merge patch, which REPLACES arrays wholesale; a patch carrying only
+    name+image drops every other field of that container.
+
+    Non-blocking on purpose: adoption re-asserts the manifest either way. The
+    damage is that unexpected churn reads as "the handoff broke it".
+    """
+
+    def test_the_exact_drift_that_caused_the_churn(self):
+        rendered = {
+            "kind": "Rollout",
+            "spec": {"template": {"spec": {"containers": [
+                {"name": "demo", "image": "demo:blue",
+                 "ports": [{"name": "http", "containerPort": 8080}],
+                 "resources": {"requests": {"cpu": "5m", "memory": "16Mi"}}},
+            ]}}},
+        }
+        # What `--type=merge` left behind.
+        live = {
+            "kind": "Rollout",
+            "spec": {"template": {"spec": {"containers": [
+                {"name": "demo", "image": "demo:blue", "resources": {}},
+            ]}}},
+        }
+        differences = diff_live_against_rendered(rendered, live)
+        assert any("ports" in d for d in differences), differences
+        assert any("resources" in d for d in differences), differences
+
+    def test_identical_objects_report_no_drift(self):
+        obj = {"kind": "Service", "spec": {"ports": [{"port": 80}]}}
+        assert diff_live_against_rendered(obj, dict(obj)) == []
+
+    def test_server_side_defaults_are_not_drift(self):
+        """Live carries clusterIP/status the manifest never declared — one-directional."""
+        rendered = {"kind": "Service", "spec": {"ports": [{"port": 80}]}}
+        live = {
+            "kind": "Service",
+            "spec": {"ports": [{"port": 80}], "clusterIP": "10.96.0.1", "type": "ClusterIP"},
+            "status": {"loadBalancer": {}},
+        }
+        assert diff_live_against_rendered(rendered, live) == []
+
+    def test_adoption_annotations_are_not_drift(self):
+        """The engine stamps its own tracking id — flagging it would cry wolf every handoff."""
+        rendered = {"metadata": {"annotations": {
+            "argocd.argoproj.io/tracking-id": "x", "keep": "me"}}}
+        live = {"metadata": {"annotations": {"keep": "me"}}}
+        assert diff_live_against_rendered(rendered, live) == []
+
+    def test_list_length_change_is_reported(self):
+        rendered = {"spec": {"containers": [{"name": "a"}, {"name": "sidecar"}]}}
+        live = {"spec": {"containers": [{"name": "a"}]}}
+        assert any("length" in d for d in diff_live_against_rendered(rendered, live))
+
+    def test_finding_is_a_warning_not_a_blocker(self):
+        finding = check_live_matches_rendered(["Rollout/demo spec.x (missing)"])
+        assert finding.passed is False
+        assert finding.blocking is False, "drift means 'expect churn', not 'stop'"
+        assert "WILL churn" in finding.detail
+
+    def test_clean_finding_says_it_should_be_a_no_op(self):
+        finding = check_live_matches_rendered([])
+        assert finding.passed is True
+        assert "no-op" in finding.detail
+
+    def test_long_drift_lists_are_truncated_with_a_count(self):
+        """A wall of field paths is the same as no report."""
+        finding = check_live_matches_rendered([f"f{i}" for i in range(20)])
+        assert "+14 more" in finding.detail
+
+    def test_drift_alone_does_not_block_the_verdict(self):
+        result = preflight(
+            release="demo", namespace="ns", revision=3,
+            resources=[_owned("Rollout", "demo", release="demo", namespace="ns")],
+            commits_ahead=0, drift=["Rollout/demo spec.x (missing)"],
+        )
+        assert result.safe is True, "drift is a warning; the handoff is still safe to run"
+        assert any(f.check == "live-matches-rendered" and not f.passed for f in result.findings)

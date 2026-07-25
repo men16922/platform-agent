@@ -226,6 +226,82 @@ def check_baseline_recorded(revision: int | None) -> Finding:
     )
 
 
+#: Fields the delivery engine legitimately adds on adoption. Reporting these as
+#: drift would make the check cry wolf on every single handoff.
+_ADOPTION_ANNOTATIONS = ("argocd.argoproj.io/tracking-id", "kubectl.kubernetes.io/last-applied-configuration")
+
+
+def check_live_matches_rendered(differences: list[str]) -> Finding:
+    """Does the LIVE object still match the manifest the engine will apply?
+
+    The gap this closes, found the hard way on the first real handoff: every
+    other check passed, the preflight said SAFE TO PROCEED, and adoption still
+    churned — ArgoCD applied the rendered manifest and a canary rolled.
+
+    Nothing was wrong with the handoff. The live Rollout had silently lost its
+    container `ports` and `resources.requests`, so re-asserting git's desired
+    state was a real change. (Cause: `kubectl patch --type=merge` on a container
+    list. That is a JSON merge patch, which REPLACES arrays wholesale — a patch
+    carrying only name+image drops every other field of the container.)
+
+    Adoption re-asserts the manifest either way, so drift is not dangerous by
+    itself. It is dangerous because it makes the handoff look like the culprit:
+    you expect a no-op, you get a rollout, and you reach for the rollback.
+    Non-blocking on purpose — this is "expect churn, here is exactly what",
+    not "stop".
+    """
+    if not differences:
+        return Finding(
+            check="live-matches-rendered",
+            passed=True,
+            blocking=False,
+            detail="live objects match the rendered manifest — adoption should be a true no-op",
+        )
+    listed = ", ".join(differences[:6])
+    if len(differences) > 6:
+        listed += f", +{len(differences) - 6} more"
+    return Finding(
+        check="live-matches-rendered",
+        passed=False,
+        blocking=False,
+        detail=(
+            f"{len(differences)} field(s) drifted from the rendered manifest: {listed}. "
+            "Adoption will re-assert git and that WILL churn — reconcile first if you "
+            "want to measure the handoff itself"
+        ),
+    )
+
+
+def diff_live_against_rendered(
+    rendered: dict[str, Any], live: dict[str, Any], path: str = ""
+) -> list[str]:
+    """Field paths where ``live`` no longer carries what ``rendered`` declares.
+
+    One-directional on purpose: extra fields in the live object are the API
+    server's defaults (clusterIP, creationTimestamp, status, …) and reporting
+    them would bury the two fields that actually matter.
+    """
+    differences: list[str] = []
+    if isinstance(rendered, dict) and isinstance(live, dict):
+        for key, want in rendered.items():
+            if key in _ADOPTION_ANNOTATIONS:
+                continue
+            here = f"{path}.{key}" if path else key
+            if key not in live:
+                differences.append(f"{here} (missing)")
+            else:
+                differences.extend(diff_live_against_rendered(want, live[key], here))
+    elif isinstance(rendered, list) and isinstance(live, list):
+        if len(rendered) != len(live):
+            differences.append(f"{path} (length {len(live)} != {len(rendered)})")
+        else:
+            for index, (want, got) in enumerate(zip(rendered, live)):
+                differences.extend(diff_live_against_rendered(want, got, f"{path}[{index}]"))
+    elif rendered != live:
+        differences.append(f"{path} ({live!r} != {rendered!r})")
+    return differences
+
+
 def rollback_commands(terraform_address: str, release: str, namespace: str) -> list[str]:
     """
     The exact way back to single (Terraform) ownership.
@@ -248,6 +324,7 @@ def preflight(
     commits_ahead: int,
     remote_configured: bool = True,
     snapshot_taken: bool = False,
+    drift: list[str] | None = None,
 ) -> HandoffPreflight:
     """Run every check. Safe only if no blocking check failed."""
     return HandoffPreflight(
@@ -259,5 +336,6 @@ def preflight(
             check_ownership(resources, release, namespace),
             check_stateful(resources, snapshot_taken),
             check_source_reachable(commits_ahead, remote_configured),
+            check_live_matches_rendered(drift or []),
         ],
     )

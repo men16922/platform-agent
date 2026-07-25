@@ -51,3 +51,86 @@ The first version judged Pods/ReplicaSets too and reported "4 resources would no
 be adopted" for loki. Those are controller-created descendants that never carry
 Helm ownership — filtering on ownerReferences turned a false BLOCKED into a
 clean pass (12 resources). A checker that cries wolf gets ignored.
+
+
+================================================================================
+=== HANDOFF EXECUTED (2026-07-26) — rollouts-demo, TF -> ArgoCD ===
+================================================================================
+
+Blocker (b) cleared by the push, so the preflight went green and the user ran
+the one command the agent is not permitted to run.
+
+--- preflight, immediately before ---
+  [ok] revision-baseline: revision before handoff = 8; adoption must leave it unchanged
+  [ok] ownership-metadata: all 2 resources carry Helm ownership
+  [ok] stateful-resources: no PVC/StatefulSet — a failed adoption costs uptime, not data
+  [ok] source-reachable: remote is up to date with the local branch
+  => SAFE TO PROCEED
+
+--- the handoff ---
+  $ terraform state rm helm_release.rollouts_demo
+    Removed helm_release.rollouts_demo[0]
+  $ terraform plan -var rollouts_demo_gitops_owned=true
+    Plan: 1 to add, 0 to change, 0 to destroy      <- no `helm uninstall`
+  $ terraform apply -auto-approve -var rollouts_demo_gitops_owned=true
+    helm_release.rollouts_demo_app[0]: Creation complete after 1s
+
+--- result ---
+  ArgoCD Application rollouts-demo    Synced / Healthy
+  Terraform now owns                  helm_release.rollouts_demo_app[0]  (the
+                                      ownership RECORD) — not the workload
+  helm release rollouts-demo          revision 8, UNCHANGED (the baseline check's
+                                      whole point)
+  Rollout uid                         1aab334a-… unchanged  (not recreated)
+  Service uid / clusterIP             b117e477-… / 10.96.70.166 unchanged
+  selfHeal                            scaled 4 -> 2, restored to 4 within ~40s
+
+--- BUT: adoption was NOT a no-op, and the preflight did not predict it ---
+Every check passed and a canary still rolled: a new ReplicaSet appeared and the
+Rollout paused at 50%. Diffing the old and new pod templates:
+
+  .spec.containers[0].ports      ABSENT -> [{containerPort: 8080, name: http}]
+  .spec.containers[0].resources.requests
+                                 ABSENT -> {cpu: 5m, memory: 16Mi}
+
+The handoff was not at fault. The LIVE Rollout had silently lost those fields,
+so ArgoCD re-asserting git's desired state was a genuine change — the adoption
+REPAIRED drift rather than causing it.
+
+Cause, self-inflicted earlier in the session: `kubectl patch --type=merge` on a
+container list. `--type=merge` is a JSON merge patch (RFC 7386), which REPLACES
+arrays wholesale — a patch carrying only `name` and `image` drops every other
+field of that container. Strategic merge would have merged by the `name` key;
+`--type=merge` does not. Nothing looked wrong: the pods had no readiness probe,
+so they reported Ready while the Service's named `targetPort: http` had nothing
+to resolve against.
+
+--- the fix: a 5th preflight check ---
+`live-matches-rendered` diffs `helm get manifest` against the live objects and
+lists every field the live object no longer carries. NON-BLOCKING on purpose:
+adoption re-asserts the manifest either way, so drift is not dangerous by
+itself. It is dangerous because unexpected churn reads as "the handoff broke
+it" and sends you reaching for the rollback.
+
+One-directional: extra fields in the live object are server-side defaults
+(clusterIP, status, …), and the engine's own `argocd.argoproj.io/tracking-id`
+is filtered — a check that fires on every single handoff gets ignored.
+
+  [ok] live-matches-rendered: live objects match the rendered manifest —
+       adoption should be a true no-op
+
+--- trying to demonstrate the new check live, and what that showed instead ---
+Re-running the exact `--type=merge` footgun and immediately re-reading the
+object: ports and resources were gone. Seconds later the preflight reported NO
+drift — because ArgoCD's selfHeal had already put them back.
+
+That is not the check failing; it is the handoff working. Post-adoption, this
+class of drift cannot persist. The check matters for the state the preflight is
+actually run in: TF-owned, with nothing continuously reconciling. Pinned by
+unit guards instead (tests/test_handoff_preflight.py::TestLiveMatchesRendered),
+including the exact rendered/live pair that caused the churn.
+
+--- remaining ---
+loki / tempo / pa hold data; a volume snapshot mechanism is still required
+before those three (kind has no CSI snapshotter by default). rollouts-demo was
+chosen first precisely because a failed adoption there costs uptime, not data.

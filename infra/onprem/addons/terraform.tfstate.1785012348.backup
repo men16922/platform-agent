@@ -1,0 +1,794 @@
+{
+  "version": 4,
+  "terraform_version": "1.15.8",
+  "serial": 33,
+  "lineage": "c53e801c-d599-b00d-c085-7c467a4299e2",
+  "outputs": {
+    "argocd_namespace": {
+      "value": "argocd",
+      "type": "string"
+    },
+    "gitops_application": {
+      "value": "ArgoCD Application 'platform-agent' → https://github.com/men16922/platform-agent.git\n  path=infra/helm/platform-agent rev=main values=values-kind.yaml\nSync/drift:  kubectl -n argocd get application platform-agent\n",
+      "type": "string"
+    },
+    "monitoring_namespace": {
+      "value": "monitoring",
+      "type": "string"
+    },
+    "ui_access": {
+      "value": "ArgoCD:  kubectl -n argocd port-forward svc/argocd-server 8090:443\n         (admin password: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d)\nGrafana: kubectl -n monitoring port-forward svc/monitoring-grafana 3001:80\nProm:    kubectl -n monitoring port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090\n",
+      "type": "string"
+    }
+  },
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "helm_release",
+      "name": "argo_rollouts",
+      "provider": "provider[\"registry.terraform.io/hashicorp/helm\"]",
+      "instances": [
+        {
+          "schema_version": 2,
+          "attributes": {
+            "atomic": false,
+            "chart": "argo-rollouts",
+            "cleanup_on_fail": false,
+            "create_namespace": true,
+            "dependency_update": false,
+            "description": null,
+            "devel": null,
+            "disable_crd_hooks": false,
+            "disable_openapi_validation": false,
+            "disable_webhooks": false,
+            "force_update": false,
+            "id": "argo-rollouts",
+            "keyring": null,
+            "lint": false,
+            "manifest": null,
+            "max_history": 0,
+            "metadata": {
+              "app_version": "v1.9.1",
+              "chart": "argo-rollouts",
+              "first_deployed": 1784544259,
+              "last_deployed": 1784544259,
+              "name": "argo-rollouts",
+              "namespace": "argo-rollouts",
+              "notes": "",
+              "revision": 1,
+              "values": "{\"controller\":{\"resources\":{\"requests\":{\"cpu\":\"10m\",\"memory\":\"64Mi\"}}},\"dashboard\":{\"enabled\":true,\"resources\":{\"requests\":{\"cpu\":\"5m\",\"memory\":\"32Mi\"}}}}",
+              "version": "2.41.1"
+            },
+            "name": "argo-rollouts",
+            "namespace": "argo-rollouts",
+            "pass_credentials": false,
+            "postrender": null,
+            "recreate_pods": false,
+            "render_subchart_notes": true,
+            "replace": false,
+            "repository": "https://argoproj.github.io/argo-helm",
+            "repository_ca_file": null,
+            "repository_cert_file": null,
+            "repository_key_file": null,
+            "repository_password": null,
+            "repository_username": null,
+            "reset_values": false,
+            "resources": null,
+            "reuse_values": false,
+            "set": null,
+            "set_list": null,
+            "set_sensitive": null,
+            "set_wo": null,
+            "set_wo_revision": null,
+            "skip_crds": false,
+            "status": "deployed",
+            "take_ownership": false,
+            "timeout": 600,
+            "timeouts": null,
+            "upgrade_install": false,
+            "values": [
+              "# Low-footprint Argo Rollouts controller for local kind/k3s. Contract\n# (guard-tested): every CPU request stays \u003c= 50m so the full add-on stack fits\n# the Docker VM budget. Dashboard is enabled for the canary promote/abort demo.\ncontroller:\n  resources:\n    requests:\n      cpu: 10m\n      memory: 64Mi\n\ndashboard:\n  enabled: true\n  resources:\n    requests:\n      cpu: 5m\n      memory: 32Mi\n"
+            ],
+            "verify": false,
+            "version": "2.41.1",
+            "wait": true,
+            "wait_for_jobs": false
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "repository_password"
+              }
+            ]
+          ],
+          "identity_schema_version": 0,
+          "identity": {
+            "namespace": "argo-rollouts",
+            "release_name": "argo-rollouts"
+          }
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "helm_release",
+      "name": "argocd",
+      "provider": "provider[\"registry.terraform.io/hashicorp/helm\"]",
+      "instances": [
+        {
+          "schema_version": 2,
+          "attributes": {
+            "atomic": false,
+            "chart": "argo-cd",
+            "cleanup_on_fail": false,
+            "create_namespace": true,
+            "dependency_update": false,
+            "description": null,
+            "devel": null,
+            "disable_crd_hooks": false,
+            "disable_openapi_validation": false,
+            "disable_webhooks": false,
+            "force_update": false,
+            "id": "argocd",
+            "keyring": null,
+            "lint": false,
+            "manifest": null,
+            "max_history": 0,
+            "metadata": {
+              "app_version": "v3.4.5",
+              "chart": "argo-cd",
+              "first_deployed": 1784541126,
+              "last_deployed": 1784543664,
+              "name": "argocd",
+              "namespace": "argocd",
+              "notes": "\nIn order to access the server UI you have the following options:\n\n1. kubectl port-forward service/argocd-server -n argocd 8080:443\n\n    and then open the browser on http://localhost:8080 and accept the certificate\n\n2. enable ingress in the values file `server.ingress.enabled` and either\n      - Add the annotation for ssl passthrough: https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/#option-1-ssl-passthrough\n      - Set the `configs.params.\"server.insecure\"` in the values file and terminate SSL at your ingress: https://argo-cd.readthedocs.io/en/stable/operator-manual/ingress/#option-2-multiple-ingress-objects-and-hosts\n\n\nAfter reaching the UI the first time you can login with username: admin and the random password generated during the installation. You can find the password by running:\n\nkubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=\"{.data.password}\" | base64 -d\n\n(You should delete the initial secret afterwards as suggested by the Getting Started Guide: https://argo-cd.readthedocs.io/en/stable/getting_started/#4-login-using-the-cli)\n",
+              "revision": 2,
+              "values": "{\"applicationSet\":{\"resources\":{\"requests\":{\"cpu\":\"5m\",\"memory\":\"32Mi\"}}},\"configs\":{\"cm\":{\"application.resourceTrackingMethod\":\"annotation\"}},\"controller\":{\"resources\":{\"requests\":{\"cpu\":\"10m\",\"memory\":\"256Mi\"}}},\"dex\":{\"enabled\":false},\"notifications\":{\"enabled\":false},\"redis\":{\"resources\":{\"requests\":{\"cpu\":\"5m\",\"memory\":\"32Mi\"}}},\"repoServer\":{\"resources\":{\"requests\":{\"cpu\":\"5m\",\"memory\":\"128Mi\"}}},\"server\":{\"resources\":{\"requests\":{\"cpu\":\"5m\",\"memory\":\"64Mi\"}}}}",
+              "version": "10.1.4"
+            },
+            "name": "argocd",
+            "namespace": "argocd",
+            "pass_credentials": false,
+            "postrender": null,
+            "recreate_pods": false,
+            "render_subchart_notes": true,
+            "replace": false,
+            "repository": "https://argoproj.github.io/argo-helm",
+            "repository_ca_file": null,
+            "repository_cert_file": null,
+            "repository_key_file": null,
+            "repository_password": null,
+            "repository_username": null,
+            "reset_values": false,
+            "resources": null,
+            "reuse_values": false,
+            "set": null,
+            "set_list": null,
+            "set_sensitive": null,
+            "set_wo": null,
+            "set_wo_revision": null,
+            "skip_crds": false,
+            "status": "deployed",
+            "take_ownership": false,
+            "timeout": 600,
+            "timeouts": null,
+            "upgrade_install": false,
+            "values": [
+              "# Low-footprint Argo CD for local kind/k3s. Contract (guard-tested): every CPU\n# request stays \u003c= 50m so the full add-on stack fits the Docker VM budget.\n# Dex (SSO) and notifications are off — local access is port-forward + admin.\n\ndex:\n  enabled: false\n\nnotifications:\n  enabled: false\n\n# Track managed resources by annotation, not the app.kubernetes.io/instance\n# label. The platform-agent chart already sets that label to its release name,\n# so label tracking would collide (ArgoCD's official guidance for Helm charts\n# that stamp the instance label). Required for Phase 3 to adopt the workload.\nconfigs:\n  cm:\n    application.resourceTrackingMethod: annotation\n\ncontroller:\n  resources:\n    requests:\n      cpu: 10m\n      memory: 256Mi\n\nserver:\n  resources:\n    requests:\n      cpu: 5m\n      memory: 64Mi\n\nrepoServer:\n  resources:\n    requests:\n      cpu: 5m\n      memory: 128Mi\n\napplicationSet:\n  resources:\n    requests:\n      cpu: 5m\n      memory: 32Mi\n\nredis:\n  resources:\n    requests:\n      cpu: 5m\n      memory: 32Mi\n"
+            ],
+            "verify": false,
+            "version": "10.1.4",
+            "wait": true,
+            "wait_for_jobs": false
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "repository_password"
+              }
+            ]
+          ],
+          "identity_schema_version": 0,
+          "identity": {
+            "namespace": "argocd",
+            "release_name": "argocd"
+          }
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "helm_release",
+      "name": "fluent_bit",
+      "provider": "provider[\"registry.terraform.io/hashicorp/helm\"]",
+      "instances": [
+        {
+          "schema_version": 2,
+          "attributes": {
+            "atomic": false,
+            "chart": "fluent-bit",
+            "cleanup_on_fail": false,
+            "create_namespace": false,
+            "dependency_update": false,
+            "description": null,
+            "devel": null,
+            "disable_crd_hooks": false,
+            "disable_openapi_validation": false,
+            "disable_webhooks": false,
+            "force_update": false,
+            "id": "fluent-bit",
+            "keyring": null,
+            "lint": false,
+            "manifest": null,
+            "max_history": 0,
+            "metadata": {
+              "app_version": "5.0.9",
+              "chart": "fluent-bit",
+              "first_deployed": 1784545461,
+              "last_deployed": 1784545461,
+              "name": "fluent-bit",
+              "namespace": "monitoring",
+              "notes": "Get Fluent Bit build information by running these commands:\n\nexport POD_NAME=$(kubectl get pods --namespace monitoring -l \"app.kubernetes.io/name=fluent-bit,app.kubernetes.io/instance=fluent-bit\" -o jsonpath=\"{.items[0].metadata.name}\")\nkubectl --namespace monitoring port-forward $POD_NAME 2020:2020\ncurl http://127.0.0.1:2020 \n\n",
+              "revision": 1,
+              "values": "{\"config\":{\"filters\":\"[FILTER]\\n    Name kubernetes\\n    Match kube.*\\n    Merge_Log On\\n    Keep_Log Off\\n    K8S-Logging.Parser On\\n    K8S-Logging.Exclude On\\n\",\"inputs\":\"[INPUT]\\n    Name tail\\n    Path /var/log/containers/*.log\\n    multiline.parser docker, cri\\n    Tag kube.*\\n    Mem_Buf_Limit 5MB\\n    Skip_Long_Lines On\\n\",\"outputs\":\"[OUTPUT]\\n    Name loki\\n    Match kube.*\\n    Host loki-gateway.monitoring.svc\\n    Port 80\\n    Labels job=fluent-bit\\n    Label_keys $kubernetes['namespace_name'],$kubernetes['pod_name'],$kubernetes['container_name']\\n    Auto_Kubernetes_Labels On\\n\"},\"resources\":{\"requests\":{\"cpu\":\"5m\",\"memory\":\"32Mi\"}},\"testFramework\":{\"enabled\":false}}",
+              "version": "0.57.9"
+            },
+            "name": "fluent-bit",
+            "namespace": "monitoring",
+            "pass_credentials": false,
+            "postrender": null,
+            "recreate_pods": false,
+            "render_subchart_notes": true,
+            "replace": false,
+            "repository": "https://fluent.github.io/helm-charts",
+            "repository_ca_file": null,
+            "repository_cert_file": null,
+            "repository_key_file": null,
+            "repository_password": null,
+            "repository_username": null,
+            "reset_values": false,
+            "resources": null,
+            "reuse_values": false,
+            "set": null,
+            "set_list": null,
+            "set_sensitive": null,
+            "set_wo": null,
+            "set_wo_revision": null,
+            "skip_crds": false,
+            "status": "deployed",
+            "take_ownership": false,
+            "timeout": 300,
+            "timeouts": null,
+            "upgrade_install": false,
+            "values": [
+              "# Fluent Bit DaemonSet: tail container logs, enrich with k8s metadata, ship to\n# Loki's gateway (in-cluster). Low-footprint for local kind/k3s — guard-tested\n# CPU request \u003c= 50m. Pairs with values/loki.yaml.\nresources:\n  requests:\n    cpu: 5m\n    memory: 32Mi\n\n# No test connection pod on a local stack.\ntestFramework:\n  enabled: false\n\nconfig:\n  inputs: |\n    [INPUT]\n        Name tail\n        Path /var/log/containers/*.log\n        multiline.parser docker, cri\n        Tag kube.*\n        Mem_Buf_Limit 5MB\n        Skip_Long_Lines On\n\n  filters: |\n    [FILTER]\n        Name kubernetes\n        Match kube.*\n        Merge_Log On\n        Keep_Log Off\n        K8S-Logging.Parser On\n        K8S-Logging.Exclude On\n\n  # Ship to Loki. The kubernetes filter adds namespace/pod/container as record\n  # keys; expose them as Loki labels so Grafana can filter by them.\n  outputs: |\n    [OUTPUT]\n        Name loki\n        Match kube.*\n        Host loki-gateway.monitoring.svc\n        Port 80\n        Labels job=fluent-bit\n        Label_keys $kubernetes['namespace_name'],$kubernetes['pod_name'],$kubernetes['container_name']\n        Auto_Kubernetes_Labels On\n"
+            ],
+            "verify": false,
+            "version": "0.57.9",
+            "wait": true,
+            "wait_for_jobs": false
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "repository_password"
+              }
+            ]
+          ],
+          "identity_schema_version": 0,
+          "identity": {
+            "namespace": "monitoring",
+            "release_name": "fluent-bit"
+          },
+          "dependencies": [
+            "helm_release.loki"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "helm_release",
+      "name": "kube_prometheus_stack",
+      "provider": "provider[\"registry.terraform.io/hashicorp/helm\"]",
+      "instances": [
+        {
+          "schema_version": 2,
+          "attributes": {
+            "atomic": false,
+            "chart": "kube-prometheus-stack",
+            "cleanup_on_fail": false,
+            "create_namespace": true,
+            "dependency_update": false,
+            "description": null,
+            "devel": null,
+            "disable_crd_hooks": false,
+            "disable_openapi_validation": false,
+            "disable_webhooks": false,
+            "force_update": false,
+            "id": "monitoring",
+            "keyring": null,
+            "lint": false,
+            "manifest": null,
+            "max_history": 0,
+            "metadata": {
+              "app_version": "v0.92.1",
+              "chart": "kube-prometheus-stack",
+              "first_deployed": 1784541128,
+              "last_deployed": 1784991944,
+              "name": "monitoring",
+              "namespace": "monitoring",
+              "notes": "kube-prometheus-stack has been installed. Check its status by running:\n  kubectl --namespace monitoring get pods -l \"release=monitoring\"\n\nGet Grafana 'admin' user password by running:\n\n  kubectl --namespace monitoring get secrets monitoring-grafana -o jsonpath=\"{.data.admin-password}\" | base64 -d ; echo\n\nAccess Grafana local instance:\n\n  export POD_NAME=$(kubectl --namespace monitoring get pod -l \"app.kubernetes.io/name=grafana,app.kubernetes.io/instance=monitoring\" -oname)\n  kubectl --namespace monitoring port-forward $POD_NAME 3000\n\nGet your grafana admin user password by running:\n\n  kubectl get secret --namespace monitoring -l app.kubernetes.io/component=admin-secret -o jsonpath=\"{.items[0].data.admin-password}\" | base64 --decode ; echo\n\n\nVisit https://github.com/prometheus-operator/kube-prometheus for instructions on how to create \u0026 configure Alertmanager and Prometheus instances using the Operator.\n\nkube-state-metrics is a simple service that listens to the Kubernetes API server and generates metrics about the state of the objects.\nThe exposed metrics can be found here:\nhttps://github.com/kubernetes/kube-state-metrics/blob/master/docs/README.md#exposed-metrics\n\nThe metrics are exported on the HTTP endpoint /metrics on the listening port.\nIn your case, monitoring-kube-state-metrics.monitoring.svc.cluster.local:8080/metrics\n\nThey are served either as plaintext or protobuf depending on the Accept header.\nThey are designed to be consumed either by Prometheus itself or by a scraper that is compatible with scraping a Prometheus client endpoint.\n\n1. Get the application URL by running these commands:\n  export POD_NAME=$(kubectl get pods --namespace monitoring -l \"app.kubernetes.io/name=prometheus-node-exporter,app.kubernetes.io/instance=monitoring\" -o jsonpath=\"{.items[0].metadata.name}\")\n  echo \"Visit http://127.0.0.1:9100 to use your application\"\n  kubectl port-forward --namespace monitoring $POD_NAME 9100\n1. Get your 'admin' user password by running:\n\n   kubectl get secret --namespace monitoring monitoring-grafana -o jsonpath=\"{.data.admin-password}\" | base64 --decode ; echo\n\n\n2. The Grafana server can be accessed via port 80 on the following DNS name from within your cluster:\n\n   monitoring-grafana.monitoring.svc.cluster.local\n\n   Get the Grafana URL to visit by running these commands in the same shell:\n     export POD_NAME=$(kubectl get pods --namespace monitoring -l \"app.kubernetes.io/name=grafana,app.kubernetes.io/instance=monitoring\" -o jsonpath=\"{.items[0].metadata.name}\")\n     kubectl --namespace monitoring port-forward $POD_NAME 3000\n\n3. Login with the password from step 1 and the username: admin\n#################################################################################\n######   WARNING: Persistence is disabled!!! You will lose your data when   #####\n######            the Grafana pod is terminated.                            #####\n#################################################################################\n",
+              "revision": 4,
+              "values": "{\"additionalPrometheusRulesMap\":{\"platform-agent-demo\":{\"groups\":[{\"name\":\"platform-agent.demo\",\"rules\":[{\"alert\":\"PlatformDemoCrashLoop\",\"annotations\":{\"description\":\"Container {{ $labels.container }} restarted more than twice in 5m.\",\"summary\":\"Pod {{ $labels.pod }} in {{ $labels.namespace }} is crash-looping\"},\"expr\":\"increase(kube_pod_container_status_restarts_total{namespace=\\\"default\\\"}[5m]) \\u003e 2\",\"for\":\"1m\",\"labels\":{\"severity\":\"warning\"}}]}]}},\"alertmanager\":{\"alertmanagerSpec\":{\"resources\":{\"requests\":{\"cpu\":\"5m\",\"memory\":\"32Mi\"}}},\"config\":{\"receivers\":[{\"name\":\"null\"},{\"name\":\"platform-agent\",\"webhook_configs\":[{\"send_resolved\":false,\"url\":\"http://pa-platform-agent-webhook.default.svc:8078/webhook/alertmanager\"}]}],\"route\":{\"group_by\":[\"alertname\",\"namespace\"],\"group_interval\":\"1m\",\"group_wait\":\"10s\",\"receiver\":\"platform-agent\",\"repeat_interval\":\"12h\",\"routes\":[{\"matchers\":[\"alertname = \\\"Watchdog\\\"\"],\"receiver\":\"null\"}]}}},\"grafana\":{\"additionalDataSources\":[{\"access\":\"proxy\",\"isDefault\":false,\"name\":\"Loki\",\"type\":\"loki\",\"uid\":\"loki\",\"url\":\"http://loki-gateway.monitoring.svc\"},{\"access\":\"proxy\",\"isDefault\":false,\"name\":\"Tempo\",\"type\":\"tempo\",\"uid\":\"tempo\",\"url\":\"http://tempo.monitoring.svc:3200\"}],\"resources\":{\"requests\":{\"cpu\":\"5m\",\"memory\":\"96Mi\"}}},\"kube-state-metrics\":{\"resources\":{\"requests\":{\"cpu\":\"5m\",\"memory\":\"32Mi\"}}},\"kubeControllerManager\":{\"enabled\":false},\"kubeEtcd\":{\"enabled\":false},\"kubeProxy\":{\"enabled\":false},\"kubeScheduler\":{\"enabled\":false},\"prometheus\":{\"prometheusSpec\":{\"resources\":{\"requests\":{\"cpu\":\"10m\",\"memory\":\"384Mi\"}},\"retention\":\"12h\"}},\"prometheus-node-exporter\":{\"resources\":{\"requests\":{\"cpu\":\"5m\",\"memory\":\"16Mi\"}}},\"prometheusOperator\":{\"resources\":{\"requests\":{\"cpu\":\"5m\",\"memory\":\"64Mi\"}}}}",
+              "version": "87.17.0"
+            },
+            "name": "monitoring",
+            "namespace": "monitoring",
+            "pass_credentials": false,
+            "postrender": null,
+            "recreate_pods": false,
+            "render_subchart_notes": true,
+            "replace": false,
+            "repository": "https://prometheus-community.github.io/helm-charts",
+            "repository_ca_file": null,
+            "repository_cert_file": null,
+            "repository_key_file": null,
+            "repository_password": null,
+            "repository_username": null,
+            "reset_values": false,
+            "resources": null,
+            "reuse_values": false,
+            "set": null,
+            "set_list": null,
+            "set_sensitive": null,
+            "set_wo": null,
+            "set_wo_revision": null,
+            "skip_crds": false,
+            "status": "deployed",
+            "take_ownership": false,
+            "timeout": 600,
+            "timeouts": null,
+            "upgrade_install": false,
+            "values": [
+              "# Low-footprint kube-prometheus-stack for local kind/k3s. Contract\n# (guard-tested): every CPU request stays \u003c= 50m. Storage is ephemeral\n# (emptyDir) and retention short — this is a demo/ops-loop substrate, not a\n# long-term TSDB. Control-plane component scrapes that are unreachable on\n# kind/k3s (etcd/scheduler/controller-manager/kube-proxy) are disabled so the\n# default rules don't fire permanent false-positive alerts.\n\nkubeEtcd:\n  enabled: false\nkubeScheduler:\n  enabled: false\nkubeControllerManager:\n  enabled: false\nkubeProxy:\n  enabled: false\n\nprometheusOperator:\n  resources:\n    requests:\n      cpu: 5m\n      memory: 64Mi\n\nprometheus:\n  prometheusSpec:\n    retention: 12h\n    resources:\n      requests:\n        cpu: 10m\n        memory: 384Mi\n\nalertmanager:\n  alertmanagerSpec:\n    resources:\n      requests:\n        cpu: 5m\n        memory: 32Mi\n  # Route every alert into the platform-agent Day-2 loop (in-cluster webhook →\n  # detect→analyze→decide→execute). The Watchdog heartbeat is dropped — it is a\n  # meta-alert that always fires and would spam the incident pipeline.\n  config:\n    route:\n      receiver: platform-agent\n      group_by: [\"alertname\", \"namespace\"]\n      group_wait: 10s\n      group_interval: 1m\n      repeat_interval: 12h\n      routes:\n        - receiver: \"null\"\n          matchers:\n            - alertname = \"Watchdog\"\n    receivers:\n      - name: \"null\"\n      - name: platform-agent\n        webhook_configs:\n          - url: http://pa-platform-agent-webhook.default.svc:8078/webhook/alertmanager\n            send_resolved: false\n\n# Demo rule for the live E2E: fires within ~2-3 min once a pod in the default\n# namespace crash-loops (much faster than the stock KubePodCrashLooping's 15m).\nadditionalPrometheusRulesMap:\n  platform-agent-demo:\n    groups:\n      - name: platform-agent.demo\n        rules:\n          - alert: PlatformDemoCrashLoop\n            expr: increase(kube_pod_container_status_restarts_total{namespace=\"default\"}[5m]) \u003e 2\n            for: 1m\n            labels:\n              severity: warning\n            annotations:\n              summary: \"Pod {{ $labels.pod }} in {{ $labels.namespace }} is crash-looping\"\n              description: \"Container {{ $labels.container }} restarted more than twice in 5m.\"\n\ngrafana:\n  resources:\n    requests:\n      cpu: 5m\n      memory: 96Mi\n  # Phase 5/6: register Loki and Tempo so metrics (Prometheus), logs (Loki) and\n  # traces (Tempo) share one Grafana. URLs are the in-cluster Services from\n  # values/loki.yaml and values/tempo.yaml.\n  additionalDataSources:\n    - name: Loki\n      type: loki\n      uid: loki\n      access: proxy\n      url: http://loki-gateway.monitoring.svc\n      isDefault: false\n    - name: Tempo\n      type: tempo\n      uid: tempo\n      access: proxy\n      # 3200 is Tempo 2.x's http_listen_port (query API + metrics). NOT 3100 —\n      # that is the pre-2.x default and this chart's Service does not expose it\n      # (verified with `helm template`); 4317 is OTLP ingest, also not this.\n      url: http://tempo.monitoring.svc:3200\n      isDefault: false\n\nkube-state-metrics:\n  resources:\n    requests:\n      cpu: 5m\n      memory: 32Mi\n\nprometheus-node-exporter:\n  resources:\n    requests:\n      cpu: 5m\n      memory: 16Mi\n"
+            ],
+            "verify": false,
+            "version": "87.17.0",
+            "wait": true,
+            "wait_for_jobs": false
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "repository_password"
+              }
+            ]
+          ],
+          "identity_schema_version": 0,
+          "identity": {
+            "namespace": "monitoring",
+            "release_name": "monitoring"
+          }
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "helm_release",
+      "name": "loki",
+      "provider": "provider[\"registry.terraform.io/hashicorp/helm\"]",
+      "instances": [
+        {
+          "schema_version": 2,
+          "attributes": {
+            "atomic": false,
+            "chart": "loki",
+            "cleanup_on_fail": false,
+            "create_namespace": false,
+            "dependency_update": false,
+            "description": null,
+            "devel": null,
+            "disable_crd_hooks": false,
+            "disable_openapi_validation": false,
+            "disable_webhooks": false,
+            "force_update": false,
+            "id": "loki",
+            "keyring": null,
+            "lint": false,
+            "manifest": null,
+            "max_history": 0,
+            "metadata": {
+              "app_version": "3.6.8",
+              "chart": "loki",
+              "first_deployed": 1784545407,
+              "last_deployed": 1784545407,
+              "name": "loki",
+              "namespace": "monitoring",
+              "notes": "***********************************************************************\n Welcome to Grafana Loki\n Chart version: 7.1.0\n Chart Name: loki\n Loki version: 3.6.8\n***********************************************************************\n\n** Please be patient while the chart is being deployed **\n\nTip:\n\n  Watch the deployment status using the command: kubectl get pods -w --namespace monitoring\n\nIf pods are taking too long to schedule make sure pod affinity can be fulfilled in the current cluster.\n\n***********************************************************************\nInstalled components:\n***********************************************************************\n* loki\n\nLoki has been deployed as a single binary.\nThis means a single pod is handling reads and writes. You can scale that pod vertically by adding more CPU and memory resources.\n\n\n***********************************************************************\nSending logs to Loki\n***********************************************************************\n\nLoki has been configured with a gateway (nginx) to support reads and writes from a single component.\n\nYou can send logs from inside the cluster using the cluster DNS:\n\nhttp://loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push\n\nYou can test to send data from outside the cluster by port-forwarding the gateway to your local machine:\n\n  kubectl port-forward --namespace monitoring svc/loki-gateway 3100:80 \u0026\n\nAnd then using http://127.0.0.1:3100/loki/api/v1/push URL as shown below:\n\n```\ncurl -H \"Content-Type: application/json\" -XPOST -s \"http://127.0.0.1:3100/loki/api/v1/push\"  \\\n--data-raw \"{\\\"streams\\\": [{\\\"stream\\\": {\\\"job\\\": \\\"test\\\"}, \\\"values\\\": [[\\\"$(date +%s)000000000\\\", \\\"fizzbuzz\\\"]]}]}\"\n```\n\nThen verify that Loki did receive the data using the following command:\n\n```\ncurl \"http://127.0.0.1:3100/loki/api/v1/query_range\" --data-urlencode 'query={job=\"test\"}' | jq .data.result\n```\n\n***********************************************************************\nConnecting Grafana to Loki\n***********************************************************************\n\nIf Grafana operates within the cluster, you'll set up a new Loki datasource by utilizing the following URL:\n\nhttp://loki-gateway.monitoring.svc.cluster.local/\n",
+              "revision": 1,
+              "values": "{\"backend\":{\"replicas\":0},\"chunksCache\":{\"enabled\":false},\"deploymentMode\":\"SingleBinary\",\"gateway\":{\"enabled\":true,\"resources\":{\"requests\":{\"cpu\":\"5m\",\"memory\":\"16Mi\"}}},\"loki\":{\"analytics\":{\"reporting_enabled\":false},\"auth_enabled\":false,\"commonConfig\":{\"replication_factor\":1},\"limits_config\":{\"reject_old_samples\":false,\"retention_period\":\"72h\"},\"rulerConfig\":{\"storage\":{\"type\":\"local\"}},\"schemaConfig\":{\"configs\":[{\"from\":\"2024-04-01\",\"index\":{\"period\":\"24h\",\"prefix\":\"loki_index_\"},\"object_store\":\"filesystem\",\"schema\":\"v13\",\"store\":\"tsdb\"}]},\"storage\":{\"type\":\"filesystem\"}},\"lokiCanary\":{\"enabled\":false},\"monitoring\":{\"selfMonitoring\":{\"enabled\":false,\"grafanaAgent\":{\"installOperator\":false}}},\"read\":{\"replicas\":0},\"resultsCache\":{\"enabled\":false},\"singleBinary\":{\"persistence\":{\"enabled\":true,\"size\":\"1Gi\",\"storageClass\":\"standard\"},\"replicas\":1,\"resources\":{\"requests\":{\"cpu\":\"20m\",\"memory\":\"128Mi\"}}},\"test\":{\"enabled\":false},\"write\":{\"replicas\":0}}",
+              "version": "7.1.0"
+            },
+            "name": "loki",
+            "namespace": "monitoring",
+            "pass_credentials": false,
+            "postrender": null,
+            "recreate_pods": false,
+            "render_subchart_notes": true,
+            "replace": false,
+            "repository": "https://grafana.github.io/helm-charts",
+            "repository_ca_file": null,
+            "repository_cert_file": null,
+            "repository_key_file": null,
+            "repository_password": null,
+            "repository_username": null,
+            "reset_values": false,
+            "resources": null,
+            "reuse_values": false,
+            "set": null,
+            "set_list": null,
+            "set_sensitive": null,
+            "set_wo": null,
+            "set_wo_revision": null,
+            "skip_crds": false,
+            "status": "deployed",
+            "take_ownership": false,
+            "timeout": 600,
+            "timeouts": null,
+            "upgrade_install": false,
+            "values": [
+              "# Low-footprint Loki for local kind/k3s (Phase 5 logging). SingleBinary mode +\n# filesystem storage; every microservice/cache component is off so the whole\n# add-on stack still fits the Docker VM budget. Contract (guard-tested): CPU\n# requests stay \u003c= 50m. Not for production scale — local log aggregation only.\ndeploymentMode: SingleBinary\n\nloki:\n  auth_enabled: false\n  commonConfig:\n    replication_factor: 1\n  storage:\n    type: filesystem\n  schemaConfig:\n    configs:\n      - from: \"2024-04-01\"\n        store: tsdb\n        object_store: filesystem\n        schema: v13\n        index:\n          prefix: loki_index_\n          period: 24h\n  limits_config:\n    retention_period: 72h\n    reject_old_samples: false\n  # Silence the ruler/analytics extras that assume a hosted backend.\n  rulerConfig:\n    storage:\n      type: local\n  analytics:\n    reporting_enabled: false\n\nsingleBinary:\n  replicas: 1\n  resources:\n    requests:\n      cpu: 20m\n      memory: 128Mi\n  persistence:\n    enabled: true\n    size: 1Gi\n    storageClass: standard\n\n# Scalable/microservice targets off — SingleBinary owns everything.\nbackend: { replicas: 0 }\nread: { replicas: 0 }\nwrite: { replicas: 0 }\n\n# memcached caches default to multi-Gi requests — the classic local footprint\n# trap. Off for local; SingleBinary serves queries directly.\nchunksCache:\n  enabled: false\nresultsCache:\n  enabled: false\n\ngateway:\n  enabled: true\n  resources:\n    requests:\n      cpu: 5m\n      memory: 16Mi\n\n# Extras that pull more pods/charts — all off for a minimal local stack.\nlokiCanary:\n  enabled: false\ntest:\n  enabled: false\nmonitoring:\n  selfMonitoring:\n    enabled: false\n    grafanaAgent:\n      installOperator: false\n"
+            ],
+            "verify": false,
+            "version": "7.1.0",
+            "wait": true,
+            "wait_for_jobs": false
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "repository_password"
+              }
+            ]
+          ],
+          "identity_schema_version": 0,
+          "identity": {
+            "namespace": "monitoring",
+            "release_name": "loki"
+          }
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "helm_release",
+      "name": "platform_agent_app",
+      "provider": "provider[\"registry.terraform.io/hashicorp/helm\"]",
+      "instances": [
+        {
+          "schema_version": 2,
+          "attributes": {
+            "atomic": false,
+            "chart": "./charts/platform-agent-app",
+            "cleanup_on_fail": false,
+            "create_namespace": false,
+            "dependency_update": false,
+            "description": null,
+            "devel": null,
+            "disable_crd_hooks": false,
+            "disable_openapi_validation": false,
+            "disable_webhooks": false,
+            "force_update": false,
+            "id": "platform-agent-app",
+            "keyring": null,
+            "lint": false,
+            "manifest": null,
+            "max_history": 0,
+            "metadata": {
+              "app_version": "1.0",
+              "chart": "platform-agent-app",
+              "first_deployed": 1784543695,
+              "last_deployed": 1784543695,
+              "name": "platform-agent-app",
+              "namespace": "argocd",
+              "notes": "",
+              "revision": 1,
+              "values": "{\"argocdNamespace\":\"argocd\",\"chartPath\":\"infra/helm/platform-agent\",\"destNamespace\":\"default\",\"releaseName\":\"pa\",\"repoURL\":\"https://github.com/men16922/platform-agent.git\",\"targetRevision\":\"main\",\"valuesFile\":\"values-kind.yaml\"}",
+              "version": "0.1.0"
+            },
+            "name": "platform-agent-app",
+            "namespace": "argocd",
+            "pass_credentials": false,
+            "postrender": null,
+            "recreate_pods": false,
+            "render_subchart_notes": true,
+            "replace": false,
+            "repository": null,
+            "repository_ca_file": null,
+            "repository_cert_file": null,
+            "repository_key_file": null,
+            "repository_password": null,
+            "repository_username": null,
+            "reset_values": false,
+            "resources": null,
+            "reuse_values": false,
+            "set": [
+              {
+                "name": "argocdNamespace",
+                "type": "",
+                "value": "argocd"
+              },
+              {
+                "name": "repoURL",
+                "type": "",
+                "value": "https://github.com/men16922/platform-agent.git"
+              },
+              {
+                "name": "targetRevision",
+                "type": "",
+                "value": "main"
+              },
+              {
+                "name": "chartPath",
+                "type": "",
+                "value": "infra/helm/platform-agent"
+              },
+              {
+                "name": "valuesFile",
+                "type": "",
+                "value": "values-kind.yaml"
+              },
+              {
+                "name": "destNamespace",
+                "type": "",
+                "value": "default"
+              },
+              {
+                "name": "releaseName",
+                "type": "",
+                "value": "pa"
+              }
+            ],
+            "set_list": null,
+            "set_sensitive": null,
+            "set_wo": null,
+            "set_wo_revision": null,
+            "skip_crds": false,
+            "status": "deployed",
+            "take_ownership": false,
+            "timeout": 300,
+            "timeouts": null,
+            "upgrade_install": false,
+            "values": null,
+            "verify": false,
+            "version": "0.1.0",
+            "wait": true,
+            "wait_for_jobs": false
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "repository_password"
+              }
+            ]
+          ],
+          "identity_schema_version": 0,
+          "identity": {
+            "namespace": "argocd",
+            "release_name": "platform-agent-app"
+          },
+          "dependencies": [
+            "helm_release.argocd"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "helm_release",
+      "name": "rollouts_demo",
+      "provider": "provider[\"registry.terraform.io/hashicorp/helm\"]",
+      "instances": [
+        {
+          "index_key": 0,
+          "schema_version": 2,
+          "attributes": {
+            "atomic": false,
+            "chart": "./charts/rollouts-demo",
+            "cleanup_on_fail": false,
+            "create_namespace": false,
+            "dependency_update": false,
+            "description": null,
+            "devel": null,
+            "disable_crd_hooks": false,
+            "disable_openapi_validation": false,
+            "disable_webhooks": false,
+            "force_update": false,
+            "id": "rollouts-demo",
+            "keyring": null,
+            "lint": false,
+            "manifest": null,
+            "max_history": 0,
+            "metadata": {
+              "app_version": "1.9.1",
+              "chart": "rollouts-demo",
+              "first_deployed": 1784544296,
+              "last_deployed": 1785011020,
+              "name": "rollouts-demo",
+              "namespace": "argo-rollouts",
+              "notes": "",
+              "revision": 8,
+              "values": "{\"agentAnalysis\":{\"enabled\":false,\"url\":\"http://pa-platform-agent-webhook.default.svc:8078/canary/judge\"},\"analysis\":{\"enabled\":false,\"prometheusAddress\":\"http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090\"}}",
+              "version": "0.2.0"
+            },
+            "name": "rollouts-demo",
+            "namespace": "argo-rollouts",
+            "pass_credentials": false,
+            "postrender": null,
+            "recreate_pods": false,
+            "render_subchart_notes": true,
+            "replace": false,
+            "repository": null,
+            "repository_ca_file": null,
+            "repository_cert_file": null,
+            "repository_key_file": null,
+            "repository_password": null,
+            "repository_username": null,
+            "reset_values": false,
+            "resources": null,
+            "reuse_values": false,
+            "set": [
+              {
+                "name": "analysis.enabled",
+                "type": "",
+                "value": "false"
+              },
+              {
+                "name": "analysis.prometheusAddress",
+                "type": "",
+                "value": "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090"
+              },
+              {
+                "name": "agentAnalysis.enabled",
+                "type": "",
+                "value": "false"
+              },
+              {
+                "name": "agentAnalysis.url",
+                "type": "",
+                "value": "http://pa-platform-agent-webhook.default.svc:8078/canary/judge"
+              }
+            ],
+            "set_list": null,
+            "set_sensitive": null,
+            "set_wo": null,
+            "set_wo_revision": null,
+            "skip_crds": false,
+            "status": "deployed",
+            "take_ownership": false,
+            "timeout": 300,
+            "timeouts": null,
+            "upgrade_install": false,
+            "values": null,
+            "verify": false,
+            "version": "0.2.0",
+            "wait": true,
+            "wait_for_jobs": false
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "repository_password"
+              }
+            ]
+          ],
+          "identity_schema_version": 0,
+          "identity": {
+            "namespace": "argo-rollouts",
+            "release_name": "rollouts-demo"
+          },
+          "dependencies": [
+            "helm_release.argo_rollouts"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "helm_release",
+      "name": "tempo",
+      "provider": "provider[\"registry.terraform.io/hashicorp/helm\"]",
+      "instances": [
+        {
+          "schema_version": 2,
+          "attributes": {
+            "atomic": false,
+            "chart": "tempo",
+            "cleanup_on_fail": false,
+            "create_namespace": false,
+            "dependency_update": false,
+            "description": null,
+            "devel": null,
+            "disable_crd_hooks": false,
+            "disable_openapi_validation": false,
+            "disable_webhooks": false,
+            "force_update": false,
+            "id": "tempo",
+            "keyring": null,
+            "lint": false,
+            "manifest": null,
+            "max_history": 0,
+            "metadata": {
+              "app_version": "2.9.0",
+              "chart": "tempo",
+              "first_deployed": 1784990778,
+              "last_deployed": 1784990778,
+              "name": "tempo",
+              "namespace": "monitoring",
+              "notes": "",
+              "revision": 1,
+              "values": "{\"persistence\":{\"enabled\":false},\"serviceMonitor\":{\"enabled\":false},\"tempo\":{\"receivers\":{\"otlp\":{\"protocols\":{\"grpc\":{\"endpoint\":\"0.0.0.0:4317\"}}}},\"resources\":{\"requests\":{\"cpu\":\"25m\",\"memory\":\"128Mi\"}},\"retention\":\"24h\",\"storage\":{\"trace\":{\"backend\":\"local\",\"local\":{\"path\":\"/var/tempo/traces\"},\"wal\":{\"path\":\"/var/tempo/wal\"}}}}}",
+              "version": "1.24.4"
+            },
+            "name": "tempo",
+            "namespace": "monitoring",
+            "pass_credentials": false,
+            "postrender": null,
+            "recreate_pods": false,
+            "render_subchart_notes": true,
+            "replace": false,
+            "repository": "https://grafana.github.io/helm-charts",
+            "repository_ca_file": null,
+            "repository_cert_file": null,
+            "repository_key_file": null,
+            "repository_password": null,
+            "repository_username": null,
+            "reset_values": false,
+            "resources": null,
+            "reuse_values": false,
+            "set": null,
+            "set_list": null,
+            "set_sensitive": null,
+            "set_wo": null,
+            "set_wo_revision": null,
+            "skip_crds": false,
+            "status": "deployed",
+            "take_ownership": false,
+            "timeout": 600,
+            "timeouts": null,
+            "upgrade_install": false,
+            "values": [
+              "# Low-footprint Grafana Tempo for local kind/k3s (Phase 6 tracing). Single\n# binary + local storage, OTLP gRPC ingest. Contract (guard-tested): CPU\n# requests stay \u003c= 50m. Not for production scale — local trace aggregation only.\n# The chart itself warns it is deprecated; `tempo-distributed` is the production\n# answer (same trade-off the logging stack makes with Loki SingleBinary).\ntempo:\n  # OTLP gRPC (4317) is the one receiver the agent needs: the tracing seam\n  # exports OTLP and nothing else. Declaring only otlp here keeps the *config*\n  # free of Jaeger/Zipkin/OpenCensus receivers. (The chart's Service still\n  # publishes those legacy ports unconditionally — this is a config-level\n  # narrowing, not a network one.)\n  receivers:\n    otlp:\n      protocols:\n        grpc:\n          endpoint: 0.0.0.0:4317\n  # 24h is enough to debug an incident that just happened; traces are the most\n  # voluminous signal and this is a laptop-sized cluster.\n  retention: 24h\n  storage:\n    trace:\n      backend: local\n      local:\n        path: /var/tempo/traces\n      wal:\n        path: /var/tempo/wal\n  # MUST be nested under `tempo:` — a top-level `resources:` is silently ignored\n  # by this chart and renders `resources: {}` (caught by `helm template`).\n  resources:\n    requests:\n      cpu: 25m\n      memory: 128Mi\n\npersistence:\n  enabled: false\n\n# The single-binary chart runs one replica by design; leave scraping to the\n# kube-prometheus-stack's normal pod discovery.\nserviceMonitor:\n  enabled: false\n"
+            ],
+            "verify": false,
+            "version": "1.24.4",
+            "wait": true,
+            "wait_for_jobs": false
+          },
+          "sensitive_attributes": [
+            [
+              {
+                "type": "get_attr",
+                "value": "repository_password"
+              }
+            ]
+          ],
+          "identity_schema_version": 0,
+          "identity": {
+            "namespace": "monitoring",
+            "release_name": "tempo"
+          }
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}
