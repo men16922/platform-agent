@@ -50,12 +50,15 @@ rubric(8기준) → **MAD(Advocate/Critic, Judge)** 수렴 A+(92) → **평가 �
   **라이브 DoD 통과**(`docs/evidence/phase1a-credential-isolation.log`): acme→acme 실행 성공 / acme→globex
   거부 / **advisory 가드를 끄면 API 서버가 `Forbidden`**(자격증명이 경계임을 RBAC로 증명) / 위조 tenant 발급
   거부 / scope 없는 live 거부. 잔여(2차): agent→hub push 인증 · 서명키 custody·rotation · push heartbeat.
-- [~] **Phase 1b** — **어댑터 2개 + 순서 보장 완료(2026-07-26, `738c812`, gate 1058)**: `argocd`/`flux`가
+- [~] **Phase 1b** — **어댑터 2개 + 순서 보장 + 핸드오프 프리플라이트 완료(`738c812`·`e48c5f6`, gate 1079)**: `argocd`/`flux`가
   계약의 세 압박점(순서 원시형·상태 어휘·객체 형태)을 각자 방식으로 만족. wave→`sync-wave`(문자열) /
   `dependsOn`(객체 참조)로 **TF `depends_on` 대체물** 확보. render 결정론·tenant 접두사·라벨 질의성·
-  Flux `releaseName` 안정을 가드로 고정. **잔여**: (a) 레지스트리→어댑터 팬아웃을 실제 클러스터에 apply,
-  (b) **TF↔GitOps no-churn 핸드오프**(state rm + 오너십 annotation 매칭 채택 + PVC 스냅샷 + import 롤백)
-  라이브 검증 — 이건 기존 kind 애드온 릴리스를 건드리므로 스냅샷 선행 필요.
+  Flux `releaseName` 안정을 가드로 고정. **프리플라이트**(`scripts/preflight_gitops_handoff.py`)가
+  `state rm` 전에 4검사(ownership·stateful·source-reachable·baseline)로 안전성을 증명하고 롤백 명령을 선출력.
+  **라이브 read-only 결과**: ownership은 전 릴리스 통과(최대 미지수 해소). **잔여 = 블로커 2종 해소 후 실행**:
+  (a) loki/tempo/pa가 데이터 보유 → **스냅샷 수단 선행**(kind엔 CSI 스냅샷터 기본 부재),
+  (b) 로컬이 origin ahead → 지금 채택하면 **옛 차트 내용**이 적용됨(push는 사용자 게이트).
+  `rollouts-demo`가 데이터 위험 0이라 push 후 첫 대상. 증거 `docs/evidence/gitops-handoff-preflight.log`.
 - [ ] **Phase 2**: Capsule(soft)+RBAC + 대시보드 tenant/env 스위처 + 라이브 상태 폴러(2축 drift).
 - [ ] Phase 3(인가 강화)·4(managed 어댑터, billable)·5(레지스트리 PR 쓰기) = 후속.
 - **S 달성(93.5)** = ①실행위치=in-cluster 러너 ②token broker=incident provenance 바인딩 ③read=push(허브 read 자격증명 0). Phase 1a 진입 시 명시할 2차 잔여: agent→hub push 인증·승인레코드 one-time nonce·push heartbeat(staleness).
@@ -68,7 +71,11 @@ rubric(8기준) → **MAD(Advocate/Critic, Judge)** 수렴 A+(92) → **평가 �
 
 - [ ] **① 2단계**: AnalysisTemplate `web` provider가 **platform-agent decision 엔드포인트**를 호출해 LLM
   confidence를 canary 게이트로(D19 층 유지: 러너 무변경, Rollouts가 에이전트를 판정자로 소비).
-- [ ] **② 잔여(선택)**: 인시던트 상세에서 `trace_id`로 Tempo 딥링크 · executor span(현재 parking 경로만 실증).
+- [x] ~~**② 잔여 — Tempo 딥링크**~~ — **완료(2026-07-26, `90a92ba`, gate 1095)**: `trace_id`를 파이프라인→
+  레코드→대시보드까지 관통, 상세 페이지에서 Grafana Explore로 딥링크. prod-safe(`stack-links` 규칙:
+  미설정이면 **링크 없음** — 죽은 링크는 "트레이싱 꺼짐"을 "트레이스 없음"으로 오독시킴).
+  라이브: record trace_id로 Tempo 200 + span 4개.
+  - [ ] 잔여(선택): executor span(현재 parking 경로만 실증 — 승인 후 실행 경로는 미측정).
 - [ ] **⑥ 잔여(승인 필요)**: PSS `restricted` · 이미지 서명(Cosign). 차트 자체는 Phase 2(Capsule이 대상
   namespace·tenant 라벨을 만듦)에서 켠다. k3s(flannel)는 집행이 전이되지 않으므로 검증기 재실행 필요.
 

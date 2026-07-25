@@ -7,6 +7,26 @@
 
 ---
 
+## 2026-07-26 — 핸드오프 프리플라이트 + 인시던트→트레이스 딥링크 (gate 1058→1095)
+
+- Status: Phase 1b 잔여(no-churn 핸드오프)를 **안전하게** 진행하기 위한 프리플라이트를 먼저 만들고,
+  ②의 잔여였던 딥링크를 소진. 핸드오프 자체는 블로커 2종이 남아 의도적으로 실행하지 않음.
+- Changed: **프리플라이트**(`e48c5f6`) `platform/handoff.py` + `scripts/preflight_gitops_handoff.py`(읽기 전용,
+  4검사 + 롤백 명령 선출력). **딥링크**(`90a92ba`) `trace_id`를 파이프라인→`record_incident`→대시보드
+  `Incident`→상세 페이지까지 관통 + `trace-links.ts`(prod-safe).
+- Verified: `make check` **1079**(+21) → **1095**(+16) · `tsc` 클린.
+  **프리플라이트 라이브 read-only**(9 릴리스 중 4): **ownership은 전부 통과**(loki 12·pa 6·tempo 4·demo 2
+  리소스) — 최대 미지수였던 "채택이 될까"가 해소. **딥링크 라이브**: pipeline trace_id == record trace_id →
+  Tempo `/api/traces/<id>` **HTTP 200**, span 4개(analyze가 wall clock의 85%).
+- Blockers: **핸드오프 미실행, 이유 2가지**: (1) loki/tempo/pa가 데이터 보유 → 스냅샷 수단 선행
+  (kind엔 CSI 스냅샷터 기본 부재), (2) 로컬이 origin ahead → 엔진은 **리모트**를 동기화하므로 지금 채택하면
+  옛 차트 내용이 적용되고 그 churn이 채택 실패로 오독됨(push는 사용자 게이트).
+- 품질 메모: 프리플라이트 첫 버전이 Pod/ReplicaSet까지 판정해 loki에 오탐 BLOCKED를 냈다 →
+  `ownerReferences`로 파생 객체 제외. 수집기도 라벨 셀렉터→`helm get manifest` 열거로 교체
+  (차트가 instance 라벨을 안 붙이면 "리소스 없음"이 블로커로 오독 — rollouts-demo가 그 케이스).
+  **늑대 소년이 된 체커는 무시당하고, 그게 체커가 없는 것보다 나쁘다.**
+- Next: push 후 `rollouts-demo`(데이터 위험 0)로 no-churn 채택 라이브 → 스냅샷 수단 확보 후 stateful 3건.
+
 ## 2026-07-26 — 사후검증 provider 실행부 + Phase 1b delivery 어댑터 2개 (gate 1017→1058)
 
 - Status: ③(사후검증)과 Phase 1b(어댑터)를 연달아 소진. 둘 다 "하나만으로는 검증이 안 되는" 구조를 의도적으로
@@ -91,17 +111,3 @@
 - 메모: 아티클 **발행 완료**(사용자 확인) → `docs/post/` 추적 4파일 제거(git 이력 잔존), 미추적 원본
   `local-onprem.mov`(22MB)는 복구 불가라 재편집 마스터로 보존. GitAIOps 후속편은 `NEXT_PLAN`에
   논지·소재만 남기고 **착수 보류**(사용자 지시).
-
-## 2026-07-21 — 멀티테넌트/멀티클라우드 플랫폼 설계 확정 — S(93.5) via MAD (코드 무변경, 문서)
-
-- Status: 사용자 방향(on-prem이라도 멀티-env·env별 add-on·클라우드 무관)을 플랫폼 설계로 확정. **코드 착수 전**.
-- Changed(`95f1381`): 설계 v5 `docs/plans/2026-07-21-multi-tenant-env-addons.md` + 의사결정·MAD 히스토리
-  `-mad-history.md` + NEXT_PLAN 백로그. 아키텍처=**capability, implementation-pluggable**(cloud-neutral DNA 확장):
-  Tenant=격리 티어 정책(soft/vcluster/dedicated), Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux 어댑터,
-  SSOT=per-tenant git 레지스트리. 최우선 불변식=에이전트 실행 blast radius 1 tenant/env(자격증명이 경계 —
-  in-cluster 러너·incident-provenance broker·read push로 봉인).
-- Verified: **등급 확정 파이프라인** — 원칙-아키텍트 rubric(8기준·보안16 최대) → **MAD(Advocate/Critic/Judge)**
-  A+(92) → **평가 에이전트 ground-truth 재리뷰**(코드 주장 2건 오류 적발: NormalizedIncident namespace 부재·
-  resolve_action seam 오인) → v4 정정 Fable5 A+(91) → S-델타 3건 소진 v5 → **Fable5 재평가 = S(93.5)**. 목표 A+~S 초과.
-- Blockers: 없음. 2차 잔여(Phase 1a 진입 시): agent→hub push 인증·승인레코드 one-time nonce·push heartbeat.
-- Next: Phase 0(레지스트리 스키마+어댑터 계약+NormalizedAddonStatus 2축) → Phase 1a(자격증명 격리 seam).
