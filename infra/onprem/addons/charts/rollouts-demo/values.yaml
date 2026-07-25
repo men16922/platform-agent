@@ -5,3 +5,23 @@ replicas: 4
 image:
   repository: argoproj/rollouts-demo
   tag: blue
+
+# Metric-based canary judgment (AnalysisTemplate + Prometheus, see templates/analysis.yaml).
+#
+# Default OFF on purpose: the Phase 4 manual promote/abort demo IS live-verified
+# (docs/evidence/onprem-addons-rollouts-e2e.log) and this path is NOT yet — enabling
+# it by default would ship unverified auto-abort behaviour into a working demo.
+# Flipping `enabled: true` and re-running the canary IS the live-verification step;
+# confirm `prometheusAddress` resolves first (kube-prometheus-stack names that
+# Service from its own chart helpers, so it is not guessable from this repo).
+analysis:
+  enabled: false
+  templateName: rollouts-demo-canary-health
+  prometheusAddress: http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090
+  # Abort once the canary pods have accumulated more than this many restarts.
+  maxRestarts: 0
+  # Skip the first measurement window so a normal container start is not a "restart".
+  initialDelay: 30s
+  interval: 30s
+  # Consecutive failed measurements tolerated before the rollout aborts.
+  failureLimit: 2

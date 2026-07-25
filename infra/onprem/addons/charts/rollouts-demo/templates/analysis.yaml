@@ -1,0 +1,49 @@
+{{- if .Values.analysis.enabled }}
+# Metric-based canary judgment (Argo Rollouts AnalysisTemplate, Prometheus provider).
+#
+# Layered ON TOP of the manual promote/abort gate in rollout.yaml — it does not
+# replace it. The Rollout references this as a *background* analysis, so the
+# indefinite `pause: {}` gate (Phase 4's live-verified demo path) still works while
+# a crash-looping canary now aborts on its own instead of waiting for a human.
+#
+# Metric = container restarts of the CANARY pods only. Restarts are the signal our
+# own incident demo produces (OOMKilled → CrashLoopBackOff), and kube-state-metrics
+# ships with kube-prometheus-stack, so no app-side instrumentation is required.
+# Canary pods are selected by the rollouts-pod-template-hash the Rollout passes in
+# as an arg — matching on the pod-name prefix avoids depending on
+# kube-state-metrics `metricLabelsAllowlist` (pod labels are NOT exported by default).
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ .Values.analysis.templateName }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  args:
+    - name: canary-hash
+    - name: namespace
+  metrics:
+    - name: canary-restarts
+      # First measurement is delayed so a normal container start is not read as a
+      # restart, then re-measured for as long as the canary is live.
+      initialDelay: {{ .Values.analysis.initialDelay }}
+      interval: {{ .Values.analysis.interval }}
+      # `failureLimit` > 0 keeps a single scrape blip from aborting a healthy canary;
+      # consecutive failures are what abort it.
+      failureLimit: {{ .Values.analysis.failureLimit }}
+      successCondition: result[0] <= {{ .Values.analysis.maxRestarts }}
+      provider:
+        prometheus:
+          # kube-prometheus-stack names this Service from its own chart helpers, so
+          # it is values-driven rather than derived here. Confirm once with
+          #   kubectl get svc -n monitoring -l app.kubernetes.io/name=prometheus
+          # and override analysis.prometheusAddress if the release renders it differently.
+          # (Prometheus lives in the monitoring namespace, not this chart's namespace.)
+          address: {{ .Values.analysis.prometheusAddress }}
+          # `or vector(0)` makes "no canary restarts scraped yet" a passing 0 rather
+          # than an empty result, which Rollouts would score as an Error.
+          query: >-
+            sum(kube_pod_container_status_restarts_total{
+              namespace="{{ "{{args.namespace}}" }}",
+              pod=~"{{ .Chart.Name }}-{{ "{{args.canary-hash}}" }}-.*"
+            }) or vector(0)
+{{- end }}

@@ -26,6 +26,22 @@ spec:
               memory: 16Mi
   strategy:
     canary:
+      {{- if .Values.analysis.enabled }}
+      # Background analysis: runs alongside the steps below for as long as the
+      # canary is live, aborting the rollout on its own if the canary is unhealthy.
+      # Additive to the manual gate — `pause: {}` still holds for promote/abort.
+      analysis:
+        templates:
+          - templateName: {{ .Values.analysis.templateName }}
+        args:
+          # Rollouts injects the canary ReplicaSet's pod-template-hash so the query
+          # scores ONLY canary pods, never the stable ones.
+          - name: canary-hash
+            valueFrom:
+              podTemplateHashValue: Latest
+          - name: namespace
+            value: {{ .Release.Namespace }}
+      {{- end }}
       steps:
         - setWeight: 25
         - pause: { duration: 10s }

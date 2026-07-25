@@ -167,6 +167,72 @@ def test_rollouts_demo_is_a_canary_with_a_manual_gate():
     assert "pause: {}" in manifest, "canary must pause indefinitely for a manual promote/abort gate"
 
 
+# --- Metric-based canary judgment (AnalysisTemplate + Prometheus) -----------
+#
+# Contract: the analysis is ADDITIVE to the manual gate above (D19 keeps the
+# runner and Rollouts in separate layers; Phase 4's live evidence rests on the
+# manual path), and it is OFF until a live run verifies it.
+
+
+def _demo_chart_values() -> dict:
+    return yaml.safe_load((ROLLOUTS_DEMO / "values.yaml").read_text(encoding="utf-8"))
+
+
+def test_analysis_template_is_shipped():
+    assert (ROLLOUTS_DEMO / "templates" / "analysis.yaml").is_file()
+    analysis = (ROLLOUTS_DEMO / "templates" / "analysis.yaml").read_text(encoding="utf-8")
+    assert "kind: AnalysisTemplate" in analysis
+    assert "prometheus:" in analysis, "stage 1 judgment must use the Prometheus provider"
+
+
+def test_analysis_defaults_off_so_the_verified_demo_is_unchanged():
+    """Auto-abort is unverified live; shipping it on by default would risk the demo."""
+    assert _demo_chart_values()["analysis"]["enabled"] is False
+
+
+def test_analysis_is_additive_not_a_replacement_of_the_manual_gate():
+    manifest = (ROLLOUTS_DEMO / "templates" / "rollout.yaml").read_text(encoding="utf-8")
+    # Background analysis lives under canary alongside steps, and the indefinite
+    # pause must survive — replacing it would regress the promote/abort demo.
+    assert "analysis:" in manifest
+    assert "pause: {}" in manifest
+    assert "podTemplateHashValue: Latest" in manifest, (
+        "canary-hash must come from the Rollout so only canary pods are scored"
+    )
+
+
+def test_analysis_query_scopes_to_canary_pods_only():
+    analysis = (ROLLOUTS_DEMO / "templates" / "analysis.yaml").read_text(encoding="utf-8")
+    # The hash arg is what separates canary from stable; without it the query
+    # would score stable pods too and could never fail a bad canary.
+    assert "{{args.canary-hash}}" in analysis
+    assert "{{args.namespace}}" in analysis
+    assert "kube_pod_container_status_restarts_total" in analysis, (
+        "restart count comes from kube-state-metrics (ships with kps) — no app instrumentation"
+    )
+
+
+def test_analysis_treats_no_data_as_passing_not_error():
+    analysis = (ROLLOUTS_DEMO / "templates" / "analysis.yaml").read_text(encoding="utf-8")
+    assert "or vector(0)" in analysis, (
+        "an empty Prometheus result scores as Error in Rollouts — must fall back to 0"
+    )
+
+
+def test_analysis_prometheus_address_is_values_driven():
+    """kps names the Service from its own helpers, so a mismatch must be a values fix."""
+    analysis = (ROLLOUTS_DEMO / "templates" / "analysis.yaml").read_text(encoding="utf-8")
+    assert ".Values.analysis.prometheusAddress" in analysis
+    address = _demo_chart_values()["analysis"]["prometheusAddress"]
+    assert address.startswith("http://") and ":9090" in address
+
+
+def test_analysis_tolerates_a_single_scrape_blip():
+    values = _demo_chart_values()["analysis"]
+    assert values["failureLimit"] >= 1, "one bad measurement must not abort a healthy canary"
+    assert values["initialDelay"], "first measurement must be delayed past normal container start"
+
+
 # --- Phase 5: logging (Loki + Fluent Bit) ----------------------------------
 
 
