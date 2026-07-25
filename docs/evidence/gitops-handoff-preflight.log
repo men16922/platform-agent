@@ -1,0 +1,53 @@
+=== Phase 1b: TF→GitOps handoff preflight, live read-only (2026-07-25T16:27:05Z) ===
+context: kind-platform-agent | 9 helm releases | changes NOTHING (read-only)
+
+[handoff-preflight] rollouts-demo (ns=argo-rollouts) — BLOCKED
+  [ok  ] revision-baseline: revision before handoff = 3; adoption must leave it unchanged
+  [ok  ] ownership-metadata: all 2 resources carry Helm ownership for rollouts-demo/argo-rollouts
+  [ok  ] stateful-resources: no PVC/StatefulSet in this release — a failed adoption costs uptime, not data
+  [FAIL] source-reachable: local branch is 18 commit(s) ahead of the remote; the engine would sync older chart content and the resulting churn would look like an adoption failure
+
+[handoff-preflight] tempo (ns=monitoring) — BLOCKED
+  [ok  ] revision-baseline: revision before handoff = 1; adoption must leave it unchanged
+  [ok  ] ownership-metadata: all 4 resources carry Helm ownership for tempo/monitoring
+  [FAIL] stateful-resources: stateful resources present (StatefulSet/tempo) with no snapshot — a failed adoption would destroy data, not just restart it
+  [FAIL] source-reachable: local branch is 18 commit(s) ahead of the remote; the engine would sync older chart content and the resulting churn would look like an adoption failure
+
+[handoff-preflight] loki (ns=monitoring) — BLOCKED
+  [ok  ] revision-baseline: revision before handoff = 1; adoption must leave it unchanged
+  [ok  ] ownership-metadata: all 12 resources carry Helm ownership for loki/monitoring
+  [FAIL] stateful-resources: stateful resources present (StatefulSet/loki) with no snapshot — a failed adoption would destroy data, not just restart it
+  [FAIL] source-reachable: local branch is 18 commit(s) ahead of the remote; the engine would sync older chart content and the resulting churn would look like an adoption failure
+
+[handoff-preflight] pa (ns=default) — BLOCKED
+  [ok  ] revision-baseline: revision before handoff = 1; adoption must leave it unchanged
+  [ok  ] ownership-metadata: all 6 resources carry Helm ownership for pa/default
+  [FAIL] stateful-resources: stateful resources present (PersistentVolumeClaim/pa-platform-agent-store) with no snapshot — a failed adoption would destroy data, not just restart it
+  [FAIL] source-reachable: local branch is 18 commit(s) ahead of the remote; the engine would sync older chart content and the resulting churn would look like an adoption failure
+
+=== READING ===
+ownership-metadata passes everywhere: every Helm-applied object carries
+managed-by=Helm + meta.helm.sh/release-{name,namespace}, so a GitOps manifest that
+reproduces them WILL adopt rather than recreate. That was the main unknown.
+
+Two real blockers remain, and neither is a code problem:
+
+1. stateful-resources — loki (StatefulSet + PVC storage-loki-0), tempo
+   (StatefulSet) and pa (PVC pa-platform-agent-store) hold data. A botched
+   adoption there is data loss, not an outage. kind has no CSI snapshotter by
+   default, so a snapshot mechanism has to exist before those three move.
+
+2. source-reachable — the local branch is ahead of origin, and the engine syncs
+   the REMOTE. Adopting now would apply older chart content; the resulting churn
+   would look exactly like an adoption failure and send the next person hunting
+   the wrong bug. Pushing is an explicit user gate, so this stays blocked.
+
+rollouts-demo is the one release with no data at risk: it clears every check
+except the unpushed-source one, making it the natural first subject once the
+branch is pushed.
+
+=== FALSE POSITIVE FIXED DURING THIS RUN ===
+The first version judged Pods/ReplicaSets too and reported "4 resources would not
+be adopted" for loki. Those are controller-created descendants that never carry
+Helm ownership — filtering on ownerReferences turned a false BLOCKED into a
+clean pass (12 resources). A checker that cries wolf gets ignored.
