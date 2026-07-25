@@ -4,7 +4,7 @@
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(M9=eval·하드닝 스프린트+라이브 E2E, M8=레퍼런스 8/8) / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 현재 상태 (2026-07-26, gate 1168)
+## 현재 상태 (2026-07-26, gate 1191)
 
 **GitAIOps 대조 7/7 완료**(①②③④⑤⑥⑦) + **멀티테넌트 Phase 0·1a·1b 배선 완료**.
 ① 릴리스 게이트는 3종 판별(pass/fail/unknown)까지 라이브 실증, ⑥ PSS restricted·Cosign, ⑦ 스위퍼 CronJob.
@@ -106,8 +106,15 @@ rubric(8기준) → **MAD(Advocate/Critic, Judge)** 수렴 A+(92) → **평가 �
   `rto_sec`을 선언한 **모든** 런북이 후보에서 탈락, `generic-recovery`(rto=null)만 생존 → 매 인시던트가
   알림-only. `_is_integer_like` + `normalise_runbook`(읽기 경계 coerce)로 수정. 라이브 before/after
   `docs/evidence/runbook-decimal-rto-fix.log`(1/5 → **5/5** 유효, generic-recovery → **eks-pod-oom**).
-- [ ] **(잔여) capability step 런북을 executor가 실제로 사용** — `capability_schema.py`(steps·`verify`)는 아직
-  테스트만 소비하고 executor는 flat `actions`를 돈다. ③의 provider측 verify 실행부와 같은 작업.
+- [x] ~~**capability step 런북을 executor가 실제로 사용**~~ — **완료(2026-07-26, `c4816fd`, gate 1191)**:
+  `DecisionOutput.steps` + `_resolve_runbook_steps` + executor의 조건/on_failure/선언된 verify 처리 +
+  `CAPABILITY_RUNBOOKS` 연결(9런북이 죽은 데이터였음). **유닛 테스트가 구조적으로 못 잡는 결함 1건**을
+  실제 파이프라인 실행이 잡았다 — `_deserialise_decision`이 `steps`를 버려 executor가 조용히 flat 경로로
+  회귀(유닛 테스트는 객체를 메모리에서 만들어 직렬화 경계를 안 넘는다). 그 다음 층도 같은 부류:
+  조건이 적용되자 런북의 *성공* 경로가 `resolved=False`가 돼 `not_applicable` 축을 추가.
+  증거 `docs/evidence/capability-steps-executor-wiring.log`.
+  - [ ] 잔여(별도 갭): CAPABILITY_RUNBOOKS의 4개(certificate-expiry·disk-full·health-check-failure·
+    network-latency-high)는 BUILTIN_RUNBOOKS에 없어 선택 불가.
 - [x] ~~**⑦ TTL 스위퍼 CronJob**~~ — **완료(2026-07-26, `d96b888`)**. 차트에 기본 OFF·report-only CronJob
   (넘길 `--delete` 플래그 자체가 없음, D5). **핵심은 CronJob이 아니라 그 전에 발견한 결함**: `_run_json`이
   CLI 실패를 None으로 삼켜 gcloud 부재가 **`clean` + exit 0**이 됐다 — 컨테이너에서 돌리면 영원히 녹색인데

@@ -7,6 +7,28 @@
 
 ---
 
+## 2026-07-26 — capability step을 executor가 실제로 소비 (gate 1168→1191)
+
+- Status: `capability_schema`가 표현할 수 있던 순서·조건·on_failure·per-step verify를 **아무도 읽지 않던**
+  갭을 해소. 고친 것 4개인데 **뒤의 둘은 앞을 고쳐야 보이는 종류**였다.
+- Changed(`c4816fd`): `DecisionOutput.steps`(기본 []=기존 동작) + `_resolve_runbook_steps` +
+  executor `_run_capability_steps`(조건 평가·on_failure·선언된 verify 우선) + `resolution_verdict`에
+  `not_applicable` 축. `CAPABILITY_RUNBOOKS`를 해석 경계에서 연결(row가 이기고 없으면 카탈로그가 채움).
+- Verified: `make check` **1191**(+23). **라이브 인-프로세스 before/after**(같은 알럿):
+  before `executed=[restart, scale] skipped=[]` — 필요 없는 노드 스케일아웃 /
+  after `executed=[restart] skipped=[scale] resolved=True`.
+  증거 `docs/evidence/capability-steps-executor-wiring.log`.
+- Blockers: 없음. 미완(의도적): CAPABILITY_RUNBOOKS의 4개(certificate-expiry·disk-full·
+  health-check-failure·network-latency-high)는 BUILTIN_RUNBOOKS에 없어 여전히 선택 불가 — 별도 갭.
+- 품질 메모: **유닛 테스트가 구조적으로 못 잡는 결함**을 만났다. `_deserialise_decision`이 `steps`를
+  버려서 executor가 조용히 flat 경로로 되돌아갔는데, 유닛 테스트는 전부 DecisionOutput을 **메모리에서**
+  만들어 그 경계를 안 넘는다. 실제 파이프라인을 한 번 돌리자 즉시 드러났다(성공한 restart 뒤에
+  `previous_step_failed: True` 조건의 scale이 실행됨). **선언하는 것과 경계를 건너 실어 나르는 것은
+  다른 문제이고, 프로덕션에서 도는 건 후자다.** 그 다음 층도 같은 부류였다 — 조건이 적용되자 이번엔
+  런북의 *성공* 경로가 `resolved=False`가 됐다(log-only에서 배운 뒤집힘의 재발). 조건 스킵은
+  "안 하기로 올바르게 판단함"이지 "하려다 못 함"이 아니다.
+- Next: Phase 2(Capsule+RBAC+대시보드 tenant/env 스위처+2축 drift 폴러). `/tidy-docs` 필요(LOG 예산 초과).
+
 ## 2026-07-26 — Phase 1b 핸드오프 실행 + 프리플라이트 5번째 검사 (gate 1159→1168)
 
 - Status: 사용자가 `terraform state rm`을 실행해 마지막 블로커가 풀렸고, rollouts-demo 소유권을
