@@ -1,6 +1,6 @@
 # COMPLETED_SUMMARY — platform-agent
 
-최종 갱신: 2026-07-17
+최종 갱신: 2026-07-26
 
 > 완료된 milestone 압축. current docs 에는 링크만, 상세 체크리스트는 여기로 압축.
 > 도메인 원문 상세는 `bin/docs/archive/`.
@@ -37,6 +37,30 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 ## M6 — CDK deprecation 정리 (완료)
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
+
+## M10 — GitAIOps 대조 7/7 + 멀티테넌트 Phase 0·1a·1b + 공급망 하드닝 (완료, 2026-07-20~26)
+
+**gate 870 → 1191.** 상세 이력 → `PROGRESS_LOG.md`(최신 3건) · `docs/archive/progress-2026-07.md` ·
+증거 `docs/evidence/*`. 설계 → `docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5, S 93.5).
+
+- **On-Prem 애드온 스택 IaC** Phase 1~5(ArgoCD GitOps · kube-prometheus-stack · Argo Rollouts ·
+  Loki/Fluent Bit) + k3s 기판 패리티. Gateway API는 소비처 부재로 의도적 보류.
+- **GitAIOps 실습서 대조 7/7**: ①Rollouts AnalysisTemplate + **에이전트 릴리스 게이트 3종 판별**
+  (정상→pass / 크래시→165s auto-abort / 관측 불가→unknown) · ②OTel→Tempo + 인시던트 딥링크
+  (MTTR의 82%가 로컬 LLM 추론) · ③런북 사후검증 provider 실행부 · ④권한 통제 3단 ·
+  ⑤Sync Wave(Phase 1b 흡수) · ⑥NetworkPolicy 집행 + **PSS restricted · Cosign** ·
+  ⑦고아 클러스터 스위퍼 + **CronJob·coverage 정직성**.
+- **멀티테넌트 플랫폼**: Phase 0(레지스트리·로더·`DeliveryAdapter` 계약) · Phase 1a(자격증명이 경계 —
+  `IncidentScope` + provenance 바인딩 `TokenBroker`, 라이브 RBAC `Forbidden`으로 증명) ·
+  Phase 1b(argocd/flux 어댑터 2개 + 핸드오프 프리플라이트 5검사 + **rollouts-demo 소유권 TF→ArgoCD 이관 실행**).
+- **런북이 선언대로 실행됨**: capability step(순서·조건·on_failure·per-step verify)을 executor가 실제 소비.
+
+**이 마일스톤에서 반복해 나온 결함 형태 — 전부 "선언은 됐는데 소비/전달이 없음":**
+`llm.endpoint`(차트에 있는데 webhook이 못 받음 → 모든 판정 unknown) · `capability_schema.steps`
+(스키마에 있는데 executor가 안 읽음) · `_deserialise_decision`(steps를 직렬화 경계에서 버림) ·
+`CAPABILITY_RUNBOOKS`(9런북이 죽은 데이터) · `scripts/`(이미지에 미포함) · 스위퍼 `_run_json`
+(CLI 부재를 clean으로) · DynamoDB `Decimal`(rto 선언 런북 전량 탈락).
+**공통점: 테스트는 선언을 검증해 초록이었고, 라이브 실행이 소비 부재를 드러냈다.**
 
 ## M9 — eval·하드닝 스프린트 + 라이브 E2E 2종: 자율 백로그 전면 소진 (완료, 2026-07-19)
 

@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-07-26
 
-> ▶ NEXT SESSION: **Phase 2** — Capsule(soft 티어)+RBAC + 대시보드 tenant/env 스위처 + 라이브 상태 폴러(2축 drift). 설계는 `docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5). **먼저 `/tidy-docs`** — PROGRESS_LOG가 예산(120줄)을 크게 넘었다. **직전 완료**: capability step을 executor가 실제 소비(`c4816fd`) · Phase 1b 핸드오프 실행(rollouts-demo TF→ArgoCD, `7033db3`) · ① 게이트 3종 판별 · ⑥ PSS/Cosign · ⑦ 스위퍼 CronJob — gate **1191**, push 완료(`c4816fd`). stateful 3건(loki/tempo/pa) 이관은 **스냅샷 수단 선행**. 로컬 kind 가동 중, MLX는 내려둠(analyzer는 휴리스틱 폴백 상태).
+> ▶ NEXT SESSION: **Phase 2** — Capsule(soft 티어)+RBAC + 대시보드 tenant/env 스위처 + 라이브 상태 폴러(2축 drift). 설계는 `docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5). 문서는 정리 완료(전 파일 예산 내). **직전 완료**: capability step을 executor가 실제 소비(`c4816fd`) · Phase 1b 핸드오프 실행(rollouts-demo TF→ArgoCD, `7033db3`) · ① 게이트 3종 판별 · ⑥ PSS/Cosign · ⑦ 스위퍼 CronJob — gate **1191**, push 완료(`c4816fd`). stateful 3건(loki/tempo/pa) 이관은 **스냅샷 수단 선행**. 로컬 kind 가동 중, MLX는 내려둠(analyzer는 휴리스틱 폴백 상태).
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 
