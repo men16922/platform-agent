@@ -55,6 +55,22 @@ variable "fluent_bit_chart_version" {
   default = "0.57.9"
 }
 
+# Metric-based canary judgment for the Rollouts demo. Default false: this path is
+# additive to the live-verified manual promote/abort gate, and shipping an
+# unverified auto-abort as the default would risk that demo.
+variable "rollouts_demo_analysis_enabled" {
+  type    = bool
+  default = false
+}
+
+# kube-prometheus-stack names its Prometheus Service from its own chart helpers,
+# so the address is configuration rather than something this module derives.
+# Confirmed live against the module's own Grafana datasource.
+variable "rollouts_demo_prometheus_address" {
+  type    = string
+  default = "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090"
+}
+
 # Phase 6 tracing: Grafana Tempo (single binary) in the monitoring namespace so
 # the kps Grafana adds it as a third datasource (metrics + logs + traces).
 # tempo 1.24.4 ships Tempo 2.9.0 (verified: helm search repo grafana/tempo --versions).

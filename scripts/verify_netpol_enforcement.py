@@ -106,20 +106,50 @@ def _wait_ready(namespace: str, selector: str, timeout_sec: int = 180) -> bool:
     return proc.returncode == 0
 
 
-def _can_reach(timeout_sec: int = 8) -> bool:
-    """Run a one-shot client pod that curls the server Service across namespaces."""
-    target = f"http://server.{_SERVER_NS}.svc.cluster.local:8080/hostname"
+def _connect_once(timeout_sec: int) -> bool:
+    """
+    One client pod opening a TCP connection to the server Service.
+
+    NOTE: agnhost `connect` takes ``host:port`` and a **tcp/udp/sctp** protocol —
+    not a URL and not ``http`` (that exits "Unsupported protocol", which reads as
+    "unreachable" and silently breaks the probe's control step). NetworkPolicy
+    operates at L3/L4 anyway, so a TCP connect is the right level of test.
+    """
+    target = f"server.{_SERVER_NS}.svc.cluster.local:8080"
     proc = _kubectl(
-        "run", f"probe-{int(time.time())}",
+        "run", f"probe-{int(time.time() * 1000)}",
         "-n", _CLIENT_NS,
         "--image", _IMAGE,
         "--restart=Never", "--rm", "-i", "--quiet",
         "--command", "--",
-        "/agnhost", "connect", f"--timeout={timeout_sec}s", "--protocol=http", target,
+        "/agnhost", "connect", f"--timeout={timeout_sec}s", "--protocol=tcp", target,
         timeout=timeout_sec + 120,
     )
-    # agnhost `connect` exits non-zero when the connection cannot be established.
+    # agnhost `connect` exits non-zero when the connection cannot be established
+    # (prints REFUSED / TIMEOUT on stdout).
     return proc.returncode == 0
+
+
+def _can_reach(*, attempts: int, delay_sec: int = 5, timeout_sec: int = 8) -> bool:
+    """
+    True if ANY attempt connects.
+
+    Retries exist because pod ``Ready`` does not mean the process has bound its
+    port yet — a single shot right after Ready returns REFUSED and would make the
+    control step fail for a reason that has nothing to do with NetworkPolicy
+    (observed on kind: attempt 1 REFUSED, attempt 2 fine).
+
+    "Any success = reachable" is also the right polarity for the post-policy
+    check: one leaked connection is enough to disprove enforcement, so retrying
+    makes the NOT-ENFORCED verdict *more* sensitive and forces ENFORCED to mean
+    "failed every time". Erring toward NOT ENFORCED is the safe direction.
+    """
+    for attempt in range(attempts):
+        if _connect_once(timeout_sec):
+            return True
+        if attempt < attempts - 1:
+            time.sleep(delay_sec)
+    return False
 
 
 def _cleanup() -> None:
@@ -149,7 +179,8 @@ def main() -> int:
             return 2
 
         # Control: without any policy the two namespaces must be able to talk.
-        if not _can_reach():
+        # Generous retries — this only has to prove connectivity *exists*.
+        if not _can_reach(attempts=6):
             print(
                 "INCONCLUSIVE: baseline cross-namespace connectivity failed, so a later "
                 "failure would prove nothing about NetworkPolicy",
@@ -162,7 +193,8 @@ def main() -> int:
         # Give the CNI a moment to program the policy before re-testing.
         time.sleep(5)
 
-        if _can_reach():
+        # Fewer attempts, but any single success disproves enforcement.
+        if _can_reach(attempts=3, delay_sec=3):
             print(
                 "\nNOT ENFORCED: traffic still flows with a default-deny-ingress policy applied.\n"
                 "  This CNI ignores NetworkPolicy. Do NOT enable tenancy-netpol here — it would\n"

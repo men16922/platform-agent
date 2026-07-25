@@ -1,0 +1,38 @@
+=== ② OTel -> Tempo live E2E (2026-07-25T14:49:38Z) ===
+context: kind-platform-agent (k8s v1.34.0), tempo chart 1.24.4 (Tempo 2.9.0)
+tempo pod: 1/1 Running
+resources applied: {"cpu":"25m","memory":"128Mi"}
+
+--- pipeline run (OTEL_EXPORTER_OTLP_ENDPOINT=127.0.0.1:4317 via port-forward) ---
+alert: PlatformDemoCrashLoop / crashme-abc OOMKilled -> P2 / confidence 0.85 / APPROVE
+trace_id: 3c9da1037da6a04a73ad194c085a2405
+
+--- Tempo query API (GET /api/traces/<id>) = HTTP 200, span breakdown ---
+  onprem.detect                  0.3ms
+  onprem.analyze              4135.6ms   <- 82% of wall clock (local Qwen inference)
+  onprem.decide                890.1ms
+  onprem.incident_pipeline    5026.2ms   (root)
+
+FINDING: the previously-unanswerable question 'how much of incident MTTR is LLM
+inference?' is now a measurement: 4136/5026 = 82%.
+
+--- Grafana datasources (metrics + logs + traces in one pane) ---
+  alertmanager Alertmanager http://monitoring-kube-prometheus-alertmanager.monitoring:9093/
+  loki         Loki         http://loki-gateway.monitoring.svc
+  prometheus   Prometheus   http://monitoring-kube-prometheus-prometheus.monitoring:9090/
+
+--- after `terraform apply -target=helm_release.kube_prometheus_stack` (kps values change) ---
+NOTE: applying only -target=helm_release.tempo left Grafana WITHOUT the Tempo datasource —
+the datasource lives in values/kube-prometheus-stack.yaml, so that release must be applied too.
+  alertmanager Alertmanager http://monitoring-kube-prometheus-alertmanager.monitoring:9093/
+  loki         Loki         http://loki-gateway.monitoring.svc
+  prometheus   Prometheus   http://monitoring-kube-prometheus-prometheus.monitoring:9090/
+  tempo        Tempo        http://tempo.monitoring.svc:3200          <- registered, query port
+TEMPO PRESENT: True
+
+--- Grafana proxy -> Tempo query (proves the datasource actually works, not just exists) ---
+GET /api/datasources/proxy/uid/tempo/api/traces/3c9da1037da6a04a73ad194c085a2405 = HTTP 200
+spans: ['onprem.detect', 'onprem.analyze', 'onprem.decide', 'onprem.incident_pipeline']
+
+CONFIRMED: values-driven `prometheusAddress` default in the AnalysisTemplate matches reality —
+the module's own Grafana datasource is http://monitoring-kube-prometheus-prometheus.monitoring:9090/

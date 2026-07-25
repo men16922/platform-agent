@@ -8,12 +8,19 @@ image:
 
 # Metric-based canary judgment (AnalysisTemplate + Prometheus, see templates/analysis.yaml).
 #
-# Default OFF on purpose: the Phase 4 manual promote/abort demo IS live-verified
-# (docs/evidence/onprem-addons-rollouts-e2e.log) and this path is NOT yet — enabling
-# it by default would ship unverified auto-abort behaviour into a working demo.
-# Flipping `enabled: true` and re-running the canary IS the live-verification step;
-# confirm `prometheusAddress` resolves first (kube-prometheus-stack names that
-# Service from its own chart helpers, so it is not guessable from this repo).
+# LIVE-VERIFIED 2026-07-25 on kind, BOTH directions
+# (docs/evidence/onprem-addons-rollouts-analysis-e2e.log):
+#   bad canary  -> AnalysisRun Failed (failed 3 > failureLimit 2) -> auto-abort in
+#                  ~105s with NO human action; stable ReplicaSet kept 4/4 serving.
+#   good canary -> 3x Successful (value 0) -> NOT aborted; the manual `pause: {}`
+#                  gate still governs promote (so the Phase 4 demo is intact).
+#
+# Still default OFF: the Phase 4 manual promote/abort demo is the documented
+# walkthrough, and flipping the default would change what that demo does. Enable
+# per-environment through Terraform instead of editing this file:
+#   terraform apply -var rollouts_demo_analysis_enabled=true
+# `prometheusAddress` below was confirmed against the module's own Grafana
+# datasource (kube-prometheus-stack names that Service from its chart helpers).
 analysis:
   enabled: false
   templateName: rollouts-demo-canary-health

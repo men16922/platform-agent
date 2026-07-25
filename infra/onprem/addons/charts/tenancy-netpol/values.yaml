@@ -2,13 +2,21 @@
 #
 # Default OFF, and this is not timidity: a NetworkPolicy applied to a CNI that
 # does not enforce NetworkPolicy is *worse than nothing* — the objects exist, the
-# dashboard/audit reads "isolated", and traffic flows anyway. kind's default
-# kindnet historically did not enforce policies (newer kindnetd added support),
-# so the enforcing-ness of the target substrate is an empirical question:
+# dashboard/audit reads "isolated", and traffic flows anyway. So enforcement is an
+# empirical question per substrate:
 #
 #   python scripts/verify_netpol_enforcement.py     # must report ENFORCED
 #
-# Only then flip `enabled: true`. On k3s (flannel) the same probe applies.
+# STATUS on kind (k8s v1.34.0, default kindnet), verified 2026-07-25:
+#   probe = ENFORCED, and the rendered policy was proven to allow same-tenant
+#   traffic while blocking cross-tenant traffic
+#   (docs/evidence/onprem-netpol-tenancy-e2e.log).
+#
+# Still OFF here for a DIFFERENT reason than before: the target namespaces
+# (<prefix>-<env>-<capability>) and their platform-agent.io/tenant labels are
+# created by Capsule in Phase 2. Enabling now would apply policies to namespaces
+# that do not exist. Flip `enabled: true` with Phase 2, not before.
+# On k3s (flannel) re-run the probe — enforcement does not transfer.
 enabled: false
 
 # Tenants to isolate. `prefix` must match the registry's `naming_prefix`

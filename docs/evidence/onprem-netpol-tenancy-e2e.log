@@ -1,0 +1,25 @@
+=== tenancy-netpol tenant semantics E2E (2026-07-25T14:44:54Z) ===
+context: kind-platform-agent  k8s: v1.34.0
+namespaces labelled: acme x2, globex x1
+server Ready in acme-dev-observability
+
+--- baseline (no policy) ---
+  same-tenant  (acme-dev-logging): REACHABLE
+  cross-tenant (globex-dev-observability): REACHABLE
+
+--- applying chart-rendered NetworkPolicy for acme ---
+networkpolicy.networking.k8s.io/deny-cross-tenant created
+
+--- after policy ---
+  same-tenant  (acme-dev-logging): REACHABLE
+  cross-tenant (globex-dev-observability): BLOCKED
+
+VERDICT: same-tenant=ok  cross-tenant=blocked
+PASS: policy allows same tenant, denies cross tenant
+probing context: kind-platform-agent
+baseline: B -> A reachable (no policy) ✓
+
+ENFORCED: default-deny blocked the cross-namespace connection.
+  Safe to set tenancy-netpol `enabled: true` on this substrate.
+  Reminder: namespaces still need the platform-agent.io/tenant label for the
+  same-tenant allowance to match (Capsule sets it in Phase 2).

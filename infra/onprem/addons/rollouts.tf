@@ -22,6 +22,20 @@ resource "helm_release" "rollouts_demo" {
   chart     = "${path.module}/charts/rollouts-demo"
   namespace = var.argo_rollouts_namespace
 
+  # Metric-based canary judgment (AnalysisTemplate + Prometheus). Default off —
+  # see values.yaml for why. Exposed as a variable so enabling it is an IaC change
+  # rather than a hand-edit of chart values.
+  set = [
+    {
+      name  = "analysis.enabled"
+      value = var.rollouts_demo_analysis_enabled
+    },
+    {
+      name  = "analysis.prometheusAddress"
+      value = var.rollouts_demo_prometheus_address
+    },
+  ]
+
   wait    = true
   timeout = 300
 

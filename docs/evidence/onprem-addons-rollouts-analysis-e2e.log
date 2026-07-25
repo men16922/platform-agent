@@ -1,0 +1,63 @@
+=== ① Rollouts AnalysisTemplate live E2E (2026-07-25T15:09:32Z) ===
+before: phase=Healthy image=argoproj/rollouts-demo:yellow
+analysis wired: rollouts-demo-canary-health
+rollout.argoproj.io/rollouts-demo patched
+patched: canary container now exits 1 (simulates a broken release)
+
+--- AnalysisRun detail (rollouts-demo-66c5686467-5) ---
+phase: Failed
+metric=canary-restarts phase=Failed failed=3 successful= count=3
+measurements:
+  value=[2] phase=Failed finishedAt=2026-07-25T15:10:02Z
+  value=[3] phase=Failed finishedAt=2026-07-25T15:10:32Z
+  value=[3] phase=Failed finishedAt=2026-07-25T15:11:02Z
+
+--- Rollout after abort ---
+phase=Degraded
+message=RolloutAborted: Rollout aborted update to revision 5: Background analysis phase error/failed: Metric "canary-restarts" assessed Failed due to failed (3) > failureLimit (2)
+Paused=False (RolloutPaused)
+Healthy=False (RolloutHealthy)
+Completed=False (RolloutCompleted)
+Progressing=False (RolloutAborted)
+Available=True (AvailableReason)
+
+--- stable preserved? (rollback semantics) ---
+  rs=rollouts-demo-5dc5cc desired=4 current=4 ready=4
+  rs=rollouts-demo-66c5686467 desired=0 current=0 ready=0
+  rs=rollouts-demo-6cdd8f6fbf desired=0 current=0 ready=0
+  rs=rollouts-demo-7ff988b864 desired=0 current=0 ready=0
+
+--- CONTROL: healthy canary must PASS analysis (not a false-negative machine) ---
+image yellow -> red (a real, working image)
+[15s] phase=Healthy step=6 ar=rollouts-demo-66c5686467-5   Failed   2m23s
+[30s] phase=Healthy step=6 ar=rollouts-demo-66c5686467-5   Failed   2m38s
+[45s] phase=Healthy step=6 ar=rollouts-demo-66c5686467-5   Failed   2m53s
+[60s] phase=Healthy step=6 ar=rollouts-demo-66c5686467-5   Failed   3m8s
+[75s] phase=Healthy step=6 ar=rollouts-demo-66c5686467-5   Failed   3m23s
+[90s] phase=Healthy step=6 ar=rollouts-demo-66c5686467-5   Failed   3m38s
+[105s] phase=Healthy step=6 ar=rollouts-demo-66c5686467-5   Failed   3m54s
+[120s] phase=Healthy step=6 ar=rollouts-demo-66c5686467-5   Failed   4m9s
+[135s] phase=Healthy step=6 ar=rollouts-demo-66c5686467-5   Failed   4m24s
+[150s] phase=Healthy step=6 ar=rollouts-demo-66c5686467-5   Failed   4m39s
+[165s] phase=Healthy step=6 ar=rollouts-demo-66c5686467-5   Failed   4m54s
+[180s] phase=Healthy step=6 ar=rollouts-demo-66c5686467-5   Failed   5m9s
+[195s] phase=Healthy step=6 ar=rollouts-demo-66c5686467-5   Failed   5m24s
+[210s] phase=Healthy step=6 ar=rollouts-demo-66c5686467-5   Failed   5m39s
+[225s] phase=Healthy step=6 ar=rollouts-demo-66c5686467-5   Failed   5m55s
+[240s] phase=Healthy step=6 ar=rollouts-demo-66c5686467-5   Failed   6m10s
+
+--- CONTROL result: healthy canary (image yellow -> red) ---
+analysisrun=rollouts-demo-7ff988b864-7 phase=Running
+metric=canary-restarts phase=Running successful=3 failed=
+  value=[0] phase=Successful
+  value=[0] phase=Successful
+  value=[0] phase=Successful
+rollout: phase=Paused step=3
+=> a healthy canary was NOT aborted: the template is not a false-negative machine.
+
+--- promote -> stable ---
+phase=Healthy image=argoproj/rollouts-demo:red
+
+VERDICT: metric-based canary judgment works in BOTH directions —
+  bad canary  -> AnalysisRun Failed (3 > failureLimit 2) -> auto-abort, stable preserved
+  good canary -> 3x Successful (value 0) -> not aborted, manual gate still governs promote
