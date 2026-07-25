@@ -41,7 +41,7 @@ class TestNotificationAction:
         ssm = mock.MagicMock()
         with mock.patch.object(handler, "_SSM", ssm), \
              mock.patch.object(handler, "_SLACK_WEBHOOK", "https://hooks.slack.example/x"):
-            executed, skipped, _verifications = handler._run_ssm_actions(_decision(["AWS-SendSlackAlert"]), mock.MagicMock())
+            executed, skipped, _verifications, _na = handler._run_ssm_actions(_decision(["AWS-SendSlackAlert"]), mock.MagicMock())
         assert executed == ["AWS-SendSlackAlert"]
         assert skipped == []
         ssm.start_automation_execution.assert_not_called()
@@ -50,7 +50,7 @@ class TestNotificationAction:
         ssm = mock.MagicMock()
         with mock.patch.object(handler, "_SSM", ssm), \
              mock.patch.object(handler, "_SLACK_WEBHOOK", ""):
-            executed, skipped, _verifications = handler._run_ssm_actions(_decision(["AWS-SendSlackAlert"]), mock.MagicMock())
+            executed, skipped, _verifications, _na = handler._run_ssm_actions(_decision(["AWS-SendSlackAlert"]), mock.MagicMock())
         assert executed == []
         assert skipped == ["AWS-SendSlackAlert"]
         ssm.start_automation_execution.assert_not_called()
@@ -61,7 +61,7 @@ class TestNotificationAction:
         with mock.patch.object(handler, "_SSM", ssm), \
              mock.patch.object(handler, "_SLACK_WEBHOOK", "https://hooks.slack.example/x"), \
              mock.patch.object(handler, "_wait_for_ssm"):
-            executed, skipped, _verifications = handler._run_ssm_actions(
+            executed, skipped, _verifications, _na = handler._run_ssm_actions(
                 _decision(["AWS-SendSlackAlert", "AWS-RestartEKSPod"]), mock.MagicMock()
             )
         assert executed == ["AWS-SendSlackAlert", "AWS-RestartEKSPod"]

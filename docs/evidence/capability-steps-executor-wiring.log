@@ -1,0 +1,100 @@
+=== capability step 런북을 executor가 실제로 소비 (2026-07-26, in-process, $0) ===
+
+WHAT WAS WRONG
+  `capability_schema` could always express ordering, `condition`, `on_failure`
+  and a per-step `verify` naming how to prove the step helped. Nothing consumed
+  any of it:
+
+    - `DecisionOutput` carried only a flat `actions: list[str]`.
+    - `_resolve_runbook_actions` resolved the flat `capabilities` list; `steps`
+      was never read.
+    - `CAPABILITY_RUNBOOKS` — 9 runbooks with full step definitions — was
+      referenced by NOTHING outside its own tests. All five selectable runbook
+      ids also live there, so every one of those step definitions was dead data.
+
+  The tests were green throughout, because they tested the declaration.
+
+--- fix 1: steps reach the executor ---
+  DecisionOutput.steps (default [] = the old behaviour, exactly)
+  _resolve_runbook_steps() resolves each declared step's capability -> action,
+  keeping order, condition, on_failure and verify.
+  `actions` is derived from the steps in step order, so the Slack report, the
+  incident record and every existing consumer see an unchanged shape.
+
+--- fix 2: the built-in catalog was unreachable ---
+  The runbook row wins (an operator editing DynamoDB must be able to change the
+  plan); CAPABILITY_RUNBOOKS fills in when the row declares no steps. That one
+  lookup makes nine runbooks' worth of ordering and verification live.
+
+--- fix 3: THE ONE THE UNIT TESTS COULD NOT CATCH ---
+First real pipeline run, log-only, alert = pod OOMKilled:
+
+  decision.runbook ... step_count=2
+  steps:
+    - restart_pod  cap=restart_workload  action=ONPREM-RolloutRestartWorkload
+      condition=None  on_failure=continue  verify=assert_workload_ready
+    - scale_nodes  cap=scale_out         action=ONPREM-ScaleWorkload
+      condition={'previous_step_failed': True}  on_failure=abort
+      verify=assert_replica_count
+
+  executed : ['ONPREM-RolloutRestartWorkload', 'ONPREM-ScaleWorkload']   <-- WRONG
+  skipped  : []
+
+  `scale_nodes` is conditioned on the restart having FAILED. The restart
+  succeeded. It should have been skipped, and it ran.
+
+  Cause: `_deserialise_decision` did not carry `steps`. The pipeline serialises
+  the decision between stages, so the executor received a DecisionOutput with an
+  empty step list and silently fell back to the flat path — conditions,
+  on_failure and verify all discarded, nothing in the logs to say so.
+
+  Every unit test passed because each built DecisionOutput in memory and never
+  crossed that boundary. Declaring a thing and carrying it across a boundary are
+  different problems, and only the second one is what runs in production.
+
+  After carrying `steps` through:
+    executor.step.condition_false  step=scale_nodes action=ONPREM-ScaleWorkload
+    executed : ['ONPREM-RolloutRestartWorkload']
+    skipped  : ['ONPREM-ScaleWorkload']
+    resolved : False            <-- still wrong, differently
+
+--- fix 4: a condition-skip is not a failure ---
+  With conditions finally honoured, `resolution_verdict` counted the skip
+  against resolution — so the runbook's SUCCESS path (restart worked, therefore
+  do not scale) reported `resolved=False`.
+
+  That is the same inversion log-only mode already taught us: "we correctly
+  chose not to act" became "we tried and could not". It would make every
+  properly-conditioned runbook look broken precisely when it worked, and the
+  better the runbook, the worse it would look.
+
+  `resolution_verdict(..., not_applicable=[...])` now exempts condition-skips.
+  They are still reported as skipped (transparency); they just do not withhold
+  resolution. A step that TRIED and failed still does.
+
+--- final, same alert ---
+  decision.runbook ... step_count=2
+  executor.step.condition_false  step=scale_nodes
+  executed : ['ONPREM-RolloutRestartWorkload']
+  skipped  : ['ONPREM-ScaleWorkload']
+  resolved : True
+
+  Before this work the same incident produced
+  executed=[restart, scale] / skipped=[] — it scaled out a node group that did
+  not need scaling, because the condition saying otherwise was never read.
+
+--- scope ---
+  The On-Prem in-process pipeline calls the same decision/executor handlers as
+  the AWS Step Functions path, so both are covered by one change.
+
+  NOT done: four runbooks in CAPABILITY_RUNBOOKS (certificate-expiry, disk-full,
+  health-check-failure, network-latency-high) are still unreachable — they have
+  no entry in BUILTIN_RUNBOOKS, so nothing can select them. Separate gap, left
+  alone rather than quietly widened.
+
+  Guards: tests/test_executor_capability_steps.py (order, conditions,
+  on_failure, declared-verify precedence, resolution semantics, and the
+  serialisation round-trip that this run caught), plus decision-side resolution
+  guards in tests/test_decision.py.
+
+gate: 1168 -> 1191 (+23)

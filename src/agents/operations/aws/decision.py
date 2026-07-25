@@ -32,7 +32,7 @@ from src.agents.models import (
     RemediationMode,
     Severity,
 )
-from src.agents.runbooks.catalog import BUILTIN_RUNBOOKS
+from src.agents.runbooks.catalog import BUILTIN_RUNBOOKS, CAPABILITY_RUNBOOKS
 from src.agents.runbooks.schema import normalise_runbook, validate_runbook
 
 logger = structlog.get_logger(__name__)
@@ -55,7 +55,7 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 
     analyzer = _deserialise_analyzer(event)
 
-    runbook_id, actions, rto = _select_runbook(analyzer)
+    runbook_id, actions, rto, steps = _select_runbook(analyzer)
     mode = _determine_mode(analyzer.severity, actions)
 
     # Reconciliation gate (deterministic-tool-first): never auto-execute a
@@ -69,13 +69,20 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         )
     mode = gated_mode
 
-    log.info("decision.runbook", runbook_id=runbook_id, mode=mode, actions=actions, rto=rto)
+    log.info(
+        "decision.runbook",
+        runbook_id=runbook_id, mode=mode, actions=actions, rto=rto,
+        # Which plan shape the executor will walk — the flat list, or ordered
+        # steps with conditions and per-step verification.
+        step_count=len(steps),
+    )
 
     output = DecisionOutput(
         analyzer=analyzer,
         runbook_id=runbook_id,
         remediation_mode=mode,
         actions=actions,
+        steps=steps,
         estimated_rto_sec=rto,
         reconciliation=recon.to_dict(),
     )
@@ -92,7 +99,9 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
 _BUILTIN_RUNBOOKS = BUILTIN_RUNBOOKS
 
 
-def _select_runbook(analyzer: AnalyzerOutput) -> tuple[str, list[str], int | None]:
+def _select_runbook(
+    analyzer: AnalyzerOutput,
+) -> tuple[str, list[str], int | None, list[dict[str, Any]]]:
     """
     Match the analyzer output against runbook registry.
 
@@ -103,28 +112,24 @@ def _select_runbook(analyzer: AnalyzerOutput) -> tuple[str, list[str], int | Non
       4. generic-recovery fallback
     """
     alarm     = analyzer.detector.alarm
+
+    def _plan(runbook: dict[str, Any]) -> tuple[str, list[str], int | None, list[dict[str, Any]]]:
+        steps = _resolve_runbook_steps(runbook, analyzer)
+        # When steps resolve, they ARE the plan and `actions` is derived from them
+        # in step order — so the Slack report, the incident record and every
+        # existing consumer keep seeing the same shape, just correctly ordered.
+        actions = [s["action"] for s in steps] if steps else _resolve_runbook_actions(runbook, analyzer)
+        return runbook["runbook_id"], actions, runbook.get("rto_sec"), steps
+
     dynamo_rb = _lookup_dynamo(alarm.alarm_name)
     if dynamo_rb:
-        return (
-            dynamo_rb["runbook_id"],
-            _resolve_runbook_actions(dynamo_rb, analyzer),
-            dynamo_rb.get("rto_sec"),
-        )
+        return _plan(dynamo_rb)
 
     registry_rb = _match_runbook_registry(alarm, analyzer.root_cause, _scan_dynamo_candidates())
     if registry_rb:
-        return (
-            registry_rb["runbook_id"],
-            _resolve_runbook_actions(registry_rb, analyzer),
-            registry_rb.get("rto_sec"),
-        )
+        return _plan(registry_rb)
 
-    candidate = _match_builtin(alarm, analyzer.root_cause)
-    return (
-        candidate["runbook_id"],
-        _resolve_runbook_actions(candidate, analyzer),
-        candidate.get("rto_sec"),
-    )
+    return _plan(_match_builtin(alarm, analyzer.root_cause))
 
 
 def _lookup_dynamo(alarm_name: str) -> dict[str, Any] | None:
@@ -207,6 +212,70 @@ def _match_runbook_registry(
             best_rb = rb
 
     return best_rb or generic_rb
+
+
+def _resolve_runbook_steps(
+    runbook: dict[str, Any], analyzer: AnalyzerOutput
+) -> list[dict[str, Any]]:
+    """Resolve a runbook's declared ``steps`` into executable, ordered entries.
+
+    Until now only the flat ``capabilities`` list was resolved, which throws away
+    everything the step schema exists to express: order, conditions, on_failure,
+    and the per-step ``verify`` that says how to prove the step actually helped.
+    A runbook could declare all of it and the executor would still run an
+    unordered, unconditional list.
+
+    Returns [] when the runbook declares no steps — the caller then keeps the
+    flat path, so nothing changes for the runbooks that have always used it.
+    """
+    # The runbook row wins (an operator editing DynamoDB must be able to change
+    # the plan). The built-in capability catalog fills in when the row declares
+    # no steps — which was EVERY row: all five selectable runbook ids also exist
+    # in CAPABILITY_RUNBOOKS with full step definitions, and nothing referenced
+    # that catalog outside its own tests. Nine runbooks' worth of ordering,
+    # conditions and verification were dead data.
+    declared = runbook.get("steps") or CAPABILITY_RUNBOOKS.get(
+        runbook.get("runbook_id", ""), {}
+    ).get("steps") or []
+    incident = analyzer.detector.normalized_incident
+    if not declared or not incident:
+        return []
+
+    provider = incident.provider or "aws"
+    try:
+        execution_adapter = get_execution_adapter(provider)
+    except Exception as exc:
+        logger.warning(
+            "decision.step_resolution.error",
+            runbook_id=runbook.get("runbook_id"), provider=provider, error=str(exc),
+        )
+        return []
+
+    resolved: list[dict[str, Any]] = []
+    for index, step in enumerate(declared):
+        if not isinstance(step, dict) or not step.get("capability"):
+            continue
+        try:
+            action = execution_adapter.resolve_action(step["capability"], incident)["action"]
+        except Exception as exc:
+            # One unresolvable capability must not discard the whole plan; the
+            # step is dropped and the rest still run in order.
+            logger.warning(
+                "decision.step_resolution.skipped",
+                runbook_id=runbook.get("runbook_id"),
+                capability=step.get("capability"), error=str(exc),
+            )
+            continue
+        resolved.append({
+            "name": step.get("name") or f"step-{index + 1}",
+            "capability": step["capability"],
+            "action": action,
+            "parameters": step.get("parameters") or {},
+            "condition": step.get("condition"),
+            "on_failure": step.get("on_failure", "abort"),
+            "verify": step.get("verify"),
+        })
+    return resolved
 
 
 def _resolve_runbook_actions(runbook: dict[str, Any], analyzer: AnalyzerOutput) -> list[str]:

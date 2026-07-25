@@ -283,6 +283,7 @@ def resolution_verdict(
     executed: list[str],
     skipped: list[str],
     verifications: list[VerificationResult] | None = None,
+    not_applicable: list[str] | None = None,
 ) -> ResolutionVerdict:
     """
     Decide whether an incident is resolved, using verification evidence when present.
@@ -291,8 +292,17 @@ def resolution_verdict(
     exactly the historical rule ``bool(executed) and not skipped`` and ``verified``
     is ``None`` (honestly "unknown", not "passed"). Only a *required* verification
     can withhold resolution — advisory checks are reported but never block.
+
+    ``not_applicable`` carries steps whose ``condition`` was false — "we correctly
+    chose not to do this", which is NOT "we tried and could not". Conflating the
+    two is the same inversion log-only mode already taught us: it would make every
+    runbook that uses conditions properly (scale out ONLY if the restart failed)
+    report unresolved on its success path, which is the path that should look best.
+    They are still reported as skipped for transparency; they just do not count
+    against resolution.
     """
-    dispatched = bool(executed) and not skipped
+    blocking_skips = [s for s in skipped if s not in set(not_applicable or [])]
+    dispatched = bool(executed) and not blocking_skips
 
     if not verifications:
         return ResolutionVerdict(

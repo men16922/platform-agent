@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from unittest import mock
 
 import pytest
 
@@ -205,3 +206,40 @@ class TestVerdictIntegration:
         verdict = resolution_verdict(["A"], [], [])
         assert verdict.resolved is True
         assert verdict.verified is None, "absent evidence must read as unknown, not proven"
+
+
+class TestDeclaredCapability:
+    """A runbook step can name its own check; an unrunnable one is never a pass."""
+
+    def test_declared_capability_overrides_the_action_table(self, monkeypatch):
+        from src.agents.operations.runners import onprem_verify as mod
+
+        seen = {}
+
+        def fake_check(action, params, scope, timeout_sec):
+            seen["called"] = True
+            return mod.VerificationResult(
+                step_name=action, capability="assert_replica_count", passed=True, detail="ok",
+            )
+
+        monkeypatch.setattr(mod, "_CHECKS", {"assert_replica_count": fake_check})
+        monkeypatch.setattr(
+            "src.agents.operations.runners.onprem_runner._is_live", lambda: True
+        )
+        result = mod.verify_onprem_action(
+            "ONPREM-RestartWorkload", {}, mock.MagicMock(), scope=object(),
+            capability="assert_replica_count",
+        )
+        assert seen.get("called") is True
+        assert result is not None and result.passed is True
+
+    def test_unknown_declared_capability_fails_rather_than_silently_passing(self):
+        from src.agents.operations.runners import onprem_verify as mod
+
+        result = mod.verify_onprem_action(
+            "ONPREM-RestartWorkload", {}, mock.MagicMock(), scope=object(),
+            capability="assert_something_nobody_implemented", step_name="scale",
+        )
+        assert result is not None
+        assert result.passed is False, "a check we cannot run must not count as verified"
+        assert result.step_name == "scale"

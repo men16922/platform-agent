@@ -174,6 +174,8 @@ def verify_onprem_action(
     log: Any,
     scope: "IncidentScope | None" = None,
     timeout_sec: int = _DEFAULT_TIMEOUT_SEC,
+    capability: str | None = None,
+    step_name: str | None = None,
 ) -> VerificationResult | None:
     """
     Verify one executed action's effect. ``None`` = nothing declared to verify.
@@ -181,10 +183,24 @@ def verify_onprem_action(
     A missing scope yields a *failed* check rather than None: we ran a live action
     and then could not confirm it, which is precisely the state that must not be
     reported as resolved.
+
+    ``capability`` lets a runbook step name its OWN check, which beats the
+    action→capability table: the table is a global guess about what an action
+    implies, while the step's ``verify`` is the author stating what would count
+    as proof for this particular use of it. Unset falls back to the table, so
+    every runbook that predates the step schema behaves exactly as before.
     """
-    capability = VERIFY_FOR_ACTION.get(action)
+    capability = capability or VERIFY_FOR_ACTION.get(action)
     if capability is None:
         return None
+    if capability not in _CHECKS:
+        # A declared check we cannot run is not a pass. Silently dropping it
+        # would let a runbook claim verification it never had.
+        log.warning("onprem_verify.unknown_capability", action=action, capability=capability)
+        return VerificationResult(
+            step_name=step_name or action, capability=capability, passed=False,
+            detail=f"no check implemented for capability {capability!r}",
+        )
 
     # Log-only mode changed nothing, so there is nothing to verify. Reporting a
     # failed check here would be worse than silence: it would turn "we chose not

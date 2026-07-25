@@ -88,6 +88,14 @@ class DecisionOutput:
     runbook_id:        str
     remediation_mode:  RemediationMode
     actions:           list[str]     = field(default_factory=list)  # SSM doc names / kubectl cmds
+    # Resolved capability steps, in order, when the runbook declares them.
+    # Empty = the flat `actions` list is the whole plan (every runbook before
+    # this, and every runbook that declares only `capabilities`). The executor
+    # branches on emptiness, so an absent value is exactly the old behaviour.
+    #
+    # Each entry: {name, action, capability, parameters, condition, on_failure, verify}
+    # — `actions` stays populated in step order so reports and records are unchanged.
+    steps:             list[dict]    = field(default_factory=list)
     estimated_rto_sec: Optional[int] = None
     # Reconciliation gate result (deterministic-tool-first grounding check).
     reconciliation:    Optional[dict] = None

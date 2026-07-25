@@ -63,8 +63,9 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     skipped:  list[str] = []
 
     verifications: list[Any] = []
+    not_applicable: list[str] = []
     if decision.remediation_mode in (RemediationMode.AUTO, RemediationMode.APPROVE):
-        executed, skipped, verifications = _run_ssm_actions(decision, log)
+        executed, skipped, verifications, not_applicable = _run_ssm_actions(decision, log)
     else:
         skipped = decision.actions
         log.info("executor.manual_mode", skipped=skipped)
@@ -74,7 +75,7 @@ def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     # to check) this is exactly the historical rule `bool(executed) and not skipped`
     # and `verified` reports None ("unknown") rather than claiming proof. Where a
     # check DID run, a required failure now withholds resolution.
-    verdict  = resolution_verdict(executed, skipped, verifications)
+    verdict  = resolution_verdict(executed, skipped, verifications, not_applicable)
     resolved = verdict.resolved
     if verifications:
         log.info("executor.verified", **verdict.to_dict())
@@ -166,9 +167,109 @@ def _resolve_incident_scope(normalized_incident: NormalizedIncident | None, log:
         return None
 
 
+def _run_capability_steps(
+    decision: DecisionOutput, log: Any
+) -> tuple[list[str], list[str], list[Any], list[str]]:
+    """Walk a runbook's declared steps in order, honouring the step contract.
+
+    The flat path below treats every action as unconditional, independent and
+    unordered. The step schema has always been able to express more than that —
+    ordering, `condition`, `on_failure`, and a per-step `verify` naming how to
+    prove the step helped — but nothing consumed it, so a runbook could declare
+    the lot and still be run as a bag of actions.
+
+    Two rules worth stating because they are the ones that bite:
+
+    * A step whose ``condition`` is false is NOT a failure. It is reported as
+      skipped, and it must not mark the run unresolved — "we correctly chose not
+      to do this" is not "we tried and could not".
+    * ``on_failure: abort`` stops the remaining steps. Those are reported as
+      skipped too, because a plan that stopped halfway did not finish.
+    """
+    from src.agents.runbooks.capability_schema import evaluate_condition
+
+    executed: list[str] = []
+    skipped:  list[str] = []
+    # Steps whose condition was false: reported, but not counted as a failure to act.
+    not_applicable: list[str] = []
+    verifications: list[Any] = []
+
+    alarm = decision.analyzer.detector.alarm
+    normalized_incident = decision.analyzer.detector.normalized_incident
+    provider = normalized_incident.provider if normalized_incident else "aws"
+    incident_scope = _resolve_incident_scope(normalized_incident, log)
+
+    context: dict[str, Any] = {
+        "severity": decision.analyzer.severity.value,
+        "provider": provider,
+        "previous_step_failed": False,
+    }
+
+    aborted = False
+    for step in decision.steps:
+        action = step.get("action", "")
+        name = step.get("name", action)
+
+        if aborted:
+            skipped.append(action)
+            continue
+
+        if not evaluate_condition(step.get("condition"), context):
+            log.info("executor.step.condition_false", step=name, action=action)
+            skipped.append(action)
+            not_applicable.append(action)
+            continue
+
+        params = _build_action_params(action, alarm, normalized_incident, provider)
+        try:
+            if action in _NOTIFICATION_ACTIONS:
+                if not _SLACK_WEBHOOK:
+                    raise RuntimeError("no slack webhook configured")
+                log.info("executor.notify.in_process", step=name, action=action)
+            elif provider != "aws":
+                _run_external_action(provider, action, params, log, incident_scope)
+            else:
+                resp = _SSM.start_automation_execution(
+                    DocumentName=action, DocumentVersion="$DEFAULT", Parameters=params,
+                )
+                if decision.remediation_mode == RemediationMode.AUTO:
+                    _wait_for_ssm(_SSM, resp["AutomationExecutionId"], log)
+            executed.append(action)
+            context["previous_step_failed"] = False
+        except Exception as exc:
+            log.error("executor.step.failed", step=name, action=action, error=str(exc))
+            skipped.append(action)
+            context["previous_step_failed"] = True
+            if step.get("on_failure", "abort") == "abort":
+                log.warning("executor.step.abort", step=name)
+                aborted = True
+            continue
+
+        # The runbook's own `verify` wins over the action→capability table: the
+        # author saying how to prove THIS step beats a global guess.
+        if provider == "onprem":
+            from src.agents.operations.runners.onprem_verify import verify_onprem_action
+
+            declared = step.get("verify") or {}
+            result = verify_onprem_action(
+                action, params, log, incident_scope,
+                capability=declared.get("capability") or None,
+                step_name=name,
+            )
+            if result is not None:
+                verifications.append(result)
+                if not result.passed and declared.get("required", True) is False:
+                    log.info("executor.step.verify_advisory_failed", step=name)
+
+    return executed, skipped, verifications, not_applicable
+
+
 def _run_ssm_actions(
     decision: DecisionOutput, log: Any
-) -> tuple[list[str], list[str], list[Any]]:
+) -> tuple[list[str], list[str], list[Any], list[str]]:
+    if decision.steps:
+        return _run_capability_steps(decision, log)
+
     executed: list[str] = []
     skipped:  list[str] = []
     # Post-execution evidence: "dispatched" and "actually helped" are different
@@ -259,7 +360,8 @@ def _run_ssm_actions(
                 )
                 skipped.append(action)
 
-    return executed, skipped, verifications
+    # The flat path has no conditions, so nothing can be "not applicable".
+    return executed, skipped, verifications, []
 
 
 def _build_action_params(
@@ -498,6 +600,12 @@ def _deserialise_decision(event: dict[str, Any]) -> DecisionOutput:
         runbook_id=event["runbook_id"],
         remediation_mode=RemediationMode(event["remediation_mode"]),
         actions=event.get("actions", []),
+        # Dropping this silently reinstates the flat path: the executor sees no
+        # steps, walks `actions` unconditionally, and every condition/on_failure/
+        # verify the runbook declared is lost — with nothing in the logs to say
+        # so. In-memory unit tests cannot catch it because they never cross this
+        # boundary; running the real pipeline is what surfaced it.
+        steps=event.get("steps", []),
         estimated_rto_sec=event.get("estimated_rto_sec"),
     )
 

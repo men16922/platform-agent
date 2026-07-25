@@ -109,7 +109,7 @@ class TestMatchBuiltin:
             confidence=0.8,
         )
 
-        runbook_id, actions, rto = _select_runbook(analyzer)
+        runbook_id, actions, rto, _steps = _select_runbook(analyzer)
 
         assert runbook_id == "eks-pod-oom"
         assert actions == ["AWS-RestartEKSPod", "AWS-ScaleOutEKSNodeGroup"]
@@ -154,7 +154,7 @@ class TestMatchBuiltin:
             }
         ]
 
-        runbook_id, actions, rto = _select_runbook(analyzer)
+        runbook_id, actions, rto, _steps = _select_runbook(analyzer)
 
         assert runbook_id == "lambda-throttle"
         assert actions == ["AWS-IncreaseLambdaConcurrency"]
@@ -346,3 +346,131 @@ class TestScanDynamoCandidates:
             dynamo.Table.return_value = table
 
             assert _lookup_dynamo("Nope") is None
+
+
+class TestStepResolution:
+    """`steps` must reach the executor, or the schema is documentation.
+
+    Before this, only the flat `capabilities` list was resolved — so a runbook
+    could declare ordering, conditions, on_failure and per-step verification and
+    every one of them would be silently discarded on the way to the executor.
+    """
+
+    @staticmethod
+    def _analyzer(provider: str = "aws"):
+        alarm = AlarmContext(
+            alarm_name="test-alarm",
+            alarm_arn="arn:aws:cloudwatch:ap-northeast-2:111122223333:alarm:test-alarm",
+            state="ALARM",
+            reason="threshold crossed",
+            metric_name="pod_memory_utilization",
+            namespace="ContainerInsights",
+        )
+        detector = DetectorOutput(
+            alarm=alarm,
+            normalized_incident=NormalizedIncident(
+                provider=provider,
+                service="checkout-api",
+                resource_type="kubernetes-workload",
+                resource_id="checkout-api-7d9f6b88d8-xk2lm",
+                signal_type="reliability",
+                recommended_capabilities=["restart_workload"],
+                source_metadata={"alarm_name": alarm.alarm_name},
+            ),
+        )
+        return AnalyzerOutput(
+            detector=detector, root_cause="OOMKilled", severity=Severity.P2, confidence=0.8,
+        )
+
+    def test_declared_steps_are_resolved_to_actions_in_order(self):
+        from src.agents.operations.aws.decision import _resolve_runbook_steps
+
+        runbook = {
+            "runbook_id": "eks-pod-oom",
+            "steps": [
+                {"name": "restart", "capability": "restart_workload"},
+                {"name": "scale", "capability": "scale_out",
+                 "condition": {"previous_step_failed": True},
+                 "on_failure": "continue",
+                 "verify": {"capability": "assert_workload_ready"}},
+            ],
+        }
+        steps = _resolve_runbook_steps(runbook, self._analyzer())
+        assert [s["name"] for s in steps] == ["restart", "scale"]
+        assert all(s["action"] for s in steps), "every step must carry a resolved action"
+        assert steps[1]["condition"] == {"previous_step_failed": True}
+        assert steps[1]["on_failure"] == "continue"
+        assert steps[1]["verify"] == {"capability": "assert_workload_ready"}
+
+    def test_no_steps_declared_yields_nothing(self):
+        """The flat path stays the flat path — this is what keeps it backward compatible."""
+        from src.agents.operations.aws.decision import _resolve_runbook_steps
+
+        assert _resolve_runbook_steps({"runbook_id": "x", "capabilities": ["restart_workload"]},
+                                      self._analyzer()) == []
+
+    def test_one_unresolvable_capability_does_not_discard_the_plan(self):
+        from src.agents.operations.aws.decision import _resolve_runbook_steps
+
+        runbook = {
+            "runbook_id": "x",
+            "steps": [
+                {"name": "good", "capability": "restart_workload"},
+                {"name": "bogus", "capability": "no_such_capability_exists"},
+            ],
+        }
+        steps = _resolve_runbook_steps(runbook, self._analyzer())
+        assert [s["name"] for s in steps] == ["good"]
+
+    def test_steps_become_the_action_list_in_step_order(self):
+        """`actions` stays populated so reports and records are unchanged."""
+        from src.agents.operations.aws.decision import _resolve_runbook_steps
+
+        runbook = {"runbook_id": "x", "steps": [{"name": "a", "capability": "restart_workload"}]}
+        steps = _resolve_runbook_steps(runbook, self._analyzer())
+        assert [s["action"] for s in steps] == [steps[0]["action"]]
+
+    def test_builtin_capability_catalog_fills_in_when_the_row_declares_none(self):
+        """CAPABILITY_RUNBOOKS was dead data — nothing outside its own tests read it.
+
+        Every selectable runbook id also lives there with full steps, so without
+        this lookup the entire step contract stayed unreachable in production.
+        """
+        from src.agents.operations.aws.decision import _resolve_runbook_steps
+
+        steps = _resolve_runbook_steps({"runbook_id": "eks-pod-oom"}, self._analyzer())
+        assert [s["name"] for s in steps] == ["restart_pod", "scale_nodes"]
+        assert steps[1]["condition"] == {"previous_step_failed": True}
+        assert steps[0]["verify"]["capability"] == "assert_workload_ready"
+
+    def test_the_row_wins_over_the_builtin_catalog(self):
+        """An operator editing the DynamoDB row must be able to change the plan."""
+        from src.agents.operations.aws.decision import _resolve_runbook_steps
+
+        steps = _resolve_runbook_steps(
+            {"runbook_id": "eks-pod-oom",
+             "steps": [{"name": "only_this", "capability": "restart_workload"}]},
+            self._analyzer(),
+        )
+        assert [s["name"] for s in steps] == ["only_this"]
+
+    def test_every_selectable_runbook_declares_steps_somewhere(self):
+        """Data-level claim: the lookup has something to find for each of them."""
+        from src.agents.runbooks.catalog import BUILTIN_RUNBOOKS, CAPABILITY_RUNBOOKS
+
+        for runbook in BUILTIN_RUNBOOKS.values():
+            runbook_id = runbook["runbook_id"]
+            assert CAPABILITY_RUNBOOKS.get(runbook_id, {}).get("steps"), (
+                f"{runbook_id} is selectable but has no step definition to reach the executor"
+            )
+
+    def test_capability_must_suit_the_incident_or_the_step_is_dropped(self):
+        """A lambda capability against a kubernetes workload cannot resolve.
+
+        Worth pinning: the fill-in must not smuggle a plan that does not fit the
+        incident just because the ids happen to match.
+        """
+        from src.agents.operations.aws.decision import _resolve_runbook_steps
+
+        steps = _resolve_runbook_steps({"runbook_id": "lambda-throttle"}, self._analyzer())
+        assert steps == [], "an unresolvable capability must not become an action"
