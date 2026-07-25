@@ -50,43 +50,27 @@ rubric(8기준) → **MAD(Advocate/Critic, Judge)** 수렴 A+(92) → **평가 �
   **라이브 DoD 통과**(`docs/evidence/phase1a-credential-isolation.log`): acme→acme 실행 성공 / acme→globex
   거부 / **advisory 가드를 끄면 API 서버가 `Forbidden`**(자격증명이 경계임을 RBAC로 증명) / 위조 tenant 발급
   거부 / scope 없는 live 거부. 잔여(2차): agent→hub push 인증 · 서명키 custody·rotation · push heartbeat.
-- [ ] **Phase 1b**: Delivery 어댑터 2개 실제(argocd+flux) + TF↔GitOps no-churn 핸드오프 + **순서 보장 이관**
-  (핸드오프로 사라지는 TF `depends_on`의 대체 = ArgoCD `sync-wave` / Flux `dependsOn`, 2026-07-25 추가).
+- [~] **Phase 1b** — **어댑터 2개 + 순서 보장 완료(2026-07-26, `738c812`, gate 1058)**: `argocd`/`flux`가
+  계약의 세 압박점(순서 원시형·상태 어휘·객체 형태)을 각자 방식으로 만족. wave→`sync-wave`(문자열) /
+  `dependsOn`(객체 참조)로 **TF `depends_on` 대체물** 확보. render 결정론·tenant 접두사·라벨 질의성·
+  Flux `releaseName` 안정을 가드로 고정. **잔여**: (a) 레지스트리→어댑터 팬아웃을 실제 클러스터에 apply,
+  (b) **TF↔GitOps no-churn 핸드오프**(state rm + 오너십 annotation 매칭 채택 + PVC 스냅샷 + import 롤백)
+  라이브 검증 — 이건 기존 kind 애드온 릴리스를 건드리므로 스냅샷 선행 필요.
 - [ ] **Phase 2**: Capsule(soft)+RBAC + 대시보드 tenant/env 스위처 + 라이브 상태 폴러(2축 drift).
 - [ ] Phase 3(인가 강화)·4(managed 어댑터, billable)·5(레지스트리 PR 쓰기) = 후속.
 - **S 달성(93.5)** = ①실행위치=in-cluster 러너 ②token broker=incident provenance 바인딩 ③read=push(허브 read 자격증명 0). Phase 1a 진입 시 명시할 2차 잔여: agent→hub push 인증·승인레코드 one-time nonce·push heartbeat(staleness).
 
-## 신규 백로그 — GitAIOps 실습서 대조 후속 (2026-07-25 시드)
+## GitAIOps 실습서 대조 후속 — 6/7 완료, 잔여만 (근거: `docs/reference/gitaiops-notiflex-book.md`)
 
-상세·근거·안티패턴: `docs/reference/gitaiops-notiflex-book.md`. 멀티테넌트 Phase 0과 **독립**이라 끼워넣기 가능.
+**완료**: ①Rollouts AnalysisTemplate(라이브 양방향, `b07523b`) · ②OTel→Tempo(MTTR의 82%가 로컬 LLM 추론) ·
+③런북 사후검증(provider 실행부까지, `d68fe6b`) · ④권한 통제 3단(비커밋 개인 스코프) · ⑤Sync Wave(Phase 1b로
+흡수, `738c812`) · ⑥NetworkPolicy 집행·시맨틱 실증 · ⑦고아 클러스터 스위퍼. 증거 `docs/evidence/*`.
 
-- [x] ~~**① Rollouts AnalysisTemplate**(1단계)~~ — **라이브 실증 완료(2026-07-26, `b07523b`)**: 양방향 —
-  나쁜 canary는 `failed(3)>failureLimit(2)`로 **사람 개입 0, ~105초 auto-abort**(stable 4/4 유지), 좋은 canary는
-  3연속 Successful로 **abort 안 됨**(false-negative 기계 아님). `var.rollouts_demo_analysis_enabled`로 IaC 토글.
-  기본 OFF 유지(Phase 4 수동 데모가 문서화된 walkthrough라서). 증거 `docs/evidence/onprem-addons-rollouts-analysis-e2e.log`.
-  - [ ] **2단계(잔여)**: `web` provider가 **platform-agent decision 엔드포인트**를 호출해 LLM confidence를 canary
-    게이트로(D19 층 유지: 러너 무변경, Rollouts가 에이전트를 판정자로 소비).
-- [x] ~~**② OTel → Tempo**~~ — **라이브 실증 완료(2026-07-26, `b07523b`)**: Tempo query API·Grafana 프록시 양쪽에서
-  트레이스 조회, Grafana 4 데이터소스(Alertmanager/Loki/Prometheus/**Tempo**). **결과: 인시던트 5026ms 중
-  analyze 4136ms = MTTR의 82%가 로컬 LLM 추론** — 이전엔 답할 수 없던 질문이 측정값이 됨.
-  증거 `docs/evidence/onprem-tracing-tempo-e2e.log`. 함정: `-target=tempo`만 apply하면 데이터소스가 안 생김(kps도 필요).
-  - [ ] **잔여(선택)**: 인시던트 상세 페이지에서 `trace_id`로 Tempo 딥링크 · executor span(현재 parking 경로만 실증).
-- [~] **③ 런북 사후검증** — **계약+판정 seam 완료(2026-07-25, `5fba0af`, gate 892)**: `RunbookStep.verify`
-  (`StepVerification`) + `resolution_verdict()` 2축 판정(resolved/dispatched/**verified**, 검증 없으면
-  verified=None="모름"이고 판정은 기존 규칙과 동일=역호환) + executor `resolved` 배선 + 카탈로그 4스텝. **잔여**:
-  provider측 verify 실행부(`assert_workload_ready` 등을 실제 read로 해결). **Phase 1a 완료로 차단 해소** —
-  `_run_external_action`이 이미 `incident_scope`를 받으므로 verify도 같은 스코프 자격증명으로 read하면 된다.
-- [x] ~~**④ 권한 통제 3단 분리**~~ — **완료(2026-07-25, 비커밋 개인 스코프)**: `settings.local.json`의
-  `gcloud:*`/`aws:*`/`az:*` 포괄 allow 제거 → 조회 동사 allow(104건) + billable 생성/삭제·terraform apply/destroy·
-  helm install/upgrade를 `ask`(30건). D16의 "billable=사용자 게이트"를 로컬 설정이 우회하던 상태 차단.
-  짝: `scripts/provision_gke_live.py` 3중 TTL 워치독 커밋(워치독=생성 이후, 권한게이트=생성 자체).
-- [~] **⑥ NetworkPolicy** — **집행·시맨틱 라이브 실증 완료(2026-07-26, `b07523b`)**: kind(k8s v1.34.0, 기본
-  kindnet) = **ENFORCED**, 차트 렌더 정책으로 같은 테넌트 REACHABLE / 크로스테넌트 BLOCKED 실증(적용 전엔 둘 다
-  REACHABLE). 검증기 자체 버그 2건도 라이브가 적발(agnhost `connect`는 http/URL 불가 · 파드 Ready≠포트 바인딩).
-  증거 `docs/evidence/onprem-netpol-tenancy-e2e.log`. **차트는 기본 OFF 유지 — 이유 변경**: 집행 불명이 아니라
-  대상 namespace·tenant 라벨이 **Phase 2 Capsule 산출물**이라서. Phase 2에서 함께 켠다.
-  - [ ] **잔여**: PSS `restricted` 프로파일 · 이미지 서명(Cosign) — 별도 승인 필요. k3s(flannel)는 집행이
-    전이되지 않으므로 그 기판에서 검증기 재실행 필요.
+- [ ] **① 2단계**: AnalysisTemplate `web` provider가 **platform-agent decision 엔드포인트**를 호출해 LLM
+  confidence를 canary 게이트로(D19 층 유지: 러너 무변경, Rollouts가 에이전트를 판정자로 소비).
+- [ ] **② 잔여(선택)**: 인시던트 상세에서 `trace_id`로 Tempo 딥링크 · executor span(현재 parking 경로만 실증).
+- [ ] **⑥ 잔여(승인 필요)**: PSS `restricted` · 이미지 서명(Cosign). 차트 자체는 Phase 2(Capsule이 대상
+  namespace·tenant 라벨을 만듦)에서 켠다. k3s(flannel)는 집행이 전이되지 않으므로 검증기 재실행 필요.
 
 ## 신규 백로그 — 라이브 실행이 표면화한 별도 결함 (2026-07-26)
 

@@ -7,6 +7,25 @@
 
 ---
 
+## 2026-07-26 — 사후검증 provider 실행부 + Phase 1b delivery 어댑터 2개 (gate 1017→1058)
+
+- Status: ③(사후검증)과 Phase 1b(어댑터)를 연달아 소진. 둘 다 "하나만으로는 검증이 안 되는" 구조를 의도적으로
+  깨는 작업 — ③은 dispatched≠verified, 1b는 엔진 1개면 추상이 자기 자신에 들어맞는 문제.
+- Changed: **③**(`d68fe6b`) `operations/runners/onprem_verify.py` 신설(rollout status / readyReplicas /
+  node unschedulable, **액션과 동일한 스코프 자격증명으로 읽기 전용**) + executor가 실행된 액션마다 검증해
+  `resolution_verdict(executed, skipped, verifications)`로 집계. **Phase 1b**(`738c812`)
+  `platform/adapters/{argocd,flux}.py` + 레지스트리(`get_delivery_adapter`).
+- Verified: `make check` **1035**(③, +18) → **1058**(1b, +23).
+  **③ 라이브 양방향**(`docs/evidence/onprem-verification-e2e.log`): healthy 워크로드 → dispatched=True
+  verified=True resolved=True / broken 워크로드(잘못된 이미지+progressDeadline 30s) → **dispatched=True인데
+  verified=False resolved=False** — 이전엔 True로 보고됐을 케이스.
+- Blockers: 없음. **의미 오류 1건을 테스트가 잡음**: log-only 모드에서 검증을 돌리면 "실행 안 함"이
+  "실행했는데 실패"로 뒤집혀 기본 설정의 모든 인시던트가 resolved=False가 된다 → log-only는 검증 스킵.
+- 설계 메모(1b): 두 엔진이 **순서 원시형**(sync-wave 문자열 ↔ dependsOn 객체 참조)·**상태 어휘**(Argo 2필드 ↔
+  Flux `Ready` 1조건이라 매핑이 lossy; not-ready를 drifted로 만들면 정보 발명)·**객체 형태**(Application 1개 ↔
+  HelmRelease 조합이라 render가 리스트 반환)에서 불일치 — 계약이 argocd-shaped가 아님을 이걸로 압박.
+- Next: Phase 1b 잔여(레지스트리→어댑터 팬아웃 실 apply + **TF↔GitOps no-churn 핸드오프 라이브**, PVC 스냅샷 선행).
+
 ## 2026-07-26 — Phase 1a 자격증명 격리 + 런북 전량 무력화 결함 근본수정 (gate 983→1017)
 
 - Status: 계획의 **최우선 불변식**(자격증명이 경계) 구현·라이브 증명 완료. 그 과정에서 라이브가 표면화한
