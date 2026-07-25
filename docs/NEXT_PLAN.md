@@ -46,9 +46,13 @@ rubric(8기준) → **MAD(Advocate/Critic, Judge)** 수렴 A+(92) → **평가 �
 (soft/vcluster/dedicated), Env=cluster(멀티클라우드), Delivery=ArgoCD|Fl|Config Sync 어댑터, SSOT=per-tenant git 레지스트리.
 **최우선 불변식**: 에이전트 실행 blast radius=1 tenant/env(자격증명이 경계, 실행 경로 코드 seam으로 강제).
 
-- [ ] **Phase 0**: `platform/` 레지스트리 스키마(파티션) + 로더(py/ts) + 어댑터 계약 + NormalizedAddonStatus(2축) 타입.
-- [ ] **Phase 1a**: 실행 자격증명 격리(최소 증명) — `_run_external_action→run_onprem_action` scope 관통, ambient 삭제,
-  인시던트당 단기 토큰, 크로스테넌트 액션 Forbidden 라이브 증명. (S 잔여: broker 인가·kubectl 실행위치 결정)
+- [x] ~~**Phase 0**~~ — **완료(2026-07-25, `303f4a2`, gate 958)**: `platform/` 레지스트리(파티션·isolation·quota·prefix) + 로더(py/ts) + `DeliveryAdapter` 계약(tenant/env 관통) + `NormalizedAddonStatus`(2축+applicable). 동작 무변경.
+- [x] ~~**Phase 1a**: 실행 자격증명 격리~~ — **완료(2026-07-26, `0bb993f`, gate 1007)**: `IncidentScope` +
+  provenance 바인딩 `TokenBroker`(호출자 tenant 문자열 불신, attested 레코드의 tenant로만 발급, nonce 1회용) +
+  `NormalizedIncident.tenant/env` 1급 필드 + 실행 경로 scope 관통 + **ambient kubeconfig 경로 삭제**.
+  **라이브 DoD 통과**(`docs/evidence/phase1a-credential-isolation.log`): acme→acme 실행 성공 / acme→globex
+  거부 / **advisory 가드를 끄면 API 서버가 `Forbidden`**(자격증명이 경계임을 RBAC로 증명) / 위조 tenant 발급
+  거부 / scope 없는 live 거부. 잔여(2차): agent→hub push 인증 · 서명키 custody·rotation · push heartbeat.
 - [ ] **Phase 1b**: Delivery 어댑터 2개 실제(argocd+flux) + TF↔GitOps no-churn 핸드오프 + **순서 보장 이관**
   (핸드오프로 사라지는 TF `depends_on`의 대체 = ArgoCD `sync-wave` / Flux `dependsOn`, 2026-07-25 추가).
 - [ ] **Phase 2**: Capsule(soft)+RBAC + 대시보드 tenant/env 스위처 + 라이브 상태 폴러(2축 drift).
@@ -73,8 +77,8 @@ rubric(8기준) → **MAD(Advocate/Critic, Judge)** 수렴 A+(92) → **평가 �
 - [~] **③ 런북 사후검증** — **계약+판정 seam 완료(2026-07-25, `5fba0af`, gate 892)**: `RunbookStep.verify`
   (`StepVerification`) + `resolution_verdict()` 2축 판정(resolved/dispatched/**verified**, 검증 없으면
   verified=None="모름"이고 판정은 기존 규칙과 동일=역호환) + executor `resolved` 배선 + 카탈로그 4스텝. **잔여**:
-  provider측 verify 실행부(`assert_workload_ready` 등을 실제 read로 해결) — Phase 1a의 `_run_external_action`
-  시그니처 변경과 같은 경로라 **Phase 1a와 함께** 하는 것이 안전(단독 착수 시 충돌).
+  provider측 verify 실행부(`assert_workload_ready` 등을 실제 read로 해결). **Phase 1a 완료로 차단 해소** —
+  `_run_external_action`이 이미 `incident_scope`를 받으므로 verify도 같은 스코프 자격증명으로 read하면 된다.
 - [x] ~~**④ 권한 통제 3단 분리**~~ — **완료(2026-07-25, 비커밋 개인 스코프)**: `settings.local.json`의
   `gcloud:*`/`aws:*`/`az:*` 포괄 allow 제거 → 조회 동사 allow(104건) + billable 생성/삭제·terraform apply/destroy·
   helm install/upgrade를 `ask`(30건). D16의 "billable=사용자 게이트"를 로컬 설정이 우회하던 상태 차단.
@@ -89,12 +93,14 @@ rubric(8기준) → **MAD(Advocate/Critic, Judge)** 수렴 A+(92) → **평가 �
 
 ## 신규 백로그 — 라이브 실행이 표면화한 별도 결함 (2026-07-26)
 
-- [ ] **capability 런북이 decision 단계에서 사용 불가** — 라이브 인시던트에서 `decision.candidate.invalid` 4건
-  관측 후 `generic-recovery`(알림만)로 폴백. 원인 2겹: (a) DynamoDB `incident-runbooks` 시드 행이 `alarm_name`
-  없이 저장돼 `require_alarm_name=True` 검증 탈락, (b) **`CAPABILITY_RUNBOOKS` 9개 전부** base `validate_runbook`
-  미통과(`steps`만 있고 `actions`/`capabilities` 키 없음 — `capabilities`는 dataclass 파생 property).
-  즉 capability 런북은 현재 **장식**이고 `capability_schema.py`는 테스트만 소비. OOMKilled가 restart+rollback
-  런북이 아니라 알림으로 처리되는 실질 영향. 시드 계약과 스키마 접점을 함께 고쳐야 함(단독 수정 시 회귀 위험).
+- [x] ~~**런북이 decision 단계에서 전량 탈락**~~ — **근본수정 완료(2026-07-26, `b078094`, gate 1017)**.
+  최초 가설(시드 `alarm_name` 누락 / CAPABILITY_RUNBOOKS 스키마)은 **둘 다 오진**이었고, 라이브 테이블을 직접
+  스캔해 진짜 원인을 특정: **DynamoDB가 숫자를 `Decimal`로 반환** → `isinstance(Decimal(180), int)`가 False →
+  `rto_sec`을 선언한 **모든** 런북이 후보에서 탈락, `generic-recovery`(rto=null)만 생존 → 매 인시던트가
+  알림-only. `_is_integer_like` + `normalise_runbook`(읽기 경계 coerce)로 수정. 라이브 before/after
+  `docs/evidence/runbook-decimal-rto-fix.log`(1/5 → **5/5** 유효, generic-recovery → **eks-pod-oom**).
+- [ ] **(잔여) capability step 런북을 executor가 실제로 사용** — `capability_schema.py`(steps·`verify`)는 아직
+  테스트만 소비하고 executor는 flat `actions`를 돈다. ③의 provider측 verify 실행부와 같은 작업.
 - [ ] **⑦ TTL 스위퍼 CronJob** (승인 필요) — 로컬 워치독이 못 지키는 케이스(머신 자체 사망) 보완. 라벨/생성시각
   기준 TTL 초과 클라우드 리소스 **신고**(삭제는 승인 게이트).
 
