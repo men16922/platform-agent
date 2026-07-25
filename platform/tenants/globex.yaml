@@ -1,0 +1,21 @@
+# Second tenant — exists so cross-tenant isolation is testable (a single-tenant
+# registry cannot falsify "tenant-A cannot reach tenant-B"), and so the shared
+# `kind-platform-agent` cluster is genuinely multi-tenant under the soft tier.
+isolation: soft
+naming_prefix: globex
+
+quota:
+  cpu: "8"
+  memory: 32Gi
+  pods: 100
+
+environments:
+  dev:
+    # Same cluster as acme/dev on purpose: soft tier means several tenants share
+    # one cluster by namespace, so the credential boundary must be per-TENANT,
+    # not per-env. A per-env kubeconfig here would reach acme's namespaces.
+    cluster: kind-platform-agent
+    substrate: kind
+    delivery: argocd
+    addons:
+      observability: kube-prometheus-stack 87.17.0

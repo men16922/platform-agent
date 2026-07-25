@@ -1,0 +1,40 @@
+# Tenant registry entry — one file per tenant so no god-object forms and so
+# path-scoped CODEOWNERS can gate writes (`tenants/acme.yaml` -> @acme-owners).
+# The dashboard's Phase 5 "attach add-on" flow may only ever PR *this* file.
+#
+# isolation drives the credential boundary, not just labels:
+#   soft      -> per-tenant namespace Role/RoleBinding + SA (default)
+#   vcluster  -> per-vcluster kubeconfig (virtual control plane)
+#   dedicated -> per-cluster kubeconfig; only here does env == cluster == tenant
+isolation: soft
+
+# Prefixes namespaces/releases so two tenants cannot collide on a shared cluster.
+naming_prefix: acme
+
+# Enforced by Capsule as ResourceQuota + LimitRange. Bounds API-object
+# consumption only — node kernel/disk-IO starvation is NOT covered (that is the
+# soft tier's documented non-guarantee; escalate to vcluster/dedicated for more).
+quota:
+  cpu: "16"
+  memory: 64Gi
+  pods: 200
+
+environments:
+  dev:
+    cluster: kind-platform-agent
+    substrate: kind
+    delivery: argocd
+    addons:
+      observability: kube-prometheus-stack 87.17.0
+      logging: loki 7.1.0
+      tracing: tempo 1.24.4
+      progressive: argo-rollouts 2.41.1
+  # Per-env versions, deliberately not lockstep: bump in dev, verify, then
+  # promote to prod by PR. A partial add-on subset is normal.
+  prod:
+    cluster: k3s-lab
+    substrate: k3s
+    # Engine override — proves the delivery contract is not argocd-shaped.
+    delivery: flux
+    addons:
+      observability: kube-prometheus-stack 87.17.0

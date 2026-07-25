@@ -1,0 +1,69 @@
+# Shared add-on catalog — the *capability* definitions every tenant draws from.
+#
+# Phase 0 of docs/plans/2026-07-21-multi-tenant-env-addons.md. This file declares
+# WHAT a capability is and which backends can satisfy it; it never says which
+# tenant gets it (that lives in tenants/<name>.yaml) and it never says HOW to
+# install it (that is the delivery adapter's job).
+#
+# `wave` exists because Phase 1b hands add-on ownership from Terraform to GitOps,
+# and Terraform's `depends_on` ordering disappears with it. The delivery adapters
+# render this number into their own ordering primitive:
+#   ArgoCD -> argocd.argoproj.io/sync-wave     Flux -> spec.dependsOn
+# Lower waves reconcile first: 0 = CRDs/namespaces, 1 = platform add-ons, 2 = workloads.
+version: 1
+
+capabilities:
+  observability:
+    description: Metrics + dashboards (Prometheus-compatible)
+    wave: 1
+    backends:
+      self_hosted: kube-prometheus-stack
+      # Managed backends have no sync axis — see NormalizedAddonStatus.applicable.
+      managed:
+        aws: amazon-managed-prometheus
+        gcp: google-managed-prometheus
+        azure: azure-monitor-managed-prometheus
+
+  logging:
+    description: Log aggregation and query
+    wave: 1
+    backends:
+      self_hosted: loki
+      managed:
+        aws: cloudwatch-logs
+        gcp: cloud-logging
+        azure: log-analytics
+
+  tracing:
+    description: Distributed traces (OTLP ingest)
+    wave: 1
+    backends:
+      self_hosted: tempo
+      managed:
+        aws: aws-xray
+        gcp: cloud-trace
+        azure: azure-monitor-traces
+
+  progressive:
+    description: Weighted/canary progressive delivery
+    wave: 1
+    backends:
+      self_hosted: argo-rollouts
+      # Cluster-side mechanism is identical on managed substrates — no managed variant.
+      managed: {}
+
+  gitops:
+    description: Declarative sync from the git registry
+    wave: 0
+    backends:
+      self_hosted: argocd
+      managed:
+        gcp: config-sync
+        azure: flux-extension
+
+  tenancy:
+    description: Namespace/quota isolation enforcement for the soft tier
+    wave: 0
+    backends:
+      self_hosted: capsule
+      managed: {}
