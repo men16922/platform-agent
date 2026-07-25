@@ -1,0 +1,40 @@
+=== capability runbooks disarmed by the DynamoDB Decimal boundary (found + fixed 2026-07-26) ===
+
+SURFACED BY: running a real incident through the on-prem pipeline during ② tracing
+verification. The trace showed the decision stage picking `generic-recovery`
+(notify only) for an OOMKilled/CrashLoop alert, with four warnings:
+
+  decision.candidate.invalid runbook_id=kafka-lag-spike
+  decision.candidate.invalid runbook_id=eks-pod-oom
+  decision.candidate.invalid runbook_id=lambda-throttle
+  decision.candidate.invalid runbook_id=rds-cpu-high
+  decision.runbook actions=['ONPREM-CreateChangeRequest'] runbook_id=generic-recovery
+
+FIRST HYPOTHESIS (WRONG): a regression from the newly added `verify` slots.
+Ruled out — the 4 rejected ids include runbooks that were never edited, and the
+catalog edit was +20 lines of pure addition.
+
+ROOT CAUSE: scanning the live table showed the real problem is one line.
+
+  runbook_id='eks-pod-oom'      problems: ['rto_sec must be an integer or null']
+  runbook_id='generic-recovery' problems: OK          <- the ONLY survivor
+
+DynamoDB returns every number as `Decimal`, and `isinstance(Decimal(180), int)`
+is False. `validate_runbook` used a strict int check, so EVERY runbook declaring
+an rto_sec was dropped from the candidate set. `generic-recovery` survived only
+because its rto_sec is null.
+
+IMPACT (production, silent): every incident fell back to notify-only remediation.
+The restart / scale / rollback runbooks were unreachable through the registry —
+the agent looked healthy and simply never acted. Same Decimal boundary class as
+the 2026-07-19 approval_bridge defect, in the read direction this time.
+
+FIX: `_is_integer_like` accepts integer-valued Decimal/float (strings and bools
+still rejected) + `normalise_runbook` coerces at the DynamoDB read boundary so
+downstream never sees a Decimal. Applied at both read sites in decision.py.
+
+--- live before/after, same alert (crashme-abc OOMKilled) ---
+BEFORE: runbook_id=generic-recovery  actions=['ONPREM-CreateChangeRequest']        rto=None
+AFTER : runbook_id=eks-pod-oom       actions=['ONPREM-RolloutRestartWorkload',
+                                              'ONPREM-ScaleWorkload']             rto=180
+candidate scan: 1 of 5 rows valid  ->  5 of 5 valid

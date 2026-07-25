@@ -25,6 +25,7 @@ otherwise the decision stage would resolve no remediation.
 
 from __future__ import annotations
 
+from decimal import Decimal
 from typing import Any
 
 _LIST_OF_STR_FIELDS = (
@@ -66,7 +67,7 @@ def validate_runbook(item: Any, *, require_alarm_name: bool = False) -> list[str
     if not has_actions and not has_capabilities:
         problems.append("runbook must declare at least one of 'actions' or 'capabilities'")
 
-    if "rto_sec" in item and item["rto_sec"] is not None and not isinstance(item["rto_sec"], int):
+    if "rto_sec" in item and item["rto_sec"] is not None and not _is_integer_like(item["rto_sec"]):
         problems.append("rto_sec must be an integer or null")
 
     if "provider" in item and not isinstance(item["provider"], str):
@@ -82,3 +83,50 @@ def is_valid_runbook(item: Any, *, require_alarm_name: bool = False) -> bool:
 
 def _is_list_of_str(value: Any) -> bool:
     return isinstance(value, list) and all(isinstance(v, str) for v in value)
+
+
+def _is_integer_like(value: Any) -> bool:
+    """
+    True for an integer-valued number, whatever numeric type carries it.
+
+    DynamoDB returns every number as ``Decimal``, and ``isinstance(Decimal(180), int)``
+    is False — so a strict ``int`` check silently rejected every registry runbook
+    that declared an ``rto_sec``. That is not a cosmetic validation nit: an invalid
+    runbook is dropped from the candidate set, so *every* incident fell back to
+    ``generic-recovery`` (notify only) instead of the restart/scale/rollback runbook
+    it matched. Only ``generic-recovery`` survived, because its rto_sec is null.
+
+    Strings stay invalid — the point is to accept the storage layer's numeric type,
+    not to start parsing text.
+    """
+    if isinstance(value, bool):
+        # bool is a subclass of int; an RTO of True/False is a typo, not a duration.
+        return False
+    if isinstance(value, int):
+        return True
+    if isinstance(value, (Decimal, float)):
+        try:
+            return int(value) == value
+        except (ValueError, OverflowError):  # NaN / inf
+            return False
+    return False
+
+
+def normalise_runbook(item: Any) -> Any:
+    """
+    Return the item with storage-layer numeric types coerced to plain ints.
+
+    Applied at the DynamoDB read boundary so downstream code (RTO comparisons,
+    Slack rendering, JSON serialisation) never has to know a ``Decimal`` could
+    appear. Non-dicts and absent/None values pass through untouched.
+    """
+    if not isinstance(item, dict):
+        return item
+    rto = item.get("rto_sec")
+    if rto is None or isinstance(rto, bool) or isinstance(rto, int):
+        return item
+    if _is_integer_like(rto):
+        coerced = dict(item)
+        coerced["rto_sec"] = int(rto)
+        return coerced
+    return item

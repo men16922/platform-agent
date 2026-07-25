@@ -33,7 +33,7 @@ from src.agents.models import (
     Severity,
 )
 from src.agents.runbooks.catalog import BUILTIN_RUNBOOKS
-from src.agents.runbooks.schema import validate_runbook
+from src.agents.runbooks.schema import normalise_runbook, validate_runbook
 
 logger = structlog.get_logger(__name__)
 
@@ -142,6 +142,7 @@ def _lookup_dynamo(alarm_name: str) -> dict[str, Any] | None:
     # Operator overrides are registered out-of-band; ignore malformed ones so a
     # bad hand-registered entry falls back to heuristic matching instead of
     # producing a broken decision downstream.
+    item = normalise_runbook(item)
     problems = validate_runbook(item, require_alarm_name=True)
     if problems:
         logger.warning(
@@ -162,6 +163,9 @@ def _scan_dynamo_candidates() -> list[dict[str, Any]]:
 
     valid: list[dict[str, Any]] = []
     for item in items:
+        # DynamoDB hands back Decimals; coerce before validating so a stored
+        # rto_sec does not disqualify an otherwise-good runbook.
+        item = normalise_runbook(item)
         if validate_runbook(item, require_alarm_name=True):
             logger.warning(
                 "decision.candidate.invalid",
