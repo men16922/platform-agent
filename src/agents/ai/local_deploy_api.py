@@ -25,9 +25,10 @@ import asyncio
 import json
 import logging
 import os
+import time
 from typing import Any, Callable
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -45,6 +46,13 @@ from src.agents.ai.model_router import (
     route_deploy_stream,
 )
 from src.agents.ai.provision_tools import teardown_cluster
+from src.agents.platform.collector import (
+    StatusStore,
+    UnauthenticatedReport,
+    load_push_keys,
+    verify,
+)
+from src.agents.platform.registry import load_registry
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +140,61 @@ app.add_middleware(
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok", "service": "model-router-api"}
+
+
+# --- platform status: the hub half of the push collector --------------------
+#
+# The hub ACCEPTS status; it never fetches it. That is the point — a hub that
+# polled N clusters would have to hold credentials for N clusters, which is the
+# cross-tenant concentration Phase 1a removed. Everything here is therefore
+# write-in / read-out, with no outbound path to any spoke.
+
+_status_store = StatusStore()
+
+
+@app.post("/api/platform/status")
+async def ingest_platform_status(
+    payload: dict[str, Any],
+    x_platform_signature: str = Header(default=""),
+) -> dict[str, Any]:
+    """Accept one spoke's report, authenticated by a per-identity HMAC key.
+
+    With no keys configured the endpoint accepts nothing. An unconfigured hub that
+    accepted unsigned reports would let anyone who can reach the port write any
+    tenant's status — and status is what humans act on.
+    """
+    keys = load_push_keys()
+    if not keys:
+        raise HTTPException(status_code=503, detail="no push keys configured")
+    try:
+        report = verify(payload, x_platform_signature, keys)
+    except UnauthenticatedReport as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    _status_store.ingest(report, received_at=time.time())
+    return {"accepted": report.identity, "rows": len(report.statuses)}
+
+
+@app.get("/api/platform/status")
+async def read_platform_status() -> dict[str, Any]:
+    """Everything the hub has been told, plus what it has stopped being told.
+
+    `freshness` and `missing` are not decoration: a drift view that only lists what
+    it received is silent exactly when a cluster goes dark, which is the case it
+    exists for.
+    """
+    now = time.time()
+    try:
+        missing = _status_store.missing_identities(load_registry())
+    except (OSError, ValueError):
+        # The registry is a git artifact and may not ship with the hub; the
+        # received data is still worth serving.
+        missing = []
+    return {
+        "statuses": [s.to_dict() for s in _status_store.statuses(now=now)],
+        "freshness": _status_store.freshness(now=now),
+        "missing": missing,
+        "stale_after_sec": _status_store.stale_after_sec,
+    }
 
 
 @app.get("/api/models")

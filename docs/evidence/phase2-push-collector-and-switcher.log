@@ -1,0 +1,114 @@
+Phase 2 — push 기반 2축 drift 수집기 + 대시보드 tenant/env 스위처 (라이브, kind, $0)
+2026-07-26 / gate 1219 → 1251
+
+방향이 설계의 전부다: 허브가 N개 클러스터를 폴링하면 N개 자격증명을 **보유**해야
+하고, 그 순간 컨트롤플레인이 Phase 1a가 없앤 크로스테넌트 도달범위를 되찾는다.
+각 클러스터의 에이전트가 자기만 읽고 push한다 → 허브는 스포크 read 자격증명 0.
+
+================================================================================
+1. 스포크 → 허브 첫 푸시 (실 kind 클러스터)
+================================================================================
+  $ PLATFORM_PUSH_KEYS='{"acme/dev":"..."}' uvicorn src.agents.ai.local_deploy_api:app --port 8099
+  $ PLATFORM_PUSH_KEY=... python scripts/push_addon_status.py --tenant acme --env dev \
+        --hub http://127.0.0.1:8099
+    pushed 4 row(s) for acme/dev (4 observed, 0 unknown)
+
+  허브가 본 것:
+    logging        loki                    sync=drifted  health=missing  (7.1.0)
+    observability  kube-prometheus-stack   sync=drifted  health=missing  (87.17.0)
+    progressive    argo-rollouts           sync=drifted  health=missing  (2.41.1)
+    tracing        tempo                   sync=drifted  health=missing  (1.24.4)
+    freshness: acme/dev @ kind-platform-agent, age 0s, stale=false
+    missing:   ["acme/prod", "globex/dev"]      ← 한 번도 푸시한 적 없는 선언 env
+
+  **이 4개 missing은 오탐이 아니라 사실이다.** 레지스트리는 acme/dev가 4개
+  capability를 구독한다고 선언하지만, 클러스터에는 per-capability ArgoCD
+  Application이 없다 — 실제 설치물은 Terraform이 클러스터 스코프로 올린 것이다.
+  즉 "선언된 테넌트 스코프 전달"과 "실제 설치물"이 아직 다르다는 것을 수집기가
+  처음으로 드러냈다. 목록을 클러스터 객체로 순회했다면 이 4행은 아예 없었을 것이고,
+  짧은 목록은 "이상 없음"으로 읽힌다.
+
+================================================================================
+2. 반대 방향 — 실제 Application이 있으면 어떻게 읽히는가
+================================================================================
+  어댑터(ArgoCDDeliveryAdapter.render)가 **직접 렌더한** acme/dev progressive
+  Application을 적용. 수집기가 쓰는 라벨(platform-agent.io/capability)은 이
+  어댑터가 붙이는 것이라, 매핑이 지어낸 규약이 아니다.
+
+    apply → sync=Synced  health=Progressing → 푸시 → progressive: synced/progressing
+         → health=Healthy                   → 푸시 → progressive: synced/healthy
+    (나머지 3개는 그대로 drifted/missing — 한 축만 움직였다)
+
+  부수 확증: 이 파드들은 PSS restricted + Capsule 쿼터/LimitRange가 걸린 테넌트
+  네임스페이스에서 정상 기동했다.
+
+================================================================================
+3. 라이브가 잡은 결함 2건 — 둘 다 "테넌트 capability"의 전제가 틀린 자리
+================================================================================
+  (a) **클러스터 싱글턴을 테넌트별로 렌더하면 컨트롤러가 서로 싸운다.**
+      적용된 argo-rollouts는 `--namespaced` 없이 ClusterRoleBinding을 받았다:
+        CLUSTER-SCOPED: acme-dev-progressive-argo-rollouts
+      기존 argo-rollouts 컨트롤러(argo-rollouts ns, rollouts-demo 관리)와 **동일한
+      Rollout 객체를 둘이 함께 조정**한다. leader-elect는 자기 네임스페이스 리스
+      기준이라 둘 다 리더가 된다.
+      → 카탈로그의 `self_hosted: argo-rollouts`는 테넌트 단위로 복제 가능한
+        백엔드가 아니다. capability마다 **scope(cluster|namespace)** 축이 필요하고,
+        delivery 어댑터는 클러스터 싱글턴을 테넌트별로 렌더하기를 거부해야 한다.
+        (kube-prometheus-stack도 CRD/ServiceMonitor 때문에 같은 부류다.)
+      이번 슬라이스 범위 밖이라 구현하지 않고 NEXT_PLAN에 남긴다.
+
+  (b) **Application을 지워도 워크로드가 남는다.**
+        kubectl delete application acme-dev-progressive → deleted
+        kubectl get pods -n acme-dev-progressive → 2/2 Running (그대로)
+      syncPolicy.automated.prune=true는 *동기화 중* 잉여 리소스만 정리한다.
+      Application 삭제 시 리소스를 함께 지우려면
+      `resources-finalizer.argocd.argoproj.io` 파이널라이저가 필요하다.
+      → 테넌트가 애드온을 구독 해지하면 클러스터 스코프 컨트롤러가 **고아로 남는다.**
+      수동 정리 완료(deployment/sa/cm/ClusterRole·Binding 제거), rollouts-demo는
+      Healthy 4/4로 무손상 확인.
+
+================================================================================
+4. 인증 — 신원은 서명을 검증한 키이지 본문이 아니다
+================================================================================
+  $ PLATFORM_PUSH_KEY=wrong-key python scripts/push_addon_status.py ...
+    hub rejected the report: 401 {"detail":"report rejected"}   EXIT=1
+
+  · 주장한 신원(acme/dev)의 키로만 검증한다 → acme를 사칭하려면 acme의 키가 필요.
+  · 없는 테넌트와 잘못된 서명의 에러 메시지가 동일 — 다르면 테넌트 목록이 샌다.
+  · 서명자의 스코프 밖 row가 섞이면 거부(리포팅도 쓰기다: acme 키로 globex 상태를
+    쓸 수 있으면 blast radius 불변식이 read 경로에서 깨진다).
+  · 키 미설정 허브는 503으로 **아무것도 받지 않는다** — "키 없으면 검사 생략"이
+    기본값이면 env var를 잊은 배포가 곧 공개 쓰기 엔드포인트다.
+
+================================================================================
+5. 대시보드 — 세 종류의 부재를 서로 다르게 보여준다
+================================================================================
+  $ LOCAL_DEPLOY_API_URL=http://127.0.0.1:8099 next start -p 3111
+  $ curl /api/dashboard/platform/status
+    connected: True
+      logging/observability/tracing  drifted/missing
+      progressive                    synced/healthy   ← 2번의 Application 살아있을 때
+    freshness: acme/dev age 0s stale=false
+    missing:   acme/prod, globex/dev
+
+  Application 제거 후 재푸시 → progressive도 drifted/missing으로 정직하게 되돌아옴.
+  허브 종료 후 → connected: False, statuses 0.
+
+  UI가 구분하는 세 가지 (합치면 전부 "조용함"으로 보이는 것들):
+    허브 도달 불가   = 아무것도 모른다(모른다는 것은 안다)  → 빨간 배지 + 설명
+    한 번도 푸시 없음 = 아무도 안 보고 있는 선언된 env       → "Never reported"
+    푸시 후 침묵     = 죽은 에이전트 → 행이 UNKNOWN(회색), healthy로 얼지 않음
+  provisioning 페이지 200 · `tsc --noEmit` 클린 · `next build` 성공.
+
+================================================================================
+6. staleness 규율 (유닛)
+================================================================================
+  · 신선도는 **허브의 수신 시각**으로 계산한다 — 스포크의 시계가 틀렸거나 리플레이된
+    리포트가 신선해 보이면 안 된다.
+  · 만료된 리포트는 **버리지 않고 UNKNOWN으로 강등**한다. 목록에서 사라지면
+    "폐기된 env"로 읽히지만 사실은 "이 클러스터 소식이 끊겼다"이고 후자가 행동가능하다.
+
+================================================================================
+gate: 1219 → 1251 (+32)  ·  make check 1251 passed, 1 skipped
+정리: 테넌트 Application·워크로드·ClusterRole 제거, 임시 허브/대시보드 프로세스 종료.
+남긴 것: acme/dev·globex/dev 테넌시 객체와 NetworkPolicy 5개(Phase 2 산출물).

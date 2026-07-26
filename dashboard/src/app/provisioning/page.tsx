@@ -2,6 +2,7 @@ import { DataSourceBadge } from "@/components/data-source-badge";
 import { getDeploymentFeed } from "@/lib/activity-data";
 import { ProvisioningControl } from "@/components/provisioning-control";
 import { PlatformAddons } from "@/components/platform-addons";
+import { PlatformTenantSwitcher } from "@/components/platform-tenant-switcher";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,10 @@ export default async function ProvisioningPage() {
       </div>
 
       <ProvisioningControl initialDeployments={deployments} />
+
+      {/* Per-tenant/env view of the SAME platform layer, but observed rather than
+          declared: pushed by each cluster's agent, two axes, absence made visible. */}
+      <PlatformTenantSwitcher />
 
       {/* Platform layer stood up on top of the cluster (GitOps / observability /
           progressive delivery) — provisioning output, so it lives here. */}
