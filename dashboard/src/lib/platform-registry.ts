@@ -92,14 +92,57 @@ export interface TenancyPosture {
   quota_hard: Record<string, string>;
   quota_used: Record<string, string>;
   isolation: Record<string, boolean | null>;
+  // Everything below arrives from a spoke agent that may be OLDER than this UI —
+  // during any rolling upgrade the hub serves reports written by both versions.
+  // A TypeScript type is a compile-time claim about data that crossed a network,
+  // so these are optional and every read site has a fallback. Learned at runtime:
+  // the non-optional version crashed the page the moment a pre-upgrade agent
+  // pushed.
+  /** soft | vcluster | dedicated */
+  tier?: string;
+  /** What a scoped credential is issued for: "tenant" or "env". */
+  credential_scope?: string;
+  namespaces?: string[];
 }
+
+/**
+ * What each tier actually separates — and what it does not.
+ *
+ * A green isolation row means something very different on a shared control plane
+ * than on a dedicated cluster, and nothing on the screen told the reader which
+ * one they were looking at. The non-guarantee is stated next to the guarantee on
+ * purpose: a boundary described only by what it protects gets over-trusted.
+ */
+export const TIER_MEANING: Record<
+  string,
+  { label: string; separates: string; shares: string; notCovered: string }
+> = {
+  soft: {
+    label: "Soft · namespace-level",
+    separates: "namespaces, quota, network policy, RBAC, pod security",
+    shares: "control plane, nodes, CRDs, cluster-scoped operators",
+    notCovered: "node CPU/disk-IO starvation — API objects are bounded, the kernel is not",
+  },
+  vcluster: {
+    label: "vCluster · virtual control plane",
+    separates: "API server, CRDs, RBAC — per tenant",
+    shares: "nodes",
+    notCovered: "node-level resource contention",
+  },
+  dedicated: {
+    label: "Dedicated · cluster per tenant",
+    separates: "everything, including nodes",
+    shares: "nothing",
+    notCovered: "cost — this is the expensive tier",
+  },
+};
 
 /** The four things a platform engineer checks before trusting a boundary. */
 export const ISOLATION_AXES: Array<{ key: string; label: string; asks: string }> = [
-  { key: "quota", label: "쿼터", asks: "한 팀이 자원을 독식할 수 있나" },
-  { key: "network", label: "네트워크", asks: "다른 팀이 접속할 수 있나" },
-  { key: "rbac", label: "권한", asks: "에이전트가 남의 팀을 건드릴 수 있나" },
-  { key: "pod_security", label: "파드 보안", asks: "루트 컨테이너가 뜰 수 있나" },
+  { key: "quota", label: "Quota", asks: "Can one team starve the others?" },
+  { key: "network", label: "Network", asks: "Can another tenant reach these namespaces?" },
+  { key: "rbac", label: "RBAC", asks: "Can the agent touch another tenant?" },
+  { key: "pod_security", label: "Pod security", asks: "Can a workload here run as root?" },
 ];
 
 /** Drift is a sync-axis fact — never infer it from health. */

@@ -92,6 +92,16 @@ class TenancyPosture:
     quota_used: dict[str, str] = field(default_factory=dict)
     #: quota / network / rbac / pod_security -> True | False | None
     isolation: dict[str, bool | None] = field(default_factory=dict)
+    #: soft | vcluster | dedicated — the strength of the boundary, which decides
+    #: what these axes can even promise. Without it a green row is ambiguous:
+    #: "isolated" means something very different on a shared control plane than
+    #: on a dedicated cluster, and the reader cannot tell which they are looking at.
+    tier: str = ""
+    #: What a scoped credential is issued FOR under this tier (tenant | env).
+    credential_scope: str = ""
+    #: The tenant's own namespaces. Counts alone hide the shape — a reader asking
+    #: "what is actually separated here" wants the names.
+    namespaces: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -100,6 +110,9 @@ class TenancyPosture:
             "quota_hard": self.quota_hard,
             "quota_used": self.quota_used,
             "isolation": self.isolation,
+            "tier": self.tier,
+            "credential_scope": self.credential_scope,
+            "namespaces": self.namespaces,
         }
 
     @classmethod
@@ -112,6 +125,9 @@ class TenancyPosture:
             quota_hard=payload.get("quota_hard") or {},
             quota_used=payload.get("quota_used") or {},
             isolation=payload.get("isolation") or {},
+            tier=payload.get("tier", ""),
+            credential_scope=payload.get("credential_scope", ""),
+            namespaces=payload.get("namespaces") or [],
         )
 
 
@@ -229,7 +245,12 @@ def collect_tenancy(
     if not declared:
         return None
 
-    posture = TenancyPosture(declared_namespaces=len(declared))
+    posture = TenancyPosture(
+        declared_namespaces=len(declared),
+        tier=tenant.isolation.value,
+        credential_scope=tenant.credential_scope,
+        namespaces=declared,
+    )
     posture.quota_hard = {
         (f"limits.{k}" if k in ("cpu", "memory") else k): str(v)
         for k, v in tenant.quota.to_dict().items()

@@ -23,13 +23,22 @@ export function PlatformAddons() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {stacks.map((s) => (
-          <a
+        {stacks.map((s) => {
+          // Some add-ons ship no console (Fluent Bit, Capsule) or are queried
+          // through Grafana (Loki, Tempo). Those still belong in the inventory —
+          // dropping them would make this read as the full stack while hiding
+          // part of it — but they must not pretend to be clickable.
+          const Card = s.url ? "a" : "div";
+          const linkProps = s.url
+            ? { href: s.url, target: "_blank", rel: "noopener noreferrer" }
+            : {};
+          return (
+          <Card
             key={s.key}
-            href={s.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="surface group relative flex flex-col gap-3 overflow-hidden p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_50px_rgba(0,0,0,0.28)]"
+            {...linkProps}
+            className={`surface group relative flex flex-col gap-3 overflow-hidden p-4 transition-all duration-200 ${
+              s.url ? "hover:-translate-y-0.5 hover:shadow-[0_18px_50px_rgba(0,0,0,0.28)]" : ""
+            }`}
           >
             <span className="absolute bottom-0 left-0 top-0 w-0.5" style={{ background: s.accent }} />
             <div className="flex items-start justify-between gap-2">
@@ -37,9 +46,11 @@ export function PlatformAddons() {
                 <span className="h-2 w-2 rounded-full" style={{ background: s.accent }} />
                 <span className="font-medium text-[#e6edf7]">{s.label}</span>
               </div>
-              <span className="text-[11px] text-[var(--muted)] opacity-40 transition-opacity group-hover:opacity-100">
-                Open ↗
-              </span>
+              {s.url ? (
+                <span className="text-[11px] text-[var(--muted)] opacity-40 transition-opacity group-hover:opacity-100">
+                  Open ↗
+                </span>
+              ) : null}
             </div>
             <span
               className="w-fit rounded border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider"
@@ -51,8 +62,10 @@ export function PlatformAddons() {
               <span className="font-mono text-[#cbd6e9]">{s.chart}</span>
               <span className="font-mono">ns/{s.namespace}</span>
             </div>
-          </a>
-        ))}
+            {s.note ? <span className="text-[10px] text-[var(--muted)]">{s.note}</span> : null}
+          </Card>
+          );
+        })}
       </div>
     </section>
   );

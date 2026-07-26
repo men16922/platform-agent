@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   ISOLATION_AXES,
+  TIER_MEANING,
   summarizeByEnv,
   showsSyncAxis,
   type NormalizedAddonStatus,
@@ -69,6 +70,7 @@ function axisColor(state: string): string {
  * fact, and collapsing it either way is how a status screen starts lying.
  */
 function IsolationPanel({ posture }: { posture: TenancyPosture }) {
+  const tier = posture.tier ? TIER_MEANING[posture.tier] : undefined;
   const adoptionGap =
     posture.adopted_namespaces !== null &&
     posture.adopted_namespaces !== posture.declared_namespaces;
@@ -76,9 +78,25 @@ function IsolationPanel({ posture }: { posture: TenancyPosture }) {
   return (
     <div className="surface space-y-4 p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="text-[11px] font-semibold text-[#cbd6e9]">격리 상태</p>
+        <div>
+          <p className="text-[11px] font-semibold text-[#cbd6e9]">
+            Isolation · {tier?.label ?? (posture.tier || "unknown tier")}
+          </p>
+          {tier && (
+            <p className="mt-1 text-[10px] leading-relaxed text-[var(--muted)]">
+              <span className="text-[#8fd3a8]">separated:</span> {tier.separates}
+              <br />
+              <span className="text-[#d29922]">shared:</span> {tier.shares}
+              <br />
+              {/* Stated next to the guarantee on purpose — a boundary described
+                  only by what it protects gets over-trusted. */}
+              <span className="text-[#f85149]">not covered:</span> {tier.notCovered}
+            </p>
+          )}
+        </div>
         <span className="text-[10px] text-[var(--muted)]">
-          네임스페이스 {posture.adopted_namespaces ?? "?"} / {posture.declared_namespaces} 적용됨
+          {posture.adopted_namespaces ?? "?"} / {posture.declared_namespaces} namespaces bound
+          {posture.credential_scope && ` · credential per ${posture.credential_scope}`}
         </span>
       </div>
 
@@ -87,16 +105,17 @@ function IsolationPanel({ posture }: { posture: TenancyPosture }) {
           while every view reads correct. It gets its own line, not a colour. */}
       {adoptionGap && (
         <p className="rounded border border-[#d2992233] bg-[#d2992212] px-3 py-2 text-[10px] text-[#d29922]">
-          선언된 네임스페이스 중 일부가 아직 테넌트에 편입되지 않았습니다 — 그 네임스페이스에는
-          쿼터가 적용되지 않습니다.
+          Some declared namespaces are not bound to the tenant yet — the quota does not
+          apply to them.
         </p>
       )}
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {ISOLATION_AXES.map((axis) => {
-          const state = posture.isolation[axis.key] ?? null;
+          const state = (posture.isolation ?? {})[axis.key] ?? null;
           const color = state === true ? "#3fb950" : state === false ? "#f85149" : "#8b949e";
-          const mark = state === true ? "적용" : state === false ? "없음" : "확인 불가";
+          const mark =
+            state === true ? "enforced" : state === false ? "absent" : "not observed";
           return (
             <div
               key={axis.key}
@@ -115,11 +134,31 @@ function IsolationPanel({ posture }: { posture: TenancyPosture }) {
         })}
       </div>
 
-      {Object.keys(posture.quota_hard).length > 0 && (
+      {(posture.namespaces?.length ?? 0) > 0 && (
         <div className="space-y-1.5">
-          <p className="text-[10px] uppercase tracking-wider text-[var(--muted)]">쿼터 사용량</p>
-          {Object.entries(posture.quota_hard).map(([key, hard]) => {
-            const used = posture.quota_used[key];
+          <p className="text-[10px] uppercase tracking-wider text-[var(--muted)]">
+            Tenant namespaces
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {(posture.namespaces ?? []).map((ns) => (
+              <span
+                key={ns}
+                className="rounded border border-white/8 bg-white/[0.02] px-2 py-0.5 font-mono text-[10px] text-[#cbd6e9]"
+              >
+                {ns}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {Object.keys(posture.quota_hard ?? {}).length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[10px] uppercase tracking-wider text-[var(--muted)]">
+            Quota usage <span className="normal-case">(tenant total, not per namespace)</span>
+          </p>
+          {Object.entries(posture.quota_hard ?? {}).map(([key, hard]) => {
+            const used = (posture.quota_used ?? {})[key];
             return (
               <div key={key} className="flex items-baseline justify-between text-[11px]">
                 <span className="font-mono text-[var(--muted)]">{key}</span>
@@ -133,6 +172,121 @@ function IsolationPanel({ posture }: { posture: TenancyPosture }) {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Every tenant on one screen — the platform operator's view.
+ *
+ * The per-tenant panel below answers "is THIS tenant sound"; this table answers
+ * the question that actually gets asked first, which is "is anything wrong
+ * anywhere". Those need opposite layouts, so both exist rather than one
+ * compromising for the other.
+ *
+ * Declared-but-silent tenants get a row too. A fleet view that lists only the
+ * clusters that reported is at its shortest and calmest exactly when clusters
+ * are going dark.
+ */
+function FleetTable({
+  rows,
+}: {
+  rows: Array<{
+    identity: string;
+    stale: boolean;
+    reported: boolean;
+    posture?: TenancyPosture;
+    addons: { total: number; bad: number };
+  }>;
+}) {
+  const cell = (state: boolean | null | undefined) => {
+    if (state === true) return <span style={{ color: "#3fb950" }}>✓</span>;
+    if (state === false) return <span style={{ color: "#f85149" }}>✕</span>;
+    // Never blank: an empty cell reads as "fine", and "we could not look" is not fine.
+    return <span className="text-[var(--muted)]">?</span>;
+  };
+
+  return (
+    <div className="surface overflow-x-auto">
+      <table className="w-full text-left text-xs">
+        <thead className="text-[10px] uppercase tracking-wider text-[var(--muted)]">
+          <tr className="border-b border-white/8">
+            <th className="px-4 py-3 font-semibold">Tenant / env</th>
+            <th className="px-4 py-3 font-semibold">Tier</th>
+            <th className="px-4 py-3 font-semibold">Namespaces</th>
+            {ISOLATION_AXES.map((axis) => (
+              <th key={axis.key} className="px-3 py-3 font-semibold" title={axis.asks}>
+                {axis.label}
+              </th>
+            ))}
+            <th className="px-4 py-3 font-semibold">CPU</th>
+            <th className="px-4 py-3 font-semibold">Add-ons</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => {
+            const posture = row.posture;
+            const cpuHard = (posture?.quota_hard ?? {})["limits.cpu"];
+            return (
+              <tr key={row.identity} className="border-b border-white/5 last:border-0">
+                <td className="px-4 py-3 font-medium text-[#e6edf7]">
+                  {row.identity}
+                  {row.stale && (
+                    <span className="ml-2 text-[10px] font-semibold text-[#8b949e]">
+                      no heartbeat
+                    </span>
+                  )}
+                </td>
+                {!row.reported ? (
+                  // One wide cell rather than a row of "?" — never reported is a
+                  // different situation from an unreadable axis, and squeezing it
+                  // into the same shape hides which one you are looking at.
+                  <td className="px-4 py-3 text-[#d29922]" colSpan={ISOLATION_AXES.length + 4}>
+                    never reported — declared in the registry, no agent pushing
+                  </td>
+                ) : (
+                  <>
+                    <td
+                      className="px-4 py-3 text-[var(--muted)]"
+                      title={
+                        posture?.tier && TIER_MEANING[posture.tier]
+                          ? `shares: ${TIER_MEANING[posture.tier].shares}`
+                          : undefined
+                      }
+                    >
+                      {posture?.tier || "—"}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-[var(--muted)]">
+                      {posture
+                        ? `${posture.adopted_namespaces ?? "?"} / ${posture.declared_namespaces}`
+                        : "—"}
+                    </td>
+                    {ISOLATION_AXES.map((axis) => (
+                      <td key={axis.key} className="px-3 py-3">
+                        {cell((posture?.isolation ?? {})[axis.key])}
+                      </td>
+                    ))}
+                    <td className="px-4 py-3 font-mono text-[var(--muted)]">
+                      {cpuHard
+                        ? `${(posture?.quota_used ?? {})["limits.cpu"] ?? "?"} / ${cpuHard}`
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      {row.addons.bad > 0 ? (
+                        <span style={{ color: "#f85149" }}>
+                          {row.addons.bad} of {row.addons.total} unhealthy
+                        </span>
+                      ) : (
+                        <span className="text-[var(--muted)]">{row.addons.total} ok</span>
+                      )}
+                    </td>
+                  </>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -207,6 +361,32 @@ export function PlatformTenantSwitcher() {
         <p className="surface p-4 text-xs text-[var(--muted)]">
           The hub is up and has never been pushed to.
         </p>
+      )}
+
+      {(groups.length > 0 || feed.missing.length > 0) && feed.connected && (
+        <FleetTable
+          rows={[
+            ...groups.map((group) => {
+              const identity = `${group.tenant}/${group.env}`;
+              return {
+                identity,
+                stale: staleIdentities.has(identity),
+                reported: true,
+                posture: feed.tenancy[identity],
+                addons: {
+                  total: group.total,
+                  bad: group.driftCount + group.unhealthyCount,
+                },
+              };
+            }),
+            ...feed.missing.map((identity) => ({
+              identity,
+              stale: false,
+              reported: false,
+              addons: { total: 0, bad: 0 },
+            })),
+          ]}
+        />
       )}
 
       {groups.length > 0 && (

@@ -28,6 +28,7 @@ from src.agents.platform.collector import (
     PUSH_KEYS_ENV,
     StatusReport,
     StatusStore,
+    TenancyPosture,
     UnauthenticatedReport,
     build_report,
     collect,
@@ -407,6 +408,42 @@ class TestTenancyPosture:
 
     def test_env_with_no_namespaces_has_no_posture(self, acme):
         assert collect_tenancy(acme, "nope", kubectl=self._cluster()) is None
+
+    def test_tier_travels_with_the_posture(self, acme):
+        """A green isolation row means different things per tier.
+
+        On a shared control plane "isolated" is a much weaker claim than on a
+        dedicated cluster, and nothing else on the screen distinguishes them.
+        """
+        posture = collect_tenancy(acme, "dev", kubectl=self._cluster())
+        assert posture.tier == "soft"
+        # Under soft, several tenants share a cluster, so a per-ENV credential
+        # would reach co-tenant namespaces — the unit has to be the tenant.
+        assert posture.credential_scope == "tenant"
+        assert posture.namespaces == [
+            "acme-dev-logging", "acme-dev-observability",
+            "acme-dev-progressive", "acme-dev-tracing",
+        ]
+
+    def test_a_report_without_the_newer_fields_still_parses(self):
+        """A hub serves reports from agents older than itself during any upgrade.
+
+        Learned at runtime, not in review: the UI read `namespaces.length` on a
+        payload pushed by a pre-upgrade agent and took the page down. Both ends
+        have to tolerate the older shape, so the parser fills defaults rather than
+        raising — and the TS side made the same fields optional.
+        """
+        old_payload = {
+            "adopted_namespaces": 4,
+            "declared_namespaces": 4,
+            "quota_hard": {"limits.cpu": "16"},
+            "quota_used": {},
+            "isolation": {"quota": True},
+        }
+        restored = TenancyPosture.from_dict(old_payload)
+        assert restored.tier == ""
+        assert restored.namespaces == []
+        assert restored.isolation["quota"] is True
 
     def test_posture_survives_the_wire(self, acme):
         """`isolation` decides badge colour; dropping it in transit paints grey."""
