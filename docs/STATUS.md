@@ -31,6 +31,7 @@
 - `make check` (pytest) → **842 passed, 1 skipped** (2026-07-17, 234.42s) — **차트 stateStore 배선(④↔#7 마무리)**: `stateStore.{dsn,existingSecret}` values(secretKeyRef=프로덕션·plain=dev, secret 우선), persistence off→RollingUpdate·replicas>1 해금, Dockerfile `.[state]`(psycopg2) 재빌드 검증. 차트 가드 +3. JSONL 기본값 무변경. **k3s substrate 스모크(동일자, 코드 무변경)**: 기존 k8s-lab VM에 helm install→`local-path` PVC Bound→P2 승인 루프→원상 복원 — env×substrate 양축(kind/k3s) 실증 완결(`docs/evidence/helm-k3s-substrate-smoke.log`).
 - `make check` (pytest) → **839 passed, 1 skipped** (2026-07-17, 238.51s) — **레퍼런스 #7-b Terraform 모듈 → #7 전체 완결(Helm+Terraform)**: 신규 `infra/terraform/aws-production/`(VPC·EKS 1.31·**Aurora Serverless v2 `platform_state`**=④ DSN seam 정합·**IRSA**=차트 SA 전용 trust+DynamoDB activity 테이블 정확-ARN 유일 grant). Redis/Cognito=미소비 의도적 제외. `terraform init+fmt+validate` Success(spend 0, **apply 안 함**=사용자 게이트). 가드 +5(bare `"*"` 금지 등). 이로써 AWSome 레퍼런스 8항목 전부 소화.
 - `make check` (pytest) → **834 passed, 1 skipped** (2026-07-17, 242.90s) — **로드맵 ④ SQL State Store(옵트인)+실 Alertmanager 라이브**: 신규 `state_store.py`(`PLATFORM_STATE_DSN` 옵트인, DB-API 주입식, append-only+latest-wins=JSONL 시맨틱 동일, sqlite 오프라인 테스트 +5) + approvals/incidents 양방향 배선. **라이브(docker $0)**: 실 Alertmanager grouping→배달→P2 parking→PostgreSQL, **레플리카 2개 상태 공유**(replica-2 승인→replica-1 즉시 반영=JSONL 불가), 전 프로세스 재기동 생존, psql ground-truth 3 rows. 증거 `docs/evidence/state-store-alertmanager-live.log`. JSONL 기본값 무변경(비오염 테스트 양방향).
+- `make check` (pytest) → **1281 passed, 1 skipped** (2026-07-26, 1271→1281, +10) — **어댑터 helm values seam**(`01d3c6d`): 카탈로그가 values 파일을 가리키고(복사 금지) 두 엔진이 같은 dict를 싣는다. 라이브가 결함 2건을 더 드러냈다 — **PSS restricted 테넌트 네임스페이스가 우리 애드온을 거부**(Argo는 Synced/Progressing인데 파드 0개; `monitoring`엔 PSS 라벨이 없어 지금까지 안 보였다) · **구독 해지가 테넌트 데이터를 파괴**(차트가 `whenDeleted: Delete`로 k8s 기본값 Retain을 뒤집음). 둘 다 근본수정. **라이브**: acme-dev-logging이 PSS+쿼터+NetworkPolicy 아래 Synced/Healthy — Phase 2 첫 진짜 테넌트 스코프 설치. 증거 `docs/evidence/phase2-values-seam.log`.
 - `make check` (pytest) → **1271 passed, 1 skipped** (2026-07-26, 1267→1271, +4) — **삭제 cascade**(`e1ea15f`): 계약이 삭제 의미를 말하게 하고(Flux=uninstall vs ArgoCD=고아라 같은 의도가 엔진마다 반대 결과) argocd 렌더러가 resources-finalizer를 붙인다. **라이브 A/B**: 파이널라이저만 다른 Application 2개를 삭제 → 있는 쪽 소멸, 없는 쪽은 소유자 없이 Running. 덮지 않는 것: StatefulSet PVC는 남는다. 증거 `docs/evidence/phase2-deletion-cascade.log`.
 - `make check` (pytest) → **1267 passed, 1 skipped** (2026-07-26, 1251→1267, +16) — **capability scope 축**(`bb7a819`): 카탈로그에 `scope: cluster|namespace`를 두고 delivery **계약**이 클러스터 싱글턴의 테넌트별 렌더를 거부한다(엔진마다 복제하면 세 번째 엔진이 빠뜨린다). 수집기는 공유 설치물을 테넌트 drift로 세지 않고(`applicable=False`), 안 보이면 MISSING이 아니라 UNKNOWN. 미선언은 cluster로 fail-safe. **라이브**: 직전 세션에 컨트롤러 충돌을 냈던 그 매니페스트를 argocd·flux 둘 다 거부, namespace scope 2개는 정상 렌더. 증거 `docs/evidence/phase2-capability-scope.log`.
 - `make check` (pytest) → **1251 passed, 1 skipped** (2026-07-26, 1216→1251, +35) — **Phase 2 잔여 3건: ⑥ NetworkPolicy 실제 활성화 + push 기반 2축 drift 수집기 + 대시보드 tenant/env 스위처**(`3dbc572`·`b2b52fc`). ⑥이 막혀 있던 진짜 이유는 네임스페이스 부재가 아니라 **차트가 켤 수 있는 물건이 아니었던 것**(16개 데카르트 곱 vs 레지스트리 구독 6개, 설치하는 helm_release 없음) → 레지스트리 기반 렌더링으로 대체하고 집행이 증명된 기판에만 렌더. 수집기는 push 전용이라 허브에 스포크 read 자격증명이 0이고, 신원은 서명을 검증한 키다. **라이브(kind, $0)**: 정책 5개 + 격리 4종 통과 · 스포크→허브→대시보드 왕복 실증. `tsc` 클린 · `next build` 성공. 증거 `docs/evidence/phase2-{netpol-activation,push-collector-and-switcher}.log`.
@@ -85,9 +86,11 @@
 3. **Cosign 어드미션 집행 없음(의도적)** — 서명 검증은 CI/사람용 게이트(`scripts/verify_image_signature.py`)
    까지다. 미서명 이미지를 API 서버가 거부하려면 policy controller(sigstore/Kyverno)라는 새 클러스터
    의존성이 필요해 Phase 2 네임스페이스 작업과 함께 다룬다. **지금 있는 보증을 과대 해석하지 말 것.**
-4. **delivery 어댑터가 helm values를 렌더하지 못한다** — 우리가 선언한 차트 대부분(loki·tempo·
-   kps)은 values 없이 `helm template`조차 실패한다(`Please define loki.storage.bucketNames.chunks`).
-   따라서 **테넌트별 실제 설치는 values seam이 생기기 전까지 불가능**하다. 렌더러는 chart+version
-   까지만 표현한다. (2026-07-26 라이브에서 확인.)
+4. **PSS restricted 아래에서 애드온 차트는 기본값으로 동작하지 않는다** — 테넌트 네임스페이스에
+   `enforce: restricted`가 붙으면 차트 기본값으로는 파드가 admission에서 거부되고, **Argo는
+   Synced로 보인다**(파드 0개인 채). loki·tempo는 seccompProfile을 values에 넣어 해소했지만,
+   **새 애드온을 추가할 때마다 같은 확인이 필요**하다 — 렌더된 파드 스펙을 테넌트 네임스페이스에
+   `kubectl apply --dry-run=server`로 던져 API 서버에 직접 묻는 것이 가장 싸다.
+   values 파일은 에러가 아니라 **안 읽히는 방식으로** 실패한다(차트마다 키 철자가 다르다).
 5. **Dashboard dependency audit** — Next.js 16.2.10 내부 번들 PostCSS(<8.5.10) moderate 2건(XSS via `</style>` in CSS stringify). **재검증(2026-07-13)**: 16.2.x 패치 릴리스 없음(최신=현재)·`audit fix --force`는 next@9 다운그레이드 → **upstream 대기 확정**. 빌드타임 경로라 런타임 위험 낮음. 필요 시 `overrides`로 postcss 강제(빌드 파손 리스크) 검토 가능.
 - (해소된 리스크 이력 — Slack App 미연결=07-19 해소·A2A discovery=07-14·추적 IA 실증=07-13·NEXT_PUBLIC 인라인=07-13 — 은 `PROGRESS_LOG`/`docs/archive/` 참조.)
