@@ -7,6 +7,28 @@
 
 ---
 
+## 2026-07-26 — capability scope 축: 클러스터 싱글턴 렌더 거부 (gate 1251→1267)
+
+- Status: 직전 라이브가 낸 사고(컨트롤러 2개가 같은 Rollout을 조정)를 닫았다. STATUS에
+  "렌더 결과를 그대로 적용하지 말 것"으로 남겨뒀던 리스크가 해소됐다.
+- Changed(`bb7a819`): 카탈로그에 capability별 `scope: cluster|namespace` ·
+  `reject_cluster_singletons`를 **delivery 계약**에 배치(엔진마다 복제하면 세 번째 엔진이
+  빠뜨린다) · 수집기가 공유 설치물을 테넌트 drift로 세지 않음(`applicable=False`, 안 보이면
+  MISSING 아니라 UNKNOWN) · 대시보드 sync 칸에 "shared" 표기 · 미선언은 cluster로 fail-safe.
+- Verified: `make check` **1267**(+16) · `tsc --noEmit` 클린. **라이브**: 사고를 낸 그
+  매니페스트를 argocd·flux 둘 다 거부하고 namespace scope 2개(logging/tracing)는 정상 렌더 ·
+  재푸시 결과가 4행 전부 missing에서 (2 진짜 missing / 2 shared-unknown)으로 정직해짐.
+  증거 `docs/evidence/phase2-capability-scope.log`.
+- Blockers: 없음.
+- 품질 메모: **내 첫 구현이 게이트를 27 errors로 깨뜨렸다.** scope 누락을
+  `validate_registry`의 problem으로 올렸는데, 로더가 fail-closed라 이 필드가 생기기 전에
+  쓰인 최소 카탈로그가 전부 로드 자체를 거부했다 — 문서 공백을 "플랫폼 뷰가 아예 안 뜸"으로
+  바꾼 셈이고, 막으려던 실패보다 나쁘다. 게다가 **가드는 이미 다른 곳에 있었다**(fail-safe
+  기본값 cluster → 어댑터가 거부). 부재는 리포팅으로 내리고 **오값만** 거부한다 —
+  부재는 공백이지만 오값은 주장이고, 주장은 믿긴다.
+- Next: ArgoCD Application 삭제 시 워크로드 고아(파이널라이저) · faked managed 디스크립터
+  (`applicable=false`) · DR 재구축 확인.
+
 ## 2026-07-26 — Phase 2: ⑥ 활성화 + push 수집기 + 대시보드 스위처 (gate 1216→1251)
 
 - Status: Phase 2 잔여 3건 소진. ⑥은 "네임스페이스가 없어서" 막혀 있던 게 아니었다 —

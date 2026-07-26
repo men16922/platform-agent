@@ -10,6 +10,23 @@
 
 ---
 
+## D27 — capability에는 **scope 축**이 있고, 클러스터 싱글턴은 테넌트별로 렌더하지 않는다
+
+- **Decision / Reason:** 카탈로그의 capability마다 `scope: cluster|namespace`를 선언하고,
+  delivery **계약**(어댑터가 아니라)이 클러스터 스코프 capability의 테넌트별 렌더를 거부한다.
+  라이브가 근거다 — 어댑터가 렌더한 per-tenant Application이 `--namespaced` 없는
+  argo-rollouts를 ClusterRoleBinding과 함께 설치해 기존 컨트롤러와 **같은 Rollout을 둘이
+  조정**했고, 에러도 로그도 없이 Application은 Synced/Healthy였다. cluster scope에서
+  테넌트별인 것은 **인스턴스**(Prometheus CR·Rollout)이지 오퍼레이터/CRD가 아니다.
+- **Impact:** 가드가 계약에 있으므로 세 번째 엔진이 빠뜨릴 수 없다(ordering 원시형과 같은
+  이유로 중앙화). 조용한 skip이 아니라 **예외** — skip은 공유 인프라만 빼고 설치해 부재가
+  전달 지연과 구분되지 않는다. 수집기 쪽 대응도 따라온다: 공유 설치물은 테넌트의 sync 축이
+  아니므로 `applicable=false`이고, 안 보이면 MISSING이 아니라 **UNKNOWN**이다(거짓 장애를
+  테넌트 수만큼 만드는 것은 진짜 장애를 숨기는 것만큼 나쁘다). 미선언 scope는 cluster로
+  fail-safe하되 **로드를 막지는 않는다** — 처음엔 검증 오류로 올렸다가 fail-closed 로더가
+  구 카탈로그 전부를 거부해 게이트가 27개 깨졌다. 부재는 공백이라 리포팅하고, 오값은
+  주장이라 거부한다.
+
 ## D26 — 상태 수집은 **push 전용**, 신원은 서명을 검증한 키, 침묵은 UNKNOWN
 
 - **Decision / Reason:** 허브가 클러스터를 폴링하지 않는다. 폴링하려면 허브가 N개 클러스터

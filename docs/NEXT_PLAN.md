@@ -40,10 +40,9 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
   - [x] ~~대시보드 tenant/env 스위처~~ · ~~push 기반 2축 drift 수집기~~ — **완료(`b2b52fc`,
     gate 1251)**: 스포크 push 전용(허브 read 자격증명 0), 신원=서명을 검증한 키, staleness는
     수신시각 기준 UNKNOWN 강등. UI는 허브 불가/미푸시/침묵을 서로 다르게 표시.
-  - [ ] **클러스터 싱글턴 capability의 scope 축** — 라이브에서 컨트롤러 2개가 같은 Rollout을
-    조정했다. 카탈로그에 capability별 `scope: cluster|namespace`를 두고 delivery 어댑터가
-    클러스터 싱글턴의 테넌트별 렌더를 **거부**해야 한다(kps도 동일 부류). 그전까지 렌더 결과를
-    그대로 적용하지 않는다.
+  - [x] ~~클러스터 싱글턴 capability의 scope 축~~ — **완료(`bb7a819`, gate 1267)**: 카탈로그
+    `scope: cluster|namespace` + delivery **계약**의 거부 가드 + 수집기의 공유 설치물 처리
+    (`applicable=false`, 안 보이면 UNKNOWN). 미선언은 cluster로 fail-safe.
   - [ ] **Application 삭제 시 워크로드 고아** — `resources-finalizer.argocd.argoproj.io` 부재.
     구독 해지 경로가 생기기 전에 정하고 갈 것.
   - [ ] faked managed 디스크립터로 `applicable=false` 검증 · DR 재구축 라이브 확인.
