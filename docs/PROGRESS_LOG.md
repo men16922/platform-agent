@@ -7,6 +7,33 @@
 
 ---
 
+## 2026-07-26 — 대시보드 멀티테넌시 관제 + 검증 훅 (gate 1290→1302)
+
+- Status: 멀티테넌시가 CLI로만 보이던 것을 대시보드로 올렸고, 그동안 문서에만 있던
+  검증 규칙을 훅으로 강제했다. 아티클 초안 3종도 `docs/post/`에 작성(발행은 사용자 게이트).
+- Changed(`654c7e5`·`eebc19e`): `TenancyPosture`(채택 ns 수·쿼터 hard/used·격리 4축·티어·
+  자격증명 스코프·네임스페이스 목록)를 **기존 push 경로에 실어** 대시보드까지 전달 —
+  대시보드가 클러스터를 직접 조회하면 D26(허브 read 자격증명 0)이 깨진다 · 플릿 표
+  (전 테넌트 × 4축, 미보고 테넌트도 행 유지) + 격리 패널(티어별 분리/공유/**미보장** 명시) ·
+  Platform Add-ons 누락 4건 추가(Loki·Fluent Bit·Tempo·Capsule, 콘솔 없는 것은 사유 표기) ·
+  대시보드 문구 영어화 · `make dev-up`이 push 키와 스포크 푸셔 2개를 함께 기동.
+- Changed(`bad2642`): Stop 훅 `make check`(소스 변경 시만, async+asyncRewake라 실패할 때만
+  깨움) + PostToolUse 훅 `tsc --noEmit`(dashboard 경로만). 기존 ruff 훅 보존.
+- Verified: `make check` **1302**(+12) · `tsc` 클린 · `next build` 성공. **라이브**: acme/dev
+  4/4·globex/dev 1/1이 tier=soft, credential per tenant로 대시보드에 표시. **반증까지 확인** —
+  NetworkPolicy 삭제 시 network 축이 False로 뒤집히고 복구 시 True 복귀. 훅도 등록 전에
+  양방향 검증(정상 exit 0 / 일부러 만든 실패 exit 2 + 정확한 요약).
+- Blockers: 없음. 영상 시나리오는 A(자연어 39초)가 이미 발행된 소재라 멀티테넌시+풀스택
+  기준으로 재작성 필요.
+- 품질 메모: **런타임 TypeError가 났고 tsc는 내내 초록이었다.** `posture.namespaces.length`가
+  구버전 에이전트 페이로드에서 터졌다 — TS 타입은 네트워크를 건너온 데이터에 대한 컴파일
+  시점 주장일 뿐이고, 롤링 업그레이드 중엔 허브가 두 버전 리포트를 동시에 서빙한다.
+  신규 필드를 optional로 내리고 모든 읽기 지점에 폴백을 넣었다. 같은 사건이 **필드 하나가
+  푸셔·허브·대시보드 세 프로세스를 전부 통과해야 한다**는 것도 다시 보여줬다(푸셔만 재기동
+  했을 때 허브가 모르는 필드를 버렸다). 훅 스크립트 자신도 첫 판이 틀렸다 — `tail -25`가
+  pytest 끝의 경고 벽을 잘라 실패가 안 보였고, 요약 라인 grep으로 교체했다.
+- Next: 영상 시나리오 재작성 → 촬영 · 아티클 발행(Notion+LinkedIn) · Phase 3(인가 강화).
+
 ## 2026-07-26 — faked managed 디스크립터 + DR 재구축 검증 (gate 1281→1290)
 
 - Status: **Phase 2 완결**(M11). 남아 있던 2건을 소진했다.
@@ -51,24 +78,3 @@
   쿠버네티스 기본값(Retain)을 뒤집은 것 — 구독 해지가 테넌트 로그를 같은 초에 파괴한다.
   **진실이 내 주의사항보다 위험했다.**
 - Next: faked managed 디스크립터(`applicable=false`) · DR 재구축 확인.
-
-## 2026-07-26 — 삭제는 cascade한다: 계약이 삭제 의미를 말하게 (gate 1267→1271)
-
-- Status: 직전 라이브의 고아 워크로드를 닫았다. 진짜 문제는 파이널라이저 부재가 아니라
-  **계약이 삭제 의미를 말한 적이 없다**는 것 — Flux는 uninstall, ArgoCD는 고아라
-  "구독 해지" 하나의 의도가 엔진마다 반대 결과를 낸다.
-- Changed(`e1ea15f`): `DeliveryAdapter.render`에 "Deletion must cascade" 명시 ·
-  argocd 렌더러가 `resources-finalizer.argocd.argoproj.io` 부착 · prune≠삭제정책 가드 ·
-  flux uninstall 비활성화 금지 가드(부재 단언).
-- Verified: `make check` **1271**(+4). **라이브 A/B(kind, $0)**: 같은 차트 Application
-  2개를 파이널라이저만 다르게 두고 둘 다 삭제 → 있는 쪽은 사라지고 없는 쪽
-  (`podinfo-orphan`)은 소유자 없이 Running. 증거 `docs/evidence/phase2-deletion-cascade.log`.
-- Blockers: 없음. 정리 완료(probe ns 삭제), rollouts-demo·테넌트 정책 5개 무손상.
-- 품질 메모: 선언한 차트(loki 7.1.0)로 실증하려다 **어댑터가 helm values를 못 싣는다**는
-  갭이 드러났다 — `Please define loki.storage.bucketNames.chunks`로 템플릿 자체가 실패한다.
-  파이널라이저는 차트와 무관한 엔진 동작이라 기본값으로 설치되는 차트로 통제 실험을 했고,
-  **대체 차트를 썼다는 사실을 증거에 명시**했다. 또 이 수정이 덮지 않는 것도 적었다:
-  cascade는 엔진이 관리하는 것까지라 StatefulSet PVC는 남는다("깨끗이 제거됨" 아님).
-  **[정정 2026-07-26]** 이 마지막 문장은 틀렸다 — 다음 증분에서 실측하니 PVC까지 사라졌고,
-  원인은 차트가 `whenDeleted: Delete`로 쿠버네티스 기본값을 뒤집은 것이었다. 위 항목 참조.
-- Next: 어댑터 helm values seam · faked managed 디스크립터(`applicable=false`) · DR 재구축.

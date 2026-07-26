@@ -2,6 +2,23 @@
   "permissions": {
     "defaultMode": "auto"
   },
+  "skillOverrides": {
+    "artifact-design": "off",
+    "artifact-capabilities": "off",
+    "keybindings-help": "off",
+    "schedule": "off",
+    "init": "off",
+
+    "frontend-design:frontend-design": "user-invocable-only",
+    "overnight-harness:harness-init": "user-invocable-only",
+    "dataviz": "user-invocable-only",
+    "fewer-permission-prompts": "user-invocable-only",
+    "loop": "user-invocable-only",
+    "run": "user-invocable-only",
+    "review": "user-invocable-only",
+    "security-review": "user-invocable-only",
+    "simplify": "user-invocable-only"
+  },
   "hooks": {
     "PostToolUse": [
       {
