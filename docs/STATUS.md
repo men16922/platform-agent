@@ -31,6 +31,7 @@
 - `make check` (pytest) → **842 passed, 1 skipped** (2026-07-17, 234.42s) — **차트 stateStore 배선(④↔#7 마무리)**: `stateStore.{dsn,existingSecret}` values(secretKeyRef=프로덕션·plain=dev, secret 우선), persistence off→RollingUpdate·replicas>1 해금, Dockerfile `.[state]`(psycopg2) 재빌드 검증. 차트 가드 +3. JSONL 기본값 무변경. **k3s substrate 스모크(동일자, 코드 무변경)**: 기존 k8s-lab VM에 helm install→`local-path` PVC Bound→P2 승인 루프→원상 복원 — env×substrate 양축(kind/k3s) 실증 완결(`docs/evidence/helm-k3s-substrate-smoke.log`).
 - `make check` (pytest) → **839 passed, 1 skipped** (2026-07-17, 238.51s) — **레퍼런스 #7-b Terraform 모듈 → #7 전체 완결(Helm+Terraform)**: 신규 `infra/terraform/aws-production/`(VPC·EKS 1.31·**Aurora Serverless v2 `platform_state`**=④ DSN seam 정합·**IRSA**=차트 SA 전용 trust+DynamoDB activity 테이블 정확-ARN 유일 grant). Redis/Cognito=미소비 의도적 제외. `terraform init+fmt+validate` Success(spend 0, **apply 안 함**=사용자 게이트). 가드 +5(bare `"*"` 금지 등). 이로써 AWSome 레퍼런스 8항목 전부 소화.
 - `make check` (pytest) → **834 passed, 1 skipped** (2026-07-17, 242.90s) — **로드맵 ④ SQL State Store(옵트인)+실 Alertmanager 라이브**: 신규 `state_store.py`(`PLATFORM_STATE_DSN` 옵트인, DB-API 주입식, append-only+latest-wins=JSONL 시맨틱 동일, sqlite 오프라인 테스트 +5) + approvals/incidents 양방향 배선. **라이브(docker $0)**: 실 Alertmanager grouping→배달→P2 parking→PostgreSQL, **레플리카 2개 상태 공유**(replica-2 승인→replica-1 즉시 반영=JSONL 불가), 전 프로세스 재기동 생존, psql ground-truth 3 rows. 증거 `docs/evidence/state-store-alertmanager-live.log`. JSONL 기본값 무변경(비오염 테스트 양방향).
+- `make check` (pytest) → **1251 passed, 1 skipped** (2026-07-26, 1216→1251, +35) — **Phase 2 잔여 3건: ⑥ NetworkPolicy 실제 활성화 + push 기반 2축 drift 수집기 + 대시보드 tenant/env 스위처**(`3dbc572`·`b2b52fc`). ⑥이 막혀 있던 진짜 이유는 네임스페이스 부재가 아니라 **차트가 켤 수 있는 물건이 아니었던 것**(16개 데카르트 곱 vs 레지스트리 구독 6개, 설치하는 helm_release 없음) → 레지스트리 기반 렌더링으로 대체하고 집행이 증명된 기판에만 렌더. 수집기는 push 전용이라 허브에 스포크 read 자격증명이 0이고, 신원은 서명을 검증한 키다. **라이브(kind, $0)**: 정책 5개 + 격리 4종 통과 · 스포크→허브→대시보드 왕복 실증. `tsc` 클린 · `next build` 성공. 증거 `docs/evidence/phase2-{netpol-activation,push-collector-and-switcher}.log`.
 - `make check` (pytest) → **1216 passed, 1 skipped** (2026-07-26, 1191→1216, +25) — **Phase 2 첫 슬라이스: soft-tier tenancy + Capsule**(`440f3a0`). ⑥이 기다리던 tenant 라벨 네임스페이스를 레지스트리에서 렌더·적용. 라이브가 3건을 잡았고 셋 다 거짓 보증 자리 — 특히 **Capsule은 admin이 만든 네임스페이스를 채택하지 않아** Tenant가 Active인데 NAMESPACE COUNT=0(쿼터가 아무것도 안 묶는데 정상으로 보임), 그리고 **쿼터 합산은 정적 조회로는 4배 버그처럼 보이지만** 소비하면 `limited: 6`(=16−10)으로 잔여가 재기록된다(설계는 옳았고 내 첫 결론이 틀렸다).
 - `make check` (pytest) → **1191 passed, 1 skipped** (2026-07-26, 1168→1191, +23) — **capability step을 executor가 실제 소비**(`c4816fd`). 스키마가 표현하던 순서·조건·on_failure·per-step verify를 아무도 읽지 않던 갭 해소 + `CAPABILITY_RUNBOOKS`(9런북, 죽은 데이터였음) 연결. **유닛 테스트가 구조적으로 못 잡는 결함 1건 포함**: `_deserialise_decision`이 `steps`를 버려 executor가 조용히 flat 경로로 회귀 — 유닛 테스트는 객체를 메모리에서 만들어 직렬화 경계를 안 넘는다. 라이브 before/after: 필요 없는 노드 스케일아웃 → `executed=[restart] skipped=[scale] resolved=True`.
 - `make check` (pytest) → **1168 passed, 1 skipped** (2026-07-26, 1159→1168, +9) — **Phase 1b 핸드오프 실행**(`7033db3`): rollouts-demo 소유권 TF→ArgoCD. 채택이 no-op이 아니었는데 원인은 라이브 드리프트(`--type=merge`가 컨테이너 배열 통째 교체)였고 ArgoCD가 **복구**한 것 → 프리플라이트 5번째 검사 `live-matches-rendered` 추가.
@@ -60,6 +61,11 @@
 
 ## Active Focus
 
+- **Phase 2 = Capsule 테넌시 + ⑥ 데이터플레인 격리 + push 수집기 + 대시보드 스위처까지 완료(2026-07-26)** —
+  소프트 티어의 "데이터플레인 격리 없음" 비보증이 좁혀졌고(same-tenant 통과/cross 차단, kubelet
+  프로브·DNS 무영향까지 실측), 2축 상태가 각 클러스터의 **push**로 허브에 모인다(허브는 스포크
+  read 자격증명 0). **잔여**: 클러스터 싱글턴 capability의 scope 축 · faked managed 디스크립터 ·
+  DR 재구축 확인.
 - **Phase 1b 핸드오프 = rollouts-demo 이관 완료(2026-07-26)** — TF는 Application 1개(소유 기록)만 보유, 워크로드는
   ArgoCD 소유. helm rev 8 불변 · Rollout/Service UID 불변 · selfHeal 4→2→4 ~40s. 채택이 no-op이 아니었는데
   원인은 핸드오프가 아니라 라이브 드리프트(`--type=merge`가 컨테이너 배열을 통째 교체해 ports/resources 소실)였고,
@@ -77,5 +83,14 @@
 3. **Cosign 어드미션 집행 없음(의도적)** — 서명 검증은 CI/사람용 게이트(`scripts/verify_image_signature.py`)
    까지다. 미서명 이미지를 API 서버가 거부하려면 policy controller(sigstore/Kyverno)라는 새 클러스터
    의존성이 필요해 Phase 2 네임스페이스 작업과 함께 다룬다. **지금 있는 보증을 과대 해석하지 말 것.**
-4. **Dashboard dependency audit** — Next.js 16.2.10 내부 번들 PostCSS(<8.5.10) moderate 2건(XSS via `</style>` in CSS stringify). **재검증(2026-07-13)**: 16.2.x 패치 릴리스 없음(최신=현재)·`audit fix --force`는 next@9 다운그레이드 → **upstream 대기 확정**. 빌드타임 경로라 런타임 위험 낮음. 필요 시 `overrides`로 postcss 강제(빌드 파손 리스크) 검토 가능.
+4. **클러스터 싱글턴 백엔드를 테넌트별로 렌더하면 컨트롤러가 충돌** — 라이브에서 확인:
+   어댑터가 렌더한 acme/dev progressive Application이 `--namespaced` 없는 argo-rollouts를
+   ClusterRoleBinding과 함께 설치해, 기존 컨트롤러와 **같은 Rollout을 둘이 조정**했다(둘 다
+   자기 네임스페이스 리스로 리더가 된다). 카탈로그에 capability별 scope(cluster|namespace)
+   축이 필요하고 어댑터가 거부해야 한다. kps도 같은 부류. **아직 미구현 — 렌더 결과를 그대로
+   적용하지 말 것.**
+5. **ArgoCD Application 삭제가 워크로드를 남긴다** — `prune: true`는 동기화 중 잉여만 정리한다.
+   `resources-finalizer.argocd.argoproj.io` 부재라 테넌트가 애드온을 구독 해지하면 워크로드가
+   고아로 남는다(라이브 확인 후 수동 정리).
+6. **Dashboard dependency audit** — Next.js 16.2.10 내부 번들 PostCSS(<8.5.10) moderate 2건(XSS via `</style>` in CSS stringify). **재검증(2026-07-13)**: 16.2.x 패치 릴리스 없음(최신=현재)·`audit fix --force`는 next@9 다운그레이드 → **upstream 대기 확정**. 빌드타임 경로라 런타임 위험 낮음. 필요 시 `overrides`로 postcss 강제(빌드 파손 리스크) 검토 가능.
 - (해소된 리스크 이력 — Slack App 미연결=07-19 해소·A2A discovery=07-14·추적 IA 실증=07-13·NEXT_PUBLIC 인라인=07-13 — 은 `PROGRESS_LOG`/`docs/archive/` 참조.)

@@ -5,10 +5,11 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(M10=GitAIOps 7/7+멀티테넌트 Phase 0·1a·1b+공급망,
 > M9=eval·하드닝, M8=레퍼런스 8/8) / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 현재 상태 (2026-07-26, gate 1216)
+## 현재 상태 (2026-07-26, gate 1251)
 
 **GitAIOps 대조 7/7 · 멀티테넌트 Phase 0·1a·1b 완료**(rollouts-demo 소유권 TF→ArgoCD 이관까지 실행).
-런북은 이제 선언한 순서·조건·검증대로 실행된다. **Phase 2 진행 중**(첫 슬라이스=tenancy 완료).
+런북은 이제 선언한 순서·조건·검증대로 실행된다. **Phase 2 주요 4건 완료**(tenancy+Capsule ·
+⑥ 데이터플레인 격리 · push 2축 수집기 · 대시보드 스위처). 잔여는 아래 3건.
 
 ## 사용자 게이트 (열린 것만)
 
@@ -33,10 +34,18 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
     레지스트리에서 Namespace(tenant/env/capability+PSS 라벨)·Capsule Tenant·네임스페이스 스코프 RBAC를
     렌더. Capsule 애드온(기본 OFF·cert-manager 비의존). 라이브 acme-dev 4 네임스페이스 + 쿼터 합산 실증.
     증거 `docs/evidence/phase2-tenancy-capsule.log`.
-  - [ ] **⑥ 실제 활성화** — 이제 대상 네임스페이스와 tenant 라벨이 존재하므로 `tenancy-netpol` 차트를
-    켤 수 있다(k3s는 flannel이라 검증기 재실행 선행).
-  - [ ] 대시보드 tenant/env 스위처.
-  - [ ] **push 기반 2축 drift 수집기**(in-cluster agent→컨트롤플레인, 허브는 스포크 read 자격증명 0).
+  - [x] ~~⑥ 실제 활성화~~ — **완료(`3dbc572`, gate 1219)**: 차트 폐기(설치하는 helm_release가
+    없었고 16개 데카르트 곱이 구독 6개와 불일치) → 레지스트리 기반 렌더링. 집행이 증명된
+    기판에만 렌더(k3s는 0개 + exit 1로 신고). 라이브 4종 통과.
+  - [x] ~~대시보드 tenant/env 스위처~~ · ~~push 기반 2축 drift 수집기~~ — **완료(`b2b52fc`,
+    gate 1251)**: 스포크 push 전용(허브 read 자격증명 0), 신원=서명을 검증한 키, staleness는
+    수신시각 기준 UNKNOWN 강등. UI는 허브 불가/미푸시/침묵을 서로 다르게 표시.
+  - [ ] **클러스터 싱글턴 capability의 scope 축** — 라이브에서 컨트롤러 2개가 같은 Rollout을
+    조정했다. 카탈로그에 capability별 `scope: cluster|namespace`를 두고 delivery 어댑터가
+    클러스터 싱글턴의 테넌트별 렌더를 **거부**해야 한다(kps도 동일 부류). 그전까지 렌더 결과를
+    그대로 적용하지 않는다.
+  - [ ] **Application 삭제 시 워크로드 고아** — `resources-finalizer.argocd.argoproj.io` 부재.
+    구독 해지 경로가 생기기 전에 정하고 갈 것.
   - [ ] faked managed 디스크립터로 `applicable=false` 검증 · DR 재구축 라이브 확인.
 - [ ] Phase 3(인가 강화)·4(managed 어댑터, billable)·5(레지스트리 PR 쓰기) = 후속.
 - [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 수단 선행**(kind엔 CSI 스냅샷터 기본 부재).
