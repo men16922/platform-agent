@@ -326,62 +326,42 @@ def test_grafana_has_all_three_signals():
 
 # --- Soft-tier data-plane isolation (NetworkPolicy) -------------------------
 #
-# The soft tier's documented non-guarantee is "no data-plane isolation". These
-# policies narrow it — but only on a CNI that actually enforces them, which is why
-# the chart ships OFF and an empirical probe gates enabling it.
+# These policies used to live in a `tenancy-netpol` Helm chart here. It was retired
+# in favour of registry-driven rendering (src/agents/platform/tenancy.py) because
+# the chart carried its own hand-maintained tenant/env/capability lists whose
+# cartesian product (16 namespaces) did not match the registry's actual
+# subscriptions (6) — and no `helm_release` ever installed it, so the isolation it
+# described applied to nothing. The guards below pin both halves of that lesson so
+# the chart cannot quietly come back.
+#
+# Behavioural guards for the renderer live in tests/test_tenancy.py.
 
 NETPOL_CHART = MODULE / "charts" / "tenancy-netpol"
 
 
-def _netpol_values() -> dict:
-    return yaml.safe_load((NETPOL_CHART / "values.yaml").read_text(encoding="utf-8"))
-
-
-def test_tenancy_netpol_chart_is_shipped():
-    assert (NETPOL_CHART / "Chart.yaml").is_file()
-    assert (NETPOL_CHART / "templates" / "deny-cross-tenant.yaml").is_file()
-
-
-def test_netpol_defaults_off_until_enforcement_is_proven():
-    """A policy on a non-enforcing CNI is a FALSE isolation signal — worse than none."""
-    assert _netpol_values()["enabled"] is False
-
-
-def test_enforcement_probe_exists_and_is_referenced():
-    probe = Path(__file__).resolve().parents[1] / "scripts" / "verify_netpol_enforcement.py"
-    assert probe.is_file(), "enabling the chart must be gated by an empirical probe"
-    values = (NETPOL_CHART / "values.yaml").read_text(encoding="utf-8")
-    assert "verify_netpol_enforcement.py" in values, "values must point at the probe"
-
-
-def test_policy_is_default_deny_ingress_with_same_tenant_allowance():
-    manifest = (NETPOL_CHART / "templates" / "deny-cross-tenant.yaml").read_text(encoding="utf-8")
-    assert "kind: NetworkPolicy" in manifest
-    assert "podSelector: {}" in manifest, "must cover every pod in the namespace"
-    assert "- Ingress" in manifest
-    # Same-tenant is matched by LABEL: NetworkPolicy peers cannot match namespace
-    # names by prefix, so the tenant label is what makes "same tenant" expressible.
-    assert "platform-agent.io/tenant" in manifest
-
-
-def test_policy_keeps_dns_reachable():
-    """A bare default-deny breaks name resolution and looks like an app bug."""
-    assert "kube-system" in _netpol_values()["allowedSharedNamespaces"]
-    manifest = (NETPOL_CHART / "templates" / "deny-cross-tenant.yaml").read_text(encoding="utf-8")
-    assert "allowedSharedNamespaces" in manifest
-
-
-def test_netpol_tenants_match_the_platform_registry_prefixes():
-    """Namespaces are only attributable to a tenant if the prefixes agree."""
-    registry_root = Path(__file__).resolve().parents[1] / "platform" / "tenants"
-    registry_prefixes = {
-        yaml.safe_load(p.read_text(encoding="utf-8"))["naming_prefix"]
-        for p in registry_root.glob("*.yaml")
-    }
-    chart_prefixes = {t["prefix"] for t in _netpol_values()["tenants"]}
-    assert chart_prefixes <= registry_prefixes, (
-        f"chart prefixes {chart_prefixes - registry_prefixes} are not in the registry"
+def test_retired_netpol_chart_is_gone():
+    """A chart nothing installs is not a security control, whatever it renders."""
+    assert not NETPOL_CHART.exists(), (
+        "tenancy-netpol was retired: NetworkPolicies are rendered from the registry "
+        "by src/agents/platform/tenancy.py so the policy set equals the namespace set "
+        "by construction"
     )
+
+
+def test_every_shipped_chart_has_an_installer():
+    """The gap that made the retired chart dead code, generalised.
+
+    A chart in this module with no `helm_release` referencing it is inert: it looks
+    like shipped capability in a review and does nothing on a cluster.
+    """
+    sources = "\n".join(_tf_sources().values())
+    for chart in (MODULE / "charts").iterdir():
+        if not chart.is_dir():
+            continue
+        assert chart.name in sources, (
+            f"chart {chart.name} is not referenced by any Terraform resource — "
+            "nothing installs it"
+        )
 
 
 # --- Phase 2: Capsule (soft isolation tier) --------------------------------

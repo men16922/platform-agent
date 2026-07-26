@@ -197,8 +197,9 @@ def main() -> int:
         if _can_reach(attempts=3, delay_sec=3):
             print(
                 "\nNOT ENFORCED: traffic still flows with a default-deny-ingress policy applied.\n"
-                "  This CNI ignores NetworkPolicy. Do NOT enable tenancy-netpol here — it would\n"
-                "  report isolation that does not exist. Use a policy-enforcing CNI\n"
+                "  This CNI ignores NetworkPolicy. Do NOT add this substrate to\n"
+                "  PROVEN_ENFORCING_SUBSTRATES — the rendered policies would report isolation\n"
+                "  that does not exist. Use a policy-enforcing CNI\n"
                 "  (e.g. kind with disableDefaultCNI + Calico) or rely on a stronger tier\n"
                 "  (vcluster/dedicated) for data-plane isolation."
             )
@@ -206,9 +207,13 @@ def main() -> int:
 
         print(
             "\nENFORCED: default-deny blocked the cross-namespace connection.\n"
-            "  Safe to set tenancy-netpol `enabled: true` on this substrate.\n"
-            "  Reminder: namespaces still need the platform-agent.io/tenant label for the\n"
-            "  same-tenant allowance to match (Capsule sets it in Phase 2)."
+            "  This substrate may be added to PROVEN_ENFORCING_SUBSTRATES in\n"
+            "  src/agents/platform/tenancy.py, which is what makes render_tenancy emit\n"
+            "  NetworkPolicies for envs running on it.\n"
+            "  This proves the CNI enforces policies AT ALL — not that our tenant semantics\n"
+            "  are right. For that, run:\n"
+            "    python scripts/verify_tenant_isolation.py --tenant A --env dev \\\n"
+            "        --peer-tenant B --peer-env dev"
         )
         return 0
     except (RuntimeError, subprocess.TimeoutExpired, OSError) as exc:

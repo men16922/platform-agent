@@ -13,9 +13,14 @@ non-zero exit with the namespaces still printed.
 Usage:
   python scripts/render_tenancy.py <tenant> -e <env> [--service-account NAME] [--check]
 
+The same rule applies to data-plane isolation: NetworkPolicies are rendered only for
+substrates where enforcement was *proven* by experiment, and their absence is
+reported rather than left for someone to infer from a manifest they did not read.
+
 Exit codes:
   0 = rendered, and the cluster can enforce everything rendered
-  1 = rendered, but the quota will NOT be enforced here (Capsule CRD absent)
+  1 = rendered, but something declared will NOT be enforced here — the quota
+      (Capsule CRD absent) or data-plane isolation (unproven substrate)
   2 = could not render (unknown tenant/env, or a tier without namespace tenancy)
 """
 
@@ -34,6 +39,7 @@ from src.agents.platform.registry import load_registry  # noqa: E402
 from src.agents.platform.tenancy import (  # noqa: E402
     UnsupportedTier,
     namespaces_for,
+    network_policies_apply_to,
     render_tenancy,
     unbounded_soft_tenants,
 )
@@ -93,6 +99,7 @@ def main() -> int:
         f"# {args.tenant}/{args.env}: "
         f"{kinds.count('Namespace')} namespace(s), "
         f"{kinds.count('Role')} role(s), "
+        f"{kinds.count('NetworkPolicy')} network policy(ies), "
         f"{'1 Capsule Tenant' if 'Tenant' in kinds else 'NO quota object'}",
         file=sys.stderr,
     )
@@ -103,6 +110,23 @@ def main() -> int:
             f"# WARNING: soft-tier tenants with no declared quota: {', '.join(unbounded)}",
             file=sys.stderr,
         )
+
+    # A missing NetworkPolicy is not a rendering bug — it is a property of the
+    # substrate, and the only failure mode worth shouting about is someone reading
+    # "tenancy applied" as "tenants cannot reach each other".
+    substrate = tenant.environments[args.env].substrate
+    if not network_policies_apply_to(tenant, args.env):
+        print(
+            f"# NO DATA-PLANE ISOLATION: substrate {substrate!r} is not in the proven-"
+            "enforcing set,\n"
+            "#   so no NetworkPolicy is rendered. Any pod on that cluster can reach these\n"
+            "#   namespaces. Prove enforcement first, then add the substrate:\n"
+            "#     python scripts/verify_netpol_enforcement.py   # must print ENFORCED",
+            file=sys.stderr,
+        )
+        enforcement_gap = True
+    else:
+        enforcement_gap = False
 
     if "Tenant" not in kinds:
         print(
@@ -125,7 +149,7 @@ def main() -> int:
             file=sys.stderr,
         )
         return 1
-    return 0
+    return 1 if enforcement_gap else 0
 
 
 if __name__ == "__main__":

@@ -55,6 +55,34 @@ CAPSULE_API_VERSION = "capsule.clastix.io/v1beta2"
 #: whether the tenant's quota applies to it.
 CAPSULE_TENANT_LABEL = "capsule.clastix.io/tenant"
 
+#: Substrates on which NetworkPolicy enforcement has been PROVEN by experiment
+#: (``scripts/verify_netpol_enforcement.py`` reporting ENFORCED), not by reading a
+#: support matrix:
+#:
+#:   kind — kindnet, k8s v1.34.0, re-probed 2026-07-26
+#:         (docs/evidence/onprem-netpol-tenancy-e2e.log)
+#:
+#: Anything absent here is *unverified*, which is not the same as unsupported. The
+#: distinction matters because the failure is silent and inverted: a policy applied
+#: to a CNI that ignores it leaves `kubectl get netpol` healthy and every audit view
+#: reading "isolated" while traffic flows. Rendering nothing is honestly insecure;
+#: rendering an unenforced policy is dishonestly secure.
+PROVEN_ENFORCING_SUBSTRATES = frozenset({"kind"})
+
+#: Namespaces every tenant namespace still accepts ingress from.
+#:
+#: Note on what this does NOT do, because the first version of this policy carried
+#: the opposite claim: these policies set ``policyTypes: [Ingress]`` only, so egress
+#: is untouched and DNS — which is egress, from the pod to kube-dns — keeps working
+#: with or without this entry. Verified live rather than reasoned about: a policied
+#: pod resolved ``kubernetes.default`` with kube-system NOT in this list.
+#: What the entry is actually for is kube-system components that OPEN connections to
+#: tenant pods. Empty by default: on kind nothing in kube-system does, kubelet probes
+#: come from the node (not a pod, so no namespaceSelector can match them and kindnet
+#: permits them regardless — live-verified with a readinessProbe under default-deny),
+#: and an allowance nobody needs is just a hole nobody audits.
+DEFAULT_SHARED_NAMESPACES: tuple[str, ...] = ()
+
 #: Pod Security Standards applied at the namespace, matching the chart-side
 #: securityContext that was shipped and live-verified with ⑥.
 _PSS_LABELS = {
@@ -173,6 +201,73 @@ def render_rbac(tenant: Tenant, env_name: str, *, service_account: str) -> list[
     return objects
 
 
+def substrate_enforces_network_policy(substrate: str) -> bool:
+    """Has NetworkPolicy enforcement been *proven* on this substrate?"""
+    return substrate in PROVEN_ENFORCING_SUBSTRATES
+
+
+def render_network_policies(
+    tenant: Tenant,
+    env_name: str,
+    *,
+    shared_namespaces: tuple[str, ...] = DEFAULT_SHARED_NAMESPACES,
+) -> list[dict[str, Any]]:
+    """Default-deny ingress + same-tenant allowance, one policy per namespace.
+
+    This narrows the soft tier's documented "no data-plane isolation"
+    non-guarantee: without it, any pod on the cluster can reach any tenant's pods,
+    and the only thing separating two tenants is that they do not know each
+    other's Service names.
+
+    Rendered from the registry, and that is the whole point of moving it here. The
+    predecessor was a Helm chart carrying its own hand-maintained lists of tenants
+    x envs x capabilities — a cartesian product of 16 namespaces against a registry
+    that subscribes 6. Ten of those policies named namespaces that will never
+    exist, and no ``helm_release`` ever installed the chart, so the isolation it
+    described was never applied anywhere. Deriving the policy set from the same
+    call that renders the namespaces (``namespaces_for``) makes the two sets equal
+    by construction rather than by a test that notices they drifted.
+
+    Selection is by the ``platform-agent.io/tenant`` LABEL, not by namespace name:
+    NetworkPolicy peers cannot match names by prefix, so the label is what makes
+    "same tenant" expressible at all. The namespace must therefore carry it, which
+    ``render_namespaces`` and the Capsule tenant both ensure.
+    """
+    if tenant.isolation is not IsolationTier.SOFT:
+        raise UnsupportedTier(
+            f"{tenant.name} is {tenant.isolation.value}: its boundary is not the namespace"
+        )
+    peers: list[dict[str, Any]] = [
+        {"namespaceSelector": {"matchLabels": {TENANT_LABEL: tenant.name}}}
+    ]
+    peers.extend(
+        {"namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": shared}}}
+        for shared in shared_namespaces
+    )
+
+    objects: list[dict[str, Any]] = []
+    for _capability, namespace in namespaces_for(tenant, env_name):
+        objects.append({
+            "apiVersion": "networking.k8s.io/v1",
+            "kind": "NetworkPolicy",
+            "metadata": {
+                "name": "deny-cross-tenant",
+                "namespace": namespace,
+                "labels": {TENANT_LABEL: tenant.name, ENV_LABEL: env_name},
+            },
+            "spec": {
+                # Empty selector = every pod in this namespace.
+                "podSelector": {},
+                # Ingress only. A default-deny EGRESS would also block DNS and image
+                # pulls, and the symptom (name resolution failing) reads as an
+                # application bug rather than a policy effect.
+                "policyTypes": ["Ingress"],
+                "ingress": [{"from": peers}],
+            },
+        })
+    return objects
+
+
 def service_account_owner(namespace: str, name: str) -> str:
     """Capsule's required owner spelling for a ServiceAccount.
 
@@ -245,10 +340,30 @@ def render_tenancy(
     service_account: str = "platform-agent",
     service_account_namespace: str = "default",
     owner: str | None = None,
+    include_network_policies: bool = True,
 ) -> list[dict[str, Any]]:
-    """Every soft-tier object for one tenant/env, in apply order."""
+    """Every soft-tier object for one tenant/env, in apply order.
+
+    NetworkPolicies are included by default but **skipped on a substrate whose
+    enforcement has not been proven** (see ``PROVEN_ENFORCING_SUBSTRATES``). The
+    skip is silent here on purpose — this function is pure, and the caller that can
+    actually tell a human (``scripts/render_tenancy.py``) reports it as a
+    non-guarantee. Both directions of the alternative are worse: refusing to render
+    would make an unverified substrate unprovisionable, and rendering anyway would
+    ship a policy that reads as isolation and enforces nothing.
+    """
     tenant = registry.tenant(tenant_name)
-    objects = render_namespaces(tenant, env_name)
+    # ORDER IS LOAD-BEARING: the Capsule Tenant must exist before its namespaces.
+    # Each namespace carries `capsule.clastix.io/tenant`, and Capsule's MUTATING
+    # webhook rejects a namespace claiming membership in a tenant it cannot find:
+    #   admission webhook "namespaces.mutating.projectcapsule.dev" denied the
+    #   request: tenants.capsule.clastix.io "globex-dev" not found
+    # This module previously emitted namespaces first while its docstring claimed
+    # "in apply order", and every unit test passed because they assert the SET of
+    # objects, never the sequence. It only surfaced when a *new* tenant was applied
+    # in one `kubectl apply -f -`; the existing tenant had been built up piecemeal,
+    # so the wrong order had never been exercised.
+    objects: list[dict[str, Any]] = []
     capsule = render_capsule_tenant(
         tenant,
         env_name,
@@ -256,8 +371,21 @@ def render_tenancy(
     )
     if capsule is not None:
         objects.append(capsule)
+    objects.extend(render_namespaces(tenant, env_name))
     objects.extend(render_rbac(tenant, env_name, service_account=service_account))
+    if include_network_policies and network_policies_apply_to(tenant, env_name):
+        objects.extend(render_network_policies(tenant, env_name))
     return objects
+
+
+def network_policies_apply_to(tenant: Tenant, env_name: str) -> bool:
+    """Will this tenant/env get data-plane isolation, and can the cluster enforce it?"""
+    env = tenant.environments.get(env_name)
+    if env is None:
+        return False
+    return tenant.isolation is IsolationTier.SOFT and substrate_enforces_network_policy(
+        env.substrate
+    )
 
 
 def unbounded_soft_tenants(registry: Registry) -> list[str]:
