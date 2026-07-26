@@ -1,0 +1,85 @@
+Phase 2 마무리 — faked managed 디스크립터 + DR 재구축 드릴 (라이브, kind, $0)
+2026-07-26 / gate 1281 → 1290
+
+================================================================================
+1. faked managed 디스크립터 — 돈 쓰기 전에 applicable=false 경로를 증명한다
+================================================================================
+  수집기는 쿠버네티스 객체를 읽는다. 관리형 백엔드(AMP·Cloud Logging…)는 그런 객체가
+  **아예 없다.** 그대로 두면 클라우드 콘솔에서 잘 돌고 있는 서비스가 테넌트의
+  MISSING으로 보고된다 — 방금 고친 cluster-scope 거짓 경보와 같은 부류, 다른 방향.
+
+  관리형 여부는 **카탈로그에서 파생**한다(env가 다시 태그하지 않는다):
+    `observability: amazon-managed-prometheus` 는 이미 백엔드를 말했고,
+    그 이름이 카탈로그의 `backends.managed` 값에 있으면 관리형이다.
+    한 선택에 대해 두 개의 사실을 두면 서로 어긋날 수 있다.
+
+  faked 디스크립터(테스트 픽스처): substrate=eks인 initech/prod가
+    observability: amazon-managed-prometheus   (관리형)
+    logging: loki 7.1.0                        (자체 호스팅, 같은 env 안에서 대조)
+  결과:
+    observability → applicable=False · sync=n/a · health=**unknown** · MISSING 아님
+    logging       → applicable=True  · health=missing (정상 동작)
+
+  `healthy=None`을 고른 이유: 우리는 아무것도 관측하지 않았다. 조회하지 않은 백엔드에
+  health를 단언하는 것은 2축 모델이 막으려는 바로 그 날조다 — **묻지도 않은 질문에
+  대한 초록 배지는 "unknown"보다 나쁘다.** 진짜 health는 클라우드 API가 필요하고
+  그건 Phase 4(과금)다.
+
+================================================================================
+2. DR 재구축 드릴 — 레지스트리만으로 테넌트를 복구할 수 있는가
+================================================================================
+  폭발 반경이 가장 작은 globex/dev(네임스페이스 1개, 워크로드 0)를 **실제로 파괴**했다:
+    kubectl delete ns globex-dev-observability   → deleted
+    kubectl delete tenant globex-dev             → deleted
+
+  레지스트리만으로 재구축:
+    python scripts/render_tenancy.py globex -e dev | kubectl apply -f -
+      tenant.capsule.clastix.io/globex-dev created
+      namespace/globex-dev-observability created
+      role/globex-agent · rolebinding/globex-agent · networkpolicy/deny-cross-tenant created
+
+  라벨 대조: `diff before after` → **완전 동일**.
+
+  그런데 직후 상태가:
+    Tenant globex-dev: Active, NAMESPACE COUNT = **0**   (파괴 전엔 1)
+
+  → 또 이른 시점의 정지 조회였다. 10초 뒤:
+    t+10s: ns=1
+    resourcequota/capsule-globex-dev-0  pods 0/100 · limits.cpu 0/8 · limits.memory 0/32Gi
+    (globex의 레지스트리 선언과 정확히 일치)
+
+  **재구축은 성공이고 내 첫 판독이 틀렸다** — Phase 2 첫 슬라이스에서 배운 것과 같은
+  교훈이 DR 경로에서 재발했다.
+
+  다만 그 10초 창은 진짜 위험이다: 네임스페이스가 존재하고, 라벨이 올바르고, 모든
+  화면이 "완료"로 보이는데 **쿼터가 아무것도 안 묶는다.** 그 사이 admit된 워크로드는
+  공유 클러스터에서 무제한이다. 그리고 이 상태는 **영구 버전과 육안으로 구별되지
+  않는다**(Capsule이 admin 생성 네임스페이스를 아예 채택하지 않던 첫 슬라이스의 그 상태).
+
+================================================================================
+3. 그래서 만든 것 — scripts/verify_tenancy_adoption.py
+================================================================================
+  "객체가 존재한다"와 "쿼터가 그것들을 묶는다"는 다른 사실이라 직접 묻는다:
+    선언된 네임스페이스 수 == 테넌트가 실제로 소유한 수(status.size)?
+    각 네임스페이스에 capsule 라벨과 ResourceQuota가 있는가?
+
+  $ python scripts/verify_tenancy_adoption.py
+    context: kind-platform-agent
+    acme/dev: adopted and bounded ✓
+    globex/dev: adopted and bounded ✓
+    acme/prod: not checked — lives on k3s-lab
+    EXIT=0
+
+  **검증기 자신이 첫 실행에서 거짓 경보를 냈다**: acme/prod는 k3s-lab 클러스터인데
+  현재 컨텍스트에서 조회해 "Capsule Tenant not found — quota is unenforced"로 보고했다.
+  독스트링엔 "다른 클러스터는 broken이 아니라 cannot-check로 보고한다"고 써놓고 코드가
+  안 지킨 것. → env.cluster와 현재 컨텍스트를 비교하도록 수정.
+  **안 본 것은 발견이 아니다** — 이 스크립트가 막으려던 실패를, 이 스크립트가 저질렀다.
+
+  `--wait N`도 붙였다: 재조정(reconcile) 지연은 기다리면 닫히고, 안 닫히면 적용 identity가
+  Capsule의 `administrators`에 없다는 뜻이라 메시지로 안내한다.
+
+================================================================================
+gate: 1281 → 1290 (+9)  ·  make check 1290 passed, 1 skipped
+클러스터 최종 상태: acme-dev(4ns)·globex-dev(1ns) 모두 adopted and bounded,
+NetworkPolicy 5개, rollouts-demo Healthy 4/4.

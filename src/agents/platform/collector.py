@@ -43,6 +43,7 @@ from src.agents.platform.addon_status import (
     HealthState,
     NormalizedAddonStatus,
     SyncState,
+    from_managed,
 )
 from src.agents.platform.adapters.argocd import ArgoCDDeliveryAdapter
 from src.agents.platform.registry import Registry, Tenant
@@ -145,6 +146,7 @@ def collect(
     *,
     observed: bool = True,
     scope_of: Any = None,
+    is_managed: Any = None,
 ) -> list[NormalizedAddonStatus]:
     """Map observed Applications onto the two axes, one row per DECLARED add-on.
 
@@ -187,6 +189,29 @@ def collect(
         backend = declared.split()[0]
         version = env.addon_version(capability)
         application = by_capability.get(capability)
+
+        if is_managed and is_managed(capability, backend):
+            # A managed backend has no git-sync axis at all, and this collector —
+            # which reads Kubernetes objects — cannot see it. Falling through would
+            # report MISSING for a service that is running fine in the cloud
+            # provider's console: the same false alarm the cluster-scoped case
+            # produced, from a different direction.
+            #
+            # `healthy=None` rather than True: we have not observed anything.
+            # Asserting health for a backend nobody queried is the fabrication the
+            # two-axis model exists to prevent, and reading a green badge for an
+            # unqueried service is worse than reading "unknown". A real health
+            # signal needs the cloud API, which is Phase 4 (and billable).
+            rows.append(from_managed(
+                tenant=tenant.name,
+                env=env_name,
+                capability=capability,
+                backend=backend,
+                healthy=None,
+                desired_version=version,
+                native={"backend_kind": "managed", "substrate": env.substrate},
+            ))
+            continue
 
         if observed and scope_of and scope_of(capability) == "cluster":
             shared = shared_by_capability.get(capability)
@@ -249,6 +274,7 @@ def build_report(
     now: float,
     observed: bool = True,
     scope_of: Any = None,
+    is_managed: Any = None,
 ) -> StatusReport:
     env = tenant.environments[env_name]
     return StatusReport(
@@ -257,7 +283,8 @@ def build_report(
         cluster=env.cluster,
         collected_at=now,
         statuses=collect(
-            tenant, env_name, applications, observed=observed, scope_of=scope_of
+            tenant, env_name, applications,
+            observed=observed, scope_of=scope_of, is_managed=is_managed,
         ),
     )
 

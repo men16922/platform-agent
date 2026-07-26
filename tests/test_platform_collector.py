@@ -18,8 +18,10 @@ test suite passes while the system is broken:
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
+import yaml
 
 from src.agents.platform.addon_status import HealthState, SyncState
 from src.agents.platform.collector import (
@@ -177,6 +179,122 @@ class TestClusterScopedCapabilities:
         rows = collect(acme, "dev", [foreign], scope_of=registry.scope_of)
         logging_row = next(r for r in rows if r.capability == "logging")
         assert logging_row.health_state is HealthState.MISSING
+
+
+class TestFakedManagedDescriptor:
+    """Prove the `applicable=false` path BEFORE any billable managed backend exists.
+
+    A faked descriptor is the point, not a shortcut: the plan requires this path
+    proven without spending money, and a fake exercises exactly the code a real AMP
+    subscription would. What it must prove is that a managed backend does not get
+    reported as the tenant's missing add-on — this collector reads Kubernetes
+    objects, and a service running fine in a cloud console has no Kubernetes object
+    at all. Falling through would produce MISSING for something healthy: the same
+    false alarm the cluster-scoped case produced, arriving from a different
+    direction.
+    """
+
+    @staticmethod
+    def _managed_tenant(tmp_path, registry_root=None):
+        """A tenant on EKS subscribing to the catalog's managed observability."""
+        root = registry_root or (tmp_path / "platform")
+        (root / "tenants").mkdir(parents=True, exist_ok=True)
+        catalog = Path(__file__).resolve().parents[1] / "platform" / "catalog.yaml"
+        (root / "catalog.yaml").write_text(catalog.read_text(encoding="utf-8"), encoding="utf-8")
+        (root / "tenants" / "initech.yaml").write_text(
+            yaml.safe_dump({
+                "isolation": "soft",
+                "naming_prefix": "initech",
+                "quota": {"cpu": "8", "memory": "16Gi", "pods": 50},
+                "environments": {
+                    "prod": {
+                        "cluster": "initech-prod",
+                        "substrate": "eks",
+                        "delivery": "argocd",
+                        "addons": {
+                            # Straight out of the catalog's managed map for AWS.
+                            "observability": "amazon-managed-prometheus",
+                            # Alongside a self-hosted one, so the two paths are
+                            # distinguished within a single env rather than by
+                            # comparing two fixtures.
+                            "logging": "loki 7.1.0",
+                        },
+                    }
+                },
+            }),
+            encoding="utf-8",
+        )
+        return load_registry(root)
+
+    def test_managed_backend_is_recognised_from_the_catalog(self, registry):
+        """Derived, not declared twice — two facts about one choice can disagree."""
+        assert registry.is_managed_backend("observability", "amazon-managed-prometheus")
+        assert registry.is_managed_backend("logging", "cloud-logging")
+        assert not registry.is_managed_backend("observability", "kube-prometheus-stack")
+
+    def test_managed_row_has_no_sync_axis(self, tmp_path):
+        managed = self._managed_tenant(tmp_path)
+        rows = collect(
+            managed.tenant("initech"), "prod", [],
+            scope_of=managed.scope_of, is_managed=managed.is_managed_backend,
+        )
+        row = next(r for r in rows if r.capability == "observability")
+        assert row.applicable is False
+        assert row.sync_state is SyncState.NOT_APPLICABLE
+        assert row.is_drifted is False
+
+    def test_managed_row_is_not_reported_missing(self, tmp_path):
+        """The failure this exists to prevent: a healthy cloud service read as gone."""
+        managed = self._managed_tenant(tmp_path)
+        rows = collect(
+            managed.tenant("initech"), "prod", [],
+            scope_of=managed.scope_of, is_managed=managed.is_managed_backend,
+        )
+        row = next(r for r in rows if r.capability == "observability")
+        assert row.health_state is not HealthState.MISSING
+
+    def test_unobserved_managed_health_is_unknown_never_healthy(self, tmp_path):
+        """Asserting health for a backend nobody queried is a fabrication.
+
+        A green badge for an unqueried cloud service is worse than "unknown": it is
+        an answer to a question that was never asked. Real health needs the cloud
+        API, which is Phase 4 and billable.
+        """
+        managed = self._managed_tenant(tmp_path)
+        rows = collect(
+            managed.tenant("initech"), "prod", [],
+            scope_of=managed.scope_of, is_managed=managed.is_managed_backend,
+        )
+        row = next(r for r in rows if r.capability == "observability")
+        assert row.health_state is HealthState.UNKNOWN
+
+    def test_self_hosted_sibling_in_the_same_env_still_reports_normally(self, tmp_path):
+        """Managed-ness is per capability, not per env."""
+        managed = self._managed_tenant(tmp_path)
+        rows = collect(
+            managed.tenant("initech"), "prod", [],
+            scope_of=managed.scope_of, is_managed=managed.is_managed_backend,
+        )
+        row = next(r for r in rows if r.capability == "logging")
+        assert row.applicable is True
+        assert row.health_state is HealthState.MISSING
+
+    def test_report_survives_the_wire_with_applicability_intact(self, tmp_path):
+        """`applicable` decides whether a UI shows a sync badge at all.
+
+        If it is dropped in serialisation the dashboard fabricates a sync column for
+        a backend that has none — and the boundary is exactly where this codebase
+        has been bitten before.
+        """
+        managed = self._managed_tenant(tmp_path)
+        report = build_report(
+            managed.tenant("initech"), "prod", [], now=NOW,
+            scope_of=managed.scope_of, is_managed=managed.is_managed_backend,
+        )
+        restored = StatusReport.from_dict(json.loads(json.dumps(report.to_dict())))
+        row = next(r for r in restored.statuses if r.capability == "observability")
+        assert row.applicable is False
+        assert row.sync_state is SyncState.NOT_APPLICABLE
 
 
 class TestReadApplications:

@@ -161,6 +161,18 @@ class Registry:
     def is_cluster_scoped(self, capability: str) -> bool:
         return self.scope_of(capability) == "cluster"
 
+    def is_managed_backend(self, capability: str, backend: str) -> bool:
+        """Is this declared backend one of the catalog's MANAGED options?
+
+        Derived from the catalog rather than declared again per env: a tenant that
+        writes ``observability: amazon-managed-prometheus`` has already said which
+        backend it wants, and asking it to also tag that choice as managed creates
+        two facts that can disagree. The catalog is where the taxonomy lives.
+        """
+        entry = self.catalog.get("capabilities", {}).get(capability) or {}
+        managed = (entry.get("backends") or {}).get("managed") or {}
+        return backend in set(managed.values())
+
     def values_for(self, capability: str, *, repo_root: Path | None = None) -> dict[str, Any]:
         """Baseline Helm values for a capability's self-hosted backend.
 

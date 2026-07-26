@@ -247,6 +247,43 @@ class TestNetworkPolicies:
         assert "render_tenancy" in source or "network_policies_apply_to" in source
 
 
+class TestDisasterRecovery:
+    """The registry must be sufficient to rebuild a tenant, and "rebuilt" must be
+    checkable rather than assumed.
+
+    A live drill destroyed globex/dev entirely (namespace + Capsule Tenant) and
+    rebuilt it from `render_tenancy` alone: labels came back byte-identical and every
+    object was recreated. But for ~10 seconds the Tenant still reported NAMESPACE
+    COUNT = 0 — namespace present, correctly labelled, quota binding nothing. That
+    window is indistinguishable at a glance from the permanent version of the same
+    state (Capsule refusing to adopt at all), which is exactly where the first Phase
+    2 apply got stuck.
+    """
+
+    def test_render_is_deterministic(self, registry):
+        """A rebuild that produces different objects is not a rebuild."""
+        first = render_tenancy(registry, "globex", "dev")
+        second = render_tenancy(registry, "globex", "dev")
+        assert first == second
+
+    def test_rebuild_needs_nothing_but_the_registry(self, registry):
+        """No cluster reads in the render path: DR cannot depend on the thing that died."""
+        objects = render_tenancy(registry, "globex", "dev")
+        kinds = [o["kind"] for o in objects]
+        assert {"Tenant", "Namespace", "Role", "RoleBinding"} <= set(kinds)
+
+    def test_adoption_has_a_verifier(self):
+        """Because "objects exist" and "the quota binds them" are different facts."""
+        probe = REPO / "scripts" / "verify_tenancy_adoption.py"
+        assert probe.is_file()
+        source = probe.read_text(encoding="utf-8")
+        # It must compare the env's declared cluster with the current context: the
+        # first version reported a tenant on another cluster as unenforced, which is
+        # the false alarm the script exists to prevent.
+        assert "current_cluster" in source
+        assert "status" in source and "size" in source, "must read the tenant's owned count"
+
+
 class TestApplyOrder:
     """`render_tenancy` claims to emit objects in apply order, and that claim is
     load-bearing rather than cosmetic.
