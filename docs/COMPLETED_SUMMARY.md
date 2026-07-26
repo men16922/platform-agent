@@ -38,6 +38,38 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
+## M11 — 멀티테넌트 Phase 2 완결 (완료, 2026-07-26)
+
+**gate 1191 → 1290.** 증거 `docs/evidence/phase2-*.log`. 설계 →
+`docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5).
+
+소프트 티어가 선언에서 **실측된 격리**가 됐다. 목적은 테넌트 하나의 잘못이 이웃에게
+번지지 않게 하는 것이고, 이번 단계에서 그 경계가 네임스페이스·쿼터·데이터플레인·자격증명
+네 층에서 각각 라이브로 증명됐다.
+
+- **tenancy + Capsule**: 레지스트리가 Namespace(tenant/env/capability + PSS 라벨)·Capsule
+  Tenant(`scope: Tenant` 합산 쿼터)·네임스페이스 스코프 RBAC를 렌더. 쿼터 합산은 정지
+  조회로는 4배 버그로 보이고 **소비 실험만이 사실을 말한다**(`limited: 6` = 16−10).
+- **⑥ 데이터플레인 격리**: 손수 관리하던 차트(데카르트 곱 16 vs 구독 6, 설치 주체 없음)를
+  폐기하고 네임스페이스와 **같은 호출**에서 렌더 → 두 집합이 구성상 동일. 집행이 실험으로
+  증명된 기판에만 렌더. 라이브 4종(same 통과·cross 차단·kubelet 프로브 생존·DNS 무영향).
+- **push 2축 수집기 + 대시보드 스위처**: 허브는 스포크 read 자격증명 0, 신원=서명을 검증한
+  키, 침묵은 UNKNOWN 강등. UI가 허브 불가/미푸시/침묵을 구분한다.
+- **capability scope 축**: 클러스터 싱글턴을 테넌트별로 렌더하면 컨트롤러 둘이 같은 객체를
+  조정한다(라이브에서 발생). 거부 가드는 어댑터가 아니라 **계약**에 둔다.
+- **삭제 cascade + values seam**: 삭제 의미를 계약이 말하게 하고(엔진 기본값이 정반대),
+  values는 복사하지 않고 가리킨다. 라이브가 **PSS restricted가 우리 애드온을 거부**
+  (Argo는 Synced인데 파드 0개)하고 **구독 해지가 데이터를 파괴**(차트가 k8s 기본값을 뒤집음)
+  하는 것을 잡아 둘 다 근본수정.
+- **managed 경로 + DR**: faked 디스크립터로 과금 없이 `applicable=false` 증명(조회 안 한
+  백엔드에 health를 단언하지 않는다). globex/dev를 실제 파괴 후 레지스트리만으로 재구축 —
+  라벨 완전 동일, 채택 검증기 신설(`verify_tenancy_adoption.py`).
+
+**반복된 교훈**: 라이브가 잡은 결함 대부분은 "테스트는 초록인데 아무 효과가 없는 코드"와
+"정지 조회가 거짓말하는 상태"였다. 그리고 검증기 자신이 거짓 초록/거짓 경보를 낸 사례가
+세 번 있었다(`dns-suffix`가 질의를 안 보냄 · 다른 클러스터를 broken으로 보고 · scope 누락을
+fail-closed로 올려 게이트 27개 파손).
+
 ## M10 — GitAIOps 대조 7/7 + 멀티테넌트 Phase 0·1a·1b + 공급망 하드닝 (완료, 2026-07-20~26)
 
 **gate 870 → 1191.** 상세 이력 → `PROGRESS_LOG.md`(최신 3건) · `docs/archive/progress-2026-07.md` ·

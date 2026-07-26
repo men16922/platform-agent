@@ -5,11 +5,10 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(M10=GitAIOps 7/7+멀티테넌트 Phase 0·1a·1b+공급망,
 > M9=eval·하드닝, M8=레퍼런스 8/8) / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 현재 상태 (2026-07-26, gate 1281)
+## 현재 상태 (2026-07-26, gate 1290)
 
 **GitAIOps 대조 7/7 · 멀티테넌트 Phase 0·1a·1b 완료**(rollouts-demo 소유권 TF→ArgoCD 이관까지 실행).
-런북은 이제 선언한 순서·조건·검증대로 실행된다. **Phase 2 주요 4건 완료**(tenancy+Capsule ·
-⑥ 데이터플레인 격리 · push 2축 수집기 · 대시보드 스위처). 잔여는 아래 3건.
+런북은 이제 선언한 순서·조건·검증대로 실행된다. **Phase 2 완결**(M11) — 다음은 **Phase 3(인가 강화)**.
 
 ## 사용자 게이트 (열린 것만)
 
@@ -29,27 +28,9 @@
 Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSOT=per-tenant git 레지스트리.
 **최우선 불변식**: 에이전트 실행 blast radius=1 tenant/env(자격증명이 경계) — Phase 1a에서 강제 완료.
 
-- [~] **Phase 2**: Capsule(soft)+RBAC + 대시보드 tenant/env 스위처 + 라이브 상태 폴러(2축 drift).
-  - [x] ~~첫 슬라이스: soft-tier tenancy~~ — **완료(`440f3a0`, gate 1216)**: `platform/tenancy.py`가
-    레지스트리에서 Namespace(tenant/env/capability+PSS 라벨)·Capsule Tenant·네임스페이스 스코프 RBAC를
-    렌더. Capsule 애드온(기본 OFF·cert-manager 비의존). 라이브 acme-dev 4 네임스페이스 + 쿼터 합산 실증.
-    증거 `docs/evidence/phase2-tenancy-capsule.log`.
-  - [x] ~~⑥ 실제 활성화~~ — **완료(`3dbc572`, gate 1219)**: 차트 폐기(설치하는 helm_release가
-    없었고 16개 데카르트 곱이 구독 6개와 불일치) → 레지스트리 기반 렌더링. 집행이 증명된
-    기판에만 렌더(k3s는 0개 + exit 1로 신고). 라이브 4종 통과.
-  - [x] ~~대시보드 tenant/env 스위처~~ · ~~push 기반 2축 drift 수집기~~ — **완료(`b2b52fc`,
-    gate 1251)**: 스포크 push 전용(허브 read 자격증명 0), 신원=서명을 검증한 키, staleness는
-    수신시각 기준 UNKNOWN 강등. UI는 허브 불가/미푸시/침묵을 서로 다르게 표시.
-  - [x] ~~클러스터 싱글턴 capability의 scope 축~~ — **완료(`bb7a819`, gate 1267)**: 카탈로그
-    `scope: cluster|namespace` + delivery **계약**의 거부 가드 + 수집기의 공유 설치물 처리
-    (`applicable=false`, 안 보이면 UNKNOWN). 미선언은 cluster로 fail-safe.
-  - [x] ~~Application 삭제 시 워크로드 고아~~ — **완료(`e1ea15f`, gate 1271)**: 계약에
-    "Deletion must cascade" 명시 + argocd resources-finalizer. 라이브 A/B로 실증.
-    남는 것: cascade는 엔진 관리 대상까지라 **StatefulSet PVC는 존치**된다.
-  - [x] ~~어댑터 helm values seam~~ — **완료(`01d3c6d`, gate 1281)**: 카탈로그가 values
-    파일을 가리키고(복사 금지) argocd `valuesObject`·flux `spec.values`가 같은 dict를 싣는다.
-    라이브에서 PSS 거부·PVC 자동삭제 2건을 더 잡아 근본수정.
-  - [ ] faked managed 디스크립터로 `applicable=false` 검증 · DR 재구축 라이브 확인.
+- [x] **Phase 2 완결(M11, gate 1290)** — tenancy+Capsule · ⑥ 데이터플레인 격리 · push 2축
+  수집기 + 대시보드 스위처 · capability scope 축 · 삭제 cascade · values seam · managed 경로 ·
+  DR 재구축. 상세 → `COMPLETED_SUMMARY.md` M11, 증거 `docs/evidence/phase2-*.log`.
 - [ ] Phase 3(인가 강화)·4(managed 어댑터, billable)·5(레지스트리 PR 쓰기) = 후속.
 - [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 수단 선행**(kind엔 CSI 스냅샷터 기본 부재).
   rollouts-demo는 데이터 위험 0이라 먼저 했고, 나머지 셋은 실패 비용이 가용성이 아니라 데이터다.
