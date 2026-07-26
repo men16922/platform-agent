@@ -7,6 +7,25 @@
 
 ---
 
+## 2026-07-26 — 삭제는 cascade한다: 계약이 삭제 의미를 말하게 (gate 1267→1271)
+
+- Status: 직전 라이브의 고아 워크로드를 닫았다. 진짜 문제는 파이널라이저 부재가 아니라
+  **계약이 삭제 의미를 말한 적이 없다**는 것 — Flux는 uninstall, ArgoCD는 고아라
+  "구독 해지" 하나의 의도가 엔진마다 반대 결과를 낸다.
+- Changed(`e1ea15f`): `DeliveryAdapter.render`에 "Deletion must cascade" 명시 ·
+  argocd 렌더러가 `resources-finalizer.argocd.argoproj.io` 부착 · prune≠삭제정책 가드 ·
+  flux uninstall 비활성화 금지 가드(부재 단언).
+- Verified: `make check` **1271**(+4). **라이브 A/B(kind, $0)**: 같은 차트 Application
+  2개를 파이널라이저만 다르게 두고 둘 다 삭제 → 있는 쪽은 사라지고 없는 쪽
+  (`podinfo-orphan`)은 소유자 없이 Running. 증거 `docs/evidence/phase2-deletion-cascade.log`.
+- Blockers: 없음. 정리 완료(probe ns 삭제), rollouts-demo·테넌트 정책 5개 무손상.
+- 품질 메모: 선언한 차트(loki 7.1.0)로 실증하려다 **어댑터가 helm values를 못 싣는다**는
+  갭이 드러났다 — `Please define loki.storage.bucketNames.chunks`로 템플릿 자체가 실패한다.
+  파이널라이저는 차트와 무관한 엔진 동작이라 기본값으로 설치되는 차트로 통제 실험을 했고,
+  **대체 차트를 썼다는 사실을 증거에 명시**했다. 또 이 수정이 덮지 않는 것도 적었다:
+  cascade는 엔진이 관리하는 것까지라 StatefulSet PVC는 남는다("깨끗이 제거됨" 아님).
+- Next: 어댑터 helm values seam · faked managed 디스크립터(`applicable=false`) · DR 재구축.
+
 ## 2026-07-26 — capability scope 축: 클러스터 싱글턴 렌더 거부 (gate 1251→1267)
 
 - Status: 직전 라이브가 낸 사고(컨트롤러 2개가 같은 Rollout을 조정)를 닫았다. STATUS에

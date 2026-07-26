@@ -5,7 +5,7 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(M10=GitAIOps 7/7+멀티테넌트 Phase 0·1a·1b+공급망,
 > M9=eval·하드닝, M8=레퍼런스 8/8) / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 현재 상태 (2026-07-26, gate 1251)
+## 현재 상태 (2026-07-26, gate 1271)
 
 **GitAIOps 대조 7/7 · 멀티테넌트 Phase 0·1a·1b 완료**(rollouts-demo 소유권 TF→ArgoCD 이관까지 실행).
 런북은 이제 선언한 순서·조건·검증대로 실행된다. **Phase 2 주요 4건 완료**(tenancy+Capsule ·
@@ -43,8 +43,11 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
   - [x] ~~클러스터 싱글턴 capability의 scope 축~~ — **완료(`bb7a819`, gate 1267)**: 카탈로그
     `scope: cluster|namespace` + delivery **계약**의 거부 가드 + 수집기의 공유 설치물 처리
     (`applicable=false`, 안 보이면 UNKNOWN). 미선언은 cluster로 fail-safe.
-  - [ ] **Application 삭제 시 워크로드 고아** — `resources-finalizer.argocd.argoproj.io` 부재.
-    구독 해지 경로가 생기기 전에 정하고 갈 것.
+  - [x] ~~Application 삭제 시 워크로드 고아~~ — **완료(`e1ea15f`, gate 1271)**: 계약에
+    "Deletion must cascade" 명시 + argocd resources-finalizer. 라이브 A/B로 실증.
+    남는 것: cascade는 엔진 관리 대상까지라 **StatefulSet PVC는 존치**된다.
+  - [ ] **어댑터 helm values seam** — 선언한 차트 대부분이 values 없이는 템플릿조차 안 된다
+    (loki가 라이브에서 `bucketNames.chunks` 요구). 테넌트별 실제 설치의 전제 조건.
   - [ ] faked managed 디스크립터로 `applicable=false` 검증 · DR 재구축 라이브 확인.
 - [ ] Phase 3(인가 강화)·4(managed 어댑터, billable)·5(레지스트리 PR 쓰기) = 후속.
 - [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 수단 선행**(kind엔 CSI 스냅샷터 기본 부재).
