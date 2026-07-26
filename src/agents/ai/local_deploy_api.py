@@ -191,6 +191,7 @@ async def read_platform_status() -> dict[str, Any]:
         missing = []
     return {
         "statuses": [s.to_dict() for s in _status_store.statuses(now=now)],
+        "tenancy": _status_store.tenancy(),
         "freshness": _status_store.freshness(now=now),
         "missing": missing,
         "stale_after_sec": _status_store.stale_after_sec,

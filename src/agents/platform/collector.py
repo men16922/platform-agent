@@ -47,7 +47,7 @@ from src.agents.platform.addon_status import (
 )
 from src.agents.platform.adapters.argocd import ArgoCDDeliveryAdapter
 from src.agents.platform.registry import Registry, Tenant
-from src.agents.platform.tenancy import TENANT_LABEL
+from src.agents.platform.tenancy import TENANT_LABEL, namespaces_for
 
 #: How long a report stays believable without a refresh. Chosen against the push
 #: cadence (a CronJob/loop pushing every minute), not against how long a human
@@ -65,6 +65,57 @@ class UnauthenticatedReport(ValueError):
 
 
 @dataclass
+class TenancyPosture:
+    """Is this tenant's boundary actually in place, and how full is it?
+
+    Deliberately small. A platform engineer looking at a tenant asks four things —
+    is it isolated, how much of its quota is gone, are its add-ons running, how old
+    is this information — and only the first two are missing from the add-on view.
+    Everything finer (which policy, which role, per-namespace breakdown) is a
+    kubectl away and would turn a status screen into an inventory.
+
+    Every axis is tri-state: True / False / **None = we could not look**. The last
+    one is not decoration. A screen that renders "not isolated" when the agent
+    simply failed to read the cluster produces the same panic as a real breach, and
+    a screen that renders green in that case is worse.
+    """
+
+    #: Namespaces the tenant actually owns, per the tenancy operator — NOT the
+    #: number that merely carry the tenant's label. The gap between those two is
+    #: precisely the failure this platform has hit twice: namespaces that look
+    #: attributed while the quota binds nothing.
+    adopted_namespaces: int | None = None
+    declared_namespaces: int = 0
+    #: Declared bound (registry) vs observed consumption (cluster), e.g.
+    #: {"limits.cpu": "16"} / {"limits.cpu": "10"}.
+    quota_hard: dict[str, str] = field(default_factory=dict)
+    quota_used: dict[str, str] = field(default_factory=dict)
+    #: quota / network / rbac / pod_security -> True | False | None
+    isolation: dict[str, bool | None] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "adopted_namespaces": self.adopted_namespaces,
+            "declared_namespaces": self.declared_namespaces,
+            "quota_hard": self.quota_hard,
+            "quota_used": self.quota_used,
+            "isolation": self.isolation,
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any] | None) -> TenancyPosture | None:
+        if not payload:
+            return None
+        return cls(
+            adopted_namespaces=payload.get("adopted_namespaces"),
+            declared_namespaces=int(payload.get("declared_namespaces", 0) or 0),
+            quota_hard=payload.get("quota_hard") or {},
+            quota_used=payload.get("quota_used") or {},
+            isolation=payload.get("isolation") or {},
+        )
+
+
+@dataclass
 class StatusReport:
     """One spoke agent's view of one tenant/env at one moment."""
 
@@ -76,6 +127,9 @@ class StatusReport:
     #: (or a replayed report) must not be able to look fresh.
     collected_at: float
     statuses: list[NormalizedAddonStatus] = field(default_factory=list)
+    #: None when the agent could not inspect tenancy at all (no permission, no
+    #: operator) — distinct from an all-False posture, which means we looked.
+    tenancy: TenancyPosture | None = None
 
     @property
     def identity(self) -> str:
@@ -88,6 +142,7 @@ class StatusReport:
             "cluster": self.cluster,
             "collected_at": self.collected_at,
             "statuses": [s.to_dict() for s in self.statuses],
+            "tenancy": self.tenancy.to_dict() if self.tenancy else None,
         }
 
     @classmethod
@@ -111,6 +166,7 @@ class StatusReport:
                 )
                 for row in payload.get("statuses", [])
             ],
+            tenancy=TenancyPosture.from_dict(payload.get("tenancy")),
         )
 
 
@@ -137,6 +193,134 @@ def read_applications(namespace: str = "argocd", *, kubectl: Any = None) -> list
 
 def _kubectl(*args: str) -> subprocess.CompletedProcess:
     return subprocess.run(["kubectl", *args], capture_output=True, text=True, timeout=60)
+
+
+def _read_json(runner: Any, *args: str) -> dict[str, Any] | None:
+    """`kubectl get ... -o json`, or None when we could not look.
+
+    None is load-bearing everywhere downstream: it is what keeps "the agent has no
+    permission" from rendering as "the tenant has no isolation".
+    """
+    proc = runner(*args, "-o", "json")
+    if proc.returncode != 0:
+        return None
+    try:
+        return json.loads(proc.stdout)
+    except (ValueError, AttributeError):
+        return None
+
+
+def collect_tenancy(
+    tenant: Tenant, env_name: str, *, kubectl: Any = None
+) -> TenancyPosture | None:
+    """Read the four isolation axes for one tenant, in four cluster reads.
+
+    Four reads, not four-per-namespace: a status screen refreshing every minute
+    should not scale its API load with tenant size.
+
+    What each axis answers, in the words a platform engineer would use:
+      quota        — is there a bound, and is the operator applying it?
+      network      — can other tenants reach these namespaces?
+      rbac         — is the agent's credential confined to this tenant?
+      pod_security — can a workload here run as root?
+    """
+    runner = kubectl or _kubectl
+    declared = [ns for _cap, ns in namespaces_for(tenant, env_name)]
+    if not declared:
+        return None
+
+    posture = TenancyPosture(declared_namespaces=len(declared))
+    posture.quota_hard = {
+        (f"limits.{k}" if k in ("cpu", "memory") else k): str(v)
+        for k, v in tenant.quota.to_dict().items()
+    }
+
+    capsule = _read_json(
+        runner, "get", "tenant.capsule.clastix.io", f"{tenant.naming_prefix}-{env_name}"
+    )
+    if capsule is not None:
+        posture.adopted_namespaces = int((capsule.get("status") or {}).get("size", 0) or 0)
+    # Bound present AND applied to every declared namespace. The operator existing
+    # is not enough — the platform has twice seen an Active tenant owning zero
+    # namespaces, which reads as bounded while bounding nothing.
+    posture.isolation["quota"] = (
+        None if capsule is None
+        else bool(posture.quota_hard) and posture.adopted_namespaces == len(declared)
+    )
+
+    quotas = _read_json(runner, "get", "resourcequota", "--all-namespaces")
+    if quotas is not None:
+        used: dict[str, int | str] = {}
+        for item in quotas.get("items", []):
+            if (item.get("metadata") or {}).get("namespace") not in declared:
+                continue
+            for key, value in ((item.get("status") or {}).get("used") or {}).items():
+                if key in posture.quota_hard:
+                    used[key] = _add_quantity(used.get(key), value)
+        posture.quota_used = {k: str(v) for k, v in used.items()}
+
+    policies = _read_json(runner, "get", "networkpolicy", "--all-namespaces")
+    posture.isolation["network"] = (
+        None if policies is None
+        else _covers_all(policies, declared)
+    )
+
+    roles = _read_json(runner, "get", "rolebinding", "--all-namespaces")
+    posture.isolation["rbac"] = (
+        None if roles is None
+        else _covers_all(roles, declared, name_prefix=f"{tenant.naming_prefix}-")
+    )
+
+    namespaces = _read_json(runner, "get", "namespace")
+    if namespaces is None:
+        posture.isolation["pod_security"] = None
+    else:
+        enforced = {
+            (item.get("metadata") or {}).get("name")
+            for item in namespaces.get("items", [])
+            if ((item.get("metadata") or {}).get("labels") or {}).get(
+                "pod-security.kubernetes.io/enforce"
+            ) == "restricted"
+        }
+        posture.isolation["pod_security"] = all(ns in enforced for ns in declared)
+
+    return posture
+
+
+def _covers_all(listing: dict[str, Any], namespaces: list[str], *, name_prefix: str = "") -> bool:
+    """True when every declared namespace holds at least one matching object.
+
+    "Some namespaces are covered" is not isolation — the uncovered one is the whole
+    exposure, so this is deliberately an ALL, not an ANY.
+    """
+    covered = {
+        (item.get("metadata") or {}).get("namespace")
+        for item in listing.get("items", [])
+        if not name_prefix
+        or str((item.get("metadata") or {}).get("name", "")).startswith(name_prefix)
+    }
+    return all(ns in covered for ns in namespaces)
+
+
+def _add_quantity(current: int | str | None, value: str) -> int | str:
+    """Sum Kubernetes quantities where we safely can, else keep the raw string.
+
+    Only plain integers and millicores are summed. Memory units (Gi/Mi) are left
+    alone rather than converted: a wrong unit conversion on a quota display is a
+    number that looks authoritative and is false, and nobody re-checks a number.
+    """
+    def parse(raw: Any) -> int | None:
+        text = str(raw)
+        try:
+            return int(float(text[:-1])) if text.endswith("m") else int(float(text)) * 1000
+        except ValueError:
+            return None
+
+    left, right = parse(current) if current is not None else 0, parse(value)
+    if left is None or right is None:
+        return value if current is None else str(current)
+    total = left + right
+    return f"{total}m" if total % 1000 else str(total // 1000)
 
 
 def collect(
@@ -275,6 +459,7 @@ def build_report(
     observed: bool = True,
     scope_of: Any = None,
     is_managed: Any = None,
+    tenancy: TenancyPosture | None = None,
 ) -> StatusReport:
     env = tenant.environments[env_name]
     return StatusReport(
@@ -286,6 +471,7 @@ def build_report(
             tenant, env_name, applications,
             observed=observed, scope_of=scope_of, is_managed=is_managed,
         ),
+        tenancy=tenancy,
     )
 
 
@@ -395,6 +581,20 @@ class StatusStore:
                     native={"stale_sec": round(now - received_at, 1), **(row.native or {})},
                 ))
         return rows
+
+    def tenancy(self) -> dict[str, Any]:
+        """Isolation posture per identity, as last pushed.
+
+        Not degraded on staleness the way statuses are: a boundary does not stop
+        existing because the agent went quiet, and blanking it would read as "the
+        isolation went away". Freshness is already reported separately, and that is
+        the honest place for "how old is this".
+        """
+        return {
+            identity: report.tenancy.to_dict()
+            for identity, (report, _received) in sorted(self._reports.items())
+            if report.tenancy is not None
+        }
 
     def freshness(self, *, now: float) -> list[dict[str, Any]]:
         """Per-identity heartbeat, so "we stopped hearing from acme/dev" is visible

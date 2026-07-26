@@ -31,6 +31,7 @@ from src.agents.platform.collector import (
     UnauthenticatedReport,
     build_report,
     collect,
+    collect_tenancy,
     load_push_keys,
     read_applications,
     sign,
@@ -295,6 +296,143 @@ class TestFakedManagedDescriptor:
         row = next(r for r in restored.statuses if r.capability == "observability")
         assert row.applicable is False
         assert row.sync_state is SyncState.NOT_APPLICABLE
+
+
+class TestTenancyPosture:
+    """The isolation axes a platform engineer checks before trusting a boundary.
+
+    The rule these guards exist for: **a badge that cannot turn red is worthless.**
+    Live-falsified by deleting one NetworkPolicy and watching the axis flip to
+    False, then restoring it.
+    """
+
+    @staticmethod
+    def _cluster(**overrides):
+        """A fake kubectl returning one canned document per resource kind."""
+        docs = {
+            "tenant.capsule.clastix.io": {"status": {"size": 4}},
+            "resourcequota": {"items": [
+                {"metadata": {"namespace": "acme-dev-logging"},
+                 "status": {"used": {"limits.cpu": "2", "pods": "3"}}},
+                {"metadata": {"namespace": "acme-dev-tracing"},
+                 "status": {"used": {"limits.cpu": "500m", "pods": "1"}}},
+            ]},
+            "networkpolicy": {"items": [
+                {"metadata": {"namespace": ns, "name": "deny-cross-tenant"}}
+                for ns in ("acme-dev-logging", "acme-dev-observability",
+                           "acme-dev-tracing", "acme-dev-progressive")
+            ]},
+            "rolebinding": {"items": [
+                {"metadata": {"namespace": ns, "name": "acme-agent"}}
+                for ns in ("acme-dev-logging", "acme-dev-observability",
+                           "acme-dev-tracing", "acme-dev-progressive")
+            ]},
+            "namespace": {"items": [
+                {"metadata": {"name": ns, "labels": {
+                    "pod-security.kubernetes.io/enforce": "restricted"}}}
+                for ns in ("acme-dev-logging", "acme-dev-observability",
+                           "acme-dev-tracing", "acme-dev-progressive")
+            ]},
+        }
+        docs.update(overrides)
+
+        def runner(*args):
+            kind = args[1] if len(args) > 1 else ""
+            doc = docs.get(kind)
+            if doc is None:
+                return type("P", (), {"returncode": 1, "stdout": ""})()
+            return type("P", (), {"returncode": 0, "stdout": json.dumps(doc)})()
+
+        return runner
+
+    def test_all_axes_green_when_everything_is_in_place(self, acme):
+        posture = collect_tenancy(acme, "dev", kubectl=self._cluster())
+        assert posture.isolation == {
+            "quota": True, "network": True, "rbac": True, "pod_security": True
+        }
+        assert posture.adopted_namespaces == 4
+        assert posture.declared_namespaces == 4
+
+    def test_partial_coverage_is_not_isolation(self, acme):
+        """One uncovered namespace IS the exposure — so the axis is ALL, not ANY."""
+        posture = collect_tenancy(acme, "dev", kubectl=self._cluster(
+            networkpolicy={"items": [
+                {"metadata": {"namespace": "acme-dev-logging", "name": "deny-cross-tenant"}}
+            ]},
+        ))
+        assert posture.isolation["network"] is False
+
+    def test_unreadable_axis_is_none_not_false(self, acme):
+        """"We could not look" must not render as "not isolated".
+
+        A screen that cries breach because the agent lost permission burns its own
+        credibility; one that renders green in that case is worse.
+        """
+        posture = collect_tenancy(acme, "dev", kubectl=self._cluster(networkpolicy=None))
+        assert posture.isolation["network"] is None
+        assert posture.isolation["quota"] is True
+
+    def test_adopted_short_of_declared_fails_the_quota_axis(self, acme):
+        """The failure this platform hit twice: labelled but not owned.
+
+        An Active tenant owning zero namespaces reads as bounded everywhere while
+        bounding nothing, so the axis tracks ownership, not the object's existence.
+        """
+        posture = collect_tenancy(acme, "dev", kubectl=self._cluster(
+            **{"tenant.capsule.clastix.io": {"status": {"size": 2}}}
+        ))
+        assert posture.adopted_namespaces == 2
+        assert posture.isolation["quota"] is False
+
+    def test_quota_used_is_summed_across_namespaces(self, acme):
+        """A tenant bound is a tenant total; per-namespace numbers hide the sum."""
+        posture = collect_tenancy(acme, "dev", kubectl=self._cluster())
+        assert posture.quota_used["limits.cpu"] == "2500m"
+        assert posture.quota_used["pods"] == "4"
+        assert posture.quota_hard["limits.cpu"] == "16"
+
+    def test_unsummable_units_are_left_alone(self, acme):
+        """Memory units are not converted.
+
+        A wrong unit conversion produces a number that looks as authoritative as a
+        right one, and nobody re-checks a number on a dashboard.
+        """
+        posture = collect_tenancy(acme, "dev", kubectl=self._cluster(
+            resourcequota={"items": [
+                {"metadata": {"namespace": "acme-dev-logging"},
+                 "status": {"used": {"limits.memory": "2Gi"}}},
+            ]},
+        ))
+        assert posture.quota_used["limits.memory"] == "2Gi"
+
+    def test_env_with_no_namespaces_has_no_posture(self, acme):
+        assert collect_tenancy(acme, "nope", kubectl=self._cluster()) is None
+
+    def test_posture_survives_the_wire(self, acme):
+        """`isolation` decides badge colour; dropping it in transit paints grey."""
+        posture = collect_tenancy(acme, "dev", kubectl=self._cluster())
+        report = build_report(acme, "dev", [], now=NOW, tenancy=posture)
+        restored = StatusReport.from_dict(json.loads(json.dumps(report.to_dict())))
+        assert restored.tenancy.isolation == posture.isolation
+        assert restored.tenancy.quota_used == posture.quota_used
+
+    def test_store_serves_posture_per_identity(self, acme):
+        posture = collect_tenancy(acme, "dev", kubectl=self._cluster())
+        store = StatusStore()
+        store.ingest(build_report(acme, "dev", [], now=NOW, tenancy=posture), received_at=NOW)
+        assert store.tenancy()["acme/dev"]["isolation"]["network"] is True
+
+    def test_stale_report_keeps_its_posture(self, acme):
+        """A boundary does not stop existing because the agent went quiet.
+
+        Blanking it would read as "the isolation went away"; staleness is already
+        reported separately, which is the honest place for "how old is this".
+        """
+        posture = collect_tenancy(acme, "dev", kubectl=self._cluster())
+        store = StatusStore(stale_after_sec=1)
+        store.ingest(build_report(acme, "dev", [], now=NOW, tenancy=posture), received_at=NOW)
+        assert store.is_stale("acme/dev", now=NOW + 3600) is True
+        assert store.tenancy()["acme/dev"]["isolation"]["quota"] is True
 
 
 class TestReadApplications:

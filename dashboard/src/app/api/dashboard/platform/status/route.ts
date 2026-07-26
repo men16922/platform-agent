@@ -1,4 +1,4 @@
-import type { NormalizedAddonStatus } from "@/lib/platform-registry";
+import type { NormalizedAddonStatus, TenancyPosture } from "@/lib/platform-registry";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +10,8 @@ const HUB = process.env.LOCAL_DEPLOY_API_URL || "http://127.0.0.1:8077";
 export interface PlatformStatusFeed {
   statuses: NormalizedAddonStatus[];
   freshness: Array<{ identity: string; cluster: string; age_sec: number; stale: boolean }>;
+  /** identity ("tenant/env") -> isolation posture. Absent when never pushed. */
+  tenancy: Record<string, TenancyPosture>;
   /** Declared tenant/envs the hub has never heard from at all. */
   missing: string[];
   staleAfterSec: number;
@@ -21,6 +23,7 @@ export async function GET() {
   const empty: PlatformStatusFeed = {
     statuses: [],
     freshness: [],
+    tenancy: {},
     missing: [],
     staleAfterSec: 0,
     connected: false,
@@ -33,6 +36,7 @@ export async function GET() {
     return Response.json({
       statuses: body.statuses ?? [],
       freshness: body.freshness ?? [],
+      tenancy: body.tenancy ?? {},
       missing: body.missing ?? [],
       staleAfterSec: body.stale_after_sec ?? 0,
       connected: true,

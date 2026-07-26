@@ -76,6 +76,32 @@ export interface NormalizedAddonStatus {
   native?: Record<string, unknown>;
 }
 
+/**
+ * Is the tenant's boundary actually in place, and how full is it?
+ *
+ * Pushed by the spoke agent alongside add-on status — the dashboard never reads a
+ * cluster, which is what keeps the control plane free of spoke credentials.
+ *
+ * Every axis is tri-state: true / false / **null = could not look**. Rendering
+ * "not isolated" when the agent merely lacked permission causes the same panic as
+ * a real breach; rendering green in that case is worse.
+ */
+export interface TenancyPosture {
+  adopted_namespaces: number | null;
+  declared_namespaces: number;
+  quota_hard: Record<string, string>;
+  quota_used: Record<string, string>;
+  isolation: Record<string, boolean | null>;
+}
+
+/** The four things a platform engineer checks before trusting a boundary. */
+export const ISOLATION_AXES: Array<{ key: string; label: string; asks: string }> = [
+  { key: "quota", label: "쿼터", asks: "한 팀이 자원을 독식할 수 있나" },
+  { key: "network", label: "네트워크", asks: "다른 팀이 접속할 수 있나" },
+  { key: "rbac", label: "권한", asks: "에이전트가 남의 팀을 건드릴 수 있나" },
+  { key: "pod_security", label: "파드 보안", asks: "루트 컨테이너가 뜰 수 있나" },
+];
+
 /** Drift is a sync-axis fact — never infer it from health. */
 export function isDrifted(status: NormalizedAddonStatus): boolean {
   return status.sync_state === "drifted";

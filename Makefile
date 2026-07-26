@@ -62,6 +62,13 @@ LLM_LOG_DIR    := /tmp/platform-agent
 # Offline activity store: the router WRITES deploy/rollback rows here and the
 # dashboard READS them (hybrid = this file + AWS). Same path on both sides.
 ACTIVITY_FILE  ?= $(HOME)/.platform-agent/activity.jsonl
+# Local-only HMAC keys for the spoke->hub status push. The hub accepts NOTHING
+# without keys (an unconfigured hub that accepted unsigned reports would let
+# anyone who can reach the port write any tenant's status), so the local stack
+# has to hand it one. Fixed value on purpose: this is a loopback dev key, and a
+# random one would break the pushers started in a different shell.
+PLATFORM_PUSH_KEYS ?= {"acme/dev":"local-dev","globex/dev":"local-dev"}
+PUSH_TENANTS   ?= acme globex
 APPROVALS_FILE ?= $(HOME)/.platform-agent/pending-approvals.jsonl
 INCIDENT_FILE  ?= $(HOME)/.platform-agent/incidents.jsonl
 WEBHOOK_PORT   ?= 8078
@@ -120,13 +127,18 @@ dev-up:  ## start the whole local stack in one command (reuses a warm MLX/proxy)
 	fi
 	@echo "→ router   (:$(ROUTER_PORT)) — restart, offline recording → $(ACTIVITY_FILE)"
 	@pkill -f "uvicorn src.agents.ai.local_deploy_api" 2>/dev/null; true
-	@cd $(DEPLOY_WORKDIR) && PYTHONPATH=$(CURDIR) PLATFORM_ACTIVITY_FILE=$(ACTIVITY_FILE) ONPREM_LLM_ENDPOINT=http://127.0.0.1:$(PROXY_PORT)/v1 ONPREM_LLM_MODEL=$(MLX_MODEL) nohup uvicorn src.agents.ai.local_deploy_api:app --host 127.0.0.1 --port $(ROUTER_PORT) > $(LLM_LOG_DIR)/router.log 2>&1 &
+	@cd $(DEPLOY_WORKDIR) && PYTHONPATH=$(CURDIR) PLATFORM_ACTIVITY_FILE=$(ACTIVITY_FILE) PLATFORM_PUSH_KEYS='$(PLATFORM_PUSH_KEYS)' ONPREM_LLM_ENDPOINT=http://127.0.0.1:$(PROXY_PORT)/v1 ONPREM_LLM_MODEL=$(MLX_MODEL) nohup uvicorn src.agents.ai.local_deploy_api:app --host 127.0.0.1 --port $(ROUTER_PORT) > $(LLM_LOG_DIR)/router.log 2>&1 &
 	@echo "→ webhook  (:$(WEBHOOK_PORT)) — restart, On-Prem Day-2 (Alertmanager → pipeline → approval gate)"
 	@pkill -f "uvicorn src.agents.ai.onprem_webhook_api" 2>/dev/null; true
 	@PLATFORM_ACTIVITY_FILE=$(ACTIVITY_FILE) PLATFORM_APPROVALS_FILE=$(APPROVALS_FILE) PLATFORM_INCIDENT_FILE=$(INCIDENT_FILE) nohup uvicorn src.agents.ai.onprem_webhook_api:app --host 127.0.0.1 --port $(WEBHOOK_PORT) > $(LLM_LOG_DIR)/webhook.log 2>&1 &
 	@echo "→ dashboard(:$(DASHBOARD_PORT)) — restart (next dev)"
 	@pkill -f "next-server" 2>/dev/null; pkill -f "next dev" 2>/dev/null; true
 	@cd $(DASHBOARD_DIR) && nohup npm run dev > $(LLM_LOG_DIR)/dashboard.log 2>&1 &
+	@echo "→ status   — spoke agents push tenant status/isolation to the hub (60s loop)"
+	@pkill -f "scripts/push_addon_status.py" 2>/dev/null; true
+	@for t in $(PUSH_TENANTS); do \
+		PLATFORM_PUSH_KEY=local-dev nohup python scripts/push_addon_status.py --tenant $$t --env dev --hub http://127.0.0.1:$(ROUTER_PORT) --interval 60 > $(LLM_LOG_DIR)/push-$$t.log 2>&1 & \
+	done
 	@echo ""
 	@echo "stack starting → http://localhost:$(DASHBOARD_PORT)   (check: make dev-status | logs: $(LLM_LOG_DIR)/)"
 

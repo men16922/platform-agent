@@ -26,6 +26,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.agents.platform.collector import (  # noqa: E402
     build_report,
+    collect_tenancy,
     read_applications,
     sign,
 )
@@ -46,6 +47,9 @@ def push_once(
     report = build_report(
         tenant, env_name, applications, now=time.time(),
         observed=bool(applications), scope_of=scope_of,
+        # The isolation axes ride the same push. The dashboard must never read a
+        # cluster itself — that is what keeps the hub free of spoke credentials.
+        tenancy=collect_tenancy(tenant, env_name),
     )
     payload = report.to_dict()
     request = urllib.request.Request(

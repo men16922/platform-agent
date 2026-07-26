@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import {
+  ISOLATION_AXES,
   summarizeByEnv,
   showsSyncAxis,
   type NormalizedAddonStatus,
+  type TenancyPosture,
 } from "@/lib/platform-registry";
 
 /**
@@ -26,6 +28,7 @@ import {
 interface StatusFeed {
   statuses: NormalizedAddonStatus[];
   freshness: Array<{ identity: string; cluster: string; age_sec: number; stale: boolean }>;
+  tenancy: Record<string, TenancyPosture>;
   missing: string[];
   staleAfterSec: number;
   connected: boolean;
@@ -34,6 +37,7 @@ interface StatusFeed {
 const EMPTY: StatusFeed = {
   statuses: [],
   freshness: [],
+  tenancy: {},
   missing: [],
   staleAfterSec: 0,
   connected: false,
@@ -54,6 +58,83 @@ function axisColor(state: string): string {
       // unknown / n⁄a — deliberately grey, never green.
       return "#8b949e";
   }
+}
+
+/**
+ * The two questions the add-on table cannot answer: is this tenant's boundary
+ * actually in place, and how much of its quota is gone.
+ *
+ * Tri-state on purpose. An axis the agent could not read renders grey with a
+ * question mark, never red and never green — "we could not look" is a third
+ * fact, and collapsing it either way is how a status screen starts lying.
+ */
+function IsolationPanel({ posture }: { posture: TenancyPosture }) {
+  const adoptionGap =
+    posture.adopted_namespaces !== null &&
+    posture.adopted_namespaces !== posture.declared_namespaces;
+
+  return (
+    <div className="surface space-y-4 p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="text-[11px] font-semibold text-[#cbd6e9]">격리 상태</p>
+        <span className="text-[10px] text-[var(--muted)]">
+          네임스페이스 {posture.adopted_namespaces ?? "?"} / {posture.declared_namespaces} 적용됨
+        </span>
+      </div>
+
+      {/* The gap between "labelled with a tenant" and "owned by that tenant" is
+          the exact failure this platform hit twice: a quota that binds nothing
+          while every view reads correct. It gets its own line, not a colour. */}
+      {adoptionGap && (
+        <p className="rounded border border-[#d2992233] bg-[#d2992212] px-3 py-2 text-[10px] text-[#d29922]">
+          선언된 네임스페이스 중 일부가 아직 테넌트에 편입되지 않았습니다 — 그 네임스페이스에는
+          쿼터가 적용되지 않습니다.
+        </p>
+      )}
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {ISOLATION_AXES.map((axis) => {
+          const state = posture.isolation[axis.key] ?? null;
+          const color = state === true ? "#3fb950" : state === false ? "#f85149" : "#8b949e";
+          const mark = state === true ? "적용" : state === false ? "없음" : "확인 불가";
+          return (
+            <div
+              key={axis.key}
+              className="rounded-md border border-white/8 bg-white/[0.02] px-3 py-2"
+              title={axis.asks}
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
+                <span className="text-[11px] font-medium text-[#e6edf7]">{axis.label}</span>
+              </div>
+              <p className="mt-1 text-[10px]" style={{ color }}>
+                {mark}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      {Object.keys(posture.quota_hard).length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[10px] uppercase tracking-wider text-[var(--muted)]">쿼터 사용량</p>
+          {Object.entries(posture.quota_hard).map(([key, hard]) => {
+            const used = posture.quota_used[key];
+            return (
+              <div key={key} className="flex items-baseline justify-between text-[11px]">
+                <span className="font-mono text-[var(--muted)]">{key}</span>
+                <span className="font-mono text-[#cbd6e9]">
+                  {/* Raw strings, no unit maths: a converted number that is wrong
+                      looks exactly as authoritative as one that is right. */}
+                  {used ?? "?"} <span className="text-[var(--muted)]">/ {hard}</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function PlatformTenantSwitcher() {
@@ -169,6 +250,10 @@ export function PlatformTenantSwitcher() {
             );
           })}
         </div>
+      )}
+
+      {active && feed.tenancy[active] && (
+        <IsolationPanel posture={feed.tenancy[active]} />
       )}
 
       {rows.length > 0 && (
