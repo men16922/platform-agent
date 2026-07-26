@@ -79,6 +79,16 @@ class DeliveryAdapter(ABC):
         Must be deterministic: the Phase 1b DoD requires adoption of already-installed
         releases to be a **no-churn** no-op, and a renderer whose output wobbles
         between runs would trigger delete-and-recreate (PVC loss).
+
+        **Deletion must cascade.** Removing the rendered object must remove what it
+        installed, because the only reason to remove it is that the tenant no longer
+        subscribes to that capability. This has to be stated here rather than left to
+        each engine, since the engines disagree by default: Flux uninstalls its
+        release, while ArgoCD orphans every resource unless the Application carries
+        `resources-finalizer.argocd.argoproj.io`. Left unstated, one declared intent
+        produces a cleaned-up cluster on Flux and a running workload nobody owns on
+        Argo — and the Argo side was observed live, with the Application gone and its
+        pods still serving.
         """
 
     @abstractmethod

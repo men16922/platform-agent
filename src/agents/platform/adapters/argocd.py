@@ -27,6 +27,10 @@ from src.agents.platform.registry import Environment, Tenant
 #: Argo resolves the in-cluster destination by this well-known address.
 IN_CLUSTER_SERVER = "https://kubernetes.default.svc"
 
+#: Makes deleting an Application delete what it installed. Argo's default is to
+#: orphan, which is the opposite of what "the tenant unsubscribed" means.
+RESOURCES_FINALIZER = "resources-finalizer.argocd.argoproj.io"
+
 
 class ArgoCDDeliveryAdapter(DeliveryAdapter):
     engine = "argocd"
@@ -57,6 +61,28 @@ class ArgoCDDeliveryAdapter(DeliveryAdapter):
                     "metadata": {
                         "name": name,
                         "namespace": "argocd",
+                        # Deleting this Application removes what it installed.
+                        #
+                        # Without the finalizer Argo drops the Application and leaves
+                        # every resource running, which a live run confirmed: the
+                        # Application was gone and its two controller pods were still
+                        # there. `prune: true` does not cover this — pruning removes
+                        # resources that fell out of a sync, and a deleted Application
+                        # never syncs again.
+                        #
+                        # It also makes the two engines mean the same thing by
+                        # deletion: Flux uninstalls its release, so without this,
+                        # "unsubscribe from an add-on" would leave a workload behind
+                        # on ArgoCD clusters and not on Flux ones — the same declared
+                        # intent with opposite outcomes per engine.
+                        #
+                        # Caveat that survives this fix: the cascade covers what the
+                        # ENGINE manages. PVCs created from a StatefulSet's
+                        # volumeClaimTemplates are created by Kubernetes, not by Argo,
+                        # so they outlive it. Unsubscribing a stateful add-on still
+                        # leaves disks; that is a data-retention default, not an
+                        # accident, but it must not be mistaken for a clean removal.
+                        "finalizers": [RESOURCES_FINALIZER],
                         "annotations": self.ordering_annotation(addon.wave),
                         "labels": {
                             # Tenancy is queryable from the object itself; the

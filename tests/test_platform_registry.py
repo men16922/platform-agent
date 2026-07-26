@@ -27,7 +27,7 @@ from src.agents.platform import (
     load_registry,
     validate_registry,
 )
-from src.agents.platform.adapters.argocd import ArgoCDDeliveryAdapter
+from src.agents.platform.adapters.argocd import RESOURCES_FINALIZER, ArgoCDDeliveryAdapter
 from src.agents.platform.adapters.flux import FluxDeliveryAdapter
 from src.agents.platform.delivery import (
     ClusterSingletonCapability,
@@ -332,6 +332,62 @@ class TestClusterSingletonScope:
         with pytest.raises(ClusterSingletonCapability) as exc:
             reject_cluster_singletons([addon])
         assert "once per cluster" in str(exc.value)
+
+
+class TestDeletionCascades:
+    """Removing a rendered object must remove what it installed.
+
+    The engines disagree by default, which is exactly why the contract has to say
+    it: Flux uninstalls its release on delete, ArgoCD orphans everything unless the
+    Application carries the resources finalizer. Live confirmation of the Argo side
+    — the Application was deleted and its two pods kept running, holding a
+    ClusterRoleBinding, with nothing owning them.
+    """
+
+    @staticmethod
+    def _addon():
+        from src.agents.platform.delivery import DesiredAddon
+
+        return DesiredAddon(
+            tenant="acme", env="dev", capability="logging", backend="loki",
+            version="7.1.0", wave=1, namespace="acme-dev-logging", scope="namespace",
+        )
+
+    def test_argocd_application_carries_the_resources_finalizer(self, registry):
+        rendered = ArgoCDDeliveryAdapter(repo_url="https://example.invalid").render(
+            registry.tenant("acme"), registry.environment("acme", "dev"), [self._addon()]
+        )
+        assert rendered[0]["metadata"]["finalizers"] == [RESOURCES_FINALIZER]
+
+    def test_prune_does_not_substitute_for_the_finalizer(self, registry):
+        """`prune: true` removes resources that fell out of a SYNC.
+
+        A deleted Application never syncs again, so pruning has nothing to do with
+        deletion — the two were conflated until a live delete left the workload up.
+        """
+        rendered = ArgoCDDeliveryAdapter(repo_url="https://example.invalid").render(
+            registry.tenant("acme"), registry.environment("acme", "dev"), [self._addon()]
+        )
+        assert rendered[0]["spec"]["syncPolicy"]["automated"]["prune"] is True
+        assert "finalizers" in rendered[0]["metadata"], "prune is not a deletion policy"
+
+    def test_flux_does_not_disable_its_uninstall(self, registry):
+        """Flux cascades by default; the guard is that we never turn that off.
+
+        Asserting the absence of a setting is unusual, but the failure mode here is
+        someone adding `uninstall.disableWait`-style config that quietly makes the
+        two engines disagree again.
+        """
+        rendered = FluxDeliveryAdapter().render(
+            registry.tenant("acme"), registry.environment("acme", "dev"), [self._addon()]
+        )
+        spec = rendered[0]["spec"]
+        assert spec.get("suspend") is not True
+        assert "uninstall" not in spec or spec["uninstall"].get("keepHistory") is not True
+
+    def test_the_contract_states_the_semantic(self):
+        """Otherwise a third engine inherits its own default, silently."""
+        assert "cascade" in (DeliveryAdapter.render.__doc__ or "").lower()
 
 
 class TestDeliveryContract:

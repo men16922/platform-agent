@@ -1,0 +1,75 @@
+삭제는 cascade한다 — 계약이 삭제 의미를 말하게 만들기 (라이브, kind, $0)
+2026-07-26 / gate 1267 → 1271
+
+발단: 직전 세션에서 `kubectl delete application acme-dev-progressive` 후에도 파드
+2개가 ClusterRoleBinding을 쥔 채 계속 돌았다. 소유자가 없는 워크로드.
+
+================================================================================
+1. 진짜 문제는 파이널라이저 부재가 아니라 계약의 침묵이었다
+================================================================================
+  같은 선언이 엔진마다 반대 결과를 낸다:
+    Flux   HelmRelease 삭제 → helm uninstall (기본값)
+    ArgoCD Application  삭제 → 전 리소스 **고아** (파이널라이저 없으면)
+  계약(`DeliveryAdapter.render`)은 삭제가 무엇을 의미하는지 말한 적이 없었으므로,
+  "테넌트가 구독 해지했다"는 하나의 의도가 Argo 클러스터에선 떠도는 워크로드로,
+  Flux 클러스터에선 정리된 클러스터로 끝난다.
+  → 계약 독스트링에 **"Deletion must cascade"** 를 명시하고, argocd 렌더러가
+    `resources-finalizer.argocd.argoproj.io`를 붙인다. 세 번째 엔진이 자기 기본값을
+    조용히 상속하는 것을 막는 자리는 어댑터가 아니라 계약이다.
+
+  `prune: true`와 혼동하지 말 것: prune은 **동기화 중** 빠진 리소스를 지운다.
+  삭제된 Application은 다시 동기화되지 않으므로 prune은 삭제와 무관하다.
+
+================================================================================
+2. A/B 대조 실험 — 같은 차트, 파이널라이저만 다르게
+================================================================================
+  선언한 차트(loki 7.1.0)로 하려다 막혔다:
+    ComparisonError: failed to execute helm template ... loki/templates/write/
+    statefulset-write.yaml:50:28: Please define loki.storage.bucketNames.chunks
+  → **어댑터가 helm values를 싣지 못한다**(레포의 애드온 TF는 values 파일을 준다).
+    별도 갭으로 기록. 파이널라이저는 차트와 무관한 엔진 동작이므로, 기본값으로
+    설치되는 차트(podinfo 6.7.1)로 통제 실험을 했다.
+
+  동일한 Application 2개, 유일한 차이는 렌더러가 이제 붙이는 파이널라이저:
+    cascade-with-finalizer      (finalizers: [resources-finalizer.argocd.argoproj.io])
+    cascade-without-finalizer   (없음, fullnameOverride=podinfo-orphan)
+
+  설치 확인:
+    NAME                             READY
+    cascade-with-finalizer-podinfo   0/1 (Progressing)
+    podinfo-orphan                   1/1
+
+  둘 다 삭제:
+    $ kubectl delete application -n argocd cascade-with-finalizer cascade-without-finalizer
+      both deleted
+
+  15초 후 네임스페이스:
+    NAME                             READY   UP-TO-DATE   AVAILABLE   AGE
+    deployment.apps/podinfo-orphan   1/1     1            1           38s
+    pod/podinfo-orphan-8767ccdc7-t7tqx   1/1   Running    0           38s
+
+  → 파이널라이저 있는 쪽은 **사라졌고**, 없는 쪽은 소유자 없이 **계속 돈다**.
+    결함과 수정이 같은 화면에 나란히 있다.
+
+================================================================================
+3. 이 수정이 덮지 않는 것 (과대 해석 금지)
+================================================================================
+  cascade는 **엔진이 관리하는 것**까지다. StatefulSet의 volumeClaimTemplates가 만든
+  PVC는 Argo가 아니라 쿠버네티스가 만들므로 살아남는다. 즉 stateful 애드온 구독
+  해지는 여전히 디스크를 남긴다 — 데이터 보존 기본값이지 사고는 아니지만,
+  "깨끗이 제거됨"으로 읽으면 안 된다. (Phase 1b의 스냅샷 선행 조건과 같은 계열.)
+
+  삭제가 이제 파괴적이라는 점도 그대로 남는다: Application을 실수로 지우면 워크로드가
+  같이 없어진다. 그것이 구독 해지의 올바른 의미이고, Application 삭제는 이미 명시적인
+  파괴 행위다.
+
+================================================================================
+정리 / 무손상 확인
+================================================================================
+  cascade-probe 네임스페이스 삭제 · 실패한 acme-dev-logging Application 제거.
+  rollouts-demo Healthy 4/4 · 테넌트 NetworkPolicy 5개 그대로.
+
+gate: 1267 → 1271 (+4)  ·  make check 1271 passed, 1 skipped
+새로 연 갭: **어댑터가 helm values를 렌더하지 못한다** — 우리가 선언한 차트 대부분
+(loki·tempo·kps)은 values 없이는 템플릿조차 되지 않으므로, 테넌트별 실제 설치는
+values seam이 생기기 전까지 불가능하다. NEXT_PLAN에 기록.
