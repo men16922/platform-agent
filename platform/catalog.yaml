@@ -10,12 +10,32 @@
 # render this number into their own ordering primitive:
 #   ArgoCD -> argocd.argoproj.io/sync-wave     Flux -> spec.dependsOn
 # Lower waves reconcile first: 0 = CRDs/namespaces, 1 = platform add-ons, 2 = workloads.
+#
+# `scope` exists because a live run proved the obvious assumption wrong: rendering
+# a capability once per tenant is only valid when the backend can actually run once
+# per tenant. Applying a per-tenant `argo-rollouts` Application installed a SECOND
+# cluster-scoped controller (ClusterRoleBinding, no --namespaced), and both
+# controllers then reconciled the same Rollout objects — leader election is
+# per-namespace, so both were leaders. Nothing errored; two controllers simply
+# fought over every workload on the cluster.
+#
+#   scope: namespace  one installation per tenant namespace — safe to duplicate
+#   scope: cluster    ONE installation per cluster, shared. Tenants consume it;
+#                     what is per-tenant is the *instance* (a Prometheus CR, a
+#                     Rollout), never the operator/CRDs underneath it.
+#
+# Delivery adapters refuse to render a cluster-scoped capability per tenant. That
+# refusal is the point: the alternative is a duplicate that looks installed.
 version: 1
 
 capabilities:
   observability:
     description: Metrics + dashboards (Prometheus-compatible)
     wave: 1
+    # Prometheus Operator owns cluster-wide CRDs; a second install fights the
+    # first over CRD ownership. The per-tenant thing is a Prometheus/ServiceMonitor
+    # instance, not the operator.
+    scope: cluster
     backends:
       self_hosted: kube-prometheus-stack
       # Managed backends have no sync axis — see NormalizedAddonStatus.applicable.
@@ -27,6 +47,8 @@ capabilities:
   logging:
     description: Log aggregation and query
     wave: 1
+    # No CRDs, no cluster controller — a per-tenant Loki is a normal deployment.
+    scope: namespace
     backends:
       self_hosted: loki
       managed:
@@ -37,6 +59,7 @@ capabilities:
   tracing:
     description: Distributed traces (OTLP ingest)
     wave: 1
+    scope: namespace
     backends:
       self_hosted: tempo
       managed:
@@ -47,6 +70,8 @@ capabilities:
   progressive:
     description: Weighted/canary progressive delivery
     wave: 1
+    # The one a live run caught: two controllers, same Rollouts, no error.
+    scope: cluster
     backends:
       self_hosted: argo-rollouts
       # Cluster-side mechanism is identical on managed substrates — no managed variant.
@@ -55,6 +80,8 @@ capabilities:
   gitops:
     description: Declarative sync from the git registry
     wave: 0
+    # The engine that reconciles everything else cannot be reconciled per tenant.
+    scope: cluster
     backends:
       self_hosted: argocd
       managed:
@@ -64,6 +91,9 @@ capabilities:
   tenancy:
     description: Namespace/quota isolation enforcement for the soft tier
     wave: 0
+    # Capsule's webhooks intercept namespace admission cluster-wide; per tenant it
+    # would be a tenancy operator arbitrating its own tenant.
+    scope: cluster
     backends:
       self_hosted: capsule
       managed: {}

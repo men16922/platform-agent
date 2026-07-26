@@ -21,6 +21,15 @@ from src.agents.platform.addon_status import NormalizedAddonStatus
 from src.agents.platform.registry import Environment, Tenant
 
 
+class ClusterSingletonCapability(ValueError):
+    """Raised when a cluster-scoped capability is asked to be rendered per tenant.
+
+    An error rather than a silent skip. A skip would produce a manifest set that
+    installs *most* of what the tenant declared, and the missing part is precisely
+    the shared infrastructure whose absence looks identical to a delivery lag.
+    """
+
+
 @dataclass(frozen=True)
 class DesiredAddon:
     """One (tenant, env, capability) the delivery engine must reconcile."""
@@ -36,6 +45,17 @@ class DesiredAddon:
     wave: int
     # Prefixed target namespace, so two tenants on one cluster cannot collide.
     namespace: str
+    #: From the catalog: can this backend exist once per tenant?
+    #:
+    #: Carried on the addon rather than looked up inside each adapter, so both
+    #: engines answer the question the same way and neither can forget to ask it.
+    #: Defaults to namespace only because this field arrived after the adapters;
+    #: `desired_addons_for`, which reads the catalog, fills it in for real callers.
+    scope: str = "namespace"
+
+    @property
+    def is_cluster_singleton(self) -> bool:
+        return self.scope == "cluster"
 
 
 class DeliveryAdapter(ABC):
@@ -81,11 +101,36 @@ class DeliveryAdapter(ABC):
         """
 
 
-def desired_addons(tenant: Tenant, env: Environment, wave_of: Any) -> list[DesiredAddon]:
+def reject_cluster_singletons(addons: list[DesiredAddon]) -> None:
+    """Guard every adapter's ``render`` must pass through.
+
+    Lives on the contract rather than inside each engine because the failure it
+    prevents is engine-independent: a cluster-scoped backend rendered once per
+    tenant installs a second controller that reconciles the same objects as the
+    first. Nothing errors, nothing logs; the two simply fight. Duplicating the
+    check per adapter would mean a future third engine can omit it and inherit the
+    bug — the same shape as the ordering primitive this contract already centralises.
+    """
+    singletons = sorted({a.capability for a in addons if a.is_cluster_singleton})
+    if singletons:
+        raise ClusterSingletonCapability(
+            f"{', '.join(singletons)} are cluster-scoped in the catalog and cannot be "
+            "rendered per tenant: a second installation would reconcile the same "
+            "objects as the existing one. Install once per cluster; give the tenant "
+            "an instance (a Prometheus CR, a Rollout), not another operator."
+        )
+
+
+def desired_addons(
+    tenant: Tenant, env: Environment, wave_of: Any, scope_of: Any = None
+) -> list[DesiredAddon]:
     """
     Expand a tenant/env's declared add-ons into DesiredAddon records, wave-sorted.
 
     ``wave_of`` is a callable (capability -> int), normally ``Registry.wave_for``.
+    ``scope_of`` is (capability -> "cluster"|"namespace"), normally
+    ``Registry.scope_of``; omitted, every add-on is treated as namespace-scoped,
+    which is only safe for callers that are not about to install anything.
     Sorting here means every adapter receives the same order regardless of the
     mapping order in YAML.
     """
@@ -103,6 +148,7 @@ def desired_addons(tenant: Tenant, env: Environment, wave_of: Any) -> list[Desir
                 version=version,
                 wave=wave_of(capability),
                 namespace=tenant.namespace_for(env.name, capability),
+                scope=scope_of(capability) if scope_of else "namespace",
             )
         )
     return sorted(expanded, key=lambda a: (a.wave, a.capability))

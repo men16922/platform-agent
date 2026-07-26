@@ -34,7 +34,9 @@ from src.agents.platform.registry import load_registry  # noqa: E402
 PUSH_KEY_ENV = "PLATFORM_PUSH_KEY"
 
 
-def push_once(hub: str, tenant, env_name: str, key: str, *, timeout: int = 15) -> tuple[int, str]:
+def push_once(
+    hub: str, tenant, env_name: str, key: str, *, scope_of=None, timeout: int = 15
+) -> tuple[int, str]:
     """One read + one push. Returns (exit code, human-readable line)."""
     applications = read_applications()
     # An empty read is ambiguous — no ArgoCD, no permission, or genuinely nothing
@@ -42,7 +44,8 @@ def push_once(hub: str, tenant, env_name: str, key: str, *, timeout: int = 15) -
     # empty cluster (MISSING for every add-on). Claiming a false outage is as bad
     # as hiding a real one, and the hub cannot tell the difference after the fact.
     report = build_report(
-        tenant, env_name, applications, now=time.time(), observed=bool(applications)
+        tenant, env_name, applications, now=time.time(),
+        observed=bool(applications), scope_of=scope_of,
     )
     payload = report.to_dict()
     request = urllib.request.Request(
@@ -95,7 +98,7 @@ def main() -> int:
         return 2
 
     while True:
-        code, line = push_once(args.hub, tenant, args.env, key)
+        code, line = push_once(args.hub, tenant, args.env, key, scope_of=registry.scope_of)
         print(f"[{time.strftime('%H:%M:%S')}] {line}", file=sys.stderr if code else sys.stdout)
         if args.interval <= 0:
             return code

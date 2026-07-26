@@ -46,6 +46,7 @@ from src.agents.platform.addon_status import (
 )
 from src.agents.platform.adapters.argocd import ArgoCDDeliveryAdapter
 from src.agents.platform.registry import Registry, Tenant
+from src.agents.platform.tenancy import TENANT_LABEL
 
 #: How long a report stays believable without a refresh. Chosen against the push
 #: cadence (a CronJob/loop pushing every minute), not against how long a human
@@ -143,6 +144,7 @@ def collect(
     applications: list[dict[str, Any]],
     *,
     observed: bool = True,
+    scope_of: Any = None,
 ) -> list[NormalizedAddonStatus]:
     """Map observed Applications onto the two axes, one row per DECLARED add-on.
 
@@ -154,23 +156,63 @@ def collect(
     ``observed=False`` means we could not look at all (no ArgoCD, no permission).
     Every axis then reads UNKNOWN — distinct from MISSING, which is a real
     observation that the add-on is gone.
+
+    ``scope_of`` (normally ``Registry.scope_of``) keeps cluster-scoped capabilities
+    from being reported as the tenant's own. A shared operator is not something the
+    tenant syncs, so per tenant its sync axis is meaningless — the same fact
+    ``applicable=False`` already models for managed backends. Without this, every
+    tenant on the cluster shows "logging MISSING, drifted" for one shared install
+    that is running fine, and four tenants produce four false alarms about it.
     """
     env = tenant.environments.get(env_name)
     if env is None:
         return []
 
     by_capability: dict[str, dict[str, Any]] = {}
+    shared_by_capability: dict[str, dict[str, Any]] = {}
     for application in applications:
         labels = (application.get("metadata") or {}).get("labels") or {}
         capability = labels.get("platform-agent.io/capability")
-        if capability:
+        if not capability:
+            continue
+        if labels.get(TENANT_LABEL) in (None, tenant.name):
             by_capability[capability] = application
+        # An Application carrying a capability but no tenant label is the shared,
+        # cluster-level installation of that capability.
+        if TENANT_LABEL not in labels:
+            shared_by_capability[capability] = application
 
     rows: list[NormalizedAddonStatus] = []
     for capability, declared in sorted(env.addons.items()):
         backend = declared.split()[0]
         version = env.addon_version(capability)
         application = by_capability.get(capability)
+
+        if observed and scope_of and scope_of(capability) == "cluster":
+            shared = shared_by_capability.get(capability)
+            health = (
+                ArgoCDDeliveryAdapter.normalise(
+                    tenant.name, env_name, capability, shared
+                ).health_state
+                if shared is not None
+                # Not MISSING: a cluster install this view cannot see through GitOps
+                # (Terraform-owned, for instance) is unobserved, not absent. Claiming
+                # a false outage for every tenant is as bad as hiding a real one.
+                else HealthState.UNKNOWN
+            )
+            rows.append(NormalizedAddonStatus(
+                tenant=tenant.name,
+                env=env_name,
+                capability=capability,
+                backend=backend,
+                sync_state=SyncState.NOT_APPLICABLE,
+                health_state=health,
+                desired_version=version,
+                applicable=False,
+                native={"scope": "cluster", "shared": shared is not None},
+            ))
+            continue
+
         if not observed:
             rows.append(NormalizedAddonStatus(
                 tenant=tenant.name,
@@ -206,6 +248,7 @@ def build_report(
     *,
     now: float,
     observed: bool = True,
+    scope_of: Any = None,
 ) -> StatusReport:
     env = tenant.environments[env_name]
     return StatusReport(
@@ -213,7 +256,9 @@ def build_report(
         env=env_name,
         cluster=env.cluster,
         collected_at=now,
-        statuses=collect(tenant, env_name, applications, observed=observed),
+        statuses=collect(
+            tenant, env_name, applications, observed=observed, scope_of=scope_of
+        ),
     )
 
 

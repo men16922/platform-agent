@@ -1,0 +1,85 @@
+capability scope 축 — 클러스터 싱글턴을 테넌트별로 렌더하지 않는다
+2026-07-26 / gate 1251 → 1267
+
+발단: 직전 세션의 라이브 실행이 어댑터가 렌더한 per-tenant Application을 적용했더니
+클러스터 스코프 argo-rollouts 컨트롤러가 하나 더 설치되어, 기존 컨트롤러와 **같은
+Rollout 객체를 둘이 조정**했다. 에러도 로그도 없었고 `kubectl get application`은
+내내 Synced/Healthy였다. 그 상태를 STATUS 리스크로 남기고 이번에 닫는다.
+
+================================================================================
+1. 카탈로그에 scope 축
+================================================================================
+  capability마다 `scope: cluster|namespace`.
+    observability  cluster    Prometheus Operator가 클러스터 전역 CRD를 소유
+    progressive    cluster    ← 라이브가 잡은 그것
+    gitops         cluster    다른 모든 걸 조정하는 엔진을 테넌트별로 조정할 수 없다
+    tenancy        cluster    Capsule webhook은 네임스페이스 admission을 전역 가로챔
+    logging        namespace  CRD·클러스터 컨트롤러 없음 — 테넌트별 Loki는 평범한 배포
+    tracing        namespace
+
+  핵심 구분: cluster scope에서 테넌트별인 것은 **인스턴스**(Prometheus CR, Rollout)이지
+  오퍼레이터/CRD가 아니다.
+
+================================================================================
+2. 어댑터가 거부한다 (계약에 1번, 엔진마다 아님)
+================================================================================
+  $ python - <<'PY' (실 레지스트리 acme/dev)
+    argocd: REFUSED -> observability, progressive are cluster-scoped in the catalog
+      and cannot be rendered per tenant: a second installation would reconcile the
+      same objects as the existing one. Install once per cluster; give the tenant
+      an instance (a Prometheus CR, a Rollout), not another operator.
+    flux:   REFUSED -> (동일)
+    namespace-scoped still render: ['acme-dev-logging', 'acme-dev-tracing']
+
+  즉 **어제 사고를 낸 바로 그 매니페스트가 이제 렌더되지 않는다.**
+  가드를 `delivery.py`(계약)에 둔 이유: 실패 양상이 엔진 독립적이라, 어댑터마다
+  복제하면 세 번째 엔진이 빠뜨리고 같은 버그를 상속한다.
+  조용한 skip이 아니라 **예외**인 이유: skip은 선언한 것 중 "대부분"을 설치하고,
+  빠진 부분이 하필 공유 인프라라 부재가 전달 지연과 구분되지 않는다.
+
+================================================================================
+3. 수집기 — 공유 설치물은 테넌트의 drift가 아니다
+================================================================================
+  이전(scope 없음)                        이후(scope 적용)
+    logging        drifted/missing          logging        drifted/missing   (진짜)
+    observability  drifted/missing          observability  n/a/unknown  shared
+    progressive    drifted/missing          progressive    n/a/unknown  shared
+    tracing        drifted/missing          tracing        drifted/missing   (진짜)
+
+  라이브 재실행:
+    pushed 4 row(s) for acme/dev (2 observed, 2 unknown)
+      logging        sync=drifted  health=missing  applicable=True
+      observability  sync=n/a      health=unknown  applicable=False  native={'scope':'cluster','shared':False}
+      progressive    sync=n/a      health=unknown  applicable=False  native={'scope':'cluster','shared':False}
+      tracing        sync=drifted  health=missing  applicable=True
+
+  · 공유 오퍼레이터는 테넌트가 sync하는 대상이 아니므로 sync 축이 테넌트 관점에서
+    **무의미**하다 — managed 백엔드에 이미 쓰던 `applicable=False`와 같은 사실.
+    이게 없으면 잘 돌고 있는 설치물 하나가 테넌트 수만큼 거짓 경보를 만든다.
+  · 보이지 않는 공유 설치물은 MISSING이 아니라 **UNKNOWN**이다(Terraform 소유라
+    GitOps 리더가 못 본다). 거짓 장애를 만드는 것은 진짜 장애를 숨기는 것만큼 나쁘다.
+  · 관측되면 health는 보고한다 — 공유라고 보고 불가는 아니다(테넌트가 의존한다).
+  · 남의 테넌트 라벨이 붙은 Application은 절대 내 선언을 만족시키지 않는다.
+
+================================================================================
+4. 내가 처음에 틀린 것 — 필수 필드로 만들어 게이트를 27개 깨뜨렸다
+================================================================================
+  scope 누락을 validate_registry의 problem으로 올렸더니, 로더가 **fail-closed**라
+  이 필드가 생기기 전에 쓰인 모든 최소 카탈로그(테스트 픽스처 포함)가 로드 자체를
+  거부했다: 27 errors + 1 failed.
+
+    ValueError: invalid platform registry:
+      catalog.capabilities.logging.scope must be one of cluster|namespace
+
+  문서 공백을 "플랫폼 뷰가 아예 안 뜸"으로 바꾼 셈이고, 막으려던 것보다 나쁜 실패다.
+  게다가 **가드는 이미 다른 곳에 있었다** — `scope_of`가 cluster로 기본값을 주므로
+  누락된 capability는 어댑터가 렌더를 거부한다(시끄럽고 안전하며 한 줄로 고친다).
+  → 누락은 problem이 아니라 **리포팅**(`capabilities_missing_scope`)으로 내리고,
+    잘못된 값만 거부한다(부재는 공백이지만 오값은 주장이고, 주장은 믿긴다).
+    우리 레포 카탈로그의 엄격함은 테스트로 유지한다.
+
+================================================================================
+gate: 1251 → 1267 (+16)  ·  make check 1267 passed, 1 skipped  ·  tsc 클린
+대시보드: cluster scope 행의 sync 칸은 빈 대시가 아니라 "shared"로 표시(툴팁 포함) —
+  "이 백엔드엔 sync 개념이 없음"과 "sync가 클러스터의 것이지 이 테넌트의 것이 아님"은
+  다른 사실이다.

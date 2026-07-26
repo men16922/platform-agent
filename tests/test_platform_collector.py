@@ -99,6 +99,86 @@ class TestCollect:
         assert collect(acme, "nope", []) == []
 
 
+class TestClusterScopedCapabilities:
+    """A shared operator is not the tenant's to sync, and must not be reported as
+    the tenant's own missing add-on.
+
+    Without this, one cluster-level install that is running perfectly produces a
+    "MISSING, drifted" row in EVERY tenant's view — four tenants, four false alarms
+    about the same healthy thing. The sync axis genuinely is meaningless per tenant
+    here, which is the fact `applicable=False` already models for managed backends.
+    """
+
+    def test_shared_capability_is_not_the_tenants_drift(self, acme, registry):
+        rows = collect(acme, "dev", [], scope_of=registry.scope_of)
+        progressive = next(r for r in rows if r.capability == "progressive")
+        assert progressive.applicable is False
+        assert progressive.sync_state is SyncState.NOT_APPLICABLE
+        assert progressive.is_drifted is False
+        assert progressive.native["scope"] == "cluster"
+
+    def test_unseen_shared_install_is_unknown_not_missing(self, acme, registry):
+        """Terraform-owned installs are invisible to a GitOps reader.
+
+        Reporting MISSING would invent an outage for something running fine; the
+        honest statement is that this view cannot see it.
+        """
+        rows = collect(acme, "dev", [], scope_of=registry.scope_of)
+        progressive = next(r for r in rows if r.capability == "progressive")
+        assert progressive.health_state is HealthState.UNKNOWN
+        assert progressive.native["shared"] is False
+
+    def test_health_of_an_observed_shared_install_is_reported(self, acme, registry):
+        """Shared does not mean unreportable — the tenant still depends on it."""
+        shared = {
+            "metadata": {"labels": {"platform-agent.io/capability": "progressive"}},
+            "status": {"sync": {"status": "Synced"}, "health": {"status": "Degraded"}},
+        }
+        rows = collect(acme, "dev", [shared], scope_of=registry.scope_of)
+        progressive = next(r for r in rows if r.capability == "progressive")
+        assert progressive.health_state is HealthState.DEGRADED
+        assert progressive.native["shared"] is True
+        # Still not the tenant's sync axis, even when observed.
+        assert progressive.applicable is False
+
+    def test_namespace_scoped_capabilities_are_unaffected(self, acme, registry):
+        rows = collect(acme, "dev", [], scope_of=registry.scope_of)
+        logging_row = next(r for r in rows if r.capability == "logging")
+        assert logging_row.applicable is True
+        assert logging_row.health_state is HealthState.MISSING
+
+    def test_a_tenants_own_application_still_wins(self, acme, registry):
+        """A tenant-labelled Application for a namespace-scoped capability is the
+        tenant's, and must not be confused with a shared one."""
+        owned = {
+            "metadata": {
+                "labels": {
+                    "platform-agent.io/capability": "logging",
+                    "platform-agent.io/tenant": "acme",
+                }
+            },
+            "status": {"sync": {"status": "Synced"}, "health": {"status": "Healthy"}},
+        }
+        rows = collect(acme, "dev", [owned], scope_of=registry.scope_of)
+        logging_row = next(r for r in rows if r.capability == "logging")
+        assert logging_row.health_state is HealthState.HEALTHY
+
+    def test_another_tenants_application_is_not_adopted(self, acme, registry):
+        """globex's logging Application must never satisfy acme's declaration."""
+        foreign = {
+            "metadata": {
+                "labels": {
+                    "platform-agent.io/capability": "logging",
+                    "platform-agent.io/tenant": "globex",
+                }
+            },
+            "status": {"sync": {"status": "Synced"}, "health": {"status": "Healthy"}},
+        }
+        rows = collect(acme, "dev", [foreign], scope_of=registry.scope_of)
+        logging_row = next(r for r in rows if r.capability == "logging")
+        assert logging_row.health_state is HealthState.MISSING
+
+
 class TestReadApplications:
     def test_unreadable_cluster_yields_no_observation(self):
         """Not an empty cluster — the caller must pass observed=False for that."""

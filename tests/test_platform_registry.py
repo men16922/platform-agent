@@ -27,7 +27,14 @@ from src.agents.platform import (
     load_registry,
     validate_registry,
 )
-from src.agents.platform.delivery import DeliveryAdapter, desired_addons
+from src.agents.platform.adapters.argocd import ArgoCDDeliveryAdapter
+from src.agents.platform.adapters.flux import FluxDeliveryAdapter
+from src.agents.platform.delivery import (
+    ClusterSingletonCapability,
+    DeliveryAdapter,
+    desired_addons,
+    reject_cluster_singletons,
+)
 
 REGISTRY_ROOT = Path(__file__).resolve().parents[1] / "platform"
 
@@ -122,10 +129,26 @@ class TestValidationFailsClosed:
         base.update(overrides)
         return base
 
-    CATALOG = {"capabilities": {"observability": {"wave": 1}}}
+    CATALOG = {"capabilities": {"observability": {"wave": 1, "scope": "cluster"}}}
 
     def test_valid_minimal_registry(self):
         assert validate_registry(self.CATALOG, {"acme": self._tenant()}) == []
+
+    def test_a_missing_scope_does_not_block_loading(self):
+        """A registry written before this field existed must still load.
+
+        The loader is fail-closed, so rejecting an absent scope would turn a
+        documentation gap into "the platform view does not load at all" — a worse
+        failure than the one being guarded against, and the guard is elsewhere:
+        an absent scope reads as cluster, so adapters refuse to duplicate it.
+        """
+        catalog = {"capabilities": {"observability": {"wave": 1}}}
+        assert validate_registry(catalog, {"acme": self._tenant()}) == []
+
+    def test_unknown_scope_value_is_rejected(self):
+        """Absent is a gap; wrong is a claim, and a wrong claim gets believed."""
+        catalog = {"capabilities": {"observability": {"wave": 1, "scope": "per-tenant"}}}
+        assert any("scope" in p for p in validate_registry(catalog, {"acme": self._tenant()}))
 
     def test_bad_isolation_tier_rejected(self):
         problems = validate_registry(self.CATALOG, {"acme": self._tenant(isolation="kinda")})
@@ -210,6 +233,105 @@ class TestDesiredAddons:
         )
         second = desired_addons(registry.tenant("acme"), reversed_env, registry.wave_for)
         assert [a.capability for a in first] == [a.capability for a in second]
+
+
+class TestClusterSingletonScope:
+    """A cluster-scoped capability must never be rendered per tenant.
+
+    This axis exists because of a live run, not a design review: applying the
+    adapter's own per-tenant `progressive` Application installed a SECOND
+    cluster-scoped argo-rollouts controller (ClusterRoleBinding, no --namespaced),
+    and both controllers then reconciled the same Rollout objects. Leader election
+    is per-namespace, so both were leaders. Nothing errored — that is the whole
+    problem. `kubectl get application` read Synced/Healthy throughout.
+    """
+
+    def test_catalog_marks_the_singletons(self, registry):
+        assert registry.is_cluster_scoped("progressive") is True
+        assert registry.is_cluster_scoped("observability") is True
+        assert registry.is_cluster_scoped("gitops") is True
+        assert registry.is_cluster_scoped("tenancy") is True
+        # Loki/Tempo carry no CRDs and no cluster controller: a per-tenant install
+        # is a normal deployment, not a competing operator.
+        assert registry.is_cluster_scoped("logging") is False
+        assert registry.is_cluster_scoped("tracing") is False
+
+    def test_our_own_catalog_answers_the_question_for_every_capability(self, registry):
+        """Strictness where it belongs: this repo's catalog, not everyone's.
+
+        An undeclared capability still fails safe (it reads as cluster-scoped), but
+        the symptom is an adapter refusing to render it, which looks like an adapter
+        bug rather than an unanswered question.
+        """
+        assert registry.capabilities_missing_scope() == []
+
+    def test_unknown_capability_defaults_to_cluster(self, registry):
+        """Fails safe in the only direction that is recoverable.
+
+        Guessing "namespace" for a singleton yields two controllers fighting with
+        nothing in any log; guessing "cluster" for a namespace-scoped add-on yields
+        a refusal someone fixes in the catalog in a minute.
+        """
+        assert registry.scope_of("nonexistent-capability") == "cluster"
+
+    def test_scope_travels_on_the_desired_addon(self, registry):
+        addons = desired_addons(
+            registry.tenant("acme"),
+            registry.environment("acme", "dev"),
+            registry.wave_for,
+            registry.scope_of,
+        )
+        by_capability = {a.capability: a for a in addons}
+        assert by_capability["progressive"].is_cluster_singleton is True
+        assert by_capability["tracing"].is_cluster_singleton is False
+
+    @pytest.mark.parametrize(
+        "adapter",
+        [ArgoCDDeliveryAdapter(repo_url="https://example.invalid"), FluxDeliveryAdapter()],
+        ids=["argocd", "flux"],
+    )
+    def test_both_engines_refuse_to_render_a_singleton(self, registry, adapter):
+        """The guard lives on the contract, so a third engine inherits it."""
+        addons = desired_addons(
+            registry.tenant("acme"),
+            registry.environment("acme", "dev"),
+            registry.wave_for,
+            registry.scope_of,
+        )
+        with pytest.raises(ClusterSingletonCapability, match="progressive"):
+            adapter.render(registry.tenant("acme"), registry.environment("acme", "dev"), addons)
+
+    def test_namespace_scoped_addons_still_render(self, registry):
+        """The refusal must be about the singleton, not about tenancy in general."""
+        addons = [
+            a
+            for a in desired_addons(
+                registry.tenant("acme"),
+                registry.environment("acme", "dev"),
+                registry.wave_for,
+                registry.scope_of,
+            )
+            if not a.is_cluster_singleton
+        ]
+        rendered = ArgoCDDeliveryAdapter(repo_url="https://example.invalid").render(
+            registry.tenant("acme"), registry.environment("acme", "dev"), addons
+        )
+        assert {m["metadata"]["labels"]["platform-agent.io/capability"] for m in rendered} == {
+            "logging",
+            "tracing",
+        }
+
+    def test_the_error_names_what_to_do_instead(self):
+        """An error that only says "no" gets worked around."""
+        from src.agents.platform.delivery import DesiredAddon
+
+        addon = DesiredAddon(
+            tenant="acme", env="dev", capability="progressive", backend="argo-rollouts",
+            version="2.41.1", wave=1, namespace="acme-dev-progressive", scope="cluster",
+        )
+        with pytest.raises(ClusterSingletonCapability) as exc:
+            reject_cluster_singletons([addon])
+        assert "once per cluster" in str(exc.value)
 
 
 class TestDeliveryContract:

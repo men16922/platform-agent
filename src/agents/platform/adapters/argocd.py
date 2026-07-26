@@ -17,7 +17,11 @@ from __future__ import annotations
 from typing import Any
 
 from src.agents.platform.addon_status import NormalizedAddonStatus, from_argocd
-from src.agents.platform.delivery import DeliveryAdapter, DesiredAddon
+from src.agents.platform.delivery import (
+    DeliveryAdapter,
+    DesiredAddon,
+    reject_cluster_singletons,
+)
 from src.agents.platform.registry import Environment, Tenant
 
 #: Argo resolves the in-cluster destination by this well-known address.
@@ -40,6 +44,9 @@ class ArgoCDDeliveryAdapter(DeliveryAdapter):
     def render(
         self, tenant: Tenant, env: Environment, addons: list[DesiredAddon]
     ) -> list[dict[str, Any]]:
+        # Before anything is rendered: a cluster singleton rendered per tenant is a
+        # second controller, not a second copy.
+        reject_cluster_singletons(addons)
         manifests: list[dict[str, Any]] = []
         for addon in addons:
             name = f"{tenant.naming_prefix}-{env.name}-{addon.capability}"

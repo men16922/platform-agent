@@ -195,10 +195,19 @@ export function PlatformTenantSwitcher() {
                     {showsSyncAxis(row) ? (
                       <span style={{ color: axisColor(row.sync_state) }}>{row.sync_state}</span>
                     ) : (
-                      // A managed backend has no sync concept. Showing "—" instead of a
-                      // fabricated "synced" badge is the whole point of `applicable`.
-                      <span className="text-[var(--muted)]" title="no sync axis for this backend">
-                        —
+                      // Two different reasons the sync axis is absent, and they must
+                      // not both render as a bare dash: a managed backend has no sync
+                      // concept, while a cluster-scoped capability has one that
+                      // belongs to the cluster rather than to this tenant.
+                      <span
+                        className="text-[var(--muted)]"
+                        title={
+                          row.native?.scope === "cluster"
+                            ? "shared cluster install — one per cluster, not synced per tenant"
+                            : "no sync axis for this backend"
+                        }
+                      >
+                        {row.native?.scope === "cluster" ? "shared" : "—"}
                       </span>
                     )}
                   </td>

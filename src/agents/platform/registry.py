@@ -29,6 +29,12 @@ _PREFIX_RE = re.compile(r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")
 _SUBSTRATES = frozenset({"kind", "k3s", "eks", "gke", "aks"})
 _DELIVERY_ENGINES = frozenset({"argocd", "flux", "config-sync"})
 
+#: Whether a capability's backend can exist once per tenant or only once per
+#: cluster. See the rationale block in platform/catalog.yaml — this axis exists
+#: because a live run installed a second cluster-scoped controller that then
+#: fought the first one silently.
+CAPABILITY_SCOPES = frozenset({"cluster", "namespace"})
+
 
 class IsolationTier(str, Enum):
     """
@@ -139,6 +145,35 @@ class Registry:
         wave = entry.get("wave", 2)
         return wave if isinstance(wave, int) else 2
 
+    def scope_of(self, capability: str) -> str:
+        """``"cluster"`` or ``"namespace"`` — can this run once per tenant?
+
+        Defaults to ``cluster`` for an unknown capability, which is the direction
+        that fails safe: the wrong answer for a namespace-scoped add-on is a
+        refusal someone must correct in the catalog, while the wrong answer for a
+        cluster singleton is two controllers fighting over the same objects with
+        nothing in any log to say so.
+        """
+        entry = self.catalog.get("capabilities", {}).get(capability) or {}
+        scope = entry.get("scope")
+        return scope if scope in CAPABILITY_SCOPES else "cluster"
+
+    def is_cluster_scoped(self, capability: str) -> bool:
+        return self.scope_of(capability) == "cluster"
+
+    def capabilities_missing_scope(self) -> list[str]:
+        """Catalog entries with no declared scope — a reporting concern, not fatal.
+
+        They behave as cluster-scoped (so nothing gets silently duplicated), which
+        means the symptom is an adapter refusing to render them. Naming them here
+        keeps that refusal from looking like a bug in the adapter.
+        """
+        return sorted(
+            name
+            for name, entry in (self.catalog.get("capabilities") or {}).items()
+            if not isinstance(entry, dict) or entry.get("scope") not in CAPABILITY_SCOPES
+        )
+
     def backend_for(self, capability: str, substrate: str, *, managed: bool = False) -> str | None:
         """Resolve capability -> backend. Managed resolution is substrate-keyed."""
         entry = self.catalog.get("capabilities", {}).get(capability) or {}
@@ -183,6 +218,22 @@ def validate_registry(catalog: Any, tenants: dict[str, Any]) -> list[str]:
             wave = entry.get("wave")
             if not isinstance(wave, int) or wave < 0:
                 problems.append(f"catalog.capabilities.{name}.wave must be a non-negative int")
+            # A *wrong* scope is a problem; a missing one is not.
+            #
+            # The first version of this rejected an absent scope too, and that made
+            # the loader — which is fail-closed by design — refuse to load any
+            # registry written before this field existed. Turning a documentation
+            # gap into "the platform view will not load at all" is a worse failure
+            # than the one being guarded against, especially when the guard is
+            # already elsewhere: `scope_of` defaults to cluster, so an omission
+            # makes the adapters REFUSE to render per tenant. Loud, safe, one line
+            # to fix. Omissions in our own catalog are caught by a test instead,
+            # and `capabilities_missing_scope` makes them reportable anywhere else.
+            scope = entry.get("scope")
+            if scope is not None and scope not in CAPABILITY_SCOPES:
+                problems.append(
+                    f"catalog.capabilities.{name}.scope must be one of cluster|namespace"
+                )
 
     for tenant_name, data in tenants.items():
         prefix = f"tenants.{tenant_name}"
