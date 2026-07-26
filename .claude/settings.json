@@ -10,6 +10,28 @@
           {
             "type": "command",
             "command": "cd /Users/men1692/Desktop/AWS/platform-agent && ruff check --fix $CLAUDE_FILE_PATHS 2>&1 || true"
+          },
+          {
+            "type": "command",
+            "command": "/Users/men1692/Desktop/AWS/platform-agent/.claude/hooks/tsc.sh",
+            "async": true,
+            "asyncRewake": true,
+            "timeout": 180,
+            "statusMessage": "typechecking dashboard"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/men1692/Desktop/AWS/platform-agent/.claude/hooks/gate.sh",
+            "async": true,
+            "asyncRewake": true,
+            "timeout": 900,
+            "statusMessage": "running make check"
           }
         ]
       }
