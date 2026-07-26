@@ -1,0 +1,101 @@
+어댑터 helm values seam — 그리고 그것이 드러낸 두 결함 (라이브, kind, $0)
+2026-07-26 / gate 1271 → 1281
+
+발단: 직전 세션에서 어댑터가 렌더한 loki Application이
+`Please define loki.storage.bucketNames.chunks`로 템플릿조차 실패했다.
+렌더러가 chart+version만 표현하고 values를 못 실었기 때문.
+
+================================================================================
+1. values는 복사하지 않고 가리킨다
+================================================================================
+  검증된 values는 이미 `infra/onprem/addons/values/*.yaml`에 있고 Terraform이
+  그걸로 설치한다. 카탈로그에 **복사**하면 "loki는 어떻게 구성되나"에 답이 둘이 되고
+  아무 것도 실패하지 않은 채 갈라진다 — 폐기한 tenancy-netpol 차트가 바로 그 모양이었다.
+  → 카탈로그는 **경로만** 선언한다: `self_hosted_values: infra/onprem/addons/values/loki.yaml`
+    `Registry.values_for()`가 그 한 파일을 읽고, argocd는 `helm.valuesObject`(문자열 아님 —
+    문자열은 아무도 통제 못 하는 들여쓰기를 왕복하고, no-churn 채택이 diff 가능성에 의존한다),
+    flux는 `spec.values`로 같은 dict를 싣는다.
+
+  $ helm template loki grafana/loki --version 7.1.0 -f <렌더된 valuesObject>
+    → 12 kinds 렌더 성공 (직전 세션에 실패했던 그 단계)
+
+================================================================================
+2. 라이브 1차 — Synced/Progressing인데 파드가 0개
+================================================================================
+  적용하니 Application은 Synced/Progressing, 리소스 12개 Synced. 그런데:
+    $ kubectl get pods -n acme-dev-logging
+      No resources found
+
+  StatefulSet 이벤트 세 단계 아래에 진짜 이유가 있었다:
+    pods "acme-dev-logging-loki-0" is forbidden: violates PodSecurity
+    "restricted:latest": seccompProfile (pod or containers "loki",
+    "loki-sc-rules" must set securityContext.seccompProfile.type to
+    "RuntimeDefault" or "Localhost")
+
+  **플랫폼의 PSS restricted 테넌트 네임스페이스가 플랫폼 자신의 애드온을 거부한다.**
+  이게 지금까지 안 보였던 이유: Terraform이 설치하는 loki는 PSS 라벨이 없는
+  `monitoring`에 산다. Phase 2가 테넌트 네임스페이스에 `enforce: restricted`를
+  붙이는 순간, **같은 values가 다른 네임스페이스에서 거부된다.**
+  D23이 경고한 "OFF는 중립이 아니다 — 라벨이 붙는 순간 롤아웃이 거부되기 시작한다"가
+  실제로 일어난 것이고, 그 위에서 대시보드/Argo는 초록이었다.
+  (admission이 파드를 거부해도 StatefulSet은 여전히 "synced"다.)
+
+  조치: 공유 values에 파드 레벨 seccompProfile 추가(loki 2곳: SingleBinary + gateway,
+  tempo 1곳). 파드 레벨을 고른 이유는 이 파일이 열거하지 않는 사이드카(loki-sc-rules)까지
+  덮기 때문.
+
+  추론 대신 **API 서버에 물어봤다**(렌더된 파드 스펙을 테넌트 네임스페이스에 server dry-run):
+    tempo: pod/pss-dryrun created (server dry run)        ← 통과
+    loki : pod/pss-dryrun-loki created (server dry run)   ← 통과
+  tempo에서는 키 이름 함정도 잡혔다 — 이 차트는 **최상위 `securityContext`가 파드용,
+  중첩 `tempo.securityContext`가 컨테이너용**이다. loki 철자인 `podSecurityContext`를
+  썼다면 Helm이 조용히 무시했을 것이다(values 파일은 에러가 아니라 **안 읽히는 방식으로**
+  실패한다). 컨테이너 레벨 allowPrivilegeEscalation·capabilities는 파드 레벨로 못 채운다.
+
+  라이브 재적용:
+    NAME                                      READY   STATUS
+    acme-dev-logging-loki-0                   2/2     Running
+    acme-dev-logging-loki-gateway-...         1/1     Running
+    Application: Synced / Healthy · PVC 1Gi Bound
+  → Phase 2 통틀어 **첫 진짜 테넌트 스코프 애드온 설치**(PSS restricted + Capsule 쿼터 +
+    NetworkPolicy가 모두 걸린 네임스페이스에서).
+
+  수집기 관통 확인(push → 허브):
+    logging        sync=synced   health=healthy    applicable=True
+    observability  sync=n/a      health=unknown    applicable=False (shared)
+    progressive    sync=n/a      health=unknown    applicable=False (shared)
+    tracing        sync=drifted  health=missing    applicable=True
+
+================================================================================
+3. 내가 직전에 쓴 주의사항이 틀렸다 — 그리고 진실이 더 위험했다
+================================================================================
+  삭제 cascade 커밋에서 나는 "cascade는 엔진 관리 대상까지라 StatefulSet PVC는
+  남는다"고 단정했다. 정리하며 실제로 지워보니:
+    pods → 없음 (cascade 정상)
+    PVC  → **없음**
+
+  원인은 Argo가 아니라 **차트**였다:
+    persistentVolumeClaimRetentionPolicy: {whenDeleted: Delete, whenScaled: Delete}
+  쿠버네티스 기본값은 Retain인데 loki 차트가 `enableStatefulSetAutoDeletePVC: true`로
+  뒤집는다. 즉 **구독 해지가 테넌트의 로그를 같은 초에 조용히 파괴**한다.
+  내 주의사항은 방향이 반대였고, 진짜 동작이 더 위험했다.
+
+  조치: 공유 values에 `enableStatefulSetAutoDeletePVC: false`
+    → 렌더된 retention policy가 사라짐 = 쿠버네티스 기본값 Retain 적용.
+  근거: "애드온 구독 해지"는 곧 대시보드 PR로 하는 레지스트리 편집이 된다(Phase 5).
+  데이터를 말없이 파괴하는 편집은 **아무도 선택하지 않은 정책**이고 차트에서 상속된 것이다.
+  남은 볼륨은 디스크를 먹지만 의도적으로 회수할 수 있고, 파괴된 로그는 못 되돌린다.
+  argocd.py의 틀린 주석도 실측 결과로 교체했다.
+
+================================================================================
+가드
+================================================================================
+  · 선언된 values 파일이 전부 해석되는가(`capabilities_missing_values() == []`)
+  · values는 파일에서 오고 복사본이 아닌가(디스크 내용과 동일 단언)
+  · namespace-scope 애드온 values에 seccompProfile이 있는가(네임스페이스가 PSS restricted다)
+  · stateful 애드온이 볼륨을 자동 삭제하지 않는가
+  · argocd는 valuesObject(문자열 아님), 두 엔진이 **같은 dict**를 싣는가
+  · values 없으면 빈 `helm: {}` 블록을 내지 않는가(매 diff마다 churn)
+
+gate: 1271 → 1281 (+10)  ·  make check 1281 passed, 1 skipped
+정리: acme-dev-logging Application·워크로드·PVC 제거(네임스페이스는 Phase 2 산출물로 존치).

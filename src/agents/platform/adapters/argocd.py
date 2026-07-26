@@ -76,12 +76,18 @@ class ArgoCDDeliveryAdapter(DeliveryAdapter):
                         # on ArgoCD clusters and not on Flux ones — the same declared
                         # intent with opposite outcomes per engine.
                         #
-                        # Caveat that survives this fix: the cascade covers what the
-                        # ENGINE manages. PVCs created from a StatefulSet's
-                        # volumeClaimTemplates are created by Kubernetes, not by Argo,
-                        # so they outlive it. Unsubscribing a stateful add-on still
-                        # leaves disks; that is a data-retention default, not an
-                        # accident, but it must not be mistaken for a clean removal.
+                        # What the cascade does to DATA is decided by the chart, not
+                        # here — and the first version of this comment got it wrong.
+                        # It claimed volumeClaimTemplate PVCs outlive the cascade
+                        # because Kubernetes creates them, not Argo. Measured: the
+                        # tenant's loki PVC vanished with the Application. The reason
+                        # was the chart setting
+                        # `persistentVolumeClaimRetentionPolicy.whenDeleted: Delete`,
+                        # inverting Kubernetes' own Retain default. So "unsubscribe"
+                        # destroyed the tenant's logs, silently, in the same second.
+                        # Our values now pin retention (see values/loki.yaml), but the
+                        # general rule stands: this finalizer controls whether objects
+                        # are removed, never whether their data survives.
                         "finalizers": [RESOURCES_FINALIZER],
                         "annotations": self.ordering_annotation(addon.wave),
                         "labels": {
@@ -101,6 +107,16 @@ class ArgoCDDeliveryAdapter(DeliveryAdapter):
                             "repoURL": self.repo_url,
                             "chart": addon.backend,
                             "targetRevision": addon.version or self.target_revision,
+                            # `valuesObject`, not the `values` string: Argo parses a
+                            # string as YAML text, so a dict serialised into it has to
+                            # round-trip through indentation nobody controls. The
+                            # typed field keeps the manifest diffable, which the
+                            # no-churn adoption requirement depends on.
+                            **(
+                                {"helm": {"valuesObject": addon.values}}
+                                if addon.values
+                                else {}
+                            ),
                         },
                         "destination": {"server": IN_CLUSTER_SERVER, "namespace": addon.namespace},
                         "syncPolicy": {

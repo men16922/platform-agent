@@ -36,7 +36,8 @@ from src.agents.platform.delivery import (
     reject_cluster_singletons,
 )
 
-REGISTRY_ROOT = Path(__file__).resolve().parents[1] / "platform"
+REPO = Path(__file__).resolve().parents[1]
+REGISTRY_ROOT = REPO / "platform"
 
 
 @pytest.fixture(scope="module")
@@ -332,6 +333,131 @@ class TestClusterSingletonScope:
         with pytest.raises(ClusterSingletonCapability) as exc:
             reject_cluster_singletons([addon])
         assert "once per cluster" in str(exc.value)
+
+
+class TestValuesSeam:
+    """Most of the charts this platform declares cannot template without values.
+
+    Found live and expensively: an Application rendered with chart+version alone
+    reported `Unknown / Healthy` while installing nothing, and the real reason was
+    buried in a status condition — `Please define loki.storage.bucketNames.chunks`.
+    An add-on that cannot template is an add-on that can never sync, and the top
+    line of the UI said Healthy the whole time.
+    """
+
+    def test_every_declared_values_file_resolves(self, registry):
+        """A moved or misnamed path surfaces here, not as an ArgoCD ComparisonError."""
+        assert registry.capabilities_missing_values() == []
+
+    def test_values_come_from_the_file_not_a_copy(self, registry):
+        """One source for "how is loki configured".
+
+        Copying the values into the catalog would give Terraform and the delivery
+        adapters separate copies of the same configuration, free to drift with
+        nothing failing — which is precisely how the retired netpol chart ended up
+        describing namespaces that never existed.
+        """
+        declared = registry.catalog["capabilities"]["logging"]["self_hosted_values"]
+        on_disk = yaml.safe_load((REPO / declared).read_text(encoding="utf-8"))
+        assert registry.values_for("logging") == on_disk
+
+    def test_loki_values_carry_what_the_chart_demands(self, registry):
+        """The specific thing whose absence broke the live render."""
+        values = registry.values_for("logging")
+        assert values["deploymentMode"] == "SingleBinary"
+        assert values["loki"]["storage"]["type"] == "filesystem"
+
+    def test_missing_file_degrades_to_empty_not_an_exception(self, registry, tmp_path):
+        """The loader is fail-closed for structure; values are a rendering input.
+
+        Refusing to load the whole platform because one add-on's values file moved
+        would be a bigger outage than the one it prevents — and the gap is loud
+        anyway, since the chart refuses to template.
+        """
+        assert registry.values_for("logging", repo_root=tmp_path) == {}
+
+    def test_capability_with_no_declared_values_is_not_a_problem(self, registry):
+        assert registry.values_for("not-a-capability") == {}
+
+    def test_values_carry_pss_seccomp_for_namespace_scoped_addons(self, registry):
+        """Tenant namespaces enforce PSS `restricted`; the charts do not comply alone.
+
+        Measured, not predicted: with the charts' own defaults, the tenant's loki
+        installed as ArgoCD **Synced / Progressing with zero pods** — admission was
+        refusing every pod for a missing seccompProfile, and that error lives in
+        StatefulSet events, three levels under a green badge. `enforce: restricted`
+        arrived with Phase 2 tenancy, so values proven in the unlabelled
+        `monitoring` namespace stopped working the moment they targeted a tenant.
+        """
+        for capability in ("logging", "tracing"):
+            values = registry.values_for(capability)
+            rendered = yaml.safe_dump(values)
+            assert "seccompProfile" in rendered, (
+                f"{capability} values must set seccompProfile: its namespace enforces "
+                "PSS restricted, and the chart default does not"
+            )
+
+    def test_stateful_addon_does_not_auto_delete_its_volume(self, registry):
+        """Unsubscribing must not silently destroy a tenant's data.
+
+        The loki chart defaults `enableStatefulSetAutoDeletePVC: true`, which renders
+        `whenDeleted: Delete` and inverts Kubernetes' Retain default. Live, deleting
+        the Application took the PVC and the logs with it. Unsubscribe is about to
+        become a dashboard-driven registry edit (Phase 5); an edit that destroys data
+        with no warning is a policy nobody chose, inherited from a chart.
+        """
+        persistence = registry.values_for("logging")["singleBinary"]["persistence"]
+        assert persistence["enableStatefulSetAutoDeletePVC"] is False
+
+    def test_argocd_renders_values_as_an_object_not_a_string(self, registry):
+        """`valuesObject`, not `values`.
+
+        Argo parses the string form as YAML text, so a dict serialised into it
+        round-trips through indentation nobody controls — and no-churn adoption
+        depends on the manifest being diffable.
+        """
+        addons = [
+            a
+            for a in desired_addons(
+                registry.tenant("acme"), registry.environment("acme", "dev"),
+                registry.wave_for, registry.scope_of, registry.values_for,
+            )
+            if a.capability == "logging"
+        ]
+        rendered = ArgoCDDeliveryAdapter(repo_url="https://example.invalid").render(
+            registry.tenant("acme"), registry.environment("acme", "dev"), addons
+        )
+        helm = rendered[0]["spec"]["source"]["helm"]
+        assert isinstance(helm["valuesObject"], dict)
+        assert helm["valuesObject"]["deploymentMode"] == "SingleBinary"
+
+    def test_both_engines_install_the_same_configuration(self, registry):
+        """Otherwise "the same add-on" means two different things per engine."""
+        addons = [
+            a
+            for a in desired_addons(
+                registry.tenant("acme"), registry.environment("acme", "dev"),
+                registry.wave_for, registry.scope_of, registry.values_for,
+            )
+            if a.capability == "logging"
+        ]
+        tenant, env = registry.tenant("acme"), registry.environment("acme", "dev")
+        argo = ArgoCDDeliveryAdapter(repo_url="https://example.invalid").render(tenant, env, addons)
+        flux = FluxDeliveryAdapter().render(tenant, env, addons)
+        assert argo[0]["spec"]["source"]["helm"]["valuesObject"] == flux[0]["spec"]["values"]
+
+    def test_no_values_renders_no_empty_helm_block(self, registry):
+        """An empty `helm: {}` is churn on every diff for no behaviour."""
+        from src.agents.platform.delivery import DesiredAddon
+
+        addon = DesiredAddon(
+            tenant="acme", env="dev", capability="logging", backend="loki",
+            version="7.1.0", wave=1, namespace="acme-dev-logging", scope="namespace",
+        )
+        rendered = ArgoCDDeliveryAdapter(repo_url="https://example.invalid").render(
+            registry.tenant("acme"), registry.environment("acme", "dev"), [addon]
+        )
+        assert "helm" not in rendered[0]["spec"]["source"]
 
 
 class TestDeletionCascades:

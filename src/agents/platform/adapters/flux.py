@@ -89,6 +89,10 @@ class FluxDeliveryAdapter(DeliveryAdapter):
                             }
                         },
                         "install": {"createNamespace": True},
+                        # Flux takes values inline on the HelmRelease. Same baseline
+                        # dict as ArgoCD receives, so the two engines install the
+                        # same thing rather than each engine's chart defaults.
+                        **({"values": addon.values} if addon.values else {}),
                         **self.ordering_annotation(addon.wave),
                     },
                 }

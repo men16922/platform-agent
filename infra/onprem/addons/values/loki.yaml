@@ -5,6 +5,17 @@
 deploymentMode: SingleBinary
 
 loki:
+  # PSS `restricted` requires seccompProfile at the pod level (or on every
+  # container), and this chart sets everything else PSS wants but not this. It
+  # only began to matter when Phase 2 started labelling tenant namespaces
+  # `enforce: restricted`: identical values install fine in `monitoring` (no PSS
+  # label) and are refused in a tenant namespace. The refusal is quiet — ArgoCD
+  # reported Synced/Progressing with ZERO pods, because a StatefulSet whose pods
+  # admission rejects is still "synced". Pod level, not container level, so it
+  # also covers sidecars this file does not enumerate (loki-sc-rules).
+  podSecurityContext:
+    seccompProfile:
+      type: RuntimeDefault
   auth_enabled: false
   commonConfig:
     replication_factor: 1
@@ -39,6 +50,18 @@ singleBinary:
     enabled: true
     size: 1Gi
     storageClass: standard
+    # Keep the volume when the StatefulSet goes away. The chart defaults this to
+    # true, which renders `persistentVolumeClaimRetentionPolicy.whenDeleted:
+    # Delete` — the opposite of Kubernetes' own default (Retain), and measured
+    # live: deleting the tenant's logging Application removed the PVC and the
+    # logs with it, in the same second, with no warning anywhere.
+    #
+    # That is the wrong default for this platform specifically. "Unsubscribe from
+    # an add-on" is about to become a registry edit made through a dashboard PR
+    # (Phase 5), and an edit that silently destroys a tenant's data is not a
+    # deletion policy anyone chose — it is one inherited from a chart. Retained
+    # volumes cost disk and can be reclaimed deliberately; destroyed logs cannot.
+    enableStatefulSetAutoDeletePVC: false
 
 # Scalable/microservice targets off — SingleBinary owns everything.
 backend: { replicas: 0 }
@@ -54,6 +77,17 @@ resultsCache:
 
 gateway:
   enabled: true
+  # PSS `restricted` requires seccompProfile at the pod level (or on every
+  # container), and this chart sets everything else PSS wants but not this. It
+  # only began to matter when Phase 2 started labelling tenant namespaces
+  # `enforce: restricted`: identical values install fine in `monitoring` (no PSS
+  # label) and are refused in a tenant namespace. The refusal is quiet — ArgoCD
+  # reported Synced/Progressing with ZERO pods, because a StatefulSet whose pods
+  # admission rejects is still "synced". Pod level, not container level, so it
+  # also covers sidecars this file does not enumerate (loki-sc-rules).
+  podSecurityContext:
+    seccompProfile:
+      type: RuntimeDefault
   resources:
     requests:
       cpu: 5m

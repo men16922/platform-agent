@@ -14,7 +14,7 @@ express "which tenant" cannot be audited for it later.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from src.agents.platform.addon_status import NormalizedAddonStatus
@@ -52,6 +52,15 @@ class DesiredAddon:
     #: Defaults to namespace only because this field arrived after the adapters;
     #: `desired_addons_for`, which reads the catalog, fills it in for real callers.
     scope: str = "namespace"
+
+    #: Baseline Helm values from the catalog's declared file.
+    #:
+    #: Not optional decoration: most of the charts this platform declares fail
+    #: `helm template` outright without them (loki demands
+    #: `loki.storage.bucketNames.chunks`), so an adapter that renders chart+version
+    #: alone produces an Application that can never sync. Found live, on an
+    #: Application that reported Unknown/Healthy while installing nothing.
+    values: dict[str, Any] = field(default_factory=dict)
 
     @property
     def is_cluster_singleton(self) -> bool:
@@ -132,7 +141,11 @@ def reject_cluster_singletons(addons: list[DesiredAddon]) -> None:
 
 
 def desired_addons(
-    tenant: Tenant, env: Environment, wave_of: Any, scope_of: Any = None
+    tenant: Tenant,
+    env: Environment,
+    wave_of: Any,
+    scope_of: Any = None,
+    values_of: Any = None,
 ) -> list[DesiredAddon]:
     """
     Expand a tenant/env's declared add-ons into DesiredAddon records, wave-sorted.
@@ -159,6 +172,7 @@ def desired_addons(
                 wave=wave_of(capability),
                 namespace=tenant.namespace_for(env.name, capability),
                 scope=scope_of(capability) if scope_of else "namespace",
+                values=values_of(capability) if values_of else {},
             )
         )
     return sorted(expanded, key=lambda a: (a.wave, a.capability))

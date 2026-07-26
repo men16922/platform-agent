@@ -161,6 +161,50 @@ class Registry:
     def is_cluster_scoped(self, capability: str) -> bool:
         return self.scope_of(capability) == "cluster"
 
+    def values_for(self, capability: str, *, repo_root: Path | None = None) -> dict[str, Any]:
+        """Baseline Helm values for a capability's self-hosted backend.
+
+        Loaded from the path the catalog points at, never copied into the catalog:
+        the same files are what `infra/onprem/addons` installs today, and a second
+        copy would let "how is loki configured" have two answers that drift apart
+        without anything failing. That is the shape of bug this codebase keeps
+        finding, so the registry reads the one file instead.
+
+        Missing file or unreadable YAML returns ``{}`` rather than raising. The
+        registry loader is fail-closed for *structure*, but values are a rendering
+        input: refusing to load the whole platform because one add-on's values file
+        moved would be a much larger outage than the one it prevents. The empty
+        result is visible where it matters — `helm template` fails loudly on charts
+        that need values, which is precisely how this gap was found.
+        """
+        entry = self.catalog.get("capabilities", {}).get(capability) or {}
+        declared = entry.get("self_hosted_values")
+        if not declared:
+            return {}
+        root = repo_root or DEFAULT_REGISTRY_ROOT.parent
+        path = Path(root) / declared
+        try:
+            loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except (OSError, yaml.YAMLError):
+            return {}
+        return loaded if isinstance(loaded, dict) else {}
+
+    def capabilities_missing_values(self) -> list[str]:
+        """Capabilities whose declared values file does not resolve to a mapping.
+
+        A capability with no usable values is not necessarily broken — some charts
+        template fine on defaults — but for ours it means the add-on cannot be
+        installed at all, and the symptom appears far away (an ArgoCD
+        ComparisonError, not a registry error).
+        """
+        return sorted(
+            name
+            for name, entry in (self.catalog.get("capabilities") or {}).items()
+            if isinstance(entry, dict)
+            and entry.get("self_hosted_values")
+            and not self.values_for(name)
+        )
+
     def capabilities_missing_scope(self) -> list[str]:
         """Catalog entries with no declared scope — a reporting concern, not fatal.
 

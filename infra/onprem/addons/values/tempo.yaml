@@ -4,6 +4,15 @@
 # The chart itself warns it is deprecated; `tempo-distributed` is the production
 # answer (same trade-off the logging stack makes with Loki SingleBinary).
 tempo:
+  # Container-level half of PSS `restricted` (the pod-level half is the top-level
+  # `securityContext` below — this chart really does use both spellings for
+  # different scopes). allowPrivilegeEscalation and dropped capabilities cannot be
+  # satisfied from the pod level; they are container fields.
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
   # OTLP gRPC (4317) is the one receiver the agent needs: the tracing seam
   # exports OTLP and nothing else. Declaring only otlp here keeps the *config*
   # free of Jaeger/Zipkin/OpenCensus receivers. (The chart's Service still
@@ -38,3 +47,15 @@ persistence:
 # kube-prometheus-stack's normal pod discovery.
 serviceMonitor:
   enabled: false
+
+# PSS `restricted` requires seccompProfile at the pod level. Same lesson as loki:
+# these values install fine in `monitoring` (unlabelled) and are refused in a
+# Phase 2 tenant namespace, with ArgoCD still reporting Synced. Top level here,
+# not under `tempo:` — this chart puts the pod security context on the release.
+# NOTE the key: this chart calls its POD-level context `securityContext` (it is
+# what carries fsGroup/runAsUser into spec.template.spec). `podSecurityContext`,
+# which is loki's spelling, would be accepted by Helm and silently ignored —
+# values files fail by being unread, not by erroring.
+securityContext:
+  seccompProfile:
+    type: RuntimeDefault

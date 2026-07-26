@@ -43,6 +43,11 @@ capabilities:
         aws: amazon-managed-prometheus
         gcp: google-managed-prometheus
         azure: azure-monitor-managed-prometheus
+    # Baseline Helm values, POINTED AT rather than copied here. The same files are
+    # what infra/onprem/addons installs today; a second copy would give the platform
+    # two answers to "how is this configured" that drift apart with nothing failing —
+    # the exact shape of the retired tenancy-netpol chart's bug.
+    self_hosted_values: infra/onprem/addons/values/kube-prometheus-stack.yaml
 
   logging:
     description: Log aggregation and query
@@ -55,6 +60,11 @@ capabilities:
         aws: cloudwatch-logs
         gcp: cloud-logging
         azure: log-analytics
+    # Baseline Helm values, POINTED AT rather than copied here. The same files are
+    # what infra/onprem/addons installs today; a second copy would give the platform
+    # two answers to "how is this configured" that drift apart with nothing failing —
+    # the exact shape of the retired tenancy-netpol chart's bug.
+    self_hosted_values: infra/onprem/addons/values/loki.yaml
 
   tracing:
     description: Distributed traces (OTLP ingest)
@@ -66,6 +76,11 @@ capabilities:
         aws: aws-xray
         gcp: cloud-trace
         azure: azure-monitor-traces
+    # Baseline Helm values, POINTED AT rather than copied here. The same files are
+    # what infra/onprem/addons installs today; a second copy would give the platform
+    # two answers to "how is this configured" that drift apart with nothing failing —
+    # the exact shape of the retired tenancy-netpol chart's bug.
+    self_hosted_values: infra/onprem/addons/values/tempo.yaml
 
   progressive:
     description: Weighted/canary progressive delivery
@@ -76,6 +91,11 @@ capabilities:
       self_hosted: argo-rollouts
       # Cluster-side mechanism is identical on managed substrates — no managed variant.
       managed: {}
+    # Baseline Helm values, POINTED AT rather than copied here. The same files are
+    # what infra/onprem/addons installs today; a second copy would give the platform
+    # two answers to "how is this configured" that drift apart with nothing failing —
+    # the exact shape of the retired tenancy-netpol chart's bug.
+    self_hosted_values: infra/onprem/addons/values/argo-rollouts.yaml
 
   gitops:
     description: Declarative sync from the git registry
@@ -87,6 +107,11 @@ capabilities:
       managed:
         gcp: config-sync
         azure: flux-extension
+    # Baseline Helm values, POINTED AT rather than copied here. The same files are
+    # what infra/onprem/addons installs today; a second copy would give the platform
+    # two answers to "how is this configured" that drift apart with nothing failing —
+    # the exact shape of the retired tenancy-netpol chart's bug.
+    self_hosted_values: infra/onprem/addons/values/argocd.yaml
 
   tenancy:
     description: Namespace/quota isolation enforcement for the soft tier
@@ -97,3 +122,8 @@ capabilities:
     backends:
       self_hosted: capsule
       managed: {}
+    # Baseline Helm values, POINTED AT rather than copied here. The same files are
+    # what infra/onprem/addons installs today; a second copy would give the platform
+    # two answers to "how is this configured" that drift apart with nothing failing —
+    # the exact shape of the retired tenancy-netpol chart's bug.
+    self_hosted_values: infra/onprem/addons/values/capsule.yaml
