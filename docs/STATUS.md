@@ -91,7 +91,6 @@
   관제한다**(플릿 표, push 전용 D28) · **검증이 훅으로 강제된다**(Stop→`make check`,
   PostToolUse→`tsc`, D29).
 - **Phase 2 = 완결(M11)** · **Phase 0·1a·1b = 완결(M10)** — 상세 → `COMPLETED_SUMMARY`.
-  **Phase 1b 잔여**: loki/tempo/pa 이관은 볼륨 스냅샷 수단 선행(kind엔 CSI 스냅샷터 부재).
 
 ## Open Risks / Gaps
 
