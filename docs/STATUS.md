@@ -76,15 +76,14 @@
   ②는 롤백을 되게 만들지 않고 조용한 되돌림을 거부로 바꿀 뿐(→ D32) ·
   테넌트 파티션이 걸린 읽기 경로는 **플릿 뷰 하나뿐**이다(incidents/deployments/activities는
   여전히 무인증·무파티션 — 대시보드 전체를 "테넌트 격리됨"이라 부르면 안 된다).
-- **레포 원고 동기화** — 발행 3종(Notion 전문 `3a94c2420ac4801cbe99e36c16ed90fd` ·
-  YouTube Shorts `2J9WfZV0TPE` · LinkedIn)은 2026-07-28 전부 완료. 정정본이 레포에도
-  반영됐다(`6979787`). 남은 건 GitAIOps 후속편이며 착수 보류(사용자 지시).
+- **발행 3종 완료(2026-07-28)** — Notion `3a94c2420ac4801cbe99e36c16ed90fd` · YouTube Shorts
+  `2J9WfZV0TPE` · LinkedIn. 레포 원고 정정도 반영(`6979787`). GitAIOps 후속편은 착수 보류.
 
 **직전에 선 것들(2026-07-26~27, 상세는 `PROGRESS_LOG`/`COMPLETED_SUMMARY`)**
 
-- **자연어 한 문장이 테넌트를 세운다** — `setup_tenancy → install_tenant_addons` 체인(17.6s).
-  에이전트 mutating 범위는 **테넌트 스코프까지**, 공유 스택 9개는 TF 소유(D30).
-  컨텍스트가 레지스트리와 다르면 아무것도 쓰지 않고 거부한다.
+- **자연어 한 문장이 테넌트를 세운다** — `setup_tenancy → install_tenant_addons`(17.6s).
+  mutating 범위는 **테넌트 스코프까지**, 공유 스택 9개는 TF 소유이고 컨텍스트가 레지스트리와
+  다르면 아무것도 쓰지 않고 거부한다(D30).
 - **시연 가능** — `make dev-up` → `make demo-baseline`으로 4축 ✓ → netpol 1개 삭제 시
   network 축만 ✕ → 복구까지 재현. 영상·대본 → `docs/post/`.
 - **레지스트리가 설치까지 표현한다**(`render_addons.py`) · **대시보드가 멀티테넌시를
