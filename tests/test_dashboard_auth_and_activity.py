@@ -35,8 +35,10 @@ def test_auth_role_hierarchy():
     # Verify P1 approval is admin-only
     assert "P1 approval requires admin" in content
 
-    # Verify read path remains public
-    assert "Read path remains public" in content
+    # The read path is NO LONGER public — this test used to pin that statement
+    # in place, which is how a policy line outlives the policy. Assert the
+    # correction is recorded instead, so the doc cannot quietly drift back.
+    assert "테넌트별 파티션" in content, "read-path policy must reflect partitioning"
 
 
 def test_auth_design_doc_constraints():
@@ -166,3 +168,19 @@ def test_activity_data_access_layer():
 
     # Must use correct table name
     assert "platform-agent-activity" in content
+
+
+def test_incidents_route_partitions_and_does_not_share_a_cache():
+    """
+    Once the response varies by caller, a shared/CDN cache serves one tenant's
+    incidents to another. The cache header is part of the partition, not an
+    optimisation that happened to be dropped — so assert it, or the next person
+    tuning performance reinstates the leak.
+    """
+    from pathlib import Path
+
+    route = Path("dashboard/src/app/api/dashboard/incidents/route.ts").read_text()
+    assert "resolveVisibility" in route and "filterRows" in route
+    assert "s-maxage" not in route, "shared-cache directive on a per-caller response"
+    assert "private" in route and "no-store" in route
+    assert "withheld" in route, "silently shortening the list is the failure mode"

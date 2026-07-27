@@ -65,6 +65,8 @@ export function mapIncidentRecord(item: Record<string, unknown>): Incident | nul
   return {
     id,
     provider: isProvider(item.provider) ? item.provider : "aws",
+    ...(typeof item.tenant === "string" && item.tenant ? { tenant: item.tenant } : {}),
+    ...(typeof item.env === "string" && item.env ? { env: item.env } : {}),
     alarm_name: alarmName,
     severity: isSeverity(item.severity) ? item.severity : "P3",
     mode: isMode(item.mode) ? item.mode : "MANUAL",
@@ -130,8 +132,8 @@ export async function getIncidentFeed(): Promise<IncidentFeed> {
         TableName: process.env.DASHBOARD_INCIDENT_TABLE ?? DEFAULT_TABLE,
         Limit: 100,
         ProjectionExpression:
-          "alarm_name, incident_id, provider, severity, #mode, root_cause, runbook_id, resolved, executed, executed_actions, created_at, resolved_at",
-        ExpressionAttributeNames: { "#mode": "mode" },
+          "alarm_name, incident_id, provider, severity, #mode, root_cause, runbook_id, resolved, executed, executed_actions, created_at, resolved_at, tenant, #env",
+        ExpressionAttributeNames: { "#mode": "mode", "#env": "env" },
       }),
     );
 

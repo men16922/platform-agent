@@ -29,6 +29,11 @@ export interface Incident {
   // OTel trace id when tracing was on; absent when it was off (so the UI shows
   // no link rather than a dead one).
   trace_id?: string;
+  // Owning tenant/env. Optional because rows written before the executor
+  // persisted them have neither — and "no tenant recorded" is a different fact
+  // from "belongs to no tenant", which is why the reader must not default it.
+  tenant?: string;
+  env?: string;
 }
 
 // Domain of a row (which page it belongs to). Rollback is a STATUS, not a type,

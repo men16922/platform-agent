@@ -217,7 +217,7 @@ AUTH_ADMIN_USERS=<comma-separated-github-usernames>
 | Decision | Rationale |
 |----------|-----------|
 | JWT over database sessions | Edge Runtime 호환 + 외부 DB 의존성 없음 |
-| Read path remains public | Dashboard는 portfolio 용도; incident 데이터는 이미 CloudWatch에 공개 |
+| ~~Read path remains public~~ → **테넌트별 파티션**(2026-07-28 정정) | 단일 테넌트 포트폴리오 대시보드에서는 맞는 판단이었지만 **플릿 뷰가 생기면서 틀린 문장이 됐다** — 한 테넌트가 다른 테넌트의 토폴로지·인시던트를 읽는다. 지금은 `lib/visibility.ts`가 호출자 권한으로 행을 거른다. 인가는 proxy가 아니라 **데이터 옆**에 있다(Next 권고 + 이 레포의 단일 seam 원칙) |
 | P1 approval requires admin | AUTO 모드 override는 최고 권한만 허용 |
 | GitHub OAuth first | 개발자 중심 프로젝트; 추후 SAML 추가 용이 |
 | No write UI until Phase 1 complete | 인증 없는 mutation은 금지 (AGENT_BRIEF guardrail) |

@@ -113,3 +113,29 @@ export function filterFleet<T extends FleetLike>(feed: T, visibility: Visibility
     missing: feed.missing.filter((identity) => isVisible(visibility, identity)),
   };
 }
+
+
+/** A row that may or may not declare an owning tenant. */
+export interface TenantOwned {
+  tenant?: string;
+}
+
+/**
+ * Drop rows the caller may not see.
+ *
+ * Rows with **no recorded tenant** are visible only to admins. They are mostly
+ * incidents written before the executor persisted tenancy, and the safe reading
+ * of "we do not know whose this is" on a shared screen is not "everyone's".
+ * That does hide history from viewers rather than mislabel it — the alternative
+ * leaks, and a partition that is right except for the old rows is not a
+ * partition. The count of what was withheld is returned so the UI can say so
+ * instead of quietly showing a shorter list.
+ */
+export function filterRows<T extends TenantOwned>(
+  rows: readonly T[],
+  visibility: Visibility,
+): { rows: T[]; withheld: number } {
+  if (visibility.tenants === null) return { rows: [...rows], withheld: 0 };
+  const allowed = rows.filter((r) => !!r.tenant && isVisible(visibility, r.tenant));
+  return { rows: allowed, withheld: rows.length - allowed.length };
+}

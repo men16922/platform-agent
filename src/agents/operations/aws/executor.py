@@ -503,6 +503,18 @@ def _record_incident(
             "resolved_at":     recorded_at,
             "ttl":             int(time.time()) + 90 * 86400,  # 90-day retention
         }
+        # Whose incident this is. `NormalizedIncident` has carried tenant/env as
+        # first-class fields since Phase 1a, and this writer dropped them — so
+        # the read side had nothing to partition on and the dashboard showed
+        # every tenant's incidents to everyone. Stored only when non-empty:
+        # absent means "this incident predates tenancy or has none", which the
+        # reader must be able to tell apart from "belongs to a tenant".
+        if normalized_incident:
+            if normalized_incident.tenant:
+                item["tenant"] = normalized_incident.tenant
+            if normalized_incident.env:
+                item["env"] = normalized_incident.env
+
         # Surface the reconciliation gate result so the dashboard can show WHY an
         # AUTO decision was downgraded (parity with the on-prem incident pipeline).
         if decision.reconciliation:

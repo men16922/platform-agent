@@ -125,3 +125,44 @@ class TestFleetFiltering:
         )
         assert len(got["statuses"]) == 2
         assert len(got["missing"]) == 2
+
+
+class TestRowFiltering:
+    ROWS = (
+        "[{id:'a',tenant:'acme'},{id:'g',tenant:'globex'},{id:'legacy'}]"
+    )
+
+    def test_viewer_sees_only_their_tenants_rows(self):
+        got = _run(
+            f"const vis=v.resolveVisibility({{role:'viewer',tenants:['acme']}});"
+            f"console.log(JSON.stringify(v.filterRows({self.ROWS},vis)))"
+        )
+        assert [r["id"] for r in got["rows"]] == ["a"]
+        assert got["withheld"] == 2
+
+    def test_rows_with_no_recorded_tenant_are_admin_only(self):
+        """
+        Mostly incidents written before the executor persisted tenancy. On a
+        shared screen the safe reading of "we do not know whose this is" is not
+        "everyone's" — that hides history from viewers, and the alternative
+        leaks. A partition that is right except for the old rows is not one.
+        """
+        viewer = _run(
+            f"const vis=v.resolveVisibility({{role:'viewer',tenants:['acme']}});"
+            f"console.log(JSON.stringify(v.filterRows({self.ROWS},vis)))"
+        )
+        assert "legacy" not in [r["id"] for r in viewer["rows"]]
+
+        admin = _run(
+            f"const vis=v.resolveVisibility({{role:'admin'}});"
+            f"console.log(JSON.stringify(v.filterRows({self.ROWS},vis)))"
+        )
+        assert [r["id"] for r in admin["rows"]] == ["a", "g", "legacy"]
+        assert admin["withheld"] == 0
+
+    def test_withheld_count_lets_the_ui_say_so_instead_of_shortening_silently(self):
+        got = _run(
+            "const vis=v.resolveVisibility({role:'viewer',tenants:['nobody']});"
+            f"console.log(JSON.stringify(v.filterRows({self.ROWS},vis)))"
+        )
+        assert got["rows"] == [] and got["withheld"] == 3
