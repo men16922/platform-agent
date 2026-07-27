@@ -1,11 +1,11 @@
 # NEXT_PLAN — platform-agent
 
-최종 갱신: 2026-07-27
+최종 갱신: 2026-07-28
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(M10=GitAIOps 7/7+멀티테넌트 Phase 0·1a·1b+공급망,
 > M9=eval·하드닝, M8=레퍼런스 8/8) / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 현재 상태 (2026-07-27, gate 1355)
+## 현재 상태 (2026-07-28, gate 1355)
 
 **GitAIOps 대조 7/7 · 멀티테넌트 Phase 0·1a·1b 완료**(rollouts-demo 소유권 TF→ArgoCD 이관까지 실행).
 런북은 이제 선언한 순서·조건·검증대로 실행된다. **Phase 2 완결**(M11) — 다음은 **Phase 3(인가 강화)**.
@@ -21,13 +21,13 @@
   나왔고 전부 테스트는 초록이었다 — 라이브 실행만이 소비 부재를 드러냈다.
   **집필·발행은 이 계획에만 남기고 착수하지 않는다**(사용자 지시 2026-07-25).
 - [ ] (선택) **Azure Foundry 스택 정리** — 유휴 ≈$0라 유지 중.
-- [ ] **LinkedIn 발행** — Notion 전문은 발행 완료(`3a94c2420ac4801cbe99e36c16ed90fd`,
-  YouTube Shorts `2J9WfZV0TPE`). `docs/post/linkedin-intro-ko.md`를 최종 확인해 영상/링크와 게시한다.
-  본문의 "어려웠던 것" 단락은 영상의 논지(반증 가능한 화면)와 유지한다.
-  **게시 전 정정 1건(미반영)**: 본문의 "**7B가 30B를 이겼습니다**(20/20 vs 19/20)"는 과대주장이다 —
-  1건 차이·시행 1회(`trials:1`)이고 temperature 1.0에서는 **역전된다**(7B 18 < 30B 19).
-  데이터가 지탱하는 건 ①크기 4배로도 개선 없음 ②temp↑면 악화 ③정확도를 움직인 건 프롬프트
-  (전 설정 80%→95~100%). 근거 → `docs/evidence/model-sweep-live.log`. 아티클 본문은 이미 헤지돼 있다.
+- [x] **LinkedIn 발행 완료(2026-07-28)** — 이로써 발행 3종(Notion 전문
+  `3a94c2420ac4801cbe99e36c16ed90fd` · YouTube Shorts `2J9WfZV0TPE` · LinkedIn)이 전부 닫혔다.
+  **레포 원고는 게시본과 다르다**: `docs/post/linkedin-intro-ko.md` 34·71행에 "7B가 30B를
+  이겼습니다(20/20 vs 19/20)"가 남아 있다. 데이터가 지탱하는 건 ①크기 4배로도 개선 없음
+  ②temp↑면 악화(temp 1.0에서 7B 18 < 30B 19로 역전) ③정확도를 움직인 건 프롬프트
+  (전 설정 80%→95~100%) — 근거 `docs/evidence/model-sweep-live.log`.
+  원고를 게시본에 맞추는 것은 별건으로 남긴다(아래 잔여 항목).
 - [x] **영상 재촬영·편집**(2026-07-26) — 시나리오가 격리 반증 단독 → **풀스택 체인**으로 바뀌어
   다시 찍었다. `docs/post/media/multitenancy-fullstack-30s.mp4`(30.03초 · 오버레이 없음 ·
   원본 153.8초를 10컷). 파이프라인 4단계 → `scripts/demo/README.md`.
@@ -67,6 +67,9 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 - [ ] **선택 불가 런북 4개** — `CAPABILITY_RUNBOOKS`의 certificate-expiry·disk-full·
   health-check-failure·network-latency-high는 `BUILTIN_RUNBOOKS`에 없어 아무것도 이들을 고를 수 없다.
   step 배선(`c4816fd`) 중 발견했고, 범위를 조용히 넓히지 않으려 분리해 남김.
+- [ ] **LinkedIn 원고를 게시본에 맞추기** — 발행은 끝났고 레포 원고만 구판이다.
+  34·71행의 "7B가 30B를 이겼습니다"가 그 자리. 공개 아티클이 링크하는 레포이므로,
+  게시본과 다른 주장이 남아 있으면 그게 정본처럼 읽힌다.
 - [ ] **Capsule deprecation 이관** — `render_tenancy.py` 적용 시 `limitRanges`(→TenantReplications)와
   `additionalMetadata`(→`additionalMetadataList`) 경고가 뜬다. 지금은 동작하지만 상위 버전에서
   **에러 없이 안 읽히는** 쪽으로 실패할 부류라 Capsule 업그레이드 전에 처리.

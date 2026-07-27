@@ -1,6 +1,6 @@
 # STATUS — platform-agent
 
-최종 갱신: 2026-07-27
+최종 갱신: 2026-07-28
 
 > 현재 구현 상태 / 검증 baseline / active focus / open risks. **≤120줄** 유지.
 
@@ -91,9 +91,10 @@
   `install_tenant_addons` 체인(17.6s). 에이전트의 mutating 범위는 **테넌트 스코프까지**이고
   공유 스택 9개는 Terraform 소유로 남는다(→ `DECISIONS` D30). 컨텍스트가 레지스트리와
   다르면 아무것도 쓰지 않고 거부한다 — 자연어 도구는 "지금 어느 클러스터냐"를 되물을 수 없다.
-- **Notion 전문 발행 완료(2026-07-26)** — 멀티테넌트 실험 글을 영상의 실제 흐름에 맞춰 재작성하고
-  Humanize Korean(A·14.6%·6/6) 후 페이지 `3a94c2420ac4801cbe99e36c16ed90fd`에 YouTube Shorts
-  `2J9WfZV0TPE`와 함께 반영·재조회 확인. 남은 발행 작업은 **LinkedIn 게시**다.
+- **발행 3종 완료(2026-07-28)** — Notion 전문 `3a94c2420ac4801cbe99e36c16ed90fd`(영상 흐름에 맞춰
+  재작성 + Humanize Korean A·14.6%·6/6) · YouTube Shorts `2J9WfZV0TPE` · LinkedIn 게시.
+  **레포 원고는 게시본과 다르다** — `docs/post/linkedin-intro-ko.md` 34·71행에 "7B가 30B를
+  이겼습니다"가 남아 있다(→ `NEXT_PLAN` 잔여). 공개 아티클이 링크하는 레포라 방치하면 정본처럼 읽힌다.
 - **시연 가능(2026-07-26)** — `make dev-up` → `make demo-baseline`으로 4축 ✓ 상태가 뜨고,
   netpol 1개 삭제 → network 축만 ✕ → 복구까지 재현된다. 영상·대본 → `docs/post/`.
 - **레지스트리가 설치까지 표현한다(2026-07-26)** — repo+chart+values 세 입력이 전부
