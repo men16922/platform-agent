@@ -6,31 +6,8 @@
 
 ---
 
-## 현재 요약
-
-- 제품 방향: Day1+Day2를 함께 다루는 AWS-native `platform-agent`.
-- Operations 4단계(detect→analyze→decide→execute) 파이프라인 런타임 동작.
-- 3-cloud AI Agent 실호출 완료: Bedrock Claude + Vertex AI Gemini 3.5 Flash + Azure OpenAI GPT-5.4.
-- Capability-based runbook schema 구현 (cloud-neutral execution steps).
-- overnight-harness 기반 자동 개발 루프 구성 완료 (5 engine 지원).
-- 4 provider 코드 완비: AWS / GCP / Azure / On-Prem.
-
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` (pytest) → **983 passed, 1 skipped** (2026-07-25, 876→983, +107) — **GitAIOps 실습서 대조 갭 6건 + 멀티테넌트 Phase 0**(`5fba0af`~`7b4231a`, 8커밋): ③런북 `verify` 슬롯+`resolution_verdict` 2축(검증 없으면 verified=None, 역호환) · ④권한통제 3단(포괄 `gcloud:*`→조회 allow 104+billable ask 30) + GKE TTL 워치독 · ①Rollouts AnalysisTemplate(수동 게이트에 가산, 기본 OFF) · ②OTel 4단계 span + `tracing.tf`(무-의존 폴백) · **Phase 0**(`platform/` 레지스트리+로더+`DeliveryAdapter` 계약+`NormalizedAddonStatus` 2축, py+ts) · ⑦고아 클러스터 스위퍼 · ⑥NetworkPolicy+CNI 집행 검증기(기본 OFF). `tsc` 클린 · `terraform validate` Success · **라이브 read-only**: 2 GCP 프로젝트 방치 클러스터 0건 확증. `helm template`이 Tempo 버그 2건 적발(포트 3100→3200, `resources` 위치). 상세 → `PROGRESS_LOG` 2026-07-25.
-- `make check` (pytest) → **876 passed, 1 skipped** (2026-07-21, 870→876) — **대시보드 On-Prem 분석 Qwen 우선 + 인시던트 상세뷰 + 스택링크 + AWS데모 제거**(`4aef387`·`74d7a9d`·`7ca72ed`): analyzer LLM 백엔드 pluggable(ANALYZER_LLM_ENDPOINT=로컬 Qwen, 없으면 Bedrock·역호환) + 파서 견고화·어댑터 annotations·프롬프트 detail·confidence 영속화(+6). **라이브($0)**: OOMKilled→Qwen confidence 0.95+정확 root cause→INC-95C55A19 상세뷰. 인시던트 상세페이지 신설, 스택링크 Provisioning 이관(prod-safe).
-- `make check` (pytest) → **870 passed, 1 skipped** (2026-07-20, 867→870) — **On-Prem 애드온 스택 Phase 5(로깅)**: `logging.tf`(loki 7.1.0 SingleBinary+캐시off + fluent-bit 0.57.9 DaemonSet) + grafana Loki 데이터소스. 가드 +3, 핀 3→5. **라이브($0)**: 파드 Ready→Loki query API가 `pa-platform-agent-webhook` 포함 다수 네임스페이스 로그 반환→Grafana Loki 데이터소스 등록 확인. 증거 `docs/evidence/onprem-addons-logging-e2e.log`.
-- `make check` (pytest) → **867 passed, 1 skipped** (2026-07-20, 865→867) — **On-Prem 애드온 스택 Phase 4(Argo Rollouts)**: `rollouts.tf`(argo-rollouts 2.41.1 컨트롤러 + 데모 canary, 무기한 pause 수동게이트). 가드 +2, 핀 2→3. DECISIONS D19(러너 vs Rollouts 병존). **라이브($0)**: promote(blue→yellow, 게이트 60s→75%→100% stable)·abort(yellow→red 25%→Degraded, yellow stable 유지) 양경로. 증거 `docs/evidence/onprem-addons-rollouts-e2e.log`.
-- `make check` (pytest) → **865 passed, 1 skipped** (2026-07-20, 233.46s, 861→865) — **On-Prem 애드온 스택 Phase 3(GitOps)**(`fafacc6`): `gitops.tf`가 ArgoCD `Application`(로컬 래퍼 차트, argocd depends_on)로 platform-agent 차트를 GitHub origin main에서 auto-sync·selfHeal 관리. `application.resourceTrackingMethod=annotation`으로 instance 라벨 추적 충돌 근본 회피, `releaseName=pa`로 Phase 2 접점 보존. 가드 +4. **라이브($0)**: apply→Synced/Healthy(rev=git HEAD)→6 리소스 무중단 채택→drift(scale 1→3)→selfHeal ~16s 복원. 증거 `docs/evidence/onprem-addons-gitops-e2e.log`.
-- `make check` (pytest) → **861 passed, 1 skipped** (2026-07-20, 229.27s, 854→861) — **On-Prem 플랫폼 애드온 스택 Phase 1+2**: 신규 `infra/onprem/addons/` root(argo-cd 10.1.4·kps 87.17.0 핀, 저사양 values, kind·k3s 양기판) apply→전 파드 Ready→UI 3종 200 + Alertmanager receiver→in-cluster webhook 배선 라이브 E2E(crashme 크래시루프→룰 발화→배달→4-step→P2 승인→INC-96D41C2B resolved, $0). 가드 +7. 증거 `docs/evidence/onprem-addons-{phase1,alertmanager-e2e}.log`.
-- `make check` (pytest) → **854 passed, 1 skipped** (2026-07-20, 256.62s, 수 무변경) — **리팩토링 후속 2건**(`8792c9c`): operations 그룹핑 cloud축 통일(`aws/`·`runners/` 신설, CDK 핸들러 경로 7종 정합) + approval_bridge 610줄 handler → 4모듈 분리(handler/request_store/slack_interactive/payloads). 순수 구조 개편(동작·테스트 수 무변경).
-- `make check` (pytest) → **854 passed, 1 skipped** (2026-07-19, 232.03s, 847→854) — **On-Prem P2 승인 Slack 버튼 연동**(`617839b`): DynamoDB 공유 매체+옵트인 폴러, 라이브 왕복(P2 parking→Slack ONPREM 카드→Approve 클릭→APPROVED→폴러 실행→INC-FA2143AF resolved, 증거 `docs/evidence/onprem-slack-approval-live.log`). **동일자 terraform aws-production 실 apply→검증→destroy 완주**(코드 무변경): EKS 노드 2 Ready·Aurora `platform_state` available·IRSA trust 재배선 확증 후 29개 destroy·잔존 0·≈$0.5 미만(증거 `docs/evidence/terraform-aws-production-apply-live.log`) — #7-b 전 단계 실증 완결.
-- `make check` (pytest) → **847 passed, 1 skipped** (2026-07-19, 232.55s, 844→847) — **Slack E2E발 후속 2건 근본수정+라이브 검증**: (a) **Bedrock 무효 모델 ID**(`9a56949`) — 스택이 `.env` 무시·무효 ID 하드코딩으로 매 인시던트 휴리스틱 폴백 강등되던 latent 결함 → `us.anthropic.claude-sonnet-4-6` 프로파일+정확-ARN IAM(프로파일+3리전 하위 모델), 라이브 `analyzer.llm_done`(실 Claude root cause가 Slack 카드에 표시). (b) **유령 SSM 문서**(`55de55e`) — `AWS-SendSlackAlert` 미실존으로 generic-recovery 구조적 `resolved=False` → `_NOTIFICATION_ACTIONS` in-process 1급 처리(+3 test), 라이브 실 LLM **P1/AUTO** 판정→`executor.notify.in_process`→**`resolved=True`**(INC-E15BA62E, DynamoDB 확증). 동일 세션에서 P3/MANUAL·P2/APPROVE 경로도 관측(LLM 심각도 3단 실증).
-- `make check` (pytest) → **844 passed, 1 skipped** (2026-07-19, 234.56s) — **Slack App 실 생성 + 인터랙티브 승인 버튼 라이브 E2E 완주**: 알람 ALARM→SFN WaitForApproval→Slack `#platform-test` 버튼 메시지→**Approve 클릭**(브라우저)→서명 검증→DynamoDB claim(APR-8BC7E7E95B9A=APPROVED)→`SendTaskSuccess`→SFN **SUCCEEDED**(INC-2AC4B6C9). 라이브가 표면화한 프로덕션 버그 2건 근본수정(`0f99420`): (a) detector `_SIGNAL_ADAPTER` NameError=AWS 경로 전면 불능→`get_signal_adapter("aws")`+AWS 경로 회귀 가드, (b) approval_bridge confidence float→DynamoDB TypeError=승인 요청 전량 소실→`Decimal`+e2e 페이크에 float 거부 계약. 증거 `docs/evidence/slack-interactive-approval-live.log`.
-- `make check` (pytest) → **843 passed, 1 skipped** (2026-07-18, 236.08s) — **OAuth 대시보드 배포 트리거 라이브 E2E + 프로덕션 장애 2건 근본수정**: (a) `.vercelignore` 무앵커 `src/`가 git 트리거 Vercel 배포를 전부 404 빌드로 만들던 결함 수정(canonical 200 복구), (b) CloudTrail로 07-11 **Vercel OIDC provider 삭제** 규명→CDK로 재생성(실 slug `men16922s-projects`)+정확-ARN `StartExecution` grant→대시보드 **DEMO FALLBACK→LIVE·AWS** 복구, (c) 라이브 클릭이 표면화한 `smoke_tester` `base_url` KeyError 수정+가드(+1 test). **E2E**: GitHub OAuth(operator)→Start Release→SFN `deploy-dep-1f054864` **SUCCEEDED**. 증거 `docs/evidence/oauth-deploy-trigger-live.log`.
-- `make check` (pytest) → **842 passed, 1 skipped** (2026-07-17, 234.42s) — **차트 stateStore 배선(④↔#7 마무리)**: `stateStore.{dsn,existingSecret}` values(secretKeyRef=프로덕션·plain=dev, secret 우선), persistence off→RollingUpdate·replicas>1 해금, Dockerfile `.[state]`(psycopg2) 재빌드 검증. 차트 가드 +3. JSONL 기본값 무변경. **k3s substrate 스모크(동일자, 코드 무변경)**: 기존 k8s-lab VM에 helm install→`local-path` PVC Bound→P2 승인 루프→원상 복원 — env×substrate 양축(kind/k3s) 실증 완결(`docs/evidence/helm-k3s-substrate-smoke.log`).
-- `make check` (pytest) → **839 passed, 1 skipped** (2026-07-17, 238.51s) — **레퍼런스 #7-b Terraform 모듈 → #7 전체 완결(Helm+Terraform)**: 신규 `infra/terraform/aws-production/`(VPC·EKS 1.31·**Aurora Serverless v2 `platform_state`**=④ DSN seam 정합·**IRSA**=차트 SA 전용 trust+DynamoDB activity 테이블 정확-ARN 유일 grant). Redis/Cognito=미소비 의도적 제외. `terraform init+fmt+validate` Success(spend 0, **apply 안 함**=사용자 게이트). 가드 +5(bare `"*"` 금지 등). 이로써 AWSome 레퍼런스 8항목 전부 소화.
-- `make check` (pytest) → **834 passed, 1 skipped** (2026-07-17, 242.90s) — **로드맵 ④ SQL State Store(옵트인)+실 Alertmanager 라이브**: 신규 `state_store.py`(`PLATFORM_STATE_DSN` 옵트인, DB-API 주입식, append-only+latest-wins=JSONL 시맨틱 동일, sqlite 오프라인 테스트 +5) + approvals/incidents 양방향 배선. **라이브(docker $0)**: 실 Alertmanager grouping→배달→P2 parking→PostgreSQL, **레플리카 2개 상태 공유**(replica-2 승인→replica-1 즉시 반영=JSONL 불가), 전 프로세스 재기동 생존, psql ground-truth 3 rows. 증거 `docs/evidence/state-store-alertmanager-live.log`. JSONL 기본값 무변경(비오염 테스트 양방향).
 - `make check` (pytest) → **1355 passed, 1 skipped** (2026-07-27, 1341→1355, +14) — **Phase 3①
   자격증명 격리 full**(`bb091e1`): 가드가 `scope.py` 한 곳(`guard_scoped_action`)이고 세 러너가
   같은 구현을 부른다 · `resolve_incident_scope` 이관으로 **GCP Cloud Workflows 경로의 스코프 부재**
@@ -63,9 +40,11 @@
 - `make check` (pytest) → **1168 passed, 1 skipped** (2026-07-26, 1159→1168, +9) — **Phase 1b 핸드오프 실행**(`7033db3`): rollouts-demo 소유권 TF→ArgoCD. 채택이 no-op이 아니었는데 원인은 라이브 드리프트(`--type=merge`가 컨테이너 배열 통째 교체)였고 ArgoCD가 **복구**한 것 → 프리플라이트 5번째 검사 `live-matches-rendered` 추가.
 - `make check` (pytest) → **1159 passed, 1 skipped** (2026-07-26, 1114→1159, +45) — **① 게이트 완결(3종 판별) + ⑥ PSS/Cosign + ⑦ 스위퍼 CronJob**(`8e549bf`·`d96b888`·`69f149d`·`5015810`, **origin push 완료**). ①은 pass 경로를 여는 과정에서 **연쇄 결함 3건**이 드러나 전부 근본수정: (a) `llm.endpoint`를 router만 소비하고 webhook은 못 받아 **모든 판정이 unknown**이던 것(모델 부재가 아니라 배선 부재), (b) 템플릿이 firing 알럿을 **합성**해 보내 정상 canary가 conf 0.80으로 `fail`이던 것 → 호출자는 **신원만** 보내고 게이트가 Alertmanager를 직접 조회(`None`=못 봄 ≠ `[]`=조용함), (c) kps 파드 룰이 `for: 15m`이라 2~3분짜리 canary엔 발화 자체가 없어 크래시 canary도 pass이던 것 → canary 시간 스케일 룰 동봉. **라이브 3종 판별**: 정상→`pass`x3 abort 없음 / 크래시→`pass→fail→fail` **165s auto-abort**(stable 4/4, Available=True 내내) / 관측 불가→`unknown` 차단. ⑥ 양방향(비준수 설치는 API 서버가 4개 위반 적시하며 forbidden / 준수 설치는 `uid=10001` Running) + Cosign(서명은 **태그가 아니라 다이제스트**에 붙음을 라이브가 정정 → 차트 `image.digest`). ⑦은 CLI 부재가 `clean(exit 0)`이던 것을 **exit 2(coverage incomplete)** 로. 증거 `docs/evidence/onprem-{canary-agent-gate,pss-restricted-and-sweeper}-e2e.log`.
 - **라이브 실증(2026-07-26, `b07523b`, 수 무변경)** — 기본 OFF로 남겨둔 3건 완주: ①canary 자동판정 **양방향**(나쁜 canary=`failed(3)>limit(2)`→사람 개입 0으로 ~105s auto-abort·stable 4/4 유지 / 좋은 canary=3연속 Successful→abort 안 됨) · ②Tempo 트레이스(query API·Grafana 프록시 양쪽 200, **5026ms 중 analyze 4136ms=MTTR의 82%가 로컬 LLM 추론**) · ⑥kindnet=**ENFORCED**+차트 정책 테넌트 시맨틱(same 통과/cross 차단). 증거 `docs/evidence/onprem-{addons-rollouts-analysis,tracing-tempo,netpol-tenancy}-e2e.log`. 라이브가 검증기 자체 버그 2건도 적발(agnhost `connect` http/URL 불가 · 파드 Ready≠포트 바인딩).
-- (이전 이력: gate 1114 이하 · 2026-07-10~17 → `docs/archive/status-baseline-2026-07.md`)
+- (이전 이력: gate 1114 이하 · 2026-07-10~25 → `docs/archive/status-baseline-2026-07.md`)
 
 ## 동작하는 영역 (요약)
+
+제품 방향: Day1+Day2를 함께 다루는 AWS-native `platform-agent`. 4 provider(AWS/GCP/Azure/On-Prem) 코드 완비. 하네스 = overnight-harness 5 engine.
 
 1. **Operations 파이프라인** — Detector/Analyzer/Decision/Executor + Approval Bridge.
 2. **3-Cloud Day2 Operations** — AWS(Step Functions) + GCP(Cloud Workflows) + Azure(Durable Functions). 각각 4-step 파이프라인 구현.
@@ -83,44 +62,30 @@
 
 ## Active Focus
 
-- **Phase 3① = 완료(2026-07-27)** — 자격증명 격리가 전 러너·두 디스패치 경로로 확장됐고,
-  경계를 판정하는 주체가 우리 코드가 아니라 **API 서버**임을 라이브로 확인했다.
-  **남은 Phase 3**: ②롤백↔selfHeal 우선순위(registry write-back) · ③viewer 가시성 제한.
-  **과대 해석 금지**: 자격증명 자체가 테넌트-바운드인 것은 **온프렘뿐**이다(→ Open Risks 7).
-- **자연어 한 문장이 테넌트를 세운다(2026-07-26)** — Agents 채팅 → `setup_tenancy` →
-  `install_tenant_addons` 체인(17.6s). 에이전트의 mutating 범위는 **테넌트 스코프까지**이고
-  공유 스택 9개는 Terraform 소유로 남는다(→ `DECISIONS` D30). 컨텍스트가 레지스트리와
-  다르면 아무것도 쓰지 않고 거부한다 — 자연어 도구는 "지금 어느 클러스터냐"를 되물을 수 없다.
-- **발행 3종 완료(2026-07-28)** — Notion 전문 `3a94c2420ac4801cbe99e36c16ed90fd`(영상 흐름에 맞춰
-  재작성 + Humanize Korean A·14.6%·6/6) · YouTube Shorts `2J9WfZV0TPE` · LinkedIn 게시.
-  **레포 원고는 게시본과 다르다** — `docs/post/linkedin-intro-ko.md` 34·71행에 "7B가 30B를
-  이겼습니다"가 남아 있다(→ `NEXT_PLAN` 잔여). 공개 아티클이 링크하는 레포라 방치하면 정본처럼 읽힌다.
-- **시연 가능(2026-07-26)** — `make dev-up` → `make demo-baseline`으로 4축 ✓ 상태가 뜨고,
-  netpol 1개 삭제 → network 축만 ✕ → 복구까지 재현된다. 영상·대본 → `docs/post/`.
-- **레지스트리가 설치까지 표현한다(2026-07-26)** — repo+chart+values 세 입력이 전부
-  레지스트리에서 나오고(`render_addons.py`), 클러스터 싱글턴은 이름을 대며 거부된다.
-  repo URL은 카탈로그의 유일한 복사이며 TF 대조 가드가 드리프트를 게이트로 잡는다.
-- **대시보드가 멀티테넌시를 관제한다(2026-07-26)** — 플릿 표(전 테넌트 × 격리 4축 + 티어 + 쿼터)
-  + 테넌트별 상세. 데이터는 스포크 push로만 들어오고 대시보드는 클러스터를 직접 조회하지 않는다.
-  "N ok"는 **에이전트가 실제로 평가한 행만** 센다(나머지는 `M not assessed`).
-- **검증이 훅으로 강제된다(2026-07-26)** — Stop→`make check`(소스 변경 시만·실패할 때만 깨움),
-  PostToolUse→`tsc`(dashboard 경로만). 그동안 문서에만 있던 규칙이다.
-- **Phase 2 = 완결(M11, 2026-07-26)** — 네임스페이스·쿼터·데이터플레인·자격증명 네 층이 각각
-  라이브로 증명됐고 DR 재구축까지 확인. 다음은 **Phase 3(인가 강화)**. 상세 → `COMPLETED_SUMMARY` M11.
-- **Phase 2 구성요소(참고)** —
-  소프트 티어의 "데이터플레인 격리 없음" 비보증이 좁혀졌고(same-tenant 통과/cross 차단, kubelet
-  프로브·DNS 무영향까지 실측), 2축 상태가 각 클러스터의 **push**로 허브에 모인다(허브는 스포크
-  read 자격증명 0). **잔여**: 클러스터 싱글턴 capability의 scope 축 · faked managed 디스크립터 ·
-  DR 재구축 확인.
-- **Phase 1b 핸드오프 = rollouts-demo 이관 완료(2026-07-26)** — TF는 Application 1개(소유 기록)만 보유, 워크로드는
-  ArgoCD 소유. helm rev 8 불변 · Rollout/Service UID 불변 · selfHeal 4→2→4 ~40s. 채택이 no-op이 아니었는데
-  원인은 핸드오프가 아니라 라이브 드리프트(`--type=merge`가 컨테이너 배열을 통째 교체해 ports/resources 소실)였고,
-  ArgoCD가 그걸 **복구**한 것 → 프리플라이트에 5번째 검사 `live-matches-rendered`(non-blocking) 추가.
-  **잔여**: loki/tempo/pa는 데이터 보유 → 스냅샷 수단 선행(kind엔 CSI 스냅샷터 부재).
-- **멀티테넌트/멀티클라우드 플랫폼 — Phase 0·1a·1b(어댑터+프리플라이트) 완료** — `docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5, S 93.5). Phase 1a로 **최우선 불변식(자격증명이 경계)이 코드 seam+라이브 RBAC로 강제됨**. Phase 1b = delivery 어댑터 2개(argocd+flux) + TF↔GitOps no-churn 핸드오프 + **순서 보장 이관**(sync-wave/dependsOn). ③ provider측 verify는 Phase 1a가 `incident_scope`를 이미 관통시켜 **차단 해소**.
-- **라이브 실증 완료(2026-07-26)**: ①canary auto-abort 양방향(~105s, stable 유지 / 정상 canary는 통과) · ②Tempo 트레이스(**5026ms 중 analyze 4136ms = MTTR의 82%가 로컬 LLM**) · ⑥kindnet ENFORCED + 테넌트 시맨틱(same=통과, cross=차단). 증거 `docs/evidence/onprem-{addons-rollouts-analysis,tracing-tempo,netpol-tenancy}-e2e.log`. ①⑥은 검증 후에도 기본 OFF(①=문서화된 수동 데모 보존, ⑥=대상 ns/라벨이 Phase 2 Capsule 산출물).
-- **완료(참고)**: On-Prem 애드온 스택 Phase 1~5(gate 870) · 대시보드 Qwen/상세뷰(gate 876) · GitAIOps 대조 갭 6건(gate 983).
-- 아티클: **발행 완료**(2026-07-25). GitAIOps 후속편은 `NEXT_PLAN`에 논지만 남기고 착수 보류(사용자 지시).
+**지금 하는 것**
+
+- **Phase 3(인가 강화)** — ①자격증명 격리 full = 완료(2026-07-27). 남은 것은
+  ②롤백↔selfHeal 우선순위(registry write-back, 지금은 문서로만 명명되고
+  `ONPREM_EXECUTOR_LIVE=false`로 묶여 있다) · ③viewer 가시성 제한.
+  **과대 해석 금지**: 자격증명 자체가 테넌트-바운드인 것은 **온프렘뿐**(→ Open Risks 7).
+- **레포 원고 동기화** — 발행 3종(Notion 전문 `3a94c2420ac4801cbe99e36c16ed90fd` ·
+  YouTube Shorts `2J9WfZV0TPE` · LinkedIn)은 2026-07-28 전부 완료. 정정본이 레포에도
+  반영됐다(`6979787`). 남은 건 GitAIOps 후속편이며 착수 보류(사용자 지시).
+
+**직전에 선 것들(2026-07-26~27, 상세는 `PROGRESS_LOG`/`COMPLETED_SUMMARY`)**
+
+- **자연어 한 문장이 테넌트를 세운다** — `setup_tenancy → install_tenant_addons` 체인(17.6s).
+  에이전트 mutating 범위는 **테넌트 스코프까지**, 공유 스택 9개는 TF 소유(D30).
+  컨텍스트가 레지스트리와 다르면 아무것도 쓰지 않고 거부한다.
+- **시연 가능** — `make dev-up` → `make demo-baseline`으로 4축 ✓ → netpol 1개 삭제 시
+  network 축만 ✕ → 복구까지 재현. 영상·대본 → `docs/post/`.
+- **레지스트리가 설치까지 표현한다** — repo+chart+values 세 입력이 전부 레지스트리에서
+  나오고(`render_addons.py`), 클러스터 싱글턴은 이름을 대며 거부된다.
+- **대시보드가 멀티테넌시를 관제한다** — 플릿 표(전 테넌트 × 격리 4축 + 티어 + 쿼터).
+  데이터는 스포크 push로만 들어온다(D28). "N ok"는 실제로 평가한 행만 센다.
+- **검증이 훅으로 강제된다** — Stop→`make check`(소스 변경 시만), PostToolUse→`tsc`(D29).
+- **Phase 2 = 완결(M11)** · **Phase 0·1a·1b = 완결(M10)** — 상세 → `COMPLETED_SUMMARY`.
+  **Phase 1b 잔여**: loki/tempo/pa 이관은 볼륨 스냅샷 수단 선행(kind엔 CSI 스냅샷터 부재).
 
 ## Open Risks / Gaps
 
