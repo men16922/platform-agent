@@ -228,3 +228,102 @@ class TokenBroker:
             approval_id=record.approval_id,
             allowed_namespaces=namespaces,
         )
+
+
+def resolve_incident_scope(normalized_incident: Any, log: Any) -> IncidentScope | None:
+    """
+    Mint the scope an incident is entitled to, or return None (fail-closed downstream).
+
+    The credential is chosen by the **attested approval record** carried on the
+    incident, never by a caller-supplied tenant string. Returning None is safe
+    precisely because ``guard_scoped_action`` refuses to act on it — this function
+    is allowed to be best-effort only because the gate downstream is not.
+
+    Lives here rather than in one cloud's executor because there is more than one
+    dispatch path into the runners (the AWS Step Functions executor and the GCP
+    Cloud Workflows executor). When this logic sat in ``aws/executor.py`` the GCP
+    path simply had no scope at all.
+
+    Best-effort by design: tenancy resolution must never take down the AWS path,
+    which has no tenant and never had this problem.
+    """
+    if normalized_incident is None or getattr(normalized_incident, "provider", None) == "aws":
+        return None
+
+    attested = (getattr(normalized_incident, "source_metadata", None) or {}).get("attested_approval")
+    if not isinstance(attested, dict):
+        log.info("executor.scope.absent", reason="no attested approval on the incident")
+        return None
+
+    try:
+        from src.agents.platform.registry import load_registry
+
+        broker = TokenBroker.from_env(load_registry())
+        record = AttestedApproval(
+            approval_id=attested.get("approval_id", ""),
+            tenant=attested.get("tenant", ""),
+            env=attested.get("env", ""),
+            signature=attested.get("signature", ""),
+            nonce=attested.get("nonce", ""),
+        )
+        # The incident's own tenant is passed only so a mismatch is REFUSED;
+        # the broker never uses it to pick the credential.
+        scope = broker.mint(record, requested_tenant=getattr(normalized_incident, "tenant", "") or None)
+        log.info("executor.scope.minted", scope=scope.redacted())
+        return scope
+    except Exception as exc:
+        log.warning("executor.scope.unavailable", error=str(exc))
+        return None
+
+
+def guard_scoped_action(
+    *,
+    action: str,
+    namespace: str,
+    scope: IncidentScope | None,
+    log: Any,
+    log_prefix: str,
+) -> IncidentScope:
+    """
+    The fail-closed gate every live remediation action must pass. Phase 3.
+
+    This lived inside the on-prem runner through Phase 1a, which meant each new
+    runner had to *remember* to re-derive it. That is the failure mode this repo
+    has already paid for once (a capability rendered per-engine is a capability
+    the third engine forgets), so the gate is one implementation and the runners
+    call it — they do not restate it.
+
+    Two refusals, in order:
+
+    1. **No scope** — an unresolved credential means we do not know whose cluster
+       this would touch, which is exactly when acting is least safe. Refuse
+       rather than fall back to whatever ambient identity is lying around.
+    2. **Out-of-scope namespace** — advisory, because the API server is the real
+       authority. Refusing here turns an opaque ``Forbidden`` into an
+       attributable log line naming the tenant and the namespace.
+
+    ``log_prefix`` keeps each runner's event names intact (``<prefix>.no_scope``,
+    ``<prefix>.out_of_scope``) so operators keep grepping what they already grep.
+
+    Returns the scope so callers can use it as an assertion site rather than
+    re-checking for ``None`` afterwards.
+    """
+    if scope is None:
+        log.error(f"{log_prefix}.no_scope", action=action)
+        raise ScopeError(
+            f"refusing live action {action!r} without a scoped credential "
+            "(ambient credential execution was removed in Phase 1a)"
+        )
+
+    if not scope.permits_namespace(namespace):
+        log.warning(
+            f"{log_prefix}.out_of_scope",
+            action=action,
+            namespace=namespace,
+            scope=scope.redacted(),
+        )
+        raise ScopeError(
+            f"namespace {namespace!r} is outside the scope of tenant {scope.tenant!r}"
+        )
+
+    return scope

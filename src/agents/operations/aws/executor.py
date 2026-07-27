@@ -128,43 +128,14 @@ def _resolve_incident_scope(normalized_incident: NormalizedIncident | None, log:
     """
     Mint the per-incident scoped credential, or return None (fail-closed downstream).
 
-    The credential is chosen by the **attested approval record**, never by a
-    caller-supplied tenant string: the record travels with the incident and the
-    broker verifies its signature before issuing anything. Returning None is safe
-    because the on-prem runner refuses a live action without a scope — the old
-    behaviour (fall back to the ambient kubeconfig) is what this replaces.
-
-    Everything here is best-effort and non-fatal: tracing/tenancy must never take
-    down the AWS path, which has no tenant and never had this problem.
+    Thin delegation on purpose (Phase 3): the implementation moved to
+    ``platform.scope`` because this is not the only dispatch path into the
+    runners, and a second copy here is how the GCP path ended up with no scope
+    at all. Kept as a module-level name because callers patch it in tests.
     """
-    if normalized_incident is None or normalized_incident.provider == "aws":
-        return None
+    from src.agents.platform.scope import resolve_incident_scope
 
-    attested = (normalized_incident.source_metadata or {}).get("attested_approval")
-    if not isinstance(attested, dict):
-        log.info("executor.scope.absent", reason="no attested approval on the incident")
-        return None
-
-    try:
-        from src.agents.platform.registry import load_registry
-        from src.agents.platform.scope import AttestedApproval, TokenBroker
-
-        broker = TokenBroker.from_env(load_registry())
-        record = AttestedApproval(
-            approval_id=attested.get("approval_id", ""),
-            tenant=attested.get("tenant", ""),
-            env=attested.get("env", ""),
-            signature=attested.get("signature", ""),
-            nonce=attested.get("nonce", ""),
-        )
-        # The incident's own tenant is passed only so a mismatch is REFUSED;
-        # the broker never uses it to pick the credential.
-        scope = broker.mint(record, requested_tenant=normalized_incident.tenant or None)
-        log.info("executor.scope.minted", scope=scope.redacted())
-        return scope
-    except Exception as exc:
-        log.warning("executor.scope.unavailable", error=str(exc))
-        return None
+    return resolve_incident_scope(normalized_incident, log)
 
 
 def _run_capability_steps(
@@ -633,14 +604,19 @@ def _run_external_action(
     ``incident_scope`` is the per-incident scoped credential handle (Phase 1a).
     This function used to drop the incident entirely and forward only ``params``,
     which is why blast radius depended on label/routing correctness instead of on
-    a credential. The on-prem runner now refuses a live run without it.
+    a credential. Every cluster-touching runner now refuses a live run without it.
+
+    Phase 3 closed the asymmetry here: the scope reached only the on-prem runner,
+    so a GKE or AKS remediation still ran on routing correctness alone. Every
+    branch below forwards it, and ``test_scope_reaches_every_runner`` fails if a
+    future provider is added without doing the same.
     """
     if provider == "gcp":
         from src.agents.operations.runners.gcp_runner import run_gcp_action
-        run_gcp_action(action, params, log)
+        run_gcp_action(action, params, log, incident_scope)
     elif provider == "azure":
         from src.agents.operations.runners.azure_runner import run_azure_action
-        run_azure_action(action, params, log)
+        run_azure_action(action, params, log, incident_scope)
     elif provider == "onprem":
         # Real kubectl remediation, gated off by default (ONPREM_EXECUTOR_LIVE)
         # and refused outright when no scoped credential was resolved.

@@ -123,10 +123,34 @@ class TestQuotaIsATenantBound:
 class TestRbacStaysInsideTheTenant:
     def test_role_is_namespaced_never_cluster_scoped(self, registry):
         objects = render_rbac(registry.tenant("acme"), "dev", service_account="platform-agent")
-        assert {o["kind"] for o in objects} == {"Role", "RoleBinding"}
+        assert {o["kind"] for o in objects} == {"ServiceAccount", "Role", "RoleBinding"}
         assert all(o["metadata"].get("namespace") for o in objects), (
             "a ClusterRole here re-grants the blast radius Phase 1a closed"
         )
+
+    def test_every_binding_subject_is_actually_rendered(self, registry):
+        """
+        A RoleBinding may name a ServiceAccount that does not exist; Kubernetes
+        accepts it silently and the grant simply cannot be exercised. That was
+        the real state of every tenant through Phase 1a — a healthy-looking
+        `kubectl get rolebinding` over an identity nobody had created.
+
+        So assert the subject against what this renderer *emits*, not against a
+        name we happen to expect: this fails if the SA is ever dropped again, and
+        it fails for the right reason.
+        """
+        objects = render_rbac(registry.tenant("acme"), "dev", service_account="pa")
+        rendered = {
+            (o["metadata"]["namespace"], o["metadata"]["name"])
+            for o in objects if o["kind"] == "ServiceAccount"
+        }
+        for binding in (o for o in objects if o["kind"] == "RoleBinding"):
+            for subject in binding["subjects"]:
+                assert subject["kind"] == "ServiceAccount"
+                assert (subject["namespace"], subject["name"]) in rendered, (
+                    f"RoleBinding {binding['metadata']['name']} in "
+                    f"{binding['metadata']['namespace']} binds a subject nothing creates"
+                )
 
     def test_no_wildcards_anywhere(self, registry):
         for obj in render_rbac(registry.tenant("acme"), "dev", service_account="pa"):

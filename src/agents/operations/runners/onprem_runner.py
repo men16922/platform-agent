@@ -131,34 +131,24 @@ def run_onprem_action(
     context — that downgrade is exactly the fail-open this phase removes. Log-only
     mode still works without a scope, since it touches nothing.
 
+    The refusal itself lives in ``guard_scoped_action`` so the GCP and Azure
+    runners enforce the identical contract rather than a lookalike of it.
+
     Raises on a failed live kubectl call so the executor marks the action skipped.
     """
     if not _is_live():
         log.info("onprem_runner.log_only", action=action, params=params)
         return
 
-    if scope is None:
-        # Fail closed: an unresolved credential means we do not know whose cluster
-        # this would touch, which is precisely when acting is least safe.
-        log.error("onprem_runner.no_scope", action=action)
-        raise RuntimeError(
-            f"refusing live action {action!r} without a scoped credential "
-            "(ambient kubeconfig execution was removed in Phase 1a)"
-        )
+    from src.agents.platform.scope import guard_scoped_action
 
-    namespace = (params.get("Namespace") or [""])[0]
-    if not scope.permits_namespace(namespace):
-        # Advisory short-circuit — RBAC would also refuse, but skipping here keeps
-        # a clear, attributable log line instead of an opaque Forbidden.
-        log.warning(
-            "onprem_runner.out_of_scope",
-            action=action,
-            namespace=namespace,
-            scope=scope.redacted(),
-        )
-        raise RuntimeError(
-            f"namespace {namespace!r} is outside the scope of tenant {scope.tenant!r}"
-        )
+    scope = guard_scoped_action(
+        action=action,
+        namespace=(params.get("Namespace") or [""])[0],
+        scope=scope,
+        log=log,
+        log_prefix="onprem_runner",
+    )
 
     args = _kubectl_args(action, params, log)
     if args is None:

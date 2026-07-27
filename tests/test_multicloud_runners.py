@@ -11,6 +11,15 @@ from unittest import mock
 from src.agents.operations.runners.gcp_auth import get_gcp_access_token
 from src.agents.operations.runners.gcp_runner import run_gcp_action
 from src.agents.operations.runners.azure_runner import run_azure_action
+from src.agents.platform.scope import IncidentScope
+
+# A live runner refuses to act without a scoped credential (Phase 3), so the
+# real-API tests below have to carry one. Empty `allowed_namespaces` means the
+# namespace gate is a no-op — deliberate, so these stay tests about the API call
+# shape. Namespace refusal is covered in `test_scope_all_runners.py`.
+ANY_NAMESPACE_SCOPE = IncidentScope(
+    tenant="acme", env="dev", kubeconfig_path="/dev/null", approval_id="APR-TEST"
+)
 
 
 class TestGcpAuth:
@@ -95,8 +104,8 @@ class TestGcpRunner:
         }
         
         with mock.patch.dict(os.environ, {"GCP_MOCK": "false", "TESTING": "False"}):
-            run_gcp_action("GCP-RolloutRestartGKEWorkload", params, log)
-            
+            run_gcp_action("GCP-RolloutRestartGKEWorkload", params, log, ANY_NAMESPACE_SCOPE)
+
             # GKE cluster lookup assertion
             mock_get.assert_called_once_with(
                 "https://container.googleapis.com/v1/projects/gcp-proj-1/locations/-/clusters/gke-cluster-1",
@@ -145,8 +154,8 @@ class TestGcpRunner:
         }
         
         with mock.patch.dict(os.environ, {"GCP_MOCK": "false", "TESTING": "False", "GCP_FAILOVER_CLUSTER_NAME": "gke-cluster-1-backup"}):
-            run_gcp_action("GCP-RolloutRestartGKEWorkload", params, log)
-            
+            run_gcp_action("GCP-RolloutRestartGKEWorkload", params, log, ANY_NAMESPACE_SCOPE)
+
             # GKE lookup should be called twice (primary then backup)
             assert mock_get.call_count == 2
             mock_get.assert_any_call(

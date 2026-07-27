@@ -10,7 +10,7 @@ import base64
 import os
 import tempfile
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import requests
 import structlog
@@ -18,20 +18,48 @@ import structlog
 from src.agents.operations.runners import _k8s_rest
 from src.agents.operations.runners.gcp_auth import get_gcp_access_token
 
+if TYPE_CHECKING:
+    from src.agents.platform.scope import IncidentScope
+
 logger = structlog.get_logger(__name__)
 
 
-def run_gcp_action(action: str, params: dict[str, list[str]], log: Any) -> None:
+def run_gcp_action(
+    action: str,
+    params: dict[str, list[str]],
+    log: Any,
+    scope: "IncidentScope | None" = None,
+) -> None:
     """
     Executes a real GCP remediation action.
     Falls back to mock simulation if GCP_MOCK=True or in testing environment without credentials.
+
+    ``scope`` is the per-incident credential handle (Phase 3). Until now this
+    runner took no scope at all, so a GKE remediation's blast radius depended on
+    the routing that chose ``params`` — the same fail-open the on-prem path
+    removed in Phase 1a. A live run is now refused without an attested scope, and
+    the target namespace must fall inside it.
+
+    Honest limit: the *credential* here is still one project-wide GCP identity.
+    The scope decides which namespace this action may touch; it does not yet make
+    the token itself tenant-bound. Per-tenant Workload Identity is Phase 4.
     """
     is_mock = os.getenv("GCP_MOCK", "false").lower() == "true" or os.getenv("TESTING") == "True"
-    
+
     if is_mock:
         log.info("gcp_runner.mock_execution", action=action, params=params)
         time.sleep(1)  # Simulate execution latency
         return
+
+    from src.agents.platform.scope import guard_scoped_action
+
+    guard_scoped_action(
+        action=action,
+        namespace=(params.get("Namespace") or [""])[0],
+        scope=scope,
+        log=log,
+        log_prefix="gcp_runner",
+    )
 
     try:
         token = get_gcp_access_token()

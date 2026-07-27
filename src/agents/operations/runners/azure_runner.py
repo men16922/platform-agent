@@ -9,27 +9,56 @@ from __future__ import annotations
 
 import os
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import requests
 import structlog
 
 from src.agents.operations.runners import _k8s_rest
 
+if TYPE_CHECKING:
+    from src.agents.platform.scope import IncidentScope
+
 logger = structlog.get_logger(__name__)
 
 
-def run_azure_action(action: str, params: dict[str, list[str]], log: Any) -> None:
+def run_azure_action(
+    action: str,
+    params: dict[str, list[str]],
+    log: Any,
+    scope: "IncidentScope | None" = None,
+) -> None:
     """
     Executes a real Azure remediation action.
     Falls back to mock simulation if AZURE_MOCK=True or in testing environment without credentials.
+
+    ``scope`` is the per-incident credential handle (Phase 3). A live run without
+    an attested scope is refused, and the target namespace must fall inside it.
+
+    Honest limit — and this path is the weakest of the three: ``_execute_aks_call``
+    asks ARM for the cluster's **admin** kubeconfig, so the identity doing the
+    work is cluster-admin regardless of which tenant the incident names. The
+    namespace gate below narrows *what gets asked for*; it does not narrow what
+    the credential could do if something bypassed the gate. Making the AKS
+    credential itself tenant-bound (Entra Workload ID + per-namespace RBAC)
+    needs a live AKS cluster and belongs to Phase 4.
     """
     is_mock = os.getenv("AZURE_MOCK", "false").lower() == "true" or os.getenv("TESTING") == "True"
-    
+
     if is_mock:
         log.info("azure_runner.mock_execution", action=action, params=params)
         time.sleep(1)  # Simulate execution latency
         return
+
+    from src.agents.platform.scope import guard_scoped_action
+
+    guard_scoped_action(
+        action=action,
+        namespace=(params.get("Namespace") or [""])[0],
+        scope=scope,
+        log=log,
+        log_prefix="azure_runner",
+    )
 
     # In production, we get access token via Federated Credentials or environment vars
     try:

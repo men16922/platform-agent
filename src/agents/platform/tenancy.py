@@ -164,10 +164,21 @@ def render_namespaces(tenant: Tenant, env_name: str) -> list[dict[str, Any]]:
 
 
 def render_rbac(tenant: Tenant, env_name: str, *, service_account: str) -> list[dict[str, Any]]:
-    """A Role + RoleBinding per namespace, granting only the remediation surface.
+    """A ServiceAccount + Role + RoleBinding per namespace, granting only the
+    remediation surface.
 
     Namespaced on purpose: a ClusterRole would make the credential reach every
     tenant on the cluster, which is precisely the blast radius Phase 1a closed.
+
+    The ServiceAccount is rendered here rather than assumed to exist. It was
+    assumed through Phase 1a, and live inspection in Phase 3 found the result: the
+    RoleBinding pointed at ``platform-agent`` in a namespace that had no such
+    ServiceAccount, so the identity this entire boundary rests on had never been
+    created. Kubernetes accepts a binding to an absent subject without complaint,
+    so ``kubectl get rolebinding`` showed a healthy-looking grant that could not
+    be exercised by anybody. It failed closed, which is why nothing broke and
+    nothing surfaced — the same "no error, just not read" shape as the values-file
+    and Capsule-deprecation defects.
     """
     if tenant.isolation is not IsolationTier.SOFT:
         raise UnsupportedTier(
@@ -177,6 +188,11 @@ def render_rbac(tenant: Tenant, env_name: str, *, service_account: str) -> list[
     for _capability, namespace in namespaces_for(tenant, env_name):
         role_name = f"{tenant.naming_prefix}-agent"
         labels = {TENANT_LABEL: tenant.name, ENV_LABEL: env_name}
+        objects.append({
+            "apiVersion": "v1",
+            "kind": "ServiceAccount",
+            "metadata": {"name": service_account, "namespace": namespace, "labels": labels},
+        })
         objects.append({
             "apiVersion": "rbac.authorization.k8s.io/v1",
             "kind": "Role",

@@ -123,9 +123,15 @@ def _execute_single_action(
         resolved = adapter.resolve_action(capability, incident)
         parameters = resolved.get("parameters", {})
 
-        # Call real GKE and Cloud Run action runner
+        # Call real GKE and Cloud Run action runner.
+        # The scope is resolved from the incident's own attested approval — this
+        # path forwarded no credential handle at all before Phase 3, so a GKE
+        # remediation's blast radius rested on routing correctness alone.
         from src.agents.operations.runners.gcp_runner import run_gcp_action
-        run_gcp_action(action, parameters, logger)
+        from src.agents.platform.scope import resolve_incident_scope
+
+        incident_scope = resolve_incident_scope(incident, logger)
+        run_gcp_action(action, parameters, logger, incident_scope)
 
         return {"success": True, "action": action, "parameters": parameters}
 
