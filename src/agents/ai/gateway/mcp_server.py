@@ -370,12 +370,18 @@ class MCPServer:
         kill_switch: bool | None = None,
         scope: Any = None,
         log: Any = None,
+        rate_limiter: Any = None,
     ):
         # Per-incident scoped credential (Phase 1a's ``IncidentScope``). Optional
         # so the verified anonymous read path is unchanged; when present it both
         # bounds which namespaces the cluster tools may touch and pins kubectl to
         # that credential rather than whatever context happens to be current.
         self._scope = scope
+        # Per-tenant call budget. Only meaningful with a scope, because without
+        # one there is no tenant to attribute the call to — which is itself a
+        # reason the unscoped read path stays a named carve-out rather than a
+        # default.
+        self._rate_limiter = rate_limiter
         self._log = log if log is not None else _NullLog()
         self._kubectl = KubectlTool()
         self._docker = DockerTool()
@@ -454,6 +460,20 @@ class MCPServer:
             # here rather than left implicit so nobody reads the mutating
             # refusal above as covering the whole gateway.
             return fn(**args)
+
+        # Budget before boundary: an over-budget tenant is refused whether or not
+        # the namespace would have been allowed, and checking first keeps a
+        # flooding caller from paying for the boundary computation each time.
+        if self._rate_limiter is not None:
+            from src.agents.platform.ratelimit import RateLimitExceeded
+
+            try:
+                self._rate_limiter.check(self._scope.tenant, action=name)
+            except RateLimitExceeded as exc:
+                self._log.warning(
+                    "mcp_server.rate_limited", tool=name, tenant=self._scope.tenant
+                )
+                return ToolResult(success=False, error=str(exc))
 
         # Same gate the runners use — not a lookalike of it. A namespace outside
         # the scope is refused before the call, and the credential is pinned for

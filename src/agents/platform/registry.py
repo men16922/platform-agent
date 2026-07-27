@@ -63,11 +63,20 @@ class IsolationTier(str, Enum):
 
 @dataclass(frozen=True)
 class Quota:
-    """Capsule-enforced ResourceQuota/LimitRange bounds (API objects only)."""
+    """Capsule-enforced ResourceQuota/LimitRange bounds (API objects only).
+
+    ``calls_per_min`` is the exception and is deliberately not in ``to_dict``:
+    it bounds what a tenant may *do* through the shared control plane, not what
+    it may *hold* in the cluster, so no Kubernetes object carries it. It lives
+    here anyway because a second file for tenant policy is a second file for it
+    to drift out of sync. Unset means unlimited — this axis has to be additive
+    or turning it on is an outage.
+    """
 
     cpu: str | None = None
     memory: str | None = None
     pods: int | None = None
+    calls_per_min: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {k: v for k, v in {"cpu": self.cpu, "memory": self.memory, "pods": self.pods}.items() if v is not None}
@@ -430,6 +439,7 @@ def load_registry(root: Path | str | None = None) -> Registry:
                 cpu=quota_raw.get("cpu"),
                 memory=quota_raw.get("memory"),
                 pods=quota_raw.get("pods"),
+                calls_per_min=quota_raw.get("calls_per_min"),
             ),
             environments=environments,
         )

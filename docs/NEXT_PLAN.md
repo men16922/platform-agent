@@ -78,11 +78,18 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 - [ ] **LinkedIn 원고를 게시본에 맞추기** — 발행은 끝났고 레포 원고만 구판이다.
   34·71행의 "7B가 30B를 이겼습니다"가 그 자리. 공개 아티클이 링크하는 레포이므로,
   게시본과 다른 주장이 남아 있으면 그게 정본처럼 읽힌다.
-- [ ] **공유 MCP 서버에 테넌트 신원 전파** — `gateway/mcp_server.py`는 공유인데 테넌트 개념이
-  0이다(kill-switch는 "이 도구를 전부 끈다"이지 "이 테넌트에게만"이 아니다). Phase 3①이 *실행*
-  경로에 세운 경계가 *도구* 경로엔 없다. 근거 → `docs/reference/gcp-agentic-ai-architecture-center.md`.
-- [ ] **테넌트별 rate limit(노이지 네이버)** — 쿼터가 Capsule의 cpu/memory/pods까지고 **모델 호출량은
-  아무도 안 센다**. 로컬 Qwen 단일 인스턴스라 한 테넌트의 폭주가 공유 추론을 독점할 수 있다.
+- [x] **MCP 게이트웨이 ambient 자격증명 차단(gate 1395, 2026-07-28)** — 갭을 파보니 신원 부재보다
+  컸다: 모든 도구가 맨 `kubectl`을 쐈고 `kubectl_apply`는 임의 매니페스트를 임의 ns에 썼다.
+  이제 argv가 스코프 kubeconfig로 고정되고 변경 도구는 fail-closed.
+  증거 `docs/evidence/mcp-gateway-scope.log`.
+- [x] **테넌트별 call budget(gate 1404, 2026-07-28)** — `platform/ratelimit.py`(sliding window,
+  레지스트리 `quota.calls_per_min`에서 선언, 미선언=무제한이라 additive). MCP 도구 호출에 배선.
+- [ ] **rate limit을 모델 호출까지 확장** — 위는 **도구 호출만** 센다. 공유 추론(로컬 Qwen 단일
+  인스턴스)은 `mlx_qwen_tool_proxy`의 `do_POST`가 chokepoint인데 **요청에 테넌트가 실려 있지 않다**.
+  헤더로 받게 하려면 호출자 전부가 실어 보내야 하고, 안 그러면 "선언은 됐는데 아무도 안 보내는"
+  필드가 하나 더 생긴다 — 신원 전파가 선행 과제.
+- [ ] **무스코프 MCP 읽기는 여전히 ambient** — 검증된 익명 kagent 왕복을 살리려는 의도적 예외다.
+  닫으려면 kagent 경로에 먼저 스코프를 줘야 한다. 읽기가 무해해서가 아니다(남의 로그 = 유출).
 - [ ] **A2A 인증 실집행 결정** — 카드가 광고하던 bearer/JWT를 서버가 검사하지 않던 것은 해소했다
   (`A2A_BEARER_TOKEN` 미설정 시 광고도 안 한다). 남은 결정은 **기본값을 on으로 돌릴지** —
   지금은 라이브 kagent 왕복이 익명이라 opt-in이다.
