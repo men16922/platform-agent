@@ -136,8 +136,9 @@ def test_single_catalog_is_source_of_truth():
     # The catalog covers exactly the union of the three source tool lists (nothing dropped/added).
     from src.agents.ai.ops_tools import OPS_TOOLS
     from src.agents.ai.provision_tools import PROVISION_TOOLS
+    from src.agents.ai.tenancy_tools import TENANCY_TOOLS
 
-    union = {t.__name__ for t in OPS_TOOLS + PROVISION_TOOLS + ld.LOCAL_DEPLOY_TOOLS}
+    union = {t.__name__ for t in OPS_TOOLS + PROVISION_TOOLS + TENANCY_TOOLS + ld.LOCAL_DEPLOY_TOOLS}
     assert set(catalog_names) == union
 
 

@@ -5,10 +5,12 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(M10=GitAIOps 7/7+멀티테넌트 Phase 0·1a·1b+공급망,
 > M9=eval·하드닝, M8=레퍼런스 8/8) / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 현재 상태 (2026-07-26, gate 1302)
+## 현재 상태 (2026-07-26, gate 1341)
 
 **GitAIOps 대조 7/7 · 멀티테넌트 Phase 0·1a·1b 완료**(rollouts-demo 소유권 TF→ArgoCD 이관까지 실행).
 런북은 이제 선언한 순서·조건·검증대로 실행된다. **Phase 2 완결**(M11) — 다음은 **Phase 3(인가 강화)**.
+**시연 가능**: `make dev-up` → `make demo-baseline` 두 줄로 영상 시나리오 A가 재현된다.
+**자연어 한 문장이 테넌트를 세운다**: `setup_tenancy → install_tenant_addons` 체인(17.6s, 라이브 실증).
 
 ## 사용자 게이트 (열린 것만)
 
@@ -19,11 +21,17 @@
   나왔고 전부 테스트는 초록이었다 — 라이브 실행만이 소비 부재를 드러냈다.
   **집필·발행은 이 계획에만 남기고 착수하지 않는다**(사용자 지시 2026-07-25).
 - [ ] (선택) **Azure Foundry 스택 정리** — 유휴 ≈$0라 유지 중.
-- [ ] **아티클 발행** — 초안 3종 완료(`docs/post/`): Notion 실습 아티클 · LinkedIn 소개 ·
-  30초 영상 시나리오. 주제=GitAIOps 실습서 스택을 온프렘+로컬 Qwen+멀티테넌시로 재구성,
-  결론=**자동화는 러닝커브를 없애지 않고 앞으로 당긴다**. 발행 경로는 Notion 전문 + LinkedIn 링크.
-- [ ] **영상 시나리오 재작성** — 현재 파일의 추천안 A(자연어 39초)는 **이미 발행한 소재**다.
-  멀티테넌시 + 풀스택 기준으로 다시 짜야 한다(격리 반증 장면이 가장 강함).
+- [ ] **LinkedIn 발행** — Notion 전문은 발행 완료(`3a94c2420ac4801cbe99e36c16ed90fd`,
+  YouTube Shorts `2J9WfZV0TPE`). `docs/post/linkedin-intro-ko.md`를 최종 확인해 영상/링크와 게시한다.
+  본문의 "어려웠던 것" 단락은 영상의 논지(반증 가능한 화면)와 유지한다.
+  **게시 전 정정 1건(미반영)**: 본문의 "**7B가 30B를 이겼습니다**(20/20 vs 19/20)"는 과대주장이다 —
+  1건 차이·시행 1회(`trials:1`)이고 temperature 1.0에서는 **역전된다**(7B 18 < 30B 19).
+  데이터가 지탱하는 건 ①크기 4배로도 개선 없음 ②temp↑면 악화 ③정확도를 움직인 건 프롬프트
+  (전 설정 80%→95~100%). 근거 → `docs/evidence/model-sweep-live.log`. 아티클 본문은 이미 헤지돼 있다.
+- [x] **영상 재촬영·편집**(2026-07-26) — 시나리오가 격리 반증 단독 → **풀스택 체인**으로 바뀌어
+  다시 찍었다. `docs/post/media/multitenancy-fullstack-30s.mp4`(30.03초 · 오버레이 없음 ·
+  원본 153.8초를 10컷). 파이프라인 4단계 → `scripts/demo/README.md`.
+  구판 `isolation-falsified-30s.mp4`는 마지막 비트로 흡수됨.
 
 ## 진행 중 — 멀티테넌트/멀티-클라우드 플랫폼 + per-env Add-on
 
@@ -50,6 +58,9 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 - [ ] **선택 불가 런북 4개** — `CAPABILITY_RUNBOOKS`의 certificate-expiry·disk-full·
   health-check-failure·network-latency-high는 `BUILTIN_RUNBOOKS`에 없어 아무것도 이들을 고를 수 없다.
   step 배선(`c4816fd`) 중 발견했고, 범위를 조용히 넓히지 않으려 분리해 남김.
+- [ ] **Capsule deprecation 이관** — `render_tenancy.py` 적용 시 `limitRanges`(→TenantReplications)와
+  `additionalMetadata`(→`additionalMetadataList`) 경고가 뜬다. 지금은 동작하지만 상위 버전에서
+  **에러 없이 안 읽히는** 쪽으로 실패할 부류라 Capsule 업그레이드 전에 처리.
 - [ ] **Cosign 어드미션 집행**(승인 필요) — 현재는 CI/사람용 검증 게이트까지다. API 서버가 미서명
   이미지를 거부하려면 policy controller(sigstore/Kyverno)라는 새 클러스터 의존성이 필요 → Phase 2와 함께.
 

@@ -62,6 +62,17 @@ __TOOLS__
   change anything unless explicitly asked.
 - **For a "set up / provision a cluster" request**, use `provision_cluster`
   first; then deploy only if the user also asked to deploy.
+- **For a "set up a tenant / multi-tenancy" request**, the steps chain in a fixed
+  order because each one needs the previous one's objects: `provision_cluster`
+  (only if there is no cluster yet) -> `setup_tenancy` -> `install_tenant_addons`.
+  Add-ons are delivery objects *inside* the tenant's namespaces, so installing
+  them before the boundary exists fails on a missing namespace. Do all the steps
+  the request asks for in one go — do not stop after the boundary and wait.
+- **Applied is not enforced.** `setup_tenancy` reports per-axis enforcement and
+  fills `enforcement_gaps` when the cluster will not hold to something the
+  registry declares (an absent Capsule CRD drops the quota with no error at all).
+  Repeat those gaps in your summary; never report a tenant as isolated because
+  the apply succeeded.
 - **For a deployment request**, call `deploy_service` once (it runs build ->
   push -> deploy -> validate and stops at the first failure). Only fall back to
   the individual step tools if you need to intervene between steps. If validation
@@ -307,7 +318,7 @@ def deploy_service(
 
 LOCAL_DEPLOY_TOOLS = [deploy_service, build_image, push_image, deploy_to_cluster, validate_deployment, rollback_deployment]
 
-# Full platform agent tool set = provision (IaC) + deploy/recover + read-only diagnostics.
+# Full platform agent tool set = provision (IaC) + tenancy + deploy/recover + read-only diagnostics.
 from src.agents.ai.ops_tools import (  # noqa: E402
     describe_deployment,
     get_logs,
@@ -318,6 +329,10 @@ from src.agents.ai.ops_tools import (  # noqa: E402
 from src.agents.ai.provision_tools import (  # noqa: E402
     provision_cluster,
     teardown_cluster,
+)
+from src.agents.ai.tenancy_tools import (  # noqa: E402
+    install_tenant_addons,
+    setup_tenancy,
 )
 
 
@@ -347,6 +362,7 @@ class AgentTool:
 _CATEGORY_BLURBS: dict[str, str] = {
     "Investigate": "read-only, use freely",
     "Provision": "infrastructure / IaC, mutating — only when explicitly asked",
+    "Tenancy": "tenant boundaries + their add-ons, from the registry, mutating",
     "Deploy": "mutating",
     "Recover": "mutating",
 }
@@ -359,6 +375,8 @@ AGENT_TOOL_CATALOG: list[AgentTool] = [
     AgentTool(list_namespaces, "Investigate", "namespaces in the cluster"),
     AgentTool(provision_cluster, "Provision", "stand up a cluster (Terraform kind / Ansible k3s)"),
     AgentTool(teardown_cluster, "Provision", "destroy a provisioned cluster"),
+    AgentTool(setup_tenancy, "Tenancy", "create a tenant/env boundary (namespaces, RBAC, NetworkPolicy, quota)"),
+    AgentTool(install_tenant_addons, "Tenancy", "install that tenant's declared add-ons — needs the boundary first"),
     AgentTool(deploy_service, "Deploy", "**preferred** — build -> push -> deploy -> validate in ONE call"),
     AgentTool(build_image, "Deploy", "build step only (fine-grained control)"),
     AgentTool(push_image, "Deploy", "push a built image to the registry"),

@@ -201,6 +201,42 @@ class Registry:
             return {}
         return loaded if isinstance(loaded, dict) else {}
 
+    def repo_for(self, capability: str) -> str:
+        """Helm chart repository for a capability's self-hosted backend.
+
+        Chart + version + values are not enough to install anything — a chart name
+        with no repository resolves to nothing, and ArgoCD reports that as a
+        ComparisonError on the Application rather than as a registry problem. Until
+        this axis existed the only place the URL lived was `infra/onprem/addons/*.tf`,
+        so the registry could describe an add-on it could not produce an installable
+        manifest for, and every live install was hand-assembled.
+
+        This is the one catalog field that is a *copy* of something Terraform also
+        states (values are pointed at, not copied, for exactly that reason). A URL
+        is a scalar with no file to point at, so the copy is made safe the other
+        way: `test_catalog_repos_match_terraform` fails the gate if the two
+        disagree. Unchecked duplication is what this codebase keeps getting bitten
+        by; checked duplication is just redundancy.
+        """
+        entry = self.catalog.get("capabilities", {}).get(capability) or {}
+        declared = entry.get("self_hosted_repo")
+        return declared if isinstance(declared, str) else ""
+
+    def capabilities_missing_repo(self) -> list[str]:
+        """Capabilities that name a self-hosted chart with nowhere to fetch it from.
+
+        Reported rather than raised, on the same reasoning as the values gap: the
+        registry still describes a valid platform, but nothing can install this
+        capability, and the symptom otherwise surfaces three systems away.
+        """
+        return sorted(
+            name
+            for name, entry in (self.catalog.get("capabilities") or {}).items()
+            if isinstance(entry, dict)
+            and (entry.get("backends") or {}).get("self_hosted")
+            and not self.repo_for(name)
+        )
+
     def capabilities_missing_values(self) -> list[str]:
         """Capabilities whose declared values file does not resolve to a mapping.
 
@@ -216,6 +252,24 @@ class Registry:
             and entry.get("self_hosted_values")
             and not self.values_for(name)
         )
+
+    def uninstallable_reason(self, capability: str) -> str | None:
+        """Why this add-on cannot be installed as rendered, or None if it can.
+
+        Asked before printing or applying rather than after, because both gaps fail
+        far from their cause — a missing repo becomes an ArgoCD ComparisonError,
+        missing values become a chart that refuses to template — and neither
+        symptom names the registry.
+
+        Both callers that turn the registry into installed software (the render
+        script and the agent's tenancy tool) ask here, so the two can never differ
+        on what "installable" means.
+        """
+        if not self.repo_for(capability):
+            return "no self_hosted_repo in the catalog — nowhere to fetch the chart from"
+        if not self.values_for(capability):
+            return "declared values file did not resolve to a mapping"
+        return None
 
     def capabilities_missing_scope(self) -> list[str]:
         """Catalog entries with no declared scope — a reporting concern, not fatal.

@@ -46,3 +46,11 @@ infra/onprem/terraform/.terraform/
 
 # macOS
 .DS_Store
+
+# Local ArgoCD demo credential — never commit. The recording script now reads the
+# password from the cluster secret instead, but an older README told people to
+# create this file.
+.argocd-demo-password
+
+# Skill scratch output (humanize drafts 등). 산출물은 docs/ 아래 최종본만 남긴다.
+_workspace/

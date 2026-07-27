@@ -28,4 +28,16 @@ def get_delivery_adapter(engine: str):
         ) from exc
 
 
+def build_delivery_adapter(engine: str, repo_url: str = ""):
+    """Instantiate an engine's adapter for one chart's repository.
+
+    One adapter per add-on, not per env: the repository is a property of the chart.
+    ArgoCD renders the URL into the Application's Source, so it has to be on the
+    adapter; Flux reads it from the HelmRepository the manifest references, so it
+    keeps the value and never renders it. Threading it in uniformly means callers
+    do not branch on the engine — which is where the third caller would go wrong.
+    """
+    return get_delivery_adapter(engine)(repo_url=repo_url)
+
+
 __all__ = ["ArgoCDDeliveryAdapter", "FluxDeliveryAdapter", "DELIVERY_ADAPTERS", "get_delivery_adapter"]

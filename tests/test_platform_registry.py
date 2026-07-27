@@ -11,6 +11,7 @@ The three contracts under test:
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -458,6 +459,81 @@ class TestValuesSeam:
             registry.tenant("acme"), registry.environment("acme", "dev"), [addon]
         )
         assert "helm" not in rendered[0]["spec"]["source"]
+
+
+class TestChartRepoSeam:
+    """A chart name with no repository is not an installable add-on.
+
+    Until this axis existed the URL lived only in `infra/onprem/addons/*.tf`, so the
+    registry described add-ons it could not produce a manifest for: every live
+    install was hand-assembled with the repo pasted in at the prompt, and the
+    reproducible path stopped at "render something ArgoCD reports as
+    ComparisonError". Same family as the values gap — declared, unusable, green.
+    """
+
+    def test_every_self_hosted_backend_has_somewhere_to_fetch_from(self, registry):
+        assert registry.capabilities_missing_repo() == []
+
+    def test_catalog_repos_match_terraform(self, registry):
+        """The check that makes this field's duplication safe.
+
+        Values are pointed at rather than copied precisely so two answers cannot
+        drift apart; a URL is a scalar with no file to point at, so the copy is
+        allowed and then verified. Terraform installs the cluster-wide copy of these
+        same charts, and if the two sources ever named different repositories, the
+        tenant-scoped add-on would silently come from somewhere else than the
+        platform's own.
+        """
+        declared: dict[str, str] = {}
+        for tf in sorted((REPO / "infra/onprem/addons").glob("*.tf")):
+            for chart, repo in _helm_release_pairs(tf.read_text(encoding="utf-8")):
+                declared[chart] = repo
+
+        assert declared, "no helm_release blocks parsed — the guard would pass vacuously"
+
+        for capability, entry in registry.catalog["capabilities"].items():
+            chart = (entry.get("backends") or {}).get("self_hosted")
+            if chart not in declared:
+                # Not every catalogued chart is installed by this Terraform root
+                # (argo-cd is bootstrapped, capsule is opt-in): nothing to compare.
+                continue
+            assert registry.repo_for(capability) == declared[chart], (
+                f"{capability}: catalog says {registry.repo_for(capability)}, "
+                f"Terraform installs {chart} from {declared[chart]}"
+            )
+
+    def test_rendered_application_points_at_the_registry_repo(self, registry):
+        """The whole point: manifest built from the registry alone is installable."""
+        tenant, env = registry.tenant("acme"), registry.environment("acme", "dev")
+        addons = [
+            a
+            for a in desired_addons(
+                tenant, env, registry.wave_for, registry.scope_of, registry.values_for
+            )
+            if a.capability == "logging"
+        ]
+        rendered = ArgoCDDeliveryAdapter(repo_url=registry.repo_for("logging")).render(
+            tenant, env, addons
+        )
+        source = rendered[0]["spec"]["source"]
+        assert source["repoURL"] == "https://grafana.github.io/helm-charts"
+        assert source["chart"] == "loki"
+
+
+def _helm_release_pairs(body: str) -> list[tuple[str, str]]:
+    """(chart, repository) for each `helm_release` block in a Terraform file.
+
+    Parsed per block rather than per file: `tracing.tf` declares more than one
+    release, and pairing a file's first chart with its first repository would
+    quietly compare the wrong two strings.
+    """
+    pairs: list[tuple[str, str]] = []
+    for block in re.split(r'resource\s+"helm_release"', body)[1:]:
+        chart = re.search(r'\n\s*chart\s*=\s*"([^"]+)"', block)
+        repo = re.search(r'\n\s*repository\s*=\s*"([^"]+)"', block)
+        if chart and repo:
+            pairs.append((chart.group(1), repo.group(1)))
+    return pairs
 
 
 class TestDeletionCascades:

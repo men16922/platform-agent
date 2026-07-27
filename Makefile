@@ -75,6 +75,30 @@ WEBHOOK_PORT   ?= 8078
 DASHBOARD_DIR  ?= dashboard
 DASHBOARD_PORT ?= 3000
 
+# ===== Add-on console port-forwards =====
+# The Provisioning screen links to each add-on's own UI. Those links are only
+# reachable while a port-forward is up, and `dev-up` did not start them — so
+# every "Open" on that screen was dead unless someone had run kubectl by hand.
+#
+# The ports live here rather than in the dashboard because the dashboard is the
+# CONSUMER: it is handed URLs through NEXT_PUBLIC_*_URL (below), so the forward
+# and the link can never disagree. The code's own defaults are a last resort for
+# a bare `npm run dev`.
+#
+# Grafana is NOT on 3001. That default collided with an unrelated local project
+# already listening there, and the failure mode is the worst kind — the link
+# opens and shows someone else's app instead of erroring.
+ARGOCD_PORT       ?= 8090
+GRAFANA_PORT      ?= 3002
+PROMETHEUS_PORT   ?= 9090
+ALERTMANAGER_PORT ?= 9093
+ROLLOUTS_PORT     ?= 3101
+CONSOLE_URLS = NEXT_PUBLIC_ARGOCD_URL=https://localhost:$(ARGOCD_PORT) \
+               NEXT_PUBLIC_GRAFANA_URL=http://localhost:$(GRAFANA_PORT) \
+               NEXT_PUBLIC_PROMETHEUS_URL=http://localhost:$(PROMETHEUS_PORT) \
+               NEXT_PUBLIC_ALERTMANAGER_URL=http://localhost:$(ALERTMANAGER_PORT) \
+               NEXT_PUBLIC_ROLLOUTS_URL=http://localhost:$(ROLLOUTS_PORT)/rollouts
+
 mlx-serve:  ## start local MLX-LM server (run in its own terminal)
 	HF_HUB_DISABLE_XET=1 .venv-mlx/bin/mlx_lm.server --model $(MLX_MODEL) --host 127.0.0.1 --port $(MLX_PORT) --max-tokens 1024 --prompt-cache-bytes 2147483648
 
@@ -131,9 +155,11 @@ dev-up:  ## start the whole local stack in one command (reuses a warm MLX/proxy)
 	@echo "→ webhook  (:$(WEBHOOK_PORT)) — restart, On-Prem Day-2 (Alertmanager → pipeline → approval gate)"
 	@pkill -f "uvicorn src.agents.ai.onprem_webhook_api" 2>/dev/null; true
 	@PLATFORM_ACTIVITY_FILE=$(ACTIVITY_FILE) PLATFORM_APPROVALS_FILE=$(APPROVALS_FILE) PLATFORM_INCIDENT_FILE=$(INCIDENT_FILE) nohup uvicorn src.agents.ai.onprem_webhook_api:app --host 127.0.0.1 --port $(WEBHOOK_PORT) > $(LLM_LOG_DIR)/webhook.log 2>&1 &
+	@echo "→ consoles  — port-forward the add-on UIs the dashboard links to"
+	@$(MAKE) --no-print-directory stack-consoles
 	@echo "→ dashboard(:$(DASHBOARD_PORT)) — restart (next dev)"
 	@pkill -f "next-server" 2>/dev/null; pkill -f "next dev" 2>/dev/null; true
-	@cd $(DASHBOARD_DIR) && nohup npm run dev > $(LLM_LOG_DIR)/dashboard.log 2>&1 &
+	@cd $(DASHBOARD_DIR) && $(CONSOLE_URLS) nohup npm run dev > $(LLM_LOG_DIR)/dashboard.log 2>&1 &
 	@echo "→ status   — spoke agents push tenant status/isolation to the hub (60s loop)"
 	@pkill -f "scripts/push_addon_status.py" 2>/dev/null; true
 	@for t in $(PUSH_TENANTS); do \
@@ -142,11 +168,13 @@ dev-up:  ## start the whole local stack in one command (reuses a warm MLX/proxy)
 	@echo ""
 	@echo "stack starting → http://localhost:$(DASHBOARD_PORT)   (check: make dev-status | logs: $(LLM_LOG_DIR)/)"
 
-dev-down:  ## stop the whole local stack (dashboard + webhook + MLX + proxy + router)
+dev-down:  ## stop the whole local stack (dashboard + webhook + consoles + MLX + proxy + router)
 	-@pkill -f "next-server" 2>/dev/null; pkill -f "next dev" 2>/dev/null; true
 	-@pkill -f "uvicorn src.agents.ai.onprem_webhook_api" 2>/dev/null; true
+	-@pkill -f "scripts/push_addon_status.py" 2>/dev/null; true
+	@$(MAKE) --no-print-directory stack-consoles-down
 	@$(MAKE) local-llm-down
-	@echo "stopped dashboard + webhook + local LLM deploy stack"
+	@echo "stopped dashboard + webhook + consoles + pushers + local LLM deploy stack"
 
 dev-status:  ## show the whole local stack status
 	@curl -s -m 3 localhost:$(MLX_PORT)/v1/models >/dev/null 2>&1 && echo "MLX-LM    :$(MLX_PORT)  up" || echo "MLX-LM    :$(MLX_PORT)  down"
@@ -155,7 +183,56 @@ dev-status:  ## show the whole local stack status
 	@curl -s -m 3 localhost:$(WEBHOOK_PORT)/health >/dev/null 2>&1 && echo "webhook   :$(WEBHOOK_PORT)   up" || echo "webhook   :$(WEBHOOK_PORT)   down"
 	@curl -s -m 3 localhost:$(DASHBOARD_PORT) >/dev/null 2>&1 && echo "dashboard :$(DASHBOARD_PORT)   up" || echo "dashboard :$(DASHBOARD_PORT)   down"
 
-.PHONY: mlx-serve mlx-proxy router-api onprem-webhook local-llm-up local-llm-down local-llm-status dashboard-dev dev-up dev-down dev-status
+# ===== add-on console port-forwards =====
+stack-consoles:  ## port-forward every add-on console the dashboard links to
+	@mkdir -p $(LLM_LOG_DIR)
+	@pkill -f "kubectl port-forward.*(argocd-server|monitoring-grafana|kube-prometheus-prometheus|kube-prometheus-alertmanager|argo-rollouts-dashboard)" 2>/dev/null; true
+	@kubectl port-forward -n argocd svc/argocd-server $(ARGOCD_PORT):443 > $(LLM_LOG_DIR)/pf-argocd.log 2>&1 &
+	@kubectl port-forward -n monitoring svc/monitoring-grafana $(GRAFANA_PORT):80 > $(LLM_LOG_DIR)/pf-grafana.log 2>&1 &
+	@kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-prometheus $(PROMETHEUS_PORT):9090 > $(LLM_LOG_DIR)/pf-prometheus.log 2>&1 &
+	@kubectl port-forward -n monitoring svc/monitoring-kube-prometheus-alertmanager $(ALERTMANAGER_PORT):9093 > $(LLM_LOG_DIR)/pf-alertmanager.log 2>&1 &
+	@kubectl port-forward -n argo-rollouts svc/argo-rollouts-dashboard $(ROLLOUTS_PORT):3100 > $(LLM_LOG_DIR)/pf-rollouts.log 2>&1 &
+	@echo "consoles forwarding → argocd:$(ARGOCD_PORT) grafana:$(GRAFANA_PORT) prometheus:$(PROMETHEUS_PORT) alertmanager:$(ALERTMANAGER_PORT) rollouts:$(ROLLOUTS_PORT)"
+	@echo "   (verify: make stack-consoles-status)"
+
+stack-consoles-down:  ## stop the add-on console port-forwards
+	-@pkill -f "kubectl port-forward.*(argocd-server|monitoring-grafana|kube-prometheus-prometheus|kube-prometheus-alertmanager|argo-rollouts-dashboard)" 2>/dev/null; true
+	@echo "stopped console port-forwards"
+
+stack-consoles-status:  ## are the dashboard's console links actually reachable?
+	@for pair in "argocd https://localhost:$(ARGOCD_PORT)" "grafana http://localhost:$(GRAFANA_PORT)/login" \
+	             "prometheus http://localhost:$(PROMETHEUS_PORT)/-/ready" "alertmanager http://localhost:$(ALERTMANAGER_PORT)/-/ready" \
+	             "rollouts http://localhost:$(ROLLOUTS_PORT)/rollouts"; do \
+		name=$${pair%% *}; url=$${pair#* }; \
+		code=$$(curl -sk -m 4 -o /dev/null -w "%{http_code}" "$$url" 2>/dev/null); \
+		case "$$code" in 2*|3*) echo "$$name  $$code  $$url";; *) echo "$$name  DEAD ($$code)  $$url";; esac; \
+	done
+
+# ===== demo baseline (CHANGES THE CLUSTER — kind only) =====
+# Everything the isolation-falsification demo needs on screen, in one command:
+# tenancy objects for both tenants, the tenant-scoped add-ons, and one forced push
+# so the dashboard is current instead of up to 60s behind.
+#
+# Deliberately separate from dev-up: dev-up starts processes, this applies objects
+# to a cluster. Running it against the wrong kubectl context is the failure worth
+# making someone type a second command to avoid, so it prints the context first.
+demo-baseline:  ## apply the demo's tenancy + tenant add-ons to the CURRENT kube context
+	@echo "→ context: $$(kubectl config current-context)"
+	@echo "→ tenancy (acme, globex)"
+	@for t in $(PUSH_TENANTS); do \
+		python scripts/render_tenancy.py $$t -e dev 2>/dev/null | kubectl apply -f - >/dev/null || exit 1; \
+	done
+	@echo "→ tenant-scoped add-ons (acme/dev)"
+	@python scripts/render_addons.py acme -e dev 2>/dev/null | kubectl apply -f - >/dev/null
+	@echo "→ waiting for Applications to report Healthy (ctrl-c is safe)"
+	@until [ "$$(kubectl get app -n argocd acme-dev-logging -o jsonpath='{.status.health.status}' 2>/dev/null)" = "Healthy" ] \
+	   && [ "$$(kubectl get app -n argocd acme-dev-tracing -o jsonpath='{.status.health.status}' 2>/dev/null)" = "Healthy" ]; do sleep 5; done
+	@for t in $(PUSH_TENANTS); do \
+		PLATFORM_PUSH_KEY=local-dev python scripts/push_addon_status.py --tenant $$t --env dev --hub http://127.0.0.1:$(ROUTER_PORT) --once; \
+	done
+	@echo "ready → http://localhost:$(DASHBOARD_PORT)/provisioning   (all four isolation axes should read enforced)"
+
+.PHONY: mlx-serve mlx-proxy router-api onprem-webhook local-llm-up local-llm-down local-llm-status dashboard-dev dev-up dev-down dev-status demo-baseline stack-consoles stack-consoles-down stack-consoles-status
 
 # ===== overnight harness targets (append to your Makefile) =====
 # The overnight runner + helpers are the Single Source of Truth in the overnight-harness

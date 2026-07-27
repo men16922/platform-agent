@@ -1,0 +1,136 @@
+데모 시연 베이스라인 + 격리 반증 리허설 (라이브, kind, $0)
+2026-07-26 / gate 1302 → 1317+
+
+목적: `docs/post/video-30s-script.md` 시나리오 A("초록을 빨갛게 만들어 본다")를
+찍을 수 있는 상태를 실제로 만들고, 대본에 적은 수치를 전부 실측으로 교체한다.
+논지는 하나다 — **반증되지 않는 대시보드는 장식이다.**
+
+================================================================================
+0. 출발점에서 드러난 갭 — 레지스트리만으로는 아무것도 설치할 수 없었다
+================================================================================
+  플릿 표는 4축 전부 초록인데 Add-ons 열은 2/4 unhealthy, CPU는 `0 / 16`이었다.
+  선언된 애드온이 하나도 안 떠 있었고, 올리려고 보니 **올릴 방법이 없었다**:
+
+    chart + version   → 카탈로그에 있음
+    values            → 카탈로그가 가리킴 (직전 세션에 추가)
+    repository URL    → **`infra/onprem/addons/*.tf`에만 있음**
+
+  그래서 매 라이브 세션의 설치는 프롬프트에서 손으로 조립됐고, 설치된 것은
+  레지스트리가 선언한 것이 아니라 그날 밤 조작자가 친 것이었다. 증상은 레지스트리를
+  가리키지 않는다 — ArgoCD의 ComparisonError로 세 시스템 건너에서 나타난다.
+  (values 갭·scope 갭과 정확히 같은 족보: 선언은 됐고, 소비가 없고, 전부 초록.)
+
+  조치:
+   · 카탈로그에 `self_hosted_repo` — 이 파일에서 **유일하게 복사인 필드**다.
+     values는 파일을 가리키면 되지만 URL은 가리킬 파일이 없다. 복사를 금지하는
+     대신 **검증**한다: `test_catalog_repos_match_terraform`이 TF의 helm_release
+     블록을 파싱해 불일치하면 게이트를 빨갛게 만든다. 무검증 중복이 이 코드베이스를
+     계속 무는 것이지, 중복 자체가 아니다.
+   · `Registry.repo_for()` + `capabilities_missing_repo()`
+   · `scripts/render_addons.py` — render_tenancy.py와 같은 규약(읽기 전용, stdout,
+     적용은 별도의 의도적 행위). 클러스터 싱글턴은 **이름을 대며 거부**한다:
+     조용한 누락은 "이 테넌트엔 observability가 없다"로 읽히는데 사실은
+     "observability는 공유 설치물"이다.
+
+    $ python scripts/render_addons.py acme -e dev --check
+      # acme/dev via argocd on kind-platform-agent: 2 manifest(s) for logging, tracing
+      # SHARED, NOT PER-TENANT: observability, progressive are cluster-scoped ...
+      EXIT=0
+    $ python scripts/render_addons.py globex -e dev --check
+      # Nothing to apply — every declared capability here is a shared cluster install.
+      EXIT=1     ← 빈 스트림은 "할 일 없음"과 "전부 공유"가 같아 보인다. 코드만이 구분한다.
+
+================================================================================
+1. 시연 베이스라인 — 테넌트 스코프 애드온 2종 라이브
+================================================================================
+  $ python scripts/render_addons.py acme -e dev | kubectl apply -f -
+    application.argoproj.io/acme-dev-logging created
+    application.argoproj.io/acme-dev-tracing created
+
+  ~60초 후:
+    acme-dev-logging   Synced   Healthy    loki-0 2/2, loki-gateway 1/1, PVC 1Gi Bound
+    acme-dev-tracing   Synced   Healthy    tempo-0 1/1
+
+  PSS restricted + Capsule 쿼터 + NetworkPolicy가 걸린 테넌트 네임스페이스에서
+  **tempo까지 처음으로** 기동했다(직전 세션은 loki만 실증).
+
+  쿼터가 비로소 뭔가를 센다 — 그리고 Capsule의 집계가 화면에서 확인된다:
+    acme-dev-logging        pods 2/199   limits.cpu 1500m/15500m
+    acme-dev-tracing        pods 1/198   limits.cpu  500m/14500m
+    acme-dev-observability  pods 0/197   limits.cpu     0/14
+    → 네임스페이스마다 hard가 달라 보이지만 이것은 **잔여의 재기록**이다
+      (16 − 소비 2 = 14). 정적 조회로는 4배 버그처럼 보였던 그 동작이,
+      소비가 생기니 설계대로 동작함이 다시 확인됐다.
+
+  대시보드 관통(푸시 → 허브 → 화면):
+    logging  synced/healthy   observability  shared/unknown(applicable=false)
+    tracing  synced/healthy   progressive    shared/unknown(applicable=false)
+    quota used {cpu 2, mem 1536Mi, pods 3} / hard {16, 64Gi, 200}
+
+================================================================================
+2. 라이브가 잡은 결함 2건 — 둘 다 "화면이 실제보다 좋게 말한다"
+================================================================================
+  (a) **`--once`는 문서에만 있었다.** `push_addon_status.py` 독스트링은
+      `[--once|--interval 60]`이라고 광고하는데 argparse엔 `--interval`뿐이라
+      문서에 적힌 명령이 그대로 죽는다. `make dev-up`이 쓰는 형태가
+      `--interval 60`이라 아무도 안 밟았다 — 문서를 읽는 사람만 밟는 자리.
+      (이 세션에서 촬영 체크리스트에 `--once`를 그대로 옮겨 적었다가 밟았다.)
+      → `--once` 구현 + 상호배타 + 가드 3건. 가드 첫 판이 **스위트를 멈춰 세웠다**:
+        `--interval 60` 폼을 그냥 `main()`으로 부르면 60초씩 영원히 잔다.
+        루프는 끝나지 않는 것이 정상이므로, sleep을 끊어서 단언하도록 고쳤다.
+
+  (b) **플릿 표가 "4 ok"라고 말했다.** 그 중 2개는 에이전트가 health를 단언할 수
+      없는 공유 클러스터 설치(`unknown`)였다. 격리 4축 셀은 "못 봤다"를 회색
+      물음표로 끝까지 구분하는데, 바로 옆 열이 그걸 초록 카운트에 합산하고 있었다.
+      → `N ok · M not assessed`. 스위처 버튼도 같은 규칙.
+        (`unknownCount`는 이미 계산돼 있었고 아무도 쓰지 않았다 — 또 "선언은 됐고
+        소비가 없는" 자리.)
+
+================================================================================
+3. 반증 — 경계를 하나 지우면 화면이 뒤집히는가
+================================================================================
+  $ kubectl delete networkpolicy deny-cross-tenant -n acme-dev-logging
+    (4개 중 1개만 삭제. 수집기의 커버리지 판정은 ALL이다 — 일부만 덮인 것은
+     격리가 아니라는 뜻이고, 그래서 하나만 지워도 축이 뒤집혀야 한다.)
+
+    acme/dev  : {'network': False, 'pod_security': True, 'quota': True, 'rbac': True}
+    globex/dev: {'network': True,  'pod_security': True, 'quota': True, 'rbac': True}
+
+  화면(스크린샷 확인):
+    NETWORK 열 acme/dev = ✕(빨강), 나머지 3축 ✓, **이웃 테넌트 globex/dev 행은 전부 ✓**
+    격리 패널: Network `absent`(빨강), Quota/RBAC/Pod security `enforced`
+  → 축이 테넌트별이고 전역 네트워크 점검이 아님이 같은 프레임에서 증명된다.
+    화면 전체가 빨개졌다면 "연결이 끊겼나" 로 읽혔을 것이다.
+
+  복구:
+    $ python scripts/render_tenancy.py acme -e dev | kubectl apply -f -
+    → 4개 정책 복원, network 축 True 복귀. 잔여 오염 0.
+
+================================================================================
+4. 지연은 버그가 아니라 설계의 결과다 — 실측
+================================================================================
+  강제 푸시 없이(=관객이 실제로 기다리는 시간), 허브 기준:
+    복구 → True    18s
+    삭제 → False   61s
+    복구 → True    59s
+  스포크 푸시 주기 60초에 균등 도착한다. 대시보드 폴링 15초가 그 위에 얹히므로
+  **최악 ≈ 75초, 평균 ≈ 45초.**
+
+  이 지연의 이유는 허브가 클러스터를 조회하지 않고 각 클러스터가 스스로 보고하기
+  때문이다(D26: 허브의 스포크 read 자격증명 0). 즉 **줄이려면 설계를 바꿔야 한다.**
+  → 30초 영상에서는 촬영용으로 `--interval 5` 또는 `--once`를 쓰되,
+    화면에 `푸시 주기 60s→5s (촬영용)`을 표기한다. 즉시 빨개지는 것처럼 편집하면
+    D26 설명 자체가 약해진다.
+
+================================================================================
+5. 부수 관측 (조치 안 함, 기록만)
+================================================================================
+  Capsule이 `render_tenancy.py` 출력에 deprecation 2건을 경고한다:
+    `limitRanges` → TenantReplications 로 이관 예정
+    `additionalMetadata` → `additionalMetadataList`
+  지금은 동작하지만 Capsule 상위 버전에서 조용히 무시될 수 있는 부류(=values 파일이
+  실패하는 방식과 같다). 범위 밖이라 NEXT_PLAN에 남긴다.
+
+================================================================================
+정리 상태: acme-dev-logging·acme-dev-tracing Application 존치(시연 베이스라인),
+NetworkPolicy 4개 복구 완료, 격리 4축 ✓.

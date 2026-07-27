@@ -81,9 +81,18 @@ def main() -> int:
     parser.add_argument("--tenant", required=True)
     parser.add_argument("--env", required=True)
     parser.add_argument("--hub", default=os.getenv("PLATFORM_HUB_URL", "http://127.0.0.1:8077"))
-    parser.add_argument("--interval", type=int, default=0,
-                        help="seconds between pushes; 0 = push once and exit")
+    # `--once` and `--interval 0` are the same run; both spellings exist because
+    # the docstring promised `--once` and only `--interval` was implemented, so the
+    # documented invocation failed at argparse. Cheap to state twice, and the one
+    # an operator reaches for during a live demo is the explicit flag.
+    schedule = parser.add_mutually_exclusive_group()
+    schedule.add_argument("--once", action="store_true",
+                          help="read and push exactly once, then exit (the default)")
+    schedule.add_argument("--interval", type=int, default=0,
+                          help="seconds between pushes; 0 = push once and exit")
     args = parser.parse_args()
+    if args.once:
+        args.interval = 0
 
     key = os.getenv(PUSH_KEY_ENV, "").strip()
     if not key:

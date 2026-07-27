@@ -31,6 +31,17 @@
 - `make check` (pytest) → **842 passed, 1 skipped** (2026-07-17, 234.42s) — **차트 stateStore 배선(④↔#7 마무리)**: `stateStore.{dsn,existingSecret}` values(secretKeyRef=프로덕션·plain=dev, secret 우선), persistence off→RollingUpdate·replicas>1 해금, Dockerfile `.[state]`(psycopg2) 재빌드 검증. 차트 가드 +3. JSONL 기본값 무변경. **k3s substrate 스모크(동일자, 코드 무변경)**: 기존 k8s-lab VM에 helm install→`local-path` PVC Bound→P2 승인 루프→원상 복원 — env×substrate 양축(kind/k3s) 실증 완결(`docs/evidence/helm-k3s-substrate-smoke.log`).
 - `make check` (pytest) → **839 passed, 1 skipped** (2026-07-17, 238.51s) — **레퍼런스 #7-b Terraform 모듈 → #7 전체 완결(Helm+Terraform)**: 신규 `infra/terraform/aws-production/`(VPC·EKS 1.31·**Aurora Serverless v2 `platform_state`**=④ DSN seam 정합·**IRSA**=차트 SA 전용 trust+DynamoDB activity 테이블 정확-ARN 유일 grant). Redis/Cognito=미소비 의도적 제외. `terraform init+fmt+validate` Success(spend 0, **apply 안 함**=사용자 게이트). 가드 +5(bare `"*"` 금지 등). 이로써 AWSome 레퍼런스 8항목 전부 소화.
 - `make check` (pytest) → **834 passed, 1 skipped** (2026-07-17, 242.90s) — **로드맵 ④ SQL State Store(옵트인)+실 Alertmanager 라이브**: 신규 `state_store.py`(`PLATFORM_STATE_DSN` 옵트인, DB-API 주입식, append-only+latest-wins=JSONL 시맨틱 동일, sqlite 오프라인 테스트 +5) + approvals/incidents 양방향 배선. **라이브(docker $0)**: 실 Alertmanager grouping→배달→P2 parking→PostgreSQL, **레플리카 2개 상태 공유**(replica-2 승인→replica-1 즉시 반영=JSONL 불가), 전 프로세스 재기동 생존, psql ground-truth 3 rows. 증거 `docs/evidence/state-store-alertmanager-live.log`. JSONL 기본값 무변경(비오염 테스트 양방향).
+- `make check` (pytest) → **1341 passed, 1 skipped** (2026-07-26, 1322→1341, +19) — **자연어가 테넌트를
+  세운다 + 풀스택 30초 영상**: 에이전트 도구 2개 신설(`tenancy_tools.py` = `setup_tenancy` ·
+  `install_tenant_addons`)로 "레지스트리에 다 적혀 있는데 사람만 적용할 수 있던" 마지막 두 걸음 해소.
+  `cluster_io.py`가 렌더된 객체가 클러스터를 만지는 유일한 자리이고, `render_*` 스크립트와 **같은
+  구현**을 쓴다(복사본 0, `render_tenancy.py` 출력이 HEAD와 완전 동일함을 대조로 증명). 자연어 도구는
+  되물을 수 없으므로 **kubectl 컨텍스트 ≠ 레지스트리 클러스터면 아무것도 쓰지 않고 거부**.
+  **라이브(실제 브라우저)**: 빈칸 → 문장 1줄 → 체인 2단(17.6s) → `4 / 4`·4축 ✓ → `1500m / 16` →
+  실제 ArgoCD Synced/Healthy → netpol 1개 삭제 시 network만 ✕(globex 무영향) → 복구 ✓.
+  영상 `docs/post/media/multitenancy-fullstack-30s.mp4`(30.03s, 오버레이 없음, 원본 153.8s→10컷).
+  라이브가 결함 4건 적발(경고→실패 오기록 · 도구 완료 오판정 · 녹화 세션 부재 · 자격증명 파일).
+- `make check` (pytest) → **1322 passed, 1 skipped** (2026-07-26, 1302→1322, +20) — **시연 가능 레벨**: 영상 시나리오를 격리 반증으로 재작성하고 그 대본이 찍히는 상태까지 구축. 준비가 구조적 갭을 드러냄 — repo URL이 TF에만 있어 **레지스트리만으로는 애드온을 설치할 수 없었다**(매 라이브 설치가 손으로 조립됨) → 카탈로그 `self_hosted_repo`(유일한 복사, TF 대조 가드로 안전화) + `scripts/render_addons.py` + `make demo-baseline`. **라이브**: 테넌트 스코프 loki+tempo Synced/Healthy(쿼터가 소비를 셈 cpu 2/16), netpol 1/4 삭제 시 network 축만 ✕·이웃 테넌트 무영향·복구 시 ✓, 실측 지연 18s/61s/59s. 증거 `docs/evidence/demo-isolation-falsification.log`.
 - `make check` (pytest) → **1302 passed, 1 skipped** (2026-07-26, 1290→1302, +12) — **대시보드 멀티테넌시 관제 + 검증 훅**(`654c7e5`·`eebc19e`·`bad2642`): 격리 4축·티어·쿼터·네임스페이스를 **기존 push 경로**에 실어 대시보드로(직접 조회는 D26 위반) · 플릿 표 + 티어별 분리/공유/미보장 명시 · Add-ons 누락 4건(Loki·Fluent Bit·Tempo·Capsule) 추가 · Stop 훅 `make check` + PostToolUse 훅 `tsc`. **라이브 반증**: NetworkPolicy 삭제 시 network 축이 False로 뒤집히고 복구 시 True. `tsc` 클린 · `next build` 성공.
 - `make check` (pytest) → **1290 passed, 1 skipped** (2026-07-26, 1281→1290, +9) — **Phase 2 완결(M11)**(`c6d930d`): managed 백엔드는 카탈로그에서 파생해 `applicable=false`(조회 안 한 백엔드에 health를 단언하지 않는다, faked 디스크립터로 과금 0 증명) · **DR 드릴** globex/dev 실제 파괴 후 레지스트리만으로 재구축(라벨 완전 동일, 10초 뒤 쿼터 선언값 일치) · 채택 검증기 신설. 증거 `docs/evidence/phase2-managed-and-dr.log`.
 - `make check` (pytest) → **1281 passed, 1 skipped** (2026-07-26, 1271→1281, +10) — **어댑터 helm values seam**(`01d3c6d`): 카탈로그가 values 파일을 가리키고(복사 금지) 두 엔진이 같은 dict를 싣는다. 라이브가 결함 2건을 더 드러냈다 — **PSS restricted 테넌트 네임스페이스가 우리 애드온을 거부**(Argo는 Synced/Progressing인데 파드 0개; `monitoring`엔 PSS 라벨이 없어 지금까지 안 보였다) · **구독 해지가 테넌트 데이터를 파괴**(차트가 `whenDeleted: Delete`로 k8s 기본값 Retain을 뒤집음). 둘 다 근본수정. **라이브**: acme-dev-logging이 PSS+쿼터+NetworkPolicy 아래 Synced/Healthy — Phase 2 첫 진짜 테넌트 스코프 설치. 증거 `docs/evidence/phase2-values-seam.log`.
@@ -41,12 +52,8 @@
 - `make check` (pytest) → **1191 passed, 1 skipped** (2026-07-26, 1168→1191, +23) — **capability step을 executor가 실제 소비**(`c4816fd`). 스키마가 표현하던 순서·조건·on_failure·per-step verify를 아무도 읽지 않던 갭 해소 + `CAPABILITY_RUNBOOKS`(9런북, 죽은 데이터였음) 연결. **유닛 테스트가 구조적으로 못 잡는 결함 1건 포함**: `_deserialise_decision`이 `steps`를 버려 executor가 조용히 flat 경로로 회귀 — 유닛 테스트는 객체를 메모리에서 만들어 직렬화 경계를 안 넘는다. 라이브 before/after: 필요 없는 노드 스케일아웃 → `executed=[restart] skipped=[scale] resolved=True`.
 - `make check` (pytest) → **1168 passed, 1 skipped** (2026-07-26, 1159→1168, +9) — **Phase 1b 핸드오프 실행**(`7033db3`): rollouts-demo 소유권 TF→ArgoCD. 채택이 no-op이 아니었는데 원인은 라이브 드리프트(`--type=merge`가 컨테이너 배열 통째 교체)였고 ArgoCD가 **복구**한 것 → 프리플라이트 5번째 검사 `live-matches-rendered` 추가.
 - `make check` (pytest) → **1159 passed, 1 skipped** (2026-07-26, 1114→1159, +45) — **① 게이트 완결(3종 판별) + ⑥ PSS/Cosign + ⑦ 스위퍼 CronJob**(`8e549bf`·`d96b888`·`69f149d`·`5015810`, **origin push 완료**). ①은 pass 경로를 여는 과정에서 **연쇄 결함 3건**이 드러나 전부 근본수정: (a) `llm.endpoint`를 router만 소비하고 webhook은 못 받아 **모든 판정이 unknown**이던 것(모델 부재가 아니라 배선 부재), (b) 템플릿이 firing 알럿을 **합성**해 보내 정상 canary가 conf 0.80으로 `fail`이던 것 → 호출자는 **신원만** 보내고 게이트가 Alertmanager를 직접 조회(`None`=못 봄 ≠ `[]`=조용함), (c) kps 파드 룰이 `for: 15m`이라 2~3분짜리 canary엔 발화 자체가 없어 크래시 canary도 pass이던 것 → canary 시간 스케일 룰 동봉. **라이브 3종 판별**: 정상→`pass`x3 abort 없음 / 크래시→`pass→fail→fail` **165s auto-abort**(stable 4/4, Available=True 내내) / 관측 불가→`unknown` 차단. ⑥ 양방향(비준수 설치는 API 서버가 4개 위반 적시하며 forbidden / 준수 설치는 `uid=10001` Running) + Cosign(서명은 **태그가 아니라 다이제스트**에 붙음을 라이브가 정정 → 차트 `image.digest`). ⑦은 CLI 부재가 `clean(exit 0)`이던 것을 **exit 2(coverage incomplete)** 로. 증거 `docs/evidence/onprem-{canary-agent-gate,pss-restricted-and-sweeper}-e2e.log`.
-- `make check` (pytest) → **1114 passed, 1 skipped** (2026-07-26, 1095→1114, +19) — **① 2단계: 에이전트를 릴리스 게이트로**(`b9eafb0`). `canary_judge` + `POST /canary/judge` + `web` provider AnalysisTemplate. 판정 3규칙이 전부 안전한 방향 기본값(**저신뢰→unknown이 P1보다 우선**, `successCondition: result == "pass"`라 unknown은 승격 안 됨), 게이트는 **분석만**(execute=False). 라이브 부분: 이미지 재빌드→kind load→**인클러스터 `POST /canary/judge` 200**에 `verdict=unknown`(모델 부재 폴백) — "판단 불가 ≠ 승인" 실증. canary 전체 E2E는 미실행.
-- `make check` (pytest) → **1095 passed, 1 skipped** (2026-07-26, 1058→1095, +37) — **TF→GitOps 핸드오프 프리플라이트**(`e48c5f6`) + **인시던트→Tempo 딥링크**(`90a92ba`). 프리플라이트는 `state rm` 전에 ownership·stateful·source-reachable·baseline 4검사로 안전성을 증명하고 롤백 명령을 선출력 — 라이브 read-only에서 **ownership 전 릴리스 통과**(최대 미지수 해소), 잔여 블로커는 스냅샷 부재와 미푸시 소스. 딥링크는 prod-safe(미설정이면 링크 없음) + 라이브 Tempo 200. 증거 `docs/evidence/gitops-handoff-preflight.log`.
-- `make check` (pytest) → **1058 passed, 1 skipped** (2026-07-26, 1017→1058, +41) — **③ 사후검증 provider 실행부**(`d68fe6b`) + **Phase 1b delivery 어댑터 2개**(`738c812`). ③: `onprem_verify`가 액션과 **같은 스코프 자격증명으로** rollout status/readyReplicas/cordon을 읽어 `resolved`를 증거 기반으로. 라이브 양방향 — healthy→resolved=True / broken→**dispatched=True인데 resolved=False**(`docs/evidence/onprem-verification-e2e.log`). 1b: argocd/flux가 순서 원시형·상태 어휘·객체 형태 세 압박점을 각자 만족(wave→`sync-wave`/`dependsOn` = **TF `depends_on` 대체물**).
-- `make check` (pytest) → **1017 passed, 1 skipped** (2026-07-26, 983→1017, +34) — **Phase 1a 자격증명 격리**(`0bb993f`, +24)와 **런북 전량 무력화 결함 근본수정**(`b078094`, +10). Phase 1a: `IncidentScope`+provenance 바인딩 `TokenBroker`(호출자 tenant 불신, attested 레코드로만 발급, nonce 1회용) + `NormalizedIncident.tenant/env` 1급 필드 + 실행 경로 scope 관통 + **ambient kubeconfig 삭제**. 라이브 DoD: **advisory 가드를 꺼도 API 서버가 `Forbidden`**(자격증명이 경계임을 RBAC로 증명). Decimal 결함: DynamoDB가 숫자를 `Decimal`로 반환해 `rto_sec`을 선언한 **모든 런북이 후보에서 탈락**→매 인시던트 알림-only 폴백이던 것을 읽기 경계 coerce로 수정(라이브 1/5→**5/5**, generic-recovery→**eks-pod-oom**). 증거 `docs/evidence/{phase1a-credential-isolation,runbook-decimal-rto-fix}.log`.
 - **라이브 실증(2026-07-26, `b07523b`, 수 무변경)** — 기본 OFF로 남겨둔 3건 완주: ①canary 자동판정 **양방향**(나쁜 canary=`failed(3)>limit(2)`→사람 개입 0으로 ~105s auto-abort·stable 4/4 유지 / 좋은 canary=3연속 Successful→abort 안 됨) · ②Tempo 트레이스(query API·Grafana 프록시 양쪽 200, **5026ms 중 analyze 4136ms=MTTR의 82%가 로컬 LLM 추론**) · ⑥kindnet=**ENFORCED**+차트 정책 테넌트 시맨틱(same 통과/cross 차단). 증거 `docs/evidence/onprem-{addons-rollouts-analysis,tracing-tempo,netpol-tenancy}-e2e.log`. 라이브가 검증기 자체 버그 2건도 적발(agnhost `connect` http/URL 불가 · 파드 Ready≠포트 바인딩).
-- (이전 이력 2026-07-10~17, gate 829 이하 → `docs/archive/status-baseline-2026-07.md`)
+- (이전 이력: gate 1114 이하 · 2026-07-10~17 → `docs/archive/status-baseline-2026-07.md`)
 
 ## 동작하는 영역 (요약)
 
@@ -66,9 +73,21 @@
 
 ## Active Focus
 
+- **자연어 한 문장이 테넌트를 세운다(2026-07-26)** — Agents 채팅 → `setup_tenancy` →
+  `install_tenant_addons` 체인(17.6s). 에이전트의 mutating 범위는 **테넌트 스코프까지**이고
+  공유 스택 9개는 Terraform 소유로 남는다(→ `DECISIONS` D30). 컨텍스트가 레지스트리와
+  다르면 아무것도 쓰지 않고 거부한다 — 자연어 도구는 "지금 어느 클러스터냐"를 되물을 수 없다.
+- **Notion 전문 발행 완료(2026-07-26)** — 멀티테넌트 실험 글을 영상의 실제 흐름에 맞춰 재작성하고
+  Humanize Korean(A·14.6%·6/6) 후 페이지 `3a94c2420ac4801cbe99e36c16ed90fd`에 YouTube Shorts
+  `2J9WfZV0TPE`와 함께 반영·재조회 확인. 남은 발행 작업은 **LinkedIn 게시**다.
+- **시연 가능(2026-07-26)** — `make dev-up` → `make demo-baseline`으로 4축 ✓ 상태가 뜨고,
+  netpol 1개 삭제 → network 축만 ✕ → 복구까지 재현된다. 영상·대본 → `docs/post/`.
+- **레지스트리가 설치까지 표현한다(2026-07-26)** — repo+chart+values 세 입력이 전부
+  레지스트리에서 나오고(`render_addons.py`), 클러스터 싱글턴은 이름을 대며 거부된다.
+  repo URL은 카탈로그의 유일한 복사이며 TF 대조 가드가 드리프트를 게이트로 잡는다.
 - **대시보드가 멀티테넌시를 관제한다(2026-07-26)** — 플릿 표(전 테넌트 × 격리 4축 + 티어 + 쿼터)
   + 테넌트별 상세. 데이터는 스포크 push로만 들어오고 대시보드는 클러스터를 직접 조회하지 않는다.
-  `make dev-up` 하나로 허브·푸셔까지 뜬다.
+  "N ok"는 **에이전트가 실제로 평가한 행만** 센다(나머지는 `M not assessed`).
 - **검증이 훅으로 강제된다(2026-07-26)** — Stop→`make check`(소스 변경 시만·실패할 때만 깨움),
   PostToolUse→`tsc`(dashboard 경로만). 그동안 문서에만 있던 규칙이다.
 - **Phase 2 = 완결(M11, 2026-07-26)** — 네임스페이스·쿼터·데이터플레인·자격증명 네 층이 각각
@@ -105,5 +124,8 @@
    **새 애드온을 추가할 때마다 같은 확인이 필요**하다 — 렌더된 파드 스펙을 테넌트 네임스페이스에
    `kubectl apply --dry-run=server`로 던져 API 서버에 직접 묻는 것이 가장 싸다.
    values 파일은 에러가 아니라 **안 읽히는 방식으로** 실패한다(차트마다 키 철자가 다르다).
-6. **Dashboard dependency audit** — Next.js 16.2.10 내부 번들 PostCSS(<8.5.10) moderate 2건(XSS via `</style>` in CSS stringify). **재검증(2026-07-13)**: 16.2.x 패치 릴리스 없음(최신=현재)·`audit fix --force`는 next@9 다운그레이드 → **upstream 대기 확정**. 빌드타임 경로라 런타임 위험 낮음. 필요 시 `overrides`로 postcss 강제(빌드 파손 리스크) 검토 가능.
+6. **Capsule deprecation 2건(미조치)** — `render_tenancy.py`가 내는 `limitRanges`·
+   `additionalMetadata`는 상위 버전에서 제거 예정이다. 지금은 동작하지만 **values 파일이
+   실패하는 방식과 같은 부류**(에러 없이 안 읽힘)라 Capsule 업그레이드 전에 이관 필요.
+7. **Dashboard dependency audit** — Next.js 16.2.10 내부 번들 PostCSS(<8.5.10) moderate 2건(XSS via `</style>` in CSS stringify). **재검증(2026-07-13)**: 16.2.x 패치 릴리스 없음(최신=현재)·`audit fix --force`는 next@9 다운그레이드 → **upstream 대기 확정**. 빌드타임 경로라 런타임 위험 낮음. 필요 시 `overrides`로 postcss 강제(빌드 파손 리스크) 검토 가능.
 - (해소된 리스크 이력 — Slack App 미연결=07-19 해소·A2A discovery=07-14·추적 IA 실증=07-13·NEXT_PUBLIC 인라인=07-13 — 은 `PROGRESS_LOG`/`docs/archive/` 참조.)

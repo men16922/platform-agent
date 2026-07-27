@@ -4,6 +4,33 @@
 
 ---
 
+## 2026-07-26 — 어댑터 helm values seam + PSS/PVC 결함 2건 (gate 1271→1281)
+
+- Status: 렌더러가 chart+version만 실어 선언한 차트 대부분이 템플릿조차 안 되던 갭 해소.
+  라이브가 그 위에서 결함 2건을 더 드러냈고, **둘 다 초록 화면 뒤에 있었다**.
+- Changed(`01d3c6d`): 카탈로그가 values 파일을 **가리킨다**(복사 금지 — Terraform과
+  어댑터가 사본을 각자 가지면 조용히 갈라진다) · `Registry.values_for` ·
+  argocd `helm.valuesObject`(문자열 아님)·flux `spec.values`에 같은 dict ·
+  공유 values에 파드 레벨 seccompProfile · `enableStatefulSetAutoDeletePVC: false`.
+- Verified: `make check` **1281**(+10). **라이브(kind, $0)**: acme-dev-logging이 PSS
+  restricted + Capsule 쿼터 + NetworkPolicy 아래에서 Synced/Healthy(2/2 Running, PVC
+  Bound) — Phase 2 첫 진짜 테넌트 스코프 애드온 설치. 수집기 관통(logging=synced/healthy)
+  확인 후 정리. 증거 `docs/evidence/phase2-values-seam.log`.
+- Blockers: 없음.
+- 품질 메모: (1) **PSS restricted 테넌트 네임스페이스가 우리 애드온을 거부**했다. Argo는
+  Synced/Progressing인데 파드 0개, 진짜 이유는 StatefulSet 이벤트 세 단계 아래
+  (seccompProfile 미설정). Terraform이 쓰는 `monitoring`엔 PSS 라벨이 없어 지금까지
+  안 보였다 — D23이 경고한 그 상황이 실제로 일어났다. 추론 대신 렌더된 파드 스펙을
+  테넌트 네임스페이스에 **server dry-run**해서 API 서버에 물었고, tempo에서 키 함정도
+  잡혔다(최상위 `securityContext`=파드, `tempo.securityContext`=컨테이너 — loki 철자를
+  쓰면 Helm이 조용히 무시한다. **values 파일은 에러가 아니라 안 읽히는 방식으로 실패한다**).
+  (2) **직전 커밋에서 내가 쓴 주의사항이 틀렸다.** "StatefulSet PVC는 cascade에서 남는다"고
+  단정했는데 실제로는 PVC까지 사라졌다. 원인은 Argo가 아니라 차트가 `whenDeleted: Delete`로
+  쿠버네티스 기본값(Retain)을 뒤집은 것 — 구독 해지가 테넌트 로그를 같은 초에 파괴한다.
+  **진실이 내 주의사항보다 위험했다.**
+- Next: faked managed 디스크립터(`applicable=false`) · DR 재구축 확인.
+
+
 ## 2026-07-26 — 삭제는 cascade한다: 계약이 삭제 의미를 말하게 (gate 1267→1271)
 
 - Status: 직전 라이브의 고아 워크로드를 닫았다. 진짜 문제는 파이널라이저 부재가 아니라

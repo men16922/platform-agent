@@ -28,13 +28,13 @@ from __future__ import annotations
 
 import argparse
 import os
-import subprocess
 import sys
 
 import yaml
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from src.agents.platform.cluster_io import CAPSULE_CRD, capsule_crd_installed  # noqa: E402
 from src.agents.platform.registry import load_registry  # noqa: E402
 from src.agents.platform.tenancy import (  # noqa: E402
     UnsupportedTier,
@@ -43,20 +43,6 @@ from src.agents.platform.tenancy import (  # noqa: E402
     render_tenancy,
     unbounded_soft_tenants,
 )
-
-CAPSULE_CRD = "tenants.capsule.clastix.io"
-
-
-def _capsule_installed() -> bool | None:
-    """True/False, or None when we could not ask the cluster at all."""
-    try:
-        proc = subprocess.run(
-            ["kubectl", "get", "crd", CAPSULE_CRD],
-            capture_output=True, text=True, timeout=30,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        return None
-    return proc.returncode == 0
 
 
 def main() -> int:
@@ -135,7 +121,7 @@ def main() -> int:
         )
         return 1
 
-    installed = _capsule_installed()
+    installed = capsule_crd_installed()
     if installed is None:
         print("# CANNOT VERIFY: no reachable cluster to check the Capsule CRD against.",
               file=sys.stderr)

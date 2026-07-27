@@ -18,6 +18,7 @@ test suite passes while the system is broken:
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -628,3 +629,78 @@ class TestRoundTrip:
         assert [r.to_dict() for r in restored.statuses] == [
             r.to_dict() for r in original.statuses
         ]
+
+
+class TestPusherCLI:
+    """The spoke agent's documented invocations must actually parse.
+
+    Not a hypothetical: the docstring advertised `--once`, only `--interval` was
+    implemented, and the documented command died at argparse. It went unnoticed
+    because `make dev-up` passes `--interval 60` — the one form nobody reads the
+    docs for. The same shape as the rest of this codebase's expensive bugs:
+    declared, never exercised, and green everywhere.
+    """
+
+    @staticmethod
+    def _cli():
+        import importlib.util
+
+        path = Path(__file__).resolve().parents[1] / "scripts" / "push_addon_status.py"
+        spec = importlib.util.spec_from_file_location("push_addon_status", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    @pytest.mark.parametrize(
+        "argv", [["--once"], []], ids=["explicit-once", "default-is-once"]
+    )
+    def test_single_shot_forms_parse_and_exit(self, monkeypatch, argv):
+        cli = self._cli()
+        monkeypatch.setenv("PLATFORM_PUSH_KEY", "k")
+        monkeypatch.setattr(
+            sys, "argv", ["push_addon_status.py", "--tenant", "acme", "--env", "dev", *argv]
+        )
+        # Parsing is the assertion; the push itself needs a hub and a cluster.
+        monkeypatch.setattr(cli, "push_once", lambda *a, **k: (0, "ok"))
+        assert cli.main() == 0
+
+    def test_interval_form_parses_and_loops(self, monkeypatch):
+        """Asserted by interrupting the sleep — the loop is meant not to exit.
+
+        Calling `main()` on this form without a stop is how the first version of
+        this test hung the suite: it parsed fine and then slept for a minute at a
+        time, forever.
+        """
+        cli = self._cli()
+        monkeypatch.setenv("PLATFORM_PUSH_KEY", "k")
+        monkeypatch.setattr(
+            sys, "argv",
+            ["push_addon_status.py", "--tenant", "acme", "--env", "dev", "--interval", "60"],
+        )
+        pushes: list[int] = []
+        monkeypatch.setattr(cli, "push_once", lambda *a, **k: (pushes.append(1), (0, "ok"))[1])
+        monkeypatch.setattr(cli.time, "sleep", lambda _s: (_ for _ in ()).throw(StopIteration))
+        with pytest.raises(StopIteration):
+            cli.main()
+        assert pushes == [1], "the interval form must push before it first sleeps"
+
+    def test_once_and_interval_are_mutually_exclusive(self, monkeypatch):
+        """Both spellings mean the same run, so accepting both together would
+        silently honour one and ignore the other."""
+        cli = self._cli()
+        monkeypatch.setenv("PLATFORM_PUSH_KEY", "k")
+        monkeypatch.setattr(
+            sys, "argv",
+            ["push_addon_status.py", "--tenant", "acme", "--env", "dev",
+             "--once", "--interval", "60"],
+        )
+        with pytest.raises(SystemExit):
+            cli.main()
+
+    def test_unsigned_report_is_refused_before_any_read(self, monkeypatch):
+        """No key means no identity; a hub that accepted it would be an open
+        write endpoint reachable by anything on the network."""
+        cli = self._cli()
+        monkeypatch.delenv("PLATFORM_PUSH_KEY", raising=False)
+        monkeypatch.setattr(sys, "argv", ["push_addon_status.py", "--tenant", "acme", "--env", "dev"])
+        assert cli.main() == 2

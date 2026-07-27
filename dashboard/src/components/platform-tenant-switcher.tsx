@@ -196,7 +196,7 @@ function FleetTable({
     stale: boolean;
     reported: boolean;
     posture?: TenancyPosture;
-    addons: { total: number; bad: number };
+    addons: { total: number; bad: number; unknown: number };
   }>;
 }) {
   const cell = (state: boolean | null | undefined) => {
@@ -271,13 +271,21 @@ function FleetTable({
                         ? `${(posture?.quota_used ?? {})["limits.cpu"] ?? "?"} / ${cpuHard}`
                         : "—"}
                     </td>
+                    {/* "N ok" may only count rows the agent actually assessed.
+                        Live, a tenant with two healthy add-ons and two shared
+                        cluster installs it cannot speak for rendered "4 ok" —
+                        the same collapse of "not observed" into "fine" that the
+                        isolation cells above go out of their way to avoid. */}
                     <td className="px-4 py-3">
                       {row.addons.bad > 0 ? (
                         <span style={{ color: "#f85149" }}>
                           {row.addons.bad} of {row.addons.total} unhealthy
                         </span>
                       ) : (
-                        <span className="text-[var(--muted)]">{row.addons.total} ok</span>
+                        <span className="text-[var(--muted)]">
+                          {row.addons.total - row.addons.unknown} ok
+                          {row.addons.unknown > 0 && ` · ${row.addons.unknown} not assessed`}
+                        </span>
                       )}
                     </td>
                   </>
@@ -376,6 +384,7 @@ export function PlatformTenantSwitcher() {
                 addons: {
                   total: group.total,
                   bad: group.driftCount + group.unhealthyCount,
+                  unknown: group.unknownCount,
                 },
               };
             }),
@@ -383,7 +392,7 @@ export function PlatformTenantSwitcher() {
               identity,
               stale: false,
               reported: false,
-              addons: { total: 0, bad: 0 },
+              addons: { total: 0, bad: 0, unknown: 0 },
             })),
           ]}
         />
@@ -423,7 +432,12 @@ export function PlatformTenantSwitcher() {
                     {group.driftCount > 0 && `${group.driftCount} drifted`}
                     {group.driftCount > 0 && group.unhealthyCount > 0 && " · "}
                     {group.unhealthyCount > 0 && `${group.unhealthyCount} unhealthy`}
-                    {group.driftCount === 0 && group.unhealthyCount === 0 && `${group.total} ok`}
+                    {group.driftCount === 0 &&
+                      group.unhealthyCount === 0 &&
+                      // Same rule as the fleet table: only assessed rows are "ok".
+                      `${group.total - group.unknownCount} ok${
+                        group.unknownCount > 0 ? ` · ${group.unknownCount} not assessed` : ""
+                      }`}
                   </span>
                 )}
               </button>

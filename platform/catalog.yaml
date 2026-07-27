@@ -26,6 +26,14 @@
 #
 # Delivery adapters refuse to render a cluster-scoped capability per tenant. That
 # refusal is the point: the alternative is a duplicate that looks installed.
+#
+# `self_hosted_repo` is the chart repository. It is the ONE field here that copies
+# a value Terraform also states (`infra/onprem/addons/*.tf`), because a URL is a
+# scalar with no file to point at the way `self_hosted_values` does. Without it the
+# registry could name a chart it had no way to fetch, so nothing could render an
+# installable manifest from the registry alone and every live install was assembled
+# by hand. The copy is made safe by `test_catalog_repos_match_terraform`, which
+# fails the gate the moment the two disagree.
 version: 1
 
 capabilities:
@@ -43,6 +51,8 @@ capabilities:
         aws: amazon-managed-prometheus
         gcp: google-managed-prometheus
         azure: azure-monitor-managed-prometheus
+    # Chart repository — the one checked copy; see the header note.
+    self_hosted_repo: https://prometheus-community.github.io/helm-charts
     # Baseline Helm values, POINTED AT rather than copied here. The same files are
     # what infra/onprem/addons installs today; a second copy would give the platform
     # two answers to "how is this configured" that drift apart with nothing failing —
@@ -60,6 +70,8 @@ capabilities:
         aws: cloudwatch-logs
         gcp: cloud-logging
         azure: log-analytics
+    # Chart repository — the one checked copy; see the header note.
+    self_hosted_repo: https://grafana.github.io/helm-charts
     # Baseline Helm values, POINTED AT rather than copied here. The same files are
     # what infra/onprem/addons installs today; a second copy would give the platform
     # two answers to "how is this configured" that drift apart with nothing failing —
@@ -76,6 +88,8 @@ capabilities:
         aws: aws-xray
         gcp: cloud-trace
         azure: azure-monitor-traces
+    # Chart repository — the one checked copy; see the header note.
+    self_hosted_repo: https://grafana.github.io/helm-charts
     # Baseline Helm values, POINTED AT rather than copied here. The same files are
     # what infra/onprem/addons installs today; a second copy would give the platform
     # two answers to "how is this configured" that drift apart with nothing failing —
@@ -91,6 +105,8 @@ capabilities:
       self_hosted: argo-rollouts
       # Cluster-side mechanism is identical on managed substrates — no managed variant.
       managed: {}
+    # Chart repository — the one checked copy; see the header note.
+    self_hosted_repo: https://argoproj.github.io/argo-helm
     # Baseline Helm values, POINTED AT rather than copied here. The same files are
     # what infra/onprem/addons installs today; a second copy would give the platform
     # two answers to "how is this configured" that drift apart with nothing failing —
@@ -107,6 +123,8 @@ capabilities:
       managed:
         gcp: config-sync
         azure: flux-extension
+    # Chart repository — the one checked copy; see the header note.
+    self_hosted_repo: https://argoproj.github.io/argo-helm
     # Baseline Helm values, POINTED AT rather than copied here. The same files are
     # what infra/onprem/addons installs today; a second copy would give the platform
     # two answers to "how is this configured" that drift apart with nothing failing —
@@ -122,6 +140,8 @@ capabilities:
     backends:
       self_hosted: capsule
       managed: {}
+    # Chart repository — the one checked copy; see the header note.
+    self_hosted_repo: https://projectcapsule.github.io/charts
     # Baseline Helm values, POINTED AT rather than copied here. The same files are
     # what infra/onprem/addons installs today; a second copy would give the platform
     # two answers to "how is this configured" that drift apart with nothing failing —
