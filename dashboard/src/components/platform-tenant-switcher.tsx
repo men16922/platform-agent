@@ -33,6 +33,13 @@ interface StatusFeed {
   missing: string[];
   staleAfterSec: number;
   connected: boolean;
+  /**
+   * Rows withheld by authorization rather than absent (Phase 3③). Optional with
+   * a false fallback on purpose: during a rolling upgrade the hub serves both
+   * payload versions, and a required field here is what previously killed this
+   * page at runtime while `tsc` stayed green (STATUS Open Risks 4).
+   */
+  restricted?: boolean;
 }
 
 const EMPTY: StatusFeed = {
@@ -42,6 +49,7 @@ const EMPTY: StatusFeed = {
   missing: [],
   staleAfterSec: 0,
   connected: false,
+  restricted: false,
 };
 
 function axisColor(state: string): string {
@@ -345,7 +353,11 @@ export function PlatformTenantSwitcher() {
             cluster&apos;s own agent
           </p>
         </div>
-        {feed.connected ? (
+        {feed.restricted ? (
+          <span className="rounded-md border border-[#d2992233] bg-[#d2992212] px-2.5 py-1.5 text-[10px] font-semibold text-[#d29922]">
+            restricted
+          </span>
+        ) : feed.connected ? (
           <span className="rounded-md border border-white/8 bg-white/[0.025] px-2.5 py-1.5 text-[10px] font-semibold text-[#cad5e7]">
             {groups.length} env{groups.length === 1 ? "" : "s"} reporting
           </span>
@@ -356,7 +368,15 @@ export function PlatformTenantSwitcher() {
         )}
       </div>
 
-      {!feed.connected && (
+      {feed.restricted && (
+        <p className="surface p-4 text-xs text-[var(--muted)]">
+          This view is limited to the tenants you have been granted, and you currently have none —
+          so this is <span className="text-[#cbd6e9]">not</span> a claim that no tenants exist, nor
+          that the ones you cannot see are healthy. Sign in, or ask an admin for a tenant grant.
+        </p>
+      )}
+
+      {!feed.restricted && !feed.connected && (
         <p className="surface p-4 text-xs text-[var(--muted)]">
           No status hub in reach, so this view knows nothing about any cluster — which is not the
           same as every cluster being fine. Start the local hub
@@ -365,7 +385,7 @@ export function PlatformTenantSwitcher() {
         </p>
       )}
 
-      {feed.connected && groups.length === 0 && (
+      {!feed.restricted && feed.connected && groups.length === 0 && (
         <p className="surface p-4 text-xs text-[var(--muted)]">
           The hub is up and has never been pushed to.
         </p>

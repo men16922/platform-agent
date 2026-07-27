@@ -1,0 +1,114 @@
+Phase 3③ — read-side tenant boundary (viewer visibility)
+========================================================
+Date : 2026-07-28
+Gate : make check -> 1377 passed, 1 skipped (1367 -> 1377, +10)
+Build: next build OK · tsc clean
+
+
+What was actually exposed
+--------------------------
+Phase 3① made the credential the boundary on the **write** side. The read side
+had no boundary at all:
+
+    $ curl http://<dashboard>/api/dashboard/platform/status     # no auth
+    -> every tenant's add-on status, isolation posture, namespace list,
+       quota usage, and the roster of declared-but-silent tenants
+
+On a single-tenant dashboard that is a demo convenience. On a fleet view it is
+one tenant reading another's topology, to anyone who asks.
+
+Two policies were written down and neither was the one that ran:
+
+  - `lib/auth.ts` exported `ROUTE_PROTECTION` marking reads `"public"` and
+    `meetsProtectionLevel()` to evaluate it. **Nothing imported either.**
+    Confirmed by grep across src/ — zero consumers.
+  - `middleware.ts`'s matcher listed only write routes, and that is what
+    actually executed.
+
+A test was holding the dead code in place:
+
+    tests/test_dashboard_auth_and_activity.py
+      assert "export function meetsProtectionLevel" in content
+      assert "export const ROUTE_PROTECTION" in content
+
+It asserted the *declaration*, which is how declared-but-unconsumed policy
+survives review. Replaced with an assertion about *consumption*.
+
+
+Where authorization lives now
+------------------------------
+`dashboard/src/lib/visibility.ts`, called by the route handler next to the data.
+
+This follows Next's own guidance, which is also the rule this repo already paid
+for on the Python side (`guard_scoped_action`): one implementation every caller
+invokes. From node_modules/next/dist/docs/.../guides/authentication.md:
+
+    "While Proxy can be useful for initial checks, it should not be your only
+     line of defense in protecting your data. The majority of security checks
+     should be performed as close as possible to your data source"
+
+Three answers, kept distinct — an empty fleet and a fleet you may not see call
+for opposite reactions from whoever is looking:
+
+    no session         -> restricted, reason=unauthenticated
+    session, no grants -> restricted, reason=no-grants
+    admin              -> tenants=null (unfiltered)
+
+
+Live behaviour (built artifact, `next start`)
+----------------------------------------------
+    $ curl -s http://127.0.0.1:3199/api/dashboard/platform/status
+    {
+        "statuses": [], "freshness": [], "tenancy": {}, "missing": [],
+        "staleAfterSec": 0, "connected": false, "restricted": true
+    }
+
+The hub is not even contacted when the caller is restricted — an unauthenticated
+request must not be able to make the dashboard fan out.
+
+
+The tests execute the policy rather than grep it
+-------------------------------------------------
+`tests/test_dashboard_visibility.py` compiles `visibility.ts` and runs it under
+node. Content assertions cannot catch an inverted condition: every string they
+look for stays exactly where it is while the fleet view leaks.
+
+Falsified: injecting the classic fail-open (no grants recorded -> do not filter)
+made 2 tests fail:
+
+    FAILED TestDefaultIsNothing::test_signed_in_user_without_grants_sees_nothing
+    FAILED TestGrants::test_empty_strings_are_not_grants
+
+Restored -> 8 passed.
+
+`missing` is filtered too. It names declared tenant/envs the hub has never heard
+from — so it leaks the tenant roster precisely when those tenants have no status
+to leak, which would have made the one field that reveals every tenant name the
+one field nobody thought to filter.
+
+
+Deprecation found while reading the docs first
+-----------------------------------------------
+`dashboard/AGENTS.md` says to read `node_modules/next/dist/docs/` before writing
+dashboard code. Doing so surfaced that Next 16 **deprecated the `middleware`
+file convention** in favour of `proxy` (v16.0.0). Migrated `src/middleware.ts`
+-> `src/proxy.ts` (`export { auth as proxy }`). `next build` now reports
+`ƒ Proxy (Middleware)`. The failure mode of leaving it would have been the
+write-route matcher silently not running.
+
+
+WHAT IS NOT PROVEN HERE — read before quoting it
+--------------------------------------------------
+- **The granted-viewer path was not exercised end-to-end through the route.**
+  That needs a real OAuth session. What is proven live is the *restricted* path;
+  the filtering itself is proven by executing the module, not by a browser
+  round-trip. A live browser pass with a granted viewer is still owed.
+
+- **Only the fleet endpoint is partitioned.** `/api/dashboard/incidents`,
+  `/deployments`, `/activities` remain unauthenticated and unpartitioned. They
+  are not tenant-labelled in the read model yet, so filtering them is a data-model
+  change, not a guard. Until then, do not describe the dashboard as
+  tenant-isolated — only the fleet view is.
+
+- **Grants are stored, not verified against the registry.** A grant naming a
+  tenant that does not exist is accepted and simply matches nothing.

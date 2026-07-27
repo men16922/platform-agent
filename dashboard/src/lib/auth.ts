@@ -106,43 +106,18 @@ export function isSessionValid(session: DashboardSession | null): session is Das
   return session.exp > Math.floor(Date.now() / 1000);
 }
 
-// ─── Route protection categories ────────────────────────────
-
-export type RouteProtection = "public" | "authenticated" | "operator" | "admin";
-
-/**
- * Dashboard route protection mapping.
- * Read paths are public; write paths require authentication.
- */
-export const ROUTE_PROTECTION: Record<string, RouteProtection> = {
-  // Read endpoints (public)
-  "/api/dashboard/incidents": "public",
-  "/api/dashboard/deployments": "public",
-  "/api/dashboard/activities": "public",
-  "/api/dashboard/health": "public",
-
-  // Write endpoints (auth required — not yet implemented)
-  "/api/dashboard/incidents/*/approve": "operator",
-  "/api/dashboard/deployments/trigger": "operator",
-  "/api/dashboard/deployments/*/rollback": "operator",
-  "/api/dashboard/settings": "admin",
-};
-
-/**
- * Check if a role satisfies a route's protection level.
- */
-export function meetsProtectionLevel(role: Role | null, level: RouteProtection): boolean {
-  if (level === "public") return true;
-  if (!role) return false;
-  if (level === "authenticated") return true;
-
-  const hierarchy: Record<Role, number> = { viewer: 0, operator: 1, admin: 2 };
-  const required: Record<RouteProtection, number> = {
-    public: -1,
-    authenticated: 0,
-    operator: 1,
-    admin: 2,
-  };
-
-  return hierarchy[role] >= required[level];
-}
+// ─── Route protection ───────────────────────────────────────
+//
+// There is deliberately no route→level table here any more. One existed, was
+// exported, and was imported by nothing: it said read routes were "public"
+// while `proxy.ts`'s matcher said something else, and neither was what actually
+// ran. Two policies that disagree and a third that executes is worse than no
+// written policy at all.
+//
+// Where authorization actually lives now:
+//   - write routes  -> `src/proxy.ts` matcher + an `auth()` check inside each
+//                      route handler (the proxy is an optimistic check only,
+//                      per Next's own guidance)
+//   - read routes    -> `src/lib/visibility.ts`, called by the handler next to
+//                      the data, because the rule is per-tenant and a matcher
+//                      cannot express "this row but not that one"

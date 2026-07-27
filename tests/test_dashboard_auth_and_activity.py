@@ -70,15 +70,56 @@ def test_auth_module_exports_permission_model():
     assert "export type Permission" in content
     assert "export function hasPermission" in content
     assert "export function canApprove" in content
-    assert "export function meetsProtectionLevel" in content
     assert "export const ROLE_PERMISSIONS" in content
-    assert "export const ROUTE_PROTECTION" in content
 
     # Security invariants
     assert '"incidents:approve:p1"' in content
-    assert '"public"' in content
     assert '"operator"' in content
     assert '"admin"' in content
+
+
+def test_read_side_authorization_is_consumed_not_merely_declared():
+    """
+    This test used to assert that `ROUTE_PROTECTION` and `meetsProtectionLevel`
+    were *exported* — and they were, for months, while **nothing imported
+    either**. The route table said reads were "public"; the proxy matcher said
+    something different; neither was the thing that ran. A guard that pins a
+    declaration in place is how declared-but-unconsumed policy survives review.
+
+    So assert consumption instead: the visibility seam must exist **and** the
+    fleet route must call it. If someone deletes the call, this fails; if
+    someone re-adds an unused policy table, nothing here props it up.
+    """
+    from pathlib import Path
+
+    seam = Path("dashboard/src/lib/visibility.ts").read_text()
+    assert "export function resolveVisibility" in seam
+    assert "export function filterFleet" in seam
+
+    route = Path("dashboard/src/app/api/dashboard/platform/status/route.ts").read_text()
+    assert "resolveVisibility" in route, "the fleet route must resolve caller visibility"
+    assert "filterFleet" in route, "the fleet route must filter what it returns"
+    assert "restricted" in route, (
+        "withheld-by-authorization must stay distinct from empty — an empty "
+        "fleet and a fleet you may not see call for opposite reactions"
+    )
+
+
+def test_proxy_file_convention_is_current():
+    """
+    Next 16 deprecated the `middleware` file convention in favour of `proxy`
+    (node_modules/next/dist/docs/.../file-conventions/proxy.md). A deprecated
+    convention keeps working until it doesn't, and the failure mode is the
+    write-route matcher silently not running.
+    """
+    from pathlib import Path
+
+    assert Path("dashboard/src/proxy.ts").is_file(), "expected src/proxy.ts"
+    assert not Path("dashboard/src/middleware.ts").exists(), (
+        "middleware.ts is the deprecated convention; both files present is worse "
+        "than either alone"
+    )
+    assert "auth as proxy" in Path("dashboard/src/proxy.ts").read_text()
 
 
 def test_activity_model_schema():

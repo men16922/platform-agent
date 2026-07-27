@@ -7,6 +7,13 @@ export interface UserRecord {
   email?: string;
   name?: string;
   role: Role;
+  /**
+   * Tenants this user may see (Phase 3③). Absent or empty means **none** for
+   * non-admins — the read side fails closed the same way the write side does.
+   * Admins are not gated on this: they assign the grants, so requiring one
+   * would make the system unadministrable after the first mistake.
+   */
+  tenants?: string[];
   updated_at: string;
 }
 
@@ -23,8 +30,10 @@ function getTableName() {
 // In-memory fallback for local development or demo-fallback mode
 let mockUsers: UserRecord[] = [
   { username: "men16922", name: "Lead Engineer", email: "lead@example.com", role: "admin", updated_at: new Date().toISOString() },
-  { username: "operator-demo", name: "Ops Lead", email: "ops@example.com", role: "operator", updated_at: new Date().toISOString() },
-  { username: "viewer-demo", name: "Guest User", email: "guest@example.com", role: "viewer", updated_at: new Date().toISOString() },
+  // Grants are deliberately narrow in the mock so the fleet view demonstrates
+  // partitioning rather than showing everyone everything.
+  { username: "operator-demo", name: "Ops Lead", email: "ops@example.com", role: "operator", tenants: ["acme", "globex"], updated_at: new Date().toISOString() },
+  { username: "viewer-demo", name: "Guest User", email: "guest@example.com", role: "viewer", tenants: ["acme"], updated_at: new Date().toISOString() },
 ];
 
 export async function getUserRecord(username: string): Promise<UserRecord | null> {
