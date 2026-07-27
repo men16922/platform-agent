@@ -7,6 +7,33 @@
 
 ---
 
+## 2026-07-28 — 읽기 파티션 완결 + granted-viewer 실증 (gate 1404→1411)
+
+- Status: 대시보드 읽기 경로 둘(플릿·인시던트)이 테넌트로 파티션되고, 오래 미뤄둔
+  granted-viewer 왕복이 실증됐다.
+- Changed(`0512d2b`): 파티션 불가의 원인은 읽기가 아니라 **쓰기**였다 —
+  `NormalizedIncident`는 Phase 1a부터 `tenant`를 갖고 있는데 `_record_incident`가 버렸다.
+  저장은 **비어 있으면 키를 안 넣는다**(부재 ≠ 빈 문자열). `visibility.ts`에 `filterRows`
+  (같은 seam) · **기록 없는 행은 admin 전용** · `withheld` 카운트 반환 ·
+  캐시 헤더 `public, s-maxage=30` → **`private, no-store`**(호출자마다 다른 응답을 공유
+  캐시가 서빙하면 그게 유출이다).
+- Changed(`2357583`): granted-viewer가 미실증이던 진짜 이유는 OAuth가 아니라 **local-dev
+  우회가 `role: admin`을 하드코딩**한 것 — 인가 표면 전체가 로컬에서 검증 불가였다.
+  이제 실 로그인과 같은 저장소에서 역할을 읽는다(`DASHBOARD_DEV_AUTH_USER`).
+- Verified: `make check` **1411**(+7) · `tsc` 클린 · `next build` 성공.
+  **라이브(빌드 산출물)**: 익명 0/3(withheld 3) · **viewer-demo(grant=['acme']) 1/3**
+  (withheld 2, `private, no-store`) · admin 3/3(무태그 행 포함).
+  **반증**: "기록 없는 행은 모두에게" 주입 → RowFiltering 3건 실패, 복원 시 통과.
+  증거 `docs/evidence/phase3-read-partition-live.log`.
+- Blockers: 없음.
+- 품질 메모: 이번에도 **테스트가 낡은 정책을 고정**하고 있었다 —
+  `DASHBOARD_AUTH_DESIGN.md`의 "Read path remains public"을 단언하는 테스트가 있어서,
+  정책이 바뀐 뒤에도 문구가 살아남았다. 오늘만 세 번째 사례다(`ROUTE_PROTECTION` ·
+  Agent Card 필드 존재 단언 · 이것).
+- Next: deployments/activities 파티션은 **데이터 모델 결정 선행**(배포는 어느 테넌트
+  소유인가 — 인시던트와 달리 tenant가 아예 없다) · rate limit을 모델 호출까지 ·
+  무스코프 MCP 읽기.
+
 ## 2026-07-28 — 외부 자료 대조가 연 후속: MCP 옆문 · 테넌트 call budget (gate 1383→1404)
 
 - Status: 참고문서 작성이 목적이었는데 대조가 **우리 결함 4건**을 열었고 전부 근본수정했다.

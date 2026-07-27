@@ -21,17 +21,7 @@
   나왔고 전부 테스트는 초록이었다 — 라이브 실행만이 소비 부재를 드러냈다.
   **집필·발행은 이 계획에만 남기고 착수하지 않는다**(사용자 지시 2026-07-25).
 - [ ] (선택) **Azure Foundry 스택 정리** — 유휴 ≈$0라 유지 중.
-- [x] **LinkedIn 발행 완료(2026-07-28)** — 이로써 발행 3종(Notion 전문
-  `3a94c2420ac4801cbe99e36c16ed90fd` · YouTube Shorts `2J9WfZV0TPE` · LinkedIn)이 전부 닫혔다.
-  **레포 원고는 게시본과 다르다**: `docs/post/linkedin-intro-ko.md` 34·71행에 "7B가 30B를
-  이겼습니다(20/20 vs 19/20)"가 남아 있다. 데이터가 지탱하는 건 ①크기 4배로도 개선 없음
-  ②temp↑면 악화(temp 1.0에서 7B 18 < 30B 19로 역전) ③정확도를 움직인 건 프롬프트
-  (전 설정 80%→95~100%) — 근거 `docs/evidence/model-sweep-live.log`.
-  원고를 게시본에 맞추는 것은 별건으로 남긴다(아래 잔여 항목).
-- [x] **영상 재촬영·편집**(2026-07-26) — 시나리오가 격리 반증 단독 → **풀스택 체인**으로 바뀌어
-  다시 찍었다. `docs/post/media/multitenancy-fullstack-30s.mp4`(30.03초 · 오버레이 없음 ·
-  원본 153.8초를 10컷). 파이프라인 4단계 → `scripts/demo/README.md`.
-  구판 `isolation-falsified-30s.mp4`는 마지막 비트로 흡수됨.
+- [x] **발행 3종 완료(2026-07-28)** — Notion 전문 · YouTube Shorts · LinkedIn. 원고 정정도 반영(`6979787`).
 
 ## 진행 중 — 멀티테넌트/멀티-클라우드 플랫폼 + per-env Add-on
 
@@ -41,9 +31,7 @@
 Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSOT=per-tenant git 레지스트리.
 **최우선 불변식**: 에이전트 실행 blast radius=1 tenant/env(자격증명이 경계) — Phase 1a에서 강제 완료.
 
-- [x] **Phase 2 완결(M11, gate 1290)** — tenancy+Capsule · ⑥ 데이터플레인 격리 · push 2축
-  수집기 + 대시보드 스위처 · capability scope 축 · 삭제 cascade · values seam · managed 경로 ·
-  DR 재구축. 상세 → `COMPLETED_SUMMARY.md` M11, 증거 `docs/evidence/phase2-*.log`.
+- [x] **Phase 2 완결(M11, gate 1290)** — 상세 → `COMPLETED_SUMMARY.md` M11.
 - [x] **Phase 3① 자격증명 격리 full(gate 1355, 2026-07-27)** — 가드 1곳(`guard_scoped_action`)을
   세 러너가 공유, 두 디스패치 경로 모두 스코프 전달, 라이브에서 API 서버가 경계를 판정.
   부수로 `render_rbac`의 **바인딩 대상 SA 부재** 근본수정(Phase 1a의 RBAC 팔이 미행사 상태였음).
@@ -83,9 +71,6 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 - [ ] **선택 불가 런북 4개** — `CAPABILITY_RUNBOOKS`의 certificate-expiry·disk-full·
   health-check-failure·network-latency-high는 `BUILTIN_RUNBOOKS`에 없어 아무것도 이들을 고를 수 없다.
   step 배선(`c4816fd`) 중 발견했고, 범위를 조용히 넓히지 않으려 분리해 남김.
-- [ ] **LinkedIn 원고를 게시본에 맞추기** — 발행은 끝났고 레포 원고만 구판이다.
-  34·71행의 "7B가 30B를 이겼습니다"가 그 자리. 공개 아티클이 링크하는 레포이므로,
-  게시본과 다른 주장이 남아 있으면 그게 정본처럼 읽힌다.
 - [x] **MCP 게이트웨이 ambient 자격증명 차단(gate 1395, 2026-07-28)** — 갭을 파보니 신원 부재보다
   컸다: 모든 도구가 맨 `kubectl`을 쐈고 `kubectl_apply`는 임의 매니페스트를 임의 ns에 썼다.
   이제 argv가 스코프 kubeconfig로 고정되고 변경 도구는 fail-closed.

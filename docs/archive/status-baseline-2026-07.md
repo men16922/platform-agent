@@ -5,6 +5,28 @@
 > 배치 순으로 append돼 1114~1017 블록이 파일 끝에 있었다(2026-07-28 정렬).
 
 - **라이브 실증(2026-07-26, `b07523b`, 수 무변경)** — 기본 OFF로 남겨둔 3건 완주: ①canary 자동판정 **양방향**(나쁜 canary=`failed(3)>limit(2)`→사람 개입 0으로 ~105s auto-abort·stable 4/4 유지 / 좋은 canary=3연속 Successful→abort 안 됨) · ②Tempo 트레이스(query API·Grafana 프록시 양쪽 200, **5026ms 중 analyze 4136ms=MTTR의 82%가 로컬 LLM 추론**) · ⑥kindnet=**ENFORCED**+차트 정책 테넌트 시맨틱(same 통과/cross 차단). 증거 `docs/evidence/onprem-{addons-rollouts-analysis,tracing-tempo,netpol-tenancy}-e2e.log`. 라이브가 검증기 자체 버그 2건도 적발(agnhost `connect` http/URL 불가 · 파드 Ready≠포트 바인딩).
+- `make check` (pytest) → **1355 passed, 1 skipped** (2026-07-27, 1341→1355, +14) — **Phase 3①
+  자격증명 격리 full**(`bb091e1`): 가드가 `scope.py` 한 곳(`guard_scoped_action`)이고 세 러너가
+  같은 구현을 부른다 · `resolve_incident_scope` 이관으로 **GCP Cloud Workflows 경로의 스코프 부재**
+  해소(디스패치 경로가 둘인데 로직이 `aws/executor.py`에만 있었다) · seam이 전 분기에 전달하고
+  네 번째 클라우드를 스코프 없이 추가하면 구조 가드가 실패한다. **라이브가 Phase 1a 증명의 구멍을
+  적발**: `render_rbac`가 바인딩 대상 SA를 렌더하지 않아 **RoleBinding이 없는 SA를 가리키고
+  있었다**(fail-closed라 안 드러남 → RBAC 팔이 한 번도 행사된 적 없음). **라이브(kind, $0)**:
+  실 토큰으로 자기 ns `yes` / 이웃 테넌트·클러스터 스코프 `Forbidden`(**API 서버**가 판정) ·
+  실 러너 in-scope 재시작 성공 · gcp/azure 4케이스 인증·네트워크 이전 거부.
+  증거 `docs/evidence/phase3-scoped-credentials-all-runners.log`.
+- `make check` (pytest) → **1341 passed, 1 skipped** (2026-07-26, 1322→1341, +19) — **자연어가 테넌트를
+  세운다 + 풀스택 30초 영상**: 에이전트 도구 2개 신설(`tenancy_tools.py` = `setup_tenancy` ·
+  `install_tenant_addons`)로 "레지스트리에 다 적혀 있는데 사람만 적용할 수 있던" 마지막 두 걸음 해소.
+  `cluster_io.py`가 렌더된 객체가 클러스터를 만지는 유일한 자리이고, `render_*` 스크립트와 **같은
+  구현**을 쓴다(복사본 0, `render_tenancy.py` 출력이 HEAD와 완전 동일함을 대조로 증명). 자연어 도구는
+  되물을 수 없으므로 **kubectl 컨텍스트 ≠ 레지스트리 클러스터면 아무것도 쓰지 않고 거부**.
+  **라이브(실제 브라우저)**: 빈칸 → 문장 1줄 → 체인 2단(17.6s) → `4 / 4`·4축 ✓ → `1500m / 16` →
+  실제 ArgoCD Synced/Healthy → netpol 1개 삭제 시 network만 ✕(globex 무영향) → 복구 ✓.
+  영상 `docs/post/media/multitenancy-fullstack-30s.mp4`(30.03s, 오버레이 없음, 원본 153.8s→10컷).
+  라이브가 결함 4건 적발(경고→실패 오기록 · 도구 완료 오판정 · 녹화 세션 부재 · 자격증명 파일).
+- `make check` (pytest) → **1322 passed, 1 skipped** (2026-07-26, 1302→1322, +20) — **시연 가능 레벨**: 영상 시나리오를 격리 반증으로 재작성하고 그 대본이 찍히는 상태까지 구축. 준비가 구조적 갭을 드러냄 — repo URL이 TF에만 있어 **레지스트리만으로는 애드온을 설치할 수 없었다**(매 라이브 설치가 손으로 조립됨) → 카탈로그 `self_hosted_repo`(유일한 복사, TF 대조 가드로 안전화) + `scripts/render_addons.py` + `make demo-baseline`. **라이브**: 테넌트 스코프 loki+tempo Synced/Healthy(쿼터가 소비를 셈 cpu 2/16), netpol 1/4 삭제 시 network 축만 ✕·이웃 테넌트 무영향·복구 시 ✓, 실측 지연 18s/61s/59s. 증거 `docs/evidence/demo-isolation-falsification.log`.
+- `make check` (pytest) → **1302 passed, 1 skipped** (2026-07-26, 1290→1302, +12) — **대시보드 멀티테넌시 관제 + 검증 훅**(`654c7e5`·`eebc19e`·`bad2642`): 격리 4축·티어·쿼터·네임스페이스를 **기존 push 경로**에 실어 대시보드로(직접 조회는 D26 위반) · 플릿 표 + 티어별 분리/공유/미보장 명시 · Add-ons 누락 4건(Loki·Fluent Bit·Tempo·Capsule) 추가 · Stop 훅 `make check` + PostToolUse 훅 `tsc`. **라이브 반증**: NetworkPolicy 삭제 시 network 축이 False로 뒤집히고 복구 시 True. `tsc` 클린 · `next build` 성공.
 - `make check` (pytest) → **1290 passed, 1 skipped** (2026-07-26, 1281→1290, +9) — **Phase 2 완결(M11)**(`c6d930d`): managed 백엔드는 카탈로그에서 파생해 `applicable=false`(조회 안 한 백엔드에 health를 단언하지 않는다, faked 디스크립터로 과금 0 증명) · **DR 드릴** globex/dev 실제 파괴 후 레지스트리만으로 재구축(라벨 완전 동일, 10초 뒤 쿼터 선언값 일치) · 채택 검증기 신설. 증거 `docs/evidence/phase2-managed-and-dr.log`.
 - `make check` (pytest) → **1281 passed, 1 skipped** (2026-07-26, 1271→1281, +10) — **어댑터 helm values seam**(`01d3c6d`): 카탈로그가 values 파일을 가리키고(복사 금지) 두 엔진이 같은 dict를 싣는다. 라이브가 결함 2건을 더 드러냈다 — **PSS restricted 테넌트 네임스페이스가 우리 애드온을 거부**(Argo는 Synced/Progressing인데 파드 0개; `monitoring`엔 PSS 라벨이 없어 지금까지 안 보였다) · **구독 해지가 테넌트 데이터를 파괴**(차트가 `whenDeleted: Delete`로 k8s 기본값 Retain을 뒤집음). 둘 다 근본수정. **라이브**: acme-dev-logging이 PSS+쿼터+NetworkPolicy 아래 Synced/Healthy — Phase 2 첫 진짜 테넌트 스코프 설치. 증거 `docs/evidence/phase2-values-seam.log`.
 - `make check` (pytest) → **1271 passed, 1 skipped** (2026-07-26, 1267→1271, +4) — **삭제 cascade**(`e1ea15f`): 계약이 삭제 의미를 말하게 하고(Flux=uninstall vs ArgoCD=고아라 같은 의도가 엔진마다 반대 결과) argocd 렌더러가 resources-finalizer를 붙인다. **라이브 A/B**: 파이널라이저만 다른 Application 2개를 삭제 → 있는 쪽 소멸, 없는 쪽은 소유자 없이 Running. 덮지 않는 것: StatefulSet PVC는 남는다. 증거 `docs/evidence/phase2-deletion-cascade.log`.

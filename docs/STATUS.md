@@ -8,6 +8,13 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **1411 passed, 1 skipped** (2026-07-28, 1404→1411, +7) — **읽기 파티션
+  완결 + granted-viewer 실증**(`0512d2b`·`2357583`): 인시던트 파티션이 막혀 있던 원인은 읽기가
+  아니라 **쓰기**(`_record_incident`가 Phase 1a부터 있던 tenant를 버렸다) · 기록 없는 행은
+  admin 전용 · 캐시 `public, s-maxage` → **`private, no-store`** · granted-viewer가 미실증이던
+  진짜 이유는 **local-dev 우회가 `role: admin` 하드코딩**이라 인가 표면이 로컬에서 검증 불가였던
+  것. **라이브**: 익명 0/3 · viewer-demo(grant=acme) 1/3 · admin 3/3.
+  증거 `docs/evidence/phase3-read-partition-live.log`.
 - `make check` (pytest) → **1404 passed, 1 skipped** (2026-07-28, 1377→1404, +27) — **외부 자료
   대조발 결함 4건 근본수정**(`e7ad744`·`1aa86e0`·`67ab309`): Agent Card가 가상 주소와 **집행하지
   않는 인증**을 광고하던 것 · **MCP 게이트웨이가 ambient 자격증명 경로**였던 것(Phase 1a가 앞문에서
@@ -23,29 +30,7 @@
   되돌려짐**(전제 반증) → 관리 대상 롤백 거부/같은 워크로드 restart 통과 · ③ 익명 curl →
   `restricted:true`. 테스트는 `visibility.ts`를 **실행**하고 fail-open 주입으로 반증까지 확인.
   `tsc` 클린 · `next build` 성공. 증거 `docs/evidence/phase3-{reconciler-conflict,viewer-visibility}.log`.
-- `make check` (pytest) → **1355 passed, 1 skipped** (2026-07-27, 1341→1355, +14) — **Phase 3①
-  자격증명 격리 full**(`bb091e1`): 가드가 `scope.py` 한 곳(`guard_scoped_action`)이고 세 러너가
-  같은 구현을 부른다 · `resolve_incident_scope` 이관으로 **GCP Cloud Workflows 경로의 스코프 부재**
-  해소(디스패치 경로가 둘인데 로직이 `aws/executor.py`에만 있었다) · seam이 전 분기에 전달하고
-  네 번째 클라우드를 스코프 없이 추가하면 구조 가드가 실패한다. **라이브가 Phase 1a 증명의 구멍을
-  적발**: `render_rbac`가 바인딩 대상 SA를 렌더하지 않아 **RoleBinding이 없는 SA를 가리키고
-  있었다**(fail-closed라 안 드러남 → RBAC 팔이 한 번도 행사된 적 없음). **라이브(kind, $0)**:
-  실 토큰으로 자기 ns `yes` / 이웃 테넌트·클러스터 스코프 `Forbidden`(**API 서버**가 판정) ·
-  실 러너 in-scope 재시작 성공 · gcp/azure 4케이스 인증·네트워크 이전 거부.
-  증거 `docs/evidence/phase3-scoped-credentials-all-runners.log`.
-- `make check` (pytest) → **1341 passed, 1 skipped** (2026-07-26, 1322→1341, +19) — **자연어가 테넌트를
-  세운다 + 풀스택 30초 영상**: 에이전트 도구 2개 신설(`tenancy_tools.py` = `setup_tenancy` ·
-  `install_tenant_addons`)로 "레지스트리에 다 적혀 있는데 사람만 적용할 수 있던" 마지막 두 걸음 해소.
-  `cluster_io.py`가 렌더된 객체가 클러스터를 만지는 유일한 자리이고, `render_*` 스크립트와 **같은
-  구현**을 쓴다(복사본 0, `render_tenancy.py` 출력이 HEAD와 완전 동일함을 대조로 증명). 자연어 도구는
-  되물을 수 없으므로 **kubectl 컨텍스트 ≠ 레지스트리 클러스터면 아무것도 쓰지 않고 거부**.
-  **라이브(실제 브라우저)**: 빈칸 → 문장 1줄 → 체인 2단(17.6s) → `4 / 4`·4축 ✓ → `1500m / 16` →
-  실제 ArgoCD Synced/Healthy → netpol 1개 삭제 시 network만 ✕(globex 무영향) → 복구 ✓.
-  영상 `docs/post/media/multitenancy-fullstack-30s.mp4`(30.03s, 오버레이 없음, 원본 153.8s→10컷).
-  라이브가 결함 4건 적발(경고→실패 오기록 · 도구 완료 오판정 · 녹화 세션 부재 · 자격증명 파일).
-- `make check` (pytest) → **1322 passed, 1 skipped** (2026-07-26, 1302→1322, +20) — **시연 가능 레벨**: 영상 시나리오를 격리 반증으로 재작성하고 그 대본이 찍히는 상태까지 구축. 준비가 구조적 갭을 드러냄 — repo URL이 TF에만 있어 **레지스트리만으로는 애드온을 설치할 수 없었다**(매 라이브 설치가 손으로 조립됨) → 카탈로그 `self_hosted_repo`(유일한 복사, TF 대조 가드로 안전화) + `scripts/render_addons.py` + `make demo-baseline`. **라이브**: 테넌트 스코프 loki+tempo Synced/Healthy(쿼터가 소비를 셈 cpu 2/16), netpol 1/4 삭제 시 network 축만 ✕·이웃 테넌트 무영향·복구 시 ✓, 실측 지연 18s/61s/59s. 증거 `docs/evidence/demo-isolation-falsification.log`.
-- `make check` (pytest) → **1302 passed, 1 skipped** (2026-07-26, 1290→1302, +12) — **대시보드 멀티테넌시 관제 + 검증 훅**(`654c7e5`·`eebc19e`·`bad2642`): 격리 4축·티어·쿼터·네임스페이스를 **기존 push 경로**에 실어 대시보드로(직접 조회는 D26 위반) · 플릿 표 + 티어별 분리/공유/미보장 명시 · Add-ons 누락 4건(Loki·Fluent Bit·Tempo·Capsule) 추가 · Stop 훅 `make check` + PostToolUse 훅 `tsc`. **라이브 반증**: NetworkPolicy 삭제 시 network 축이 False로 뒤집히고 복구 시 True. `tsc` 클린 · `next build` 성공.
-- (이전 이력: gate 1290 이하 · 2026-07-10~26 → `docs/archive/status-baseline-2026-07.md`)
+- (이전 이력: gate 1355 이하 · 2026-07-10~27 → `docs/archive/status-baseline-2026-07.md`)
 
 ## 동작하는 영역 (요약)
 
@@ -74,8 +59,9 @@
   **Phase 5**(레지스트리 쓰기 — 이게 열려야 ②를 GitOps-native로 닫는다).
   **과대 해석 금지 3건**: 자격증명 자체가 테넌트-바운드인 것은 **온프렘뿐**(→ Open Risks 7) ·
   ②는 롤백을 되게 만들지 않고 조용한 되돌림을 거부로 바꿀 뿐(→ D32) ·
-  테넌트 파티션이 걸린 읽기 경로는 **플릿 뷰 하나뿐**이다(incidents/deployments/activities는
-  여전히 무인증·무파티션 — 대시보드 전체를 "테넌트 격리됨"이라 부르면 안 된다).
+  테넌트 파티션이 걸린 읽기 경로는 **둘뿐**이다(플릿·인시던트). deployments/activities는
+  여전히 무파티션이고 이유가 다르다 — 배포 기록엔 테넌트 개념이 **아예 없다**(데이터 모델
+  결정 선행). 대시보드 전체를 "테넌트 격리됨"이라 부르면 안 된다.
 - **발행 3종 완료(2026-07-28)** — Notion `3a94c2420ac4801cbe99e36c16ed90fd` · YouTube Shorts
   `2J9WfZV0TPE` · LinkedIn. 레포 원고 정정도 반영(`6979787`). GitAIOps 후속편은 착수 보류.
 
