@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+from contextvars import ContextVar
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
@@ -58,6 +59,30 @@ class ToolSpec:
         return ToolDefinition(name=self.name, description=self.description, parameters=self.parameters)
 
 
+#: Credential the current ``call_tool`` is pinned to, if any.
+#:
+#: Request-scoped rather than a parameter because the tool handlers are
+#: dispatched as ``fn(**arguments)`` straight from the MCP discovery schema —
+#: an extra argument would become part of the advertised tool contract and let
+#: a caller name its own credential, which is the opposite of the point.
+_ACTIVE_KUBECONFIG: ContextVar[str | None] = ContextVar("_ACTIVE_KUBECONFIG", default=None)
+
+
+def _kubectl(*args: str) -> list[str]:
+    """argv for kubectl, pinned to the active scoped credential when there is one.
+
+    Phase 1a removed the ambient-kubeconfig path from the executor
+    (``onprem_runner._run_kubectl``) because blast radius was whatever the
+    current context could reach. This gateway kept it: every tool below shelled
+    out to a bare ``kubectl``, so the front door was bolted and the side door
+    was not. `kubectl_apply` in particular took an arbitrary manifest and an
+    arbitrary namespace.
+    """
+    kubeconfig = _ACTIVE_KUBECONFIG.get()
+    prefix = ["kubectl", "--kubeconfig", kubeconfig] if kubeconfig else ["kubectl"]
+    return [*prefix, *args]
+
+
 def _run_cmd(cmd: list[str], timeout: int = 30) -> ToolResult:
     """Execute a command and return the result."""
     try:
@@ -77,7 +102,7 @@ class KubectlTool:
     @staticmethod
     def get(resource: str, namespace: str = "default", name: str = "", output: str = "json") -> ToolResult:
         """Get Kubernetes resources."""
-        cmd = ["kubectl", "get", resource, "--namespace", namespace, "-o", output]
+        cmd = _kubectl("get", resource, "--namespace", namespace, "-o", output)
         if name:
             cmd.insert(3, name)
         return _run_cmd(cmd)
@@ -87,7 +112,7 @@ class KubectlTool:
         """Apply a Kubernetes manifest from stdin."""
         try:
             result = subprocess.run(
-                ["kubectl", "apply", "-f", "-", "--namespace", namespace],
+                _kubectl("apply", "-f", "-", "--namespace", namespace),
                 input=manifest,
                 capture_output=True,
                 text=True,
@@ -102,19 +127,19 @@ class KubectlTool:
     @staticmethod
     def rollout_status(deployment: str, namespace: str = "default") -> ToolResult:
         """Check rollout status of a deployment."""
-        cmd = ["kubectl", "rollout", "status", f"deployment/{deployment}", "--namespace", namespace, "--timeout=60s"]
+        cmd = _kubectl("rollout", "status", f"deployment/{deployment}", "--namespace", namespace, "--timeout=60s")
         return _run_cmd(cmd, timeout=90)
 
     @staticmethod
     def logs(pod: str, namespace: str = "default", tail: int = 50) -> ToolResult:
         """Get pod logs."""
-        cmd = ["kubectl", "logs", pod, "--namespace", namespace, f"--tail={tail}"]
+        cmd = _kubectl("logs", pod, "--namespace", namespace, f"--tail={tail}")
         return _run_cmd(cmd)
 
     @staticmethod
     def describe(resource: str, name: str, namespace: str = "default") -> ToolResult:
         """Describe a Kubernetes resource."""
-        cmd = ["kubectl", "describe", resource, name, "--namespace", namespace]
+        cmd = _kubectl("describe", resource, name, "--namespace", namespace)
         return _run_cmd(cmd)
 
 
@@ -291,6 +316,34 @@ def remote_mcp_tool(
     return ToolSpec(name, description, parameters, handler)
 
 
+#: Tools that reach a Kubernetes cluster. Everything else (docker, connectors)
+#: has no tenant boundary to cross here.
+CLUSTER_TOOLS: frozenset[str] = frozenset({
+    "kubectl_get", "kubectl_apply", "kubectl_rollout_status",
+    "kubectl_logs", "kubectl_describe",
+})
+
+#: Cluster tools that CHANGE the cluster. These fail closed without a scoped
+#: credential: acting on a boundary we cannot name is exactly when acting is
+#: least safe (the reasoning Phase 1a settled for the executor). Reads stay
+#: available unscoped so the verified anonymous kagent round trip keeps working,
+#: and are pinned to the scope whenever one is present.
+MUTATING_CLUSTER_TOOLS: frozenset[str] = frozenset({"kubectl_apply"})
+
+
+class _NullLog:
+    """Swallow the guard's structured events when no logger was supplied.
+
+    The guard logs before refusing, and a gateway constructed without a logger
+    must still refuse — dropping the record is acceptable, dropping the refusal
+    is not.
+    """
+
+    def info(self, *args: Any, **kwargs: Any) -> None: ...
+    def warning(self, *args: Any, **kwargs: Any) -> None: ...
+    def error(self, *args: Any, **kwargs: Any) -> None: ...
+
+
 def _env_disabled_tools() -> set[str]:
     return {name.strip() for name in os.getenv("MCP_DISABLED_TOOLS", "").split(",") if name.strip()}
 
@@ -315,7 +368,15 @@ class MCPServer:
         extra_tools: list[ToolSpec] | None = None,
         disabled_tools: set[str] | None = None,
         kill_switch: bool | None = None,
+        scope: Any = None,
+        log: Any = None,
     ):
+        # Per-incident scoped credential (Phase 1a's ``IncidentScope``). Optional
+        # so the verified anonymous read path is unchanged; when present it both
+        # bounds which namespaces the cluster tools may touch and pins kubectl to
+        # that credential rather than whatever context happens to be current.
+        self._scope = scope
+        self._log = log if log is not None else _NullLog()
         self._kubectl = KubectlTool()
         self._docker = DockerTool()
         # The base catalog plus any operator-registered connectors form one
@@ -375,4 +436,43 @@ class MCPServer:
 
         fn = self._tool_map[name]
         args = arguments or {}
-        return fn(**args)
+
+        if name not in CLUSTER_TOOLS:
+            return fn(**args)
+
+        if self._scope is None:
+            if name in MUTATING_CLUSTER_TOOLS:
+                return ToolResult(
+                    success=False,
+                    error=(
+                        f"refusing '{name}' without a scoped credential — this gateway "
+                        "no longer inherits the ambient kubeconfig (Phase 1a closed the "
+                        "same path in the executor)"
+                    ),
+                )
+            # Unscoped read: unchanged behaviour, and it stays ambient. Named
+            # here rather than left implicit so nobody reads the mutating
+            # refusal above as covering the whole gateway.
+            return fn(**args)
+
+        # Same gate the runners use — not a lookalike of it. A namespace outside
+        # the scope is refused before the call, and the credential is pinned for
+        # its duration so a tool cannot reach past the tenant it was minted for.
+        from src.agents.platform.scope import ScopeError, guard_scoped_action
+
+        try:
+            guard_scoped_action(
+                action=name,
+                namespace=str(args.get("namespace") or ""),
+                scope=self._scope,
+                log=self._log,
+                log_prefix="mcp_server",
+            )
+        except ScopeError as exc:
+            return ToolResult(success=False, error=str(exc))
+
+        token = _ACTIVE_KUBECONFIG.set(self._scope.kubeconfig_path)
+        try:
+            return fn(**args)
+        finally:
+            _ACTIVE_KUBECONFIG.reset(token)

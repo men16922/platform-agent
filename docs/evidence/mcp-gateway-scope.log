@@ -1,0 +1,92 @@
+MCP gateway — closing the ambient-credential side door
+=======================================================
+Date    : 2026-07-28
+Cluster : kind-platform-agent (local, $0)
+Origin  : docs/reference/gcp-agentic-ai-architecture-center.md (shared-MCP gap)
+
+
+What was open
+--------------
+Phase 1a removed the ambient-kubeconfig path from the executor. Its docstring is
+explicit: "The ambient-context path is GONE on purpose (Phase 1a) ... blast
+radius was whatever that context could reach and a routing bug failed open."
+
+The MCP gateway kept exactly that path. Every tool shelled out to a bare
+`kubectl`:
+
+    cmd = ["kubectl", "get", resource, "--namespace", namespace, ...]
+    subprocess.run(["kubectl", "apply", "-f", "-", "--namespace", namespace], ...)
+
+No `--kubeconfig`, no namespace bound, and `kubectl_apply` accepts an **arbitrary
+manifest into an arbitrary namespace**. The front door was bolted; the side door
+was not. `grep tenant src/agents/ai/gateway/mcp_server.py` returned nothing — the
+kill-switch is "disable this tool for everyone", never "for this tenant".
+
+The GCP multi-tenant guide names this directly: a *shared* MCP deployment
+requires propagating identity to the server, or the fine-grained access control
+it is supposed to enforce does not exist.
+
+
+What changed
+-------------
+- `_kubectl()` builds every argv, pinning `--kubeconfig` to the scope in force.
+  Request-scoped via `ContextVar` rather than a tool parameter, because handlers
+  dispatch as `fn(**arguments)` from the advertised MCP schema — an extra
+  argument would let a *caller* name its own credential, which is the opposite
+  of the point.
+- Mutating cluster tools **fail closed** with no scope. Reads stay available
+  unscoped, because the verified anonymous kagent round trip goes through them,
+  and are pinned whenever a scope is present.
+- The namespace check is `guard_scoped_action` — the same function the three
+  runners call, not a lookalike of it.
+
+
+Live behaviour (kind, real SA token)
+-------------------------------------
+    A. scoped read, own namespace (acme-dev-logging)
+       success: True | deployment.apps/acme-dev-logging-loki-gateway
+
+    B. same gateway -> neighbour tenant (globex-dev-observability)
+       success: False
+       namespace 'globex-dev-observability' is outside the scope of tenant 'acme'
+
+    C. mutation with no scope at all (apply a Namespace named "pwned")
+       success: False
+       refusing 'kubectl_apply' without a scoped credential — this gateway no
+       longer inherits the ambient kubeconfig
+
+    D. in-scope namespace, but a resource the Role does not grant
+       success: False
+       Error from server (Forbidden): secrets is forbidden: User
+       "system:serviceaccount:acme-dev-logging:platform-agent" ...
+
+D is the one worth keeping. B is our guard saying no; **D is the API server
+saying no** — inside a namespace our own check allowed. The credential is the
+boundary and our gate is the early, attributable refusal in front of it.
+
+
+Falsification
+--------------
+The pinning test is parametrised over all five cluster tools rather than
+spot-checking one. Reintroducing a bare `kubectl` in a single tool
+(`kubectl_logs`) failed exactly that tool and nothing else:
+
+    FAILED test_every_cluster_tool_is_pinned_to_the_credential[kubectl_logs-args1]
+    1 failed, 11 passed        (restored -> 12 passed)
+
+`test_no_cluster_tool_escapes_the_gate` compares the catalog's `kubectl_*` tools
+against `CLUSTER_TOOLS` by equality, so adding a sixth kubectl tool without
+declaring it breaks the gate loudly instead of silently reopening the door.
+
+
+WHAT THIS DOES NOT DO
+----------------------
+- **Unscoped reads are still ambient.** `kubectl_get`/`logs`/`describe` with no
+  scope run against whatever context is current, exactly as before. That is a
+  deliberate carve-out to keep the verified anonymous path working, not an
+  argument that reads are harmless — a read of another tenant's logs is a
+  disclosure. Closing it means giving the kagent path a scope first.
+- **No tenant rate limiting.** Quotas stop at Capsule's cpu/memory/pods; nothing
+  counts model calls or tool invocations per tenant. Still open in `NEXT_PLAN`.
+- The gateway does not verify that a scope it was handed matches the caller —
+  it trusts its constructor. Minting remains the broker's job.

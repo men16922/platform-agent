@@ -49,7 +49,16 @@ class TestMCPToolDefinitions:
         assert set(MCPServer()._tool_map) == set(catalog_names)
 
     def test_every_catalog_tool_dispatches_to_its_handler(self):
-        server = MCPServer()
+        # A scope is supplied because mutating cluster tools now fail closed
+        # without one (the gateway stopped inheriting the ambient kubeconfig).
+        # This test is about catalog↔handler wiring, so it grants a scope with
+        # no namespace restriction and lets the boundary tests in
+        # `test_mcp_scope.py` own the refusal behaviour.
+        from src.agents.platform.scope import IncidentScope
+
+        server = MCPServer(
+            scope=IncidentScope(tenant="acme", env="dev", kubeconfig_path="/tmp/k")
+        )
         ok = MagicMock(returncode=0, stdout="ok", stderr="")
         with (
             patch("src.agents.ai.gateway.mcp_server._run_cmd", return_value=ToolResult(success=True, output="ok")),
