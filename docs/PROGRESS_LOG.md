@@ -7,6 +7,39 @@
 
 ---
 
+## 2026-07-28 — 잔여 3건 소진: grant 대조 · 선택 불가 런북 · Capsule 이관 (gate 1411→1446)
+
+- Status: 계획에 남아 있던 **차단 없는 잔여 3건**을 우선순위대로 처리. 셋 다 기록된
+  갭보다 컸고, 셋 다 **라이브가 유닛 테스트와 다른 답**을 내놓은 지점에서 진짜 결함이 나왔다.
+- Changed(`63df3c5`, grant): 기록은 "대조 안 함"이었는데 실제로는 ①grant를 **줄 방법
+  자체가 없었고**(라우트·스토어 둘 다 `tenants`를 안 받음 — 읽기 쪽이 아무 쓰기 경로도
+  못 만드는 필드를 소비 중) ②역할 변경이 whole-item Put으로 grant를 **조용히 지웠다**.
+  허브 `GET /api/platform/tenants`(레지스트리=SSOT, 못 읽으면 빈 목록 아닌 **503**) +
+  `platform-roster.ts`(null=미검증) + 저장 전 대조 + `absent=유지` + users 테이블 컬럼.
+- Changed(`9beda00`, 런북): 런북 4개가 BUILTIN에 없어 선택 불가 → 항목 추가. 그런데
+  **라이브 전체 경로는 여전히 넷 다 generic-recovery**였다. 실 스캔 결과 시드 테이블에
+  generic 행이 있어 티어 2가 티어 4의 답을 대신 냈고 **티어 3(빌트인)이 배포 환경에서
+  한 번도 도달된 적 없었다**. `allow_generic=False`로 해소. 부수로
+  `assert_health_check_passing` 구현(미구현 검사는 **실패**로 치므로, 안 하면 재시작
+  성공에도 매번 롤백 캐스케이드).
+- Changed(`278a264`, Capsule): `additionalMetadata` → `additionalMetadataList`.
+  CRD에 직접 물어 확인. 제거 릴리스에서 **에러 없이 안 읽히는** 실패라 선제 이관.
+- Verified: `make check` **1446**(+35 누적) · `tsc` 클린 · `next build` 성공.
+  **라이브**: grant 5케이스(선언 200 / 없는 테넌트 400 지목 / 역할 변경 후 생존 /
+  허브 다운 503 / 회수는 200) · 실 DynamoDB 스캔으로 런북 4개 정상 해소 ·
+  kind에서 PSS 라벨 유지 + probe 라벨 전파. 증거 `docs/evidence/{phase3-tenant-grant-validation,
+  runbook-selectability,capsule-deprecation-metadata}.log`.
+- Blockers: 없음(아래 Next는 차단이지 실패가 아님).
+- 품질 메모: **반증이 세 번 중 한 번은 내 테스트를 잡았다.** 호출부를 되돌렸는데 새 테스트
+  20건이 전부 통과했다 — 전부 `_match_runbook_registry`를 플래그를 이미 준 채로 직접
+  불러서, **플래그를 잊은 호출자를 볼 수 없었다**. 라이브만 잡았고, 호출부 단언을 추가했다.
+  "가드도 반증하라"는 이제 "가드를 **호출부에서** 반증하라"로 좁혀야 한다.
+- Next: **모델 호출 rate limit은 deployments 파티션과 같은 결정에 묶여 있다**(조사 결과) —
+  로컬 모델 호출자는 `local_deployer`/`strands_deployer` 둘뿐이고 둘 다 배포 경로인데,
+  배포 요청엔 테넌트가 없고 `setup_tenancy(tenant, ...)`는 **모델이 부르는 도구**다.
+  즉 테넌트가 추론의 **입력이 아니라 출력**이라 헤더로 받으려면 "배포는 어느 테넌트
+  소유인가"를 먼저 정해야 한다. 남은 것: 그 결정 · 무스코프 MCP 읽기 · `limitRanges` 이관 경로 결정.
+
 ## 2026-07-28 — 읽기 파티션 완결 + granted-viewer 실증 (gate 1404→1411)
 
 - Status: 대시보드 읽기 경로 둘(플릿·인시던트)이 테넌트로 파티션되고, 오래 미뤄둔

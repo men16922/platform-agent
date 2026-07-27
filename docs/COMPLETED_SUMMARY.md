@@ -38,6 +38,47 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
+## M12 — 멀티테넌트 Phase 3(인가 강화) 완결 + 읽기 경계 (완료, 2026-07-27~28)
+
+**gate 1290 → 1411.** 증거 `docs/evidence/phase3-*.log` · `mcp-gateway-scope.log`.
+결정 → `DECISIONS` D31·D32.
+
+Phase 2가 "테넌트 하나의 잘못이 이웃에게 안 번지게"를 클러스터 안에서 증명했다면,
+Phase 3는 **누가 무엇을 할 수 있고 볼 수 있는가**를 닫았다. 그리고 이 단계에서 나온
+결함은 거의 전부 **앞문은 잠갔는데 옆문이 열려 있던** 형태였다.
+
+- **①자격증명 격리 full**: fail-closed 가드를 `guard_scoped_action` 하나로 모으고 세 러너가
+  그것을 부른다(닮은꼴 금지). `resolve_incident_scope` 이관으로 **GCP Cloud Workflows 경로의
+  스코프 부재** 해소 — 디스패치 경로가 둘인데 로직이 한쪽에만 있었다. 라이브가 Phase 1a
+  증명 자체의 구멍을 적발: `render_rbac`가 바인딩 대상 **ServiceAccount를 렌더하지 않아**
+  RoleBinding이 없는 신원을 가리키고 있었다(fail-closed라 안 드러남 → RBAC 팔이 한 번도
+  행사된 적 없음). DoD가 "Forbidden **또는** 자격증명 부재"라 약한 쪽으로 통과 중이었다.
+- **②reconciler 충돌 거부**: `rollout undo`는 0을 반환하고 `resolved=True`가 기록된 뒤
+  깨진 버전이 돌아온다 — out-of-band 변경이 **10초 만에** selfHeal에 되돌려짐을 먼저 실증한
+  위에서 거부를 세웠다. 되돌리는 액션만 막는다(restart·scale은 desired로 수렴).
+  **selfHeal pause는 채택 안 함**: Application이 `argocd` ns에 있어 테넌트 스코프
+  자격증명으로 도달 불가(D32). 설계의 권장안(registry write-back)은 Phase 5 의존 —
+  계획 자체의 순서 충돌.
+- **③읽기 쪽 테넌트 경계**: `visibility.ts` 단일 seam(플릿 + 인시던트). 인시던트 파티션이
+  막혀 있던 원인은 읽기가 아니라 **쓰기**였다 — `NormalizedIncident.tenant`가 Phase 1a부터
+  있는데 기록 시점에 버려졌다. 기록 없는 행은 admin 전용, `withheld` 카운트 반환,
+  캐시 `public, s-maxage` → **`private, no-store`**.
+- **MCP 게이트웨이 옆문**: 모든 도구가 맨 `kubectl`을 쐈고 `kubectl_apply`는 임의 매니페스트를
+  임의 ns에 썼다. Phase 1a가 executor에서 없앤 fail-open이 그대로 있었다. argv를 스코프
+  kubeconfig로 고정(ContextVar — 도구 인자로 두면 **호출자가 자기 자격증명을 지명**한다),
+  변경 도구는 fail-closed. 라이브: 스코프 안 ns인데도 `secrets`는 **API 서버**가 `Forbidden`.
+- **테넌트 call budget**: 쿼터는 무엇을 *보유*하는지만 묶었다. sliding window, 레지스트리
+  `quota.calls_per_min` 선언, 미선언=무제한(additive).
+- **외부 대조**(Qwiklabs GENAI120 · GCP Architecture Center · Developers Blog): Agent Card가
+  **가상 주소**와 **집행하지 않는 인증**을 광고하던 것 적발·수정. → `docs/reference/`.
+
+**반복된 교훈**: 이 단계의 결함은 전부 **테스트가 선언을 단언해서** 살아남았다
+(`assert "supportedInterfaces" in card` · `ROUTE_PROTECTION` 존재 단언 ·
+"Read path remains public" 문구 고정). 값이 어디를 가리키는지, 누가 그것을 소비하는지를
+묻지 않는 가드는 정책보다 오래 산다. 그리고 **가드를 쓰면 가드도 반증해야 한다** —
+rate-limit 테스트 하나가 결함을 주입해도 통과했다(재시도를 시계 멈춘 순간에 해서
+아무것도 단언하지 않고 있었다).
+
 ## M11 — 멀티테넌트 Phase 2 완결 (완료, 2026-07-26)
 
 **gate 1191 → 1290.** 증거 `docs/evidence/phase2-*.log`. 설계 →

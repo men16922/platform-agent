@@ -8,6 +8,15 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **1446 passed, 1 skipped** (2026-07-28, 1411→1446, +35) — **잔여 3건**
+  (`63df3c5`·`9beda00`·`278a264`): ①grant는 대조만 없던 게 아니라 **줄 방법 자체가 없었고**
+  역할 변경이 whole-item Put으로 grant를 지웠다 → 허브 `GET /api/platform/tenants`(레지스트리
+  =SSOT, 못 읽으면 **503**) + 저장 전 대조 + `absent=유지` ②런북 4개가 선택 불가였고, 항목을
+  넣어도 **라이브는 넷 다 generic-recovery** — 시드 테이블의 generic 행 때문에 **티어 3이
+  배포 환경에서 한 번도 도달된 적 없었다**(`allow_generic=False`로 해소) ③Capsule
+  `additionalMetadata`→`additionalMetadataList`(제거 시 **에러 없이 안 읽히는** 실패).
+  **라이브**: grant 5케이스 · 실 DynamoDB 스캔 · kind PSS 라벨 유지 + probe 전파.
+  증거 `docs/evidence/{phase3-tenant-grant-validation,runbook-selectability,capsule-deprecation-metadata}.log`.
 - `make check` (pytest) → **1411 passed, 1 skipped** (2026-07-28, 1404→1411, +7) — **읽기 파티션
   완결 + granted-viewer 실증**(`0512d2b`·`2357583`): 인시던트 파티션이 막혀 있던 원인은 읽기가
   아니라 **쓰기**(`_record_incident`가 Phase 1a부터 있던 tenant를 버렸다) · 기록 없는 행은
@@ -22,15 +31,9 @@
   budget 부재. **라이브(kind)**: 스코프 안 ns인데도 `secrets`는 `Forbidden` — 우리 가드가 아니라
   **API 서버**가 경계를 판정. 넷 다 테스트가 **선언만 단언해** 살아남았다.
   증거 `docs/evidence/mcp-gateway-scope.log`.
-- `make check` (pytest) → **1377 passed, 1 skipped** (2026-07-28, 1355→1377, +22) — **Phase 3 완결
-  ②③**(`9e78f81`·`1c13a59`): ② `reconciler.py`가 소유 표식을 라이브 객체에서 읽어 reconciler가
-  되돌릴 롤백을 거부(되돌리는 액션만; restart·scale은 desired로 수렴) · ③ `visibility.ts` 단일
-  seam이 읽기 쪽 테넌트 경계를 세우고 `middleware.ts`→`proxy.ts`(Next 16 deprecation) 이관,
-  소비자 0이던 `ROUTE_PROTECTION` 제거. **라이브**: ② out-of-band 변경이 **10초 만에 selfHeal에
-  되돌려짐**(전제 반증) → 관리 대상 롤백 거부/같은 워크로드 restart 통과 · ③ 익명 curl →
-  `restricted:true`. 테스트는 `visibility.ts`를 **실행**하고 fail-open 주입으로 반증까지 확인.
-  `tsc` 클린 · `next build` 성공. 증거 `docs/evidence/phase3-{reconciler-conflict,viewer-visibility}.log`.
-- (이전 이력: gate 1355 이하 · 2026-07-10~27 → `docs/archive/status-baseline-2026-07.md`)
+- (이전 이력: gate **1377** 이하 · 2026-07-10~28 → `docs/archive/status-baseline-2026-07.md`
+  및 `PROGRESS_LOG`. Phase 3 완결 ②③ = `9e78f81`·`1c13a59`, 증거
+  `docs/evidence/phase3-{reconciler-conflict,viewer-visibility}.log`.)
 
 ## 동작하는 영역 (요약)
 
@@ -54,7 +57,7 @@
 
 **지금 하는 것**
 
-- **Phase 3(인가 강화) = 완결(2026-07-28)** — ①자격증명 격리 full · ②reconciler 충돌
+- **Phase 3(인가 강화) = 완결(M12, 2026-07-28)** — ①자격증명 격리 full · ②reconciler 충돌
   거부 · ③읽기 쪽 테넌트 경계. 다음은 **Phase 4**(managed 어댑터, billable) 또는
   **Phase 5**(레지스트리 쓰기 — 이게 열려야 ②를 GitOps-native로 닫는다).
   **과대 해석 금지 3건**: 자격증명 자체가 테넌트-바운드인 것은 **온프렘뿐**(→ Open Risks 7) ·
@@ -62,6 +65,14 @@
   테넌트 파티션이 걸린 읽기 경로는 **둘뿐**이다(플릿·인시던트). deployments/activities는
   여전히 무파티션이고 이유가 다르다 — 배포 기록엔 테넌트 개념이 **아예 없다**(데이터 모델
   결정 선행). 대시보드 전체를 "테넌트 격리됨"이라 부르면 안 된다.
+- **차단 없는 잔여 3건 = 소진(2026-07-28)** — grant 대조 · 선택 불가 런북 4개 · Capsule
+  metadata 이관. 남은 잔여는 전부 **결정 대기**이지 작업 대기가 아니다(아래 3건).
+- **⚠️ 결정 1개가 두 항목을 동시에 막고 있다: "배포는 어느 테넌트 소유인가"** —
+  조사 결과 **모델 호출 rate limit**도 여기 묶여 있다. 로컬 모델 호출자는
+  `local_deployer`/`strands_deployer` 둘뿐이고 둘 다 배포 경로인데 배포 요청엔 테넌트가
+  없고, `setup_tenancy(tenant, ...)`는 **모델이 부르는 도구**다 — 테넌트가 추론의
+  **입력이 아니라 출력**이라 신원 전파가 성립하지 않는다. deployments/activities 파티션과
+  같은 결정.
 - **발행 3종 완료(2026-07-28)** — Notion `3a94c2420ac4801cbe99e36c16ed90fd` · YouTube Shorts
   `2J9WfZV0TPE` · LinkedIn. 레포 원고 정정도 반영(`6979787`). GitAIOps 후속편은 착수 보류.
 
@@ -94,9 +105,11 @@
    **새 애드온을 추가할 때마다 같은 확인이 필요**하다 — 렌더된 파드 스펙을 테넌트 네임스페이스에
    `kubectl apply --dry-run=server`로 던져 API 서버에 직접 묻는 것이 가장 싸다.
    values 파일은 에러가 아니라 **안 읽히는 방식으로** 실패한다(차트마다 키 철자가 다르다).
-6. **Capsule deprecation 2건(미조치)** — `render_tenancy.py`가 내는 `limitRanges`·
-   `additionalMetadata`는 상위 버전에서 제거 예정이다. 지금은 동작하지만 **values 파일이
-   실패하는 방식과 같은 부류**(에러 없이 안 읽힘)라 Capsule 업그레이드 전에 이관 필요.
+6. **Capsule deprecation — `additionalMetadata`는 이관 완료(2026-07-28), `limitRanges`는 남음.**
+   후자는 기계적 포팅이 아니다: `GlobalTenantResource`는 **클러스터 스코프**라 에이전트
+   변경 범위를 테넌트 밖으로 밀어 **D30 위반**이고, `TenantResource`는 테넌트 안에 머물지만
+   **SA+RBAC라는 새 권한 표면**이 필요하다. 지금은 동작하며 경고만 뜬다(2건→1건).
+   ⚠️ 경로 선택은 결정 사항.
 7. **GCP/Azure 자격증명은 아직 테넌트-바운드가 아니다(Phase 3① 이후 남은 것)** — 스코프는 액션이
    **어느 네임스페이스를 건드릴지**를 정할 뿐 토큰 자체를 테넌트에 묶지 않는다. GCP는 프로젝트
    전역 신원 하나이고, **Azure는 ARM에서 클러스터 admin kubeconfig를 받아온다**(인시던트가
