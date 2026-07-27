@@ -6,6 +6,14 @@
 
 > **Future Reference (차용 후보, 결정 아님):**
 > - **enterprise-ai-governance-dashboard** (외부 레포) — 2-Pass Fact NL→SQL 챗봇 + SQL self-heal 루프 + LLM SKU 그룹핑 + 최소권한 Cloud Run SA. 대시보드 챗봇/FinOps 확장 시 검토. 상세 → `docs/reference/enterprise-ai-governance-dashboard.md`. (검토 2026-07-13)
+> - **GCP Architecture Center — Agentic AI 시리즈** (외부 아키텍처 가이드) — **공유 MCP에 테넌트 신원 전파** ·
+>   **테넌트별 rate limit/노이지 네이버 방어**(우리 쿼터는 k8s 자원까지고 모델 호출량은 아무도 안 센다) ·
+>   12 디자인 패턴 어휘. 격리 설계는 우리가 더 세분화(3티어 vs 프로젝트-per-테넌트 단일). 안티패턴=GCP 제품 종속
+>   (PAB·Model Armor·VPC-SC). 상세 → `docs/reference/gcp-agentic-ai-architecture-center.md`. (검토 2026-07-28)
+> - **ADK + A2A 원격 에이전트**(Qwiklabs GENAI120 + Google Developers Blog) — 우리가 이미 지나온 지점.
+>   전이된 건 결함 2건뿐(카드의 가짜 URL · **집행하지 않는 인증을 광고**). `RemoteA2aAgent`는 카드를 검증 없이
+>   믿어 차용 안 함. 원격 부재→`MANUAL_REVIEW`는 D24와 같은 결론(외부 확증).
+>   상세 → `docs/reference/adk-a2a-remote-agents-lab.md`. (검토 2026-07-28)
 > - **GitAIOps 실습서(Notiflex)** (외부 학습 레포) — Rollouts **AnalysisTemplate 메트릭 자동판정**(우리 무기한 pause 게이트의 미완점) · **OTel→Tempo로 4-step 파이프라인 자체 트레이싱** · 런북 **사전확인/사후검증 3단**(우리 `RunbookStep`엔 없음) · **allow/ask/deny 권한통제** · **Sync Wave**. 안티패턴=Kafka·멀티 노드풀·GKE 종속 시크릿·`--dangerously-skip-permissions`. 상세 → `docs/reference/gitaiops-notiflex-book.md`. (검토 2026-07-25)
 
 ---

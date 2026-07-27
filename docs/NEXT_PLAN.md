@@ -78,6 +78,14 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 - [ ] **LinkedIn 원고를 게시본에 맞추기** — 발행은 끝났고 레포 원고만 구판이다.
   34·71행의 "7B가 30B를 이겼습니다"가 그 자리. 공개 아티클이 링크하는 레포이므로,
   게시본과 다른 주장이 남아 있으면 그게 정본처럼 읽힌다.
+- [ ] **공유 MCP 서버에 테넌트 신원 전파** — `gateway/mcp_server.py`는 공유인데 테넌트 개념이
+  0이다(kill-switch는 "이 도구를 전부 끈다"이지 "이 테넌트에게만"이 아니다). Phase 3①이 *실행*
+  경로에 세운 경계가 *도구* 경로엔 없다. 근거 → `docs/reference/gcp-agentic-ai-architecture-center.md`.
+- [ ] **테넌트별 rate limit(노이지 네이버)** — 쿼터가 Capsule의 cpu/memory/pods까지고 **모델 호출량은
+  아무도 안 센다**. 로컬 Qwen 단일 인스턴스라 한 테넌트의 폭주가 공유 추론을 독점할 수 있다.
+- [ ] **A2A 인증 실집행 결정** — 카드가 광고하던 bearer/JWT를 서버가 검사하지 않던 것은 해소했다
+  (`A2A_BEARER_TOKEN` 미설정 시 광고도 안 한다). 남은 결정은 **기본값을 on으로 돌릴지** —
+  지금은 라이브 kagent 왕복이 익명이라 opt-in이다.
 - [ ] **Capsule deprecation 이관** — `render_tenancy.py` 적용 시 `limitRanges`(→TenantReplications)와
   `additionalMetadata`(→`additionalMetadataList`) 경고가 뜬다. 지금은 동작하지만 상위 버전에서
   **에러 없이 안 읽히는** 쪽으로 실패할 부류라 Capsule 업그레이드 전에 처리.

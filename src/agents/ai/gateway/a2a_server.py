@@ -14,6 +14,7 @@ Usage:
 
 from __future__ import annotations
 
+import hmac
 import json
 import os
 import uuid
@@ -62,6 +63,37 @@ class Task:
     history: list[dict[str, Any]] = field(default_factory=list)
 
 
+#: Shared secret required on `Authorization: Bearer` when enforcement is on.
+#: Unset -> enforcement off, and the card stops advertising a scheme we do not
+#: apply. Opt-in rather than default-on because the live kagent round trip and
+#: local dev both call this server anonymously today; flipping that silently
+#: would break a verified path, and an auth check nobody can pass is its own
+#: kind of outage.
+A2A_AUTH_TOKEN_ENV = "A2A_BEARER_TOKEN"
+
+
+def _auth_enforced() -> bool:
+    return bool(os.getenv(A2A_AUTH_TOKEN_ENV, "").strip())
+
+
+def check_bearer(authorization: str | None) -> bool:
+    """Whether ``authorization`` satisfies the configured bearer requirement.
+
+    Returns True when enforcement is off — the caller is not authenticated, and
+    the card says so by omitting the scheme. Comparison is constant-time so a
+    wrong token cannot be recovered a byte at a time.
+    """
+    expected = os.getenv(A2A_AUTH_TOKEN_ENV, "").strip()
+    if not expected:
+        return True
+    if not authorization:
+        return False
+    scheme, _, value = authorization.partition(" ")
+    if scheme.lower() != "bearer":
+        return False
+    return hmac.compare_digest(value.strip(), expected)
+
+
 class A2AServer:
     """In-memory A2A Server implementing the core protocol operations."""
 
@@ -85,15 +117,51 @@ class A2AServer:
             self._orchestrator = None
 
     def _load_agent_card(self) -> dict:
-        """Load the agent card from JSON file."""
+        """Load the agent card, filling its public address at serve time.
+
+        The card's interface ``url`` is the address a *remote* agent dials to
+        reach us — it is the one field on the card that nobody here consumes,
+        which is exactly why it sat pointing at a fictional host
+        (``platform-agent.example.com``) through a full live A2A round trip.
+        Our own callers always pass an endpoint explicitly, so a wrong value
+        costs whoever is trying to consume us, never us.
+
+        So it is not written down as an absolute URL any more. ``A2A_PUBLIC_URL``
+        is the single place the address comes from, and when it is unset the
+        interface is omitted rather than published as a guess: a card with no
+        address says "ask the operator", while a card with the wrong address
+        sends someone somewhere.
+        """
         card_path = os.path.join(
             os.path.dirname(__file__), "..", "a2a_card.json"
         )
         try:
             with open(card_path) as f:
-                return json.load(f)
+                card = json.load(f)
         except FileNotFoundError:
             return {"name": "Platform Deployer Agent", "version": "1.0.0"}
+
+        public_url = os.getenv("A2A_PUBLIC_URL", "").strip()
+        if public_url:
+            card["supportedInterfaces"] = [{
+                "url": public_url.rstrip("/"),
+                "protocolBinding": "HTTP+JSON",
+                "protocolVersion": "1.0",
+            }]
+        else:
+            card.pop("supportedInterfaces", None)
+
+        # The card must not advertise a guarantee this server does not provide.
+        # It declared `securitySchemes: bearer/JWT` and a matching
+        # `securityRequirements` while nothing here ever looked at an
+        # Authorization header — the mirror image of the stale URL, and the worse
+        # direction of the two: a remote agent reads the card, dutifully sends a
+        # token, and concludes it is talking to an authenticated endpoint.
+        # Advertised only when enforcement is actually switched on.
+        if not _auth_enforced():
+            card.pop("securitySchemes", None)
+            card.pop("securityRequirements", None)
+        return card
 
     @property
     def agent_card(self) -> dict:
@@ -255,7 +323,7 @@ def create_a2a_app():
         FastAPI app instance (requires fastapi to be installed).
     """
     try:
-        from fastapi import FastAPI, HTTPException
+        from fastapi import FastAPI, Header, HTTPException
         from fastapi.responses import JSONResponse
     except ImportError:
         raise ImportError("fastapi is required: pip install fastapi")
@@ -267,8 +335,14 @@ def create_a2a_app():
     async def get_agent_card():
         return JSONResponse(content=server.agent_card)
 
+    def _require_auth(authorization: str | None) -> None:
+        """The card advertises bearer auth only when this actually applies."""
+        if not check_bearer(authorization):
+            raise HTTPException(status_code=401, detail="invalid or missing bearer token")
+
     @app.post("/message:send")
-    async def send_message(body: dict):
+    async def send_message(body: dict, authorization: str | None = Header(default=None)):
+        _require_auth(authorization)
         message = body.get("message")
         if not message:
             raise HTTPException(status_code=400, detail="message is required")
@@ -289,7 +363,8 @@ def create_a2a_app():
         return JSONResponse(content=result)
 
     @app.post("/tasks/{task_id}:cancel")
-    async def cancel_task(task_id: str):
+    async def cancel_task(task_id: str, authorization: str | None = Header(default=None)):
+        _require_auth(authorization)
         result = server.cancel_task(task_id)
         if not result:
             raise HTTPException(status_code=404, detail="Task not found or not cancelable")

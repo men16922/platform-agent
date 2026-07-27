@@ -416,6 +416,13 @@ class TestMsftDeployerAgent:
 
 # --- A2A Agent Card Tests ---
 
+class _StubSupervisor:
+    """Stands in for Supervisor so card tests never touch model configuration."""
+
+    def handle(self, text, context_id=None):  # pragma: no cover - never called here
+        raise AssertionError("card tests must not dispatch messages")
+
+
 class TestA2aAgentCard:
     @pytest.fixture
     def card(self):
@@ -434,11 +441,44 @@ class TestA2aAgentCard:
         assert "name" in card
         assert "description" in card
         assert "version" in card
-        assert "supportedInterfaces" in card
         assert "capabilities" in card
         assert "defaultInputModes" in card
         assert "defaultOutputModes" in card
         assert "skills" in card
+
+    def test_card_file_carries_no_absolute_addresses(self, card):
+        """
+        The card's interface `url` is the address a *remote* agent dials to
+        reach us — the one field nobody here consumes, which is why it sat
+        pointing at `platform-agent.example.com` through a full live A2A round
+        trip while every test stayed green. The old guard asserted the field
+        was *present*, never where it pointed.
+
+        Addresses now come from `A2A_PUBLIC_URL` at serve time. Assert the file
+        has no absolute address to drift out of date, and no placeholder hosts
+        anywhere: a wrong address is paid for by whoever tries to consume us.
+        """
+        assert "supportedInterfaces" not in card, (
+            "serve-time only — a hardcoded URL here cannot stay true across "
+            "environments and nothing in this repo would notice it going stale"
+        )
+        # Only URL-valued fields — "localhost" is a real word in the deploy-local
+        # skill description, and a guard that fires on prose gets loosened until
+        # it stops firing on anything.
+        def urls(node):
+            if isinstance(node, dict):
+                for key, value in node.items():
+                    if key == "url" and isinstance(value, str):
+                        yield value
+                    else:
+                        yield from urls(value)
+            elif isinstance(node, list):
+                for item in node:
+                    yield from urls(item)
+
+        for url in urls(card):
+            for placeholder in ("example.com", "example.org", "your-org", "localhost", "TODO", "CHANGEME"):
+                assert placeholder not in url, f"placeholder {placeholder!r} in card url {url!r}"
 
     def test_has_six_skills(self, card):
         assert len(card["skills"]) == 6
@@ -459,17 +499,75 @@ class TestA2aAgentCard:
             assert "description" in skill
             assert "tags" in skill
 
-    def test_supported_interfaces(self, card):
-        interfaces = card["supportedInterfaces"]
-        assert len(interfaces) >= 1
-        iface = interfaces[0]
-        assert "url" in iface
-        assert "protocolBinding" in iface
-        assert "protocolVersion" in iface
+    def test_served_card_publishes_the_configured_address(self, monkeypatch):
+        """The served card — not the file — is what a remote agent reads."""
+        from src.agents.ai.gateway.a2a_server import A2AServer
+
+        monkeypatch.setenv("A2A_PUBLIC_URL", "https://agent.internal.example/a2a/v1/")
+        served = A2AServer(supervisor=_StubSupervisor()).agent_card  # type: ignore[arg-type]
+        iface = served["supportedInterfaces"][0]
+        assert iface["url"] == "https://agent.internal.example/a2a/v1", "trailing slash normalised"
+        assert iface["protocolBinding"] == "HTTP+JSON"
         assert iface["protocolVersion"] == "1.0"
+
+    def test_unset_address_omits_the_interface_rather_than_guessing(self, monkeypatch):
+        """
+        No address is an honest "ask the operator". A guessed one sends whoever
+        reads the card somewhere — the failure lands on them, not on us, which
+        is precisely why it went unnoticed for so long.
+        """
+        from src.agents.ai.gateway.a2a_server import A2AServer
+
+        monkeypatch.delenv("A2A_PUBLIC_URL", raising=False)
+        served = A2AServer(supervisor=_StubSupervisor()).agent_card  # type: ignore[arg-type]
+        assert "supportedInterfaces" not in served
+        assert served["skills"], "the rest of the card must still be usable"
 
     def test_security_scheme(self, card):
         assert "securitySchemes" in card
         assert "bearer" in card["securitySchemes"]
         scheme = card["securitySchemes"]["bearer"]
         assert "httpAuthSecurityScheme" in scheme
+
+
+class TestA2aAdvertisedAuthMatchesEnforcement:
+    """
+    The card declared `securitySchemes: bearer/JWT` while the server never
+    looked at an Authorization header. That is the stale-URL defect pointed the
+    other way, and the worse direction of the two: a remote agent reads the
+    card, dutifully attaches a token, and concludes it is talking to an
+    authenticated endpoint. Advertise only what is enforced.
+    """
+
+    def test_card_omits_the_scheme_when_enforcement_is_off(self, monkeypatch):
+        from src.agents.ai.gateway.a2a_server import A2AServer
+
+        monkeypatch.delenv("A2A_BEARER_TOKEN", raising=False)
+        card = A2AServer(supervisor=_StubSupervisor()).agent_card  # type: ignore[arg-type]
+        assert "securitySchemes" not in card
+        assert "securityRequirements" not in card
+
+    def test_card_advertises_the_scheme_once_enforcement_is_on(self, monkeypatch):
+        from src.agents.ai.gateway.a2a_server import A2AServer
+
+        monkeypatch.setenv("A2A_BEARER_TOKEN", "s3cret")
+        card = A2AServer(supervisor=_StubSupervisor()).agent_card  # type: ignore[arg-type]
+        assert "bearer" in card["securitySchemes"]
+        assert card["securityRequirements"] == [{"bearer": []}]
+
+    def test_enforcement_off_accepts_anonymous(self, monkeypatch):
+        """The live kagent round trip calls anonymously; it must keep working."""
+        from src.agents.ai.gateway.a2a_server import check_bearer
+
+        monkeypatch.delenv("A2A_BEARER_TOKEN", raising=False)
+        assert check_bearer(None) is True
+
+    def test_enforcement_on_rejects_missing_wrong_and_malformed(self, monkeypatch):
+        from src.agents.ai.gateway.a2a_server import check_bearer
+
+        monkeypatch.setenv("A2A_BEARER_TOKEN", "s3cret")
+        assert check_bearer("Bearer s3cret") is True
+        assert check_bearer(None) is False, "missing token must not pass"
+        assert check_bearer("Bearer wrong") is False
+        assert check_bearer("s3cret") is False, "scheme is part of the contract"
+        assert check_bearer("Basic s3cret") is False
