@@ -340,9 +340,17 @@ def render_capsule_tenant(
                 }],
             }]},
             "namespaceOptions": {
-                "additionalMetadata": {
-                    "labels": {TENANT_LABEL: tenant.name, ENV_LABEL: env_name, **_PSS_LABELS},
-                },
+                # `additionalMetadata` (singular) is deprecated in favour of this
+                # list form. Migrated because of *how* that deprecation will
+                # fail: Capsule drops unknown spec fields rather than rejecting
+                # them, so on the release that removes it the PSS labels would
+                # simply stop being placed on tenant namespaces — no error, no
+                # event, and `enforce: restricted` silently absent. Same failure
+                # mode as the add-on values files (Open Risk 5): not an error,
+                # just not read.
+                "additionalMetadataList": [
+                    {"labels": {TENANT_LABEL: tenant.name, ENV_LABEL: env_name, **_PSS_LABELS}},
+                ],
             },
         },
     }

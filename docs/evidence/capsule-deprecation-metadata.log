@@ -1,0 +1,79 @@
+Capsule deprecation: additionalMetadata -> additionalMetadataList (migrated)
+============================================================================
+Date : 2026-07-28
+Mode : live kind cluster `kind-platform-agent`, Capsule v1beta2
+Gate : make check 1445 -> 1446 (+1)
+
+
+Why this one was worth doing before it broke
+----------------------------------------------
+Open Risk 6 recorded two Capsule deprecations as "works today". The reason to
+move early is *how* they will stop working: Capsule ignores unknown spec fields
+rather than rejecting them. On the release that removes `additionalMetadata`,
+the Tenant would apply cleanly, report Ready, and simply stop placing labels —
+including `pod-security.kubernetes.io/enforce: restricted`. Every tenant
+namespace would quietly lose PSS enforcement with no error and no event. Same
+family as the add-on values files (Open Risk 5): not an error, just not read.
+
+
+Asked the API server rather than guessing
+-------------------------------------------
+    $ kubectl get crd tenants.capsule.clastix.io -o json | ...
+      additionalMetadata   Deprecated: Use additionalMetadataList instead
+      limitRanges          Deprecated: Use Tenant Replications instead
+      networkPolicies      Deprecated: Use Tenant Replications instead
+
+`networkPolicies` does not apply to us — this repo renders NetworkPolicy objects
+directly rather than through the Tenant spec.
+
+
+Live verification
+------------------
+    dry-run BEFORE : warns on `limitRanges` AND `additionalMetadata`
+    dry-run AFTER  : warns on `limitRanges` only
+
+    applied for real, then read back from the cluster:
+      spec.namespaceOptions = ['additionalMetadataList', 'managedMetadataOnly']
+      ns/acme-dev-logging still carries pod-security.../enforce=restricted
+
+Both tenants migrated (acme-dev, globex-dev) so the cluster matches the
+renderer.
+
+
+Falsification — the labels could have been leftovers
+------------------------------------------------------
+Reading the labels back proves nothing on its own: they were already there from
+the previous field. Two checks:
+
+1. Stripped `pod-security.kubernetes.io/enforce` and `platform-agent.io/tenant`
+   from the namespace. Both were back in the very next read — Capsule's webhook
+   restored them during the update itself, and the cluster object at that point
+   contained *only* the list form.
+
+2. Stronger: added a label that had never existed anywhere —
+   `platform-agent.io/probe: list-is-live` — to `additionalMetadataList` alone.
+   It appeared on **both** tenant namespaces (acme-dev-logging,
+   acme-dev-observability). Removed afterwards; namespaces verified clean.
+
+Unit side: renaming the emitted key fails the new test; restoring passes it. The
+test asserts the field *name*, not only the label content, because content-only
+assertions pass just as happily when the labels are riding a field the operator
+has stopped reading.
+
+
+WHAT IS STILL OPEN
+-------------------
+- **`limitRanges` is NOT migrated, and it is not a mechanical port.** The
+  replacement is Tenant Replications, and both routes have a cost worth a
+  decision rather than a commit:
+    * `GlobalTenantResource` is **cluster-scoped**. Having the agent create one
+      would push its mutating reach past the tenant boundary — exactly what D30
+      forbids (shared/cluster-scoped stacks are Terraform-owned).
+    * `TenantResource` is namespaced and stays inside the tenant, but it needs a
+      ServiceAccount plus RBAC granting it permission to create the replicated
+      LimitRange — a new permission surface inside the tenant namespace.
+  Left for that decision. The field still works and still warns.
+- The deprecation warning on stderr remains, and the guard that keeps a
+  warning-only stderr from reading as a failed step
+  (`test_tenancy_tools.py::CAPSULE_WARNINGS`) still matters — it now sees one
+  warning instead of two.

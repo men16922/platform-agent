@@ -119,6 +119,24 @@ class TestQuotaIsATenantBound:
         limits = render_capsule_tenant(acme, "dev", owner="x")["spec"]["limitRanges"]["items"][0]["limits"][0]
         assert limits["default"]["cpu"] and limits["defaultRequest"]["cpu"]
 
+    def test_pss_labels_ride_the_non_deprecated_metadata_field(self, acme):
+        """`additionalMetadata` (singular) is deprecated; the list form replaces it.
+
+        Asserted by field name, not just by content, because of how the removal
+        will fail: Capsule ignores unknown spec fields instead of rejecting them,
+        so on the release that drops the singular form these labels would simply
+        stop being placed — no error, no event, `enforce: restricted` quietly
+        absent from every tenant namespace. Same family as the add-on values
+        files: not an error, just not read.
+        """
+        options = render_capsule_tenant(acme, "dev", owner="x")["spec"]["namespaceOptions"]
+        assert "additionalMetadata" not in options, "the deprecated singular form is back"
+        entries = options["additionalMetadataList"]
+        assert isinstance(entries, list) and len(entries) == 1
+        labels = entries[0]["labels"]
+        assert labels["pod-security.kubernetes.io/enforce"] == "restricted"
+        assert labels["platform-agent.io/tenant"] == acme.name
+
 
 class TestRbacStaysInsideTheTenant:
     def test_role_is_namespaced_never_cluster_scoped(self, registry):
