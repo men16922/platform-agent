@@ -125,7 +125,13 @@ def _select_runbook(
     if dynamo_rb:
         return _plan(dynamo_rb)
 
-    registry_rb = _match_runbook_registry(alarm, analyzer.root_cause, _scan_dynamo_candidates())
+    # No generic fallback here: an operator-seeded table answering "nothing
+    # matched" with its own generic row would skip the built-in tier entirely
+    # (see `_match_runbook_registry`). Generic recovery stays where the priority
+    # list puts it — last, in `_match_builtin`.
+    registry_rb = _match_runbook_registry(
+        alarm, analyzer.root_cause, _scan_dynamo_candidates(), allow_generic=False
+    )
     if registry_rb:
         return _plan(registry_rb)
 
@@ -192,7 +198,20 @@ def _match_runbook_registry(
     alarm: AlarmContext,
     root_cause: str,
     registry: Iterable[dict[str, Any]],
+    *,
+    allow_generic: bool = True,
 ) -> dict[str, Any] | None:
+    """Score a registry and return the best match, or None.
+
+    ``allow_generic=False`` makes "nothing scored" answer None instead of the
+    registry's own generic-recovery row. That distinction decides whether the
+    NEXT priority tier gets consulted at all: the seeded DynamoDB table contains
+    a generic-recovery row, so with the fallback enabled the scan tier answered
+    every unmatched alarm itself and **the built-in registry tier was never
+    reached in any deployed environment** — priority 3 of the documented four
+    was dead the moment the table was seeded. Measured, not theorised: a live
+    scan of `incident-runbooks` returns exactly the five originally-seeded ids.
+    """
     text = f"{alarm.metric_name} {alarm.reason} {root_cause}".lower()
 
     best_score = 0
@@ -211,7 +230,9 @@ def _match_runbook_registry(
             best_score = score
             best_rb = rb
 
-    return best_rb or generic_rb
+    if best_rb:
+        return best_rb
+    return generic_rb if allow_generic else None
 
 
 def _resolve_runbook_steps(

@@ -1,0 +1,115 @@
+Four runbooks nothing could choose — and the tier that was shadowing them
+==========================================================================
+Date : 2026-07-28
+Mode : live DynamoDB scan (`incident-runbooks`, ap-northeast-2) + full selection path
+Gate : make check 1425 -> 1445 (+20)
+
+
+The recorded gap
+-----------------
+`CAPABILITY_RUNBOOKS` carried disk-full, health-check-failure,
+certificate-expiry and network-latency-high with complete steps, valid schemas,
+conditions, `on_failure`, per-step `verify`, and a capability→action mapping in
+**all four** provider adapters. Every test they had passed.
+
+Selection iterates `BUILTIN_RUNBOOKS`. None of the four had an entry there, so
+no alarm could reach any of them. The existing tests could not see it because
+every one starts from `CAPABILITY_RUNBOOKS[<id>]` — they ask "is this plan
+well-formed", never "can anyone get here".
+
+
+Then the live run disagreed with the unit tests
+-------------------------------------------------
+After adding the four built-in entries, `_match_builtin` selected them
+correctly and the tests were green. Running the *whole* selection path against
+the real table returned `generic-recovery` for all four.
+
+    $ live scan of `incident-runbooks`
+      scanned: 5
+      ids: ['eks-pod-oom', 'generic-recovery', 'kafka-lag-spike',
+            'lambda-throttle', 'rds-cpu-high']
+
+`_select_runbook` documents four priority tiers:
+
+    1. DynamoDB exact alarm_name lookup
+    2. DynamoDB catalog scan heuristic
+    3. Built-in registry heuristic
+    4. generic-recovery fallback
+
+Tier 2 returned `best_rb or generic_rb`, and the seeded table **contains** a
+generic-recovery row. So tier 2 answered every unmatched alarm with tier 4's
+answer, and **tier 3 was unreachable in any deployed environment** — dead from
+the moment the table was first seeded. The four runbooks were doubly
+unreachable, and the second layer is the one that mattered in production.
+
+Fixed by giving `_match_runbook_registry` an `allow_generic` flag and passing
+`False` on the scan tier. Generic recovery stays exactly where the priority list
+puts it: last, in `_match_builtin`.
+
+
+Live result, same table, after the fix
+----------------------------------------
+    CWAgent / disk_used_percent
+      -> disk-full  rto=300s
+         cleanup_disk    cleanup_disk_space  -> AWS-CleanupEBSVolume
+         expand_volume   expand_storage      -> AWS-ExpandEBSVolume  if previous_step_failed
+
+    AWS/ApplicationELB / UnHealthyHostCount
+      -> health-check-failure  rto=240s
+         restart_service restart_workload    -> AWS-RestartEKSPod  verify=assert_health_check_passing
+         rollback        rollback_release    -> AWS-RollbackEKSDeployment  if previous_step_failed
+
+    AWS/CertificateManager / DaysToExpiry
+      -> certificate-expiry  rto=600s
+         renew_certificate renew_certificate -> AWS-RenewACMCertificate
+         notify_ops        open_change_request -> AWS-SendSlackAlert  if previous_step_failed
+
+    AWS/NetworkELB / TargetResponseTime
+      -> network-latency-high  rto=180s
+         drain_unhealthy drain_node          -> AWS-DrainEKSNode
+         scale_healthy   scale_out           -> AWS-ScaleOutEKSNodeGroup
+
+
+A verification that only became reachable now
+-----------------------------------------------
+`health-check-failure` verifies its restart step with
+`assert_health_check_passing`, which nothing implemented. On-prem treats an
+unimplemented check as a **failed** check — correct, and it means making the
+runbook selectable would have made it cascade to rollback every time the restart
+actually worked. Implemented as `kubectl wait --for=condition=Available`:
+read-only, bounded, and distinct from `assert_workload_ready` (`rollout status`
+proves the rollout converged; `Available` is the condition Kubernetes derives
+from the readiness probes, which is what the alarm asked about).
+
+The same test found `assert_concurrency_applied` unimplemented too. That one is
+**not** a gap: its step (`increase_function_concurrency`) is a Lambda capability
+the on-prem adapter cannot execute at all, so on-prem never verifies it. The
+guard is scoped to steps on-prem can actually run, and a second test asserts the
+scoping is not vacuous.
+
+
+Falsification
+--------------
+  - removed one of the four built-in entries    -> 2 failures
+  - un-implemented the reachable verify check   -> 1 failure
+  - reverted the caller to the defaulting call  -> **0 failures**
+
+The third one is the finding. Every test in the new file exercised
+`_match_runbook_registry` directly with the flag already set, so none of them
+could see a *caller* that forgot it — only the live run caught it. Added
+`test_selection_reaches_the_built_in_tier_through_a_seeded_table`, which asserts
+at the call site with the seeded rows stubbed in; it fails on the reverted
+caller and passes on the fix. A guard that cannot see the mistake it was written
+for is not a guard.
+
+
+WHAT IS STILL OPEN
+-------------------
+- **The deployed table still holds only the five original rows.** Selection now
+  reaches the built-in tier, so the four work without a re-seed — but an
+  operator overriding them in DynamoDB has nothing to edit until
+  `builtin_runbook_items()` is seeded again on the next deploy. Not done here:
+  it is a deploy action, not a code change.
+- The four are proven through selection and step resolution, not through live
+  execution against a cluster. `assert_health_check_passing` is unit-covered and
+  has not run against a real Deployment.

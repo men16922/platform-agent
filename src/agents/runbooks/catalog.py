@@ -48,6 +48,64 @@ BUILTIN_RUNBOOKS: dict[str, dict[str, Any]] = {
         "provider": "aws",
         "resource_types": ["streaming-consumer"],
     },
+    # The four below existed in CAPABILITY_RUNBOOKS with full steps, and in every
+    # provider's capability->action map, and were **unselectable**: matching runs
+    # over this dict, so a capability runbook with no entry here is a plan nothing
+    # can ever choose. Found while wiring steps and left separate rather than
+    # widening that change silently.
+    #
+    # Placed after the originals on purpose: `_match_runbook_registry` keeps the
+    # first entry on a score tie, so appending cannot change which runbook an
+    # alarm already selected.
+    "disk-full": {
+        "runbook_id": "disk-full",
+        # CWAgent is where filesystem metrics land; RDS reports its own headroom.
+        "namespaces": ["CWAgent", "System/Linux", "AWS/RDS"],
+        "keywords": [
+            "disk_used_percent", "DiskSpaceUtilization", "FreeStorageSpace",
+            "disk full", "no space left", "VolumeFull",
+        ],
+        "capabilities": ["cleanup_disk_space", "expand_storage"],
+        "actions": ["AWS-CleanupEBSVolume", "AWS-ExpandEBSVolume"],
+        "rto_sec": 300,
+        "provider": "aws",
+        "resource_types": ["storage-volume", "kubernetes-workload", "database-instance"],
+    },
+    "health-check-failure": {
+        "runbook_id": "health-check-failure",
+        # Deliberately NOT AWS/EKS: an OOM alarm there is eks-pod-oom's, and a
+        # namespace hit is worth 2 — enough to steal it on a shared keyword.
+        "namespaces": ["AWS/ApplicationELB", "AWS/ELB", "AWS/Route53"],
+        "keywords": [
+            "UnHealthyHostCount", "HealthCheckStatus", "health check",
+            "unhealthy", "readiness", "liveness",
+        ],
+        "capabilities": ["restart_workload", "rollback_release"],
+        "actions": ["AWS-RestartEKSPod", "AWS-RollbackEKSDeployment"],
+        "rto_sec": 240,
+        "provider": "aws",
+        "resource_types": ["kubernetes-workload", "serverless-service"],
+    },
+    "certificate-expiry": {
+        "runbook_id": "certificate-expiry",
+        "namespaces": ["AWS/CertificateManager"],
+        "keywords": ["DaysToExpiry", "certificate", "expiry", "expiring", "TLS", "SSL"],
+        "capabilities": ["renew_certificate", "open_change_request"],
+        "actions": ["AWS-RenewACMCertificate", "AWS-SendSlackAlert"],
+        "rto_sec": 600,
+        "provider": "aws",
+        "resource_types": ["certificate", "cloud-resource"],
+    },
+    "network-latency-high": {
+        "runbook_id": "network-latency-high",
+        "namespaces": ["AWS/NetworkELB", "AWS/ApplicationELB"],
+        "keywords": ["TargetResponseTime", "latency", "p99", "round-trip", "RTT"],
+        "capabilities": ["drain_node", "scale_out"],
+        "actions": ["AWS-DrainEKSNode", "AWS-ScaleOutEKSNodeGroup"],
+        "rto_sec": 180,
+        "provider": "aws",
+        "resource_types": ["network-endpoint", "kubernetes-workload"],
+    },
     "generic-recovery": {
         "runbook_id": "generic-recovery",
         "namespaces": [],

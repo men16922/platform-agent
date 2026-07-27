@@ -133,6 +133,49 @@ def _assert_replica_count(
     )
 
 
+def _assert_health_check_passing(
+    step_name: str, params: dict[str, list[str]], scope: "IncidentScope", timeout: int
+) -> VerificationResult:
+    """The workload's own probes report healthy — the proof a health-check alarm wants.
+
+    Distinct from ``assert_workload_ready`` on purpose. `rollout status` answers
+    "did the new revision finish rolling out"; a workload can finish rolling out
+    and still fail its readiness probe moments later, which is exactly the
+    failure mode `health-check-failure` exists for. `Available` is the condition
+    Kubernetes derives from readiness, so this asks the thing the alarm asked.
+
+    Implemented because making that runbook selectable made this check
+    reachable, and an unimplemented check is a *failed* check here (by design) —
+    so shipping without it would have meant a runbook that silently cascades to
+    rollback every time its first step actually worked.
+    """
+    namespace, workload = _target(params)
+    capability = "assert_health_check_passing"
+    if not workload:
+        return VerificationResult(
+            step_name=step_name, capability=capability, passed=False,
+            detail="no workload name to verify",
+        )
+    # Read-only and bounded: `wait` polls the condition, it does not mutate.
+    args = [
+        "wait", f"deployment/{workload}",
+        "--for=condition=Available", f"--timeout={timeout}s",
+    ]
+    if namespace:
+        args += ["-n", namespace]
+    try:
+        code, out, err = _kubectl(args, scope, timeout + 30)
+    except subprocess.TimeoutExpired:
+        return VerificationResult(
+            step_name=step_name, capability=capability, passed=False,
+            detail=f"health checks did not pass within {timeout}s",
+        )
+    return VerificationResult(
+        step_name=step_name, capability=capability, passed=code == 0,
+        detail=(out or err)[:200] or "condition=Available",
+    )
+
+
 def _assert_node_unschedulable(
     step_name: str, params: dict[str, list[str]], scope: "IncidentScope", timeout: int
 ) -> VerificationResult:
@@ -164,6 +207,7 @@ def _assert_node_unschedulable(
 _CHECKS = {
     "assert_workload_ready": _assert_workload_ready,
     "assert_replica_count": _assert_replica_count,
+    "assert_health_check_passing": _assert_health_check_passing,
     "assert_node_unschedulable": _assert_node_unschedulable,
 }
 
