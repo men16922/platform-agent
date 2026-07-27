@@ -1,0 +1,104 @@
+Tenant grants are checked against the registry — and stop being silently wiped
+==============================================================================
+Date : 2026-07-28
+Mode : built artifact (`next build` + `next start`), hub = local_deploy_api on :8077
+Gate : make check 1411 -> 1425 (+14)
+
+
+The recorded gap was the smaller half of it
+--------------------------------------------
+NEXT_PLAN carried this as "grant는 저장만 되고 레지스트리와 대조되지 않는다" —
+a grant for a nonexistent tenant is accepted and matches nothing. True, and two
+larger things were sitting under it:
+
+1. **No grant could be assigned at all.** `POST /api/dashboard/users` did not
+   read a `tenants` field and `upsertUserRecord` did not take one. The only
+   grants in existence were the three hardcoded mock users. The read side
+   (`visibility.ts`, both partitioned routes) consumed a field that no write
+   path could produce — the same "declared but unconsumed" shape this repo has
+   now hit four times, inverted.
+
+2. **A role change silently revoked every grant.** The write is a whole-item
+   `PutCommand`; `tenants` was not carried over, so an admin changing someone
+   from viewer to operator also took away everything they could see. The two
+   controls sit in the same panel and nothing on the screen said so.
+
+The validation gap is the one that was written down because it is the one you
+can see by reading the code. The other two needed the write path to exist.
+
+
+What was built
+---------------
+- Hub: `GET /api/platform/tenants` — the declared roster, from the registry
+  (the SSOT), not from the push store. A roster derived from what has reported
+  would make a quiet tenant ungrantable, which is backwards: a grant is how
+  someone gets to look at one. **503, never an empty list**, when the registry
+  cannot be read — "no tenants declared" and "I could not ask" must not collapse.
+- `dashboard/src/lib/platform-roster.ts` — `fetchRoster()` (null = unverified,
+  for every reason: hub down, non-2xx, malformed body) and the pure
+  `checkGrants()` seam.
+- `POST /api/dashboard/users` accepts `tenants`, checks before storing, and
+  names the offending tenant in the error. Audit log records the grant, because
+  a grant change is an authorization change.
+- `upsertUserRecord` is absent-means-keep for `tenants`. Passing `[]` still
+  revokes — that has to stay expressible.
+- The users table gained a grants column, so the field has a caller. An API
+  nobody calls is how the original gap was born.
+
+
+Live round trips (admin session, real NextAuth dev-credentials flow)
+---------------------------------------------------------------------
+    ROSTER (hub, from the registry)
+      declared tenants : ['acme', 'globex']
+
+    1) GRANT A DECLARED TENANT  viewer-demo -> ['globex']
+       HTTP 200  stored=['globex']
+
+    2) GRANT A TENANT THAT DOES NOT EXIST  -> ['acmee']
+       HTTP 400  Unknown tenant(s): acmee. Grants must name a tenant declared
+                 in the platform registry.
+       unknown=['acmee']   stored still=['globex']
+
+    3) CHANGE THE ROLE (no tenants field) — the silent-wipe case
+       HTTP 200  stored=['globex']
+
+    4) REGISTRY UNREACHABLE (hub stopped)
+       HTTP 503  Cannot verify tenant grants: the platform registry is
+                 unreachable. Grants are not stored unverified.
+       stored still=['globex']
+
+    5) REVOCATION STILL WORKS WITH THE HUB DOWN
+       HTTP 200  stored=None
+
+Row 4 is the one worth arguing about. Falling back to "accept anything" when the
+hub is down is the tempting default and it restores the exact defect this change
+removes, precisely when nobody is watching. Row 5 is why the fail-closed rule has
+one exception: taking access away needs no roster, and an admin who must revoke
+during an outage should not be blocked by the check that exists to protect the
+grant.
+
+
+Falsification
+--------------
+Two defects injected into `checkGrants`, both caught:
+  - unverifiable roster falls open -> 2 failures (TestUnverifiableRosterFailsClosed)
+  - the check itself made a no-op  -> 5 failures
+Restoring passed all 11.
+
+And the claim that mattered most was not left to code reading. The pre-fix
+`upsertUserRecord` (no carry-over) was reinstated, rebuilt, and run against the
+same live script: step 3 came back `stored=None`. The grant really was being
+wiped by a role change; restoring the fix returned `stored=['globex']`.
+
+
+WHAT IS STILL OPEN
+-------------------
+- Grants are **tenant-level only**. The hub also returns `identities`
+  ("tenant/env"), and `visibility.ts` splits an identity on "/" before matching,
+  so a per-env grant is representable but not yet grantable. Nothing pretends
+  otherwise on screen.
+- The roster is fetched per write, uncached. That is correct for a rare admin
+  action and would be wrong if anything hot started calling it.
+- This validates the grant against the registry. It does **not** make the
+  dashboard tenant-isolated: two read paths are partitioned (fleet, incidents),
+  the rest are not.

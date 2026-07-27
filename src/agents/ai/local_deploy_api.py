@@ -198,6 +198,38 @@ async def read_platform_status() -> dict[str, Any]:
     }
 
 
+@app.get("/api/platform/tenants")
+async def read_declared_tenants() -> dict[str, Any]:
+    """The declared tenant roster, straight from the registry (the SSOT).
+
+    This exists so the dashboard can *check* a tenant grant instead of storing
+    whatever string an admin typed. A grant for a tenant that does not exist is
+    not a harmless no-op: it reads on screen as "this person has access to
+    something", and matches nothing — the failure is silent in the direction
+    that looks fine.
+
+    Deliberately the registry and not the push store: a roster derived from what
+    has reported would make a tenant ungrantable until its agent happened to
+    push, which is backwards — grants are how you get someone ready to look.
+
+    503 rather than an empty list when the registry cannot be read. "There are
+    no tenants" and "I could not ask" must not collapse, because the caller
+    fails closed on one and would happily reject every grant on the other.
+    """
+    try:
+        registry = load_registry()
+    except (OSError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail=f"registry unavailable: {exc}") from exc
+    return {
+        "tenants": sorted(registry.tenants),
+        "identities": sorted(
+            f"{name}/{env}"
+            for name, tenant in registry.tenants.items()
+            for env in tenant.environments
+        ),
+    }
+
+
 @app.get("/api/models")
 async def list_models(provider: str = "onprem") -> dict[str, Any]:
     """Models offered for an environment, recommended-first — drives the UI selector."""

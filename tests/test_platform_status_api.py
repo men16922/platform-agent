@@ -116,6 +116,46 @@ class TestRead:
         assert body["freshness"][0]["stale"] is False
         assert body["stale_after_sec"] > 0
 
+class TestDeclaredRoster:
+    """The roster a tenant grant is checked against.
+
+    Grants used to be stored unchecked, so `acmee` read as access on the admin
+    screen and matched nothing in the fleet view forever. This endpoint is what
+    makes the check possible, which is why the distinction between "no tenants"
+    and "could not ask" is load-bearing rather than pedantic.
+    """
+
+    def test_declared_tenants_come_from_the_registry_not_from_pushes(self, client):
+        """A tenant must be grantable before its agent has ever reported.
+
+        Deriving the roster from the push store would make a quiet tenant
+        ungrantable — backwards, since a grant is how someone gets to look at
+        one.
+        """
+        body = client.get("/api/platform/tenants").json()
+        assert "acme" in body["tenants"]
+        assert client.get("/api/platform/status").json()["statuses"] == [], (
+            "nothing has been pushed, yet the roster is populated"
+        )
+
+    def test_identities_are_tenant_env_pairs(self, client):
+        body = client.get("/api/platform/tenants").json()
+        assert "acme/dev" in body["identities"]
+
+    def test_unreadable_registry_is_503_not_an_empty_roster(self, client, monkeypatch):
+        """"No tenants declared" and "I could not ask" must not collapse.
+
+        The caller fails closed on one; on the other it would cheerfully reject
+        every grant an admin makes and blame the admin.
+        """
+        def boom(*_args, **_kwargs):
+            raise OSError("registry not shipped with the hub")
+
+        monkeypatch.setattr(api, "load_registry", boom)
+        assert client.get("/api/platform/tenants").status_code == 503
+
+
+class TestStructure:
     def test_the_hub_never_reads_a_spoke(self):
         """Structural, not behavioural: the invariant is 'no outbound path exists'.
 

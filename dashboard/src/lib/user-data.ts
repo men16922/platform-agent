@@ -61,14 +61,27 @@ export async function getUserRecord(username: string): Promise<UserRecord | null
   }
 }
 
+/**
+ * Create or update a user record.
+ *
+ * `tenants` is **absent-means-keep**, not absent-means-none. The write is a
+ * whole-item Put, so the first version of this function silently revoked every
+ * grant a user had the moment an admin changed their role — the two controls sit
+ * next to each other in the same panel, and nothing on screen said one erased
+ * the other. Passing `[]` still revokes; that has to stay expressible.
+ */
 export async function upsertUserRecord(
   username: string,
   role: Role,
   email?: string,
-  name?: string
+  name?: string,
+  tenants?: string[]
 ): Promise<UserRecord> {
   const normalizedUsername = username.toLowerCase();
   const updated_at = new Date().toISOString();
+
+  const existing = tenants === undefined ? await getUserRecord(normalizedUsername) : null;
+  const grants = tenants ?? existing?.tenants;
 
   const user: UserRecord = {
     username: normalizedUsername,
@@ -77,6 +90,9 @@ export async function upsertUserRecord(
     name,
     updated_at,
   };
+  // Absent, not empty: a user with no grants should not carry a `tenants: []`
+  // key that reads as a deliberate revocation in the table and in audit diffs.
+  if (grants && grants.length > 0) user.tenants = grants;
 
   if (!isLiveMode()) {
     mockUsers = mockUsers.filter((u) => u.username.toLowerCase() !== normalizedUsername);
