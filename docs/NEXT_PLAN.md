@@ -1,11 +1,11 @@
 # NEXT_PLAN — platform-agent
 
-최종 갱신: 2026-07-26
+최종 갱신: 2026-07-27
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(M10=GitAIOps 7/7+멀티테넌트 Phase 0·1a·1b+공급망,
 > M9=eval·하드닝, M8=레퍼런스 8/8) / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 현재 상태 (2026-07-26, gate 1341)
+## 현재 상태 (2026-07-27, gate 1355)
 
 **GitAIOps 대조 7/7 · 멀티테넌트 Phase 0·1a·1b 완료**(rollouts-demo 소유권 TF→ArgoCD 이관까지 실행).
 런북은 이제 선언한 순서·조건·검증대로 실행된다. **Phase 2 완결**(M11) — 다음은 **Phase 3(인가 강화)**.
@@ -44,7 +44,16 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 - [x] **Phase 2 완결(M11, gate 1290)** — tenancy+Capsule · ⑥ 데이터플레인 격리 · push 2축
   수집기 + 대시보드 스위처 · capability scope 축 · 삭제 cascade · values seam · managed 경로 ·
   DR 재구축. 상세 → `COMPLETED_SUMMARY.md` M11, 증거 `docs/evidence/phase2-*.log`.
-- [ ] Phase 3(인가 강화)·4(managed 어댑터, billable)·5(레지스트리 PR 쓰기) = 후속.
+- [x] **Phase 3① 자격증명 격리 full(gate 1355, 2026-07-27)** — 가드 1곳(`guard_scoped_action`)을
+  세 러너가 공유, 두 디스패치 경로 모두 스코프 전달, 라이브에서 API 서버가 경계를 판정.
+  부수로 `render_rbac`의 **바인딩 대상 SA 부재** 근본수정(Phase 1a의 RBAC 팔이 미행사 상태였음).
+  증거 `docs/evidence/phase3-scoped-credentials-all-runners.log`.
+- [ ] **Phase 3② 롤백↔selfHeal 우선순위** — registry write-back으로 정책 구현. 지금은 문서로만
+  명명돼 있고 `ONPREM_EXECUTOR_LIVE=false`로 묶여 있다(설계 문서 289–290행).
+- [ ] **Phase 3③ viewer 가시성 제한** — 2급 항목. 대시보드 쪽, 범위 가장 작고 독립적.
+- [ ] Phase 4(managed 어댑터, billable)·5(레지스트리 PR 쓰기) = 후속.
+  **Phase 4로 넘긴 것(명시)**: GCP/Azure 자격증명의 테넌트 바인딩. 현재 GCP는 프로젝트 전역 신원,
+  Azure는 ARM에서 **cluster-admin kubeconfig**를 받아온다 — 스코프는 네임스페이스만 좁힌다.
 - [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 수단 선행**(kind엔 CSI 스냅샷터 기본 부재).
   rollouts-demo는 데이터 위험 0이라 먼저 했고, 나머지 셋은 실패 비용이 가용성이 아니라 데이터다.
 - **S 달성(93.5) 근거**: ①실행위치=in-cluster 러너 ②token broker=incident provenance 바인딩

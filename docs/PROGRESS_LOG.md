@@ -1,11 +1,35 @@
 # PROGRESS_LOG — platform-agent
 
-최종 갱신: 2026-07-26
+최종 갱신: 2026-07-27
 
 > 최신 3–5개 증분. **최신이 위.** **≤120줄.** 넘치면 `/tidy-docs` 로 압축.
 > 이전 이력: `docs/archive/progress-2026-07.md`
 
 ---
+
+## 2026-07-27 — Phase 3① 자격증명 격리 full (gate 1341→1355)
+
+- Status: Phase 1a가 온프렘에서만 세운 "자격증명이 경계"를 전 러너·두 디스패치 경로로 확장.
+  라이브가 Phase 1a 증명 자체의 구멍을 드러냈다.
+- Changed: `scope.py`에 `guard_scoped_action` 단일 가드 + `resolve_incident_scope` 이관(디스패치
+  경로가 둘인데 로직이 `aws/executor.py`에만 있어 **GCP 경로는 스코프가 없었다**) ·
+  `run_gcp_action`/`run_azure_action`이 scope 수령 · seam이 전 분기에 전달 ·
+  `render_rbac`가 바인딩 대상 **ServiceAccount를 렌더**(누락돼 있었음).
+- Verified: `make check` **1355**(+14). **라이브(kind, $0)**: SA 생성 후 실 토큰 발급 →
+  자기 ns `yes` / 이웃 테넌트 `Forbidden` / 클러스터 스코프 `Forbidden`(판정 주체가 **API 서버**) ·
+  실 러너 in-scope 재시작 성공(새 ReplicaSet, rollout 정상) · cross-tenant/무-스코프는 kubectl
+  이전 거부 · gcp/azure 4케이스 전부 **인증·네트워크 이전** 거부.
+  증거 `docs/evidence/phase3-scoped-credentials-all-runners.log`.
+- Blockers: 없음.
+- 품질 메모: **RoleBinding이 존재하지 않는 SA를 가리키고 있었다.** k8s는 없는 subject로의
+  바인딩을 조용히 받으므로 `kubectl get rolebinding`은 내내 건강해 보였다. fail-closed라
+  아무것도 안 깨졌고 그래서 드러나지도 않았다 — values 파일·Capsule과 같은 "에러 없이 안 읽히는"
+  부류. 실질은 구멍이 아니라 **Phase 1a 증명의 RBAC 팔이 한 번도 행사된 적 없다**는 것이다
+  (DoD가 "Forbidden **또는** 자격증명 부재"라 약한 쪽으로 통과 중이었다). 구조 가드는 subset이
+  아니라 equality로 비교한다 — subset은 정규식이 아무것도 못 찾을 때도 통과해서, 감시 대상이
+  모양을 바꾸는 바로 그 순간 조용해진다.
+- Next: Phase 3② 롤백↔selfHeal 우선순위 · ③viewer 가시성. `docs/PROGRESS_LOG.md`가 예산
+  초과(145줄) → `/tidy-docs` 필요.
 
 ## 2026-07-26 — 멀티테넌트 실험 전문 재작성·Notion 발행
 

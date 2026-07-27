@@ -1,6 +1,6 @@
 # DECISIONS — platform-agent
 
-최종 갱신: 2026-07-26
+최종 갱신: 2026-07-27
 
 > 되돌리기 어려운 결정만. 형식: **Decision / Reason / Impact**. 최신이 위.
 
@@ -9,6 +9,25 @@
 > - **GitAIOps 실습서(Notiflex)** (외부 학습 레포) — Rollouts **AnalysisTemplate 메트릭 자동판정**(우리 무기한 pause 게이트의 미완점) · **OTel→Tempo로 4-step 파이프라인 자체 트레이싱** · 런북 **사전확인/사후검증 3단**(우리 `RunbookStep`엔 없음) · **allow/ask/deny 권한통제** · **Sync Wave**. 안티패턴=Kafka·멀티 노드풀·GKE 종속 시크릿·`--dangerously-skip-permissions`. 상세 → `docs/reference/gitaiops-notiflex-book.md`. (검토 2026-07-25)
 
 ---
+
+## D31 — 스코프 가드는 한 곳에 있고, GCP/Azure는 "네임스페이스만" 좁힌다고 명시한다
+
+- **Decision:** 라이브 실행의 fail-closed 게이트는 `platform/scope.py`의
+  `guard_scoped_action` **하나**이고 세 러너가 그것을 호출한다(러너별 재구현 금지).
+  그리고 GCP/Azure 경로에 대해서는 **"자격증명이 경계"라고 말하지 않는다** — 스코프는
+  액션이 건드릴 네임스페이스만 좁히고, 토큰 자체는 여전히 GCP=프로젝트 전역 신원,
+  Azure=ARM이 내주는 **cluster-admin kubeconfig**다. 자격증명 자체가 경계인 것은
+  **온프렘뿐**이며, 클라우드 자격증명의 테넌트 바인딩은 Phase 4(billable)로 미룬다.
+- **Reason:** (1) 가드를 엔진마다 복제하면 세 번째 엔진이 빠뜨린다 — capability scope(D27)에서
+  이미 치른 값이고, Phase 1a는 실제로 온프렘에만 가드를 두어 gcp/azure가 무-스코프로 남았다.
+  (2) 부분 보증을 전체 보증처럼 적으면 나중에 아무도 그 차이를 복원하지 못한다. Phase 1a의
+  DoD가 "Forbidden **또는** 자격증명 부재"라고 적혀 있었기 때문에, 바인딩 대상 SA가 아예
+  없어서 RBAC 팔이 한 번도 행사되지 않았는데도 통과로 기록될 수 있었다.
+- **Impact:** 네 번째 클라우드를 추가할 때 스코프 전달을 빠뜨리면 구조 가드
+  (`test_every_provider_branch_is_covered`)가 게이트를 깬다. 문서·아티클에서 GCP/Azure를
+  두고 "테넌트별 자격증명"이라고 쓰면 **과대주장**이다 → `STATUS` Open Risks 7.
+  `render_rbac`는 바인딩 대상 ServiceAccount를 반드시 함께 렌더한다(없는 subject로의
+  바인딩을 k8s가 조용히 받아들이기 때문).
 
 ## D30 — 에이전트가 클러스터에 쓰는 범위는 테넌트 스코프까지다
 
