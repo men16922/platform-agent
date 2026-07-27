@@ -8,6 +8,13 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **1404 passed, 1 skipped** (2026-07-28, 1377→1404, +27) — **외부 자료
+  대조발 결함 4건 근본수정**(`e7ad744`·`1aa86e0`·`67ab309`): Agent Card가 가상 주소와 **집행하지
+  않는 인증**을 광고하던 것 · **MCP 게이트웨이가 ambient 자격증명 경로**였던 것(Phase 1a가 앞문에서
+  없앤 fail-open이 옆문에 잔존, `kubectl_apply`는 임의 매니페스트를 임의 ns에) · 테넌트별 call
+  budget 부재. **라이브(kind)**: 스코프 안 ns인데도 `secrets`는 `Forbidden` — 우리 가드가 아니라
+  **API 서버**가 경계를 판정. 넷 다 테스트가 **선언만 단언해** 살아남았다.
+  증거 `docs/evidence/mcp-gateway-scope.log`.
 - `make check` (pytest) → **1377 passed, 1 skipped** (2026-07-28, 1355→1377, +22) — **Phase 3 완결
   ②③**(`9e78f81`·`1c13a59`): ② `reconciler.py`가 소유 표식을 라이브 객체에서 읽어 reconciler가
   되돌릴 롤백을 거부(되돌리는 액션만; restart·scale은 desired로 수렴) · ③ `visibility.ts` 단일
@@ -38,17 +45,7 @@
   라이브가 결함 4건 적발(경고→실패 오기록 · 도구 완료 오판정 · 녹화 세션 부재 · 자격증명 파일).
 - `make check` (pytest) → **1322 passed, 1 skipped** (2026-07-26, 1302→1322, +20) — **시연 가능 레벨**: 영상 시나리오를 격리 반증으로 재작성하고 그 대본이 찍히는 상태까지 구축. 준비가 구조적 갭을 드러냄 — repo URL이 TF에만 있어 **레지스트리만으로는 애드온을 설치할 수 없었다**(매 라이브 설치가 손으로 조립됨) → 카탈로그 `self_hosted_repo`(유일한 복사, TF 대조 가드로 안전화) + `scripts/render_addons.py` + `make demo-baseline`. **라이브**: 테넌트 스코프 loki+tempo Synced/Healthy(쿼터가 소비를 셈 cpu 2/16), netpol 1/4 삭제 시 network 축만 ✕·이웃 테넌트 무영향·복구 시 ✓, 실측 지연 18s/61s/59s. 증거 `docs/evidence/demo-isolation-falsification.log`.
 - `make check` (pytest) → **1302 passed, 1 skipped** (2026-07-26, 1290→1302, +12) — **대시보드 멀티테넌시 관제 + 검증 훅**(`654c7e5`·`eebc19e`·`bad2642`): 격리 4축·티어·쿼터·네임스페이스를 **기존 push 경로**에 실어 대시보드로(직접 조회는 D26 위반) · 플릿 표 + 티어별 분리/공유/미보장 명시 · Add-ons 누락 4건(Loki·Fluent Bit·Tempo·Capsule) 추가 · Stop 훅 `make check` + PostToolUse 훅 `tsc`. **라이브 반증**: NetworkPolicy 삭제 시 network 축이 False로 뒤집히고 복구 시 True. `tsc` 클린 · `next build` 성공.
-- `make check` (pytest) → **1290 passed, 1 skipped** (2026-07-26, 1281→1290, +9) — **Phase 2 완결(M11)**(`c6d930d`): managed 백엔드는 카탈로그에서 파생해 `applicable=false`(조회 안 한 백엔드에 health를 단언하지 않는다, faked 디스크립터로 과금 0 증명) · **DR 드릴** globex/dev 실제 파괴 후 레지스트리만으로 재구축(라벨 완전 동일, 10초 뒤 쿼터 선언값 일치) · 채택 검증기 신설. 증거 `docs/evidence/phase2-managed-and-dr.log`.
-- `make check` (pytest) → **1281 passed, 1 skipped** (2026-07-26, 1271→1281, +10) — **어댑터 helm values seam**(`01d3c6d`): 카탈로그가 values 파일을 가리키고(복사 금지) 두 엔진이 같은 dict를 싣는다. 라이브가 결함 2건을 더 드러냈다 — **PSS restricted 테넌트 네임스페이스가 우리 애드온을 거부**(Argo는 Synced/Progressing인데 파드 0개; `monitoring`엔 PSS 라벨이 없어 지금까지 안 보였다) · **구독 해지가 테넌트 데이터를 파괴**(차트가 `whenDeleted: Delete`로 k8s 기본값 Retain을 뒤집음). 둘 다 근본수정. **라이브**: acme-dev-logging이 PSS+쿼터+NetworkPolicy 아래 Synced/Healthy — Phase 2 첫 진짜 테넌트 스코프 설치. 증거 `docs/evidence/phase2-values-seam.log`.
-- `make check` (pytest) → **1271 passed, 1 skipped** (2026-07-26, 1267→1271, +4) — **삭제 cascade**(`e1ea15f`): 계약이 삭제 의미를 말하게 하고(Flux=uninstall vs ArgoCD=고아라 같은 의도가 엔진마다 반대 결과) argocd 렌더러가 resources-finalizer를 붙인다. **라이브 A/B**: 파이널라이저만 다른 Application 2개를 삭제 → 있는 쪽 소멸, 없는 쪽은 소유자 없이 Running. 덮지 않는 것: StatefulSet PVC는 남는다. 증거 `docs/evidence/phase2-deletion-cascade.log`.
-- `make check` (pytest) → **1267 passed, 1 skipped** (2026-07-26, 1251→1267, +16) — **capability scope 축**(`bb7a819`): 카탈로그에 `scope: cluster|namespace`를 두고 delivery **계약**이 클러스터 싱글턴의 테넌트별 렌더를 거부한다(엔진마다 복제하면 세 번째 엔진이 빠뜨린다). 수집기는 공유 설치물을 테넌트 drift로 세지 않고(`applicable=False`), 안 보이면 MISSING이 아니라 UNKNOWN. 미선언은 cluster로 fail-safe. **라이브**: 직전 세션에 컨트롤러 충돌을 냈던 그 매니페스트를 argocd·flux 둘 다 거부, namespace scope 2개는 정상 렌더. 증거 `docs/evidence/phase2-capability-scope.log`.
-- `make check` (pytest) → **1251 passed, 1 skipped** (2026-07-26, 1216→1251, +35) — **Phase 2 잔여 3건: ⑥ NetworkPolicy 실제 활성화 + push 기반 2축 drift 수집기 + 대시보드 tenant/env 스위처**(`3dbc572`·`b2b52fc`). ⑥이 막혀 있던 진짜 이유는 네임스페이스 부재가 아니라 **차트가 켤 수 있는 물건이 아니었던 것**(16개 데카르트 곱 vs 레지스트리 구독 6개, 설치하는 helm_release 없음) → 레지스트리 기반 렌더링으로 대체하고 집행이 증명된 기판에만 렌더. 수집기는 push 전용이라 허브에 스포크 read 자격증명이 0이고, 신원은 서명을 검증한 키다. **라이브(kind, $0)**: 정책 5개 + 격리 4종 통과 · 스포크→허브→대시보드 왕복 실증. `tsc` 클린 · `next build` 성공. 증거 `docs/evidence/phase2-{netpol-activation,push-collector-and-switcher}.log`.
-- `make check` (pytest) → **1216 passed, 1 skipped** (2026-07-26, 1191→1216, +25) — **Phase 2 첫 슬라이스: soft-tier tenancy + Capsule**(`440f3a0`). ⑥이 기다리던 tenant 라벨 네임스페이스를 레지스트리에서 렌더·적용. 라이브가 3건을 잡았고 셋 다 거짓 보증 자리 — 특히 **Capsule은 admin이 만든 네임스페이스를 채택하지 않아** Tenant가 Active인데 NAMESPACE COUNT=0(쿼터가 아무것도 안 묶는데 정상으로 보임), 그리고 **쿼터 합산은 정적 조회로는 4배 버그처럼 보이지만** 소비하면 `limited: 6`(=16−10)으로 잔여가 재기록된다(설계는 옳았고 내 첫 결론이 틀렸다).
-- `make check` (pytest) → **1191 passed, 1 skipped** (2026-07-26, 1168→1191, +23) — **capability step을 executor가 실제 소비**(`c4816fd`). 스키마가 표현하던 순서·조건·on_failure·per-step verify를 아무도 읽지 않던 갭 해소 + `CAPABILITY_RUNBOOKS`(9런북, 죽은 데이터였음) 연결. **유닛 테스트가 구조적으로 못 잡는 결함 1건 포함**: `_deserialise_decision`이 `steps`를 버려 executor가 조용히 flat 경로로 회귀 — 유닛 테스트는 객체를 메모리에서 만들어 직렬화 경계를 안 넘는다. 라이브 before/after: 필요 없는 노드 스케일아웃 → `executed=[restart] skipped=[scale] resolved=True`.
-- `make check` (pytest) → **1168 passed, 1 skipped** (2026-07-26, 1159→1168, +9) — **Phase 1b 핸드오프 실행**(`7033db3`): rollouts-demo 소유권 TF→ArgoCD. 채택이 no-op이 아니었는데 원인은 라이브 드리프트(`--type=merge`가 컨테이너 배열 통째 교체)였고 ArgoCD가 **복구**한 것 → 프리플라이트 5번째 검사 `live-matches-rendered` 추가.
-- `make check` (pytest) → **1159 passed, 1 skipped** (2026-07-26, 1114→1159, +45) — **① 게이트 완결(3종 판별) + ⑥ PSS/Cosign + ⑦ 스위퍼 CronJob**(`8e549bf`·`d96b888`·`69f149d`·`5015810`, **origin push 완료**). ①은 pass 경로를 여는 과정에서 **연쇄 결함 3건**이 드러나 전부 근본수정: (a) `llm.endpoint`를 router만 소비하고 webhook은 못 받아 **모든 판정이 unknown**이던 것(모델 부재가 아니라 배선 부재), (b) 템플릿이 firing 알럿을 **합성**해 보내 정상 canary가 conf 0.80으로 `fail`이던 것 → 호출자는 **신원만** 보내고 게이트가 Alertmanager를 직접 조회(`None`=못 봄 ≠ `[]`=조용함), (c) kps 파드 룰이 `for: 15m`이라 2~3분짜리 canary엔 발화 자체가 없어 크래시 canary도 pass이던 것 → canary 시간 스케일 룰 동봉. **라이브 3종 판별**: 정상→`pass`x3 abort 없음 / 크래시→`pass→fail→fail` **165s auto-abort**(stable 4/4, Available=True 내내) / 관측 불가→`unknown` 차단. ⑥ 양방향(비준수 설치는 API 서버가 4개 위반 적시하며 forbidden / 준수 설치는 `uid=10001` Running) + Cosign(서명은 **태그가 아니라 다이제스트**에 붙음을 라이브가 정정 → 차트 `image.digest`). ⑦은 CLI 부재가 `clean(exit 0)`이던 것을 **exit 2(coverage incomplete)** 로. 증거 `docs/evidence/onprem-{canary-agent-gate,pss-restricted-and-sweeper}-e2e.log`.
-- **라이브 실증(2026-07-26, `b07523b`, 수 무변경)** — 기본 OFF로 남겨둔 3건 완주: ①canary 자동판정 **양방향**(나쁜 canary=`failed(3)>limit(2)`→사람 개입 0으로 ~105s auto-abort·stable 4/4 유지 / 좋은 canary=3연속 Successful→abort 안 됨) · ②Tempo 트레이스(query API·Grafana 프록시 양쪽 200, **5026ms 중 analyze 4136ms=MTTR의 82%가 로컬 LLM 추론**) · ⑥kindnet=**ENFORCED**+차트 정책 테넌트 시맨틱(same 통과/cross 차단). 증거 `docs/evidence/onprem-{addons-rollouts-analysis,tracing-tempo,netpol-tenancy}-e2e.log`. 라이브가 검증기 자체 버그 2건도 적발(agnhost `connect` http/URL 불가 · 파드 Ready≠포트 바인딩).
-- (이전 이력: gate 1114 이하 · 2026-07-10~25 → `docs/archive/status-baseline-2026-07.md`)
+- (이전 이력: gate 1290 이하 · 2026-07-10~26 → `docs/archive/status-baseline-2026-07.md`)
 
 ## 동작하는 영역 (요약)
 
@@ -90,11 +87,9 @@
   컨텍스트가 레지스트리와 다르면 아무것도 쓰지 않고 거부한다.
 - **시연 가능** — `make dev-up` → `make demo-baseline`으로 4축 ✓ → netpol 1개 삭제 시
   network 축만 ✕ → 복구까지 재현. 영상·대본 → `docs/post/`.
-- **레지스트리가 설치까지 표현한다** — repo+chart+values 세 입력이 전부 레지스트리에서
-  나오고(`render_addons.py`), 클러스터 싱글턴은 이름을 대며 거부된다.
-- **대시보드가 멀티테넌시를 관제한다** — 플릿 표(전 테넌트 × 격리 4축 + 티어 + 쿼터).
-  데이터는 스포크 push로만 들어온다(D28). "N ok"는 실제로 평가한 행만 센다.
-- **검증이 훅으로 강제된다** — Stop→`make check`(소스 변경 시만), PostToolUse→`tsc`(D29).
+- **레지스트리가 설치까지 표현한다**(`render_addons.py`) · **대시보드가 멀티테넌시를
+  관제한다**(플릿 표, push 전용 D28) · **검증이 훅으로 강제된다**(Stop→`make check`,
+  PostToolUse→`tsc`, D29).
 - **Phase 2 = 완결(M11)** · **Phase 0·1a·1b = 완결(M10)** — 상세 → `COMPLETED_SUMMARY`.
   **Phase 1b 잔여**: loki/tempo/pa 이관은 볼륨 스냅샷 수단 선행(kind엔 CSI 스냅샷터 부재).
 

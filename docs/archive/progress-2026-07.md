@@ -4,6 +4,65 @@
 
 ---
 
+## 2026-07-26 — 멀티테넌트 실험 전문 재작성·Notion 발행
+
+- Status: **Notion 전문 발행 완료**. 전체 발행에서 남은 것은 LinkedIn 게시뿐이다.
+- Changed: `docs/post/notion-article-ko.md`를 영상의 실제 흐름(setup→install→상태 검증→격리 반증)에
+  맞춰 5,641→4,477자로 재구성하고 Humanize Korean 적용(A·변경률 14.6%·자체검증 6/6).
+- Published: Notion `3a94c2420ac4801cbe99e36c16ed90fd`에 목차·표·YouTube Shorts
+  (`2J9WfZV0TPE`) 영상 블록과 전문 반영.
+- Verified: MP4 1080×1350·30.033s + 6시점 프레임 검토 · Notion 재조회로 제목/본문/영상 블록 확인 ·
+  `git diff --check -- docs/post/notion-article-ko.md` 통과. `make check`는 문서·외부 발행 작업이라 미실행.
+- Blockers: 없음. Next: `docs/post/linkedin-intro-ko.md` 최종 확인 후 LinkedIn 게시 → Phase 3(인가 강화).
+
+## 2026-07-26 — 자연어 한 문장이 테넌트를 세운다 + 풀스택 30초 영상 (gate 1322→1341)
+
+- Status: Agents 채팅에 문장 하나를 치면 `setup_tenancy → install_tenant_addons`가 체인으로
+  돈다(17.6s). 실제 브라우저로 전 비트를 통과시킨 뒤 그 상태를 찍어 30초로 편집했다.
+- Changed(코드): `src/agents/ai/tenancy_tools.py`(도구 2개) · `src/agents/platform/cluster_io.py`
+  (렌더된 객체가 클러스터를 만지는 **유일한 자리**) · `Registry.uninstallable_reason` +
+  `build_delivery_adapter`로 `render_*` 스크립트와 **같은 구현** 공유(복사본 0) · 시스템
+  프롬프트에 체인 순서와 **그 이유**(애드온은 테넌트 ns *안의* 객체) 명시.
+- Changed(영상): `scripts/demo/{prep_fullstack.sh,record_fullstack.js,build_fullstack_cut.js}` ·
+  `docs/post/media/multitenancy-fullstack-30s.mp4`(1080×1350 · 30.03s · **오버레이 없음**,
+  원본 153.8s를 10컷으로) · 아티클/LinkedIn/유튜브 문구 반영.
+- Verified: `make check` **1341**(+19) · `render_tenancy.py` 출력이 HEAD와 stdout·stderr·exit
+  code 전부 동일(리팩터 무해 증명) · **라이브 브라우저 왕복**: 빈칸 → 문장 → 체인 2단 →
+  `4 / 4`·4축 ✓ → `1500m / 16`·`3 / 200` → 실제 ArgoCD Synced/Healthy → netpol 1개 삭제 시
+  **network만 ✕**(globex 초록 유지) → 복구 ✓. 증거 `docs/evidence/demo-fullstack-beats.json`.
+- Blockers: 없음.
+- 품질 메모: 라이브가 결함 4건을 잡았고 전부 내 코드였다. (1) `apply_manifests`가 kubectl
+  **경고**를 `error`에 담아 **전 스텝 성공인 실행이 `ok:False`** 로 기록됐다(Capsule deprecation
+  2줄). 지금까지 잡은 건 화면이 실제보다 **좋게** 말하는 결함이었는데 이건 **나쁘게** 말한
+  첫 사례다. (2) 도구 완료를 "running 문자열 부재"로 판정했는데 DOM엔 그 단어가 없다(아이콘뿐)
+  → **일어나지 않은 체인을 찍을** 뻔했다. (3) 녹화 프로필엔 세션이 없어 채팅이 읽기 전용 —
+  비활성 입력칸에 문장을 치고 5분 대기, 테이크 1회 손실. (4) `.argocd-demo-password`가 없어
+  첫 프레임 전에 죽고 `.gitignore`에도 없었다 — **공개 아티클이 링크할 레포에 자격증명이
+  커밋될** 뻔했다(클러스터 시크릿에서 읽도록 변경).
+- Next: 발행(Notion 전문 · LinkedIn · YouTube Shorts) · LinkedIn "7B가 30B를 이겼습니다" 정정
+  (1건·1시행 차이, temp 1.0에선 역전) · Phase 3(인가 강화).
+
+## 2026-07-26 — 30초 영상 촬영 완료 (배속 없는 실시간)
+
+- Status: 시나리오 A를 **실제로 찍었다**. `docs/post/media/isolation-falsified-30s.mp4`
+  (1080×1350 · 30.0초). 연출 없음 — 진짜 NetworkPolicy를 지우고 진짜 push 경로로
+  대시보드가 알아차리는 걸 기다렸다가 되돌린다.
+- Changed: `scripts/demo/`(record_falsification.js · render_captions.js · README) +
+  산출물 2종. 대본은 **최종본 실제 타임코드**로 갱신.
+- Verified: 컨택트시트로 6개 시점(1·6·13·16·19·28초) 전부 자막↔화면 상태 일치 확인.
+  실측 전환 **삭제 후 7.1초 · 복구 후 8.9초** → 30초에 그대로 들어가 **배속 0**.
+  촬영용으로 낮춘 푸시 주기(60s→2s)는 우상단에 상시 표기. 촬영 후 60s로 원복,
+  netpol 4개·4축 ✓ 복구 확인.
+- Blockers: 없음. 남은 것은 발행(사용자 게이트).
+- 품질 메모: **전체 화면 녹화를 폐기했다.** macOS `screencapture -v`는 권한이 있어
+  동작했지만 테스트 프레임에 조작자의 다른 탭(학습 사이트·ChatGPT 대화)이 그대로
+  담겼다 — 발행용 영상에 들어가면 되돌릴 수 없는 종류의 사고라 테스트 파일을 즉시
+  지우고 뷰포트만 녹화하는 Playwright로 바꿨다. 부수 효과로 로그인 세션도 프레임에서
+  사라졌다. 그리고 ffmpeg가 libass·freetype 없이 빌드돼 있어 `subtitles`/`drawtext`가
+  **아예 없었다** — 자막을 대시보드와 같은 엔진으로 렌더해 픽셀로 넣었다. 오버레이
+  `enable=` 창이 자막 목록과 어긋나면 **아무것도 실패하지 않은 채** 화면과 다른 말을
+  하는 영상이 나오므로, ffmpeg 명령을 비트 목록이 생성하게 했다(체크인 안 함).
+- Next: 아티클 발행(Notion 전문 + LinkedIn 링크, 영상 첨부) · Phase 3(인가 강화).
 ## 2026-07-26 — 시연 가능 레벨: 레지스트리→클러스터 설치 경로 + 격리 반증 리허설 (gate 1302→1322)
 
 - Status: 영상 시나리오를 멀티테넌시+풀스택으로 재작성하고, **그 대본이 실제로 찍히는
