@@ -8,6 +8,14 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **1377 passed, 1 skipped** (2026-07-28, 1355→1377, +22) — **Phase 3 완결
+  ②③**(`9e78f81`·`1c13a59`): ② `reconciler.py`가 소유 표식을 라이브 객체에서 읽어 reconciler가
+  되돌릴 롤백을 거부(되돌리는 액션만; restart·scale은 desired로 수렴) · ③ `visibility.ts` 단일
+  seam이 읽기 쪽 테넌트 경계를 세우고 `middleware.ts`→`proxy.ts`(Next 16 deprecation) 이관,
+  소비자 0이던 `ROUTE_PROTECTION` 제거. **라이브**: ② out-of-band 변경이 **10초 만에 selfHeal에
+  되돌려짐**(전제 반증) → 관리 대상 롤백 거부/같은 워크로드 restart 통과 · ③ 익명 curl →
+  `restricted:true`. 테스트는 `visibility.ts`를 **실행**하고 fail-open 주입으로 반증까지 확인.
+  `tsc` 클린 · `next build` 성공. 증거 `docs/evidence/phase3-{reconciler-conflict,viewer-visibility}.log`.
 - `make check` (pytest) → **1355 passed, 1 skipped** (2026-07-27, 1341→1355, +14) — **Phase 3①
   자격증명 격리 full**(`bb091e1`): 가드가 `scope.py` 한 곳(`guard_scoped_action`)이고 세 러너가
   같은 구현을 부른다 · `resolve_incident_scope` 이관으로 **GCP Cloud Workflows 경로의 스코프 부재**
@@ -64,10 +72,13 @@
 
 **지금 하는 것**
 
-- **Phase 3(인가 강화)** — ①자격증명 격리 full = 완료(2026-07-27). 남은 것은
-  ②롤백↔selfHeal 우선순위(registry write-back, 지금은 문서로만 명명되고
-  `ONPREM_EXECUTOR_LIVE=false`로 묶여 있다) · ③viewer 가시성 제한.
-  **과대 해석 금지**: 자격증명 자체가 테넌트-바운드인 것은 **온프렘뿐**(→ Open Risks 7).
+- **Phase 3(인가 강화) = 완결(2026-07-28)** — ①자격증명 격리 full · ②reconciler 충돌
+  거부 · ③읽기 쪽 테넌트 경계. 다음은 **Phase 4**(managed 어댑터, billable) 또는
+  **Phase 5**(레지스트리 쓰기 — 이게 열려야 ②를 GitOps-native로 닫는다).
+  **과대 해석 금지 3건**: 자격증명 자체가 테넌트-바운드인 것은 **온프렘뿐**(→ Open Risks 7) ·
+  ②는 롤백을 되게 만들지 않고 조용한 되돌림을 거부로 바꿀 뿐(→ D32) ·
+  테넌트 파티션이 걸린 읽기 경로는 **플릿 뷰 하나뿐**이다(incidents/deployments/activities는
+  여전히 무인증·무파티션 — 대시보드 전체를 "테넌트 격리됨"이라 부르면 안 된다).
 - **레포 원고 동기화** — 발행 3종(Notion 전문 `3a94c2420ac4801cbe99e36c16ed90fd` ·
   YouTube Shorts `2J9WfZV0TPE` · LinkedIn)은 2026-07-28 전부 완료. 정정본이 레포에도
   반영됐다(`6979787`). 남은 건 GitAIOps 후속편이며 착수 보류(사용자 지시).

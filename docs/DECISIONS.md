@@ -1,6 +1,6 @@
 # DECISIONS — platform-agent
 
-최종 갱신: 2026-07-27
+최종 갱신: 2026-07-28
 
 > 되돌리기 어려운 결정만. 형식: **Decision / Reason / Impact**. 최신이 위.
 
@@ -9,6 +9,23 @@
 > - **GitAIOps 실습서(Notiflex)** (외부 학습 레포) — Rollouts **AnalysisTemplate 메트릭 자동판정**(우리 무기한 pause 게이트의 미완점) · **OTel→Tempo로 4-step 파이프라인 자체 트레이싱** · 런북 **사전확인/사후검증 3단**(우리 `RunbookStep`엔 없음) · **allow/ask/deny 권한통제** · **Sync Wave**. 안티패턴=Kafka·멀티 노드풀·GKE 종속 시크릿·`--dangerously-skip-permissions`. 상세 → `docs/reference/gitaiops-notiflex-book.md`. (검토 2026-07-25)
 
 ---
+
+## D32 — GitOps 관리 워크로드의 자동 롤백은 **거부까지**다 (selfHeal pause 안 함)
+
+- **Decision:** reconciler가 소유한 워크로드에 대한 롤백은 거부하고 사람에게 넘긴다.
+  selfHeal을 일시 중지하는 경로는 **채택하지 않는다**.
+- **Reason:** 라이브로 확인한 구조적 충돌이다. 소유 Application은 `argocd` 네임스페이스에
+  있고, Phase 1a/3①의 테넌트 스코프 자격증명은 그것을 **읽지도 못한다**(`Forbidden` 실측).
+  pause를 하려면 (a) 러너에게 크로스-네임스페이스 자격증명을 주거나 — 최우선 불변식을
+  되돌리는 일이다 — (b) Application의 `syncPolicy` 한 필드만 만지는 제2 자격증명 클래스를
+  신설해야 한다. `apps-in-any-namespace`도 비활성이라 테넌트 로컬 우회로가 없다.
+  설계의 권장안(registry write-back)은 git 쓰기라 k8s 경계를 안 건드리지만 **Phase 5**다.
+  즉 계획 안에서 Phase 3② 후반을 옳게 닫을 방법이 없다 — 계획 자체의 순서 충돌.
+- **Impact:** 거부는 **롤백을 되게 만들지 않는다.** 조용한 되돌림을 시끄러운 거부로 바꿀
+  뿐이다(라이브: out-of-band 변경이 **10초 만에** selfHeal에 되돌려졌다 — undo는 0을
+  반환하고 `resolved=True`가 기록된 뒤 깨진 버전이 돌아온다). 되돌리는 액션만 막고
+  restart·scale은 통과시킨다 — 거기까지 막으면 멀쩡한 조치가 깨지고 가드는 꺼진다.
+  Phase 5가 레지스트리 쓰기를 열면 이 결정을 재검토한다.
 
 ## D31 — 스코프 가드는 한 곳에 있고, GCP/Azure는 "네임스페이스만" 좁힌다고 명시한다
 

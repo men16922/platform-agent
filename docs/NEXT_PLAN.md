@@ -48,10 +48,18 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
   세 러너가 공유, 두 디스패치 경로 모두 스코프 전달, 라이브에서 API 서버가 경계를 판정.
   부수로 `render_rbac`의 **바인딩 대상 SA 부재** 근본수정(Phase 1a의 RBAC 팔이 미행사 상태였음).
   증거 `docs/evidence/phase3-scoped-credentials-all-runners.log`.
-- [ ] **Phase 3② 롤백↔selfHeal 우선순위** — registry write-back으로 정책 구현. 지금은 문서로만
-  명명돼 있고 `ONPREM_EXECUTOR_LIVE=false`로 묶여 있다(설계 문서 289–290행).
-- [ ] **Phase 3③ viewer 가시성 제한** — 2급 항목. 대시보드 쪽, 범위 가장 작고 독립적.
-- [ ] Phase 4(managed 어댑터, billable)·5(레지스트리 PR 쓰기) = 후속.
+- [x] **Phase 3② reconciler 충돌 거부(gate 1367, 2026-07-28)** — **거부까지가 최종 상태**다.
+  selfHeal pause는 Application이 `argocd` ns에 있어 테넌트 스코프 자격증명으로 도달 불가
+  (`Forbidden` 실측) → 채택 안 함(→ `DECISIONS` D32). 권장안인 registry write-back은
+  Phase 5 의존이라 Phase 3 안에서 실행 불가 — **계획 자체의 순서 충돌**.
+- [x] **Phase 3③ 읽기 쪽 테넌트 경계(gate 1377, 2026-07-28)** — `visibility.ts` 단일 seam +
+  플릿 라우트. 부수로 Next 16 `middleware`→`proxy` deprecation 이관, 소비자 0이던
+  `ROUTE_PROTECTION` 제거.
+- [ ] **Phase 3③ 잔여**: grant 있는 viewer의 **브라우저 왕복 미실증**(실 OAuth 세션 필요) ·
+  incidents/deployments/activities는 여전히 무인증·무파티션(읽기 모델에 테넌트 라벨이 없어
+  데이터모델 변경 사안) · grant는 저장만 되고 레지스트리와 대조되지 않는다.
+- [ ] **Phase 4**(managed 어댑터, billable)·**5**(레지스트리 PR 쓰기) = 다음 후보.
+  Phase 5가 열리면 3②를 GitOps-native로 다시 닫을 수 있다(D32 재검토 조건).
   **Phase 4로 넘긴 것(명시)**: GCP/Azure 자격증명의 테넌트 바인딩. 현재 GCP는 프로젝트 전역 신원,
   Azure는 ARM에서 **cluster-admin kubeconfig**를 받아온다 — 스코프는 네임스페이스만 좁힌다.
 - [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 수단 선행**(kind엔 CSI 스냅샷터 기본 부재).

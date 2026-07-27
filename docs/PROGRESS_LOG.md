@@ -1,11 +1,39 @@
 # PROGRESS_LOG — platform-agent
 
-최종 갱신: 2026-07-27
+최종 갱신: 2026-07-28
 
 > 최신 3–5개 증분. **최신이 위.** **≤120줄.** 넘치면 `/tidy-docs` 로 압축.
 > 이전 이력: `docs/archive/progress-2026-07.md`
 
 ---
+
+## 2026-07-28 — Phase 3 완결: ②reconciler 충돌 거부 · ③읽기 쪽 테넌트 경계 (gate 1355→1377)
+
+- Status: Phase 3 ①②③ 종료. ②는 **거부까지**가 최종 상태이고 그 이유가 구조적이다.
+- Changed(②, `9e78f81`): `platform/reconciler.py` — 소유 표식을 **라이브 객체에서** 읽어
+  reconciler가 되돌릴 롤백을 거부. 되돌리는 액션만 막는다(restart·scale은 desired로 수렴).
+- Changed(③, `1c13a59`): `dashboard/src/lib/visibility.ts` 단일 seam + 플릿 라우트 배선 ·
+  `UserRecord.tenants` · `middleware.ts`→`proxy.ts`(Next 16 deprecation) · 죽은
+  `ROUTE_PROTECTION` 제거.
+- Verified: `make check` **1377**(+22 누적) · `tsc` 클린 · `next build` 성공.
+  **라이브(kind, $0)**: ② 같은 워크로드에 out-of-band 변경 → **10초 만에 selfHeal이 되돌림**
+  (전제 자체를 먼저 반증) → ArgoCD 관리 롤백 거부 / 같은 워크로드 restart는 정상 실행.
+  ③ 빌드 산출물에 익명 curl → `restricted:true` + 빈 플릿. **fail-open 주입 반증**으로
+  테스트가 실제로 잡는 것도 확인(2건 실패 → 되돌리니 8건 통과).
+  증거 `docs/evidence/phase3-{reconciler-conflict,viewer-visibility}.log`.
+- Blockers: 없음.
+- 품질 메모: ②의 후반(selfHeal pause)은 **구조적으로 막혔다** — Application이 `argocd`
+  네임스페이스에 있고 테넌트 스코프 자격증명은 그것을 읽지도 못한다(`Forbidden` 실측).
+  즉 Phase 3①과 3② 경로1이 정면 충돌하고, `apps-in-any-namespace`도 비활성이라
+  테넌트 로컬 우회로가 없다. 설계의 권장안인 registry write-back은 Phase 5 의존이라
+  Phase 3 안에서 실행 불가 — **계획 자체의 순서 충돌**이다(→ D32).
+  ③에서는 정책이 **두 군데 적혀 있고 둘 다 안 도는** 상태를 발견했다.
+  `ROUTE_PROTECTION`은 소비자 0이었고, **테스트가 그 죽은 코드의 존재를 고정**하고
+  있었다 — 선언을 단언하는 가드가 선언-미소비 정책이 살아남는 방식이다.
+  그리고 `AGENTS.md` 지시대로 Next 문서를 먼저 읽은 덕에 `middleware` deprecation을
+  잡았다. 안 고쳤으면 고장 모드는 **쓰기 라우트 matcher가 조용히 안 도는 것**이었다.
+- Next: Phase 4(managed 어댑터, billable) 또는 Phase 5(레지스트리 쓰기 → ②를 GitOps-native로
+  닫음). 잔여: grant 있는 viewer의 브라우저 왕복 · incidents/deployments는 여전히 무파티션.
 
 ## 2026-07-27 — Phase 3① 자격증명 격리 full (gate 1341→1355)
 
