@@ -31,6 +31,7 @@ decision.
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 from typing import TYPE_CHECKING, Any
@@ -66,6 +67,62 @@ def _run_kubectl(args: list[str], scope: "IncidentScope", timeout: int = 60) -> 
         timeout=timeout,
     )
     return proc.returncode, proc.stdout.strip(), proc.stderr.strip()
+
+
+def _guard_reconciler_conflict(
+    action: str,
+    params: dict[str, list[str]],
+    log: Any,
+    scope: "IncidentScope",
+) -> None:
+    """
+    Refuse a rollback that ArgoCD/Flux would undo (Phase 3②).
+
+    Reads ownership off the live object rather than off the registry, because the
+    question is who *is* reconciling it, not who should be. The read uses the
+    same scoped credential as the action, so it cannot see past the tenant
+    boundary either.
+
+    A failed or unparseable read is treated as "no known conflict" and logged.
+    That is deliberate: this guard exists to stop a *known* silent revert, and
+    making an unrelated kubectl hiccup block all remediation would trade a
+    quiet wrong fix for a loud absent one. The refusal below is the fail-closed
+    part; this fallback is not.
+    """
+    from src.agents.platform.reconciler import guard_rollback, is_rollback
+
+    if not is_rollback(action):
+        return
+
+    namespace = (params.get("Namespace") or [""])[0]
+    workload = (params.get("WorkloadName") or [""])[0]
+    if not workload:
+        return
+
+    get_args = ["get", f"deployment/{workload}", "-o", "json"]
+    if namespace:
+        get_args += ["-n", namespace]
+
+    code, out, err = _run_kubectl(get_args, scope)
+    if code != 0:
+        log.warning(
+            "onprem_runner.ownership_unreadable",
+            action=action, workload=f"{namespace}/{workload}", stderr=err,
+        )
+        return
+
+    try:
+        manifest = json.loads(out)
+    except json.JSONDecodeError:
+        log.warning(
+            "onprem_runner.ownership_unparseable",
+            action=action, workload=f"{namespace}/{workload}",
+        )
+        return
+
+    guard_rollback(
+        action=action, manifest=manifest, log=log, log_prefix="onprem_runner",
+    )
 
 
 def _positive_int(value: str) -> int | None:
@@ -153,6 +210,8 @@ def run_onprem_action(
     args = _kubectl_args(action, params, log)
     if args is None:
         return
+
+    _guard_reconciler_conflict(action, params, log, scope)
 
     code, out, err = _run_kubectl(args, scope)
     if code != 0:

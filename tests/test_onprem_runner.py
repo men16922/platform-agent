@@ -61,11 +61,20 @@ def test_live_restart_runs_kubectl(captured, monkeypatch):
     assert captured == [["rollout", "restart", "deployment/payments-api", "-n", "payments"]]
 
 
-def test_live_rollback_runs_kubectl(captured, monkeypatch):
+def test_live_rollback_reads_ownership_then_runs_kubectl(captured, monkeypatch):
+    """
+    Since Phase 3② a rollback first asks who owns the workload — an unowned one
+    proceeds. The read is part of the contract, not incidental: skipping it is
+    how a rollback gets silently reverted by ArgoCD. Ownership refusal itself is
+    covered in `test_reconciler_conflict.py`.
+    """
     monkeypatch.setenv("ONPREM_EXECUTOR_LIVE", "true")
     monkeypatch.delenv("TESTING", raising=False)
     onprem_runner.run_onprem_action("ONPREM-ArgoRolloutRollback", PARAMS, _Log(), SCOPE)
-    assert captured == [["rollout", "undo", "deployment/payments-api", "-n", "payments"]]
+    assert captured == [
+        ["get", "deployment/payments-api", "-o", "json", "-n", "payments"],
+        ["rollout", "undo", "deployment/payments-api", "-n", "payments"],
+    ]
 
 
 def test_live_unwired_action_is_log_only(captured, monkeypatch):

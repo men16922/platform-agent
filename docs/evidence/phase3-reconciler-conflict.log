@@ -1,0 +1,86 @@
+Phase 3② — rollback vs GitOps self-heal (the refusal half)
+==========================================================
+Date    : 2026-07-28
+Cluster : kind-platform-agent (local, $0)
+Target  : acme-dev-logging/acme-dev-logging-loki-gateway (ArgoCD-managed)
+
+
+The premise, proven first
+-------------------------
+A guard that refuses rollbacks "because the reconciler would undo them" is a
+claim until the revert is observed. So it was observed, on the exact workload
+the guard refuses:
+
+    $ kubectl -n acme-dev-logging get deploy ...-loki-gateway -o jsonpath='{.spec.replicas}'
+    1
+
+    $ kubectl -n acme-dev-logging scale deploy/...-loki-gateway --replicas=3
+    t+05s replicas=3
+    t+10s replicas=1
+    >>> selfHeal REVERTED the out-of-band change after ~10s
+
+An out-of-band spec change survives about ten seconds. A `kubectl rollout undo`
+is exactly such a change. It would return 0, the verifier could observe a
+healthy workload inside that window, `resolved=True` would be written — and then
+the broken version comes back. **The records would say the incident was fixed.**
+
+
+Ownership marker (read live, not assumed)
+------------------------------------------
+    acme-dev-logging/acme-dev-logging-loki-gateway
+        argocd.argoproj.io/tracking-id = acme-dev-logging:apps/Deployment:...
+    default/pa-platform-agent-webhook
+        argocd.argoproj.io/tracking-id = platform-agent:apps/Deployment:...
+
+The addons chart sets `resourceTrackingMethod=annotation`, so the tracking-id
+annotation is authoritative. `app.kubernetes.io/instance` is deliberately NOT
+used as a marker — plain Helm installs carry it too, and a guard that refuses
+remediation on unmanaged workloads is a guard someone switches off.
+
+Ownership is read off the live object rather than off the registry: the registry
+says what *should* be managed, and the question here is what *is*. Those differ
+exactly when something has gone wrong — which is when a rollback gets attempted.
+
+
+Live behaviour
+---------------
+    A. ROLLBACK on the ArgoCD-managed workload
+       onprem_runner.reconciler_conflict
+         action=ONPREM-ArgoRolloutRollback reconciler=argocd
+         workload=acme-dev-logging/acme-dev-logging-loki-gateway
+       RESULT: refused
+
+    B. RESTART on the SAME workload
+       onprem_runner.kubectl_ok
+         stdout='deployment.apps/acme-dev-logging-loki-gateway restarted'
+       RESULT: executed
+
+B is the half that keeps the guard usable. A restart or a scale converges to the
+same desired spec the reconciler already holds, so self-heal has nothing to
+undo; only actions that move live state *backwards* conflict. Refusing those too
+would break working remediation and the guard would get disabled.
+
+The ownership read uses the same scoped credential as the action (Phase 3①), so
+it cannot see past the tenant boundary either.
+
+
+WHAT THIS DOES NOT DO — read before quoting it
+------------------------------------------------
+- **It does not make rollback work.** It converts a silent revert into a loud
+  refusal. Automated rollback on GitOps-managed workloads remains unavailable
+  until desired can be aligned. That is the remaining half of Phase 3②:
+  self-heal pause + a TTL watchdog that restores it (a pause that fails to lift
+  is the same class of defect this guard exists to prevent).
+
+- **A failed ownership read does not block.** kubectl failing to answer is
+  logged (`onprem_runner.ownership_unreadable`) and the action proceeds. Turning
+  an unrelated hiccup into a blanket remediation outage trades a quiet wrong fix
+  for a loud absent one. The refusal is the fail-closed part; this read is not.
+
+- **`detect_reconciler() is None` is not proof of safety.** It means no marker we
+  recognise was found. A reconciler we do not know about leaves no such marker.
+
+- The design doc recommends **registry write-back** as the GitOps-native
+  alignment path, but writing the registry is Phase 5. The plan's recommended
+  path is therefore not executable inside Phase 3 — self-heal pause is the
+  interim, and this is a conflict in the plan itself, not a shortcut taken here.
