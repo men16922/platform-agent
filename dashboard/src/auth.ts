@@ -9,6 +9,13 @@ import type { Role } from "@/lib/auth";
 // to the production domain and can't complete on http://localhost:3000.
 const DEV_AUTH = process.env.DASHBOARD_DEV_AUTH === "1" && !process.env.VERCEL;
 
+// Who the local-dev bypass signs you in as. It used to be hardcoded to an admin,
+// which meant the entire authorization surface — roles, tenant grants, the
+// partitioned read paths — could not be exercised without real GitHub OAuth.
+// That is why the granted-viewer path went unverified: the only local session
+// available was the one role that skips every check.
+const DEV_AUTH_USERNAME = process.env.DASHBOARD_DEV_AUTH_USER?.trim() || "local-dev";
+
 declare module "next-auth" {
   interface Session {
     user: {
@@ -71,11 +78,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             name: "Local Dev (no GitHub)",
             credentials: {},
             authorize: async () => ({
-              id: "local-dev",
-              name: "Local Dev",
-              email: "local-dev@localhost",
-              username: "local-dev",
-              role: "admin",
+              id: DEV_AUTH_USERNAME,
+              name: `Local Dev (${DEV_AUTH_USERNAME})`,
+              email: `${DEV_AUTH_USERNAME}@localhost`,
+              username: DEV_AUTH_USERNAME,
+              // Role/grants are resolved from the stored user record in the jwt
+              // callback, exactly as they are for a real sign-in.
+              role: "viewer",
             }),
           }),
         ]
@@ -99,8 +108,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     async jwt({ token, account, profile }) {
       if (DEV_AUTH && account?.provider === "dev-credentials") {
-        token.username = "local-dev";
-        token.role = "admin";
+        token.username = DEV_AUTH_USERNAME;
+        // Read the role from the same store a real sign-in reads, so the local
+        // session exercises the real authorization path instead of bypassing
+        // it. Default admin ONLY for the default user, so existing local setups
+        // are unchanged; any named dev user gets whatever it was actually
+        // granted, and an unknown one gets the least privilege.
+        if (DEV_AUTH_USERNAME === "local-dev") {
+          token.role = "admin";
+          return token;
+        }
+        try {
+          const { getUserRecord } = await import("@/lib/user-data");
+          const rec = await getUserRecord(DEV_AUTH_USERNAME);
+          token.role = rec?.role ?? "viewer";
+        } catch {
+          token.role = "viewer";
+        }
         return token;
       }
       if (profile) {

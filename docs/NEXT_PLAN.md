@@ -55,9 +55,17 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 - [x] **Phase 3③ 읽기 쪽 테넌트 경계(gate 1377, 2026-07-28)** — `visibility.ts` 단일 seam +
   플릿 라우트. 부수로 Next 16 `middleware`→`proxy` deprecation 이관, 소비자 0이던
   `ROUTE_PROTECTION` 제거.
-- [ ] **Phase 3③ 잔여**: grant 있는 viewer의 **브라우저 왕복 미실증**(실 OAuth 세션 필요) ·
-  incidents/deployments/activities는 여전히 무인증·무파티션(읽기 모델에 테넌트 라벨이 없어
-  데이터모델 변경 사안) · grant는 저장만 되고 레지스트리와 대조되지 않는다.
+- [x] **인시던트 테넌트 파티션 + granted-viewer 실증(gate 1411, 2026-07-28)** — 파티션 불가의
+  원인은 읽기가 아니라 **쓰기**였다(`_record_incident`가 Phase 1a부터 있던 tenant를 버렸다).
+  local-dev 우회가 `role: admin`을 하드코딩해 **인가 표면 전체가 로컬에서 검증 불가**였던 것도
+  해소(`DASHBOARD_DEV_AUTH_USER`). 라이브: 익명 0/3(withheld 3) · viewer-demo 1/3(withheld 2) ·
+  admin 3/3. 증거 `docs/evidence/phase3-read-partition-live.log`.
+- [ ] **deployments/activities 파티션 — 데이터 모델 결정 필요(버그 아님)** — 인시던트는 tenant가
+  *있는데 버려진* 것이었지만, 배포 기록은 `provider/service/version/environment`뿐이고
+  `environment`는 레지스트리의 tenant/env 쌍이 아니라 자유 문자열("production")이다.
+  **배포는 어느 테넌트 소유인가**를 먼저 정해야 한다 — 발명하지 않고 남긴다.
+- [ ] **grant는 저장만 되고 레지스트리와 대조되지 않는다** — 없는 테넌트를 grant해도 통과하고
+  아무것도 매칭하지 않는다.
 - [ ] **Phase 4**(managed 어댑터, billable)·**5**(레지스트리 PR 쓰기) = 다음 후보.
   Phase 5가 열리면 3②를 GitOps-native로 다시 닫을 수 있다(D32 재검토 조건).
   **Phase 4로 넘긴 것(명시)**: GCP/Azure 자격증명의 테넌트 바인딩. 현재 GCP는 프로젝트 전역 신원,

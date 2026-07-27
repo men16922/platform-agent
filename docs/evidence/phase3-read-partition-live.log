@@ -1,0 +1,85 @@
+Phase 3③ follow-up — incidents partitioned by tenant, verified end to end
+==========================================================================
+Date : 2026-07-28
+Mode : built artifact (`next build` + `next start`), stub on-prem incident source
+
+
+The write gap under the read gap
+---------------------------------
+`/api/dashboard/incidents` returned every tenant's incidents to anyone. It could
+not be partitioned because the tenant was never stored: `NormalizedIncident` has
+carried `tenant`/`env` as first-class fields since Phase 1a, and
+`_record_incident` dropped them at write time. The read gap and the write gap
+were the same gap; the read side is merely where it got noticed.
+
+Fixed at both ends. `tenant`/`env` are written only when non-empty — absent and
+`""` are different facts, and writing `""` would make every legacy row look like
+a real tenant named nothing.
+
+
+Why the granted-viewer path had never been verified
+-----------------------------------------------------
+The local-dev auth bypass hardcoded `role: "admin"` and `username: "local-dev"`.
+The only session obtainable without real GitHub OAuth was therefore the one role
+that skips every check — so the entire authorization surface (roles, tenant
+grants, partitioned reads) was locally unexercisable. That is why this
+verification stayed owed.
+
+The bypass now resolves the role from the same user record a real sign-in reads.
+`DASHBOARD_DEV_AUTH_USER` selects who you sign in as; the default `local-dev`
+stays admin so existing local setups are unchanged, and an unknown user gets the
+least privilege rather than the most.
+
+
+Fixture
+--------
+Three incidents from a stub on-prem source:
+    INC-ACME-1    tenant=acme
+    INC-GLOBEX-1  tenant=globex
+    INC-LEGACY-1  (no tenant — stands in for rows written before the fix)
+
+`viewer-demo` is granted `["acme"]` in the user record.
+
+
+Live round trips
+-----------------
+    ANONYMOUS (no session)
+      ids: []            restricted: True   withheld: 3
+
+    VIEWER-DEMO (role=viewer, grant=['acme'])
+      session : username=viewer-demo role=viewer
+      ids     : ['INC-ACME-1']
+      tenants : ['acme']
+      restricted: False  withheld: 2
+      cache-control: private, no-store
+
+    ADMIN (default local-dev)
+      session : role=admin
+      ids     : ['INC-GLOBEX-1', 'INC-ACME-1', 'INC-LEGACY-1']
+      restricted: False  withheld: 0
+
+The viewer sees one of three. The neighbour's incident and the untagged legacy
+row are both withheld, and the count says so rather than the list just being
+shorter. The admin sees all three including the untagged one.
+
+The cache header is part of the result, not decoration: the response now varies
+by caller, so the previous `public, s-maxage=30` would have let a shared cache
+serve one tenant's incidents to another.
+
+
+Falsification
+--------------
+Injecting the obvious wrong default — treat "no tenant recorded" as visible to
+everyone — failed all three RowFiltering tests; restoring passed them.
+
+
+WHAT IS STILL OPEN
+-------------------
+- **deployments / activities remain unpartitioned, and for a different reason.**
+  Incidents had a tenant and dropped it. Deployments never had one: the record
+  carries `provider/service/version/environment`, where `environment` is a free
+  string ("production"), not the registry's tenant/env pair. Partitioning them
+  needs a data-model decision about what tenant owns a deployment — that is
+  design work, not a bug fix, so nothing was invented here.
+- Do not describe the dashboard as tenant-isolated. Two read paths are
+  partitioned (fleet, incidents); the rest are not.
