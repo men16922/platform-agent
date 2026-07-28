@@ -5,7 +5,7 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(M10=GitAIOps 7/7+멀티테넌트 Phase 0·1a·1b+공급망,
 > M9=eval·하드닝, M8=레퍼런스 8/8) / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 현재 상태 (2026-07-29, gate 1470)
+## 현재 상태 (2026-07-29, gate 1520)
 
 **Phase 0·1a·1b·2·3 완결**(M10~M12) + **차단 없는 잔여 소진**. 남은 잔여는 작업이 아니라 **결정** 3건.
 **시연 가능**: `make dev-up` → `make demo-baseline` 두 줄로 영상 시나리오 A가 재현된다.
@@ -50,13 +50,15 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 ## 잔여 — 완료 항목에서 의도적으로 남긴 것
 
 > 완료분은 `COMPLETED_SUMMARY.md` **M12**(Phase 3 인가) · **M13**("선언됐지만 아무도 읽지
-> 않는 것들" 8건) · `PROGRESS_LOG.md` · `docs/evidence/`.
+> 않는 것들" 9건 — time-to-resolve 포함) · `PROGRESS_LOG.md` · `docs/evidence/`.
 
-- [ ] **time-to-resolve가 아직 불가** — `resolved_at`이 모든 행에서 `created_at`과 같은
-  **쓴 시각**이다. 발생 시각은 이제 온프렘·클라우드 양쪽에 있으니(gate 1491·1496), 남은 건
-  해소가 실제로 일어난 시각을 기록하는 것 — executor 자체 기록 변경이라 분리해 남긴다.
-- [ ] **클라우드 인시던트 필드는 실 DynamoDB 왕복 미검증** — 모킹 테이블 + 직렬화기 직접
-  확인까지다. 쓰기 경로 자체는 불변이지만 새 속성이 실 테이블을 왕복해 대시보드에 읽힌 적은 없다.
+- [ ] **인시던트 필드 실 DynamoDB 왕복 미검증(쓰기·읽기 양쪽)** — 모킹 테이블 + 직렬화기
+  직접 확인 + 투영 표현식 파싱까지다. 새 속성(`triggered_at`·`confidence`·`reconciliation`·
+  `trace_id`·`resolved_at`)이 실 테이블을 왕복해 대시보드에 읽힌 적은 아직 없다.
+  **이제 유일하게 남은 차단 없는 잔여** — 실 AWS 자원이 필요해 승인 사항.
+- [ ] **GCP Firestore·Azure Cosmos 기록기는 `resolved_at`·`triggered_at` 둘 다 안 쓴다** —
+  대시보드도 주간 리포트도 그 스토어를 읽지 않아 지금 고치면 **소비자 없는 필드**가 된다.
+  Phase 4(managed 어댑터)에서 읽는 쪽이 생길 때 함께 — 의도적으로 남김.
 - [ ] **analyzer LLM 실패 폴백이 여전히 일괄 P2** — `severity_hint`를 안 본다. 거기서 쓰려면
   severity 매핑을 확정해야 하고, 그건 위와 같은 **정책 결정**이라 발명하지 않았다.
 - [ ] **⑥ k3s 검증기 재실행**(선택) — flannel은 NetworkPolicy 집행이 전이되지 않으므로 기판별 재확인 필요.

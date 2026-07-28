@@ -38,17 +38,17 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
-## M13 — "선언됐지만 아무도 읽지 않는 것들" 8건 (완료, 2026-07-28~29)
+## M13 — "선언됐지만 아무도 읽지 않는 것들" 9건 (완료, 2026-07-28~29)
 
-**gate 1411 → 1496 (+85).** 증거 `docs/evidence/{phase3-tenant-grant-validation,
+**gate 1411 → 1520 (+109).** 증거 `docs/evidence/{phase3-tenant-grant-validation,
 runbook-selectability,capsule-deprecation-metadata,executor-span-approval-path,
 onprem-runbook-matching,declared-unconsumed-sweep,incident-trigger-time,
-cloud-incident-fields}.log`. 결정 → `DECISIONS` D33·D34·D35.
+cloud-incident-fields,incident-time-to-resolve}.log`. 결정 → `DECISIONS` D33·D34·D35.
 
-Phase 3가 인가를 닫은 뒤 남은 잔여를 우선순위대로 소진했는데, **여덟 건이 전부 같은
+Phase 3가 인가를 닫은 뒤 남은 잔여를 우선순위대로 소진했는데, **아홉 건이 전부 같은
 결함**이었다: 필드나 계획이 **선언되고, 채워지고, 저장되고, 아무도 읽지 않는다.** 테스트는
-여덟 번 다 초록이었다 — 전부 *생산자*를 단언했기 때문이다. 여덟 번 다 **라이브 실행만이**
-드러냈고, 그중 세 번은 유닛 테스트가 통과하는 동안 라이브가 다른 답을 냈다.
+아홉 번 다 초록이었다 — 전부 *생산자*를 단언했기 때문이다. 아홉 번 다 **라이브 실행만이**
+드러냈고, 그중 네 번은 유닛 테스트가 통과하는 동안 라이브가 다른 답을 냈다.
 
 - **grant 대조(1425)**: 기록은 "대조 안 함"이었지만 grant를 **줄 방법 자체가 없었고**(읽기 쪽이
   아무 쓰기 경로도 만들 수 없는 필드를 소비 중) 역할 변경이 whole-item Put으로 grant를 지웠다.
@@ -71,12 +71,22 @@ Phase 3가 인가를 닫은 뒤 남은 잔여를 우선순위대로 소진했는
   온프렘·클라우드 양쪽 + `detected +Nm` 배지(**읽는 쪽 없이 저장만 하면 같은 결함을 하나 더
   만드는 것**). 클라우드 `confidence`는 float라 그냥 넣었으면 boto3 예외가 기록기의 `except`에
   잡혀 **레코드 전체가 사라졌을** 것 → `Decimal`.
+- **time-to-resolve(1520)**: 이 부류의 **가장 비싼 변종** — 앞의 여덟은 값이 *버려졌지만*
+  이번엔 값이 **있는 척했다.** `resolved_at`이 `created_at`의 복사본이라 주간 온콜 리포트가
+  **존재 내내 "MTTR 0.0분"을 자신 있게 발송**했다(fetch가 한 키를 `started_at`·`resolved_at`
+  양쪽 끝에 넣었다). 부재는 눈에 띄지만 **그럴듯한 기본값은 안 띈다.** 같이 나온 둘:
+  `runbook_id`에 `alarm_name` 복사 → 재발 패턴 그룹핑 붕괴 · 대시보드 Scan 투영이 **자기
+  리더가 읽는 4필드**를 안 불러 전날 수정이 배지 한 층 앞에서 멈춰 있었다.
+  실측 0.0→45.0, 라이브 P1/AUTO 1502초 보존·열린 인시던트는 부재.
 
-**반복된 교훈(테스트 규율 3종)**: ①가드를 쓰면 **호출부에서** 반증하라 — 새 테스트 20건이
+**반복된 교훈(테스트 규율 5종)**: ①가드를 쓰면 **호출부에서** 반증하라 — 새 테스트 20건이
 전부 통과하는데 호출자만 플래그를 잊은 상태였다. ②픽스처는 코드가 아니라 **실제 입력**에서
 가져와라 — 내가 쓴 summary에 런북 키워드를 심어놔 유닛은 초록인데 라이브는 계속 틀렸다.
 ③**소비자를 단언하라, 생산자 말고** — `severity_hint`를 "설정되는가"로 봤다면 그 필드가 존재한
-내내 통과했을 것이고, 그게 이 부류가 여태 살아남은 방식이다.
+내내 통과했을 것이고, 그게 이 부류가 여태 살아남은 방식이다. ④**투영/스키마 계층도 소비자다**
+— `ProjectionExpression`이 부르지 않은 속성은 리더가 아무리 방어적으로 짜여도 복구할 수 없다.
+⑤**가드는 파생시켜라, 열거하지 말고** — 매퍼가 읽는 속성을 파싱해 Scan에 요구하면 *다음*
+필드에도 실패한다. 손으로 적은 목록이었다면 당시 투영에 맞춰 쓰였을 테고 그대로 통과했다.
 스윕은 `scripts/find_unconsumed_fields.py`로 반복 가능하게 남겼다(후보≠결함).
 
 ## M12 — 멀티테넌트 Phase 3(인가 강화) 완결 + 읽기 경계 (완료, 2026-07-27~28)

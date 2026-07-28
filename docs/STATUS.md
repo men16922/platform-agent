@@ -8,18 +8,22 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` (pytest) → **1496 passed, 1 skipped** (2026-07-29, 1491→1496, +5) — **클라우드
-  인시던트 필드**(`36e3b4a`): 같은 누락이 공용 기록기에도 있었다(그것도 tenant/env 수정 주석
-  바로 아래). `triggered_at`·`confidence` 둘 다 **읽는 쪽이 이미 있었다** — 후자는 모든 클라우드
-  인시던트가 뷰 존재 내내 "confidence n/a"였다는 뜻. **함정**: boto3는 float를 거부하고 그
-  예외는 기록기의 `except`에 잡혀 **레코드 전체가 사라졌을** 것(→`Decimal`).
+- `make check` (pytest) → **1520 passed, 1 skipped** (2026-07-29, 1496→1520, +24) —
+  **time-to-resolve**(`3a89e43`): 한 사슬에 결함 셋. ①공용 클라우드 기록기가 `resolved_at`을
+  무조건 `created_at`과 같은 값으로 써 **미해소 인시던트가 해소 시각을 달고** 다녔다(온프렘은
+  아예 안 씀) ②`_fetch_incidents_from_dynamo`가 `resolved_at`을 **양쪽 끝에** 넣어 **여태
+  발송된 모든 주간 온콜 리포트의 MTTR이 0.0**이었다(+`runbook_id`에 `alarm_name` 복사 →
+  재발 패턴 그룹핑 붕괴) ③대시보드 Scan 투영이 **자기 리더가 읽는 4필드**를 안 가져와
+  아침 수정이 배지 한 층 앞에서 멈춰 있었다. 실측 **0.0 → 45.0**, 라이브 P1/AUTO **1502초**
+  보존·열린 인시던트는 부재. 증거 `docs/evidence/incident-time-to-resolve.log`.
+- `make check` → **1496** (2026-07-29, +5) — **클라우드 인시던트 필드**(`36e3b4a`):
+  `triggered_at`·`confidence` 둘 다 **읽는 쪽이 이미 있었다**. **함정**: boto3는 float를 거부하고
+  그 예외가 기록기 `except`에 잡혀 **레코드 전체가 사라졌을** 것(→`Decimal`).
   증거 `docs/evidence/cloud-incident-fields.log`.
-- `make check` (pytest) → **1491 passed, 1 skipped** (2026-07-29, 1479→1491, +12) — **인시던트
-  발생 시각**(`78e472d`): 스윕 두 번째 건. 네 어댑터가 채우는 `triggered_at`을 `record_incident`가
-  버려 행이 **"우리가 쓴 시각"만** 알았다 → 탐지 소요시간 산출 불가, 타임라인이 처리 순간에 배치.
-  저장(모르면 부재) + 양쪽 경로 배선 + 승인 경로의 `trace_id`도 복구 + 대시보드 `detected +Nm`
-  배지(**읽는 쪽 없이 저장만 하면 같은 결함을 하나 더 만드는 것**). 라이브: 승인 경로에서
-  735초 보존. 증거 `docs/evidence/incident-trigger-time.log`.
+- `make check` → **1491** (2026-07-29, +12) — **인시던트 발생 시각**(`78e472d`): 네 어댑터가
+  채우는 `triggered_at`을 `record_incident`가 경계에서 버렸다. 저장 + 양쪽 경로 배선 +
+  `detected +Nm` 배지. 라이브 승인 경로에서 735초 보존.
+  증거 `docs/evidence/incident-trigger-time.log`.
 - (이전 이력: gate **1479** 이하 · 2026-07-10~28 → `docs/archive/status-baseline-2026-07.md`
   및 `PROGRESS_LOG`. Phase 3 완결 ②③ = `9e78f81`·`1c13a59`, 증거
   `docs/evidence/phase3-{reconciler-conflict,viewer-visibility}.log`.)
@@ -57,6 +61,12 @@
 - **차단 없는 잔여 = 소진(2026-07-28~29) → M13** — 8건 전부 같은 결함이었다: **선언되고,
   채워지고, 저장되고, 아무도 읽지 않는다**. 여덟 번 다 테스트는 초록이었고 **라이브만** 드러냈다.
   남은 잔여는 전부 **결정 대기**이지 작업 대기가 아니다(아래 3건).
+- **time-to-resolve = 해소(2026-07-29, `3a89e43`)** — M13의 아홉 번째이자 **가장 비쌌던**
+  변종. 앞의 여덟은 값이 버려졌지만 이번엔 **값이 있는 척했다**: `resolved_at`이 `created_at`의
+  복사본이라 리포트가 매주 "MTTR 0.0분"을 **자신 있게** 발송했다. 부재는 눈에 띄지만 그럴듯한
+  기본값은 안 띄고, 그래서 더 오래 살아남는다. 새 교훈 둘: **투영/스키마 계층도 소비자**다
+  (`ProjectionExpression`이 안 부른 필드는 리더가 아무리 잘 짜여도 복구 불가) · 가드는
+  **파생시켜라, 열거하지 말고**(매퍼가 읽는 속성을 파싱해 요구 → 다음 필드에도 실패한다).
 - **⚠️ 결정 1개가 두 항목을 동시에 막고 있다: "배포는 어느 테넌트 소유인가"** —
   조사 결과 **모델 호출 rate limit**도 여기 묶여 있다. 로컬 모델 호출자는
   `local_deployer`/`strands_deployer` 둘뿐이고 둘 다 배포 경로인데 배포 요청엔 테넌트가
