@@ -13,9 +13,10 @@
 ## 사용자 게이트 (열린 것만)
 
 - [ ] **⚠️ 결정 1: "배포는 어느 테넌트 소유인가"** — deployments/activities 파티션과 **모델 호출
-  rate limit을 동시에** 막고 있다(아래 두 항목 참조). 발명 금지라 결정 없이는 둘 다 진행 불가.
+  rate limit을 동시에** 막고 있다(아래 두 항목). 발명 금지라 결정 없이는 둘 다 진행 불가.
 - [ ] **⚠️ 결정 2: 무스코프 MCP 읽기를 닫을 것인가** — 닫으면 검증된 익명 kagent 왕복이 깨진다.
 - [ ] **⚠️ 결정 3: Capsule `limitRanges` 이관 경로** — 클러스터 스코프(D30 위반) vs 새 SA+RBAC.
+- [ ] **⚠️ 결정 4: 인시던트 타임라인이 무엇을 표시할 것인가** — `triggered_at` 미소비(아래).
 - [ ] **(별도 계획) GitAIOps 후속편 아티클** — 논지=책의 GitAIOps는 AI 자리에 사람이 프롬프트를 넣지만
   우리는 **오프라인 Qwen 에이전트로 루프를 무인으로 닫는다**. 차별 소재는 **자동화하면 새로 깨지는 것들**:
   ①롤백↔selfHeal 충돌 ②자격증명=blast radius ③"실행됨≠나아졌음" ④권한 게이트 부재의 과금 누출.
@@ -33,53 +34,31 @@
 확정 아키텍처: **capability, implementation-pluggable** — Tenant=격리 티어 정책(soft/vcluster/dedicated),
 Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSOT=per-tenant git 레지스트리.
 **최우선 불변식**: 에이전트 실행 blast radius=1 tenant/env(자격증명이 경계) — Phase 1a에서 강제 완료.
+**Phase 0·1a·1b·2·3 = 완결**(M10~M12) — 상세 → `COMPLETED_SUMMARY.md`.
 
-- [x] **Phase 2 완결(M11, gate 1290)** · **Phase 3 완결(M12, gate 1411)** — 상세 → `COMPLETED_SUMMARY.md`.
-- [x] **Phase 3 ①②③ + 인시던트 파티션·granted-viewer(gate 1355→1411, 2026-07-27~28)** —
-  상세는 `COMPLETED_SUMMARY.md` M12 및 `docs/evidence/phase3-*.log`.
 - [ ] **deployments/activities 파티션 — 데이터 모델 결정 필요(버그 아님)** — 인시던트는 tenant가
   *있는데 버려진* 것이었지만, 배포 기록은 `provider/service/version/environment`뿐이고
   `environment`는 레지스트리의 tenant/env 쌍이 아니라 자유 문자열("production")이다.
   **배포는 어느 테넌트 소유인가**를 먼저 정해야 한다 — 발명하지 않고 남긴다.
-- [x] **grant 레지스트리 대조(gate 1425, 2026-07-28)** — 기록된 갭은 절반이었다: grant를
-  **줄 방법 자체가 없었고**(라우트·스토어 둘 다 `tenants` 미수용) 역할 변경이 whole-item
-  Put으로 grant를 조용히 지웠다. 허브 `GET /api/platform/tenants`(못 읽으면 **503**) +
-  저장 전 대조 + `absent=유지`. 증거 `docs/evidence/phase3-tenant-grant-validation.log`.
 - [ ] **Phase 4**(managed 어댑터, billable)·**5**(레지스트리 PR 쓰기) = 다음 후보.
-  Phase 5가 열리면 3②를 GitOps-native로 다시 닫을 수 있다(D32 재검토 조건).
-  **Phase 4로 넘긴 것(명시)**: GCP/Azure 자격증명의 테넌트 바인딩. 현재 GCP는 프로젝트 전역 신원,
-  Azure는 ARM에서 **cluster-admin kubeconfig**를 받아온다 — 스코프는 네임스페이스만 좁힌다.
-- [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 수단 선행**(kind엔 CSI 스냅샷터 기본 부재).
-  rollouts-demo는 데이터 위험 0이라 먼저 했고, 나머지 셋은 실패 비용이 가용성이 아니라 데이터다.
-- **S 달성(93.5) 근거**: ①실행위치=in-cluster 러너 ②token broker=incident provenance 바인딩
-  ③read=push(허브 read 자격증명 0). **2차 잔여**: agent→hub push 인증 · 서명키 custody·rotation ·
-  push heartbeat(staleness).
+  Phase 5가 열리면 3②를 GitOps-native로 닫을 수 있다(D32 재검토 조건). Phase 4로 넘긴 것:
+  GCP/Azure 자격증명의 테넌트 바인딩(상세 → `STATUS` Open Risk 7).
+- [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 수단 선행**(kind엔 CSI 스냅샷터 부재).
+  실패 비용이 가용성이 아니라 데이터라 rollouts-demo와 달리 미뤘다.
+- **2차 잔여**: agent→hub push 인증 · 서명키 custody·rotation · push heartbeat(staleness).
+  (S 93.5 근거는 설계 문서 참조)
 
 ## 잔여 — 완료 항목에서 의도적으로 남긴 것
 
-- [x] **② executor span(gate 1454, 2026-07-28)** — 기록보다 넓었다: 웹훅이 `execute=False`로
-  부르고 **루트 span이 닫힌 뒤** 실행해서, AUTO·승인 **양쪽 모두** executor span이 없었다.
-  span을 `execute_incident` 안으로 이동 + 웹훅 루트 2개 + 승인은 **부모가 아니라 링크**
-  (사이 간격이 사람의 고민 시간이라 접으면 지연 수치가 무의미해진다).
-  증거 `docs/evidence/executor-span-approval-path.log`.
-- [x] **온프렘 런북 매칭(gate 1470, 2026-07-29)** — 설계 결정이 아니라 **겹친 결함 3개**였다:
-  `reason`이 `metric_name`의 복사본 · `resource_types`가 선언만 되고 미소비 · 스테일 시드가
-  **더 나쁜 매칭으로** 빌트인을 가림(D35). 라이브에서 4종 알람 전부 올바른 런북 + ONPREM 액션.
-  증거 `docs/evidence/onprem-runbook-matching.log`.
+> 완료분(Phase 2·3, grant 대조, 런북 선택성·티어, MCP 옆문, call budget, Capsule metadata,
+> executor span, 온프렘 매칭)은 `COMPLETED_SUMMARY.md` M12 · `PROGRESS_LOG.md` · `docs/evidence/`.
+
+- [ ] **`triggered_at`이 여전히 미소비**(2026-07-29 스윕 발견) — 네 어댑터가 알람의 실제 발생
+  시각(`startsAt`/`firedDateTime`/`started_at`)을 담는데 아무도 안 읽어 **탐지까지 걸린 시간을
+  구할 수 없다**(인시던트 기록은 자기 쓰기 시각을 쓴다). 타임라인에 무엇을 표시할지 결정 필요.
+- [ ] **analyzer LLM 실패 폴백이 여전히 일괄 P2** — `severity_hint`를 안 본다. 거기서 쓰려면
+  severity 매핑을 확정해야 하고, 그건 위와 같은 **정책 결정**이라 발명하지 않았다.
 - [ ] **⑥ k3s 검증기 재실행**(선택) — flannel은 NetworkPolicy 집행이 전이되지 않으므로 기판별 재확인 필요.
-- [x] **선택 불가 런북 4개 + 티어 셰도잉(gate 1445, 2026-07-28)** — BUILTIN 항목을 넣어도
-  **라이브는 넷 다 generic-recovery**였다: 시드 테이블에 generic 행이 있어 티어 2가 티어 4의
-  답을 대신 냈고 **티어 3(빌트인)이 배포 환경에서 한 번도 도달된 적 없었다**.
-  `allow_generic=False` + `assert_health_check_passing` 구현.
-  증거 `docs/evidence/runbook-selectability.log`.
-  **잔여**: 배포된 테이블엔 여전히 원래 5행뿐 — 동작에는 문제없지만 운영자가 DynamoDB에서
-  4개를 override하려면 다음 배포의 재시드가 필요(코드가 아니라 배포 작업).
-- [x] **MCP 게이트웨이 ambient 자격증명 차단(gate 1395, 2026-07-28)** — 갭을 파보니 신원 부재보다
-  컸다: 모든 도구가 맨 `kubectl`을 쐈고 `kubectl_apply`는 임의 매니페스트를 임의 ns에 썼다.
-  이제 argv가 스코프 kubeconfig로 고정되고 변경 도구는 fail-closed.
-  증거 `docs/evidence/mcp-gateway-scope.log`.
-- [x] **테넌트별 call budget(gate 1404, 2026-07-28)** — `platform/ratelimit.py`(sliding window,
-  레지스트리 `quota.calls_per_min`에서 선언, 미선언=무제한이라 additive). MCP 도구 호출에 배선.
 - [ ] **rate limit을 모델 호출까지 확장 — 위 데이터 모델 결정에 묶여 있다(2026-07-28 조사)**.
   로컬 모델 호출자는 `local_deployer`/`strands_deployer` **둘뿐이고 둘 다 배포 경로**다.
   배포 요청(`DeployRequest`)엔 테넌트가 없고, `setup_tenancy(tenant, env)`는 **모델이 부르는
@@ -91,9 +70,6 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 - [ ] **A2A 인증 실집행 결정** — 카드가 광고하던 bearer/JWT를 서버가 검사하지 않던 것은 해소했다
   (`A2A_BEARER_TOKEN` 미설정 시 광고도 안 한다). 남은 결정은 **기본값을 on으로 돌릴지** —
   지금은 라이브 kagent 왕복이 익명이라 opt-in이다.
-- [x] **Capsule `additionalMetadata` 이관(gate 1446, 2026-07-28)** — `additionalMetadataList`로.
-  CRD에 직접 물어 확인했고, 라이브에서 probe 라벨 전파까지 반증.
-  증거 `docs/evidence/capsule-deprecation-metadata.log`.
 - [ ] **Capsule `limitRanges` 이관 — 경로 결정 필요(기계적 포팅 아님)**.
   `GlobalTenantResource`는 **클러스터 스코프**라 에이전트 변경 범위를 테넌트 밖으로 밀어
   **D30 위반**이고, `TenantResource`는 테넌트 안에 머물지만 **SA+RBAC 새 권한 표면**이 필요하다.
