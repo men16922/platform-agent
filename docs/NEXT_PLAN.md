@@ -52,9 +52,11 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 > 완료분(Phase 2·3, grant 대조, 런북 선택성·티어, MCP 옆문, call budget, Capsule metadata,
 > executor span, 온프렘 매칭)은 `COMPLETED_SUMMARY.md` M12 · `PROGRESS_LOG.md` · `docs/evidence/`.
 
-- [ ] **클라우드 3사 인시던트 행은 여전히 발생 시각을 버린다** — 온프렘은 해소(gate 1491)했지만
-  AWS/GCP/Azure는 공유 executor가 DynamoDB에 쓰므로 스키마 변경을 수반한다. 어댑터는 이미
-  동일하게 담고 있다. 덧붙여 resolve 시각 미기록이라 **time-to-resolve는 아직 불가**.
+- [ ] **time-to-resolve가 아직 불가** — `resolved_at`이 모든 행에서 `created_at`과 같은
+  **쓴 시각**이다. 발생 시각은 이제 온프렘·클라우드 양쪽에 있으니(gate 1491·1496), 남은 건
+  해소가 실제로 일어난 시각을 기록하는 것 — executor 자체 기록 변경이라 분리해 남긴다.
+- [ ] **클라우드 인시던트 필드는 실 DynamoDB 왕복 미검증** — 모킹 테이블 + 직렬화기 직접
+  확인까지다. 쓰기 경로 자체는 불변이지만 새 속성이 실 테이블을 왕복해 대시보드에 읽힌 적은 없다.
 - [ ] **analyzer LLM 실패 폴백이 여전히 일괄 P2** — `severity_hint`를 안 본다. 거기서 쓰려면
   severity 매핑을 확정해야 하고, 그건 위와 같은 **정책 결정**이라 발명하지 않았다.
 - [ ] **⑥ k3s 검증기 재실행**(선택) — flannel은 NetworkPolicy 집행이 전이되지 않으므로 기판별 재확인 필요.

@@ -7,6 +7,29 @@
 
 ---
 
+## 2026-07-29 — 클라우드 인시던트 행도 발생 시각·confidence를 버렸다 (gate 1491→1496)
+
+- Status: 아침의 온프렘 수정이 남긴 나머지 절반. 같은 누락이 `executor._record_incident`
+  (AWS·GCP·Azure 공용)에 있었고, **`tenant`/`env`에 대해 같은 결함을 고쳤다고 적어둔 주석
+  바로 아래**였다.
+- Changed(`36e3b4a`): 둘 다 **읽는 쪽이 이미 있었다** — ①`triggered_at`(대시보드가 오늘
+  아침부터 읽는다. 읽는 쪽이 쓰는 쪽보다 먼저 존재한 비대칭) ②`confidence`(analyzer가 매번
+  만들고 상세 뷰가 늘 렌더한다 → **모든 클라우드 인시던트가 그 뷰가 존재한 내내
+  "confidence n/a"를 보여줬다**).
+- Verified: `make check` **1496**(+5). ②의 함정을 **가정하지 않고 확인**했다 —
+  `TypeSerializer().serialize(0.98)`은 `TypeError: Float types are not supported`.
+  그 예외는 기록기 자신의 `except Exception`에 잡히므로, 자연스러운 타입으로 썼다면 필드
+  하나가 아니라 **레코드 전체가 조용히 사라졌을** 것이다. `Decimal(str(...))`로 저장
+  (`request_store.py`가 같은 이유로 세워둔 패턴). 반증: float 되돌림 3건 · triggered_at
+  제거 1건, 복원 시 9건 통과. 증거 `docs/evidence/cloud-incident-fields.log`.
+- Blockers: 없음.
+- 품질 메모: 반증 셋 중 하나를 **아이템 전체에 float가 없는지** 보는 가드로 뒀다 — float
+  하나면 쓰기가 통째로 실패하고, 오늘 위험을 들여온 필드가 다음에도 그 필드라는 보장은 없다.
+  그리고 이번 결함은 **자기 자신을 설명하는 주석 바로 아래**에 있었다: 같은 함수에서 같은
+  종류를 한 번 고쳤다고 그 함수가 그 종류로부터 안전해지지 않는다.
+- Next: `resolved_at`이 여전히 `created_at`과 같은 쓴 시각이라 **time-to-resolve는 아직 불가**.
+  실 DynamoDB 왕복은 미실행(모킹 테이블 + 직렬화기 직접 확인까지).
+
 ## 2026-07-29 — 인시던트 기록이 "언제 터졌는지"를 몰랐다 (gate 1479→1491)
 
 - Status: 스윕이 남긴 두 번째 실제 건. "타임라인 표시 결정 필요"로 적어뒀는데 다시 보니

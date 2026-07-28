@@ -8,19 +8,19 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **1496 passed, 1 skipped** (2026-07-29, 1491→1496, +5) — **클라우드
+  인시던트 필드**(`36e3b4a`): 같은 누락이 공용 기록기에도 있었다(그것도 tenant/env 수정 주석
+  바로 아래). `triggered_at`·`confidence` 둘 다 **읽는 쪽이 이미 있었다** — 후자는 모든 클라우드
+  인시던트가 뷰 존재 내내 "confidence n/a"였다는 뜻. **함정**: boto3는 float를 거부하고 그
+  예외는 기록기의 `except`에 잡혀 **레코드 전체가 사라졌을** 것(→`Decimal`).
+  증거 `docs/evidence/cloud-incident-fields.log`.
 - `make check` (pytest) → **1491 passed, 1 skipped** (2026-07-29, 1479→1491, +12) — **인시던트
   발생 시각**(`78e472d`): 스윕 두 번째 건. 네 어댑터가 채우는 `triggered_at`을 `record_incident`가
   버려 행이 **"우리가 쓴 시각"만** 알았다 → 탐지 소요시간 산출 불가, 타임라인이 처리 순간에 배치.
   저장(모르면 부재) + 양쪽 경로 배선 + 승인 경로의 `trace_id`도 복구 + 대시보드 `detected +Nm`
   배지(**읽는 쪽 없이 저장만 하면 같은 결함을 하나 더 만드는 것**). 라이브: 승인 경로에서
   735초 보존. 증거 `docs/evidence/incident-trigger-time.log`.
-- `make check` (pytest) → **1479 passed, 1 skipped** (2026-07-29, 1470→1479, +9) — **계통 스윕**
-  (`0cf5da5`): "선언됐고 아무도 안 읽는" 부류를 훑어(437개 중 20 후보) **`severity_hint`**를
-  적발 — 네 시그널 어댑터가 전부 채우는데 **아무도 안 읽어**, 사람이 미리 내린 분류가 버려지고
-  severity(=**AUTO/APPROVE를 정하는 축**)가 산문에서만 추론됐다. 프롬프트에 **증거로** 노출
-  (하드 매핑은 정책이라 발명 안 함). **라이브 A/B**: critical→AUTO 실행 · **warning→APPROVE 대기**
-  (같은 페이로드가 낮엔 자동 실행됐다). 증거 `docs/evidence/declared-unconsumed-sweep.log`.
-- (이전 이력: gate **1470** 이하 · 2026-07-10~28 → `docs/archive/status-baseline-2026-07.md`
+- (이전 이력: gate **1479** 이하 · 2026-07-10~28 → `docs/archive/status-baseline-2026-07.md`
   및 `PROGRESS_LOG`. Phase 3 완결 ②③ = `9e78f81`·`1c13a59`, 증거
   `docs/evidence/phase3-{reconciler-conflict,viewer-visibility}.log`.)
 
