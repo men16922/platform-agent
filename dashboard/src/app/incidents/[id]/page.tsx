@@ -4,6 +4,7 @@ import { ProviderLogo, providerBadgeStyles } from "@/components/provider-logo";
 import { DataSourceBadge } from "@/components/data-source-badge";
 import type { Incident } from "@/lib/mock-data";
 import { getTraceUrl, shortTraceId } from "@/lib/trace-links";
+import { describeDetectionGap } from "@/lib/incident-time";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,10 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
   // missing" instead of "tracing was off").
   const traceUrl = getTraceUrl(incident.trace_id);
   const confidencePct = hasConfidence ? Math.round((incident.confidence as number) * 100) : null;
+  // Gap between the alert firing and this row existing. Rendered only when the
+  // source actually reported a fire time — a record without one must not read
+  // as "detected instantly", which is what treating absent as zero would say.
+  const detection = describeDetectionGap(incident.triggered_at, incident.created_at);
 
   return (
     <div className="mx-auto max-w-4xl space-y-7">
@@ -80,7 +85,18 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
           ) : (
             <span className="rounded bg-yellow-400/15 px-1.5 py-0.5 font-bold text-[var(--warning)]">● OPEN</span>
           )}
-          <span suppressHydrationWarning>{new Date(incident.created_at).toLocaleString()}</span>
+          <span suppressHydrationWarning title="When this record was written">
+            {new Date(incident.created_at).toLocaleString()}
+          </span>
+          {detection && (
+            <span
+              className="rounded bg-white/6 px-1.5 py-0.5 text-[var(--muted)]"
+              title={`Alert fired ${new Date(incident.triggered_at as string).toLocaleString()} — recorded ${detection.label} later`}
+              suppressHydrationWarning
+            >
+              detected +{detection.label}
+            </span>
+          )}
         </div>
       </div>
 

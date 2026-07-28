@@ -1,0 +1,93 @@
+The record knew when we wrote it, not when the problem started
+===============================================================
+Date : 2026-07-29
+Mode : real uvicorn webhook, real approval round trip, real OTLP/gRPC export
+Gate : make check 1479 -> 1491 (+12)
+
+
+The finding, and why it was not a decision after all
+------------------------------------------------------
+The declared-but-unconsumed sweep left `NormalizedIncident.triggered_at` as a
+second real hit, recorded as needing a decision about "what the timeline should
+display". Re-reading it, the display is a decision; **not throwing the value
+away is not**. This is the same shape as the incident tenancy fix: the field
+existed, all four signal adapters filled it from the source's own timestamp
+(`startsAt`, `firedDateTime`, `started_at`), and `record_incident` dropped it at
+the boundary.
+
+So a row carried only `created_at` — the moment *we wrote it*. Two consequences:
+time-to-detect was not derivable at all, and the timeline placed each incident
+at the moment it happened to be processed. Alertmanager grouping alone separates
+those by minutes; a P2 waiting on a human, by far more.
+
+
+What was built
+---------------
+- `record_incident(triggered_at=…)` stores it, **absent when unknown** — the same
+  rule tenancy follows here. A defaulted value would assert a fire time that
+  never happened, which is worse than admitting ignorance.
+- Threaded through the pipeline result and both webhook write paths.
+- The approval path was also dropping `trace_id`: the parked record has carried
+  the incident's span origin since the approval-tracing work, so the timeline row
+  now deep-links to the trace instead of the chain ending at approval.
+- Dashboard: optional field on `Incident`, mapped defensively, and a
+  `detected +Nm` badge on the incident detail.
+
+The badge is not decoration — it is the point. Persisting a field with no reader
+would have recreated exactly the defect the sweep exists to find, on the same
+day the sweep found five of them.
+
+`describeDetectionGap` refuses to overstate:
+    no fire time              -> null (render nothing, never "0s")
+    unparseable either side   -> null
+    written *before* it fired -> null, never a negative duration
+The last is not hypothetical. Clock skew between a spoke and the hub is normal,
+and "detected -3s" on screen destroys trust in every number beside it far more
+than an absent badge does.
+
+
+Live — the approval path, where the gap is largest
+----------------------------------------------------
+Alert reports `startsAt` 12 minutes in the past (as one does after grouping),
+parked for approval, human waits, approve:
+
+    triggered_at : 2026-07-28T16:41:34.853508Z
+    created_at   : 2026-07-28T16:53:50.683658+00:00
+    gap          : 735s   -> badge "detected +12m"
+
+Before this change the row knew only `created_at`, so the incident sat on the
+timeline twelve minutes late with nothing to say so.
+
+Second run with tracing on, to check the `trace_id` claim rather than assert it
+in a comment:
+
+    triggered_at : 2026-07-28T16:49:26.595692Z
+    trace_id     : b552b347fd3de719ca2bd89126604199
+    matches the onprem.incident_pipeline trace: True
+
+In the first run `trace_id` was None — correct, not a bug: the origin is only
+captured when tracing is on, and a null there renders no link rather than a dead
+one.
+
+
+Falsification
+--------------
+  - record drops `triggered_at` again      -> 2 failures
+  - negative gap rendered instead of null  -> 1 failure
+Restoring passed all 12. The TS half is executed, not grepped: an inverted
+comparison leaves every string a grep test looks for exactly where it is while
+the screen shows a negative duration.
+
+
+WHAT IS STILL OPEN
+-------------------
+- **AWS/GCP/Azure incident rows are unaffected.** They are written by the shared
+  executor to DynamoDB, not by `record_incident`, so their fire time is still
+  dropped. The adapters capture it identically; only the on-prem writer was
+  changed here, and widening that touches the cloud incident schema.
+- The badge shows detection latency only. Time-to-resolve (`resolved_at` minus
+  fire time) is a further step and needs the resolve moment recorded, which it
+  currently is not.
+- `describeDetectionGap` is unit-covered, `tsc` is clean and `next build`
+  succeeds, but the badge has not been eyeballed in a browser — Docker is down,
+  so no dashboard was served against live on-prem incidents.

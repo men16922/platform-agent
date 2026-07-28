@@ -140,6 +140,7 @@ def _record_incident(
         incident_id=executor_out.get("incident_id"),
         confidence=summary.get("confidence"),
         trace_id=summary.get("trace_id"),
+        triggered_at=summary.get("triggered_at"),
     )
 
 
@@ -350,9 +351,16 @@ async def _start_slack_decision_poller() -> None:
 def _record_incident_from_approval(
     record: dict[str, Any], *, resolved: bool, executor_out: dict[str, Any] | None = None
 ) -> None:
-    """Record a resolved (approved/rejected) P2 approval as a timeline incident."""
+    """Record a resolved (approved/rejected) P2 approval as a timeline incident.
+
+    This is the path where the fire time matters most: the gap between the alert
+    firing and this row being written is however long a human took to decide, so
+    `created_at` alone puts the incident on the timeline at the wrong moment by
+    exactly the amount that is most interesting.
+    """
     executor_out = executor_out or {}
     analyzer = (record.get("decision") or {}).get("analyzer") or {}
+    normalized = (analyzer.get("detector") or {}).get("normalized_incident") or {}
     incidents.record_incident(
         severity=record.get("severity"),
         alarm_name=record.get("service"),
@@ -363,6 +371,11 @@ def _record_incident_from_approval(
         executed_actions=executor_out.get("executed_actions", []),
         incident_id=executor_out.get("incident_id"),
         confidence=analyzer.get("confidence"),
+        triggered_at=normalized.get("triggered_at"),
+        # Also dropped here until now: the parked record carries the incident's
+        # span origin (added with the approval-path tracing), so the timeline row
+        # can deep-link to the trace instead of ending the chain at approval.
+        trace_id=(record.get("origin") or {}).get("trace_id"),
     )
 
 

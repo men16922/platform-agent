@@ -109,6 +109,10 @@ def run_incident_pipeline(event: dict[str, Any], *, execute: bool = True) -> dic
         # Same condition, but the linkable pair. Parked with an approval so the
         # execution that resumes it hours later still points at the incident.
         "origin": origin.to_dict() if origin else None,
+        # When the alert fired, as reported by the source. Distinct from any
+        # timestamp we generate: the record's own `created_at` is when we wrote
+        # it, and the two differ by however long detection and queueing took.
+        "triggered_at": incident.get("triggered_at") or None,
         "stages": {
             "detector": detector_out,
             "analyzer": analyzer_out,

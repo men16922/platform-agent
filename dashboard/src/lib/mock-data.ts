@@ -34,6 +34,13 @@ export interface Incident {
   // from "belongs to no tenant", which is why the reader must not default it.
   tenant?: string;
   env?: string;
+  // When the alert actually fired, as reported by the source. `created_at` is
+  // when the row was written, and the two differ by however long detection,
+  // queueing and (on the approval path) a human decision took. Optional
+  // because sources that report no fire time exist and rows written before this
+  // was carried through have none — absent must stay readable as "unknown"
+  // rather than defaulting to a time that never happened.
+  triggered_at?: string;
 }
 
 // Domain of a row (which page it belongs to). Rollback is a STATUS, not a type,

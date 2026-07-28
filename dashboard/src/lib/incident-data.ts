@@ -83,6 +83,8 @@ export function mapIncidentRecord(item: Record<string, unknown>): Incident | nul
     reconciliation: mapReconciliation(item.reconciliation),
     confidence: typeof item.confidence === "number" ? item.confidence : undefined,
     trace_id: typeof item.trace_id === "string" && item.trace_id ? item.trace_id : undefined,
+    triggered_at:
+      typeof item.triggered_at === "string" && item.triggered_at ? item.triggered_at : undefined,
   };
 }
 

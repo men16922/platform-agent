@@ -42,6 +42,7 @@ def record_incident(
     incident_id: str | None = None,
     confidence: float | None = None,
     trace_id: str | None = None,
+    triggered_at: str | None = None,
 ) -> dict[str, Any]:
     """Append one on-prem incident (dashboard Incident shape); returns the record."""
     record = {
@@ -62,8 +63,22 @@ def record_incident(
         # into the span breakdown instead of the reader eyeballing timestamps.
         # None when tracing is off, and the UI then shows no link rather than a dead one.
         "trace_id": trace_id or None,
+        # When we wrote this row — NOT when the problem started.
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
+    # When the alert actually fired, straight from the source (`startsAt`,
+    # `firedDateTime`, `started_at`). Every signal adapter has captured this
+    # since they were written and nothing carried it past normalisation, so a
+    # record has only ever known its own write time — which makes the gap
+    # between "it broke" and "we noticed" unmeasurable, and puts the incident on
+    # the timeline at the moment we happened to process it. Alertmanager
+    # grouping alone can separate those by minutes; a replayed backlog, by more.
+    #
+    # Absent rather than empty when unknown, the same rule tenancy follows here:
+    # a row from a source that never reported a fire time must not be readable
+    # as "fired at the epoch", which is what a defaulted value would mean.
+    if triggered_at:
+        record["triggered_at"] = triggered_at
     sql = state_store.configured_store()
     if sql is not None:
         # Opt-in SQL state store (PLATFORM_STATE_DSN) — replica-shareable.
