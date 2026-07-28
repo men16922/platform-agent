@@ -41,6 +41,11 @@ export interface Incident {
   // was carried through have none — absent must stay readable as "unknown"
   // rather than defaulting to a time that never happened.
   triggered_at?: string;
+  // When the remediation finished. Optional and genuinely so: an open incident
+  // has not been resolved, and the writers now omit the field instead of
+  // defaulting it to the row's own creation time — which they used to do, making
+  // every incident look resolved the instant it was filed.
+  resolved_at?: string;
 }
 
 // Domain of a row (which page it belongs to). Rollback is a STATUS, not a type,

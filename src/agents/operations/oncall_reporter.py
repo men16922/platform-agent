@@ -21,10 +21,9 @@ def summarize_incidents(incidents: list[dict[str, Any]]) -> dict[str, Any]:
         service = incident.get("service_name", "unknown")
         service_counts[service] = service_counts.get(service, 0) + 1
 
-        started_at = incident.get("started_at")
-        resolved_at = incident.get("resolved_at")
-        if started_at and resolved_at:
-            total_minutes += _minutes_between(started_at, resolved_at)
+        minutes = _minutes_between(incident.get("started_at"), incident.get("resolved_at"))
+        if minutes is not None:
+            total_minutes += minutes
             mttr_samples += 1
 
     return {
@@ -82,10 +81,34 @@ def build_weekly_oncall_report(
     }
 
 
-def _minutes_between(started_at: str, resolved_at: str) -> float:
-    started = _parse_timestamp(started_at)
-    resolved = _parse_timestamp(resolved_at)
-    return max(0.0, (resolved - started).total_seconds() / 60.0)
+def _minutes_between(started_at: Any, resolved_at: Any) -> float | None:
+    """Minutes from start to resolution, or None when that is not knowable.
+
+    None rather than 0.0, and this is the whole point of the function. A
+    zero-minute sample is a *claim* — "we resolved it the instant it fired" —
+    and it drags the reported average toward zero, which is precisely the
+    failure this and its caller were fixed for. The cases that must not become
+    that claim:
+
+      - either side missing        (unresolved incidents have no resolution time)
+      - either side unparseable    (four signal adapters feed `triggered_at`
+                                    straight from `startsAt`/`firedDateTime`/
+                                    `started_at`; format variance is now reachable
+                                    live, and it must not crash a weekly report)
+      - naive/aware mismatch       (same reason — a TypeError here used to take
+                                    the entire report down, not one incident)
+      - resolved *before* it fired (clock skew between a spoke and the hub is
+                                    normal, and skew is not a fast recovery)
+    """
+    if not started_at or not resolved_at:
+        return None
+    try:
+        started = _parse_timestamp(started_at)
+        resolved = _parse_timestamp(resolved_at)
+        minutes = (resolved - started).total_seconds() / 60.0
+    except (ValueError, TypeError, AttributeError):
+        return None
+    return minutes if minutes >= 0 else None
 
 
 def _parse_timestamp(value: str) -> datetime:

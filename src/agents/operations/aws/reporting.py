@@ -172,9 +172,28 @@ def _fetch_incidents_from_dynamo(
                 "severity":     item.get("severity", "P3"),
                 "root_cause":   item.get("root_cause", ""),
                 "resolved":     item.get("resolved", False),
-                "started_at":   item.get("resolved_at", ""),
+                # When the incident began. `triggered_at` is the source's own fire
+                # time; `created_at` is when we wrote the row, i.e. the earliest
+                # moment we can prove we knew. Falling back to the latter
+                # understates MTTR but never invents time we cannot account for.
+                #
+                # This read `resolved_at` — the same key as the line below it — so
+                # every incident handed to the reporter began and ended at the
+                # same instant and `average_mttr_minutes` has been a structural
+                # 0.0 in every weekly report ever sent. The unit tests never saw
+                # it because they hand `summarize_incidents` a fixture with two
+                # different timestamps, which is a shape this, the only producer,
+                # could not emit.
+                "started_at":   item.get("triggered_at") or item.get("created_at", ""),
+                # Absent on unresolved rows since the executor stopped defaulting
+                # it; the reporter drops those from the MTTR sample rather than
+                # counting them as instant.
                 "resolved_at":  item.get("resolved_at", ""),
-                "runbook_id":   item.get("alarm_name", "unknown"),
+                # The runbook, not the alarm. Recurring-pattern grouping prefers
+                # `runbook_id`, so copying the alarm name in here collapsed the
+                # grouping back to per-alarm and hid exactly what it exists to
+                # show: distinct alarms that keep landing on one runbook.
+                "runbook_id":   item.get("runbook_id", "unknown"),
             }
             for item in items
             if window_start <= int(item.get("ttl", now) - 90 * 86400) <= window_end

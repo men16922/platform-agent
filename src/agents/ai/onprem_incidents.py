@@ -79,6 +79,17 @@ def record_incident(
     # as "fired at the epoch", which is what a defaulted value would mean.
     if triggered_at:
         record["triggered_at"] = triggered_at
+    # When the remediation finished. The webhook records the incident directly
+    # after the executor returns, so the write moment is the resolution moment —
+    # for the rows that were actually resolved. On-prem never wrote this field at
+    # all, which is the mirror image of the cloud writer's bug: there the field
+    # was always present and always equal to `created_at`, here it was always
+    # missing. Either way time-to-resolve came out as zero or as nothing.
+    #
+    # Omitted, not defaulted, when unresolved — a P2 parked on the approval gate
+    # is not an incident resolved the instant it was filed.
+    if resolved:
+        record["resolved_at"] = record["created_at"]
     sql = state_store.configured_store()
     if sql is not None:
         # Opt-in SQL state store (PLATFORM_STATE_DSN) — replica-shareable.

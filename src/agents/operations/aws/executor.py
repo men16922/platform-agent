@@ -501,9 +501,25 @@ def _record_incident(
             "executed_actions": executed,
             "resolved":        resolved,
             "created_at":      recorded_at,
-            "resolved_at":     recorded_at,
             "ttl":             int(time.time()) + 90 * 86400,  # 90-day retention
         }
+        # When the remediation finished. This function runs immediately after the
+        # actions do, so the write moment IS the resolution moment — but only
+        # where there was a resolution.
+        #
+        # It used to be set unconditionally to `recorded_at`, i.e. to the exact
+        # value of `created_at` on the same row. Two consequences, and the second
+        # is the expensive one: an unresolved incident carried a resolution
+        # timestamp, and the pair (`started_at`, `resolved_at`) that the weekly
+        # on-call report subtracts for MTTR was two copies of one number. Every
+        # incident in every weekly report has therefore been resolved in exactly
+        # zero minutes since the report was written.
+        #
+        # Absent when unresolved, the same rule tenancy and `triggered_at`
+        # follow here: no value means "not resolved yet", which a reader can act
+        # on. A defaulted value means "resolved instantly", which it cannot.
+        if resolved:
+            item["resolved_at"] = recorded_at
         # Whose incident this is. `NormalizedIncident` has carried tenant/env as
         # first-class fields since Phase 1a, and this writer dropped them — so
         # the read side had nothing to partition on and the dashboard showed

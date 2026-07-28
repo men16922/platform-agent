@@ -50,3 +50,31 @@ export function describeDetectionGap(
   if (seconds < 0) return null;
   return { seconds, label: formatGap(seconds) };
 }
+
+/**
+ * How long from the alert firing to the remediation finishing — time-to-resolve.
+ *
+ * The counterpart to the detection gap above, and it was not derivable until
+ * `resolved_at` stopped being a copy of `created_at`. The same refusals apply,
+ * for the same reason: the point of this badge is that a number on screen is
+ * true, so anything it cannot establish it declines to render.
+ *
+ * Measured from the fire time when the source gave one, falling back to when we
+ * wrote the row. The fallback understates the duration — it cannot count the
+ * time before we knew — but it never claims time that did not pass.
+ */
+export function describeTimeToResolve(
+  triggeredAt: string | undefined,
+  createdAt: string | undefined,
+  resolvedAt: string | undefined,
+): DetectionGap | null {
+  if (!resolvedAt) return null;
+  const startedAt = triggeredAt ?? createdAt;
+  if (!startedAt) return null;
+  const started = Date.parse(startedAt);
+  const resolved = Date.parse(resolvedAt);
+  if (Number.isNaN(started) || Number.isNaN(resolved)) return null;
+  const seconds = Math.floor((resolved - started) / 1000);
+  if (seconds < 0) return null;
+  return { seconds, label: formatGap(seconds) };
+}

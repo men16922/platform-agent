@@ -85,6 +85,11 @@ export function mapIncidentRecord(item: Record<string, unknown>): Incident | nul
     trace_id: typeof item.trace_id === "string" && item.trace_id ? item.trace_id : undefined,
     triggered_at:
       typeof item.triggered_at === "string" && item.triggered_at ? item.triggered_at : undefined,
+    // Undefined for open incidents — the writers omit it rather than defaulting
+    // it to `created_at`, so "no resolution time" stays distinguishable from
+    // "resolved in zero minutes".
+    resolved_at:
+      typeof item.resolved_at === "string" && item.resolved_at ? item.resolved_at : undefined,
   };
 }
 
@@ -133,9 +138,32 @@ export async function getIncidentFeed(): Promise<IncidentFeed> {
       new ScanCommand({
         TableName: process.env.DASHBOARD_INCIDENT_TABLE ?? DEFAULT_TABLE,
         Limit: 100,
+        // A Scan returns ONLY the attributes named here. Every field added to the
+        // writer since this string was written has therefore been fetched as
+        // undefined no matter how carefully the reader handled it — and
+        // `mapIncidentRecord` below, plus the incident row and detail views, read
+        // all four of the ones that were missing. `confidence` and
+        // `reconciliation` have been rendered as "n/a" and "not shown" for every
+        // AWS-live incident since those views shipped; `triggered_at` was fixed
+        // at the writer this morning and stopped here, one layer short of the
+        // badge built to display it.
+        //
+        // Adding a field to the writer is not done until this list names it.
+        //
+        // The two single-word additions are aliased. DynamoDB's reserved-word
+        // list is single alphabetic tokens only, so `triggered_at`/`trace_id`
+        // cannot collide, but a bare `confidence`/`reconciliation` that does
+        // would throw ValidationException — and the catch below turns any throw
+        // here into a silent downgrade to the on-prem-only feed, which is a
+        // failure mode this dashboard has already paid for once.
         ProjectionExpression:
-          "alarm_name, incident_id, provider, severity, #mode, root_cause, runbook_id, resolved, executed, executed_actions, created_at, resolved_at, tenant, #env",
-        ExpressionAttributeNames: { "#mode": "mode", "#env": "env" },
+          "alarm_name, incident_id, provider, severity, #mode, root_cause, runbook_id, resolved, executed, executed_actions, created_at, resolved_at, triggered_at, #confidence, #reconciliation, trace_id, tenant, #env",
+        ExpressionAttributeNames: {
+          "#mode": "mode",
+          "#env": "env",
+          "#confidence": "confidence",
+          "#reconciliation": "reconciliation",
+        },
       }),
     );
 

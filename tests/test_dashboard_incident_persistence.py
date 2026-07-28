@@ -65,6 +65,11 @@ def test_incident_record_contains_dashboard_read_model_fields():
     assert item["mode"] == "AUTO"
     assert item["runbook_id"] == "eks-pod-oom"
     assert item["executed_actions"] == ["AWS-RestartEKSPod"]
+    # This incident resolved, and `_record_incident` runs directly after the
+    # actions do, so the two coincide *here*. It is no longer an invariant:
+    # `resolved_at` used to be written unconditionally, which gave open incidents
+    # a resolution time and made the weekly report's MTTR a structural zero.
+    # See tests/test_incident_time_to_resolve.py.
     assert item["created_at"] == item["resolved_at"]
     assert item["executed"] == item["executed_actions"]
 

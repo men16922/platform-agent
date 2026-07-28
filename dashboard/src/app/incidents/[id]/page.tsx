@@ -4,7 +4,7 @@ import { ProviderLogo, providerBadgeStyles } from "@/components/provider-logo";
 import { DataSourceBadge } from "@/components/data-source-badge";
 import type { Incident } from "@/lib/mock-data";
 import { getTraceUrl, shortTraceId } from "@/lib/trace-links";
-import { describeDetectionGap } from "@/lib/incident-time";
+import { describeDetectionGap, describeTimeToResolve } from "@/lib/incident-time";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +56,15 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
   // source actually reported a fire time — a record without one must not read
   // as "detected instantly", which is what treating absent as zero would say.
   const detection = describeDetectionGap(incident.triggered_at, incident.created_at);
+  // Fire -> remediation finished. Null while the incident is open, which is the
+  // honest reading: an unresolved incident has no time-to-resolve. It could not
+  // be computed at all until the writers stopped setting `resolved_at` to the
+  // row's own creation time, which made this exactly 0 for every incident.
+  const timeToResolve = describeTimeToResolve(
+    incident.triggered_at,
+    incident.created_at,
+    incident.resolved_at,
+  );
 
   return (
     <div className="mx-auto max-w-4xl space-y-7">
@@ -95,6 +104,15 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
               suppressHydrationWarning
             >
               detected +{detection.label}
+            </span>
+          )}
+          {timeToResolve && (
+            <span
+              className="rounded bg-emerald-400/12 px-1.5 py-0.5 font-bold text-[var(--success)]"
+              title={`Fired ${new Date((incident.triggered_at ?? incident.created_at) as string).toLocaleString()} — remediation finished ${new Date(incident.resolved_at as string).toLocaleString()}`}
+              suppressHydrationWarning
+            >
+              resolved in {timeToResolve.label}
             </span>
           )}
         </div>

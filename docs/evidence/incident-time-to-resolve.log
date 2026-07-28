@@ -1,0 +1,154 @@
+Time-to-resolve was not derivable, and MTTR was a structural zero
+==================================================================
+Date : 2026-07-29
+Mode : unit + live on-prem chain (in-process webhook -> detector -> decision ->
+       executor -> incident store) + dashboard tsc/next build
+Gate : make check 1496 -> 1520 (+24)
+
+
+What was wrong
+----------------
+Three defects in one chain, all of them green in the suite.
+
+1. WRITERS DEFAULTED THE RESOLUTION TIME
+   `aws/executor._record_incident` (the shared cloud writer for AWS/GCP/Azure)
+   set `resolved_at` unconditionally to `recorded_at` — the same value it wrote
+   into `created_at` on the same row. So an unresolved incident carried a
+   resolution timestamp, and every resolved one reported a duration of zero.
+   The on-prem writer had the mirror-image bug: it never wrote the field at all.
+
+2. THE FETCH READ ONE KEY INTO BOTH ENDS
+   `reporting._fetch_incidents_from_dynamo`:
+
+       "started_at":   item.get("resolved_at", ""),
+       "resolved_at":  item.get("resolved_at", ""),
+
+   Every incident handed to the on-call reporter therefore began and ended at
+   the same instant. `average_mttr_minutes` has been 0.0 in every weekly
+   on-call report ever sent, and `mttr_delta_minutes` 0 on top of it.
+
+   The same function also copied `alarm_name` into `runbook_id`, which collapsed
+   recurring-pattern grouping back to per-alarm and hid the one thing it exists
+   to show: distinct alarms landing repeatedly on one runbook.
+
+3. THE DASHBOARD SCAN DID NOT FETCH WHAT ITS READERS READ
+   The incidents `ProjectionExpression` named neither `triggered_at`,
+   `confidence`, `reconciliation` nor `trace_id`. A DynamoDB Scan returns only
+   the projected attributes, so all four arrived undefined no matter how
+   carefully `mapIncidentRecord` handled them. Consequences: the incident detail
+   view has rendered "confidence n/a" for every AWS-live incident since it
+   shipped, the reconciliation panel never appeared, and this morning's
+   `triggered_at` writer fix (gate 1496) stopped one layer short of the
+   `detected +Nm` badge built to display it.
+
+
+Why the suite did not catch any of it
+---------------------------------------
+`TestOncallReporter::test_summarizes_incidents` asserts an MTTR of 45.0 — off a
+hand-written fixture with two different timestamps. That is a shape the only
+real producer could not emit. The test was green for as long as it existed and
+would have stayed green forever.
+
+This is the third instance of the same lesson in three days: assert the
+consumer, and feed it what production actually feeds it. The new tests in
+tests/test_incident_time_to_resolve.py run `_fetch_incidents_from_dynamo`, not
+a fixture shaped like its output.
+
+
+Measured: the number the weekly report ships
+----------------------------------------------
+Two rows exactly as the executor writes them, fed through the real fetch.
+Ground truth from the fire times: 30 min and 60 min, average 45.0.
+
+BEFORE
+  what the live fetch hands the reporter
+    started_at='2026-07-29T00:30:00Z'  resolved_at='2026-07-29T00:30:00Z'
+    started_at='2026-07-29T02:00:00Z'  resolved_at='2026-07-29T02:00:00Z'
+  average_mttr_minutes = 0.0
+
+AFTER
+  what the live fetch hands the reporter
+    started_at='2026-07-29T00:00:00Z'  resolved_at='2026-07-29T00:30:00Z'
+    started_at='2026-07-29T01:00:00Z'  resolved_at='2026-07-29T02:00:00Z'
+  average_mttr_minutes = 45.0
+
+
+LIVE: the real on-prem chain, three paths
+-------------------------------------------
+Alertmanager payload with `startsAt` 25 minutes in the past, posted to the real
+in-process webhook. Only the operator's severity label differs between runs.
+
+  webhook responses: {'critical/P1': 200, 'info/P3': 200, 'warning/P2': 200,
+                      'reject': 200}
+
+  severity=P1  mode=AUTO  resolved=True
+    triggered_at = 2026-07-28T19:24:48.405903Z
+    created_at   = 2026-07-28T19:49:50.713851+00:00
+    resolved_at  = 2026-07-28T19:49:50.713851+00:00
+    -> TIME TO RESOLVE = 1502s (25m)   [badge: 'resolved in 25m']
+
+  severity=P3  mode=MANUAL  resolved=False
+    resolved_at  = <ABSENT>
+    -> no resolution time: incident is OPEN (badge renders nothing)
+
+  severity=P2  mode=APPROVE -> rejected  resolved=False
+    resolved_at  = <ABSENT>
+    -> no resolution time: incident is OPEN (badge renders nothing)
+
+  1 resolved / 2 open — LIVE RESULT: PASS
+
+The P2 row is the interesting one: it is written only when the human decision
+lands, so under the old writer it would have claimed to be resolved at the
+moment someone clicked reject.
+
+
+Falsification (each fix reverted individually, then restored)
+---------------------------------------------------------------
+  1. cloud writer: restore unconditional `resolved_at`     -> 1 failed, 23 passed
+  2. on-prem writer: drop `resolved_at` again              -> 1 failed, 23 passed
+  3. fetch: `started_at` back to `resolved_at`             -> 4 failed, 20 passed
+  4. fetch: `runbook_id` back to `alarm_name`              -> 1 failed, 23 passed
+  5. reporter: restore the max(0.0, ...) clamp             -> 1 failed, 23 passed
+  6. reporter: drop the parse guard                        -> 4 failed, 20 passed
+  7. dashboard: restore the 4-field-short projection       -> 2 failed, 22 passed
+  restored                                                 -> 24 passed
+
+
+Design notes
+--------------
+- Absent, not defaulted. An open incident has no `resolved_at` at all, the same
+  rule tenancy and `triggered_at` follow. "Not resolved" is actionable; "resolved
+  in zero minutes" is a false claim that also drags the average.
+
+- `_minutes_between` returns None rather than clamping. It used to be
+  `max(0.0, ...)`, which counted a resolution timestamped *before* its fire time
+  as a perfect zero-minute recovery. Spoke/hub clock skew is normal here, and
+  skew is not a fast recovery — the sample is dropped instead.
+
+- It also no longer raises. Four signal adapters feed `triggered_at` straight
+  from `startsAt` / `firedDateTime` / `started_at`, so format variance (naive vs
+  aware, epoch ints, junk) is reachable live now that the value actually flows.
+  A raise there used to take down the entire weekly report, not one incident.
+
+- The projection guard is derived, not a keyword list. It parses which
+  attributes `mapIncidentRecord` reads and requires the Scan to fetch every one
+  of them, so it fails for the *next* field somebody adds too. A hand-maintained
+  list would have been written to match the projection as it stood and would
+  have stayed green through exactly this bug.
+
+- The `resolved in Nm` badge is part of the change, not decoration. Storing
+  a resolution time with nothing reading it would have recreated the defect
+  class this work exists to close.
+
+
+Not done
+----------
+- No real DynamoDB round trip. The projection fix is verified by parsing the
+  expression and by the mapper-coverage invariant; no AWS Scan was executed, so
+  the corrected projection has not yet been observed returning the four fields
+  from a live table. Same gap as gate 1496 noted for the write side.
+- GCP's Firestore and Azure's Cosmos writers (`gcp/executor.py`,
+  `azure/executor.py`) still record neither `resolved_at` nor `triggered_at`.
+  Those are separate native stores that nothing in the dashboard or the weekly
+  report reads, so fixing them would be writing fields with no consumer — left
+  deliberately.
