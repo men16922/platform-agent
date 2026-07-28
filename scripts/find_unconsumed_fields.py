@@ -15,7 +15,10 @@ and legitimately unread here, and `self.x` forms can slip past the pattern
 
     python scripts/find_unconsumed_fields.py
 """
-import ast, pathlib, re, sys, collections
+import ast
+import pathlib
+import re
+import collections
 
 ROOT = pathlib.Path("src/agents")
 files = [p for p in ROOT.rglob("*.py") if "cdk.out" not in str(p)]
