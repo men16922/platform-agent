@@ -1,6 +1,6 @@
 # STATUS — platform-agent
 
-최종 갱신: 2026-07-28
+최종 갱신: 2026-07-29
 
 > 현재 구현 상태 / 검증 baseline / active focus / open risks. **≤120줄** 유지.
 
@@ -8,6 +8,13 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **1470 passed, 1 skipped** (2026-07-29, 1454→1470, +16) — **온프렘 런북
+  매칭**(`b70c195`): "매칭 설계 결정"으로 남겼던 게 **겹친 결함 3개**였다 — ①`_synthetic_alarm`이
+  `reason`을 `metric_name`의 복사본으로 채워 매처가 "availability availability…"를 읽었다
+  (alertname·summary는 내내 저장돼 있었고 선택에만 안 닿음) ②`resource_types`가 모든 런북에
+  **선언돼 있고 미소비**(없으면 엉뚱한 런북이 걸리고, 해결 실패는 **하드코딩 AWS 액션**으로 조용히
+  폴백) ③스테일 시드가 **더 나쁜 매칭으로** 빌트인을 가림(1점이 3점을 이김) → 합집합 휴리스틱(D35).
+  **라이브**: 4종 알람 전부 올바른 런북 + ONPREM 액션. 증거 `docs/evidence/onprem-runbook-matching.log`.
 - `make check` (pytest) → **1454 passed, 1 skipped** (2026-07-28, 1446→1454, +8) — **executor span**
   (`3939d47`): 기록은 "승인 후 경로 미측정"이었지만 웹훅이 `execute=False` 후 **루트 span이 닫힌
   뒤** 실행해서 **AUTO 경로도 무추적**이었다 — 클러스터를 바꾸는 단계가 실제 알람이 타는 모든
@@ -23,14 +30,7 @@
   `additionalMetadata`→`additionalMetadataList`(제거 시 **에러 없이 안 읽히는** 실패).
   **라이브**: grant 5케이스 · 실 DynamoDB 스캔 · kind PSS 라벨 유지 + probe 전파.
   증거 `docs/evidence/{phase3-tenant-grant-validation,runbook-selectability,capsule-deprecation-metadata}.log`.
-- `make check` (pytest) → **1404 passed, 1 skipped** (2026-07-28, 1377→1404, +27) — **외부 자료
-  대조발 결함 4건 근본수정**(`e7ad744`·`1aa86e0`·`67ab309`): Agent Card가 가상 주소와 **집행하지
-  않는 인증**을 광고하던 것 · **MCP 게이트웨이가 ambient 자격증명 경로**였던 것(Phase 1a가 앞문에서
-  없앤 fail-open이 옆문에 잔존, `kubectl_apply`는 임의 매니페스트를 임의 ns에) · 테넌트별 call
-  budget 부재. **라이브(kind)**: 스코프 안 ns인데도 `secrets`는 `Forbidden` — 우리 가드가 아니라
-  **API 서버**가 경계를 판정. 넷 다 테스트가 **선언만 단언해** 살아남았다.
-  증거 `docs/evidence/mcp-gateway-scope.log`.
-- (이전 이력: gate **1377** 이하 · 2026-07-10~28 → `docs/archive/status-baseline-2026-07.md`
+- (이전 이력: gate **1404** 이하 · 2026-07-10~28 → `docs/archive/status-baseline-2026-07.md`
   및 `PROGRESS_LOG`. Phase 3 완결 ②③ = `9e78f81`·`1c13a59`, 증거
   `docs/evidence/phase3-{reconciler-conflict,viewer-visibility}.log`.)
 

@@ -1,11 +1,11 @@
 # NEXT_PLAN — platform-agent
 
-최종 갱신: 2026-07-28
+최종 갱신: 2026-07-29
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(M10=GitAIOps 7/7+멀티테넌트 Phase 0·1a·1b+공급망,
 > M9=eval·하드닝, M8=레퍼런스 8/8) / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 현재 상태 (2026-07-28, gate 1446)
+## 현재 상태 (2026-07-29, gate 1470)
 
 **Phase 0·1a·1b·2·3 완결**(M10~M12) + **차단 없는 잔여 소진**. 남은 잔여는 작업이 아니라 **결정** 3건.
 **시연 가능**: `make dev-up` → `make demo-baseline` 두 줄로 영상 시나리오 A가 재현된다.
@@ -20,7 +20,9 @@
   우리는 **오프라인 Qwen 에이전트로 루프를 무인으로 닫는다**. 차별 소재는 **자동화하면 새로 깨지는 것들**:
   ①롤백↔selfHeal 충돌 ②자격증명=blast radius ③"실행됨≠나아졌음" ④권한 게이트 부재의 과금 누출.
   **새 소재**: "선언은 됐는데 아무도 소비하지 않는 코드"가 반복해서 나왔고 전부 테스트는 초록이었다 —
-  라이브 실행만이 소비 부재를 드러냈다(2026-07-28에 세 건 더: grant·런북 티어·Capsule 필드).
+  라이브 실행만이 소비 부재를 드러냈다(07-28에 세 건: grant·런북 티어·Capsule 필드 / 07-29에 두 건 더:
+  executor span·`resource_types`). **07-29 추가 소재**: 내 테스트가 실제 입력이 아니라 키워드 목록에
+  맞춰져 있어서, 유닛은 초록인데 라이브는 계속 틀렸다.
   **집필·발행은 이 계획에만 남기고 착수하지 않는다**(사용자 지시 2026-07-25).
 - [ ] (선택) **Azure Foundry 스택 정리** — 유휴 ≈$0라 유지 중.
 
@@ -60,11 +62,10 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
   span을 `execute_incident` 안으로 이동 + 웹훅 루트 2개 + 승인은 **부모가 아니라 링크**
   (사이 간격이 사람의 고민 시간이라 접으면 지연 수치가 무의미해진다).
   증거 `docs/evidence/executor-span-approval-path.log`.
-- [ ] **선택 가능해진 런북 4개가 온프렘 알람엔 안 걸린다**(위 라이브 중 발견, 회귀 아님) —
-  온프렘 디텍터가 모든 Alertmanager 알람을 `namespace=ONPREM/kubernetes-workload`·
-  `metric_name=availability`로 정규화해서 **alertname이 매처에 닿지 않는다**. 네 런북은
-  CloudWatch 네임스페이스/메트릭 이름 기준이라 온프렘에선 root_cause 텍스트로만 매칭된다.
-  "온프렘 alertname을 매처에 넣을 것인가"는 매칭 설계 결정이라 발명하지 않고 남긴다.
+- [x] **온프렘 런북 매칭(gate 1470, 2026-07-29)** — 설계 결정이 아니라 **겹친 결함 3개**였다:
+  `reason`이 `metric_name`의 복사본 · `resource_types`가 선언만 되고 미소비 · 스테일 시드가
+  **더 나쁜 매칭으로** 빌트인을 가림(D35). 라이브에서 4종 알람 전부 올바른 런북 + ONPREM 액션.
+  증거 `docs/evidence/onprem-runbook-matching.log`.
 - [ ] **⑥ k3s 검증기 재실행**(선택) — flannel은 NetworkPolicy 집행이 전이되지 않으므로 기판별 재확인 필요.
 - [x] **선택 불가 런북 4개 + 티어 셰도잉(gate 1445, 2026-07-28)** — BUILTIN 항목을 넣어도
   **라이브는 넷 다 generic-recovery**였다: 시드 테이블에 generic 행이 있어 티어 2가 티어 4의

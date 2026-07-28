@@ -1,11 +1,38 @@
 # PROGRESS_LOG — platform-agent
 
-최종 갱신: 2026-07-28
+최종 갱신: 2026-07-29
 
 > 최신 3–5개 증분. **최신이 위.** **≤120줄.** 넘치면 `/tidy-docs` 로 압축.
 > 이전 이력: `docs/archive/progress-2026-07.md`
 
 ---
+
+## 2026-07-29 — "선택 가능"은 AWS 경로에서만이었다: 겹친 결함 3개 (gate 1454→1470)
+
+- Status: 어제 라이브에서 본 "온프렘 알람이 새 런북에 안 걸린다"를 **매칭 설계 결정**으로
+  남겼는데, 결정이 아니라 **배선 결함 3개가 쌓여** 있었다. 하나를 걷어내야 다음이 보였다.
+- Changed(`b70c195`): ①`_synthetic_alarm`이 `reason`과 `metric_name`을 **둘 다
+  `signal_type`**으로 채워, 매처가 "availability availability …"를 읽고 있었다. alertname·
+  summary는 내내 정규화돼 저장돼 있었고 선택에만 안 닿았다(프로바이더 중립 수정).
+  ②`resource_types`가 **모든 런북에 선언돼 있고 아무도 안 읽었다** — 이틀 새 다섯 번째
+  "선언됐고 유효하고 소비 안 되는" 필드. 없으면 RDS 런북이 k8s 워크로드에 걸리고, 실패가
+  조용하다(해결 실패 시 **런북의 하드코딩 AWS 액션 이름**으로 폴백). ③①②를 고쳐도
+  라이브는 계속 달랐다: 시드된 eks-pod-oom **1점**이 빌트인 health-check-failure **3점**을
+  이겼다 — 자기 카탈로그가 먼저 스캔됐다는 이유만으로. D34가 "무매칭"만 막고 "더 나쁜 매칭"은
+  안 막았다 → 두 카탈로그를 **합집합에 휴리스틱 한 번**으로 통합(동점 시 운영자 우선, D35).
+- Verified: `make check` **1470**(+16). **라이브**(실 웹훅+실 analyzer): 디스크→disk-full ·
+  NotReady→health-check-failure · 인증서→certificate-expiry · CrashLooping→eks-pod-oom(회귀 없음).
+  **전부 ONPREM-\* 액션**으로 해소 = 잘못된 프로바이더 폴백이 안 터졌다는 증거.
+  반증 3종(reason 되돌림 4건 · 게이트 제거 1건 · 티어 순차 복귀 6건), 복원 시 36건 통과.
+  증거 `docs/evidence/onprem-runbook-matching.log`.
+- Blockers: 없음.
+- 품질 메모: **이번엔 내 테스트 자체가 결함이었다.** 첫 버전이 통과하는데 라이브는 여전히
+  generic-recovery였다 — 내가 쓴 summary에 런북 키워드를 심어놨기 때문이다("…, disk full
+  projected in 18h"). 실제 Alertmanager는 `NodeFilesystemSpaceFillingUp`이라고 보낸다.
+  **테스트가 Alertmanager가 아니라 키워드 목록에 맞춰져 있었다.** 어제 배운 "호출부에서
+  반증하라"에 하나 더: **픽스처를 코드가 아니라 실제 입력에서 가져와라.**
+- Next: 남은 잔여는 전부 결정 대기(배포의 테넌트 소유권 · 무스코프 MCP 읽기 ·
+  Capsule `limitRanges` 경로) + 런북 DynamoDB 재시드(배포 작업).
 
 ## 2026-07-28 — executor span: 실제 경로 전부가 무추적이었다 (gate 1446→1454)
 
@@ -64,31 +91,4 @@
   배포 요청엔 테넌트가 없고 `setup_tenancy(tenant, ...)`는 **모델이 부르는 도구**다.
   즉 테넌트가 추론의 **입력이 아니라 출력**이라 헤더로 받으려면 "배포는 어느 테넌트
   소유인가"를 먼저 정해야 한다. 남은 것: 그 결정 · 무스코프 MCP 읽기 · `limitRanges` 이관 경로 결정.
-
-## 2026-07-28 — 읽기 파티션 완결 + granted-viewer 실증 (gate 1404→1411)
-
-- Status: 대시보드 읽기 경로 둘(플릿·인시던트)이 테넌트로 파티션되고, 오래 미뤄둔
-  granted-viewer 왕복이 실증됐다.
-- Changed(`0512d2b`): 파티션 불가의 원인은 읽기가 아니라 **쓰기**였다 —
-  `NormalizedIncident`는 Phase 1a부터 `tenant`를 갖고 있는데 `_record_incident`가 버렸다.
-  저장은 **비어 있으면 키를 안 넣는다**(부재 ≠ 빈 문자열). `visibility.ts`에 `filterRows`
-  (같은 seam) · **기록 없는 행은 admin 전용** · `withheld` 카운트 반환 ·
-  캐시 헤더 `public, s-maxage=30` → **`private, no-store`**(호출자마다 다른 응답을 공유
-  캐시가 서빙하면 그게 유출이다).
-- Changed(`2357583`): granted-viewer가 미실증이던 진짜 이유는 OAuth가 아니라 **local-dev
-  우회가 `role: admin`을 하드코딩**한 것 — 인가 표면 전체가 로컬에서 검증 불가였다.
-  이제 실 로그인과 같은 저장소에서 역할을 읽는다(`DASHBOARD_DEV_AUTH_USER`).
-- Verified: `make check` **1411**(+7) · `tsc` 클린 · `next build` 성공.
-  **라이브(빌드 산출물)**: 익명 0/3(withheld 3) · **viewer-demo(grant=['acme']) 1/3**
-  (withheld 2, `private, no-store`) · admin 3/3(무태그 행 포함).
-  **반증**: "기록 없는 행은 모두에게" 주입 → RowFiltering 3건 실패, 복원 시 통과.
-  증거 `docs/evidence/phase3-read-partition-live.log`.
-- Blockers: 없음.
-- 품질 메모: 이번에도 **테스트가 낡은 정책을 고정**하고 있었다 —
-  `DASHBOARD_AUTH_DESIGN.md`의 "Read path remains public"을 단언하는 테스트가 있어서,
-  정책이 바뀐 뒤에도 문구가 살아남았다. 오늘만 세 번째 사례다(`ROUTE_PROTECTION` ·
-  Agent Card 필드 존재 단언 · 이것).
-- Next: deployments/activities 파티션은 **데이터 모델 결정 선행**(배포는 어느 테넌트
-  소유인가 — 인시던트와 달리 tenant가 아예 없다) · rate limit을 모델 호출까지 ·
-  무스코프 MCP 읽기.
 
