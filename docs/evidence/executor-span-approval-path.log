@@ -1,0 +1,116 @@
+Executor span — the stage that changes the cluster was untraced on every real path
+===================================================================================
+Date : 2026-07-28
+Mode : real uvicorn webhook + real OTLP/gRPC export (Docker down → local OTLP sink
+       speaking the collector wire protocol, in place of Tempo)
+Gate : make check 1446 -> 1454 (+8)
+
+
+The recorded gap was narrower than the real one
+-------------------------------------------------
+NEXT_PLAN carried "② executor span (선택) — 현재 parking 경로만 실증. 승인 후 실행
+경로는 미측정." True, and the reason turned out to cover more than the approval
+path.
+
+`run_incident_pipeline(execute=True)` was traced, and that is what the existing
+tests exercised. Nothing reaches the pipeline that way in production: the webhook
+— the On-Prem PATH B entry point — calls it with `execute=False` and executes
+afterwards, on **both** the AUTO path and the approval path. Both executions
+happened *after* the pipeline's root span had already closed.
+
+So the one stage that actually changes the cluster produced **no span at all on
+every path a real alert takes**. The tests could not see it because they entered
+one layer below the gap — the same shape as the runbook tier finding earlier
+today, and as every "declared but unreached" defect this repo has paid for.
+
+
+What was built
+---------------
+- The span moved *into* `execute_incident`, so all three call sites get it from
+  one implementation rather than one of three being instrumented.
+- `onprem.webhook.incident` root span, so the AUTO path's execution shares a
+  trace with the detect/analyze/decide legs that chose it instead of being an
+  orphan.
+- `onprem.webhook.approve` root span for the approval path, and a **span link**
+  back to the incident — not a parent. The interval between them is a human
+  deciding; folding that into the incident's span tree would produce a span whose
+  duration is mostly someone reading Slack, and every latency figure derived from
+  the trace would be wrong.
+- `SpanOrigin` (trace id + span id) persisted with the parked approval, because a
+  trace id alone cannot form a link. Written only when present — a record parked
+  with tracing off must not look like one whose origin was lost.
+- A half-known origin yields **no link**, only an attribute. An invalid link
+  renders as a dead reference, which is the failure `current_trace_id` already
+  refuses to produce ("show no trace link rather than a dead one").
+
+
+Live: AUTO path (real Bedrock analyzer, real executor)
+--------------------------------------------------------
+    TRACE ee1d8e5c8e5ac3a0…   6 spans, one trace
+      onprem.webhook.incident     7741.6ms   root
+      onprem.incident_pipeline    6288.2ms
+      onprem.analyze              5364.8ms
+      onprem.execute              1452.7ms   <- did not exist before this change
+      onprem.decide                923.0ms
+      onprem.detect                  0.2ms
+
+The wall-clock decomposition the tracing module exists for is now readable: the
+local-LLM leg is 5.4s of 7.7s.
+
+
+Live: approval path — two traces, one link
+--------------------------------------------
+P2 parked (`APR-6CEF3B57`), stored origin:
+    {'trace_id': '110e6741f58c7adab12ad0264d4705f5', 'span_id': 'acc625d5b11365fd'}
+
+    TRACE 110e6741f58c7ada…   root=onprem.webhook.incident
+      onprem.webhook.incident     5345.9ms
+      onprem.incident_pipeline    5345.2ms   (span acc625d5)
+      onprem.analyze              4932.8ms
+      onprem.decide                411.9ms
+      onprem.detect                  0.3ms
+      -- no execute span: nothing ran, and claiming otherwise would be a lie
+
+    TRACE 7ebba25008dc5502…   root=onprem.webhook.approve
+      onprem.webhook.approve       932.2ms
+      onprem.execute               932.2ms
+        └─ LINK → trace 110e6741f58c7ada… span acc625d5
+        └─ attr executor.origin_trace_id=110e6741f58c7ada…
+
+The link resolves to the exact span that proposed the remediation. The ~11s of
+human decision time appears in neither trace's durations — which is the entire
+argument for a link over a parent.
+
+Executed for real: `ONPREM-RolloutRestartWorkload`, INC-615A4BEB, resolved=true.
+
+
+Falsification
+--------------
+  - execute span removed (the original state)      -> 5 failures
+  - approval executes without the origin link      -> 1 failure (the link test)
+  - webhook root span removed                      -> 1 failure (AUTO shares one trace)
+Restoring passed all 8.
+
+Also fixed while here: `span()` took attributes via `**kwargs`, and OTel keys are
+dotted (`executor.resolved`) so callers wrote `**{"a.b": v}`. A `**` unpack can
+collide with the named parameters — an attribute called "link" would have
+silently become a span link. Attributes now pass as a dict; the keyword form
+still works.
+
+
+WHAT IS STILL OPEN
+-------------------
+- **The four newly-selectable runbooks do not match on-prem alerts.** Surfaced by
+  this run: a disk-filling alert resolved to `generic-recovery`. The on-prem
+  detector normalises every Alertmanager alert to
+  `namespace=ONPREM/kubernetes-workload`, `metric_name=availability`, so the
+  alertname (`NodeFilesystemSpaceFillingUp`) never reaches the matcher, which
+  scores on namespace + metric text. Those runbooks are keyed on CloudWatch
+  namespaces and metric names, so on the on-prem path they can only match via
+  root-cause text. Not a regression — they were unselectable everywhere before —
+  but it means "selectable" currently means "selectable on the AWS path".
+  Whether on-prem alertnames should feed the matcher is a matching-design
+  question, left rather than invented.
+- Tempo itself was not used: Docker was down, so the export went over real
+  OTLP/gRPC to a local sink implementing the collector's TraceService. Wire
+  protocol and protobuf decoding are exercised; Tempo's own ingestion is not.

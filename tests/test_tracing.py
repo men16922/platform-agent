@@ -80,7 +80,7 @@ class TestEnabledEmitsSpans:
         exporter.clear()
 
     def test_span_is_exported_with_attributes(self, exporter):
-        with tracing.span("onprem.analyze", **{"analyzer.severity": "P2"}):
+        with tracing.span("onprem.analyze", {"analyzer.severity": "P2"}):
             pass
         spans = exporter.get_finished_spans()
         assert [s.name for s in spans] == ["onprem.analyze"]
@@ -116,7 +116,7 @@ class TestEnabledEmitsSpans:
         assert "absent" not in attributes
 
     def test_non_scalar_attributes_are_coerced(self, exporter):
-        with tracing.span("s", **{"actions": ["a", "b"]}):
+        with tracing.span("s", {"actions": ["a", "b"]}):
             pass
         # OTel rejects heterogeneous/complex values; coercion keeps the span valid.
         assert exporter.get_finished_spans()[0].attributes["actions"] == "['a', 'b']"

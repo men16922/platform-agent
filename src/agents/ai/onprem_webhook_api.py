@@ -45,6 +45,7 @@ from src.agents.ai import onprem_incidents as incidents
 from src.agents.ai import onprem_slack_approval as slack_approval
 from src.agents.ai.canary_judge import judge_canary, judge_observed_canary
 from src.agents.ai.onprem_incident_pipeline import execute_incident, run_incident_pipeline
+from src.agents.observability.tracing import SpanOrigin, set_attributes, span
 
 logger = logging.getLogger(__name__)
 
@@ -74,11 +75,25 @@ def _summary(result: dict[str, Any]) -> dict[str, Any]:
 
 
 def _handle_incident(payload: dict[str, Any]) -> PipelineResult:
-    """Run the pipeline and gate execution on the Guardian remediation mode."""
-    result = run_incident_pipeline(payload, execute=False)
-    summary = _summary(result)
-    mode = result.get("remediation_mode")
+    """Run the pipeline and gate execution on the Guardian remediation mode.
 
+    Wrapped in a span because this handler — not `run_incident_pipeline` — is
+    where an alert actually enters. The pipeline is called with ``execute=False``
+    and execution happens *after* its root span closes, so without this root the
+    AUTO path's executor span would be an orphan trace of its own, disconnected
+    from the detect/analyze/decide legs that chose it.
+    """
+    with span("onprem.webhook.incident") as request_span:
+        result = run_incident_pipeline(payload, execute=False)
+        summary = _summary(result)
+        mode = result.get("remediation_mode")
+        set_attributes(request_span, **{"incident.remediation_mode": mode})
+        return _gate_on_mode(result, summary, mode)
+
+
+def _gate_on_mode(
+    result: dict[str, Any], summary: dict[str, Any], mode: str | None
+) -> PipelineResult:
     if mode == "AUTO":
         executor_out = execute_incident(result["stages"]["decision"])
         summary.update(
@@ -94,7 +109,11 @@ def _handle_incident(payload: dict[str, Any]) -> PipelineResult:
     elif mode == "APPROVE":
         # Parked for approval — surfaced in /pending, recorded to the timeline
         # only once resolved (approve/reject), so it isn't double-counted.
-        record = approvals.create_pending(result["stages"]["decision"], summary)
+        # The origin rides along so the execution on the other side of a human
+        # decision can point back at the incident that proposed it.
+        record = approvals.create_pending(
+            result["stages"]["decision"], summary, origin=result.get("origin")
+        )
         summary.update({"status": "pending_approval", "approval_id": record["approval_id"]})
         # 옵트인 Slack 버튼 프런트엔드 — 실패해도 대시보드 승인 경로는 그대로.
         slack_approval.announce({**record, **summary})
@@ -231,7 +250,13 @@ def _apply_approval(approval_id: str) -> PipelineResult:
     if record.get("status") != "pending":
         raise ValueError(f"Already {record.get('status')}: {approval_id}")
 
-    executor_out = execute_incident(record["decision"])
+    with span("onprem.webhook.approve", {"approval.id": approval_id}):
+        # A new trace, linked to the incident — not a child of it. The gap
+        # between the two is a human deciding, and folding that into the
+        # incident's span tree would make every latency figure meaningless.
+        executor_out = execute_incident(
+            record["decision"], origin=SpanOrigin.from_dict(record.get("origin"))
+        )
     approvals.resolve(approval_id, "approved", executor_out=executor_out)
     _record_incident_from_approval(record, resolved=executor_out.get("resolved", False), executor_out=executor_out)
     logger.info("onprem_webhook.approved id=%s", approval_id)

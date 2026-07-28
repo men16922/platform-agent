@@ -24,7 +24,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.agents.observability.tracing import current_trace_id, set_attributes, span
+from src.agents.observability.tracing import (
+    SpanOrigin,
+    current_origin,
+    current_trace_id,
+    set_attributes,
+    span,
+)
 from src.agents.operations.aws.analyzer import lambda_handler as _analyze
 from src.agents.operations.aws.decision import lambda_handler as _decide
 from src.agents.operations.aws.detector import lambda_handler as _detect
@@ -44,7 +50,7 @@ def run_incident_pipeline(event: dict[str, Any], *, execute: bool = True) -> dic
     no-op unless ``OTEL_EXPORTER_OTLP_ENDPOINT`` is set, so the offline default
     path is unchanged.
     """
-    with span("onprem.incident_pipeline", **{"pipeline.execute": execute}) as root:
+    with span("onprem.incident_pipeline", {"pipeline.execute": execute}) as root:
         with span("onprem.detect"):
             detector_out = _detect(event, None)
         with span("onprem.analyze") as analyze_span:
@@ -68,16 +74,7 @@ def run_incident_pipeline(event: dict[str, Any], *, execute: bool = True) -> dic
                 },
             )
         if execute:
-            with span("onprem.execute") as execute_span:
-                executor_out = _execute(decision_out, None)
-                set_attributes(
-                    execute_span,
-                    **{
-                        "executor.resolved": executor_out.get("resolved"),
-                        "executor.executed_count": len(executor_out.get("executed_actions", [])),
-                        "executor.skipped_count": len(executor_out.get("skipped_actions", [])),
-                    },
-                )
+            executor_out = execute_incident(decision_out)
         else:
             executor_out = None
 
@@ -91,6 +88,9 @@ def run_incident_pipeline(event: dict[str, Any], *, execute: bool = True) -> dic
             },
         )
         trace_id = current_trace_id()
+        # Captured inside the root span: this is what a later, approved execution
+        # links back to. A trace id alone cannot form that link.
+        origin = current_origin()
     result = {
         "provider": incident.get("provider"),
         "service": incident.get("service"),
@@ -106,6 +106,9 @@ def run_incident_pipeline(event: dict[str, Any], *, execute: bool = True) -> dic
         # Present only when tracing is on — lets an incident record deep-link to
         # its trace instead of the reader eyeballing timestamps.
         "trace_id": trace_id,
+        # Same condition, but the linkable pair. Parked with an approval so the
+        # execution that resumes it hours later still points at the incident.
+        "origin": origin.to_dict() if origin else None,
         "stages": {
             "detector": detector_out,
             "analyzer": analyzer_out,
@@ -117,9 +120,38 @@ def run_incident_pipeline(event: dict[str, Any], *, execute: bool = True) -> dic
     return result
 
 
-def execute_incident(decision_out: dict[str, Any]) -> dict[str, Any]:
-    """Replay a parked decision through the executor (used on approval)."""
-    return _execute(decision_out, None)
+def execute_incident(
+    decision_out: dict[str, Any], *, origin: SpanOrigin | None = None
+) -> dict[str, Any]:
+    """Run the executor for one decision, traced.
+
+    The span lives here rather than at the call site because there are three
+    call sites and only one of them used to be inside a span. `run_incident_
+    pipeline(execute=True)` was traced; the webhook — the actual On-Prem Day-2
+    entry point — calls the pipeline with ``execute=False`` and then executes
+    *after* the pipeline's root span has closed, on both the AUTO path and the
+    approval path. So the stage that changes the cluster was the one stage
+    producing no span on every path a real alert takes.
+
+    ``origin`` links back to the span that proposed this remediation. On the
+    approval path that span finished when a human was still deciding, which is
+    why it is a link and not a parent — see :func:`tracing.span`.
+    """
+    with span("onprem.execute", link=origin) as execute_span:
+        executor_out = _execute(decision_out, None)
+        set_attributes(
+            execute_span,
+            **{
+                "executor.resolved": executor_out.get("resolved"),
+                "executor.executed_count": len(executor_out.get("executed_actions", [])),
+                "executor.skipped_count": len(executor_out.get("skipped_actions", [])),
+                # Recorded even when the link could not be built (origin missing
+                # a span id, e.g. parked before tracing was on) so the breadcrumb
+                # survives where the traversable edge cannot.
+                "executor.origin_trace_id": origin.trace_id if origin else None,
+            },
+        )
+    return executor_out
 
 
 def _executor_fields(executor_out: dict[str, Any] | None) -> dict[str, Any]:

@@ -29,9 +29,42 @@ import importlib.util
 import os
 from collections.abc import Generator
 from contextlib import contextmanager
+from dataclasses import dataclass
 from typing import Any
 
 _SERVICE_NAME_DEFAULT = "platform-agent"
+
+
+@dataclass(frozen=True)
+class SpanOrigin:
+    """Where some later work came from — enough to link back to it.
+
+    A trace id alone cannot form a link (OTel needs a span id too), which is why
+    this is a pair and not the bare id already stored on incident records.
+    """
+
+    trace_id: str
+    span_id: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {"trace_id": self.trace_id, "span_id": self.span_id}
+
+    @classmethod
+    def from_dict(cls, payload: Any) -> "SpanOrigin | None":
+        """Rebuild from a stored record; None when either half is missing.
+
+        Records written before tracing existed — or while it was off — carry
+        neither, and that must read as "no origin" rather than a malformed one.
+        """
+        if not isinstance(payload, dict):
+            return None
+        trace_id = payload.get("trace_id")
+        span_id = payload.get("span_id")
+        if not isinstance(trace_id, str) or not isinstance(span_id, str):
+            return None
+        if not trace_id or not span_id:
+            return None
+        return cls(trace_id=trace_id, span_id=span_id)
 
 # Resolved lazily so tests (and the pipeline) can flip env vars between calls.
 _TRACER: Any | None = None
@@ -112,8 +145,41 @@ def _coerce_attribute(value: Any) -> Any:
     return str(value)
 
 
+def _build_link(origin: "SpanOrigin | None") -> Any | None:
+    """An OTel Link to a span we recorded earlier, or None.
+
+    Both ids are required. A link carrying a zero span id is *invalid*, and an
+    invalid link renders as a dead reference in the trace UI — the same failure
+    `current_trace_id` already refuses to produce ("show no trace link rather
+    than a dead one"). So a half-known origin yields no link at all; the caller
+    still records the origin as an attribute, which is honest about being a
+    breadcrumb rather than a traversable edge.
+    """
+    if origin is None or not origin.trace_id or not origin.span_id:
+        return None
+    try:  # pragma: no cover - depends on SDK presence
+        from opentelemetry import trace
+
+        return trace.Link(
+            trace.SpanContext(
+                trace_id=int(origin.trace_id, 16),
+                span_id=int(origin.span_id, 16),
+                is_remote=True,
+                trace_flags=trace.TraceFlags(trace.TraceFlags.SAMPLED),
+            )
+        )
+    except Exception:
+        return None
+
+
 @contextmanager
-def span(name: str, **attributes: Any) -> Generator[Any]:
+def span(
+    name: str,
+    attributes: dict[str, Any] | None = None,
+    *,
+    link: "SpanOrigin | None" = None,
+    **kwattributes: Any,
+) -> Generator[Any]:
     """
     Start a span, or do nothing when tracing is off.
 
@@ -121,13 +187,29 @@ def span(name: str, **attributes: Any) -> Generator[Any]:
     must treat the yielded value as optional (use :func:`set_attributes`).
     Exceptions propagate either way — the span is closed by the SDK's own
     context manager, and the no-op path adds no behaviour at all.
+
+    ``link`` marks a *causal* relationship to work that finished earlier — used
+    for a remediation approved hours after the incident that proposed it. It is
+    deliberately a link and not a parent: re-parenting under a span that closed
+    long ago would produce one span whose duration is mostly a human reading
+    Slack, which poisons every latency figure the trace exists to provide.
+
+    Attributes may be passed as a dict or as keywords. The dict form exists
+    because OTel attribute keys are dotted (`executor.resolved`) and therefore
+    not valid Python identifiers, so callers were writing ``**{"a.b": v}`` — and
+    a ``**`` unpack can collide with the named parameters, which would mean an
+    attribute called "link" silently became a span link instead of an attribute.
     """
     tracer = _tracer()
     if tracer is None:
         yield None
         return
-    clean = {k: _coerce_attribute(v) for k, v in attributes.items() if v is not None}
-    with tracer.start_as_current_span(name, attributes=clean) as current:
+    merged = {**(attributes or {}), **kwattributes}
+    clean = {k: _coerce_attribute(v) for k, v in merged.items() if v is not None}
+    built = _build_link(link)
+    with tracer.start_as_current_span(
+        name, attributes=clean, links=[built] if built else None
+    ) as current:
         yield current
 
 
@@ -159,3 +241,22 @@ def current_trace_id() -> str | None:
     if not getattr(ctx, "is_valid", False):
         return None
     return format(ctx.trace_id, "032x")
+
+
+def current_origin() -> SpanOrigin | None:
+    """The active span as a linkable origin, or None when tracing is off.
+
+    Captured at the moment work is *parked* so the execution that resumes it —
+    possibly hours later, certainly in another request — can point back at the
+    exact span that proposed it, not merely at its trace.
+    """
+    try:  # pragma: no cover - depends on SDK presence
+        from opentelemetry import trace
+    except Exception:
+        return None
+    ctx = trace.get_current_span().get_span_context()
+    if not getattr(ctx, "is_valid", False):
+        return None
+    return SpanOrigin(
+        trace_id=format(ctx.trace_id, "032x"), span_id=format(ctx.span_id, "016x")
+    )

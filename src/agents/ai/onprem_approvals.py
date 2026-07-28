@@ -76,8 +76,19 @@ def _latest_by_id() -> dict[str, dict[str, Any]]:
     return latest
 
 
-def create_pending(decision: dict[str, Any], summary: dict[str, Any]) -> dict[str, Any]:
-    """Park a decision awaiting human approval; returns the pending record."""
+def create_pending(
+    decision: dict[str, Any],
+    summary: dict[str, Any],
+    *,
+    origin: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Park a decision awaiting human approval; returns the pending record.
+
+    ``origin`` is the span that proposed this remediation, kept so the execution
+    that eventually resumes it can link back to the incident that caused it.
+    Written only when present: absent and empty are different facts, and a
+    record parked with tracing off must not look like one whose origin was lost.
+    """
     now = _now()
     record = {
         "PK": "APPROVAL",
@@ -92,6 +103,8 @@ def create_pending(decision: dict[str, Any], summary: dict[str, Any]) -> dict[st
         "actions": summary.get("actions", []),
         "decision": decision,
     }
+    if origin:
+        record["origin"] = origin
     _append(record)
     return record
 
