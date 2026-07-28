@@ -1,0 +1,108 @@
+Sweeping for "declared, valid, unconsumed" — and the one with teeth
+====================================================================
+Date : 2026-07-29
+Mode : static sweep of 437 declared fields + live A/B through the real webhook
+Gate : make check 1470 -> 1479 (+9)
+
+
+Why a sweep
+------------
+Six defects of the same shape in two days, every one found by accident:
+
+  - `tenants` consumed by the read path, writable by nothing (grant validation)
+  - `CAPABILITY_RUNBOOKS` entries no alarm could select
+  - the built-in runbook tier, unreachable in any deployed environment
+  - `assert_health_check_passing`, declared as proof and implemented nowhere
+  - `resource_types`, declared on every runbook and read by selection never
+  - `reason`, filled with a copy of `metric_name`
+
+Accident is not a strategy. This sweep parses every `ClassDef` under
+`src/agents`, collects annotated fields, and counts reads across the tree —
+attribute access and dict-key access — flagging any field whose only appearance
+is its own declaration.
+
+    437 declared fields -> 20 candidates
+
+
+Verification of the candidates
+--------------------------------
+Most are not defects, and saying so is part of the result:
+
+  - `TokenBroker.signing_key` — FALSE POSITIVE. Used as `self.signing_key` in
+    the HMAC comparison; the pattern missed the `self.` form.
+  - `DeployResponse.route_trace`, `ExecutorOutput.slack_ts`,
+    `ValidationResult.response_time_ms`, `DeployResult.replicas_ready`,
+    `SessionResult.assumed`, `Message.task_id`/`message_id` — response/DTO
+    surface serialised out to callers. Unread *here* by design.
+  - `PipelineSpec.runtime_*`, `ProvisionSpec.registry_port`,
+    `RuntimeSpec.network_mode` — passed through to adapters.
+
+Two are real:
+
+  1. **`NormalizedIncident.severity_hint`** — fixed here.
+  2. **`NormalizedIncident.triggered_at` / `AlarmContext.triggered_at`** — set by
+     all four adapters from the alert's real start time (`startsAt`,
+     `firedDateTime`, `started_at`) and read nowhere. Time-to-detect is therefore
+     not derivable: the incident record carries its own write time. Left as a
+     finding — see WHAT IS STILL OPEN.
+
+
+The one with teeth: severity_hint
+-----------------------------------
+Every signal adapter has populated it since it was written — Alertmanager's
+`severity` label, GCP severity, Azure severity, the AWS alarm state. Nothing
+read it. Not the analyzer, not the decision stage, not the dashboard.
+
+So the one classification a human made **in advance**, in the alert rule, was
+normalised, stored on the incident, and discarded — leaving severity to be
+inferred from prose. Severity is not cosmetic here: it maps P1 -> AUTO,
+P2 -> APPROVE, P3 -> MANUAL, i.e. it decides whether a remediation executes
+with no human in the loop.
+
+Observed earlier the same day, before the fix: an Alertmanager rule labelled
+`severity: warning` was graded **P1 -> AUTO -> executed**.
+
+Fixed by surfacing it in the analyzer prompt as evidence, and saying in the
+system prompt that it is strong evidence but **not binding**, with a reason
+required for departing from it. Deliberately not a hard mapping: translating a
+provider's severity vocabulary into P1/P2/P3 is a policy call, and inventing one
+here would be exactly the overreach the repo forbids.
+
+
+Live A/B — identical alert, only the operator's label differs
+---------------------------------------------------------------
+    operator severity=critical  -> P1 / AUTO     executed
+    operator severity=warning   -> P2 / APPROVE  pending_approval
+    operator severity=info      -> P2 / APPROVE  pending_approval
+
+The `warning` case is the one that matters: the same payload auto-executed
+earlier today and now waits for a human.
+
+`info` grading P2 rather than P3 is the design working, not failing — a pod
+non-ready for 15 minutes is real degradation, and the label was declared
+evidence rather than a command. The model is free to disagree; it is no longer
+free to be unaware.
+
+
+Falsification
+--------------
+Dropping the prompt line again fails 6 of the 9 tests; restoring passes all 9.
+The tests assert the *prompt*, because the prompt is the only consumer — a test
+that checked `severity_hint` were merely set would have passed for as long as
+the field has existed, which is precisely how it survived this long.
+
+
+WHAT IS STILL OPEN
+-------------------
+- **`triggered_at` is still unconsumed.** All four adapters capture when the
+  alert actually fired; nothing reads it, so "how long until we noticed" cannot
+  be computed and the incident timeline shows write time. Small, real, and not
+  fixed here — it needs a decision about what the dashboard timeline should
+  display, and inventing that was out of scope for a sweep.
+- **The LLM-failure fallback still returns a blanket P2** and does not consult
+  `severity_hint`. Using it there means committing to a severity mapping, which
+  is the same policy call deliberately avoided above.
+- The sweep covers annotated class fields under `src/agents`. It does not cover
+  dict-shaped payload keys, registry YAML keys, or env vars — the same defect
+  class can hide in all three, and `reason`/`metric_name` (found by hand
+  yesterday) is proof that it does.

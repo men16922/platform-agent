@@ -77,6 +77,12 @@ Severity guide:
   P2 — significant degradation, auto-remediable (e.g. pod OOM, Lambda throttling, lag spike)
   P3 — early warning, human review (e.g. CPU trending up, single slow query)
 
+When an "Operator-declared severity" is given, it is the classification a human
+put in the alert rule ahead of time. Treat it as strong evidence and say in the
+root_cause why you departed from it if you do. It is not binding — the evidence
+can show an alert is worse or milder than its label — but disagreeing with it
+silently is what it exists to prevent.
+
 Return ONLY the JSON. No markdown fences.
 """
 
@@ -181,6 +187,18 @@ def _build_prompt(detector: DetectorOutput) -> str:
         ).strip()
         if alert_text:
             normalized_summary += f"\nAlert detail: {alert_text}"
+        # The severity the *operator* wrote into the alert rule. Every signal
+        # adapter has populated this since they were written — Alertmanager's
+        # `severity` label, GCP/Azure severity, the AWS alarm state — and nothing
+        # read it, here or anywhere else. So the one classification a human made
+        # in advance was normalised, stored on the incident, and dropped, leaving
+        # severity to be inferred from prose alone. That matters because severity
+        # is what decides AUTO vs APPROVE: a rule labelled `warning` has been
+        # observed being graded P1 and remediated with no human in the loop.
+        # Surfaced as evidence, not as an override — the mapping from a provider's
+        # severity vocabulary to P1/P2/P3 is a policy call, not this function's.
+        if normalized.severity_hint:
+            normalized_summary += f"\nOperator-declared severity: {normalized.severity_hint}"
 
     return f"""\
 ## Alarm
