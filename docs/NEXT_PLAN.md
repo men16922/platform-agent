@@ -16,7 +16,6 @@
   rate limit을 동시에** 막고 있다(아래 두 항목). 발명 금지라 결정 없이는 둘 다 진행 불가.
 - [ ] **⚠️ 결정 2: 무스코프 MCP 읽기를 닫을 것인가** — 닫으면 검증된 익명 kagent 왕복이 깨진다.
 - [ ] **⚠️ 결정 3: Capsule `limitRanges` 이관 경로** — 클러스터 스코프(D30 위반) vs 새 SA+RBAC.
-- [ ] **⚠️ 결정 4: 인시던트 타임라인이 무엇을 표시할 것인가** — `triggered_at` 미소비(아래).
 - [ ] **(별도 계획) GitAIOps 후속편 아티클** — 논지=책의 GitAIOps는 AI 자리에 사람이 프롬프트를 넣지만
   우리는 **오프라인 Qwen 에이전트로 루프를 무인으로 닫는다**. 차별 소재는 **자동화하면 새로 깨지는 것들**:
   ①롤백↔selfHeal 충돌 ②자격증명=blast radius ③"실행됨≠나아졌음" ④권한 게이트 부재의 과금 누출.
@@ -53,9 +52,9 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 > 완료분(Phase 2·3, grant 대조, 런북 선택성·티어, MCP 옆문, call budget, Capsule metadata,
 > executor span, 온프렘 매칭)은 `COMPLETED_SUMMARY.md` M12 · `PROGRESS_LOG.md` · `docs/evidence/`.
 
-- [ ] **`triggered_at`이 여전히 미소비**(2026-07-29 스윕 발견) — 네 어댑터가 알람의 실제 발생
-  시각(`startsAt`/`firedDateTime`/`started_at`)을 담는데 아무도 안 읽어 **탐지까지 걸린 시간을
-  구할 수 없다**(인시던트 기록은 자기 쓰기 시각을 쓴다). 타임라인에 무엇을 표시할지 결정 필요.
+- [ ] **클라우드 3사 인시던트 행은 여전히 발생 시각을 버린다** — 온프렘은 해소(gate 1491)했지만
+  AWS/GCP/Azure는 공유 executor가 DynamoDB에 쓰므로 스키마 변경을 수반한다. 어댑터는 이미
+  동일하게 담고 있다. 덧붙여 resolve 시각 미기록이라 **time-to-resolve는 아직 불가**.
 - [ ] **analyzer LLM 실패 폴백이 여전히 일괄 P2** — `severity_hint`를 안 본다. 거기서 쓰려면
   severity 매핑을 확정해야 하고, 그건 위와 같은 **정책 결정**이라 발명하지 않았다.
 - [ ] **⑥ k3s 검증기 재실행**(선택) — flannel은 NetworkPolicy 집행이 전이되지 않으므로 기판별 재확인 필요.

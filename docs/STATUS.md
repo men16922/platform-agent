@@ -8,26 +8,19 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **1491 passed, 1 skipped** (2026-07-29, 1479→1491, +12) — **인시던트
+  발생 시각**(`78e472d`): 스윕 두 번째 건. 네 어댑터가 채우는 `triggered_at`을 `record_incident`가
+  버려 행이 **"우리가 쓴 시각"만** 알았다 → 탐지 소요시간 산출 불가, 타임라인이 처리 순간에 배치.
+  저장(모르면 부재) + 양쪽 경로 배선 + 승인 경로의 `trace_id`도 복구 + 대시보드 `detected +Nm`
+  배지(**읽는 쪽 없이 저장만 하면 같은 결함을 하나 더 만드는 것**). 라이브: 승인 경로에서
+  735초 보존. 증거 `docs/evidence/incident-trigger-time.log`.
 - `make check` (pytest) → **1479 passed, 1 skipped** (2026-07-29, 1470→1479, +9) — **계통 스윕**
   (`0cf5da5`): "선언됐고 아무도 안 읽는" 부류를 훑어(437개 중 20 후보) **`severity_hint`**를
   적발 — 네 시그널 어댑터가 전부 채우는데 **아무도 안 읽어**, 사람이 미리 내린 분류가 버려지고
   severity(=**AUTO/APPROVE를 정하는 축**)가 산문에서만 추론됐다. 프롬프트에 **증거로** 노출
   (하드 매핑은 정책이라 발명 안 함). **라이브 A/B**: critical→AUTO 실행 · **warning→APPROVE 대기**
   (같은 페이로드가 낮엔 자동 실행됐다). 증거 `docs/evidence/declared-unconsumed-sweep.log`.
-- `make check` (pytest) → **1470 passed, 1 skipped** (2026-07-29, 1454→1470, +16) — **온프렘 런북
-  매칭**(`b70c195`): "매칭 설계 결정"으로 남겼던 게 **겹친 결함 3개**였다 — ①`_synthetic_alarm`이
-  `reason`을 `metric_name`의 복사본으로 채워 매처가 "availability availability…"를 읽었다
-  (alertname·summary는 내내 저장돼 있었고 선택에만 안 닿음) ②`resource_types`가 모든 런북에
-  **선언돼 있고 미소비**(없으면 엉뚱한 런북이 걸리고, 해결 실패는 **하드코딩 AWS 액션**으로 조용히
-  폴백) ③스테일 시드가 **더 나쁜 매칭으로** 빌트인을 가림(1점이 3점을 이김) → 합집합 휴리스틱(D35).
-  **라이브**: 4종 알람 전부 올바른 런북 + ONPREM 액션. 증거 `docs/evidence/onprem-runbook-matching.log`.
-- `make check` (pytest) → **1454 passed, 1 skipped** (2026-07-28, 1446→1454, +8) — **executor span**
-  (`3939d47`): 기록은 "승인 후 경로 미측정"이었지만 웹훅이 `execute=False` 후 **루트 span이 닫힌
-  뒤** 실행해서 **AUTO 경로도 무추적**이었다 — 클러스터를 바꾸는 단계가 실제 알람이 타는 모든
-  경로에서 span을 안 냈다. span을 `execute_incident` 안으로 + 웹훅 루트 2개 + 승인은 **링크**
-  (사이 간격=사람의 고민 시간). **라이브**(실 OTLP/gRPC): AUTO 6 span 단일 트레이스
-  (analyze 5.4s/7.7s) · 승인 트레이스 2개+링크 1개. 증거 `docs/evidence/executor-span-approval-path.log`.
-- (이전 이력: gate **1446** 이하 · 2026-07-10~28 → `docs/archive/status-baseline-2026-07.md`
+- (이전 이력: gate **1470** 이하 · 2026-07-10~28 → `docs/archive/status-baseline-2026-07.md`
   및 `PROGRESS_LOG`. Phase 3 완결 ②③ = `9e78f81`·`1c13a59`, 증거
   `docs/evidence/phase3-{reconciler-conflict,viewer-visibility}.log`.)
 
