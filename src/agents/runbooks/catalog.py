@@ -61,9 +61,16 @@ BUILTIN_RUNBOOKS: dict[str, dict[str, Any]] = {
         "runbook_id": "disk-full",
         # CWAgent is where filesystem metrics land; RDS reports its own headroom.
         "namespaces": ["CWAgent", "System/Linux", "AWS/RDS"],
+        # Two vocabularies, because two kinds of signal reach this matcher. The
+        # CloudWatch metric names cover AWS alarms; the bare stems cover the
+        # standard kube-prometheus-stack alert names an on-prem Alertmanager
+        # sends (NodeFilesystemSpaceFillingUp, NodeFilesystemAlmostOutOfSpace).
+        # Matching is substring and case-insensitive, so a stem catches the
+        # CamelCase name without hardcoding the whole thing.
         "keywords": [
             "disk_used_percent", "DiskSpaceUtilization", "FreeStorageSpace",
             "disk full", "no space left", "VolumeFull",
+            "filesystem", "outofspace", "spacefilling",
         ],
         "capabilities": ["cleanup_disk_space", "expand_storage"],
         "actions": ["AWS-CleanupEBSVolume", "AWS-ExpandEBSVolume"],
@@ -76,9 +83,12 @@ BUILTIN_RUNBOOKS: dict[str, dict[str, Any]] = {
         # Deliberately NOT AWS/EKS: an OOM alarm there is eks-pod-oom's, and a
         # namespace hit is worth 2 — enough to steal it on a shared keyword.
         "namespaces": ["AWS/ApplicationELB", "AWS/ELB", "AWS/Route53"],
+        # Same two vocabularies: ELB/Route53 metric names, plus the stems that
+        # appear in kube-prometheus-stack names (KubePodNotReady) and in probe
+        # failure text.
         "keywords": [
             "UnHealthyHostCount", "HealthCheckStatus", "health check",
-            "unhealthy", "readiness", "liveness",
+            "unhealthy", "readiness", "liveness", "notready", "probe",
         ],
         "capabilities": ["restart_workload", "rollback_release"],
         "actions": ["AWS-RestartEKSPod", "AWS-RollbackEKSDeployment"],

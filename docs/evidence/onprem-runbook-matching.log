@@ -1,0 +1,116 @@
+"Selectable" meant selectable on the AWS path only
+==================================================
+Date : 2026-07-29
+Mode : real uvicorn webhook + real analyzer (Bedrock), live Alertmanager payloads
+Gate : make check 1454 -> 1470 (+16)
+
+
+Where this came from
+---------------------
+Yesterday's live run of the executor-span work surfaced it as a side observation:
+an on-prem disk-filling alert resolved to `generic-recovery` even though a
+`disk-full` runbook had just been made selectable. It was recorded as a matching
+*design decision*. It was not — three separate wiring defects were stacked on top
+of each other, and each one had to be removed before the next became visible.
+
+
+Defect 1 — `reason` was a copy of `metric_name`
+-------------------------------------------------
+`_synthetic_alarm` built the AlarmContext for every non-AWS signal with
+
+    reason      = incident.signal_type
+    metric_name = incident.signal_type      # the very next line
+
+Runbook matching scores keywords over `f"{metric_name} {reason} {root_cause}"`,
+so it was reading "availability availability …". The alert name and summary had
+been normalised and stored the whole time (`source_metadata` / `observations`)
+and simply never reached selection.
+
+Fixed provider-neutrally: each adapter names the rule differently (Alertmanager
+`alertname`, GCP `policy_name`/`condition_name`, Azure `alert_rule`), so the keys
+are looked up rather than special-cased, and `signal_type` remains the fallback
+so an adapter carrying none of them is no worse off than before.
+
+
+Defect 2 — `resource_types` was declared everywhere and read by nothing
+------------------------------------------------------------------------
+Widening the matcher's text raises the chance of a keyword hit on a runbook that
+cannot apply. That turned out to be unguarded: `resource_types` is on every
+runbook, parsed into the dataclass and serialised back out, and selection never
+consulted it. Nothing stopped an RDS runbook being chosen for a Kubernetes
+workload — and the failure is quiet, because `_resolve_runbook_actions` catches
+the unresolvable capability and falls back to the runbook's **hardcoded AWS
+action names**, handing the executor actions for the wrong provider.
+
+Gate added, fail-open on either side being unknown. generic-recovery is never
+gated — it is the answer for "nothing fits", which is what makes the gate safe.
+
+That is the fifth "declared, valid, unconsumed" field found in two days.
+
+
+Defect 3 — a stale seed capped what could ever be selected
+------------------------------------------------------------
+With 1 and 2 fixed the unit tests passed and the **live webhook still disagreed**:
+`KubePodNotReady` selected `eks-pod-oom`. Scored by hand:
+
+    eks-pod-oom            score=1  hits=['OOM']            [in seeded table]
+    health-check-failure   score=3  hits=['readiness',
+                                          'notready','probe'] [built-in only]
+
+The weaker match won because its catalog was scanned first. Yesterday's fix
+(`allow_generic=False`) stopped the stale table answering when *nothing*
+matched; it did nothing about the table answering with a *worse* match. Two
+heuristics over two catalogs are now one heuristic over the union, with scanned
+rows scored first so they still win ties. Tier 1 — the exact `alarm_name`
+operator override — is untouched. → `DECISIONS` D35.
+
+
+And a defect in my own test
+-----------------------------
+The first version of the on-prem cases passed while the live webhook still
+answered generic-recovery for the same alert. The summaries I wrote contained
+the runbook's own keyword ("…, disk full projected in 18h"); a real
+Alertmanager alert says `NodeFilesystemSpaceFillingUp` and "78% used", which hit
+nothing. The test was fitted to the keyword list rather than to what
+Alertmanager sends.
+
+Rewritten with realistic alert text containing no literal keyword phrase, and
+the catalogs given stems grounded in standard kube-prometheus-stack names
+(`filesystem`, `outofspace`, `spacefilling`, `notready`, `probe`) alongside the
+existing CloudWatch metric names. Matching is substring and case-insensitive, so
+a stem catches the CamelCase name without hardcoding it.
+
+
+Live result (same webhook, same payload shapes as the failing run)
+--------------------------------------------------------------------
+    NodeFilesystemSpaceFillingUp   -> disk-full             [ONPREM-CleanupDiskSpace, ONPREM-ExpandVolume]
+    KubePodNotReady                -> health-check-failure  [ONPREM-RolloutRestartWorkload, ONPREM-ArgoRolloutRollback]
+    CertManagerCertExpirySoon      -> certificate-expiry    [ONPREM-RenewCertificate, ONPREM-CreateChangeRequest]
+    KubePodCrashLooping            -> eks-pod-oom           [ONPREM-RolloutRestartWorkload, ONPREM-ScaleWorkload]
+
+Every action resolves to an ONPREM-* action, which is also the proof that no
+wrong-provider fallback fired. The last row is the regression check: it selected
+`eks-pod-oom` before this change and still does.
+
+
+Falsification
+--------------
+  - `reason` reverted to signal_type            -> 4 failures
+  - resource-type gate removed                  -> 1 failure
+  - tiers reverted to sequential (scan first)   -> 6 failures
+Restoring passed all 36.
+
+
+WHAT IS STILL OPEN
+-------------------
+- **The deployed DynamoDB table still holds only the five original rows.**
+  Selection no longer depends on that, but an operator wanting to override the
+  four newer runbooks has nothing to edit until the next deploy re-seeds
+  `builtin_runbook_items()`. Deploy action, not a code change.
+- Keyword matching remains a scoring heuristic over text. It is now fed the
+  right text and bounded by resource type, but it is not classification — an
+  alert whose name and summary share no vocabulary with any runbook still lands
+  on generic-recovery, which is the correct answer for "nothing fits".
+- Verified against on-prem and AWS-shaped signals. GCP/Azure `reason` now draws
+  from `policy_name`/`condition_name`/`alert_rule`, unit-covered but not
+  exercised against a live GCP/Azure alert payload.

@@ -196,6 +196,48 @@ class TestTheSeededTableDoesNotShadowTheBuiltInTier:
         matched = _match_runbook_registry(alarm, "OOMKilled", self.SEEDED, allow_generic=False)
         assert matched["runbook_id"] == "eks-pod-oom"
 
+    def test_a_weak_seeded_match_does_not_beat_a_strong_built_in_one(self, monkeypatch):
+        """The deeper half of the same defect, found live after the first fix.
+
+        `allow_generic=False` stopped the stale table answering when *nothing*
+        matched. It did nothing about the table answering with a *worse* match:
+        a `KubePodNotReady` alert scored 1 against the seeded `eks-pod-oom`
+        (its root cause mentioned OOMKilled) and 3 against the built-in
+        `health-check-failure`, and the weaker one won purely because its
+        catalog was scanned first. Two heuristics over two catalogs have to be
+        one heuristic over the union.
+        """
+        import src.agents.operations.aws.decision as decision
+
+        monkeypatch.setattr(decision, "_lookup_dynamo", lambda _name: None)
+        monkeypatch.setattr(decision, "_scan_dynamo_candidates", lambda: self.SEEDED)
+
+        analyzer = _analyzer_for(
+            "ONPREM/kubernetes-workload",
+            "availability",
+            "the readiness probe never passes; possibly OOMKilled before logging",
+            "kubernetes-workload",
+        )
+        analyzer.detector.alarm.reason = "KubePodNotReady pod stuck in a non-ready state"
+        runbook_id, _actions, _rto, _steps = decision._select_runbook(analyzer)
+        assert runbook_id == "health-check-failure", (
+            "a stale seed must not cap what selection can reach"
+        )
+
+    def test_a_seeded_row_still_wins_an_equal_score(self):
+        """Operator precedence is real where it is expressed — on ties."""
+        alarm = AlarmContext(
+            alarm_name="a", alarm_arn="", state="ALARM",
+            reason="OOM observed", metric_name="availability",
+            namespace="ONPREM/kubernetes-workload", dimensions={},
+        )
+        seeded = [{**BUILTIN_RUNBOOKS["eks-pod-oom"], "runbook_id": "operator-eks-pod-oom"}]
+        picked = _match_runbook_registry(
+            alarm, "OOMKilled", [*seeded, *BUILTIN_RUNBOOKS.values()],
+            allow_generic=False, resource_type="kubernetes-workload",
+        )
+        assert picked["runbook_id"] == "operator-eks-pod-oom"
+
     def test_selection_reaches_the_built_in_tier_through_a_seeded_table(self, monkeypatch):
         """Asserted at the CALL SITE, because the parameter alone proves nothing.
 
@@ -217,6 +259,206 @@ class TestTheSeededTableDoesNotShadowTheBuiltInTier:
         )
         assert [s["action"] for s in steps] == ["AWS-CleanupEBSVolume", "AWS-ExpandEBSVolume"]
         assert rto == 300
+
+
+class TestOnPremAlertsReachTheseRunbooks:
+    """Selectable on the AWS path is not selectable.
+
+    Found by running the live webhook after making the four reachable: an
+    on-prem disk-filling alert still resolved to generic-recovery. The detector
+    builds a synthetic alarm for non-AWS signals and set ``reason`` to
+    ``signal_type`` — a duplicate of ``metric_name`` on the next line — so the
+    matcher scored keywords against "availability availability …". The alertname
+    and summary were normalised and stored the whole time and simply never
+    reached selection.
+
+    These enter from an Alertmanager payload, which is the only entry that could
+    have caught it.
+    """
+
+    @staticmethod
+    def _select(alertname: str, summary: str, labels: dict, root_cause: str):
+        from src.agents.operations.aws.decision import _select_runbook
+        from src.agents.operations.aws.detector import lambda_handler as detect
+
+        payload = {
+            "status": "firing",
+            "groupLabels": {"alertname": alertname},
+            "commonLabels": {"alertname": alertname, "severity": "warning", **labels},
+            "commonAnnotations": {"summary": summary},
+            "alerts": [
+                {
+                    "status": "firing",
+                    "labels": {"alertname": alertname, **labels},
+                    "annotations": {"summary": summary},
+                }
+            ],
+        }
+        detected = detect(payload, None)
+        detector = DetectorOutput(
+            alarm=AlarmContext(**detected["alarm"]),
+            normalized_incident=NormalizedIncident(**detected["normalized_incident"]),
+        )
+        analyzer = AnalyzerOutput(
+            detector=detector, root_cause=root_cause, severity=Severity.P2, confidence=0.9
+        )
+        return _select_runbook(analyzer)
+
+    # Real kube-prometheus-stack alert names and the kind of summary text they
+    # actually carry. The first draft of these cases planted the runbook's own
+    # keyword in the summary ("…, disk full projected in 18h") and passed while
+    # the live webhook still answered generic-recovery for the same alert — the
+    # test was fitted to the keyword list rather than to what Alertmanager sends.
+    # Nothing here contains a literal keyword phrase; matching has to come from
+    # the alert name and ordinary wording.
+    @pytest.mark.parametrize(
+        "alertname,summary,labels,root_cause,expected",
+        [
+            (
+                "NodeFilesystemSpaceFillingUp",
+                "Filesystem on /var will fill in ~18 hours; currently 78% used",
+                {"namespace": "monitoring", "service": "reporting-worker"},
+                "volume usage on the reporting worker is climbing steadily",
+                "disk-full",
+            ),
+            (
+                "KubePodNotReady",
+                "Pod payments-api has been in a non-ready state for 15 minutes",
+                {"namespace": "payments", "service": "payments-api", "pod": "p-1"},
+                "the container fails its startup check shortly after rollout",
+                "health-check-failure",
+            ),
+            (
+                "CertManagerCertExpirySoon",
+                "TLS cert for ingress renews in 5 days and has not rotated",
+                {"service": "ingress"},
+                "automatic rotation has not run for this ingress",
+                "certificate-expiry",
+            ),
+            (
+                "HighRequestLatency",
+                "p99 for the api service doubled over the last 30 minutes",
+                {"namespace": "payments", "service": "api", "pod": "a-1"},
+                "response times rose sharply across endpoints",
+                "network-latency-high",
+            ),
+        ],
+    )
+    def test_alertmanager_alert_selects_the_matching_runbook(
+        self, alertname, summary, labels, root_cause, expected
+    ):
+        runbook_id, _actions, _rto, _steps = self._select(alertname, summary, labels, root_cause)
+        assert runbook_id == expected
+
+    def test_selected_actions_are_on_prem_not_the_aws_fallback(self):
+        """The fallback that hides a mismatch: `_resolve_runbook_actions` catches
+        an unresolvable capability and returns the runbook's hardcoded AWS
+        action names, so a wrong pick surfaces as AWS-* actions on an on-prem
+        incident rather than as an error."""
+        _id, actions, _rto, _steps = self._select(
+            "NodeFilesystemSpaceFillingUp",
+            "Filesystem /var 78% used, disk full projected in 18h",
+            {"namespace": "monitoring", "service": "reporting-worker"},
+            "disk usage climbing",
+        )
+        assert actions and all(a.startswith("ONPREM-") for a in actions), actions
+
+    def test_existing_onprem_selection_is_unchanged(self):
+        runbook_id, _a, _r, _s = self._select(
+            "KubePodCrashLooping",
+            "pod OOMKilled repeatedly, MemoryPressure",
+            {"namespace": "payments", "service": "payments-api", "pod": "p-2"},
+            "pod OOMKilled, memory limit exceeded",
+        )
+        assert runbook_id == "eks-pod-oom"
+
+
+class TestReasonCarriesWhatFired:
+    """`reason` is the text selection reads; it was a copy of `metric_name`."""
+
+    @staticmethod
+    def _alarm(**incident_kwargs):
+        from src.agents.operations.aws.detector import _synthetic_alarm
+
+        return _synthetic_alarm(
+            NormalizedIncident(
+                provider="onprem",
+                service="svc",
+                resource_type="kubernetes-workload",
+                resource_id="r",
+                signal_type="availability",
+                **incident_kwargs,
+            ),
+            "onprem",
+        )
+
+    def test_rule_name_and_description_reach_the_alarm(self):
+        alarm = self._alarm(
+            source_metadata={"alertname": "NodeFilesystemSpaceFillingUp"},
+            observations={"summary": "disk 78% used"},
+        )
+        assert "NodeFilesystemSpaceFillingUp" in alarm.reason
+        assert "disk 78% used" in alarm.reason
+        assert alarm.reason != alarm.metric_name, "reason must not duplicate metric_name"
+
+    @pytest.mark.parametrize(
+        "metadata,expected",
+        [
+            ({"policy_name": "gcp-disk-policy"}, "gcp-disk-policy"),
+            ({"alert_rule": "azure-disk-rule"}, "azure-disk-rule"),
+        ],
+    )
+    def test_other_providers_are_looked_up_not_special_cased(self, metadata, expected):
+        assert expected in self._alarm(source_metadata=metadata).reason
+
+    def test_falls_back_to_signal_type_when_nothing_descriptive_exists(self):
+        """An adapter carrying none of these must not hand matching an empty
+        string — that would be worse than the duplicate it replaced."""
+        assert self._alarm().reason == "availability"
+
+
+class TestResourceTypeGate:
+    """`resource_types` was declared on every runbook and read by nothing.
+
+    Without it, a keyword hit could select a database runbook for a Kubernetes
+    workload — and the failure is quiet, because unresolvable capabilities fall
+    back to the runbook's hardcoded AWS action names.
+    """
+
+    def test_a_database_runbook_is_not_chosen_for_a_kubernetes_workload(self):
+        alarm = AlarmContext(
+            alarm_name="a", alarm_arn="", state="ALARM",
+            reason="CPUUtilization cpu saturated on the pod",
+            metric_name="availability", namespace="ONPREM/kubernetes-workload", dimensions={},
+        )
+        picked = _match_runbook_registry(
+            alarm, "cpu high", BUILTIN_RUNBOOKS.values(), resource_type="kubernetes-workload"
+        )
+        assert picked is None or picked["runbook_id"] != "rds-cpu-high"
+
+    def test_the_same_alarm_still_reaches_it_for_a_database(self):
+        """Guard the guard: a gate that excluded everything would pass the test
+        above while breaking selection entirely."""
+        alarm = AlarmContext(
+            alarm_name="a", alarm_arn="", state="ALARM",
+            reason="CPUUtilization cpu saturated", metric_name="cpu",
+            namespace="AWS/RDS", dimensions={},
+        )
+        picked = _match_runbook_registry(
+            alarm, "cpu high", BUILTIN_RUNBOOKS.values(), resource_type="database-instance"
+        )
+        assert picked["runbook_id"] == "rds-cpu-high"
+
+    def test_unknown_resource_type_does_not_exclude_anything(self):
+        alarm = make_alarm("AWS/EKS", "pod_restart_total")
+        assert _match_builtin(alarm, "OOMKilled")["runbook_id"] == "eks-pod-oom"
+
+    def test_generic_recovery_is_never_gated(self):
+        """It is the answer when nothing fits, so gating it by resource type
+        would leave some incidents with no runbook at all."""
+        alarm = make_alarm("Custom/Unknown", "WeirdMetric")
+        picked = _match_builtin(alarm, "obscure", resource_type="streaming-consumer")
+        assert picked["runbook_id"] == "generic-recovery"
 
 
 class TestDeclaredVerificationsExist:

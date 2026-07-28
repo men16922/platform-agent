@@ -106,12 +106,26 @@ def _select_runbook(
     Match the analyzer output against runbook registry.
 
     Priority:
-      1. DynamoDB lookup (exact alarm_name match)
-      2. DynamoDB catalog scan heuristic
-      3. Built-in registry heuristic
-      4. generic-recovery fallback
+      1. DynamoDB lookup (exact alarm_name match) — the operator override
+      2. Heuristic over BOTH catalogs (scanned DynamoDB rows + built-ins),
+         best score wins, DynamoDB rows winning ties
+      3. generic-recovery fallback
+
+    Tiers 2 and 3 used to be sequential, and that was not a priority rule so
+    much as an accident of which catalog got scanned first: the scan tier
+    returned *any* match it found and the built-in tier was never consulted.
+    Measured live — a `KubePodNotReady` alert scored 1 against the seeded
+    `eks-pod-oom` row and 3 against the built-in `health-check-failure`, and the
+    weaker match won because the stale table happened to hold it. Two heuristics
+    over two catalogs have to be one heuristic over the union, or the deployed
+    table's staleness silently caps what can ever be selected.
+
+    Operator precedence is preserved where it is actually expressed: tier 1 is
+    untouched, and scanned rows are scored first so they win ties.
     """
     alarm     = analyzer.detector.alarm
+    incident  = analyzer.detector.normalized_incident
+    resource_type = incident.resource_type if incident else None
 
     def _plan(runbook: dict[str, Any]) -> tuple[str, list[str], int | None, list[dict[str, Any]]]:
         steps = _resolve_runbook_steps(runbook, analyzer)
@@ -125,17 +139,22 @@ def _select_runbook(
     if dynamo_rb:
         return _plan(dynamo_rb)
 
-    # No generic fallback here: an operator-seeded table answering "nothing
-    # matched" with its own generic row would skip the built-in tier entirely
-    # (see `_match_runbook_registry`). Generic recovery stays where the priority
-    # list puts it — last, in `_match_builtin`.
+    # One heuristic over both catalogs. Scanned rows come first so they win
+    # ties; duplicates (the seed is a copy of the built-ins) are harmless for
+    # the same reason. No generic fallback inside the scoring — it is the
+    # answer for "nothing fit", which is the line below.
+    candidates = [*_scan_dynamo_candidates(), *_BUILTIN_RUNBOOKS.values()]
     registry_rb = _match_runbook_registry(
-        alarm, analyzer.root_cause, _scan_dynamo_candidates(), allow_generic=False
+        alarm,
+        analyzer.root_cause,
+        candidates,
+        allow_generic=False,
+        resource_type=resource_type,
     )
     if registry_rb:
         return _plan(registry_rb)
 
-    return _plan(_match_builtin(alarm, analyzer.root_cause))
+    return _plan(_BUILTIN_RUNBOOKS["generic-recovery"])
 
 
 def _lookup_dynamo(alarm_name: str) -> dict[str, Any] | None:
@@ -187,11 +206,38 @@ def _scan_dynamo_candidates() -> list[dict[str, Any]]:
     return valid
 
 
-def _match_builtin(alarm: AlarmContext, root_cause: str) -> dict[str, Any]:
-    candidate = _match_runbook_registry(alarm, root_cause, _BUILTIN_RUNBOOKS.values())
+def _match_builtin(
+    alarm: AlarmContext, root_cause: str, *, resource_type: str | None = None
+) -> dict[str, Any]:
+    candidate = _match_runbook_registry(
+        alarm, root_cause, _BUILTIN_RUNBOOKS.values(), resource_type=resource_type
+    )
     if candidate:
         return candidate
+    # generic-recovery is the answer when nothing fits, so it is never subject to
+    # the resource-type gate — that is what makes the gate safe to apply above.
     return _BUILTIN_RUNBOOKS["generic-recovery"]
+
+
+def _fits_resource(runbook: dict[str, Any], resource_type: str | None) -> bool:
+    """Can this runbook's plan actually apply to this kind of resource?
+
+    ``resource_types`` has been declared on every runbook since the catalog
+    existed, parsed into the dataclass and serialised back out — and never
+    consulted by selection. So nothing stopped an RDS runbook being chosen for a
+    Kubernetes workload, and the consequence is not a clean failure:
+    `_resolve_runbook_actions` catches the unresolvable capability and falls
+    back to the runbook's **hardcoded AWS action names**, handing the executor
+    actions for the wrong provider entirely.
+
+    Unknown on either side means "do not exclude" — a runbook that declares no
+    resource types is as broad as it was yesterday, and an incident whose
+    resource type could not be inferred must not lose every candidate.
+    """
+    declared = runbook.get("resource_types") or []
+    if not declared or not resource_type:
+        return True
+    return resource_type in declared
 
 
 def _match_runbook_registry(
@@ -200,6 +246,7 @@ def _match_runbook_registry(
     registry: Iterable[dict[str, Any]],
     *,
     allow_generic: bool = True,
+    resource_type: str | None = None,
 ) -> dict[str, Any] | None:
     """Score a registry and return the best match, or None.
 
@@ -221,6 +268,8 @@ def _match_runbook_registry(
     for rb in registry:
         if rb.get("runbook_id") == "generic-recovery":
             generic_rb = rb
+            continue
+        if not _fits_resource(rb, resource_type):
             continue
         score = 0
         if any(alarm.namespace.startswith(ns) for ns in rb.get("namespaces", [])):

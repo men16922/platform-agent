@@ -130,10 +130,47 @@ def _synthetic_alarm(incident: NormalizedIncident, provider: str) -> AlarmContex
         alarm_name=incident.service or "external-incident",
         alarm_arn="",
         state="ALARM",
-        reason=incident.signal_type or "",
+        reason=_incident_reason(incident),
         metric_name=incident.signal_type or "",
         namespace=f"{provider.upper()}/{incident.resource_type}",
     )
+
+
+# Where each provider puts the human-readable name of the rule that fired, and
+# the text describing it. Runbook matching scores keywords over the alarm's
+# `reason`, so anything not surfaced here is invisible to selection.
+_RULE_NAME_KEYS = ("alertname", "policy_name", "condition_name", "alert_rule")
+_DESCRIPTION_KEYS = ("summary", "description")
+
+
+def _incident_reason(incident: NormalizedIncident) -> str:
+    """What actually fired, in words — the text runbook matching reads.
+
+    This used to be ``incident.signal_type``, i.e. a duplicate of ``metric_name``
+    on the very next line, so the matcher scored keywords against
+    "availability availability …" and every descriptive word the alert carried
+    was invisible to it. The rule name and summary were normalised and stored
+    all along (``source_metadata``/``observations``) and simply never reached
+    selection — which is why an on-prem disk alert resolved to generic-recovery
+    while a `disk-full` runbook sat in the catalog.
+
+    Provider-neutral by construction: each adapter names the rule differently
+    (Alertmanager `alertname`, GCP `policy_name`/`condition_name`, Azure
+    `alert_rule`), so the keys are looked up rather than special-cased.
+    """
+    metadata = incident.source_metadata or {}
+    observations = incident.observations or {}
+    parts = [
+        str(metadata.get(key, "")).strip()
+        for key in _RULE_NAME_KEYS
+    ] + [
+        str(observations.get(key, "")).strip()
+        for key in _DESCRIPTION_KEYS
+    ]
+    reason = " ".join(part for part in parts if part)
+    # Falling back to signal_type keeps the previous behaviour for any adapter
+    # that carries none of these, rather than handing matching an empty string.
+    return reason or (incident.signal_type or "")
 
 
 # ------------------------------------------------------------------
