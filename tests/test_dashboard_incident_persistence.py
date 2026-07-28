@@ -1,3 +1,4 @@
+from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 from src.agents.models import (
@@ -118,3 +119,53 @@ class TestIncidentCarriesItsOwner:
         """The AWS path has no tenant and never had this problem; it must not break."""
         item = _record(_decision())
         assert item["provider"] == "aws" and item["runbook_id"] == "eks-pod-oom"
+
+
+class TestTheCloudRowKnowsWhenItFired:
+    """The on-prem writer was corrected first; this is the cloud half.
+
+    `created_at`/`resolved_at` are both the write moment, so without the fire
+    time a cloud incident lands on the timeline whenever it happened to be
+    processed and the gap between breaking and noticing is not derivable at all.
+    The dashboard already reads `triggered_at` — the reader existed before the
+    writer, which is the same asymmetry the tenant fix directly above closed.
+    """
+
+    def test_fire_time_is_recorded_from_the_normalized_incident(self):
+        item = _record(_decision())
+        assert item["triggered_at"], "the timeline cannot place an incident without it"
+
+    def test_absent_when_the_source_reported_none(self):
+        import dataclasses
+
+        decision = _decision()
+        decision.analyzer.detector.normalized_incident = dataclasses.replace(
+            decision.analyzer.detector.normalized_incident, triggered_at=""
+        )
+        assert "triggered_at" not in _record(decision), (
+            "a defaulted fire time asserts a moment that never happened"
+        )
+
+
+class TestConfidenceReachesTheDashboard:
+    """It has always been rendered and never been written.
+
+    The detail view shows "confidence n/a" when it is missing, so every cloud
+    incident has displayed that since the view existed — the analyser produced a
+    number and this writer dropped it.
+    """
+
+    def test_confidence_is_recorded(self):
+        assert _record(_decision())["confidence"] == Decimal("0.98")
+
+    def test_it_is_a_decimal_because_a_float_would_delete_the_row(self):
+        """boto3's resource layer rejects Python floats outright, and the raise
+        would be caught by this writer's own `except Exception` — so the wrong
+        type here does not degrade one field, it loses the whole incident."""
+        assert isinstance(_record(_decision())["confidence"], Decimal)
+
+    def test_no_float_survives_anywhere_in_the_item(self):
+        """One float anywhere is enough to fail the write, so this guards the
+        whole item rather than the field that happened to introduce the risk."""
+        floats = [k for k, v in _record(_decision()).items() if isinstance(v, float)]
+        assert floats == [], f"floats reach DynamoDB as an exception, not a value: {floats}"

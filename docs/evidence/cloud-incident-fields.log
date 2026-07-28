@@ -1,0 +1,69 @@
+The cloud half: fire time and confidence never reached the row
+===============================================================
+Date : 2026-07-29
+Mode : unit + empirical check of the boto3 serializer (no AWS write performed)
+Gate : make check 1491 -> 1496 (+5)
+
+
+Completing what the on-prem fix left open
+-------------------------------------------
+The on-prem incident writer was corrected earlier today to keep the alert's fire
+time. The same omission existed on the cloud side, in `executor._record_incident`
+— the writer for AWS, GCP and Azure incidents — and it sat directly below a
+comment describing the *identical* defect being fixed for `tenant`/`env`.
+
+Two fields, both with readers that already existed:
+
+1. **`triggered_at`** — `created_at` and `resolved_at` are both the write
+   moment, so a cloud incident landed on the timeline whenever it happened to be
+   processed, and time-to-detect was not derivable. The dashboard has read
+   `triggered_at` since this morning's change; the reader existed before the
+   writer, which is the same asymmetry the tenant fix closed.
+
+2. **`confidence`** — the analyser produces it on every incident and the detail
+   view has always rendered it, which means every cloud incident has displayed
+   "confidence n/a" for as long as that view has existed.
+
+
+The trap in field 2
+---------------------
+`confidence` is a float, and boto3's resource layer rejects Python floats
+outright. Verified rather than assumed:
+
+    TypeSerializer().serialize(0.98)          -> TypeError: Float types are not
+                                                 supported. Use Decimal types instead.
+    TypeSerializer().serialize(Decimal("0.98")) -> {'N': '0.98'}
+
+That raise would have been caught by this writer's own `except Exception`, which
+logs and returns. So writing the natural type would not have degraded one field
+— it would have **silently lost the entire incident record**, on every cloud
+incident, with only a log line to show for it.
+
+Stored as `Decimal(str(...))`, the pattern `approval_bridge/request_store.py`
+already established for exactly this reason.
+
+
+Falsification
+--------------
+  - `confidence` written as a raw float   -> 3 failures
+  - `triggered_at` dropped again          -> 1 failure
+Restoring passed all 9.
+
+One of the three is a whole-item guard — no float may appear anywhere in the
+record — because a single float is enough to fail the write, and the field that
+introduced the risk today is not necessarily the one that introduces it next.
+
+
+WHAT IS STILL OPEN
+-------------------
+- **Not exercised against real DynamoDB.** The tests drive `_record_incident`
+  with a mocked table, and the serializer behaviour was checked directly; no
+  item was written to `incident-history`. The write path itself (IAM, table
+  shape) is unchanged, but the new attributes have not been round-tripped
+  through the real table and read back by the dashboard.
+- **`resolved_at` is still the write time**, identical to `created_at` on every
+  row. Time-to-resolve therefore remains underivable even now that the fire time
+  is present — closing it means recording when resolution actually occurred,
+  which is a separate change to the executor's own bookkeeping.
+- `trace_id` is deliberately not written here: tracing is the on-prem OTel seam,
+  so its absence on cloud rows is correct rather than a gap.

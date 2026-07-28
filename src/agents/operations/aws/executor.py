@@ -14,6 +14,7 @@ import json
 import os
 import time
 import uuid
+from decimal import Decimal
 from typing import Any
 
 import boto3
@@ -514,6 +515,26 @@ def _record_incident(
                 item["tenant"] = normalized_incident.tenant
             if normalized_incident.env:
                 item["env"] = normalized_incident.env
+            # When the alert actually fired, per the source. `created_at` above is
+            # when this row was written, so without this the incident lands on the
+            # timeline at the moment we happened to process it and the gap between
+            # breaking and noticing is not derivable. Same field, same omission,
+            # same fix as tenant/env directly above — the on-prem writer was
+            # corrected first; this is the cloud half.
+            if normalized_incident.triggered_at:
+                item["triggered_at"] = normalized_incident.triggered_at
+
+        # The analyser's confidence. The dashboard has always rendered it — and
+        # has therefore always rendered "confidence n/a" for every cloud
+        # incident, because this writer never stored it.
+        #
+        # Decimal, not float: boto3's resource layer *rejects* Python floats
+        # outright (see approval_bridge/request_store.py, which already paid for
+        # this). The raise would be swallowed by the except below and the entire
+        # incident record would be lost — so the wrong type here does not degrade
+        # one field, it deletes the row.
+        if isinstance(analyzer.confidence, (int, float)):
+            item["confidence"] = Decimal(str(analyzer.confidence))
 
         # Surface the reconciliation gate result so the dashboard can show WHY an
         # AUTO decision was downgraded (parity with the on-prem incident pipeline).
