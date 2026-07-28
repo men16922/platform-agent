@@ -33,7 +33,7 @@
 확정 아키텍처: **capability, implementation-pluggable** — Tenant=격리 티어 정책(soft/vcluster/dedicated),
 Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSOT=per-tenant git 레지스트리.
 **최우선 불변식**: 에이전트 실행 blast radius=1 tenant/env(자격증명이 경계) — Phase 1a에서 강제 완료.
-**Phase 0·1a·1b·2·3 = 완결**(M10~M12) — 상세 → `COMPLETED_SUMMARY.md`.
+**Phase 0·1a·1b·2·3 = 완결**(M10~M12) + **잔여 8건 소진**(M13) — 상세 → `COMPLETED_SUMMARY.md`.
 
 - [ ] **deployments/activities 파티션 — 데이터 모델 결정 필요(버그 아님)** — 인시던트는 tenant가
   *있는데 버려진* 것이었지만, 배포 기록은 `provider/service/version/environment`뿐이고
@@ -49,8 +49,8 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 
 ## 잔여 — 완료 항목에서 의도적으로 남긴 것
 
-> 완료분(Phase 2·3, grant 대조, 런북 선택성·티어, MCP 옆문, call budget, Capsule metadata,
-> executor span, 온프렘 매칭)은 `COMPLETED_SUMMARY.md` M12 · `PROGRESS_LOG.md` · `docs/evidence/`.
+> 완료분은 `COMPLETED_SUMMARY.md` **M12**(Phase 3 인가) · **M13**("선언됐지만 아무도 읽지
+> 않는 것들" 8건) · `PROGRESS_LOG.md` · `docs/evidence/`.
 
 - [ ] **time-to-resolve가 아직 불가** — `resolved_at`이 모든 행에서 `created_at`과 같은
   **쓴 시각**이다. 발생 시각은 이제 온프렘·클라우드 양쪽에 있으니(gate 1491·1496), 남은 건

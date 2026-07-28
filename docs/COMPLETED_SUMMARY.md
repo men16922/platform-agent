@@ -38,6 +38,47 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
+## M13 — "선언됐지만 아무도 읽지 않는 것들" 8건 (완료, 2026-07-28~29)
+
+**gate 1411 → 1496 (+85).** 증거 `docs/evidence/{phase3-tenant-grant-validation,
+runbook-selectability,capsule-deprecation-metadata,executor-span-approval-path,
+onprem-runbook-matching,declared-unconsumed-sweep,incident-trigger-time,
+cloud-incident-fields}.log`. 결정 → `DECISIONS` D33·D34·D35.
+
+Phase 3가 인가를 닫은 뒤 남은 잔여를 우선순위대로 소진했는데, **여덟 건이 전부 같은
+결함**이었다: 필드나 계획이 **선언되고, 채워지고, 저장되고, 아무도 읽지 않는다.** 테스트는
+여덟 번 다 초록이었다 — 전부 *생산자*를 단언했기 때문이다. 여덟 번 다 **라이브 실행만이**
+드러냈고, 그중 세 번은 유닛 테스트가 통과하는 동안 라이브가 다른 답을 냈다.
+
+- **grant 대조(1425)**: 기록은 "대조 안 함"이었지만 grant를 **줄 방법 자체가 없었고**(읽기 쪽이
+  아무 쓰기 경로도 만들 수 없는 필드를 소비 중) 역할 변경이 whole-item Put으로 grant를 지웠다.
+  허브 로스터(못 읽으면 **503**, 회수만 예외) + 저장 전 대조 → D33.
+- **런북 선택성(1445)·티어(1470)**: 런북 4개가 BUILTIN에 없어 선택 불가 → 넣었더니 라이브는
+  여전히 generic-recovery. 시드 테이블의 generic 행이 티어 4의 답을 대신 내서 **빌트인 티어가
+  배포 환경에서 한 번도 도달된 적 없었다**(D34). 고쳤더니 이번엔 **더 나쁜 매칭**이 이겼다 —
+  1점짜리 시드 행이 3점짜리 빌트인을 눌렀다(D35, 합집합 휴리스틱).
+- **온프렘 매칭(1470)**: `reason`이 `metric_name`의 **복사본**이라 매처가
+  "availability availability…"를 읽었고, `resource_types`는 모든 런북에 선언돼 있고 **미소비**라
+  엉뚱한 런북이 걸려도 하드코딩 AWS 액션으로 조용히 폴백했다.
+- **Capsule metadata(1446)**: `additionalMetadata`는 제거 릴리스에서 **에러 없이 안 읽히는**
+  쪽으로 실패할 필드라 선제 이관(라이브에서 probe 라벨 전파로 반증).
+- **executor span(1454)**: 웹훅이 루트 span을 닫은 뒤 실행해 **AUTO·승인 양쪽 다 무추적**.
+  승인은 부모가 아니라 **링크** — 사이 간격이 사람의 고민 시간이라 접으면 지연 수치가 무의미해진다.
+- **severity_hint(1479)**: 우연을 그만두려 **계통 스윕**(437 필드 → 20 후보). 네 어댑터가 전부
+  채우는데 아무도 안 읽어, 사람이 **미리** 내린 분류가 버려지고 **AUTO/APPROVE를 정하는 축**이
+  산문에서만 추론됐다. 라이브 A/B: warning이 자동실행 → 승인대기로.
+- **인시던트 발생 시각(1491·1496)**: 행이 "우리가 쓴 시각"만 알아 탐지 소요시간이 산출 불가.
+  온프렘·클라우드 양쪽 + `detected +Nm` 배지(**읽는 쪽 없이 저장만 하면 같은 결함을 하나 더
+  만드는 것**). 클라우드 `confidence`는 float라 그냥 넣었으면 boto3 예외가 기록기의 `except`에
+  잡혀 **레코드 전체가 사라졌을** 것 → `Decimal`.
+
+**반복된 교훈(테스트 규율 3종)**: ①가드를 쓰면 **호출부에서** 반증하라 — 새 테스트 20건이
+전부 통과하는데 호출자만 플래그를 잊은 상태였다. ②픽스처는 코드가 아니라 **실제 입력**에서
+가져와라 — 내가 쓴 summary에 런북 키워드를 심어놔 유닛은 초록인데 라이브는 계속 틀렸다.
+③**소비자를 단언하라, 생산자 말고** — `severity_hint`를 "설정되는가"로 봤다면 그 필드가 존재한
+내내 통과했을 것이고, 그게 이 부류가 여태 살아남은 방식이다.
+스윕은 `scripts/find_unconsumed_fields.py`로 반복 가능하게 남겼다(후보≠결함).
+
 ## M12 — 멀티테넌트 Phase 3(인가 강화) 완결 + 읽기 경계 (완료, 2026-07-27~28)
 
 **gate 1290 → 1411.** 증거 `docs/evidence/phase3-*.log` · `mcp-gateway-scope.log`.
