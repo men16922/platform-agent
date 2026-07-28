@@ -55,7 +55,16 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 
 ## 잔여 — 완료 항목에서 의도적으로 남긴 것
 
-- [ ] **② executor span**(선택) — 현재 parking 경로만 실증. 승인 후 실행 경로는 미측정.
+- [x] **② executor span(gate 1454, 2026-07-28)** — 기록보다 넓었다: 웹훅이 `execute=False`로
+  부르고 **루트 span이 닫힌 뒤** 실행해서, AUTO·승인 **양쪽 모두** executor span이 없었다.
+  span을 `execute_incident` 안으로 이동 + 웹훅 루트 2개 + 승인은 **부모가 아니라 링크**
+  (사이 간격이 사람의 고민 시간이라 접으면 지연 수치가 무의미해진다).
+  증거 `docs/evidence/executor-span-approval-path.log`.
+- [ ] **선택 가능해진 런북 4개가 온프렘 알람엔 안 걸린다**(위 라이브 중 발견, 회귀 아님) —
+  온프렘 디텍터가 모든 Alertmanager 알람을 `namespace=ONPREM/kubernetes-workload`·
+  `metric_name=availability`로 정규화해서 **alertname이 매처에 닿지 않는다**. 네 런북은
+  CloudWatch 네임스페이스/메트릭 이름 기준이라 온프렘에선 root_cause 텍스트로만 매칭된다.
+  "온프렘 alertname을 매처에 넣을 것인가"는 매칭 설계 결정이라 발명하지 않고 남긴다.
 - [ ] **⑥ k3s 검증기 재실행**(선택) — flannel은 NetworkPolicy 집행이 전이되지 않으므로 기판별 재확인 필요.
 - [x] **선택 불가 런북 4개 + 티어 셰도잉(gate 1445, 2026-07-28)** — BUILTIN 항목을 넣어도
   **라이브는 넷 다 generic-recovery**였다: 시드 테이블에 generic 행이 있어 티어 2가 티어 4의

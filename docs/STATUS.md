@@ -8,6 +8,12 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **1454 passed, 1 skipped** (2026-07-28, 1446→1454, +8) — **executor span**
+  (`3939d47`): 기록은 "승인 후 경로 미측정"이었지만 웹훅이 `execute=False` 후 **루트 span이 닫힌
+  뒤** 실행해서 **AUTO 경로도 무추적**이었다 — 클러스터를 바꾸는 단계가 실제 알람이 타는 모든
+  경로에서 span을 안 냈다. span을 `execute_incident` 안으로 + 웹훅 루트 2개 + 승인은 **링크**
+  (사이 간격=사람의 고민 시간). **라이브**(실 OTLP/gRPC): AUTO 6 span 단일 트레이스
+  (analyze 5.4s/7.7s) · 승인 트레이스 2개+링크 1개. 증거 `docs/evidence/executor-span-approval-path.log`.
 - `make check` (pytest) → **1446 passed, 1 skipped** (2026-07-28, 1411→1446, +35) — **잔여 3건**
   (`63df3c5`·`9beda00`·`278a264`): ①grant는 대조만 없던 게 아니라 **줄 방법 자체가 없었고**
   역할 변경이 whole-item Put으로 grant를 지웠다 → 허브 `GET /api/platform/tenants`(레지스트리
@@ -17,13 +23,6 @@
   `additionalMetadata`→`additionalMetadataList`(제거 시 **에러 없이 안 읽히는** 실패).
   **라이브**: grant 5케이스 · 실 DynamoDB 스캔 · kind PSS 라벨 유지 + probe 전파.
   증거 `docs/evidence/{phase3-tenant-grant-validation,runbook-selectability,capsule-deprecation-metadata}.log`.
-- `make check` (pytest) → **1411 passed, 1 skipped** (2026-07-28, 1404→1411, +7) — **읽기 파티션
-  완결 + granted-viewer 실증**(`0512d2b`·`2357583`): 인시던트 파티션이 막혀 있던 원인은 읽기가
-  아니라 **쓰기**(`_record_incident`가 Phase 1a부터 있던 tenant를 버렸다) · 기록 없는 행은
-  admin 전용 · 캐시 `public, s-maxage` → **`private, no-store`** · granted-viewer가 미실증이던
-  진짜 이유는 **local-dev 우회가 `role: admin` 하드코딩**이라 인가 표면이 로컬에서 검증 불가였던
-  것. **라이브**: 익명 0/3 · viewer-demo(grant=acme) 1/3 · admin 3/3.
-  증거 `docs/evidence/phase3-read-partition-live.log`.
 - `make check` (pytest) → **1404 passed, 1 skipped** (2026-07-28, 1377→1404, +27) — **외부 자료
   대조발 결함 4건 근본수정**(`e7ad744`·`1aa86e0`·`67ab309`): Agent Card가 가상 주소와 **집행하지
   않는 인증**을 광고하던 것 · **MCP 게이트웨이가 ambient 자격증명 경로**였던 것(Phase 1a가 앞문에서
