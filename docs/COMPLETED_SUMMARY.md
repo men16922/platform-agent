@@ -38,12 +38,13 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
-## M13 — "선언됐지만 아무도 읽지 않는 것들" 9건 (완료, 2026-07-28~29)
+## M13 — "선언됐지만 아무도 읽지 않는 것들" 10건 (완료, 2026-07-28~29)
 
-**gate 1411 → 1520 (+109).** 증거 `docs/evidence/{phase3-tenant-grant-validation,
+**gate 1411 → 1528 (+117).** 증거 `docs/evidence/{phase3-tenant-grant-validation,
 runbook-selectability,capsule-deprecation-metadata,executor-span-approval-path,
 onprem-runbook-matching,declared-unconsumed-sweep,incident-trigger-time,
-cloud-incident-fields,incident-time-to-resolve}.log`. 결정 → `DECISIONS` D33·D34·D35.
+cloud-incident-fields,incident-time-to-resolve,rollback-cost-metrics}.log`.
+결정 → `DECISIONS` D33·D34·D35.
 
 Phase 3가 인가를 닫은 뒤 남은 잔여를 우선순위대로 소진했는데, **아홉 건이 전부 같은
 결함**이었다: 필드나 계획이 **선언되고, 채워지고, 저장되고, 아무도 읽지 않는다.** 테스트는
@@ -78,6 +79,13 @@ Phase 3가 인가를 닫은 뒤 남은 잔여를 우선순위대로 소진했는
   `runbook_id`에 `alarm_name` 복사 → 재발 패턴 그룹핑 붕괴 · 대시보드 Scan 투영이 **자기
   리더가 읽는 4필드**를 안 불러 전날 수정이 배지 한 층 앞에서 멈춰 있었다.
   실측 0.0→45.0, 라이브 P1/AUTO 1502초 보존·열린 인시던트는 부재.
+- **롤백 비용 패널(1528)**: 이 부류가 **반대 방향으로도** 열린 첫 사례 — 읽는 쪽은 멀쩡한데
+  ACTIVITY를 쓰는 셋 중 `record_rollback`만 `cost_metrics`를 빠뜨렸다. 그 자체론 과소보고인데,
+  reader `mergeActivity`가 **trace만 합집합**으로 두고 나머지를 `{...latest}`로 최신 행에서
+  가져가 **롤백되는 순간 도구/추론/토큰 수가 페이지에서 사라졌다**(패널이 조건부라 예외도
+  "0"도 없이, 바로 아래 트레이스는 오히려 길어진 채). 라이브 BEFORE 미렌더 → AFTER
+  `tool calls 5 · tokens 920`, 내역이 두 실행에 걸침. **절반씩은 각각 방어 가능한데 겹칠
+  때만 터진다** · 생산자가 여럿이면 **하나만 침묵해도** 나머지가 정상을 계속 증명해준다.
 
 **반복된 교훈(테스트 규율 5종)**: ①가드를 쓰면 **호출부에서** 반증하라 — 새 테스트 20건이
 전부 통과하는데 호출자만 플래그를 잊은 상태였다. ②픽스처는 코드가 아니라 **실제 입력**에서
@@ -87,7 +95,11 @@ Phase 3가 인가를 닫은 뒤 남은 잔여를 우선순위대로 소진했는
 — `ProjectionExpression`이 부르지 않은 속성은 리더가 아무리 방어적으로 짜여도 복구할 수 없다.
 ⑤**가드는 파생시켜라, 열거하지 말고** — 매퍼가 읽는 속성을 파싱해 Scan에 요구하면 *다음*
 필드에도 실패한다. 손으로 적은 목록이었다면 당시 투영에 맞춰 쓰였을 테고 그대로 통과했다.
-스윕은 `scripts/find_unconsumed_fields.py`로 반복 가능하게 남겼다(후보≠결함).
+⑥**생산자가 여럿이면 다수결이 결함을 가린다** — 셋 중 하나만 침묵하면 나머지 둘이 그 필드가
+정상이라고 계속 증명해준다. 열 번째 건은 그래서 ③(소비자를 단언하라)으로도 안 잡혔다:
+소비자는 멀쩡했다. 스윕은 두 방향 모두 반복 가능하게 남겼다(후보≠결함) —
+`scripts/find_unconsumed_fields.py`(선언됐는데 안 읽힘) ·
+`scripts/find_unwritten_keys.py`(읽는데 생산자 없음).
 
 ## M12 — 멀티테넌트 Phase 3(인가 강화) 완결 + 읽기 경계 (완료, 2026-07-27~28)
 

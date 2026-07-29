@@ -7,6 +7,35 @@
 
 ---
 
+## 2026-07-29 — 롤백된 배포는 비용 패널을 통째로 잃었다 (gate 1520→1528)
+
+- Status: M13의 열 번째. 앞의 아홉이 "선언됐는데 아무도 안 읽음"이었다면 이번은 **반대
+  방향** — 읽는 쪽은 멀쩡한데 **셋 중 한 생산자만 침묵**했다. 기존 스윕이 구조적으로 볼 수
+  없는 부류라 반대 방향 도구를 새로 만들어 찾았다.
+- Changed(`db41874`): ①`record_rollback`이 `cost_metrics`를 안 썼다(`steps`를 이미 쥐고
+  있어 `_cost_metrics` 호출만 빠진 상태). ②그 자체론 과소보고인데, `mergeActivity`가
+  **trace만 합집합**으로 두고 나머지를 `{...latest}`로 최신 행에서 가져간다 → 롤백되는
+  순간 도구/추론/토큰 수가 **페이지에서 사라졌다**. 패널이 조건부라 예외도 "0"도 없었고,
+  **바로 아래 트레이스는 두 실행을 합쳐 오히려 길어진** 채였다. writer만 고치면 롤백의 2회를
+  배포 전체 수치로 보고하게 되어 부정합이 바뀔 뿐이라 읽는 쪽도 함께 고쳤다
+  (`sumCostMetrics`가 접힌 모든 행을 합산 + per-tool 내역 병합 = trace와 같은 규칙).
+- Verified: `make check` **1528**(+8) · tsc 클린 · `next build` 성공. **라이브**(빌드된
+  대시보드 local 모드, 실 recorder가 쓴 JSONL, HTTP GET): BEFORE 양쪽 되돌려 재빌드 →
+  200인데 **패널 미렌더**(트레이스 도구명은 10회 표시) / AFTER → `tool calls 5 ·
+  reasoning 1 · tokens 920(800 in/120 out)`, 내역이 **두 실행에 걸침**. 반증 4건 개별
+  되돌림 전부 red, 복원 시 8건 통과. 증거 `docs/evidence/rollback-cost-metrics.log`.
+- Blockers: 없음.
+- 품질 메모: 왜 안 잡혔나 — `test_record_deploy_attaches_cost_metrics`가 **동작하는 생산자만**
+  단언했고, 병합 규칙엔 테스트가 아예 없었다. 양쪽 절반은 각각 방어 가능했고 **둘이 겹칠 때만**
+  터졌으며 **페이지에서만** 보였다. 가드는 또 파생: **`deployment_id`를 쓰는 ACTIVITY 행은
+  반드시 `cost_metrics`를 쓴다**(그 키가 곧 상세 페이지로 라우팅되는 조건이므로, 모듈 목록이
+  아니라 키가 의무를 만든다). AST가 아무것도 못 잡으면 공허하게 통과하므로 **가드의 가드**도 뒀다.
+  새 도구는 첫 실행에서 신뢰를 잃지 않도록 `item["k"]=v` 첨자 대입까지 writer로 인정한다 —
+  없으면 **이미 고친 `triggered_at`을 미생산으로 오보고**한다.
+- Next: `record_route_activity`·`record_agent_activity`는 `deployment_id`가 없어 이 뷰에
+  닿지 않으므로 **의도적으로 안 고침**(넣으면 소비자 없는 필드). `PROGRESS_LOG` 예산 초과
+  (135줄 > 120) — `/tidy-docs` 필요.
+
 ## 2026-07-29 — MTTR은 존재 내내 구조적으로 0이었다 (gate 1496→1520)
 
 - Status: `resolved_at` 하나를 보러 갔는데 **한 사슬에 결함 셋**. 전부 테스트는 초록.
