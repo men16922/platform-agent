@@ -18,8 +18,8 @@
 - [ ] **⚠️ 결정 3: Capsule `limitRanges` 이관 경로** — 클러스터 스코프(D30 위반) vs 새 SA+RBAC.
 - [ ] **⚠️ 결정 4: k3s를 proven 기판에 넣을 것인가** — 집행은 라이브로 증명됐고 시맨틱은
   미증명(피어 테넌트 부재). 상세는 아래 잔여 섹션.
-- [ ] **(별도 계획) GitAIOps 후속편 아티클** — 논지=책의 GitAIOps는 AI 자리에 사람이 프롬프트를 넣지만
-  우리는 **오프라인 Qwen 에이전트로 루프를 무인으로 닫는다**. 차별 소재는 **자동화하면 새로 깨지는 것들**:
+- [ ] **(별도 계획) GitAIOps 후속편 아티클** — 논지=책은 AI 자리에 사람이 프롬프트를 넣지만
+  우리는 **오프라인 Qwen 에이전트로 루프를 무인으로 닫는다**. 소재는 **자동화하면 새로 깨지는 것**:
   ①롤백↔selfHeal 충돌 ②자격증명=blast radius ③"실행됨≠나아졌음" ④권한 게이트 부재의 과금 누출.
   **새 소재**: "선언은 됐는데 아무도 소비하지 않는 코드" 12건(M13) — 전부 테스트는 초록이었고
   라이브만 드러냈다. 내 테스트가 실제 입력이 아니라 키워드에 맞춰져 있던 것, 그리고 **수호
@@ -43,7 +43,7 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 - [ ] **Phase 4**(managed 어댑터, billable)·**5**(레지스트리 PR 쓰기) = 다음 후보.
   Phase 5가 열리면 3②를 GitOps-native로 닫을 수 있다(D32 재검토 조건). Phase 4로 넘긴 것:
   GCP/Azure 자격증명의 테넌트 바인딩(상세 → `STATUS` Open Risk 9).
-- [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 수단 선행**(kind엔 CSI 스냅샷터 부재).
+- [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 수단 선행**(kind엔 CSI 스냅샷터 부재) —
   실패 비용이 가용성이 아니라 데이터라 rollouts-demo와 달리 미뤘다.
 - **2차 잔여**: agent→hub push 인증 · 서명키 custody·rotation · push heartbeat. (설계 문서 참조)
 
