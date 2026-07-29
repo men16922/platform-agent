@@ -52,6 +52,17 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 > 완료분은 `COMPLETED_SUMMARY.md` **M12**(Phase 3 인가) · **M13**("선언됐지만 아무도 읽지
 > 않는 것들" 11건 — 읽기 모델 드리프트 포함) · `PROGRESS_LOG.md` · `docs/evidence/`.
 
+- [ ] **TS 스윕 잔여 후보 — 사문화이지 손실이 아니다(2026-07-29 확인, 고치지 않음)**.
+  대시보드 인터페이스 261필드 중 후보 47(구조분해 오탐 포함). 읽어본 결과 **데이터 손실은
+  `activity-model.ts` 한 건뿐**이었고 나머지는 죽은 선언이다: ①`ApprovalRequest`의
+  `request_kind`/`request_subject`/`request_summary` = 이미 렌더되는 `alarm_name`/`root_cause`의
+  **복사본**(온프렘 매퍼만 채움) ②`staleAfterSec` = 임계값을 클라이언트로 보내는데 표시도
+  비교도 안 함(집행은 Python `collector.py`에 있고 정상) ③`PlatformTenant → environments →
+  substrate/delivery` + `Quota`가 **서로만 참조하는 닫힌 섬** — 라이브는 전부 push된
+  `NormalizedAddonStatus`로 돈다(`namespaceFor`의 `Pick<PlatformTenant,"namingPrefix">`만 예외).
+  ③은 레지스트리 스키마의 **두 번째 선언**이라 `activity-model`과 같은 부류지만, **거짓
+  운영 주장이 없어** 위험도가 다르다. 지우려면 실 레지스트리(Python·git)와 대조가 선행 —
+  **실증 없이 손대지 않는다.**
 - [ ] **`record_route_activity`·`record_agent_activity`의 `cost_metrics` — 의도적으로 남김**
   (2026-07-29). 둘 다 `deployment_id`를 쓰지 않아 그 필드를 렌더하는 유일한 뷰(배포 상세)에
   닿지 않는다. 지금 넣으면 **소비자 없는 필드**가 되고, 그게 M13이 찾아낸 바로 그 부류다.
