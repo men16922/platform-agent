@@ -5,7 +5,7 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(M10=GitAIOps 7/7+멀티테넌트 Phase 0·1a·1b+공급망,
 > M9=eval·하드닝, M8=레퍼런스 8/8) / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 현재 상태 (2026-07-29, gate 1533)
+## 현재 상태 (2026-07-29, gate 1544)
 
 **Phase 0·1a·1b·2·3 완결**(M10~M12) + **차단 없는 잔여 소진**. 남은 잔여는 작업이 아니라 **결정** 3건.
 **시연 가능**: `make dev-up` → `make demo-baseline` 두 줄로 영상 시나리오 A가 재현된다.
@@ -33,7 +33,7 @@
 확정 아키텍처: **capability, implementation-pluggable** — Tenant=격리 티어 정책(soft/vcluster/dedicated),
 Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSOT=per-tenant git 레지스트리.
 **최우선 불변식**: 에이전트 실행 blast radius=1 tenant/env(자격증명이 경계) — Phase 1a에서 강제 완료.
-**Phase 0·1a·1b·2·3 = 완결**(M10~M12) + **잔여 8건 소진**(M13) — 상세 → `COMPLETED_SUMMARY.md`.
+**Phase 0·1a·1b·2·3 = 완결**(M10~M12) + **잔여 12건 소진**(M13) — 상세 → `COMPLETED_SUMMARY.md`.
 
 - [ ] **deployments/activities 파티션 — 데이터 모델 결정 필요(버그 아님)** — 인시던트는 tenant가
   *있는데 버려진* 것이었지만, 배포 기록은 `provider/service/version/environment`뿐이고
@@ -41,7 +41,7 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
   **배포는 어느 테넌트 소유인가**를 먼저 정해야 한다 — 발명하지 않고 남긴다.
 - [ ] **Phase 4**(managed 어댑터, billable)·**5**(레지스트리 PR 쓰기) = 다음 후보.
   Phase 5가 열리면 3②를 GitOps-native로 닫을 수 있다(D32 재검토 조건). Phase 4로 넘긴 것:
-  GCP/Azure 자격증명의 테넌트 바인딩(상세 → `STATUS` Open Risk 7).
+  GCP/Azure 자격증명의 테넌트 바인딩(상세 → `STATUS` Open Risk 8).
 - [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 수단 선행**(kind엔 CSI 스냅샷터 부재).
   실패 비용이 가용성이 아니라 데이터라 rollouts-demo와 달리 미뤘다.
 - **2차 잔여**: agent→hub push 인증 · 서명키 custody·rotation · push heartbeat(staleness).
@@ -50,7 +50,7 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 ## 잔여 — 완료 항목에서 의도적으로 남긴 것
 
 > 완료분은 `COMPLETED_SUMMARY.md` **M12**(Phase 3 인가) · **M13**("선언됐지만 아무도 읽지
-> 않는 것들" 11건 — 읽기 모델 드리프트 포함) · `PROGRESS_LOG.md` · `docs/evidence/`.
+> 않는 것들" 12건 — 리포트 창 포함) · `PROGRESS_LOG.md` · `docs/evidence/`.
 
 - [ ] **TS 스윕 잔여 후보 — 사문화이지 손실이 아니다(2026-07-29 확인, 고치지 않음)**.
   대시보드 인터페이스 261필드 중 후보 47(구조분해 오탐 포함). 읽어본 결과 **데이터 손실은
@@ -72,6 +72,13 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
   직접 확인 + 투영 표현식 파싱까지다. 새 속성(`triggered_at`·`confidence`·`reconciliation`·
   `trace_id`·`resolved_at`)이 실 테이블을 왕복해 대시보드에 읽힌 적은 아직 없다.
   **이제 유일하게 남은 차단 없는 잔여** — 실 AWS 자원이 필요해 승인 사항.
+- [ ] **GCP/Azure는 90일 보관을 집행하지 않는다(2026-07-29 확인, 승인 필요)** — 두 기록기 다
+  `ttl`을 쓰지만 **어느 쪽도 스토어가 켜져 있지 않다**: Cosmos 항목 `ttl`은 컨테이너에
+  DefaultTimeToLive가 있어야 적용되는데 `durable_functions.py`가 `--ttl` 없이 만들고,
+  Firestore는 TTL 정책이 IaC 어디에도 없으며 필드도 **Timestamp가 아니라 정수**라 정책을
+  붙여도 안 걸린다. 즉 두 스토어의 인시던트 문서는 **무기한 남는다**. 주석은 사실에 맞춰
+  고쳤고(집행 안 하는 걸 광고하지 않는다) **동작은 안 바꿨다** — 보관을 켜는 것은 실 스토어의
+  데이터 삭제라 승인 사항이고, 지금 이 스토어들엔 읽는 쪽도 없다.
 - [ ] **GCP Firestore·Azure Cosmos 기록기는 `resolved_at`·`triggered_at` 둘 다 안 쓴다** —
   대시보드도 주간 리포트도 그 스토어를 읽지 않아 지금 고치면 **소비자 없는 필드**가 된다.
   Phase 4(managed 어댑터)에서 읽는 쪽이 생길 때 함께 — 의도적으로 남김.

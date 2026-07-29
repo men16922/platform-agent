@@ -185,7 +185,13 @@ def _record_incident(
             "resolved": resolved,
             "provider": "azure",
             "created_at": time.time(),
-            "ttl": 90 * 24 * 3600,  # 90 days
+            # Relative seconds, which IS the Cosmos item-level contract (unlike
+            # the absolute epoch AWS/GCP write) — but NOT ENFORCED: item `ttl`
+            # only applies when the container has DefaultTimeToLive set, and
+            # `durable_functions.py` creates this container with no `--ttl`.
+            # Nothing expires here either. Same reasoning as the GCP writer:
+            # enabling retention deletes data and is an approval.
+            "ttl": 90 * 24 * 3600,
         })
 
     except ImportError:

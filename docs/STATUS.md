@@ -60,7 +60,7 @@
 - **Phase 3(인가 강화) = 완결(M12, 2026-07-28)** — ①자격증명 격리 full · ②reconciler 충돌
   거부 · ③읽기 쪽 테넌트 경계. 다음은 **Phase 4**(managed 어댑터, billable) 또는
   **Phase 5**(레지스트리 쓰기 — 이게 열려야 ②를 GitOps-native로 닫는다).
-  **과대 해석 금지 3건**: 자격증명 자체가 테넌트-바운드인 것은 **온프렘뿐**(→ Open Risks 7) ·
+  **과대 해석 금지 3건**: 자격증명 자체가 테넌트-바운드인 것은 **온프렘뿐**(→ Open Risks 8) ·
   ②는 롤백을 되게 만들지 않고 조용한 되돌림을 거부로 바꿀 뿐(→ D32) ·
   테넌트 파티션이 걸린 읽기 경로는 **둘뿐**이다(플릿·인시던트). deployments/activities는
   여전히 무파티션이고 이유가 다르다 — 배포 기록엔 테넌트 개념이 **아예 없다**(데이터 모델
@@ -97,30 +97,34 @@
 ## Open Risks / Gaps
 
 1. **CDK 배포 시 Vercel context 필수(함정 실화 이력)** — ⚠️ context 미지정 배포가 **실제로 07-11 OIDC provider를 삭제**해(CloudTrail 확인) 대시보드가 조용히 DEMO FALLBACK으로 강등돼 있었음 → **07-18 복구**(provider `oidc.vercel.com/men16922s-projects` 재생성, 실 team slug=Vercel API 확증). 앞으로 diff/deploy는 반드시 `-c vercelTeamSlug=men16922s-projects -c vercelProjectName=platform-agent`. 로컬 pip 번들링(arm64↔amd64) 주의 유지.
-2. **GCP/Azure 실 클러스터 비용** — 실 배포/Remediation 가동 시 클러스터 리소스 가동 및 WIF OIDC 인증 연동 세부 과금 체크 필요.
-3. **Cosign 어드미션 집행 없음(의도적)** — 서명 검증은 CI/사람용 게이트(`scripts/verify_image_signature.py`)
+2. **GCP/Azure 인시던트 스토어는 보관 정책이 없다(2026-07-29 확인)** — 두 기록기가 `ttl`을
+   쓰지만 Cosmos는 컨테이너 DefaultTimeToLive 미설정, Firestore는 TTL 정책 부재 + 필드가
+   Timestamp가 아닌 정수라 **어느 쪽도 만료되지 않는다**. 문서/주석의 "90일"을 믿지 말 것.
+   켜는 것은 실 데이터 삭제라 승인 사항 → `NEXT_PLAN`.
+3. **GCP/Azure 실 클러스터 비용** — 실 배포/Remediation 가동 시 클러스터 리소스 가동 및 WIF OIDC 인증 연동 세부 과금 체크 필요.
+4. **Cosign 어드미션 집행 없음(의도적)** — 서명 검증은 CI/사람용 게이트(`scripts/verify_image_signature.py`)
    까지다. 미서명 이미지를 API 서버가 거부하려면 policy controller(sigstore/Kyverno)라는 새 클러스터
    의존성이 필요해 Phase 2 네임스페이스 작업과 함께 다룬다. **지금 있는 보증을 과대 해석하지 말 것.**
-4. **TS 타입은 네트워크 데이터를 보증하지 않는다** — 라이브에서 페이지가 `posture.namespaces.length`로
+5. **TS 타입은 네트워크 데이터를 보증하지 않는다** — 라이브에서 페이지가 `posture.namespaces.length`로
    죽었는데 `tsc`는 내내 초록이었다(값이 구버전 에이전트 페이로드에서 왔다). 롤링 업그레이드 중엔
    허브가 두 버전 리포트를 동시에 서빙하므로, **푸시로 들어오는 신규 필드는 항상 optional + 폴백**으로
    다룬다. 훅의 `tsc`도 이 부류는 못 잡는다.
-5. **PSS restricted 아래에서 애드온 차트는 기본값으로 동작하지 않는다** — 테넌트 네임스페이스에
+6. **PSS restricted 아래에서 애드온 차트는 기본값으로 동작하지 않는다** — 테넌트 네임스페이스에
    `enforce: restricted`가 붙으면 차트 기본값으로는 파드가 admission에서 거부되고, **Argo는
    Synced로 보인다**(파드 0개인 채). loki·tempo는 seccompProfile을 values에 넣어 해소했지만,
    **새 애드온을 추가할 때마다 같은 확인이 필요**하다 — 렌더된 파드 스펙을 테넌트 네임스페이스에
    `kubectl apply --dry-run=server`로 던져 API 서버에 직접 묻는 것이 가장 싸다.
    values 파일은 에러가 아니라 **안 읽히는 방식으로** 실패한다(차트마다 키 철자가 다르다).
-6. **Capsule deprecation — `additionalMetadata`는 이관 완료(2026-07-28), `limitRanges`는 남음.**
+7. **Capsule deprecation — `additionalMetadata`는 이관 완료(2026-07-28), `limitRanges`는 남음.**
    후자는 기계적 포팅이 아니다: `GlobalTenantResource`는 **클러스터 스코프**라 에이전트
    변경 범위를 테넌트 밖으로 밀어 **D30 위반**이고, `TenantResource`는 테넌트 안에 머물지만
    **SA+RBAC라는 새 권한 표면**이 필요하다. 지금은 동작하며 경고만 뜬다(2건→1건).
    ⚠️ 경로 선택은 결정 사항.
-7. **GCP/Azure 자격증명은 아직 테넌트-바운드가 아니다(Phase 3① 이후 남은 것)** — 스코프는 액션이
+8. **GCP/Azure 자격증명은 아직 테넌트-바운드가 아니다(Phase 3① 이후 남은 것)** — 스코프는 액션이
    **어느 네임스페이스를 건드릴지**를 정할 뿐 토큰 자체를 테넌트에 묶지 않는다. GCP는 프로젝트
    전역 신원 하나이고, **Azure는 ARM에서 클러스터 admin kubeconfig를 받아온다**(인시던트가
    어느 테넌트를 지목하든 실제 작업 신원은 cluster-admin). 자격증명 자체가 경계인 것은 **온프렘뿐**.
    → Phase 4(billable). 덧붙여 advisory `allowed_namespaces`가 실제 RBAC보다 넓고, GKE failover의
    `<cluster>-backup` 점프는 네임스페이스 게이트가 제약하지 않는다.
-8. **Dashboard dependency audit** — Next.js 16.2.10 내부 번들 PostCSS(<8.5.10) moderate 2건(XSS via `</style>` in CSS stringify). **재검증(2026-07-13)**: 16.2.x 패치 릴리스 없음(최신=현재)·`audit fix --force`는 next@9 다운그레이드 → **upstream 대기 확정**. 빌드타임 경로라 런타임 위험 낮음. 필요 시 `overrides`로 postcss 강제(빌드 파손 리스크) 검토 가능.
+9. **Dashboard dependency audit** — Next.js 16.2.10 내부 번들 PostCSS(<8.5.10) moderate 2건(XSS via `</style>` in CSS stringify). **재검증(2026-07-13)**: 16.2.x 패치 릴리스 없음(최신=현재)·`audit fix --force`는 next@9 다운그레이드 → **upstream 대기 확정**. 빌드타임 경로라 런타임 위험 낮음. 필요 시 `overrides`로 postcss 강제(빌드 파손 리스크) 검토 가능.
 - (해소된 리스크 이력 — Slack App 미연결=07-19 해소·A2A discovery=07-14·추적 IA 실증=07-13·NEXT_PUBLIC 인라인=07-13 — 은 `PROGRESS_LOG`/`docs/archive/` 참조.)

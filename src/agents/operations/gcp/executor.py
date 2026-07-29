@@ -189,7 +189,14 @@ def _record_incident(
             "resolved": resolved,
             "provider": "gcp",
             "created_at": time.time(),
-            "ttl": int(time.time()) + (90 * 24 * 3600),  # 90 days
+            # NOT ENFORCED. Firestore expiry needs a TTL policy on the
+            # collection group (`gcloud firestore fields ttls update`) pointing
+            # at a *Timestamp* field; there is no such policy in this repo's IaC
+            # and this is an integer. So nothing expires these documents — the
+            # value is stored and read by no one. Left as-is rather than
+            # "fixed": turning retention on deletes data and is an approval,
+            # and no reader exists here yet (see NEXT_PLAN).
+            "ttl": int(time.time()) + (90 * 24 * 3600),
         })
 
     except ImportError:
