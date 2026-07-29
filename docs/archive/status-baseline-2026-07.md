@@ -1,7 +1,7 @@
 # STATUS 검증 Baseline Archive — July 2026
 
 > `docs/STATUS.md` 검증 Baseline에서 예산(≤120줄) 초과로 아카이브된 과거 이력
-> (2026-07-10~29, **gate 1496 이하**). gate 내림차순으로 정렬돼 있다 — 이전에는 아카이브
+> (2026-07-10~29, **gate 1520 이하**). gate 내림차순으로 정렬돼 있다 — 이전에는 아카이브
 > 배치 순으로 append돼 1114~1017 블록이 파일 끝에 있었다(2026-07-28 정렬).
 
 - `make check` → **1496** (2026-07-29, +5) — **클라우드 인시던트 필드**(`36e3b4a`):
@@ -12,6 +12,14 @@
   채우는 `triggered_at`을 `record_incident`가 경계에서 버렸다. 저장 + 양쪽 경로 배선 +
   `detected +Nm` 배지. 라이브 승인 경로에서 735초 보존.
   증거 `docs/evidence/incident-trigger-time.log`.
+- `make check` → **1520** (2026-07-29, 1496→1520, +24) —
+  **time-to-resolve**(`3a89e43`): 한 사슬에 결함 셋. ①공용 클라우드 기록기가 `resolved_at`을
+  무조건 `created_at`과 같은 값으로 써 **미해소 인시던트가 해소 시각을 달고** 다녔다(온프렘은
+  아예 안 씀) ②`_fetch_incidents_from_dynamo`가 `resolved_at`을 **양쪽 끝에** 넣어 **여태
+  발송된 모든 주간 온콜 리포트의 MTTR이 0.0**이었다(+`runbook_id`에 `alarm_name` 복사 →
+  재발 패턴 그룹핑 붕괴) ③대시보드 Scan 투영이 **자기 리더가 읽는 4필드**를 안 가져와
+  아침 수정이 배지 한 층 앞에서 멈춰 있었다. 실측 **0.0 → 45.0**, 라이브 P1/AUTO **1502초**
+  보존·열린 인시던트는 부재. 증거 `docs/evidence/incident-time-to-resolve.log`.
 - **라이브 실증(2026-07-26, `b07523b`, 수 무변경)** — 기본 OFF로 남겨둔 3건 완주: ①canary 자동판정 **양방향**(나쁜 canary=`failed(3)>limit(2)`→사람 개입 0으로 ~105s auto-abort·stable 4/4 유지 / 좋은 canary=3연속 Successful→abort 안 됨) · ②Tempo 트레이스(query API·Grafana 프록시 양쪽 200, **5026ms 중 analyze 4136ms=MTTR의 82%가 로컬 LLM 추론**) · ⑥kindnet=**ENFORCED**+차트 정책 테넌트 시맨틱(same 통과/cross 차단). 증거 `docs/evidence/onprem-{addons-rollouts-analysis,tracing-tempo,netpol-tenancy}-e2e.log`. 라이브가 검증기 자체 버그 2건도 적발(agnhost `connect` http/URL 불가 · 파드 Ready≠포트 바인딩).
 - `make check` (pytest) → **1355 passed, 1 skipped** (2026-07-27, 1341→1355, +14) — **Phase 3①
   자격증명 격리 full**(`bb091e1`): 가드가 `scope.py` 한 곳(`guard_scoped_action`)이고 세 러너가

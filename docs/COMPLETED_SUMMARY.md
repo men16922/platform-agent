@@ -38,13 +38,13 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
-## M13 — "선언됐지만 아무도 읽지 않는 것들" 11건 (완료, 2026-07-28~29)
+## M13 — "선언됐지만 아무도 읽지 않는 것들" 12건 (완료, 2026-07-28~29)
 
-**gate 1411 → 1533 (+122).** 증거 `docs/evidence/{phase3-tenant-grant-validation,
+**gate 1411 → 1544 (+133).** 증거 `docs/evidence/{phase3-tenant-grant-validation,
 runbook-selectability,capsule-deprecation-metadata,executor-span-approval-path,
 onprem-runbook-matching,declared-unconsumed-sweep,incident-trigger-time,
 cloud-incident-fields,incident-time-to-resolve,rollback-cost-metrics,
-activity-read-model-drift}.log`.
+activity-read-model-drift,report-windows}.log`.
 결정 → `DECISIONS` D33·D34·D35.
 
 Phase 3가 인가를 닫은 뒤 남은 잔여를 우선순위대로 소진했는데, **아홉 건이 전부 같은
@@ -97,6 +97,11 @@ Phase 3가 인가를 닫은 뒤 남은 잔여를 우선순위대로 소진했는
   빠뜨렸다. 거짓 주장 둘(**`ttl` "30일 보관"인데 주 writer가 안 써서 만료 안 됨** · `GSI1`은
   절반만 채워지고 무쿼리라 그대로 짰으면 **조용히 짧은 목록**). 지키던 테스트가 **부분문자열
   존재만** 봤다 — 이 마일스톤이 적어둔 안티패턴이 **그 파일의 수호 테스트에** 있었다.
+- **리포트 창(1544)**: 위 건이 연 TTL 실마리를 따라가 나왔다 — `ttl`("쓴 시각+90일")을 두
+  리포트가 **시각처럼** 읽었다. 일일 SLO 필터 `ttl >= now-24h`는 만료 안 된 모든 행에 참이라
+  **24시간 창이 보관 기간 전체**였고(90행 중 90 → 2), 주간은 `ttl-90일` 역산이라 상수가 바뀌면
+  조용히 밀리고 **`ttl` 없는 행은 90일 과거로 떨어져 늘 누락**됐다. `created_at`으로 배치 +
+  폴백 상수를 **writer AST에서 파생 검증**. **라이브 미실행**(스케줄 Lambda) — 과대집계는 추론.
 
 **반복된 교훈(테스트 규율 7종)**: ①가드를 쓰면 **호출부에서** 반증하라 — 새 테스트 20건이
 전부 통과하는데 호출자만 플래그를 잊은 상태였다. ②픽스처는 코드가 아니라 **실제 입력**에서
