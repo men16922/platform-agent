@@ -76,7 +76,6 @@
   ✕ → 복구까지 재현. 영상·대본 → `docs/post/`.
 - **레지스트리가 설치까지 표현한다**(`render_addons.py`) · **대시보드가 멀티테넌시를 관제한다**
   (플릿 표, push 전용 D28) · **검증이 훅으로 강제된다**(Stop→`make check`, PostToolUse→`tsc`, D29).
-- **Phase 2 = 완결(M11)** · **Phase 0·1a·1b = 완결(M10)** — 상세 → `COMPLETED_SUMMARY`.
 
 ## Open Risks / Gaps
 
@@ -87,7 +86,7 @@
 3. **배포 경로는 스코프 가드를 안 탄다(2026-07-29 발견)** — `guard_scoped_action`은 인시던트
    러너 3종 + MCP 게이트웨이만 부른다. `local_deployer`는 가드 없이 `namespace="default"`로
    ambient 자격증명을 쓴다. **"blast radius = 1 tenant/env"는 인시던트 경로에만 참.** → `NEXT_PLAN`.
-4. **GCP/Azure 실 클러스터 비용** — 실 배포/Remediation 가동 시 클러스터 리소스 가동 및 WIF OIDC 인증 연동 세부 과금 체크 필요.
+4. **GCP/Azure 실 클러스터 비용** — 실 배포/Remediation 시 클러스터 가동 + WIF OIDC 과금 체크 필요.
 5. **k3s는 NetworkPolicy를 집행하지만 proven 집합엔 없다(2026-07-29 실측)** — 라이브 3종
    (ENFORCED · default-deny 아래 readinessProbe Ready · DNS 정상)으로 **집행은 증명**됐다.
    넣지 않은 이유는 이 집합이 licensing하는 주장이 **우리 정책 shape의 시맨틱**인데
