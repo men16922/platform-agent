@@ -7,7 +7,7 @@
 
 ## 현재 상태 (2026-07-29, gate 1544)
 
-**Phase 0·1a·1b·2·3 완결**(M10~M12) + **차단 없는 잔여 소진**. 남은 잔여는 작업이 아니라 **결정** 3건.
+**Phase 0·1a·1b·2·3 완결**(M10~M12) + **차단 없는 잔여 소진**. 남은 잔여는 작업이 아니라 **결정** 4건.
 **시연 가능**: `make dev-up` → `make demo-baseline` 두 줄로 영상 시나리오 A가 재현된다.
 
 ## 사용자 게이트 (열린 것만)
@@ -16,6 +16,8 @@
   rate limit을 동시에** 막고 있다(아래 두 항목). 발명 금지라 결정 없이는 둘 다 진행 불가.
 - [ ] **⚠️ 결정 2: 무스코프 MCP 읽기를 닫을 것인가** — 닫으면 검증된 익명 kagent 왕복이 깨진다.
 - [ ] **⚠️ 결정 3: Capsule `limitRanges` 이관 경로** — 클러스터 스코프(D30 위반) vs 새 SA+RBAC.
+- [ ] **⚠️ 결정 4: k3s를 proven 기판에 넣을 것인가** — 집행은 라이브로 증명됐고 시맨틱은
+  미증명(피어 테넌트 부재). 상세는 아래 잔여 섹션.
 - [ ] **(별도 계획) GitAIOps 후속편 아티클** — 논지=책의 GitAIOps는 AI 자리에 사람이 프롬프트를 넣지만
   우리는 **오프라인 Qwen 에이전트로 루프를 무인으로 닫는다**. 차별 소재는 **자동화하면 새로 깨지는 것들**:
   ①롤백↔selfHeal 충돌 ②자격증명=blast radius ③"실행됨≠나아졌음" ④권한 게이트 부재의 과금 누출.
@@ -40,7 +42,7 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
   **배포는 어느 테넌트 소유인가**를 먼저 정해야 한다 — 발명하지 않고 남긴다.
 - [ ] **Phase 4**(managed 어댑터, billable)·**5**(레지스트리 PR 쓰기) = 다음 후보.
   Phase 5가 열리면 3②를 GitOps-native로 닫을 수 있다(D32 재검토 조건). Phase 4로 넘긴 것:
-  GCP/Azure 자격증명의 테넌트 바인딩(상세 → `STATUS` Open Risk 8).
+  GCP/Azure 자격증명의 테넌트 바인딩(상세 → `STATUS` Open Risk 9).
 - [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 수단 선행**(kind엔 CSI 스냅샷터 부재).
   실패 비용이 가용성이 아니라 데이터라 rollouts-demo와 달리 미뤘다.
 - **2차 잔여**: agent→hub push 인증 · 서명키 custody·rotation · push heartbeat(staleness).
@@ -52,38 +54,40 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 > 않는 것들" 12건 — 리포트 창 포함) · `PROGRESS_LOG.md` · `docs/evidence/`.
 
 - [ ] **TS 스윕 잔여 후보 — 사문화이지 손실이 아니다(2026-07-29 확인, 고치지 않음)**.
-  대시보드 인터페이스 261필드 중 후보 47(구조분해 오탐 포함). 읽어본 결과 **데이터 손실은
-  `activity-model.ts` 한 건뿐**이었고 나머지는 죽은 선언이다: ①`ApprovalRequest`의
-  `request_kind`/`request_subject`/`request_summary` = 이미 렌더되는 `alarm_name`/`root_cause`의
-  **복사본**(온프렘 매퍼만 채움) ②`staleAfterSec` = 임계값을 클라이언트로 보내는데 표시도
-  비교도 안 함(집행은 Python `collector.py`에 있고 정상) ③`PlatformTenant → environments →
-  substrate/delivery` + `Quota`가 **서로만 참조하는 닫힌 섬** — 라이브는 전부 push된
-  `NormalizedAddonStatus`로 돈다(`namespaceFor`의 `Pick<PlatformTenant,"namingPrefix">`만 예외).
-  ③은 레지스트리 스키마의 **두 번째 선언**이라 `activity-model`과 같은 부류지만, **거짓
-  운영 주장이 없어** 위험도가 다르다. 지우려면 실 레지스트리(Python·git)와 대조가 선행 —
+  261필드 중 후보 47을 완독했고 **데이터 손실은 `activity-model.ts` 한 건뿐**. 나머지는 죽은
+  선언이다: `ApprovalRequest.request_*` 3종=렌더되는 필드의 복사본 · `staleAfterSec`=집행은
+  Python `collector.py`에 있고 클라이언트 값은 미사용 · `PlatformTenant→environments→
+  substrate/delivery`+`Quota`=**서로만 참조하는 닫힌 섬**(라이브는 push된
+  `NormalizedAddonStatus`로 돈다). 마지막 건은 `activity-model`과 같은 "두 번째 진실 소스"
+  부류지만 **거짓 운영 주장이 없어** 위험도가 다르고, 지우려면 실 레지스트리 대조가 선행이라
   **실증 없이 손대지 않는다.**
 - [ ] **`record_route_activity`·`record_agent_activity`의 `cost_metrics` — 의도적으로 남김**
-  (2026-07-29). 둘 다 `deployment_id`를 쓰지 않아 그 필드를 렌더하는 유일한 뷰(배포 상세)에
-  닿지 않는다. 지금 넣으면 **소비자 없는 필드**가 되고, 그게 M13이 찾아낸 바로 그 부류다.
-  route 활동을 그 뷰에 태울 방법이 생기면 함께.
+  (2026-07-29). 둘 다 `deployment_id`가 없어 그 필드를 렌더하는 유일한 뷰(배포 상세)에 닿지
+  않는다 — 넣으면 **소비자 없는 필드**가 되고 그게 M13이 찾은 부류다.
 
 - [ ] **인시던트 필드 실 DynamoDB 왕복 미검증(쓰기·읽기 양쪽)** — 모킹 테이블 + 직렬화기
   직접 확인 + 투영 표현식 파싱까지다. 새 속성(`triggered_at`·`confidence`·`reconciliation`·
   `trace_id`·`resolved_at`)이 실 테이블을 왕복해 대시보드에 읽힌 적은 아직 없다.
   **이제 유일하게 남은 차단 없는 잔여** — 실 AWS 자원이 필요해 승인 사항.
-- [ ] **GCP/Azure는 90일 보관을 집행하지 않는다(2026-07-29 확인, 승인 필요)** — 두 기록기 다
-  `ttl`을 쓰지만 **어느 쪽도 스토어가 켜져 있지 않다**: Cosmos 항목 `ttl`은 컨테이너에
-  DefaultTimeToLive가 있어야 적용되는데 `durable_functions.py`가 `--ttl` 없이 만들고,
-  Firestore는 TTL 정책이 IaC 어디에도 없으며 필드도 **Timestamp가 아니라 정수**라 정책을
-  붙여도 안 걸린다. 즉 두 스토어의 인시던트 문서는 **무기한 남는다**. 주석은 사실에 맞춰
-  고쳤고(집행 안 하는 걸 광고하지 않는다) **동작은 안 바꿨다** — 보관을 켜는 것은 실 스토어의
-  데이터 삭제라 승인 사항이고, 지금 이 스토어들엔 읽는 쪽도 없다.
+- [ ] **GCP/Azure는 90일 보관을 집행하지 않는다(2026-07-29 확인, 승인 필요)** — 둘 다 `ttl`을
+  쓰지만 스토어가 안 켜져 있다(Cosmos 컨테이너에 DefaultTimeToLive 없음 · Firestore는 TTL 정책
+  부재 + 필드가 Timestamp 아닌 정수). 문서는 **무기한 남는다**. 주석만 사실에 맞추고 동작은
+  안 바꿨다 — 켜는 건 실 데이터 삭제라 승인이고 읽는 쪽도 없다. → `STATUS` Open Risk 2.
 - [ ] **GCP Firestore·Azure Cosmos 기록기는 `resolved_at`·`triggered_at` 둘 다 안 쓴다** —
   대시보드도 주간 리포트도 그 스토어를 읽지 않아 지금 고치면 **소비자 없는 필드**가 된다.
   Phase 4(managed 어댑터)에서 읽는 쪽이 생길 때 함께 — 의도적으로 남김.
 - [ ] **analyzer LLM 실패 폴백이 여전히 일괄 P2** — `severity_hint`를 안 본다. 거기서 쓰려면
   severity 매핑을 확정해야 하고, 그건 위와 같은 **정책 결정**이라 발명하지 않았다.
-- [ ] **⑥ k3s 검증기 재실행**(선택) — flannel은 NetworkPolicy 집행이 전이되지 않으므로 기판별 재확인 필요.
+- [ ] **k3s: 집행 증명 완료(2026-07-29), 게이트는 미개방** — 라이브 3종(검증기 **ENFORCED**,
+  컨트롤 유효 · default-deny **아래에서 태어난** 파드의 readinessProbe Ready · 같은 정책에서
+  DNS 정상). 증거 `docs/evidence/k3s-netpol-enforcement.log`, 부작용 프로브
+  `scripts/probe_netpol_side_effects.sh`. **결정 4**: `PROVEN_ENFORCING_SUBSTRATES`에 넣으면
+  `render_tenancy`가 **acme/prod(k3s-lab)에 NetworkPolicy를 emit**한다. 위 3종이 증명한 건
+  "기판이 집행할 수 있고 집행해도 워크로드가 안 깨진다"까지고, **이 집합이 실제로 licensing하는
+  주장**(우리 정책 shape이 같은 테넌트는 통과·다른 테넌트는 차단)은 아직 미검증이다.
+  그걸 보는 `verify_tenant_isolation.py`는 **k3s-lab에 피어 테넌트가 없어 못 돌린다**(acme/prod가
+  유일한 env). globex/prod를 만들면 실 네임스페이스·쿼터·애드온이 프로비저닝되므로 **인프라
+  결정**이라 발명하지 않았다. 집행은 증명됨, 시맨틱은 미증명.
 - [ ] **rate limit을 모델 호출까지 확장 — 위 데이터 모델 결정에 묶여 있다(2026-07-28 조사)**.
   로컬 모델 호출자는 `local_deployer`/`strands_deployer` **둘뿐이고 둘 다 배포 경로**다.
   배포 요청(`DeployRequest`)엔 테넌트가 없고, `setup_tenancy(tenant, env)`는 **모델이 부르는

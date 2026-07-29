@@ -1,0 +1,92 @@
+k3s enforces NetworkPolicy — and does not break the two things default-deny usually breaks
+============================================================================================
+Date : 2026-07-29
+Mode : LIVE against a real k3s cluster (Multipass VM `k8s-lab`, 17d uptime)
+Gate : make check unchanged at 1544 (no production code path changed)
+
+Plan item : NEXT_PLAN "⑥ k3s 검증기 재실행(선택) — flannel은 NetworkPolicy 집행이
+            전이되지 않으므로 기판별 재확인 필요"
+
+Outcome   : ENFORCED, side-effects clean, and k3s STILL NOT ADDED to
+            PROVEN_ENFORCING_SUBSTRATES. Reason at the bottom — it is not an
+            oversight.
+
+
+Substrate
+-----------
+  k3s v1.31.4+k3s1, single node (control-plane,master), Ubuntu 24.04
+  CNI: flannel (10.42.0.0/16), with k3s's built-in kube-router NetworkPolicy
+       controller — the server unit carries no `--disable-network-policy`
+  kubeconfig pulled from the VM, server rewritten to 192.168.2.2:6443
+
+
+1. Does the CNI enforce NetworkPolicy at all?
+-----------------------------------------------
+  python scripts/verify_netpol_enforcement.py
+
+  first run  : INCONCLUSIVE — "server pod never became Ready". Not treated as a
+               failure: the probe's own rule is that a run whose control did not
+               work reports nothing. Cause was a cold image cache on the VM
+               (`crictl pull` of agnhost:2.47 afterwards returned "up to date",
+               i.e. the pull had completed after the 180s Ready wait expired).
+  second run : baseline: B -> A reachable (no policy)  ✓   <- control valid
+               ENFORCED: default-deny blocked the cross-namespace connection
+
+  The inconclusive-then-green sequence is worth recording rather than tidying
+  away: the difference between the two runs was a warm cache, not the cluster,
+  and a probe that reported PASS on the first run would have been reporting on
+  an experiment whose control never ran.
+
+
+2. Do the two known side-effects of default-deny bite here?
+-------------------------------------------------------------
+The kind entry in PROVEN_ENFORCING_SUBSTRATES rests on a live check that kubelet
+probes and DNS survive default-deny. kindnet's behaviour does not transfer to
+flannel + kube-router, so it was measured rather than assumed. Throwaway
+namespace, default-deny applied BEFORE the pod so it is born under the policy:
+
+  kubelet readinessProbe : READY
+      Probes originate from the NODE, so no namespaceSelector can ever match
+      them. Had kube-router treated them as ordinary ingress, every policied pod
+      would go NotReady and it would read as an application regression days
+      later. It does not.
+
+  DNS (egress)           : RESOLVED
+      k3s-sideeffect-probe.svc.cluster.local,svc.cluster.local,cluster.local
+      10.43.0.1   kubernetes.default.svc.cluster.local
+      The policies set policyTypes: [Ingress] only, so egress should be
+      untouched. "Should be" is the kind of claim this repo has been wrong about
+      before, so it is measured.
+
+  RESULT: probe=ok dns=ok
+
+
+Why k3s is still NOT in PROVEN_ENFORCING_SUBSTRATES
+-----------------------------------------------------
+Adding it is what makes `render_tenancy` emit NetworkPolicies for every env on
+that substrate — today that is acme/prod on `k3s-lab`. What the three facts
+above establish is that the substrate CAN enforce and that enforcing does not
+break workloads. What they do NOT establish is the claim the set actually
+licenses: that OUR rendered policy shape isolates correctly — same-tenant
+namespaces still reachable, a different tenant denied.
+
+`scripts/verify_tenant_isolation.py` exists for precisely that claim, renders
+from the registry rather than inventing its own policy, and asserts the
+same/cross axes. It cannot run against k3s-lab: acme/prod is the only env on
+that cluster, and the probe needs a SECOND tenant on the SAME cluster to falsify
+anything (globex exists for that reason, but only has an env on kind).
+
+Creating globex/prod on k3s-lab would provision real namespaces, quota and
+add-ons for another tenant. That is an infrastructure decision for the operator,
+not something to invent in order to make a test runnable — so the gate stays
+shut and the precondition is recorded in NEXT_PLAN.
+
+Enforcement proven. Semantics unproven. The set means the second one.
+
+
+Reproduce
+-----------
+  multipass exec k8s-lab -- sudo cat /etc/rancher/k3s/k3s.yaml > k3s.yaml
+  sed -i '' 's#https://127.0.0.1:6443#https://192.168.2.2:6443#' k3s.yaml
+  KUBECONFIG=k3s.yaml python scripts/verify_netpol_enforcement.py
+  KUBECONFIG=k3s.yaml bash scripts/probe_netpol_side_effects.sh

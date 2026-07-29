@@ -67,6 +67,24 @@ CAPSULE_TENANT_LABEL = "capsule.clastix.io/tenant"
 #: to a CNI that ignores it leaves `kubectl get netpol` healthy and every audit view
 #: reading "isolated" while traffic flows. Rendering nothing is honestly insecure;
 #: rendering an unenforced policy is dishonestly secure.
+#:
+#: k3s — MEASURED 2026-07-29, DELIBERATELY NOT ADDED YET.
+#:   k3s v1.31.4+k3s1 (flannel + k3s's built-in kube-router policy controller,
+#:   server started with no `--disable-network-policy`). Three facts, all live,
+#:   evidence in docs/evidence/k3s-netpol-enforcement.log:
+#:     * verify_netpol_enforcement.py -> ENFORCED, with its control valid
+#:       (B->A reachable with no policy first, then blocked by default-deny)
+#:     * a readinessProbe pod born UNDER default-deny still reaches Ready, so the
+#:       node-sourced probes no namespaceSelector can match are not blocked
+#:     * DNS resolves under the same policy (policyTypes is [Ingress] only)
+#:   What is still missing is the claim this set actually licenses: that OUR
+#:   rendered policy shape isolates correctly — same-tenant reachable,
+#:   cross-tenant denied. `verify_tenant_isolation.py` exists for exactly that
+#:   and cannot run here, because acme/prod is the only env on `k3s-lab` and the
+#:   probe needs a second tenant on the same cluster to falsify anything.
+#:   Adding one is a registry change that provisions real namespaces and quota,
+#:   so it is the operator's call, not this file's. Until then k3s stays out:
+#:   enforcement proven, semantics unproven. See NEXT_PLAN.
 PROVEN_ENFORCING_SUBSTRATES = frozenset({"kind"})
 
 #: Namespaces every tenant namespace still accepts ingress from.

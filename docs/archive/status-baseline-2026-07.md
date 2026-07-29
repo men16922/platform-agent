@@ -1,7 +1,7 @@
 # STATUS 검증 Baseline Archive — July 2026
 
 > `docs/STATUS.md` 검증 Baseline에서 예산(≤120줄) 초과로 아카이브된 과거 이력
-> (2026-07-10~29, **gate 1528 이하**). gate 내림차순으로 정렬돼 있다 — 이전에는 아카이브
+> (2026-07-10~29, **gate 1533 이하**). gate 내림차순으로 정렬돼 있다 — 이전에는 아카이브
 > 배치 순으로 append돼 1114~1017 블록이 파일 끝에 있었다(2026-07-28 정렬).
 
 - `make check` → **1496** (2026-07-29, +5) — **클라우드 인시던트 필드**(`36e3b4a`):
@@ -27,6 +27,14 @@
   사라졌다**(패널이 조건부라 무예외·무영). 라이브 BEFORE 미렌더 → AFTER `tool calls 5 ·
   tokens 920`, 내역이 두 실행에 걸침. 새 도구 `scripts/find_unwritten_keys.py`(대시보드가
   읽는데 생산자가 없는 키)로 발견. 증거 `docs/evidence/rollback-cost-metrics.log`.
+- `make check` → **1533** (2026-07-29, 1528→1533, +5) —
+  **읽기 모델 문서 드리프트**(`61ee2f4`): `activity-model.ts`를 **아무도 import하지 않아**
+  존재 내내 양방향으로 어긋났다 — 아무도 안 쓰는 `duration_ms`를 선언하고, 상세 페이지가
+  딛고 선 `trace`·`cost_metrics`·`deployment_id`는 빠뜨렸다. **거짓 주장 둘**: `ttl` "30일
+  보관"은 주 writer가 안 써서 **그 행들은 만료 안 됨** · `GSI1`은 절반만 채워지고 아무도
+  쿼리하지 않아, 이 문서대로 provider 쿼리를 짰다면 **조용히 짧은 목록**을 받았을 것.
+  지키던 테스트가 부분문자열 존재만 봤다 → writer AST 파생 가드로 교체.
+  런타임 변화 없음. 증거 `docs/evidence/activity-read-model-drift.log`.
 - **라이브 실증(2026-07-26, `b07523b`, 수 무변경)** — 기본 OFF로 남겨둔 3건 완주: ①canary 자동판정 **양방향**(나쁜 canary=`failed(3)>limit(2)`→사람 개입 0으로 ~105s auto-abort·stable 4/4 유지 / 좋은 canary=3연속 Successful→abort 안 됨) · ②Tempo 트레이스(query API·Grafana 프록시 양쪽 200, **5026ms 중 analyze 4136ms=MTTR의 82%가 로컬 LLM 추론**) · ⑥kindnet=**ENFORCED**+차트 정책 테넌트 시맨틱(same 통과/cross 차단). 증거 `docs/evidence/onprem-{addons-rollouts-analysis,tracing-tempo,netpol-tenancy}-e2e.log`. 라이브가 검증기 자체 버그 2건도 적발(agnhost `connect` http/URL 불가 · 파드 Ready≠포트 바인딩).
 - `make check` (pytest) → **1355 passed, 1 skipped** (2026-07-27, 1341→1355, +14) — **Phase 3①
   자격증명 격리 full**(`bb091e1`): 가드가 `scope.py` 한 곳(`guard_scoped_action`)이고 세 러너가
