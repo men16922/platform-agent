@@ -38,10 +38,8 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 **최우선 불변식**: 에이전트 실행 blast radius=1 tenant/env(자격증명이 경계) — Phase 1a에서 강제 완료.
 **Phase 0·1a·1b·2·3 = 완결**(M10~M12) + **잔여 12건 소진**(M13) — 상세 → `COMPLETED_SUMMARY.md`.
 
-- [ ] **deployments/activities 파티션 — 데이터 모델 결정 필요(버그 아님)** — 인시던트는 tenant가
-  *있는데 버려진* 것이었지만, 배포 기록은 `provider/service/version/environment`뿐이고
-  `environment`는 레지스트리의 tenant/env 쌍이 아니라 자유 문자열("production")이다.
-  **배포는 어느 테넌트 소유인가**를 먼저 정해야 한다 — 발명하지 않고 남긴다.
+- [ ] **deployments/activities 파티션 — 결정 1에 달림**. 배포 기록엔 테넌트 개념이 없고
+  `environment`는 레지스트리 쌍이 아닌 자유 문자열이다. → 브리프 참조.
 - [ ] **Phase 4**(managed 어댑터, billable)·**5**(레지스트리 PR 쓰기) = 다음 후보.
   Phase 5가 열리면 3②를 GitOps-native로 닫을 수 있다(D32 재검토 조건). Phase 4로 넘긴 것:
   GCP/Azure 자격증명의 테넌트 바인딩(상세 → `STATUS` Open Risk 9).
