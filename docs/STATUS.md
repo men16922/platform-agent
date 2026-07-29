@@ -24,14 +24,7 @@
   쿼리하지 않아, 이 문서대로 provider 쿼리를 짰다면 **조용히 짧은 목록**을 받았을 것.
   지키던 테스트가 부분문자열 존재만 봤다 → writer AST 파생 가드로 교체.
   런타임 변화 없음. 증거 `docs/evidence/activity-read-model-drift.log`.
-- `make check` → **1528** (2026-07-29, 1520→1528, +8) —
-  **롤백 비용 패널**(`db41874`): M13의 **반대 방향** 첫 사례 — 읽는 쪽은 멀쩡한데 ACTIVITY를
-  쓰는 셋 중 `record_rollback`만 `cost_metrics`를 안 썼다. `mergeActivity`가 trace만
-  합집합으로 두고 나머지를 `{...latest}`로 가져가 **롤백되는 순간 도구/추론/토큰 수가 페이지에서
-  사라졌다**(패널이 조건부라 무예외·무영). 라이브 BEFORE 미렌더 → AFTER `tool calls 5 ·
-  tokens 920`, 내역이 두 실행에 걸침. 새 도구 `scripts/find_unwritten_keys.py`(대시보드가
-  읽는데 생산자가 없는 키)로 발견. 증거 `docs/evidence/rollback-cost-metrics.log`.
-- (이전 이력: gate **1520** 이하 · 2026-07-10~29 → `docs/archive/status-baseline-2026-07.md`
+- (이전 이력: gate **1528** 이하 · 2026-07-10~29 → `docs/archive/status-baseline-2026-07.md`
   및 `PROGRESS_LOG`. Phase 3 완결 ②③ = `9e78f81`·`1c13a59`, 증거
   `docs/evidence/phase3-{reconciler-conflict,viewer-visibility}.log`.)
 
@@ -57,14 +50,12 @@
 
 **지금 하는 것**
 
-- **Phase 3(인가 강화) = 완결(M12, 2026-07-28)** — ①자격증명 격리 full · ②reconciler 충돌
-  거부 · ③읽기 쪽 테넌트 경계. 다음은 **Phase 4**(managed 어댑터, billable) 또는
-  **Phase 5**(레지스트리 쓰기 — 이게 열려야 ②를 GitOps-native로 닫는다).
-  **과대 해석 금지 3건**: 자격증명 자체가 테넌트-바운드인 것은 **온프렘뿐**(→ Open Risks 8) ·
-  ②는 롤백을 되게 만들지 않고 조용한 되돌림을 거부로 바꿀 뿐(→ D32) ·
-  테넌트 파티션이 걸린 읽기 경로는 **둘뿐**이다(플릿·인시던트). deployments/activities는
-  여전히 무파티션이고 이유가 다르다 — 배포 기록엔 테넌트 개념이 **아예 없다**(데이터 모델
-  결정 선행). 대시보드 전체를 "테넌트 격리됨"이라 부르면 안 된다.
+- **Phase 3(인가 강화) = 완결(M12, 2026-07-28)** — 상세 → `COMPLETED_SUMMARY` M12.
+  다음은 **Phase 4**(managed, billable) 또는 **Phase 5**(레지스트리 쓰기 — 열려야 ②를
+  GitOps-native로 닫는다). **과대 해석 금지 3건**: 자격증명 자체가 테넌트-바운드인 것은
+  **온프렘뿐**(→ Open Risks 8) · ②는 조용한 되돌림을 거부로 바꿀 뿐(→ D32) · 테넌트 파티션이
+  걸린 읽기 경로는 **둘뿐**(플릿·인시던트) — deployments/activities는 배포 기록에 테넌트
+  개념이 **아예 없어서** 무파티션이다. 대시보드 전체를 "테넌트 격리됨"이라 부르면 안 된다.
 - **차단 없는 잔여 = 소진(2026-07-28~29) → M13, 12건** — 같은 결함 축이고 **열두 번 다 테스트는
   초록**이었다(상세 → `COMPLETED_SUMMARY` M13). 아홉은 "선언되고 저장되고 **아무도 읽지 않는다**",
   ⑩**반대 방향**("읽는데 아무도 안 씀"), ⑪**한 층 위**(선언 자체를 아무도 안 읽음 — importer 0),

@@ -4,6 +4,35 @@
 
 ---
 
+## 2026-07-29 — MTTR은 존재 내내 구조적으로 0이었다 (gate 1496→1520)
+
+- Status: `resolved_at` 하나를 보러 갔는데 **한 사슬에 결함 셋**. 전부 테스트는 초록.
+- Changed(`3a89e43`): ①**쓰는 쪽이 기본값을 채웠다** — 공용 클라우드 기록기가 `resolved_at`을
+  무조건 `created_at`과 같은 값으로 써서 **미해소 인시던트가 해소 시각을 달고** 다녔다(온프렘은
+  정반대로 아예 안 씀). ②**`_fetch_incidents_from_dynamo`가 `resolved_at`을 `started_at`·
+  `resolved_at` 양쪽 끝에 넣었다** → 여태 발송된 **모든 주간 온콜 리포트의
+  `average_mttr_minutes`가 0.0**. 같은 함수가 `alarm_name`을 `runbook_id`에 복사해 재발 패턴
+  그룹핑도 알람별로 붕괴(런북 하나에 몰리는 서로 다른 알람 = 그 기능의 존재 이유). ③**대시보드
+  Scan의 `ProjectionExpression`이 자기 리더가 읽는 4필드를 안 가져왔다**(`triggered_at`·
+  `confidence`·`reconciliation`·`trace_id`) → 상세 뷰가 배포 내내 모든 AWS 인시던트에
+  "confidence n/a"를 띄웠고, **아침 gate 1496의 수정이 그걸 표시할 배지 한 층 앞에서 멈춰** 있었다.
+- Verified: `make check` **1520**(+24) · tsc 클린 · `next build` 성공. **BEFORE/AFTER 실측**:
+  동일 입력에 `average_mttr_minutes` **0.0 → 45.0**. **라이브**(실 온프렘 웹훅 체인, 25분 전
+  `startsAt`): P1/AUTO **1502초(25m)** 보존 · P3/MANUAL·P2/APPROVE→reject는 `resolved_at`
+  **부재**. 반증 7건 개별 되돌림 전부 red, 복원 시 24건 통과.
+  증거 `docs/evidence/incident-time-to-resolve.log`.
+- Blockers: 없음.
+- 품질 메모: 왜 안 잡혔나 — `test_summarizes_incidents`가 MTTR 45.0을 단언하는데 **손으로 만든
+  픽스처**에서 받는다. 유일한 실제 생산자가 낼 수 없는 모양이라 **영원히 초록이었을** 것이다
+  (07-29 아침에 배운 "픽스처는 실제 입력에서"의 세 번째 사례). 새 테스트는 픽스처가 아니라
+  `_fetch_incidents_from_dynamo`를 통과시킨다. 그리고 **투영 가드는 키워드 목록이 아니라
+  파생**이다 — 매퍼가 읽는 속성을 파싱해 Scan이 전부 가져오도록 요구하므로 **다음 필드에도**
+  실패한다. 손으로 적은 목록이었다면 당시 투영에 맞춰 쓰였을 테고 이 버그를 그대로 통과했다.
+  `_minutes_between`은 clamp 대신 None — 발생보다 앞선 해소(시계 어긋남)를 **완벽한 0분 복구로
+  세지 않는다**. 파싱 실패도 더는 raise 안 한다(예외 하나가 리포트 전체를 죽였다).
+- Next: 실 DynamoDB 왕복은 여전히 미실행(쓰기·읽기 양쪽 모두). GCP Firestore·Azure Cosmos
+  기록기는 둘 다 안 쓰지만 읽는 쪽이 없어 **의도적으로 남김**.
+
 ## 2026-07-29 — 클라우드 인시던트 행도 발생 시각·confidence를 버렸다 (gate 1491→1496)
 
 - Status: 아침의 온프렘 수정이 남긴 나머지 절반. 같은 누락이 `executor._record_incident`
