@@ -1,0 +1,126 @@
+The read-model doc drifted for as long as it existed, because nothing imports it
+=================================================================================
+Date : 2026-07-29
+Mode : unit + tsc + next build (no runtime behaviour changed — this is a
+       documentation/type file with zero importers)
+Gate : make check 1528 -> 1533 (+5)
+
+Found by : a forward sweep over the dashboard's own declared interfaces — the
+           half of the codebase find_unconsumed_fields.py never looked at (it
+           sweeps src/agents only).
+
+
+What was wrong
+----------------
+`dashboard/src/lib/activity-model.ts` documents the DynamoDB single-table design
+and exports record types plus four `make*Record` constructors.
+
+Nothing imports it. Not one module. Rows are written by Python
+(`ai/deploy_recorder.py`, `operations/activity_writer.py`) and read by
+`activity-data.ts`, which maps untyped records defensively. So the file could
+say anything and nothing would break — and it had drifted in both directions:
+
+  AgentActivityRecord
+    declared, produced by nobody : duration_ms, error_message
+    produced, documented nowhere : trace, cost_metrics, deployment_id,
+                                   instruction, model, summary, type
+  DeploymentRecord
+    produced, documented nowhere : cluster, type
+  ProviderHealthRecord
+    declared, produced by nobody : last_deployment_id, last_deployment_at
+
+The three omissions on AgentActivityRecord are the three fields the deployment
+detail page is built on, and `deployment_id` is the key that routes a row to
+that page at all — the same field today's cost-panel fix turned on.
+
+Two further claims in the file were false rather than merely stale:
+
+  TTL. The file declared `ttl: number` (required) and stated "30 days for
+  deployment/activity records". Only `activity_writer.py` writes a `ttl`.
+  `deploy_recorder.py` — the agent path, which writes almost every row in
+  practice — writes none, so those rows NEVER EXPIRE.
+
+  GSI1. Declared required on both DEPLOY and ACTIVITY, with a documented access
+  pattern "list deployments by provider". Again lambda-path only, and queried by
+  nothing anywhere in the repo. A provider-scoped query written against this doc
+  would have silently returned the lambda subset and missed every agent-written
+  row — no error, just a short list.
+
+There are TWO WRITER FAMILIES and neither is a superset of the other. The
+documented model matched neither.
+
+
+Why nothing caught it
+-----------------------
+`tests/test_dashboard_auth_and_activity.py::test_activity_model_schema` asserted
+substring presence: `'GSI1PK:' in content`, `"TTL_30_DAYS" in content`,
+`"makeDeploymentRecord" in content`. Keyword presence cannot see shape, so the
+test passed for every one of the drifts above — it was green while the file
+described a record that no writer had produced in a long time.
+
+This is the anti-pattern this milestone already wrote down ("derive the guard,
+do not enumerate it"), found in the test that was supposed to protect the file.
+
+
+The fix
+---------
+1. `activity-model.ts` rewritten to describe what is actually written:
+   * `*RecordCore` interfaces = the fields every writer of that PK emits;
+     the full interfaces add per-writer-family optionals, each labelled with
+     which family produces it.
+   * The header now states plainly that the file is documentation with no
+     importers, that GSI1 is half-populated and unqueried, and that agent-path
+     rows never expire.
+   * Access patterns are marked USED / NOT USED / NOT WRITTEN rather than
+     listed as if all five existed.
+   * The four `make*Record` constructors are removed. They were an unwired TS
+     write path duplicating the Python writers — a second source of truth whose
+     only possible future was to drift further apart. Nothing imported them.
+
+2. `tests/test_activity_read_model_matches_writers.py` (5 tests) derives the
+   real shapes from the writers' AST and asserts the two directions that matter:
+   * no field is declared for a row type that no writer produces
+     (catches `duration_ms`)
+   * every field emitted by *all* writers of a row type appears in the
+     documented core (catches the omissions)
+   * `ttl` / `GSI1PK` / `GSI1SK` stay optional at EVERY declaration site while
+     only one writer family emits them, and the doc keeps saying agent rows do
+     not expire
+   Plus a guard-the-guard: an AST walk that matched nothing would pass
+   everything, so both writer families must be found.
+
+   Deliberately NOT asserted: that the doc lists every optional field. Partial
+   fields are real here, and demanding the union would make the doc restate the
+   writers instead of explaining them.
+
+3. The keyword test was replaced with the part of it that is genuinely a naming
+   contract (the live PK values, and that HEALTH_HISTORY is labelled NOT
+   WRITTEN), with the removed assertions and the reason recorded in its
+   docstring.
+
+
+Falsification (each applied alone; restored green after every one)
+-------------------------------------------------------------------
+  0. the original committed activity-model.ts ..... 3 failed / 2 passed
+  1. reintroduce duration_ms ...................... 1 failed / 4 passed
+  2. drop duration_sec from the documented core ... 1 failed / 4 passed
+  3. make `ttl` required at one of its two sites .. 1 failed / 4 passed
+  4. make `GSI1PK` required at one of two sites ... 1 failed / 4 passed
+  restored ........................................ 5 passed
+
+Revert 3 initially PASSED. The assertion used `re.search`, so one optional
+declaration anywhere satisfied it while the other had been made required —
+a guard that checked `any` where it meant `all`. Tightened to require every
+declaration site, then both 3 and 4 fail as they should. Worth recording: the
+first version of a guard written against a two-site field was itself the
+half-covering kind of check this whole milestone is about.
+
+
+Verification
+--------------
+  make check   1533 passed, 1 skipped   (1528 -> 1533, +5)
+  npx tsc --noEmit                       clean
+  npx next build                         success
+
+No runtime behaviour changed — the module has no importers, which is the entire
+point of the defect.

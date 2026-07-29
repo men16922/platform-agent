@@ -1,5 +1,6 @@
 """Tests for dashboard auth boundary design — permission model correctness."""
 
+import pathlib
 import subprocess
 
 
@@ -124,31 +125,36 @@ def test_proxy_file_convention_is_current():
     assert "auth as proxy" in Path("dashboard/src/proxy.ts").read_text()
 
 
-def test_activity_model_schema():
-    """Verify the activity model defines expected DynamoDB schema types."""
-    with open("dashboard/src/lib/activity-model.ts", "r") as f:
-        content = f.read()
+def test_activity_model_documents_the_live_entity_types():
+    """The read-model doc still names the row types that actually exist.
 
-    # Key schema
-    assert 'PK:' in content
-    assert 'SK:' in content
-    assert 'GSI1PK:' in content
-    assert 'GSI1SK:' in content
+    This used to assert a list of substrings — `GSI1PK:`, `TTL_30_DAYS`,
+    `makeDeploymentRecord` — and passed for as long as those characters were
+    present, which is how the file drifted into declaring a `duration_ms` no
+    writer produces while omitting `trace`, `cost_metrics` and `deployment_id`.
+    Keyword presence cannot see shape. The shape is now derived from the writers
+    in tests/test_activity_read_model_matches_writers.py; what is left here is
+    the part that is genuinely a naming contract.
 
-    # Entity types
-    assert '"DEPLOY"' in content
-    assert '"ACTIVITY"' in content
-    assert '"HEALTH"' in content
+    The removed assertions and why:
+      * `TTL_30_DAYS` / `make*Record` — an unwired TS write path. Nothing
+        imported the module, the real writers are Python, and keeping a second
+        record constructor meant keeping a second thing to drift.
+      * `GSI1PK:` in its required form — GSI1 is written by one writer family
+        only and queried by nothing, so requiring it stated a guarantee the
+        table does not give.
+    """
+    content = pathlib.Path("dashboard/src/lib/activity-model.ts").read_text(encoding="utf-8")
+
+    for pk in ('"DEPLOY"', '"ACTIVITY"', '"HEALTH"'):
+        assert pk in content, f"{pk} is a live PK value and must stay documented"
+
+    # HEALTH_HISTORY is documented as an access pattern that is NOT written —
+    # asserting it as a schema type is what made this file look complete.
     assert "HEALTH_HISTORY" in content
-
-    # TTL
-    assert "ttl" in content
-    assert "TTL_30_DAYS" in content
-
-    # Helper functions
-    assert "makeDeploymentRecord" in content
-    assert "makeAgentActivityRecord" in content
-    assert "makeProviderHealthRecord" in content
+    assert "NOT WRITTEN" in content, (
+        "the doc must keep saying that the health-history pattern has no writer"
+    )
 
 
 def test_activity_data_access_layer():
