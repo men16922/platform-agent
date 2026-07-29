@@ -4,6 +4,57 @@
 
 ---
 
+## 2026-07-29 — 계통 스윕: 운영자가 미리 붙인 severity를 버리고 있었다 (gate 1470→1479)
+
+- Status: 남은 잔여가 전부 **결정 대기**라, 결정이 필요 없는 최고 가치 작업으로 **"선언됐고
+  아무도 안 읽는" 결함 부류를 계통적으로 훑었다**(이틀 새 여섯 번 나왔고 전부 우연이었다).
+- Changed(`0cf5da5`): `src/agents`의 모든 ClassDef 애노테이션 필드 **437개 중 20개** 후보.
+  대부분 결함 아님(`TokenBroker.signing_key`는 **오탐** — `self.` 형태를 패턴이 놓쳤다;
+  route_trace·slack_ts 등은 직렬화되는 응답 표면). 진짜는 둘, 이빨 있는 건 하나:
+  **`severity_hint`를 네 어댑터가 전부 채우는데 아무도 안 읽는다**. 사람이 **미리** 내린
+  유일한 분류가 버려지고 severity는 산문에서만 추론된다 — 그런데 severity가
+  **P1→AUTO/P2→APPROVE**, 즉 사람 없이 실행할지를 정한다. analyzer 프롬프트에 **증거로**
+  노출(하드 매핑은 정책 결정이라 발명 안 함, "구속력 없음 + 다르면 이유 명시").
+- Verified: `make check` **1479**(+9). **라이브 A/B**(동일 알람, 라벨만 다름):
+  critical→P1/AUTO **실행** · **warning→P2/APPROVE 대기** · info→P2/APPROVE.
+  warning이 핵심 — 같은 페이로드가 **오늘 낮엔 P1/AUTO로 자동 실행**됐다.
+  반증: 프롬프트 줄 제거 시 9건 중 6건 실패, 복원 시 통과.
+  증거 `docs/evidence/declared-unconsumed-sweep.log` · 스윕은
+  `scripts/find_unconsumed_fields.py`로 반복 가능하게 남김.
+- Blockers: 없음.
+- 품질 메모: 테스트가 **프롬프트**를 단언한다. "필드가 설정되는가"를 봤다면 이 필드가 존재한
+  내내 통과했을 것이고, **그게 이게 여태 살아남은 방식이다.** 어제 배운 두 가지(호출부에서
+  반증 · 픽스처는 실제 입력에서)에 이어 셋째: **소비자를 단언하라, 생산자 말고.**
+- Next: `triggered_at`도 같은 상태(네 어댑터가 채우고 아무도 안 읽음 → 탐지 소요시간 불가) —
+  타임라인 표시 결정 필요. 그 외 잔여는 전부 결정 대기.
+
+## 2026-07-29 — "선택 가능"은 AWS 경로에서만이었다: 겹친 결함 3개 (gate 1454→1470)
+
+- Status: 어제 라이브에서 본 "온프렘 알람이 새 런북에 안 걸린다"를 **매칭 설계 결정**으로
+  남겼는데, 결정이 아니라 **배선 결함 3개가 쌓여** 있었다. 하나를 걷어내야 다음이 보였다.
+- Changed(`b70c195`): ①`_synthetic_alarm`이 `reason`과 `metric_name`을 **둘 다
+  `signal_type`**으로 채워, 매처가 "availability availability …"를 읽고 있었다. alertname·
+  summary는 내내 정규화돼 저장돼 있었고 선택에만 안 닿았다(프로바이더 중립 수정).
+  ②`resource_types`가 **모든 런북에 선언돼 있고 아무도 안 읽었다** — 이틀 새 다섯 번째
+  "선언됐고 유효하고 소비 안 되는" 필드. 없으면 RDS 런북이 k8s 워크로드에 걸리고, 실패가
+  조용하다(해결 실패 시 **런북의 하드코딩 AWS 액션 이름**으로 폴백). ③①②를 고쳐도
+  라이브는 계속 달랐다: 시드된 eks-pod-oom **1점**이 빌트인 health-check-failure **3점**을
+  이겼다 — 자기 카탈로그가 먼저 스캔됐다는 이유만으로. D34가 "무매칭"만 막고 "더 나쁜 매칭"은
+  안 막았다 → 두 카탈로그를 **합집합에 휴리스틱 한 번**으로 통합(동점 시 운영자 우선, D35).
+- Verified: `make check` **1470**(+16). **라이브**(실 웹훅+실 analyzer): 디스크→disk-full ·
+  NotReady→health-check-failure · 인증서→certificate-expiry · CrashLooping→eks-pod-oom(회귀 없음).
+  **전부 ONPREM-\* 액션**으로 해소 = 잘못된 프로바이더 폴백이 안 터졌다는 증거.
+  반증 3종(reason 되돌림 4건 · 게이트 제거 1건 · 티어 순차 복귀 6건), 복원 시 36건 통과.
+  증거 `docs/evidence/onprem-runbook-matching.log`.
+- Blockers: 없음.
+- 품질 메모: **이번엔 내 테스트 자체가 결함이었다.** 첫 버전이 통과하는데 라이브는 여전히
+  generic-recovery였다 — 내가 쓴 summary에 런북 키워드를 심어놨기 때문이다("…, disk full
+  projected in 18h"). 실제 Alertmanager는 `NodeFilesystemSpaceFillingUp`이라고 보낸다.
+  **테스트가 Alertmanager가 아니라 키워드 목록에 맞춰져 있었다.** 어제 배운 "호출부에서
+  반증하라"에 하나 더: **픽스처를 코드가 아니라 실제 입력에서 가져와라.**
+- Next: 남은 잔여는 전부 결정 대기(배포의 테넌트 소유권 · 무스코프 MCP 읽기 ·
+  Capsule `limitRanges` 경로) + 런북 DynamoDB 재시드(배포 작업).
+
 ## 2026-07-28 — executor span: 실제 경로 전부가 무추적이었다 (gate 1446→1454)
 
 - Status: 잔여 "② executor span(선택)"을 처리. 기록은 "승인 후 경로 미측정"이었는데

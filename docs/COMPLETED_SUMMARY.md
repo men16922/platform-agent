@@ -176,7 +176,7 @@ fail-closed로 올려 게이트 27개 파손).
 
 ## M10 — GitAIOps 대조 7/7 + 멀티테넌트 Phase 0·1a·1b + 공급망 하드닝 (완료, 2026-07-20~26)
 
-**gate 870 → 1191.** 상세 이력 → `PROGRESS_LOG.md`(최신 3건) · `docs/archive/progress-2026-07.md` ·
+**gate 870 → 1191.** 상세 이력 → `PROGRESS_LOG.md`(최신 3–5건) · `docs/archive/progress-2026-07.md` ·
 증거 `docs/evidence/*`. 설계 → `docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5, S 93.5).
 
 - **On-Prem 애드온 스택 IaC** Phase 1~5(ArgoCD GitOps · kube-prometheus-stack · Argo Rollouts ·

@@ -1,9 +1,17 @@
 # STATUS 검증 Baseline Archive — July 2026
 
 > `docs/STATUS.md` 검증 Baseline에서 예산(≤120줄) 초과로 아카이브된 과거 이력
-> (2026-07-10~25, **gate 1114 이하**). gate 내림차순으로 정렬돼 있다 — 이전에는 아카이브
+> (2026-07-10~29, **gate 1496 이하**). gate 내림차순으로 정렬돼 있다 — 이전에는 아카이브
 > 배치 순으로 append돼 1114~1017 블록이 파일 끝에 있었다(2026-07-28 정렬).
 
+- `make check` → **1496** (2026-07-29, +5) — **클라우드 인시던트 필드**(`36e3b4a`):
+  `triggered_at`·`confidence` 둘 다 **읽는 쪽이 이미 있었다**. **함정**: boto3는 float를 거부하고
+  그 예외가 기록기 `except`에 잡혀 **레코드 전체가 사라졌을** 것(→`Decimal`).
+  증거 `docs/evidence/cloud-incident-fields.log`.
+- `make check` → **1491** (2026-07-29, +12) — **인시던트 발생 시각**(`78e472d`): 네 어댑터가
+  채우는 `triggered_at`을 `record_incident`가 경계에서 버렸다. 저장 + 양쪽 경로 배선 +
+  `detected +Nm` 배지. 라이브 승인 경로에서 735초 보존.
+  증거 `docs/evidence/incident-trigger-time.log`.
 - **라이브 실증(2026-07-26, `b07523b`, 수 무변경)** — 기본 OFF로 남겨둔 3건 완주: ①canary 자동판정 **양방향**(나쁜 canary=`failed(3)>limit(2)`→사람 개입 0으로 ~105s auto-abort·stable 4/4 유지 / 좋은 canary=3연속 Successful→abort 안 됨) · ②Tempo 트레이스(query API·Grafana 프록시 양쪽 200, **5026ms 중 analyze 4136ms=MTTR의 82%가 로컬 LLM 추론**) · ⑥kindnet=**ENFORCED**+차트 정책 테넌트 시맨틱(same 통과/cross 차단). 증거 `docs/evidence/onprem-{addons-rollouts-analysis,tracing-tempo,netpol-tenancy}-e2e.log`. 라이브가 검증기 자체 버그 2건도 적발(agnhost `connect` http/URL 불가 · 파드 Ready≠포트 바인딩).
 - `make check` (pytest) → **1355 passed, 1 skipped** (2026-07-27, 1341→1355, +14) — **Phase 3①
   자격증명 격리 full**(`bb091e1`): 가드가 `scope.py` 한 곳(`guard_scoped_action`)이고 세 러너가
