@@ -1,0 +1,110 @@
+The report windows were measured with the retention field, not a clock
+=======================================================================
+Date : 2026-07-29
+Mode : unit, through the real fetch functions (both are Lambda-only paths;
+       no live run — see "Not verified" below)
+Gate : make check 1533 -> 1544 (+11)
+
+Found by : following the TTL thread opened by the read-model fix. That fix
+           established that `ttl` coverage is uneven across writers; the next
+           question was what reads `ttl` — and two report windows did, as if it
+           were a timestamp.
+
+
+What was wrong
+----------------
+`ttl` on an incident row is the WRITE TIME PLUS NINETY DAYS
+(`aws/executor._record_incident`: `int(time.time()) + 90 * 86400`). Both fetches
+in `operations/aws/reporting.py` treated it as the write time itself.
+
+1. THE DAILY SLO WINDOW WAS NOT A WINDOW
+
+     cutoff = int(time.time()) - hours * 3600          # 24h in the PAST
+     items  = paginated_scan(table, FilterExpression=Attr("ttl").gte(cutoff))
+
+   `ttl` is ~90 days in the FUTURE for every row that has not yet expired, and
+   the cutoff is in the past, so `ttl >= cutoff` was true for all of them. The
+   in-Python re-check on the next line (`if int(item.get("ttl", 0)) < cutoff`)
+   compared the same two values and was equally always-false.
+
+   So `_fetch_slo_metrics_from_dynamo(hours=24)` returned the entire retention
+   window. The daily SLO report's failure counts have been inflated by however
+   many days of history the table happened to hold — up to 90x.
+
+2. THE WEEKLY WINDOW INVERTED THE RETENTION CONSTANT
+
+     if window_start <= int(item.get("ttl", now) - 90 * 86400) <= window_end
+
+   Arithmetically correct while the writer's retention is 90 days, and wrong the
+   moment anyone changes it — the whole report would shift by the difference,
+   silently. Worse, a row with no `ttl` defaulted to `now`, landing 90 days in
+   the past and dropping out of every weekly report without a sound, even though
+   its `created_at` said plainly how old it was.
+
+
+BEFORE / AFTER (repro: one unresolved incident per day for 90 days, rows built
+exactly as the writer emits them)
+--------------------------------------------------------------------------------
+  rows in table                    90
+  rows genuinely inside 24h         2   (inclusive boundary)
+
+  BEFORE  filter: Attr("ttl") >= 1785229713
+          failed_requests counted: 90        <- the whole table
+
+  AFTER   filter: Attr("created_at") >= "2026-07-28T09:10:19Z"
+          failed_requests counted: 2         <- matches the expected 2
+
+
+The fix
+---------
+`_created_epoch(item)` places a row by `created_at`, the ISO-8601 string every
+writer stamps unconditionally. Both windows use it.
+
+  * daily SLO: server-side filter is now `created_at >= <cutoff ISO>` (ISO-8601
+    UTC is fixed-width, so lexicographic order is chronological), plus the same
+    check client-side.
+  * weekly: `_in_window(item, start, end)` replaces the ttl inversion.
+
+`ttl` survives as an explicit fallback for rows predating `created_at` — dropping
+those would silently shrink the on-call report, which is the failure mode being
+fixed. That fallback is coupled to the writer's retention, so the coupling is
+guarded rather than trusted: a test parses `_record_incident`'s own `ttl`
+expression and requires `_LEGACY_RETENTION_SEC` to equal it.
+
+A row datable by neither field is excluded rather than guessed into `now` —
+the same rule `triggered_at` and `resolved_at` already follow here.
+
+
+Falsification (each applied alone; restored green after every one)
+-------------------------------------------------------------------
+  1. SLO scan filter back to `ttl` .................... 1 failed / 8 passed
+  2. SLO client-side re-check back to `ttl` ........... 2 failed / 7 passed
+  3. weekly window back to the ttl inversion .......... 2 failed / 9 passed
+  4. fallback constant desynced from the writer (90->30) 2 failed / 7 passed
+  5. undateable rows guessed as `now` ................. 1 failed / 8 passed
+  restored ............................................ 11 passed
+
+TWO OF MY OWN GUARDS WERE WRONG FIRST, and both are the failure mode this
+milestone keeps documenting:
+
+  * `test_ninety_days_...` first asserted `counted // 100 <= 2`, having misread
+    `failed_requests` (the raw count) for `total_requests` (the x100 synthetic).
+    90 // 100 is 0, so it passed on the UNFIXED code. It only surfaced because a
+    sibling test failed on the same misreading and forced a second look.
+  * Revert 3 initially passed: every fixture row had a `ttl` consistent with its
+    `created_at`, so the two implementations agreed on all of them. The tests
+    could not tell the fix from the bug. Added the cases where they diverge — a
+    row with `created_at` and no `ttl` (the exact silent-drop this fix is about,
+    asserted in prose but not in code until then), and a row whose `ttl` reflects
+    a different retention.
+
+
+Not verified
+--------------
+No live run. Both functions are EventBridge-scheduled Lambda paths against the
+real `incident-history` table, so exercising them means real AWS resources and
+the approval that is already open for the DynamoDB round-trip item. The repro
+drives the real fetch functions against rows shaped exactly as the writer emits
+them, and the scan filter is asserted structurally — but the claim "the daily
+SLO report has been over-counting in production" is inference from the code and
+the writer's format, not an observation of a sent report.

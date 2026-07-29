@@ -107,17 +107,59 @@ def _run_daily_slo(event: dict[str, Any], log: Any) -> dict[str, Any]:
     return report
 
 
+#: The retention the incident writer stamps onto `ttl`
+#: (``aws/executor._record_incident``: ``time.time() + 90 * 86400``). Only used
+#: to place rows that predate `created_at`; the two are kept in step by
+#: tests/test_report_windows.py rather than by hope.
+_LEGACY_RETENTION_SEC = 90 * 86400
+
+
+def _created_epoch(item: dict[str, Any]) -> int | None:
+    """When the incident row was written, in epoch seconds.
+
+    `created_at` is an ISO-8601 UTC string every writer stamps unconditionally.
+    `ttl` is a *retention* field — it is the write time plus 90 days — and using
+    it as a timestamp is what broke both windows in this module. It stays here
+    only as a fallback for rows written before `created_at` existed, and returns
+    None when neither is present, because a row we cannot place in time must be
+    left out of a time window rather than guessed into one.
+    """
+    raw = item.get("created_at")
+    if isinstance(raw, str) and raw:
+        try:
+            return int(
+                time.mktime(time.strptime(raw, "%Y-%m-%dT%H:%M:%SZ")) - time.timezone
+            )
+        except ValueError:
+            pass
+    ttl = item.get("ttl")
+    if ttl is not None:
+        try:
+            return int(ttl) - _LEGACY_RETENTION_SEC
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
 def _fetch_slo_metrics_from_dynamo(hours: int = 24) -> list[dict[str, Any]]:
     """Scan incident-history for the last N hours to produce coarse SLO inputs."""
     try:
         table  = _DYNAMO.Table(_INCIDENT_TABLE)
         cutoff = int(time.time()) - hours * 3600
-        items  = paginated_scan(table, FilterExpression=Attr("ttl").gte(cutoff))
+        # This filtered on `ttl >= cutoff`. `ttl` is the write time plus ninety
+        # days, and `cutoff` is in the past, so the comparison was true for every
+        # row that had not already expired: the "last 24 hours" of this daily SLO
+        # report has always been the entire 90-day retention window, and the
+        # failure counts it feeds have been inflated by however many days of
+        # history the table happened to hold.
+        cutoff_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(cutoff))
+        items = paginated_scan(table, FilterExpression=Attr("created_at").gte(cutoff_iso))
 
         # Aggregate by alarm_name (service proxy)
         service_counts: dict[str, dict[str, int]] = {}
         for item in items:
-            if int(item.get("ttl", 0)) < cutoff:
+            created = _created_epoch(item)
+            if created is None or created < cutoff:
                 continue
             name = item.get("alarm_name", "unknown")
             service_counts.setdefault(name, {"failed": 0})
@@ -151,6 +193,12 @@ def _run_weekly_oncall(event: dict[str, Any], log: Any) -> dict[str, Any]:
     report = build_weekly_oncall_report(current, previous)
     log.info("reporting.oncall_done", total=report["current"]["total_incidents"])
     return report
+
+
+def _in_window(item: dict[str, Any], start: int, end: int) -> bool:
+    """Whether the row belongs to [start, end]. Undateable rows do not."""
+    created = _created_epoch(item)
+    return created is not None and start <= created <= end
 
 
 def _fetch_incidents_from_dynamo(
@@ -196,7 +244,12 @@ def _fetch_incidents_from_dynamo(
                 "runbook_id":   item.get("runbook_id", "unknown"),
             }
             for item in items
-            if window_start <= int(item.get("ttl", now) - 90 * 86400) <= window_end
+            # Placed by when the row was written, not by inverting its retention
+            # field. The arithmetic here used to be `ttl - 90 days`, which is
+            # right only for as long as nobody changes the writer's retention —
+            # and a row with no `ttl` at all defaulted to `now`, landing it 90
+            # days in the past and dropping it from every report silently.
+            if _in_window(item, window_start, window_end)
         ]
         return filtered
     except Exception as exc:
