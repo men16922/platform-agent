@@ -42,7 +42,7 @@
 10. **On-prem K8s** — `make local-cluster` (kind 테스트용) → 3노드 + registry + NGINX ingress.
 11. **Deployment Adapters** — 4 provider (onprem/aws/gcp/azure): Build→Push→Deploy→Validate→Rollback.
 12. **Execution Adapters** — 4 provider: capability → provider-specific action resolution.
-13. **Dashboard** — Next.js 16 + Tailwind 4, 5페이지. AWS DynamoDB 연동 완료. 모든 데모 목업 데이터를 제거하고 실시간 Live 모드만 활성화. 🔐 Auth.js 기반 GitHub OAuth, Admin/Operator/Viewer 역할 부여 및 사용자 권한 관리 제어판(잠금 방지 보호 포함), 장애 복구 승인(Pending approvals), 신규 배포 트리거/롤백 액션 패널, 보안 감사 로그(Audit Logs) 뷰어 화면 프로덕션 배포 완료.
+13. **Dashboard** — Next.js 16 + Tailwind 4, 5페이지, DynamoDB 실시간 Live 전용(데모 목업 제거). Auth.js GitHub OAuth + Admin/Operator/Viewer 역할·권한 제어판(잠금 방지), 복구 승인, 배포 트리거/롤백 패널, 감사 로그 뷰어 — 프로덕션 배포 완료.
 
 ## Active Focus
 
