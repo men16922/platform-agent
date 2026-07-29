@@ -5,7 +5,7 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(M10=GitAIOps 7/7+멀티테넌트 Phase 0·1a·1b+공급망,
 > M9=eval·하드닝, M8=레퍼런스 8/8) / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 현재 상태 (2026-07-29, gate 1528)
+## 현재 상태 (2026-07-29, gate 1533)
 
 **Phase 0·1a·1b·2·3 완결**(M10~M12) + **차단 없는 잔여 소진**. 남은 잔여는 작업이 아니라 **결정** 3건.
 **시연 가능**: `make dev-up` → `make demo-baseline` 두 줄로 영상 시나리오 A가 재현된다.
@@ -50,7 +50,7 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 ## 잔여 — 완료 항목에서 의도적으로 남긴 것
 
 > 완료분은 `COMPLETED_SUMMARY.md` **M12**(Phase 3 인가) · **M13**("선언됐지만 아무도 읽지
-> 않는 것들" 10건 — 롤백 비용 패널 포함) · `PROGRESS_LOG.md` · `docs/evidence/`.
+> 않는 것들" 11건 — 읽기 모델 드리프트 포함) · `PROGRESS_LOG.md` · `docs/evidence/`.
 
 - [ ] **`record_route_activity`·`record_agent_activity`의 `cost_metrics` — 의도적으로 남김**
   (2026-07-29). 둘 다 `deployment_id`를 쓰지 않아 그 필드를 렌더하는 유일한 뷰(배포 상세)에

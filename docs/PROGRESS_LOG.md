@@ -7,6 +7,33 @@
 
 ---
 
+## 2026-07-29 — 읽기 모델 문서가 존재 내내 어긋나 있었다 (gate 1528→1533)
+
+- Status: 스윕을 **대시보드 TS 쪽**으로 확장(기존 스윕은 `src/agents`만 본다). M13의 열한 번째
+  이자 **한 층 위**: 필드가 아니라 **선언 자체를 아무도 안 읽는** 경우.
+- Changed(`61ee2f4`): `activity-model.ts`는 **아무도 import하지 않는다** — 그래서 어긋나도
+  아무것도 안 깨졌고, 실제로 양방향으로 어긋났다. 아무도 안 쓰는 `duration_ms`·`error_message`를
+  선언하면서 **배포 상세 페이지가 딛고 선 `trace`·`cost_metrics`·`deployment_id`는 없었다**.
+  거짓 주장 둘: ①`ttl` 필수 + "30일 보관"이지만 `ttl`을 쓰는 건 `activity_writer`뿐이고
+  실제 대부분을 쓰는 `deploy_recorder`는 안 써서 **그 행들은 만료되지 않는다** ②`GSI1`도
+  절반만 채워지고 **아무도 쿼리하지 않는다** — 이 문서를 보고 provider 스코프 쿼리를 짰다면
+  에이전트가 쓴 행을 전부 빠뜨린 짧은 목록을 **조용히** 받았을 것이다. writer 계열이 둘인데
+  어느 쪽도 상위집합이 아니고 선언은 **둘 다와** 불일치. core/optional 분리 + 접근 패턴을
+  USED/NOT USED/NOT WRITTEN으로 표기 + `make*Record` 생성자 4개 제거(배선된 적 없는 TS 쪽
+  쓰기 경로 = 갈라질 일만 남은 두 번째 진실 소스).
+- Verified: `make check` **1533**(+5) · tsc 클린 · `next build` 성공. 반증 5건(**원본 파일
+  포함** → 5개 중 3개 red) 전부 red, 복원 시 5건 통과.
+  증거 `docs/evidence/activity-read-model-drift.log`. 런타임 동작 변화 없음(importer가 0인 게 요점).
+- Blockers: 없음.
+- 품질 메모: 왜 안 잡혔나 — `test_activity_model_schema`가 **부분문자열 존재**만 봤다
+  (`'GSI1PK:' in content`, `"TTL_30_DAYS" in content`). 키워드는 **모양을 못 본다** — 이
+  마일스톤이 이미 적어둔 안티패턴이 **그 파일을 지키는 테스트에** 있었다. writer AST에서
+  파생하는 가드로 교체. **그리고 내 가드도 처음엔 같은 병이었다**: `re.search`라 두 선언 중
+  하나만 옵셔널이면 통과해서 되돌림 3이 초록으로 나왔다 — `any`를 쓸 자리에 `all`이 필요했다.
+  전 선언 지점을 요구하도록 조인 뒤에야 빨개졌다.
+- Next: TS 쪽 후보 중 `ApprovalRequest.request_kind/subject/summary`는 **이미 렌더되는
+  `alarm_name`/`root_cause`의 중복**(손실 아님, 사문화) — 남은 것들 점검 계속.
+
 ## 2026-07-29 — 롤백된 배포는 비용 패널을 통째로 잃었다 (gate 1520→1528)
 
 - Status: M13의 열 번째. 앞의 아홉이 "선언됐는데 아무도 안 읽음"이었다면 이번은 **반대
@@ -87,26 +114,3 @@
   종류를 한 번 고쳤다고 그 함수가 그 종류로부터 안전해지지 않는다.
 - Next: `resolved_at`이 여전히 `created_at`과 같은 쓴 시각이라 **time-to-resolve는 아직 불가**.
   실 DynamoDB 왕복은 미실행(모킹 테이블 + 직렬화기 직접 확인까지).
-
-## 2026-07-29 — 인시던트 기록이 "언제 터졌는지"를 몰랐다 (gate 1479→1491)
-
-- Status: 스윕이 남긴 두 번째 실제 건. "타임라인 표시 결정 필요"로 적어뒀는데 다시 보니
-  **표시는 결정이지만 값을 버리지 않는 것은 결정이 아니다** — 테넌시 때와 같은 모양.
-- Changed(`78e472d`): 네 어댑터가 소스의 실제 발생 시각을 채우는데 `record_incident`가 경계에서
-  버려, 행이 `created_at`(우리가 쓴 시각)만 알았다 → **탐지 소요시간 산출 불가**, 타임라인이
-  인시던트를 "처리된 순간"에 배치. 저장(모르면 **부재**) + 파이프라인·웹훅 양쪽 경로 배선 +
-  승인 경로가 함께 버리던 `trace_id`도 복구(어제 넣은 span origin에서) + 대시보드 optional
-  필드·방어적 매핑·**`detected +Nm` 배지**. 배지는 장식이 아니라 요점이다 — 읽는 쪽 없이
-  저장만 하면 스윕이 그날 찾은 결함을 하나 더 만드는 꼴이다.
-- Verified: `make check` **1491**(+12) · `tsc` 클린 · `next build` 성공.
-  **라이브(승인 경로 = 간격이 가장 큰 곳)**: 12분 전 발생 신고 → parking → 승인 →
-  간격 **735초** 보존("detected +12m"). 트레이싱 켠 2차 실행에서 `trace_id`가 실제
-  `onprem.incident_pipeline` 트레이스와 **일치**함까지 확인(주석으로 주장만 하지 않았다).
-  반증: 저장 제거 2건 · 음수 억제 제거 1건, 복원 시 12건 통과.
-  증거 `docs/evidence/incident-trigger-time.log`.
-- Blockers: 없음.
-- 품질 메모: `describeDetectionGap`이 **과장을 거부**하도록 짰다 — 발생 시각 없음/파싱 불가/
-  발생보다 먼저 기록됨은 전부 렌더 안 함. 마지막은 가정이 아니다(스포크↔허브 시계 어긋남은
-  정상이고, 화면의 "detected -3s"는 옆의 모든 숫자에 대한 신뢰를 배지 부재보다 크게 무너뜨린다).
-- Next: 클라우드 3사 인시던트 행은 공유 executor가 DynamoDB에 쓰므로 **여전히 발생 시각을
-  버린다**(스키마 변경 수반). resolve 시각 미기록이라 time-to-resolve도 아직 불가.

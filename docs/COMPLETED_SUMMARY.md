@@ -38,18 +38,23 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
-## M13 — "선언됐지만 아무도 읽지 않는 것들" 10건 (완료, 2026-07-28~29)
+## M13 — "선언됐지만 아무도 읽지 않는 것들" 11건 (완료, 2026-07-28~29)
 
-**gate 1411 → 1528 (+117).** 증거 `docs/evidence/{phase3-tenant-grant-validation,
+**gate 1411 → 1533 (+122).** 증거 `docs/evidence/{phase3-tenant-grant-validation,
 runbook-selectability,capsule-deprecation-metadata,executor-span-approval-path,
 onprem-runbook-matching,declared-unconsumed-sweep,incident-trigger-time,
-cloud-incident-fields,incident-time-to-resolve,rollback-cost-metrics}.log`.
+cloud-incident-fields,incident-time-to-resolve,rollback-cost-metrics,
+activity-read-model-drift}.log`.
 결정 → `DECISIONS` D33·D34·D35.
 
 Phase 3가 인가를 닫은 뒤 남은 잔여를 우선순위대로 소진했는데, **아홉 건이 전부 같은
 결함**이었다: 필드나 계획이 **선언되고, 채워지고, 저장되고, 아무도 읽지 않는다.** 테스트는
 아홉 번 다 초록이었다 — 전부 *생산자*를 단언했기 때문이다. 아홉 번 다 **라이브 실행만이**
 드러냈고, 그중 네 번은 유닛 테스트가 통과하는 동안 라이브가 다른 답을 냈다.
+
+그 뒤 같은 축의 **변형 두 건**이 더 나왔고, 둘 다 스윕을 **새 방향으로 넓혀서** 찾았다:
+**⑩반대 방향**("읽는데 아무도 안 씀" — 생산자 셋 중 하나만 침묵) · **⑪한 층 위**(필드가
+아니라 **선언 자체를 아무도 안 읽음** — importer 0인 스키마 문서가 양방향으로 드리프트).
 
 - **grant 대조(1425)**: 기록은 "대조 안 함"이었지만 grant를 **줄 방법 자체가 없었고**(읽기 쪽이
   아무 쓰기 경로도 만들 수 없는 필드를 소비 중) 역할 변경이 whole-item Put으로 grant를 지웠다.
@@ -86,8 +91,14 @@ Phase 3가 인가를 닫은 뒤 남은 잔여를 우선순위대로 소진했는
   "0"도 없이, 바로 아래 트레이스는 오히려 길어진 채). 라이브 BEFORE 미렌더 → AFTER
   `tool calls 5 · tokens 920`, 내역이 두 실행에 걸침. **절반씩은 각각 방어 가능한데 겹칠
   때만 터진다** · 생산자가 여럿이면 **하나만 침묵해도** 나머지가 정상을 계속 증명해준다.
+- **읽기 모델 문서 드리프트(1533)**: 한 층 위 — 필드가 아니라 **선언 자체를 아무도 안 읽는**
+  경우. `activity-model.ts`는 **importer가 0**이라 어긋나도 안 깨졌고, 아무도 안 쓰는
+  `duration_ms`를 선언하면서 상세 페이지가 딛고 선 `trace`·`cost_metrics`·`deployment_id`는
+  빠뜨렸다. 거짓 주장 둘(**`ttl` "30일 보관"인데 주 writer가 안 써서 만료 안 됨** · `GSI1`은
+  절반만 채워지고 무쿼리라 그대로 짰으면 **조용히 짧은 목록**). 지키던 테스트가 **부분문자열
+  존재만** 봤다 — 이 마일스톤이 적어둔 안티패턴이 **그 파일의 수호 테스트에** 있었다.
 
-**반복된 교훈(테스트 규율 5종)**: ①가드를 쓰면 **호출부에서** 반증하라 — 새 테스트 20건이
+**반복된 교훈(테스트 규율 7종)**: ①가드를 쓰면 **호출부에서** 반증하라 — 새 테스트 20건이
 전부 통과하는데 호출자만 플래그를 잊은 상태였다. ②픽스처는 코드가 아니라 **실제 입력**에서
 가져와라 — 내가 쓴 summary에 런북 키워드를 심어놔 유닛은 초록인데 라이브는 계속 틀렸다.
 ③**소비자를 단언하라, 생산자 말고** — `severity_hint`를 "설정되는가"로 봤다면 그 필드가 존재한
@@ -97,7 +108,12 @@ Phase 3가 인가를 닫은 뒤 남은 잔여를 우선순위대로 소진했는
 필드에도 실패한다. 손으로 적은 목록이었다면 당시 투영에 맞춰 쓰였을 테고 그대로 통과했다.
 ⑥**생산자가 여럿이면 다수결이 결함을 가린다** — 셋 중 하나만 침묵하면 나머지 둘이 그 필드가
 정상이라고 계속 증명해준다. 열 번째 건은 그래서 ③(소비자를 단언하라)으로도 안 잡혔다:
-소비자는 멀쩡했다. 스윕은 두 방향 모두 반복 가능하게 남겼다(후보≠결함) —
+소비자는 멀쩡했다. ⑦**수호 테스트 자신이 안티패턴일 수 있다** — 열한 번째 건에서 파일을
+지키던 테스트가 `'GSI1PK:' in content` 식 **부분문자열 존재**만 봤다. 키워드는 모양을 못 보므로
+그 파일이 얼마나 어긋나든 초록이었다. **덧붙여 내가 새로 쓴 가드도 처음엔 같은 병이었다**:
+두 곳에 선언된 필드를 `re.search`로 봐서 **한 곳만 옵셔널이면 통과**했다 — `any`를 쓸 자리에
+`all`이 필요했고, 반증을 돌리지 않았으면 그대로 뒀을 것이다.
+스윕은 두 방향 모두 반복 가능하게 남겼다(후보≠결함) —
 `scripts/find_unconsumed_fields.py`(선언됐는데 안 읽힘) ·
 `scripts/find_unwritten_keys.py`(읽는데 생산자 없음).
 

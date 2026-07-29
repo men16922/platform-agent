@@ -8,7 +8,15 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` (pytest) → **1528 passed, 1 skipped** (2026-07-29, 1520→1528, +8) —
+- `make check` (pytest) → **1533 passed, 1 skipped** (2026-07-29, 1528→1533, +5) —
+  **읽기 모델 문서 드리프트**(`61ee2f4`): `activity-model.ts`를 **아무도 import하지 않아**
+  존재 내내 양방향으로 어긋났다 — 아무도 안 쓰는 `duration_ms`를 선언하고, 상세 페이지가
+  딛고 선 `trace`·`cost_metrics`·`deployment_id`는 빠뜨렸다. **거짓 주장 둘**: `ttl` "30일
+  보관"은 주 writer가 안 써서 **그 행들은 만료 안 됨** · `GSI1`은 절반만 채워지고 아무도
+  쿼리하지 않아, 이 문서대로 provider 쿼리를 짰다면 **조용히 짧은 목록**을 받았을 것.
+  지키던 테스트가 부분문자열 존재만 봤다 → writer AST 파생 가드로 교체.
+  런타임 변화 없음. 증거 `docs/evidence/activity-read-model-drift.log`.
+- `make check` → **1528** (2026-07-29, 1520→1528, +8) —
   **롤백 비용 패널**(`db41874`): M13의 **반대 방향** 첫 사례 — 읽는 쪽은 멀쩡한데 ACTIVITY를
   쓰는 셋 중 `record_rollback`만 `cost_metrics`를 안 썼다. `mergeActivity`가 trace만
   합집합으로 두고 나머지를 `{...latest}`로 가져가 **롤백되는 순간 도구/추론/토큰 수가 페이지에서
