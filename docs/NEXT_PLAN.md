@@ -29,8 +29,8 @@
 
 ## 진행 중 — 멀티테넌트/멀티-클라우드 플랫폼 + per-env Add-on
 
-**설계**: `docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5 = S 93.5) ·
-**의사결정·MAD 히스토리**: `docs/plans/2026-07-21-multi-tenant-env-addons-mad-history.md`.
+**설계**: `docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5) · **MAD 히스토리**: 같은 폴더
+`-mad-history.md`.
 확정 아키텍처: **capability, implementation-pluggable** — Tenant=격리 티어 정책(soft/vcluster/dedicated),
 Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSOT=per-tenant git 레지스트리.
 **최우선 불변식**: 에이전트 실행 blast radius=1 tenant/env(자격증명이 경계) — Phase 1a에서 강제 완료.
@@ -45,8 +45,7 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
   GCP/Azure 자격증명의 테넌트 바인딩(상세 → `STATUS` Open Risk 9).
 - [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 수단 선행**(kind엔 CSI 스냅샷터 부재).
   실패 비용이 가용성이 아니라 데이터라 rollouts-demo와 달리 미뤘다.
-- **2차 잔여**: agent→hub push 인증 · 서명키 custody·rotation · push heartbeat(staleness).
-  (S 93.5 근거는 설계 문서 참조)
+- **2차 잔여**: agent→hub push 인증 · 서명키 custody·rotation · push heartbeat. (설계 문서 참조)
 
 ## 잔여 — 완료 항목에서 의도적으로 남긴 것
 
