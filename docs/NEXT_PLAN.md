@@ -29,8 +29,7 @@
 
 ## 진행 중 — 멀티테넌트/멀티-클라우드 플랫폼 + per-env Add-on
 
-**설계**: `docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5) · **MAD 히스토리**: 같은 폴더
-`-mad-history.md`.
+**설계**: `docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5) · **MAD**: 같은 폴더 `-mad-history.md`.
 확정 아키텍처: **capability, implementation-pluggable** — Tenant=격리 티어 정책(soft/vcluster/dedicated),
 Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSOT=per-tenant git 레지스트리.
 **최우선 불변식**: 에이전트 실행 blast radius=1 tenant/env(자격증명이 경계) — Phase 1a에서 강제 완료.
@@ -58,8 +57,7 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
   Python `collector.py`에 있고 클라이언트 값은 미사용 · `PlatformTenant→environments→
   substrate/delivery`+`Quota`=**서로만 참조하는 닫힌 섬**(라이브는 push된
   `NormalizedAddonStatus`로 돈다). 마지막 건은 `activity-model`과 같은 "두 번째 진실 소스"
-  부류지만 **거짓 운영 주장이 없어** 위험도가 다르고, 지우려면 실 레지스트리 대조가 선행이라
-  **실증 없이 손대지 않는다.**
+  부류지만 **거짓 운영 주장이 없어** 위험도가 다르고, 지우려면 실 레지스트리 대조가 선행이다.
 - [ ] **`record_route_activity`·`record_agent_activity`의 `cost_metrics` — 의도적으로 남김**
   (2026-07-29). 둘 다 `deployment_id`가 없어 그 필드를 렌더하는 유일한 뷰(배포 상세)에 닿지
   않는다 — 넣으면 **소비자 없는 필드**가 되고 그게 M13이 찾은 부류다.
@@ -79,8 +77,7 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
   severity 매핑을 확정해야 하고, 그건 위와 같은 **정책 결정**이라 발명하지 않았다.
 - [ ] **k3s: 집행 증명 완료(2026-07-29), 게이트는 미개방** — 라이브 3종(검증기 **ENFORCED**,
   컨트롤 유효 · default-deny **아래에서 태어난** 파드의 readinessProbe Ready · 같은 정책에서
-  DNS 정상). 증거 `docs/evidence/k3s-netpol-enforcement.log`, 부작용 프로브
-  `scripts/probe_netpol_side_effects.sh`. **결정 4**: `PROVEN_ENFORCING_SUBSTRATES`에 넣으면
+  DNS 정상). 증거 `docs/evidence/k3s-netpol-enforcement.log` · `scripts/probe_netpol_side_effects.sh`. **결정 4**: `PROVEN_ENFORCING_SUBSTRATES`에 넣으면
   `render_tenancy`가 **acme/prod(k3s-lab)에 NetworkPolicy를 emit**한다. 위 3종이 증명한 건
   "기판이 집행할 수 있고 집행해도 워크로드가 안 깨진다"까지고, **이 집합이 실제로 licensing하는
   주장**(우리 정책 shape이 같은 테넌트는 통과·다른 테넌트는 차단)은 아직 미검증이다.
