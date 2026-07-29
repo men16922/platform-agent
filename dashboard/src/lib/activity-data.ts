@@ -141,7 +141,10 @@ function mapDeploymentItem(item: Record<string, unknown>): Deployment | null {
     cluster,
     service,
     version,
-    environment: typeof item.environment === "string" ? item.environment : "production",
+    // This defaulted to "production" while the Python boundary defaulted the same
+    // missing value to "dev" — two layers answering one unknown with two
+    // confident, contradictory guesses. Absent now means absent (D36).
+    environment: typeof item.environment === "string" && item.environment ? item.environment : undefined,
     status: isValidDeployStatus(item.status) ? item.status : "success",
     agent: typeof item.agent === "string" ? item.agent : "Unknown Agent",
     duration_sec: typeof item.duration_sec === "number" ? item.duration_sec : 0,

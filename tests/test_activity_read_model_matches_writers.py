@@ -29,6 +29,27 @@ union would just make the doc restate the writers instead of explaining them.
 import ast
 import pathlib
 import re
+from dataclasses import dataclass, field
+
+
+@dataclass
+class _Written:
+    """What one writer puts on a row.
+
+    ``always`` are keys in the dict literal — the row cannot exist without them.
+    ``maybe`` are keys assigned afterwards (``item["k"] = v``), which is how this
+    codebase expresses "store it only when we actually know it" (`tenant`,
+    `triggered_at`, `resolved_at`, and now `environment`). The distinction is the
+    whole point: a conditional key is *produced*, so declaring it is legitimate,
+    but it is NOT part of the row's guaranteed core.
+    """
+
+    always: set[str] = field(default_factory=set)
+    maybe: set[str] = field(default_factory=set)
+
+    @property
+    def any(self) -> set[str]:
+        return self.always | self.maybe
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 MODEL_TS = REPO / "dashboard" / "src" / "lib" / "activity-model.ts"
@@ -44,12 +65,31 @@ NOT_WRITER_FIELDS = {"PK", "SK"}
 
 def written_keys_by_pk():
     """{"DEPLOY": {"writer:func": {keys...}}} — the real shapes, from the code."""
-    out: dict[str, dict[str, set[str]]] = {}
+    out: dict[str, dict[str, _Written]] = {}
     for path in WRITERS:
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 continue
+            # `item["k"] = v` written later in the same function. Collected by
+            # target name so a conditional attribute lands on the right row type —
+            # without this, a field the writer sets conditionally reads as
+            # "produced by nobody" and the phantom check below fails on a field
+            # that is very much written. (The sweep script had this same hole and
+            # reported the already-fixed `triggered_at` as unproduced.)
+            subscripts: dict[str, set[str]] = {}
+            for sub in ast.walk(node):
+                if not isinstance(sub, ast.Assign):
+                    continue
+                for target in sub.targets:
+                    if (
+                        isinstance(target, ast.Subscript)
+                        and isinstance(target.value, ast.Name)
+                        and isinstance(target.slice, ast.Constant)
+                        and isinstance(target.slice.value, str)
+                    ):
+                        subscripts.setdefault(target.value.id, set()).add(target.slice.value)
+
             for sub in ast.walk(node):
                 if not isinstance(sub, ast.Dict):
                     continue
@@ -59,8 +99,22 @@ def written_keys_by_pk():
                     if isinstance(k, ast.Constant) and isinstance(k.value, str)
                 }
                 pk = pairs.get("PK")
-                if isinstance(pk, ast.Constant) and isinstance(pk.value, str):
-                    out.setdefault(pk.value, {})[f"{path.name}:{node.name}"] = set(pairs)
+                if not (isinstance(pk, ast.Constant) and isinstance(pk.value, str)):
+                    continue
+                conditional: set[str] = set()
+                # Attach subscript writes to the literal they were assigned into,
+                # found by the variable this dict was bound to.
+                for stmt in ast.walk(node):
+                    if (
+                        isinstance(stmt, ast.Assign)
+                        and stmt.value is sub
+                        and len(stmt.targets) == 1
+                        and isinstance(stmt.targets[0], ast.Name)
+                    ):
+                        conditional = subscripts.get(stmt.targets[0].id, set())
+                out.setdefault(pk.value, {})[f"{path.name}:{node.name}"] = _Written(
+                    always=set(pairs), maybe=conditional
+                )
     return out
 
 
@@ -106,7 +160,7 @@ def test_no_field_is_declared_that_no_writer_produces():
     """Catches `duration_ms` / `error_message` — invented shape."""
     written, decl = written_keys_by_pk(), declared_fields()
     for core, full, pk in ROW_TYPES:
-        produced = set().union(*written[pk].values())
+        produced = set().union(*(w.any for w in written[pk].values()))
         phantom = _all_declared(decl, core, full) - produced - NOT_WRITER_FIELDS
         assert not phantom, (
             f"{full} declares {sorted(phantom)}, which no writer of PK={pk} produces — "
@@ -123,12 +177,26 @@ def test_every_universally_written_field_is_in_the_documented_core():
     """
     written, decl = written_keys_by_pk(), declared_fields()
     for core, full, pk in ROW_TYPES:
-        universal = set.intersection(*written[pk].values()) - NOT_WRITER_FIELDS
+        # Only unconditional keys. A key some writer stores conditionally is not
+        # guaranteed on the row and must not be documented as core.
+        universal = set.intersection(*(w.always for w in written[pk].values())) - NOT_WRITER_FIELDS
         missing = universal - _all_declared(decl, core, full)
         assert not missing, (
             f"every writer of PK={pk} emits {sorted(missing)}, but {core or full} "
             "does not document it"
         )
+
+
+def test_environment_is_optional_because_it_is_only_stored_when_declared():
+    """The agent path stores `environment` conditionally (D36), so the doc must
+    not promise it. Guards against someone tidying it back into the core."""
+    src = MODEL_TS.read_text(encoding="utf-8")
+    sites = re.findall(r"^\s+environment(\??):", src, re.M)
+    assert sites, "environment is no longer declared at all"
+    assert all(optional for optional in sites), (
+        "environment is declared as required somewhere, but the agent path writes "
+        "it only when the caller declared a tier"
+    )
 
 
 def test_ttl_and_gsi1_are_not_documented_as_guaranteed():
@@ -144,7 +212,7 @@ def test_ttl_and_gsi1_are_not_documented_as_guaranteed():
     src = MODEL_TS.read_text(encoding="utf-8")
     for field in ("ttl", "GSI1PK", "GSI1SK"):
         for pk in ("DEPLOY", "ACTIVITY"):
-            emitters = [w for w, keys in written[pk].items() if field in keys]
+            emitters = [w for w, keys in written[pk].items() if field in keys.any]
             assert emitters and len(emitters) < len(written[pk]), (
                 f"{field} on PK={pk} is now written by {emitters or 'nobody'} — "
                 "update the doc and this guard together"

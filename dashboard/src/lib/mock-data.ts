@@ -59,7 +59,8 @@ export interface Deployment {
   cluster: string; // correlation key: a deploy's target cluster == a provision's service
   service: string;
   version: string;
-  environment: string;
+  /** Absent when the caller declared no tier — see DECISIONS D36. */
+  environment?: string;
   status: "success" | "failed" | "rolling-back" | "rolled-back";
   agent: string;
   duration_sec: number;

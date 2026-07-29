@@ -61,7 +61,10 @@ class DeployRequest(BaseModel):
     instruction: str = Field(..., min_length=1, description="Natural-language deploy instruction.")
     model: str = Field("local-qwen", description="AI model id (see /api/models).")
     provider: str = Field("onprem", description="Target infrastructure (aws/gcp/azure/onprem).")
-    environment: str = Field("dev", description="Deployment tier (production/staging/dev).")
+    # No default. The dashboard's natural-language deploy sends no environment at
+    # all, so a default here is not a convenience — it is this API asserting a tier
+    # the operator never chose, on every row that path writes.
+    environment: str | None = Field(None, description="Deployment tier, when the caller declares one.")
 
 
 class DeployStep(BaseModel):
@@ -94,7 +97,7 @@ class RollbackRequest(BaseModel):
     mode: str = Field("kind", description="Provisioning mode for cluster scope (kind/k3s).")
     model: str = Field("local-qwen", description="Model id recorded for the activity trail.")
     provider: str = Field("onprem", description="Target infrastructure (aws/gcp/azure/onprem).")
-    environment: str = Field("dev", description="Deployment tier (production/staging/dev).")
+    environment: str | None = Field(None, description="Deployment tier, when the caller declares one.")
     # Supersede-in-place: the original deployment being rolled back. When set, the
     # rollback flips that row to 'rolled-back' instead of spawning a duplicate.
     deployment_id: str | None = Field(None, description="Original deployment id to supersede.")

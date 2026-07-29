@@ -1,0 +1,114 @@
+Two layers invented the deployment tier, and they invented different ones
+==========================================================================
+Date : 2026-07-29
+Mode : unit + tsc + next build (structural checks on both boundaries; no live run
+       — the paths are exercised by the existing local-deploy live scenarios)
+Gate : make check 1544 -> 1552 (+8)
+
+Decision : DECISIONS D36. This is the one code change that decision carries;
+           the rest of D36 is confirming two open items as "not doing".
+
+
+What was wrong
+----------------
+The dashboard's natural-language deploy posts exactly this:
+
+    { instruction, model, provider }
+
+No environment. `DeployRequest.environment` defaulted to `"dev"`, so every row
+that path wrote recorded a tier the operator never chose — and that is the path
+the agent UI uses, i.e. most rows.
+
+Then, further along, `activity-data.ts` mapped a MISSING environment to
+`"production"`:
+
+    environment: typeof item.environment === "string" ? item.environment : "production",
+
+One unknown, two confident and contradictory guesses, neither of them the
+operator's. Whichever layer answered first won, and nothing anywhere said "not
+declared".
+
+The detail page had a third: `head?.environment ?? "dev"`.
+
+
+The fix — absence survives end to end
+---------------------------------------
+Same rule `tenant`, `triggered_at` and `resolved_at` already follow in this repo:
+store it when known, omit it when not, and let the reader tell the difference.
+
+  boundary  `DeployRequest.environment` / `RollbackRequest.environment`
+            -> `str | None = None`. No default: the caller declares a tier or
+            does not.
+  writer    `_write_row` / `record_rollback` set `deploy_item["environment"]`
+            only when a tier was declared. Empty string counts as absence — a
+            form submitting "" declared nothing, it did not declare "" as a tier.
+  doc       `activity-model.ts`: `environment` moves out of
+            `DeploymentRecordCore` into an optional field, because the agent path
+            no longer guarantees it.
+  reader    the mapper yields `undefined`; five render sites print an em dash;
+            the detail page renders nothing rather than "dev".
+
+
+A guard of mine had the hole it was written to catch
+------------------------------------------------------
+`test_activity_read_model_matches_writers.py` derives the row shapes by walking
+dict literals. Making `environment` conditional means writing it as
+`item["environment"] = ...` — a subscript assignment, which that walker did not
+see. The field would have read as "produced by nobody" and the phantom check
+would have failed on a field that is very much written.
+
+This is the identical hole `scripts/find_unwritten_keys.py` had on its first run,
+where it reported the already-fixed `triggered_at` as unproduced. Fixed the same
+way, and then one step further: the walker now separates
+
+    always — keys in the dict literal; the row cannot exist without them
+    maybe  — keys assigned afterwards, i.e. "stored only when known"
+
+and only `always` counts toward the documented core. Without that split the
+guard would have demanded `environment` stay in the core — that is, it would have
+argued for the bug.
+
+
+Falsification (each applied alone; restored green after every one)
+-------------------------------------------------------------------
+  1. writer drops the conditional store ............ 1 failed / 12 passed
+  2. HTTP boundary defaults to "dev" again ......... 1 failed / 12 passed
+  3. mapper defaults to "production" again ......... 1 failed / 12 passed
+  4. one render site loses its absence branch ...... 1 failed /  6 passed
+  5. doc marks environment required again .......... 1 failed / 12 passed
+  restored ......................................... 13 passed
+
+Revert 4 PASSED on the first attempt and the guard was innocent: the replacement
+never applied. The render sites had been written with a literal `—` escape
+sequence rather than an em dash, so the revert's pattern matched nothing. JS
+parses `"—"` inside a string literal correctly, so the page was right and
+only the test's edit was wrong — but a falsification that silently edits nothing
+reports PASS for the same reason a real fix does. Normalised the escapes to the
+character, re-ran, and it fails as it should.
+
+Guards (tests/test_deployment_environment_absence.py, 7 tests):
+  * behavioural — no declaration means no attribute; a declared tier is kept
+    verbatim; empty string is absence; rollback follows the same rule.
+  * structural on both boundaries — every `environment` Field in the request
+    models must default to None, and the mapper must yield `undefined` rather
+    than substituting a tier.
+  * derived over the whole dashboard — any `{x.environment}` interpolated into
+    JSX with no absence branch fails, so a sixth render site added later is
+    caught rather than silently printing nothing.
+
+
+Verification
+--------------
+  make check    1552 passed, 1 skipped   (1544 -> 1552, +8)
+  npx tsc --noEmit                        clean
+  npx next build                          success
+
+
+Not fixed here (deliberately)
+-------------------------------
+The structured trigger form still offers `production / staging / dev` while the
+registry's envs are `dev` / `prod` per tenant — "staging" exists in neither, and
+"production" is not "prod". Reconciling those means deciding whether the tier is
+free text or a registry reference, which is the same question D36 answers with
+"deployments are not registry-scoped". Left as recorded in the plan rather than
+quietly aligned.

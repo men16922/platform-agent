@@ -50,7 +50,8 @@ export default async function DeploymentDetailPage({ params }: { params: Promise
 
   const head = provisioning?.deployment ?? deployments[0]?.deployment;
   const provider = head?.provider ?? "onprem";
-  const environment = head?.environment ?? "dev";
+  // No fallback tier: "not declared" is not "dev" (D36).
+  const environment = head?.environment ?? null;
 
   return (
     <div className="mx-auto max-w-5xl space-y-7">
@@ -68,7 +69,7 @@ export default async function DeploymentDetailPage({ params }: { params: Promise
             <ProviderLogo provider={provider} size="sm" />
             {provider.toUpperCase()}
           </span>
-          <span className="text-xs text-[var(--muted)]">{environment}</span>
+          {environment && <span className="text-xs text-[var(--muted)]">{environment}</span>}
         </div>
         <p className="text-xs text-[var(--muted)]">
           Provisioning and the deployments that landed on this cluster, in one place.

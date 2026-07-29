@@ -12,11 +12,10 @@
 
 ## 사용자 게이트 (열린 것만)
 
-- [ ] **⚠️ 결정 1: "배포는 어느 테넌트 소유인가"** — **브리프 작성됨(2026-07-29)**:
-  `docs/plans/2026-07-29-deployment-tenant-ownership.md`. 조사 결과 **한 개가 아니라 세 개**의
-  질문이고(귀속·인가·과금), **"두 항목을 동시에 막는다"는 전제가 틀렸다** — 과금(rate limit)은
-  결정 대기가 아니라 **구조 대기**다(요청 시점에 대상이 미상 + 라우터 무인증).
-  추천은 **D(파티션 없음으로 확정 + rate limit 안 함으로 확정)**. 선택지 A/B/C 비교는 브리프 참조.
+- [x] **결정 1 = 완료(2026-07-29) → D36**: 배포는 테넌트 소유가 아니다. deployments/activities
+  **무파티션 확정** + **테넌트별 모델 rate limit 안 함 확정**. 근거·선택지 →
+  `docs/plans/2026-07-29-deployment-tenant-ownership.md`, 결정 → `DECISIONS.md` D36.
+  되돌릴 조건: 배포 경로가 테넌트-aware해지고 라우터에 인증이 서면 둘 다 열린다.
 - [ ] **⚠️ 결정 2: 무스코프 MCP 읽기를 닫을 것인가** — 닫으면 검증된 익명 kagent 왕복이 깨진다.
 - [ ] **⚠️ 결정 3: Capsule `limitRanges` 이관 경로** — 클러스터 스코프(D30 위반) vs 새 SA+RBAC.
 - [ ] **⚠️ 결정 4: k3s를 proven 기판에 넣을 것인가** — 집행은 라이브로 증명됐고 시맨틱은
@@ -38,11 +37,9 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 **최우선 불변식**: 에이전트 실행 blast radius=1 tenant/env(자격증명이 경계) — Phase 1a에서 강제 완료.
 **Phase 0·1a·1b·2·3 = 완결**(M10~M12) + **잔여 12건 소진**(M13) — 상세 → `COMPLETED_SUMMARY.md`.
 
-- [ ] **deployments/activities 파티션 — 결정 1에 달림**. 배포 기록엔 테넌트 개념이 없고
-  `environment`는 레지스트리 쌍이 아닌 자유 문자열이다. → 브리프 참조.
 - [ ] **Phase 4**(managed 어댑터, billable)·**5**(레지스트리 PR 쓰기) = 다음 후보.
   Phase 5가 열리면 3②를 GitOps-native로 닫을 수 있다(D32 재검토 조건). Phase 4로 넘긴 것:
-  GCP/Azure 자격증명의 테넌트 바인딩(상세 → `STATUS` Open Risk 9).
+  GCP/Azure 자격증명의 테넌트 바인딩(상세 → `STATUS` Open Risk 10).
 - [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 수단 선행**(kind엔 CSI 스냅샷터 부재) —
   실패 비용이 가용성이 아니라 데이터라 rollouts-demo와 달리 미뤘다.
 - **2차 잔여**: agent→hub push 인증 · 서명키 custody·rotation · push heartbeat. (설계 문서 참조)
@@ -85,10 +82,14 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
   그걸 보는 `verify_tenant_isolation.py`는 **k3s-lab에 피어 테넌트가 없어 못 돌린다**(acme/prod가
   유일한 env). globex/prod를 만들면 실 네임스페이스·쿼터·애드온이 프로비저닝되므로 **인프라
   결정**이라 발명하지 않았다. 집행은 증명됨, 시맨틱은 미증명.
-- [ ] **rate limit을 모델 호출까지 확장 — 결정 대기가 아니라 구조 대기(2026-07-29 재조사)**.
-  테넌트는 추론의 **입력이 아니라 출력**이고(대상이 도구 호출로 정해진다), 라우터 API는
-  **무인증**이라 요청 본문의 테넌트는 자진신고다 — 자진신고 예산은 예산이 아니다.
-  상세·선택지 → `docs/plans/2026-07-29-deployment-tenant-ownership.md`.
+- [ ] **⚠️ 배포 경로가 스코프 가드를 안 탄다(2026-07-29 발견, D36에서 분리)** —
+  `guard_scoped_action`은 인시던트 러너 3종 + MCP 게이트웨이만 부르고,
+  `local_deployer.deploy_service`/`deploy_to_cluster`는 **가드 없이** ambient 자격증명으로
+  클러스터를 바꾼다. **"blast radius = 1 tenant/env"는 인시던트 경로에만 참.** 귀속(D36)과
+  별개인 **인가** 문제 — 다만 배포에 테넌트가 없으므로 무엇으로 스코프할지가 선행 질문이다.
+- [ ] **트리거 폼 tier가 레지스트리와 어긋난다** — 드롭다운 `production/staging/dev` vs
+  레지스트리 `dev`/`prod`. D36상 자유 텍스트 유지가 일관이나 드롭다운이 레지스트리를 흉내 내
+  오해를 부른다. 표기 정리만 남김.
 - [ ] **무스코프 MCP 읽기는 여전히 ambient** — 검증된 익명 kagent 왕복을 살리려는 의도적 예외다.
   닫으려면 kagent 경로에 먼저 스코프를 줘야 한다. 읽기가 무해해서가 아니다(남의 로그 = 유출).
 - [ ] **A2A 인증 실집행 결정** — 카드가 광고하던 bearer/JWT를 서버가 검사하지 않던 것은 해소했다

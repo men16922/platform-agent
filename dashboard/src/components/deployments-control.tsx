@@ -321,7 +321,7 @@ export function DeploymentsControl({ initialDeployments, tornDownClusters = [] }
                 <span className="opacity-60"> · </span>
                 <code className="text-[11px]">{dep.version}</code>
                 <span className="opacity-60"> · </span>
-                {dep.environment}
+                {dep.environment ?? <span title="no tier declared">&mdash;</span>}
                 <span className="opacity-60"> · </span>
                 {dep.provider === "onprem" ? "On-Premise" : dep.provider.toUpperCase()}
               </div>
@@ -417,7 +417,7 @@ export function DeploymentsControl({ initialDeployments, tornDownClusters = [] }
                       {dep.provider === "gcp" ? "GCP" : dep.provider === "azure" ? "Azure" : dep.provider === "onprem" ? "On-Premise" : "AWS"}
                     </span>
                   </td>
-                  <td className="p-3 text-[var(--muted)]">{dep.environment}</td>
+                  <td className="p-3 text-[var(--muted)]">{dep.environment ?? "—"}</td>
                   <td className="p-3 text-xs text-[var(--muted)]">
                     <span className="inline-flex items-center gap-1.5">
                       <ModelLogo model={modelIdFromAgent(dep.agent)} />

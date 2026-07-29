@@ -60,7 +60,6 @@ export interface DeploymentRecordCore {
   provider: "aws" | "gcp" | "azure" | "onprem";
   service: string;
   version: string;
-  environment: string; // free text ("production") — NOT a registry tenant/env pair
   status: "success" | "failed" | "rolling-back" | "rolled-back";
   agent: string;
   duration_sec: number;
@@ -68,6 +67,16 @@ export interface DeploymentRecordCore {
 }
 
 export interface DeploymentRecord extends DeploymentRecordCore {
+  /**
+   * The tier the caller declared — free text ("production"), NOT a registry
+   * tenant/env pair. Optional because the agent path stores it only when the
+   * caller actually declared one: the dashboard's natural-language deploy sends
+   * no environment at all, and defaulting it here meant every such row claimed
+   * a tier nobody chose. Absent means "not declared", which is a different fact
+   * from any particular tier. See DECISIONS D36.
+   */
+  environment?: string;
+
   /** agent path only — the lifecycle/correlation keys the dashboard IA needs. */
   type?: "deploy" | "provision";
   /** agent path only — links a deploy to the provisioning that made its cluster. */

@@ -83,7 +83,7 @@ export function ProvisioningControl({ initialDeployments }: { initialDeployments
               <span className="opacity-60"> · </span>
               <code className="text-[11px]">{teardownTarget.version}</code>
               <span className="opacity-60"> · </span>
-              {teardownTarget.environment}
+              {teardownTarget.environment ?? "—"}
             </div>
             <p className="rounded-lg border border-red-500/35 bg-red-950/20 px-3 py-2.5 text-[11px] text-[var(--muted)]">
               Tears down the entire <span className="font-semibold text-red-200">{teardownTarget.service}</span> cluster
@@ -147,7 +147,7 @@ export function ProvisioningControl({ initialDeployments }: { initialDeployments
                         {providerLabel[dep.provider] ?? dep.provider}
                       </span>
                     </td>
-                    <td className="p-3 text-[var(--muted)]">{dep.environment}</td>
+                    <td className="p-3 text-[var(--muted)]">{dep.environment ?? "—"}</td>
                     <td className="p-3 text-xs text-[var(--muted)]">{dep.agent}</td>
                     <td className="p-3">
                       <span className={statusStyle[dep.status] ?? "text-[var(--muted)]"}>{dep.status}</span>

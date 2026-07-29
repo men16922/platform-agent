@@ -265,7 +265,7 @@ def _write_row(
     instruction: str,
     model: str,
     provider: str,
-    environment: str,
+    environment: str | None,
     summary: str,
     steps: list[dict[str, Any]],
     ok: bool,
@@ -289,12 +289,19 @@ def _write_row(
         "service": service,
         "version": version,
         "provider": provider,
-        "environment": environment,
         "status": status,
         "agent": agent,
         "duration_sec": 0,
         "created_at": now,
     }
+    # The tier the caller declared. Absent when they declared none — this used to
+    # default to "dev" at the HTTP boundary, so every natural-language deploy from
+    # the dashboard (which sends no environment at all) recorded "dev" no matter
+    # what the operator meant. The dashboard mapper then invented a *different*
+    # default, "production", for the same missing value. Two layers answering one
+    # unknown with two confident and contradictory guesses.
+    if environment:
+        deploy_item["environment"] = environment
     activity_item = {
         "PK": "ACTIVITY",
         "SK": f"{now}#{activity_id}",
@@ -328,7 +335,7 @@ def record_deploy(
     summary: str,
     steps: list[dict[str, Any]],
     ok: bool,
-    environment: str = "dev",
+    environment: str | None = None,
     trace: list[dict[str, Any]] | None = None,
     table: Any | None = None,
 ) -> dict[str, str] | None:
@@ -402,7 +409,7 @@ def record_rollback(
     service: str,
     version: str,
     provider: str,
-    environment: str,
+    environment: str | None,
     model: str,
     action: str,
     summary: str,
@@ -437,12 +444,14 @@ def record_rollback(
         "service": service,
         "version": version,
         "provider": provider,
-        "environment": environment,
         "status": status,
         "agent": agent,
         "duration_sec": 0,
         "created_at": now,
     }
+    # Same rule as _write_row: absent when the caller declared no tier.
+    if environment:
+        deploy_item["environment"] = environment
     activity_item = {
         "PK": "ACTIVITY",
         "SK": f"{now}#{activity_id}",
@@ -475,7 +484,7 @@ def record_cluster_teardown(
     *,
     cluster: str,
     provider: str,
-    environment: str,
+    environment: str | None,
     model: str,
     summary: str,
     steps: list[dict[str, Any]],

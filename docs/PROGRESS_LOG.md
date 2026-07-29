@@ -7,6 +7,34 @@
 
 ---
 
+## 2026-07-29 — 결정 1을 닫았고, 두 층이 발명하던 tier를 없앴다 (gate 1544→1552)
+
+- Status: 결정 1("배포는 어느 테넌트 소유인가")을 조사→브리프→**결정(D36)**→구현까지.
+  조사에서 **전제 하나가 깨졌다**: 한 개인 줄 알았던 게 세 개(귀속·인가·과금)였고,
+  과금은 **결정 대기가 아니라 구조 대기**였다.
+- Changed(`D36`): ①**deployments/activities 무파티션 확정** + **테넌트별 모델 rate limit
+  안 함 확정** — 요청 시점에 대상이 미상(모델이 도구를 부를 때 정해짐)이고 라우터가 무인증이라
+  본문 테넌트는 자진신고인데, **자진신고 예산은 예산이 아니다**. "테넌트 격리됨"의 범위를
+  **플릿·인시던트 둘로** 못 박았다. ②D36이 딸고 온 코드 변경 — **tier 발명 제거**:
+  대시보드 NL 배포는 `environment`를 안 보내는데 HTTP 경계가 `"dev"`를, 매퍼가 부재를
+  `"production"`을 채웠다(**한 미상값에 두 층이 서로 다른 답**). 경계 기본값 제거 · writer
+  조건부 저장(빈 문자열=부재) · 문서에서 optional로 이동 · 렌더 5곳 정직화. ③분리:
+  **배포 경로 무스코프**(인가 문제, Open Risk 3) · 트리거 폼 tier 표기.
+- Verified: `make check` **1552**(+8) · tsc 클린 · `next build` 성공. 반증 5건 개별 되돌림
+  전부 red, 복원 시 13건 통과. 증거 `docs/evidence/deployment-environment-absence.log`,
+  브리프 `docs/plans/2026-07-29-deployment-tenant-ownership.md`.
+- Blockers: 없음(결정 1은 닫혔다).
+- 품질 메모: **처음 추천이 검증에서 뒤집혔다** — "대상 네임스페이스에서 역조회"가 옳은
+  모양이라 추천하려다, `deploy_service`의 `namespace` 기본값이 `"default"`이고 프롬프트가
+  namespace·tenant를 한 번도 언급하지 않으며 `deploy_recorder`가 namespace를 기록조차 안
+  한다는 걸 확인하고 접었다(오늘 켜면 전부 무테넌트 귀속). 그리고 **내 가드가 잡으려던 홀을
+  자기가 갖고 있었다**: 조건부 저장은 `item["k"]=v`라 dict 리터럴만 보는 walker에 안 잡혀,
+  그대로 뒀으면 가드가 **버그 쪽을 편들었을** 것이다(=environment를 core에 두라고 요구).
+  무조건/조건부를 분리해 고쳤다. 반증 4도 처음엔 초록이었는데 **치환이 no-op**이었다
+  (파일에 `\u2014` 이스케이프가 문자로 들어가 패턴이 안 맞았다) — 아무것도 안 고친 반증은
+  진짜 수정과 똑같이 PASS를 낸다.
+- Next: 잔여는 결정 3건(MCP 읽기·Capsule 경로·k3s 게이트) + 승인 3건 + 분리된 인가 1건.
+
 ## 2026-07-29 — k3s는 NetworkPolicy를 집행한다, 그런데 게이트는 안 열었다 (gate 1544 유지)
 
 - Status: 계획의 **비-결정 항목 마지막**(⑥ k3s 검증기 재실행)을 실행했다. flannel 집행은
@@ -65,31 +93,3 @@
   스토어의 인시던트 문서는 **무기한 남는다**. 주석만 사실에 맞추고(집행 안 하는 걸 광고하지
   않는다) **동작은 안 바꿨다** — 보관을 켜는 건 실 데이터 삭제라 승인 사항이고 읽는 쪽도 없다.
   → `STATUS` Open Risk 2 · `NEXT_PLAN`.
-
-## 2026-07-29 — 읽기 모델 문서가 존재 내내 어긋나 있었다 (gate 1528→1533)
-
-- Status: 스윕을 **대시보드 TS 쪽**으로 확장(기존 스윕은 `src/agents`만 본다). M13의 열한 번째
-  이자 **한 층 위**: 필드가 아니라 **선언 자체를 아무도 안 읽는** 경우.
-- Changed(`61ee2f4`): `activity-model.ts`는 **아무도 import하지 않는다** — 그래서 어긋나도
-  아무것도 안 깨졌고, 실제로 양방향으로 어긋났다. 아무도 안 쓰는 `duration_ms`·`error_message`를
-  선언하면서 **배포 상세 페이지가 딛고 선 `trace`·`cost_metrics`·`deployment_id`는 없었다**.
-  거짓 주장 둘: ①`ttl` 필수 + "30일 보관"이지만 `ttl`을 쓰는 건 `activity_writer`뿐이고
-  실제 대부분을 쓰는 `deploy_recorder`는 안 써서 **그 행들은 만료되지 않는다** ②`GSI1`도
-  절반만 채워지고 **아무도 쿼리하지 않는다** — 이 문서를 보고 provider 스코프 쿼리를 짰다면
-  에이전트가 쓴 행을 전부 빠뜨린 짧은 목록을 **조용히** 받았을 것이다. writer 계열이 둘인데
-  어느 쪽도 상위집합이 아니고 선언은 **둘 다와** 불일치. core/optional 분리 + 접근 패턴을
-  USED/NOT USED/NOT WRITTEN으로 표기 + `make*Record` 생성자 4개 제거(배선된 적 없는 TS 쪽
-  쓰기 경로 = 갈라질 일만 남은 두 번째 진실 소스).
-- Verified: `make check` **1533**(+5) · tsc 클린 · `next build` 성공. 반증 5건(**원본 파일
-  포함** → 5개 중 3개 red) 전부 red, 복원 시 5건 통과.
-  증거 `docs/evidence/activity-read-model-drift.log`. 런타임 동작 변화 없음(importer가 0인 게 요점).
-- Blockers: 없음.
-- 품질 메모: 왜 안 잡혔나 — `test_activity_model_schema`가 **부분문자열 존재**만 봤다
-  (`'GSI1PK:' in content`, `"TTL_30_DAYS" in content`). 키워드는 **모양을 못 본다** — 이
-  마일스톤이 이미 적어둔 안티패턴이 **그 파일을 지키는 테스트에** 있었다. writer AST에서
-  파생하는 가드로 교체. **그리고 내 가드도 처음엔 같은 병이었다**: `re.search`라 두 선언 중
-  하나만 옵셔널이면 통과해서 되돌림 3이 초록으로 나왔다 — `any`를 쓸 자리에 `all`이 필요했다.
-  전 선언 지점을 요구하도록 조인 뒤에야 빨개졌다.
-- Next: TS 쪽 후보 중 `ApprovalRequest.request_kind/subject/summary`는 **이미 렌더되는
-  `alarm_name`/`root_cause`의 중복**(손실 아님, 사문화). TS 후보 47건을 마저 읽은 결과
-  **데이터 손실은 이 건 하나뿐**이었고 나머지는 죽은 선언 → NEXT_PLAN에 후보로 기록(고치지 않음).

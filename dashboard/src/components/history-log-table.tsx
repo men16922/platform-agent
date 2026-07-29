@@ -82,7 +82,7 @@ export function HistoryLogTable({
                   <td className="p-3"><code className="text-xs">{dep.version}</code></td>
                   {variant === "deploy" && <td className="p-3 text-xs text-[var(--muted)]">{dep.cluster || "—"}</td>}
                   <td className="p-3"><ProviderCell dep={dep} /></td>
-                  <td className="p-3 text-[var(--muted)]">{dep.environment}</td>
+                  <td className="p-3 text-[var(--muted)]">{dep.environment ?? "—"}</td>
                   <td className="p-3"><span className={statusStyle[dep.status] ?? "text-[var(--muted)]"}>{dep.status}</span></td>
                 </tr>
               ))
