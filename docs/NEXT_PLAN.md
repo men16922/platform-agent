@@ -5,9 +5,9 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(M10=GitAIOps 7/7+멀티테넌트 Phase 0·1a·1b+공급망,
 > M9=eval·하드닝, M8=레퍼런스 8/8) / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 현재 상태 (2026-07-29, gate 1544)
+## 현재 상태 (2026-07-29, gate 1552)
 
-**Phase 0·1a·1b·2·3 완결**(M10~M12) + **차단 없는 잔여 소진**. 남은 잔여는 작업이 아니라 **결정** 4건.
+**Phase 0·1a·1b·2·3 완결**(M10~M12) + **차단 없는 잔여 소진**. 남은 잔여는 **결정 3건 + 승인 3건 + 분리된 인가 1건**(결정 1은 D36으로 닫힘).
 **시연 가능**: `make dev-up` → `make demo-baseline` 두 줄로 영상 시나리오 A가 재현된다.
 
 ## 사용자 게이트 (열린 것만)
@@ -47,7 +47,7 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 ## 잔여 — 완료 항목에서 의도적으로 남긴 것
 
 > 완료분은 `COMPLETED_SUMMARY.md` **M12**(Phase 3 인가) · **M13**("선언됐지만 아무도 읽지
-> 않는 것들" 12건 — 리포트 창 포함) · `PROGRESS_LOG.md` · `docs/evidence/`.
+> 않는 것들" 13건 — 배포 tier 발명 포함) · `PROGRESS_LOG.md` · `docs/evidence/`.
 
 - [ ] **TS 스윕 잔여 후보 — 사문화이지 손실이 아니다(2026-07-29 확인, 고치지 않음)**.
   261필드 중 후보 47을 완독했고 **데이터 손실은 `activity-model.ts` 한 건뿐**. 나머지는 죽은

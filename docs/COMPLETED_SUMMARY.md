@@ -38,13 +38,13 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
-## M13 — "선언됐지만 아무도 읽지 않는 것들" 12건 (완료, 2026-07-28~29)
+## M13 — "선언됐지만 아무도 읽지 않는 것들" 13건 (완료, 2026-07-28~29)
 
-**gate 1411 → 1544 (+133).** 증거 `docs/evidence/{phase3-tenant-grant-validation,
+**gate 1411 → 1552 (+141).** 증거 `docs/evidence/{phase3-tenant-grant-validation,
 runbook-selectability,capsule-deprecation-metadata,executor-span-approval-path,
 onprem-runbook-matching,declared-unconsumed-sweep,incident-trigger-time,
 cloud-incident-fields,incident-time-to-resolve,rollback-cost-metrics,
-activity-read-model-drift,report-windows}.log`.
+activity-read-model-drift,report-windows,deployment-environment-absence}.log`.
 결정 → `DECISIONS` D33·D34·D35.
 
 Phase 3가 인가를 닫은 뒤 남은 잔여를 우선순위대로 소진했는데, **아홉 건이 전부 같은
@@ -102,6 +102,11 @@ Phase 3가 인가를 닫은 뒤 남은 잔여를 우선순위대로 소진했는
   **24시간 창이 보관 기간 전체**였고(90행 중 90 → 2), 주간은 `ttl-90일` 역산이라 상수가 바뀌면
   조용히 밀리고 **`ttl` 없는 행은 90일 과거로 떨어져 늘 누락**됐다. `created_at`으로 배치 +
   폴백 상수를 **writer AST에서 파생 검증**. **라이브 미실행**(스케줄 Lambda) — 과대집계는 추론.
+- **배포 tier 발명(1552, D36)**: 이 부류의 **양층 변종** — 대시보드 NL 배포가 `environment`를
+  안 보내는데 **HTTP 경계가 `"dev"`를, 매퍼가 같은 부재를 `"production"`을** 채웠다. 한 미상값에
+  두 층이 서로 다른 답을 자신 있게 발명한 것. 부재를 끝까지 보존. **내 가드가 잡으려던 홀을
+  자기가 갖고 있었다** — 조건부 저장(`item["k"]=v`)을 dict 리터럴 walker가 못 봐서, 그대로
+  뒀으면 가드가 **버그 쪽을 편들었을** 것이다(무조건/조건부 분리로 수정).
 
 **반복된 교훈(테스트 규율 7종)**: ①가드를 쓰면 **호출부에서** 반증하라 — 새 테스트 20건이
 전부 통과하는데 호출자만 플래그를 잊은 상태였다. ②픽스처는 코드가 아니라 **실제 입력**에서
