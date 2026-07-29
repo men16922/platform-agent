@@ -1,0 +1,141 @@
+A rolled-back deployment lost the cost panel it had before the rollback
+========================================================================
+Date : 2026-07-29
+Mode : unit + live (built dashboard in local mode over a real JSONL store
+       written by the real recorder, page fetched over HTTP) + tsc/next build
+Gate : make check 1520 -> 1528 (+8)
+
+Found by : scripts/find_unwritten_keys.py (new) — the reverse-direction sweep.
+           The forward sweep (find_unconsumed_fields.py) cannot see this class:
+           the field is declared, populated and read. It is one of three writers
+           that stays silent.
+
+
+What was wrong
+----------------
+Three functions write an ACTIVITY row. Only one of them wrote `cost_metrics`.
+
+  deploy_recorder._write_row            deployment_id=yes  cost_metrics=yes
+  deploy_recorder.record_rollback       deployment_id=yes  cost_metrics=NO
+  deploy_recorder.record_route_activity deployment_id=no   cost_metrics=no
+  activity_writer.record_agent_activity deployment_id=no   cost_metrics=no
+
+`record_rollback` writes its ACTIVITY row under the *same* deployment_id as the
+deploy it supersedes, and it already had `steps` in hand — the exact input
+`_cost_metrics` consumes. It simply did not call it.
+
+That alone would under-report. What made it erase is the read side. In
+dashboard/src/lib/activity-data.ts, `mergeActivity` folds every ACTIVITY row
+sharing a deployment_id into one object:
+
+    matches.sort(oldest first)          // deploy -> rollback
+    const latest = matches[matches.length - 1]
+    const mergedTrace = matches.flatMap(a => a.trace)
+    return { ...latest, trace: mergedTrace }
+
+The trace is unioned; everything else comes from the newest row. The newest row
+after a rollback is the rollback — the one without `cost_metrics`. The detail
+panel is conditional (`activity?.cost_metrics && ...`), so nothing threw and
+nothing rendered "0". The panel was simply absent, directly above a trace that
+had just grown to list both runs' tool calls.
+
+Net effect: the moment a deployment was rolled back, its tool-call, reasoning
+and token counts disappeared from the page — and the page showed *more*
+activity than before, which is what makes the absence unremarkable.
+
+
+BEFORE / AFTER (live, same fixture, built dashboard over HTTP)
+---------------------------------------------------------------
+Fixture: real recorder writes a deploy (3 tools, 1 reasoning entry, 800 in /
+120 out tokens) then a rollback (2 tools) under the same deployment_id, into a
+JSONL store the dashboard reads in DASHBOARD_DATA_SOURCE=local mode.
+
+  BEFORE (both halves reverted, rebuilt, GET /deployments/DEP-D7D274DD -> 200)
+    ACTIVITY rows        : 2   (cost_metrics present, ABSENT)
+    trace tool names on page : 10 occurrences
+    cost panel           : NOT RENDERED
+
+  AFTER  (GET /deployments/DEP-71281D41 -> 200)
+    ACTIVITY rows        : 2   (cost_metrics present, present)
+    cost panel           : "tool calls 5  reasoning 1  tokens 920 (800 in / 120 out)"
+    breakdown            : rollback_service x1  validate_deployment x1
+                           build_image x1  push_image x1  deploy_service x1
+
+The breakdown spans both runs, matching the merged trace beside it. Before the
+fix the two panels described different sets of rows; that was the actual defect,
+and fixing only the writer would have swapped one inconsistency for another
+(the rollback's 2 tools reported as the deployment's, under a 6-entry trace).
+
+
+The fix
+---------
+1. WRITER — src/agents/ai/deploy_recorder.py:record_rollback
+   Attaches `_cost_metrics(steps, None)`, the same call `_write_row` makes.
+
+2. READER — dashboard/src/lib/activity-data.ts:mergeActivity
+   New `sumCostMetrics(matches)` sums totals and merges the per-tool breakdown
+   across every row folded into the view, and `mergeActivity` sets the field
+   explicitly instead of inheriting it through the spread. Sub-metrics now
+   follow the same rule as the trace: they describe the whole lifecycle of one
+   deployment id.
+
+Deliberately NOT changed: `record_route_activity` and `record_agent_activity`
+also omit `cost_metrics`. Neither writes a deployment_id, so neither can reach
+the only view that renders the field — adding it there would manufacture
+exactly the unconsumed field this sweep exists to find. `record_route_activity`
+also omits `model`; the timeline falls back to `modelIdFromAgent(agent)`, which
+returns null for "Supervisor" and renders a neutral mark, so absence is shown
+honestly rather than guessed.
+
+
+Falsification (each revert applied alone; restored green after every one)
+--------------------------------------------------------------------------
+  1. record_rollback omits cost_metrics ............ 4 failed / 4 passed
+  2. mergeActivity drops the explicit override ..... 2 failed / 6 passed
+  3. aggregate over `latest` instead of `matches` .. 1 failed / 7 passed
+  4. sumCostMetrics picks first row instead of sum . 1 failed / 7 passed
+  restored ......................................... 8 passed
+
+Guards (tests/test_rollback_cost_metrics.py, 8 tests):
+  * behavioural — the rollback row carries the sub-metrics; a rollback with no
+    steps reports zeros rather than absence; the summed total across both rows
+    equals the tool entries in the merged trace.
+  * derived, repo-wide — every ACTIVITY row literal in src/agents that carries a
+    `deployment_id` must carry `cost_metrics`. `deployment_id` is precisely what
+    routes a row into mergeActivity and onto the detail page, so the key, not
+    the module, is what creates the obligation. Rows without it are correctly
+    exempt. A new writer that carries one fails here. Plus a guard-the-guard
+    assertion, because an AST walk that matches nothing passes vacuously.
+  * structural on the TS (no TS runner in this repo — same approach the incident
+    projection guard uses): the merge must set cost_metrics explicitly, derive
+    it from `matches` rather than `latest`, and sum rather than pick.
+
+
+New sweep tool
+----------------
+scripts/find_unwritten_keys.py walks the store boundary in the direction the
+existing sweep cannot: keys the dashboard reads off an untyped record that no
+writer in src/ produces. Writers are found by AST (dict literals *and*
+`item["k"] = v` subscript assignments — the form the recent incident fixes used;
+without it the tool reported the already-fixed `triggered_at`/`resolved_at` as
+unproduced, which would have made it untrustworthy on first run). Vendored
+node_modules under src/stacks are excluded.
+
+Current output: 9 candidates out of 48 keys read off untyped records. All nine
+are the documented nested-literal false positive — a dict built by a helper
+(`reconciliation.to_dict`, `_cost_metrics`) and embedded by its caller, so the
+helper itself does not write. That noise was left in rather than filtered: it is
+what surfaced this defect, because the keys were nested *and* one of three
+writers omitted the whole block.
+
+The opposite direction ("written but nobody reads") is deliberately not
+reported — the forward sweep does it at field granularity, whereas on raw dict
+keys it drowns in k8s manifests, HTTP headers and CDK config.
+
+
+Why the suite was green
+-------------------------
+`test_record_deploy_attaches_cost_metrics` asserts the writer that works. There
+was no equivalent for the rollback writer, and no test at all over the merge
+rule that turned an omission into an erasure. Both halves were individually
+defensible; only the two together produced the failure, and only on the page.

@@ -457,6 +457,12 @@ def record_rollback(
         "summary": (summary or "")[:4000],
         "tool_calls": tool_calls,
         "trace": json.dumps([{"kind": "tool", **s} for s in steps])[:350000],
+        # Same sub-metrics the deploy row carries. A rollback ACTIVITY is the
+        # newest row under this deployment_id, and the read layer takes
+        # everything but the trace from the newest row — so omitting this here
+        # did not merely under-report the rollback, it erased the deploy's
+        # numbers from the page while the merged trace below them grew.
+        "cost_metrics": _cost_metrics(steps, None),
         "status": "success" if ok else "failed",
         "created_at": now,
     }

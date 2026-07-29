@@ -220,13 +220,42 @@ function pickLatestDeployment(rows: Record<string, unknown>[], id: string): Depl
   return matches[0] ?? null;
 }
 
+// Sub-metrics follow the same rule as the trace: this view shows one deployment
+// id's whole lifecycle, so the numbers must describe every row folded into it.
+// Taking them from `latest` alone reported the rollback's cost as if it were the
+// deployment's, directly under a trace listing both runs' tool calls.
+function sumCostMetrics(rows: AgentActivity[]): AgentActivity["cost_metrics"] {
+  const present = rows.map((a) => a.cost_metrics).filter((m): m is NonNullable<typeof m> => !!m);
+  if (!present.length) return undefined;
+  const byName: Record<string, number> = {};
+  for (const m of present) {
+    for (const [name, count] of Object.entries(m.tool_calls_by_name)) {
+      byName[name] = (byName[name] ?? 0) + count;
+    }
+  }
+  const sum = (pick: (m: NonNullable<AgentActivity["cost_metrics"]>) => number) =>
+    present.reduce((acc, m) => acc + pick(m), 0);
+  return {
+    tool_calls_total: sum((m) => m.tool_calls_total),
+    tool_calls_by_name: byName,
+    reasoning_steps: sum((m) => m.reasoning_steps),
+    input_tokens: sum((m) => m.input_tokens),
+    output_tokens: sum((m) => m.output_tokens),
+    total_tokens: sum((m) => m.total_tokens),
+  };
+}
+
 function mergeActivity(rows: Record<string, unknown>[], id: string): AgentActivity | null {
   const matches = rows.map(mapActivityItem).filter((a): a is AgentActivity => a?.deployment_id === id);
   if (!matches.length) return null;
   matches.sort((a, b) => a.created_at.localeCompare(b.created_at)); // oldest first: deploy → rollback
   const latest = matches[matches.length - 1];
   const mergedTrace = matches.flatMap((a) => a.trace ?? []);
-  return { ...latest, trace: mergedTrace.length ? mergedTrace : latest.trace };
+  return {
+    ...latest,
+    trace: mergedTrace.length ? mergedTrace : latest.trace,
+    cost_metrics: sumCostMetrics(matches),
+  };
 }
 
 export async function getDeploymentDetail(id: string): Promise<DeploymentDetail> {
