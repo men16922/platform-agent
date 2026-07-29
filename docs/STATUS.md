@@ -70,8 +70,7 @@
   없고, `setup_tenancy(tenant, ...)`는 **모델이 부르는 도구**다 — 테넌트가 추론의
   **입력이 아니라 출력**이라 신원 전파가 성립하지 않는다. deployments/activities 파티션과
   같은 결정.
-- **발행 3종 완료(2026-07-28)** — Notion `3a94c2420ac4801cbe99e36c16ed90fd` · YouTube Shorts
-  `2J9WfZV0TPE` · LinkedIn(`6979787`). GitAIOps 후속편은 착수 보류.
+- **발행 3종 완료(2026-07-28)** — Notion·YouTube Shorts `2J9WfZV0TPE`·LinkedIn(`6979787`). 후속편 보류.
 
 **직전에 선 것들(2026-07-26~27, 상세는 `PROGRESS_LOG`/`COMPLETED_SUMMARY`)**
 
