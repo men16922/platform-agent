@@ -1,0 +1,125 @@
+# Evidence — the deploy row never said which namespace, so rollback guessed
+
+Date: 2026-07-30   Gate: make check -> 1565 passed, 1 skipped (1552 -> 1565, +13)
+Cluster: kind platform-agent (3 nodes, v1.34.0) — LIVE
+
+## 1. Live: what a rollback that guesses `default` actually does
+```
+==============================================================================
+SETUP — the same service name in two namespaces, each with two revisions
+==============================================================================
+  live state before any rollback:
+    ✓ default/orders-api        image = nginx:1.28-alpine
+    ✓ acme-prod-app/orders-api  image = nginx:1.28-alpine
+  rollout history (default):
+      deployment.apps/orders-api 
+      REVISION  CHANGE-CAUSE
+      1         <none>
+      2         <none>
+      
+  rolling back means returning to nginx:1.27-alpine
+
+==============================================================================
+BEFORE — the rollback the dashboard used to issue: --namespace default
+         (nothing recorded where the deploy went, so 'default' was hardcoded
+          in the UI, in the API route, and in the request model)
+==============================================================================
+  $ kubectl rollout undo deployment/orders-api --namespace default
+      deployment.apps/orders-api rolled back
+  live state:
+    ✓ default/orders-api        image = nginx:1.27-alpine
+    ✓ acme-prod-app/orders-api  image = nginx:1.28-alpine
+
+  The command reported success. It reverted a workload nobody asked about,
+  and the service the operator clicked is still on the version they wanted gone.
+
+==============================================================================
+AFTER — the namespace is recorded on the row and forwarded verbatim
+==============================================================================
+  $ kubectl rollout undo deployment/orders-api --namespace acme-prod-app
+      deployment.apps/orders-api rolled back
+  live state:
+    ✓ acme-prod-app/orders-api  image = nginx:1.27-alpine
+
+==============================================================================
+ALL LIVE ASSERTIONS HELD
+==============================================================================
+```
+
+## 2. Live end-to-end: real deploy -> real row -> real HTTP rollback -> real cluster
+```
+
+==============================================================================
+SETUP — a same-named service in `default`, the decoy the old path hit
+==============================================================================
+    ✓ default/orders-api image = nginx:1.28-alpine
+
+==============================================================================
+REAL DEPLOY — the on-prem adapter applies into acme-prod-app (twice, for a revision)
+==============================================================================
+    deploy_to_cluster(image_uri=nginx:1.27-alpine) -> status=success namespace='acme-prod-app'
+    deploy_to_cluster(image_uri=nginx:1.28-alpine) -> status=success namespace='acme-prod-app'
+    ✓ acme-prod-app/orders-api image = nginx:1.28-alpine
+
+==============================================================================
+REAL RECORD — what the row says about where it landed
+==============================================================================
+    DEPLOY row: deployment_id=DEP-3B311FE4 cluster='platform-agent' namespace='acme-prod-app'
+    ✓ recorded namespace = acme-prod-app
+    (this attribute did not exist before — the row could not answer this)
+
+==============================================================================
+REAL HTTP ROLLBACK — POST /api/local-rollback with the row's namespace
+==============================================================================
+    HTTP 200  ok=True
+    summary: orders-api rolled back to previous revision.
+
+==============================================================================
+LIVE CLUSTER STATE — which workload actually moved
+==============================================================================
+    ✓ acme-prod-app/orders-api image (target) = nginx:1.27-alpine
+    ✓ default/orders-api image (decoy, must be untouched) = nginx:1.28-alpine
+
+==============================================================================
+SUPERSEDE — does the rewritten row still know where it lives?
+==============================================================================
+    row status='rolled-back' namespace='acme-prod-app'
+    ✓ namespace survives supersede = acme-prod-app
+    (a rollback that dropped it would leave the NEXT rollback guessing again)
+
+==============================================================================
+RESULT
+==============================================================================
+  ALL LIVE ASSERTIONS HELD
+
+  cleanup: removed default/orders-api and namespace acme-prod-app
+```
+
+## 3. Falsification — each fix reverted in isolation
+
+Every reversion is verified to have actually changed the file first: a
+substitution that matches nothing passes exactly like a real fix.
+```
+== baseline ==
+13 passed in 0.64s
+== reversions ==
+-- 1 recorder: DEPLOY row stops recording namespace => 3 failed, 10 passed in 0.53s
+-- 2 recorder: prefer args over result (adapter truth ignored) => 2 failed, 11 passed in 0.54s
+-- 3 rollback: supersede drops the namespace => 3 failed, 10 passed in 0.55s
+-- 4 NL rollback: stop recovering it from the superseded row => 1 failed, 12 passed in 0.56s
+-- 5 teardown cascade: flatten every app onto no namespace => 1 failed, 12 passed in 0.54s
+-- 6 deploy_service: stop reporting where it landed => 1 failed, 12 passed in 0.57s
+-- 7 request model: namespace defaults to "default" again => 1 failed, 12 passed in 0.55s
+-- 8 mapper: drop namespace from the read model => 1 failed, 12 passed in 0.55s
+-- 9 mapper: substitute "default" for a missing namespace => 2 failed, 11 passed in 0.55s
+-- 10 UI: rollback payload hardcodes "default" again => 1 failed, 12 passed in 0.54s
+-- 11 route: namespace default restored => 1 failed, 12 passed in 0.54s
+-- 12 route: tier default restored (D36 leak) => 1 failed, 12 passed in 0.54s
+-- 13 trigger route: tier default restored => 1 failed, 12 passed in 0.55s
+-- 14 read model: undeclare namespace => 1 failed, 12 passed in 0.56s
+== restored ==
+13 passed in 0.53s
+ .../dashboard/deployments/[id]/rollback/route.ts   | 18 ++++++++-
+ .../app/api/dashboard/deployments/trigger/route.ts |  5 ++-
+ dashboard/src/components/deployments-control.tsx   |  6 ++-
+```

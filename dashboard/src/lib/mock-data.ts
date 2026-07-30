@@ -61,6 +61,12 @@ export interface Deployment {
   version: string;
   /** Absent when the caller declared no tier — see DECISIONS D36. */
   environment?: string;
+  /**
+   * The namespace this workload landed in, recorded by the executor. What the
+   * rollback action targets: absent means we do not know (a provisioning row, or a
+   * row written before it was recorded), and the UI must not substitute "default".
+   */
+  namespace?: string;
   status: "success" | "failed" | "rolling-back" | "rolled-back";
   agent: string;
   duration_sec: number;

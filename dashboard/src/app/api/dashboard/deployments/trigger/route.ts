@@ -43,11 +43,14 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
+  // No tier default (D36). The form always sends one, so this only ever fired for a
+  // caller that omitted it — and for that caller it asserted "production" on a
+  // deployment nobody scoped. Absence is a different fact from any tier.
   const {
     service_name,
     version,
     provider = "aws",
-    environment = "production",
+    environment,
   } = body;
 
   if (!service_name || !version) {

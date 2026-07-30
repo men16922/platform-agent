@@ -33,6 +33,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
+from src.agents.adapters.deployment import ServiceSpec
 from src.agents.ai.deploy_recorder import (
     record_cluster_teardown,
     record_deploy,
@@ -91,7 +92,12 @@ class DeployResponse(BaseModel):
 
 class RollbackRequest(BaseModel):
     service_name: str = Field(..., min_length=1, description="Deployment to roll back.")
-    namespace: str = Field("default", description="Kubernetes namespace.")
+    # No default. The namespace a deployment lives in is now recorded on its row,
+    # so the caller that knows the answer is the row — and a "default" here was one
+    # of four layers substituting the same literal, which rolled a tenant-namespaced
+    # service back in `default` (undo finds nothing, or reverts a same-named
+    # workload). Absent means "fall through to the executor's documented default".
+    namespace: str | None = Field(None, description="Kubernetes namespace, when the caller knows it.")
     scope: str = Field("app", description="'app' (kubectl rollout undo) or 'cluster' (teardown).")
     cluster_name: str = Field("platform-agent", description="Cluster name (scope=cluster).")
     mode: str = Field("kind", description="Provisioning mode for cluster scope (kind/k3s).")
@@ -103,6 +109,17 @@ class RollbackRequest(BaseModel):
     deployment_id: str | None = Field(None, description="Original deployment id to supersede.")
     service: str | None = Field(None, description="Original service label for the row.")
     version: str | None = Field(None, description="Original version label for the row.")
+
+
+def _default_namespace() -> str:
+    """The executor's own namespace default, read from the spec instead of restated.
+
+    Derived on purpose: this value appears in a recorded row, and a copy of the
+    literal here would be a fifth layer answering the same question — the exact
+    shape of the defect this path just had. If ``ServiceSpec`` ever changes where
+    an unplaced workload goes, the row follows it.
+    """
+    return ServiceSpec(name="", image="", version="").namespace
 
 
 def get_deployer_factory() -> Callable[..., Any] | None:
@@ -428,10 +445,15 @@ async def local_rollback(req: RollbackRequest) -> dict[str, Any]:
         action = f"Rollback (cluster teardown): {req.cluster_name}"
         summary = f"Cluster '{req.cluster_name}' torn down." if ok else f"Cluster teardown failed: {result.get('error')}"
     else:
-        result = rollback_deployment(req.service_name, provider=req.provider, namespace=req.namespace)
+        # Only override when the caller actually knew the namespace, so the single
+        # kubectl default stays in the executor rather than being restated here.
+        ns_kwargs = {"namespace": req.namespace} if req.namespace else {}
+        result = rollback_deployment(req.service_name, provider=req.provider, **ns_kwargs)
         ok = bool(result.get("success"))
         tool = "rollback_deployment"
-        args = {"service_name": req.service_name, "version": "previous", "namespace": req.namespace}
+        # Record the namespace that was actually acted on, not the request's blank.
+        args = {"service_name": req.service_name, "version": "previous",
+                "namespace": req.namespace or _default_namespace()}
         action = f"Rollback {req.service_name} to previous revision"
         summary = (
             f"{req.service_name} rolled back to previous revision."
@@ -465,6 +487,9 @@ async def local_rollback(req: RollbackRequest) -> dict[str, Any]:
                 version=req.version or "previous",
                 provider=req.provider,
                 environment=req.environment,
+                # Keep the placement on the row we are superseding — dropping it
+                # would leave the *next* rollback with nothing to target.
+                namespace=req.namespace,
                 model=req.model,
                 action=action,
                 summary=summary,

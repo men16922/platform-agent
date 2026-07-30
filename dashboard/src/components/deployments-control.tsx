@@ -113,7 +113,11 @@ export function DeploymentsControl({ initialDeployments, tornDownClusters = [] }
     if (dep.provider === "onprem") {
       // Deployments rolls back the app only (previous revision); cluster teardown
       // lives on the Provisioning page.
-      payload = { service_name: dep.service, version: dep.version, provider: "onprem", environment: dep.environment, scope: "app", namespace: "default", cluster_name: "platform-agent" };
+      // `namespace` is sent only when the row recorded one. It used to be the
+      // literal "default", so rolling back a service that lives in a tenant
+      // namespace either found nothing to undo or reverted a same-named workload
+      // in `default` — while the button reported success on the row you clicked.
+      payload = { service_name: dep.service, version: dep.version, provider: "onprem", environment: dep.environment, scope: "app", namespace: dep.namespace, cluster_name: "platform-agent" };
     } else {
       const target = rollbackVersion.trim();
       if (!target) return;

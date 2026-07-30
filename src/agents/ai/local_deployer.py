@@ -281,7 +281,11 @@ def deploy_service(
 
     Returns:
         Dict with per-step status and a final `healthy` flag. On failure, the
-        `failed_step` field names the step that stopped the pipeline.
+        `failed_step` field names the step that stopped the pipeline. Includes the
+        `namespace` the workload was applied into — this is the tool the prompt
+        tells the model to prefer, so a result that omitted it left the recorded
+        row unable to say where the deploy went, and every rollback path
+        downstream fell back to the literal "default".
     """
     steps: dict[str, Any] = {}
 
@@ -310,6 +314,10 @@ def deploy_service(
         "failed_step": None if validate.get("healthy") else "validate",
         "steps": steps,
         "image_uri": push["image_uri"],
+        # Where it actually landed, as reported by the cluster step — not the
+        # argument we passed in, so a provider adapter that normalizes the
+        # namespace is recorded truthfully.
+        "namespace": deploy.get("namespace") or namespace,
         "endpoint": deploy.get("endpoint"),
         "checks": f"{validate.get('checks_passed')}/{validate.get('checks_total')}",
         "error": validate.get("error"),

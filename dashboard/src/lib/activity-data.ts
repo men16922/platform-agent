@@ -145,6 +145,10 @@ function mapDeploymentItem(item: Record<string, unknown>): Deployment | null {
     // missing value to "dev" — two layers answering one unknown with two
     // confident, contradictory guesses. Absent now means absent (D36).
     environment: typeof item.environment === "string" && item.environment ? item.environment : undefined,
+    // Where the workload landed, as recorded by the executor. Undefined rather
+    // than "default": the rollback action reads this, and guessing here is what
+    // sent a tenant-namespaced service's rollback into `default`.
+    namespace: typeof item.namespace === "string" && item.namespace ? item.namespace : undefined,
     status: isValidDeployStatus(item.status) ? item.status : "success",
     agent: typeof item.agent === "string" ? item.agent : "Unknown Agent",
     duration_sec: typeof item.duration_sec === "number" ? item.duration_sec : 0,

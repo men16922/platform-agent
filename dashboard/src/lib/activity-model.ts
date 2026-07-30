@@ -82,6 +82,17 @@ export interface DeploymentRecord extends DeploymentRecordCore {
   /** agent path only — links a deploy to the provisioning that made its cluster. */
   cluster?: string;
 
+  /**
+   * agent path only — the namespace the workload was applied into, as reported by
+   * the cluster step (not the argument the model passed). This is a *resolved
+   * fact*, unlike `environment`: the deploy already happened somewhere, so absent
+   * means either a provisioning row (no namespace exists) or a row written before
+   * this field did. It is what the rollback action targets — while it was missing,
+   * the UI, the API route and the request model each substituted `"default"`, so a
+   * service in a tenant namespace rolled back in `default`.
+   */
+  namespace?: string;
+
   /** lambda path only. */
   GSI1PK?: string; // "<provider>#DEPLOY"
   GSI1SK?: string; // same as SK

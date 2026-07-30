@@ -213,6 +213,29 @@ def _infer_cluster(steps: list[dict[str, Any]]) -> str:
     return ""
 
 
+def _infer_namespace(steps: list[dict[str, Any]]) -> str:
+    """Which namespace this run's workload landed in — "" when it named none.
+
+    The executor always knew this (it decided the ``kubectl apply --namespace``)
+    and never recorded it, so the dashboard rollback button, the Next.js route and
+    the rollback request model each substituted the literal ``"default"``. A
+    service deployed into a tenant namespace then rolled back in ``default``,
+    where the undo either finds nothing or reverts a same-named workload.
+
+    Prefers the tool *result* over the args: the result is what the adapter did,
+    and the args are only what the model asked for. Unlike ``environment`` this is
+    not a tier we decline to invent — it is a fact the run produced, so "" here
+    means the run had no namespace at all (a cluster provisioning), not that a
+    caller left it blank.
+    """
+    for source in ("result", "args"):
+        for step in steps:
+            payload = step.get(source)
+            if isinstance(payload, dict) and payload.get("namespace"):
+                return str(payload["namespace"])
+    return ""
+
+
 def _cost_metrics(steps: list[dict[str, Any]], trace: list[dict[str, Any]] | None) -> dict[str, Any]:
     """Per-run cost/usage sub-metrics for the trace (ref AWSome AI Gateway sub-metrics).
 
@@ -302,6 +325,11 @@ def _write_row(
     # unknown with two confident and contradictory guesses.
     if environment:
         deploy_item["environment"] = environment
+    # Where the workload landed. Absent on a provisioning row, which has no
+    # namespace at all — stamping the kubectl default there would make the row
+    # assert a placement that never happened.
+    if namespace := _infer_namespace(steps):
+        deploy_item["namespace"] = namespace
     activity_item = {
         "PK": "ACTIVITY",
         "SK": f"{now}#{activity_id}",
@@ -373,6 +401,8 @@ def record_deploy(
             deployment_id=target.get("deployment_id") if target else None,
             kind="deploy", cluster=(target.get("cluster") if target else "") or default_cluster,
             service=service, version="previous", provider=provider, environment=environment,
+            # The NL path is told no namespace; the row being superseded knows it.
+            namespace=str(target.get("namespace") or "") if target else "",
             model=model, action=f"Rollback {service} to previous revision", summary=summary,
             steps=steps, ok=ok, table=table,
         )
@@ -415,6 +445,7 @@ def record_rollback(
     summary: str,
     steps: list[dict[str, Any]],
     ok: bool,
+    namespace: str | None = None,
     table: Any | None = None,
 ) -> dict[str, str] | None:
     """Record a rollback as a single-row lifecycle event.
@@ -424,6 +455,12 @@ def record_rollback(
     rather than spawning a duplicate. ``kind`` keeps the row on its home page (an app
     rollback stays ``deploy``/Deployments, a cluster teardown stays ``provision``/
     Provisioning). The rollback trace is linked as a fresh ACTIVITY under the same id.
+
+    ``namespace`` must be carried in by the caller, because superseding rewrites the
+    row: a rollback that omits it *deletes* the placement the row it replaces had.
+    That is the ``cost_metrics`` lesson again with a sharper edge — the field that
+    goes missing is the one the next rollback needs to target the right namespace,
+    so one rollback silently re-arms the bug for the one after it.
     """
     if table is None and not recording_enabled():
         return None
@@ -452,6 +489,10 @@ def record_rollback(
     # Same rule as _write_row: absent when the caller declared no tier.
     if environment:
         deploy_item["environment"] = environment
+    # Prefer what the caller carried over from the row being superseded; fall back
+    # to the rollback's own steps (an NL rollback whose tool named a namespace).
+    if resolved_namespace := (namespace or _infer_namespace(steps)):
+        deploy_item["namespace"] = resolved_namespace
     activity_item = {
         "PK": "ACTIVITY",
         "SK": f"{now}#{activity_id}",
@@ -520,6 +561,9 @@ def record_cluster_teardown(
                 deployment_id=row.get("deployment_id"), kind="deploy", cluster=cluster,
                 service=svc, version=str(row.get("version", "unknown")), provider=provider,
                 environment=environment, model=model, action=f"Removed with cluster {cluster}",
+                # Each app keeps its own placement — the cascade must not flatten
+                # several tenants' namespaces onto one, or onto none.
+                namespace=str(row.get("namespace") or ""),
                 summary=f"{svc} removed — cluster '{cluster}' was torn down.", steps=[], ok=ok, table=table,
             )
     return ids

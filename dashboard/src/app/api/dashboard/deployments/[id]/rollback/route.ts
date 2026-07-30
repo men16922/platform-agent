@@ -50,14 +50,28 @@ export async function POST(
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
+  // Neither `environment` nor `namespace` gets a default here. Both used to, and
+  // both were wrong in the same way — this route is a transport, not the place that
+  // knows the answer:
+  //
+  //   `environment = "production"` re-invented the tier D36 stopped the deploy path
+  //   from inventing. D36's guard named the two boundaries it knew (the FastAPI
+  //   request model, the dashboard mapper) and this one, sitting between them, kept
+  //   writing a tier nobody chose onto the durable row every rollback supersedes.
+  //
+  //   `namespace = "default"` sent a tenant-namespaced service's rollback into
+  //   `default`, where `rollout undo` finds nothing — or finds a same-named
+  //   workload and reverts that one instead.
+  //
+  // Absent is forwarded as absent; the executor holds the single kubectl default.
   const {
     service_name,
     rollback_version,
     version,
     provider = "aws",
-    environment = "production",
+    environment,
     scope = "app",
-    namespace = "default",
+    namespace,
     cluster_name = "platform-agent",
   } = body;
 
