@@ -5,9 +5,9 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(M10=GitAIOps 7/7+멀티테넌트 Phase 0·1a·1b+공급망,
 > M9=eval·하드닝, M8=레퍼런스 8/8) / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 현재 상태 (2026-07-31, gate 1596)
+## 현재 상태 (2026-07-31, gate 1605)
 
-**Phase 0·1a·1b·2·3 완결**(M10~M12) + **차단 없는 잔여 소진**(M13, 14건). 남은 잔여는 **결정 3건**(2·3·4) **+ 승인 3건**. 결정 1=D36, **결정 5=D38**(A·B 실행 완료, C·D는 라우터 인증까지 보류)로 닫힘.
+**Phase 0·1a·1b·2·3 완결**(M10~M12) + **차단 없는 잔여 소진**(M13, 14건). 남은 잔여는 **결정 2건**(3·4) **+ 승인 3건**. 결정 1=D36, 5=D38, **2=D39**(무스코프 읽기 차단 — 근거가 사실이 아니었다)로 닫힘.
 **시연 가능**: `make dev-up` → `make demo-baseline` 두 줄로 영상 시나리오 A가 재현된다.
 
 ## 사용자 게이트 (열린 것만)
@@ -16,8 +16,10 @@
   **무파티션 확정** + **테넌트별 모델 rate limit 안 함 확정**. 근거·선택지 →
   `docs/plans/2026-07-29-deployment-tenant-ownership.md`, 결정 → `DECISIONS.md` D36.
   되돌릴 조건: 배포 경로가 테넌트-aware해지고 라우터에 인증이 서면 둘 다 열린다.
-- [ ] **⚠️ 결정 2: 무스코프 MCP 읽기를 닫을 것인가** — 닫으면 검증된 익명 kagent 왕복이 깨진다.
-  **A로 절반 풀렸다**(2026-07-31): 스코프를 만들 수단이 이제 있다. 상세는 아래 잔여 섹션.
+- [x] **결정 2 = 완료(2026-07-31) → D39**: 무스코프 클러스터 **읽기도 거부**. 근거였던
+  "익명 kagent 왕복이 이걸 쓴다"가 **사실이 아니었다**(왕복은 아웃바운드 · `src/`에 `MCPServer`
+  생성자 0). 브리프 `docs/plans/2026-07-31-unscoped-mcp-read.md`, 증거
+  `docs/evidence/unscoped-mcp-read-closed.log`. 탈출구 `PLATFORM_MCP_ALLOW_UNSCOPED_READS`.
 - [ ] **⚠️ 결정 3: Capsule `limitRanges` 이관 경로** — 클러스터 스코프(D30 위반) vs 새 SA+RBAC.
 - [ ] **⚠️ 결정 4: k3s를 proven 기판에 넣을 것인가** — 집행은 라이브로 증명됐고 시맨틱은
   미증명(피어 테넌트 부재). 상세는 아래 잔여 섹션.
@@ -61,16 +63,15 @@ deploy-identity`. 미설정이면 예전처럼 인시던트는 거부, 배포는
   `ApprovalRequest.request_*` 3종=렌더 필드의 복사본 · `staleAfterSec`=집행은 Python
   `collector.py` · `PlatformTenant→…substrate/delivery`+`Quota`=**서로만 참조하는 닫힌 섬**.
   마지막 건은 **거짓 운영 주장이 없어** 위험도가 다르고, 지우려면 실 레지스트리 대조가 선행이다.
-- [ ] **`record_route_activity`·`record_agent_activity`의 `cost_metrics` — 의도적으로 남김**
-  (2026-07-29). 둘 다 `deployment_id`가 없어 그 필드를 렌더하는 유일한 뷰(배포 상세)에 닿지 않아,
-  넣으면 **소비자 없는 필드**가 된다 — M13이 찾은 부류다.
+- [ ] **`record_route_activity`·`record_agent_activity`의 `cost_metrics` — 의도적으로 남김**.
+  둘 다 `deployment_id`가 없어 그 필드를 렌더하는 유일한 뷰에 닿지 않아 **소비자 없는 필드**가 된다.
 
 - [ ] **인시던트 필드 실 DynamoDB 왕복 미검증** — 모킹 테이블 + 직렬화기 확인 + 투영 파싱까지다.
   새 속성 5종이 실 테이블을 왕복해 대시보드에 읽힌 적은 없다 — 실 AWS 승인 사항.
 - [ ] **GCP/Azure는 90일 보관을 집행하지 않는다(2026-07-29, 승인 필요)** — 둘 다 `ttl`을 쓰지만
   스토어가 안 켜져 있어 **무기한 남는다**. 켜는 건 실 데이터 삭제 → `STATUS` Risk 2.
-- [ ] **GCP Firestore·Azure Cosmos 기록기는 `resolved_at`·`triggered_at` 둘 다 안 쓴다** —
-  그 스토어를 읽는 쪽이 없어 지금 고치면 **소비자 없는 필드**가 된다 → Phase 4에서 함께.
+- [ ] **GCP/Azure 기록기는 `resolved_at`·`triggered_at`을 안 쓴다** — 읽는 쪽이 없어 지금
+  고치면 **소비자 없는 필드**가 된다 → Phase 4.
 - [ ] **analyzer LLM 실패 폴백이 여전히 일괄 P2** — `severity_hint`를 안 본다. 쓰려면 severity
   매핑 확정이 선행이고 그건 **정책 결정**이라 발명하지 않았다.
 - [ ] **k3s: 집행 증명 완료(2026-07-29), 게이트는 미개방 — 결정 4** — 라이브 3종(검증기
@@ -87,19 +88,19 @@ deploy-identity`. 미설정이면 예전처럼 인시던트는 거부, 배포는
   `scripts/probe_scope_reachability.py`·`make deploy-identity-check`가 답한다. **남은 결정**:
   기본을 on으로 돌릴지(= 데모/로컬 흐름을 깨는 대가) · **서명키 custody·rotation**(2차 잔여) ·
   배포 신원의 테넌트 구분(= 결정 5 C/D, 라우터 인증 선행).
-- [ ] **⚠️ 결정 2: 무스코프 MCP 읽기 — A로 절반 풀렸다(2026-07-31)**. 막던 것은
-  "`MCPServer(scope=...)`를 구성할 스코프가 프로덕션에 없다"였고 이제 있다(`attest_decision`).
-  남은 건 kagent 경로가 **어떤 인가로** 스코프를 받느냐 = 결정. 읽기가 무해해서 열어둔 게
-  아니다(남의 로그 = 유출).
-- [ ] **A2A 인증 실집행 결정** — 카드가 광고하던 bearer/JWT를 서버가 안 검사하던 것은 해소했다
-  (`A2A_BEARER_TOKEN` 미설정 시 광고도 안 함). 남은 결정은 **기본값을 on으로 돌릴지**(지금은
-  라이브 kagent 왕복이 익명이라 opt-in).
+- [ ] **MCP 게이트웨이는 여전히 포트에 붙어 있지 않다(2026-07-31 확인)** — `src/`에
+  `MCPServer` 생성자가 0이다. D39로 무스코프 읽기는 닫혔지만 **"닫았다"가 "스코프가 강제된다"는
+  뜻은 아니다**: 호출자가 스코프를 넘겨야 하고 넘기는 프로덕션 경로가 없다. MCP-over-HTTP를
+  붙일 때 **요청 경로가 스코프를 공급하는지** 확인할 것(가드가 그 트랩을 들고 있다).
+- [ ] **A2A 인증 실집행 결정** — 카드가 광고하던 bearer/JWT를 서버가 안 검사하던 건 해소됐다.
+  남은 결정은 **기본값을 on으로 돌릴지**(라이브 kagent 왕복이 익명이라 opt-in — D39가 밝혔듯
+  그 "익명"은 **우리가 나가는 쪽**이지 누가 들어오는 쪽이 아니다).
 - [ ] **Capsule `limitRanges` 이관 — 경로 결정 필요(기계적 포팅 아님)**.
   `GlobalTenantResource`는 **클러스터 스코프**라 에이전트 변경 범위를 테넌트 밖으로 밀어
   **D30 위반**이고, `TenantResource`는 테넌트 안에 머물지만 **SA+RBAC 새 권한 표면**이 필요하다.
   지금은 동작하고 경고만 뜬다(2건→1건).
-- [ ] **Cosign 어드미션 집행**(승인 필요) — 현재는 CI/사람용 검증 게이트까지다. API 서버가 미서명
-  이미지를 거부하려면 policy controller(sigstore/Kyverno)라는 새 클러스터 의존성이 필요 → Phase 2와 함께.
+- [ ] **Cosign 어드미션 집행**(승인 필요) — 현재는 CI/사람용 게이트까지. API 서버가 미서명
+  이미지를 거부하려면 policy controller라는 새 클러스터 의존성이 필요.
 
 ## 유지 규약 (완료된 리팩토링에서 나온 "하지 말 것")
 

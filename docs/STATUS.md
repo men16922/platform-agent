@@ -8,14 +8,15 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` (pytest) → **1596 passed, 1 skipped** (2026-07-31, 1572→1596, +24) —
-  **결정 5를 추천안대로 실행**(`b92b54e`+`2a21b86`). **B 배포 신원 축소**: 네 어댑터가 맨
-  `kubectl`을 만들어 ambient=**cluster-admin**으로 돌던 걸 seam 하나로 고정(허용은 어댑터가
-  부르는 kubectl에서 **파생**, 금지는 **명시**). **A 스코프 생산자**: `attest_decision()`을
-  **인가가 성립하는 두 지점**에서 호출 + 테넌트 자격증명 민팅 스크립트(Phase 1a 증거의 그것은
-  손으로 만들어 커밋된 적이 없었다). **라이브 kind 양쪽**: 축소 신원으로 `get secrets -A`=no인데
-  실 배포·롤백 정상 · 실 인시던트가 **실제로 스코프를 얻고** 이웃 테넌트는 REFUSED.
-  **기본값 불변**(미설정=예전 동작 + 경고). 증거
+- `make check` (pytest) → **1605 passed, 1 skipped** (2026-07-31, 1596→1605, +9) —
+  **무스코프 MCP 읽기 차단**(`b062d98`, D39): 예외를 붙잡던 근거 **"익명 kagent 왕복이 이걸
+  쓴다"가 사실이 아니었다** — 그 왕복은 아웃바운드이고 **`src/`에 `MCPServer` 생성자가 0**이라
+  무스코프 경로를 실행하던 유일한 코드는 **그것을 고정하던 테스트**였다. 대가는 적어둔 것보다
+  컸다: `resource`가 자유 문자열이라 무스코프 읽기가 ambient(=cluster-admin) 전체에 닿았다
+  (라이브에서 `secrets -n kube-system`·`nodes` 성공 → 차단). 증거
+  `docs/evidence/unscoped-mcp-read-closed.log`.
+- `make check` → **1596** (2026-07-31, +24) — **결정 5 A·B**(D38): 배포 신원 축소 + 스코프
+  생산자. 라이브 kind 양쪽. **둘 다 옵트인**. 증거
   `docs/evidence/{deploy-identity-reduction,scope-producer-live}.log`.
 - `make check` → **1572** (2026-07-30, +7) — **스코프 도달성 실측 + 가드**(결정 5 조사):
   **생산자 없는 메커니즘은 테스트에서 영원히 초록**이다(17개 테스트가 전부 자기가 만든
@@ -85,9 +86,9 @@
 2. **GCP/Azure 인시던트 스토어는 보관 정책이 없다(2026-07-29)** — Cosmos DefaultTimeToLive 미설정,
    Firestore TTL 정책 부재 + 필드가 정수 → **어느 쪽도 만료 안 됨**. "90일"을 믿지 말 것.
    켜는 건 실 데이터 삭제라 승인 → `NEXT_PLAN`.
-3. **⚠️ 스코프 격리는 이제 가능하지만 옵트인이다(2026-07-31, 결정 5 A·B 반영)** — 어제 상태는
-   "두 경로가 반대 방향으로 고장"이었고 **둘 다 닫혔다**: 인시던트 경로에 생산자가 섰고
-   (`attest_decision`), 배포 경로는 축소 신원을 쓸 수 있다. **그러나 기본값은 여전히 미설정**이다
+3. **⚠️ 스코프 격리는 이제 가능하지만 옵트인이다(2026-07-31, D38·D39 반영)** — 세 경로가
+   닫혔다: 인시던트 경로에 생산자가 섰고(`attest_decision`), 배포 경로는 축소 신원을 쓸 수 있고,
+   MCP 무스코프 읽기는 거부된다(D39). **그러나 기본값은 여전히 미설정**이다
    — `PLATFORM_{CREDENTIAL_DIR,APPROVAL_SIGNING_KEY}`가 없으면 인시던트 경로는 예전처럼 전부
    거부하고, `PLATFORM_DEPLOY_KUBECONFIG`가 없으면 배포는 ambient(=kubeadm에서 cluster-admin)로
    돈다. 즉 **"설정하면 집행되고, 안 하면 조용히 안 된다."** 어느 쪽인지는
