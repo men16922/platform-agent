@@ -2,8 +2,15 @@
 
 Safe (read-only) kubectl wrappers so the agent can *investigate* before it acts:
 list pods, fetch logs, describe, rollout status, list namespaces. All mutating
-actions stay in the deploy tools (build/push/deploy/validate/rollback). These run
-against the ambient kubeconfig context (kind / on-prem cluster).
+actions stay in the deploy tools (build/push/deploy/validate/rollback).
+
+Read-only is not the same as harmless, and these share a process — and therefore a
+credential — with the deploy tools. So they go through the same
+``deploy_identity`` seam: pinning the deploy path while `get_logs` kept reading
+whatever the ambient context could reach would be a boundary that looks closed from
+the side you tested. (Someone else's pod logs are still someone else's data; that is
+the same reasoning the unscoped MCP read path is a *named* carve-out rather than a
+default — see 결정 2.)
 """
 
 from __future__ import annotations
@@ -11,10 +18,12 @@ from __future__ import annotations
 import subprocess
 from typing import Any
 
+from src.agents.platform.deploy_identity import deploy_kubectl
+
 
 def _kubectl(args: list[str], timeout: int = 30) -> dict[str, Any]:
     try:
-        result = subprocess.run(["kubectl", *args], capture_output=True, text=True, timeout=timeout)
+        result = subprocess.run(deploy_kubectl(*args), capture_output=True, text=True, timeout=timeout)
     except FileNotFoundError:
         return {"ok": False, "output": "", "error": "kubectl not found on PATH"}
     except subprocess.TimeoutExpired:

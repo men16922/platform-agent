@@ -1,0 +1,111 @@
+# Evidence — the deploy path no longer has to run as cluster-admin (결정 5, 옵션 B)
+
+Date: 2026-07-31 · gate 1584 (1572 -> 1584, +12)
+Cluster: kind platform-agent (3 nodes, v1.34.0) — LIVE
+Brief: docs/plans/2026-07-30-deploy-request-tenant-scoping.md (추천 B 먼저 -> A)
+
+## 1. Live: render the identity, mint it, and ask the same questions
+
+Both halves are asserted. An identity that is restricted but cannot deploy is
+not a fix, it is an outage; an identity that deploys but kept the dangerous
+verbs is the status quo with extra YAML.
+
+```
+
+==============================================================================
+0. BEFORE — what the ambient credential (today's deploy identity) can do
+==============================================================================
+    whoami: kubernetes-admin
+    ambient can-i get secrets -A                   : yes
+    ambient can-i delete namespaces -A             : yes
+    ambient can-i create clusterrolebindings       : yes
+
+==============================================================================
+1. Render + apply the deploy identity
+==============================================================================
+    namespace/platform-agent-system created
+    serviceaccount/platform-agent-deployer created
+    clusterrole.rbac.authorization.k8s.io/platform-agent-deployer created
+    clusterrolebinding.rbac.authorization.k8s.io/platform-agent-deployer created
+
+==============================================================================
+2. Mint a short-lived kubeconfig for it
+==============================================================================
+    wrote /tmp/deploy-probe.kubeconfig (valid 20m)
+      export PLATFORM_DEPLOY_KUBECONFIG=/tmp/deploy-probe.kubeconfig
+    whoami: system:serviceaccount:platform-agent-system:platform-agent-deployer
+
+==============================================================================
+3. AFTER — the same questions, asked as the deployer
+==============================================================================
+    ✓ can-i get secrets -A = no
+    ✓ can-i delete namespaces -A = no
+    ✓ can-i create namespaces = no
+    ✓ can-i create clusterrolebindings = no
+    ✓ can-i get nodes = no
+    ✓ can-i delete deployments -A = no
+    -- and what it still needs:
+    ✓ can-i create deployments -A = yes
+    ✓ can-i patch deployments -A = yes
+    ✓ can-i create services -A = yes
+    ✓ can-i get pods -A = yes
+
+==============================================================================
+4. A REAL deploy through the real adapter, pinned to that credential
+==============================================================================
+    deploy_to_cluster(nginx:1.27-alpine) -> status=success error=
+    deploy_to_cluster(nginx:1.28-alpine) -> status=success error=
+    ✓ live image after two deploys = nginx:1.28-alpine
+
+==============================================================================
+5. A REAL rollback through the same credential
+==============================================================================
+    rollback_deployment -> success=True error=
+    ✓ live image after rollback = nginx:1.27-alpine
+
+==============================================================================
+6. The reduction is real — try the dangerous thing through the same credential
+==============================================================================
+    $ kubectl --kubeconfig <deployer> get secrets -n kube-system
+      Error from server (Forbidden): secrets is forbidden: User "system:serviceaccount:platform-agent-system:platform-agent-deployer" cannot list resource "secrets" in API group "" in the namespace "kube-system"
+    ✓ Forbidden — the API server refused, not our code
+
+==============================================================================
+RESULT
+==============================================================================
+  ALL LIVE ASSERTIONS HELD
+```
+
+## 2. Falsification — each change reverted in isolation
+
+Every reversion is verified to have actually changed the file first.
+```
+== baseline ==
+12 passed in 0.04s
+
+== reversions ==
+-- 1 onprem deploy goes back to bare kubectl => 1 failed, 11 passed in 0.04s
+-- 2 azure rollback goes back to bare kubectl => 4 failed, 8 passed in 0.07s
+-- 3 read-only tools go back to ambient => 1 failed, 11 passed in 0.04s
+-- 4 gcp stops warning when unpinned => 1 failed, 11 passed in 0.04s
+-- 5 the call site stays but the name cannot resolve (the real regression) => 1 failed, 11 passed in 0.05s
+-- 6 the seam pins even when unconfigured (empty string) => 1 failed, 11 passed in 0.05s
+-- 7 grant secrets to the deploy identity => 2 failed, 10 passed in 0.05s
+-- 8 widen namespaces from read to create => 1 failed, 11 passed in 0.05s
+-- 9 wildcard verb on deployments => 2 failed, 10 passed in 0.05s
+-- 10 drop patch from deployments (rollback would be Forbidden) => 1 failed, 11 passed in 0.05s
+-- 11 SA moves into a tenant namespace => 1 failed, 11 passed in 0.05s
+-- 12 a new adapter subcommand with no verb mapping => 1 failed, 11 passed in 0.05s
+
+== restored ==
+12 passed in 0.04s
+ M src/agents/adapters/deployment/aws.py
+ M src/agents/adapters/deployment/azure.py
+ M src/agents/adapters/deployment/gcp.py
+ M src/agents/adapters/deployment/onprem.py
+ M src/agents/ai/ops_tools.py
+?? scripts/mint_deploy_kubeconfig.sh
+?? scripts/render_deploy_identity.py
+?? src/agents/platform/deploy_identity.py
+?? tests/test_deploy_identity.py
+```

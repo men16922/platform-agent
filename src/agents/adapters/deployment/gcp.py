@@ -22,6 +22,7 @@ from src.agents.adapters.deployment.base import (
     ServiceSpec,
     ValidationResult,
 )
+from src.agents.platform.deploy_identity import deploy_kubectl, warn_if_ambient
 
 
 _PROJECT = os.getenv("GCP_PROJECT", "")
@@ -84,8 +85,11 @@ class GcpClusterAdapter(ClusterAdapter):
     provider = "gcp"
 
     def deploy(self, spec: ServiceSpec, image_uri: str) -> DeployResult:
+        # Pinned to the deploy credential when one is configured; unpinned this
+        # runs as whatever the ambient context holds (measured: cluster-admin).
+        warn_if_ambient()
         manifest = self._generate_manifest(spec, image_uri)
-        cmd = ["kubectl", "apply", "-f", "-", "--namespace", spec.namespace]
+        cmd = deploy_kubectl("apply", "-f", "-", "--namespace", spec.namespace)
         try:
             result = subprocess.run(
                 cmd, input=json.dumps(manifest), capture_output=True, text=True, timeout=60
@@ -103,24 +107,23 @@ class GcpClusterAdapter(ClusterAdapter):
         return DeployResult(status=DeployStatus.FAILED, error=result.stderr)
 
     def validate(self, spec: ServiceSpec) -> ValidationResult:
-        cmd = [
-            "kubectl", "rollout", "status", f"deployment/{spec.name}",
+        cmd = deploy_kubectl("rollout", "status", f"deployment/{spec.name}",
             "--namespace", spec.namespace, "--timeout=120s",
-        ]
+        )
         rc, stdout, stderr = _run(cmd, timeout=150)
         if rc == 0:
             return ValidationResult(healthy=True, checks_passed=1, checks_total=1, details=[stdout.strip()])
         return ValidationResult(healthy=False, checks_passed=0, checks_total=1, error=stderr)
 
     def rollback(self, spec: ServiceSpec) -> RollbackResult:
-        cmd = ["kubectl", "rollout", "undo", f"deployment/{spec.name}", "--namespace", spec.namespace]
+        cmd = deploy_kubectl("rollout", "undo", f"deployment/{spec.name}", "--namespace", spec.namespace)
         rc, stdout, stderr = _run(cmd, timeout=60)
         if rc == 0:
             return RollbackResult(success=True, rolled_back_to="previous")
         return RollbackResult(success=False, error=stderr)
 
     def status(self, spec: ServiceSpec) -> DeployResult:
-        cmd = ["kubectl", "get", "deployment", spec.name, "--namespace", spec.namespace, "-o", "json"]
+        cmd = deploy_kubectl("get", "deployment", spec.name, "--namespace", spec.namespace, "-o", "json")
         rc, stdout, stderr = _run(cmd, timeout=30)
         if rc != 0:
             return DeployResult(status=DeployStatus.FAILED, error=stderr)

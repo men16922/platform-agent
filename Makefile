@@ -232,7 +232,30 @@ demo-baseline:  ## apply the demo's tenancy + tenant add-ons to the CURRENT kube
 	done
 	@echo "ready → http://localhost:$(DASHBOARD_PORT)/provisioning   (all four isolation axes should read enforced)"
 
-.PHONY: mlx-serve mlx-proxy router-api onprem-webhook local-llm-up local-llm-down local-llm-status dashboard-dev dev-up dev-down dev-status demo-baseline stack-consoles stack-consoles-down stack-consoles-status
+# The identity a deploy runs as. Measured 2026-07-30: unset, deploys ran as the
+# ambient context — cluster-admin on kind, i.e. every secret and every namespace, to
+# roll out one service (docs/evidence/deploy-path-authorization.log).
+#
+# Separate from dev-up and NOT applied automatically: it creates cluster-scoped RBAC,
+# and the repo's rule is that objects going onto a cluster are a command someone
+# types. It also prints the context first, for the same reason demo-baseline does.
+#
+# This bounds WHAT a deploy can do, not WHOSE namespace it touches — that needs the
+# request to name a tenant, which it does not (결정 5 C/D).
+deploy-identity:  ## create + mint the restricted credential the deploy path should use
+	@echo "→ context: $$(kubectl config current-context)"
+	@python scripts/render_deploy_identity.py | kubectl apply -f -
+	@bash scripts/mint_deploy_kubeconfig.sh
+	@echo "→ export the variable above, then deploys stop running as cluster-admin"
+
+deploy-identity-check:  ## show what the minted deploy credential can and cannot do
+	@test -n "$$PLATFORM_DEPLOY_KUBECONFIG" || { echo "PLATFORM_DEPLOY_KUBECONFIG is not set → deploys run AMBIENT (likely cluster-admin)"; exit 1; }
+	@echo "→ identity: $$(kubectl --kubeconfig $$PLATFORM_DEPLOY_KUBECONFIG auth whoami -o jsonpath='{.status.userInfo.username}')"
+	@for q in "get secrets -A" "delete namespaces -A" "create clusterrolebindings" "create deployments -A" "patch deployments -A"; do \
+		printf "   can-i %-30s : %s\n" "$$q" "$$(kubectl --kubeconfig $$PLATFORM_DEPLOY_KUBECONFIG auth can-i $$q 2>&1 | tail -1)"; \
+	done
+
+.PHONY: mlx-serve mlx-proxy router-api onprem-webhook local-llm-up local-llm-down local-llm-status dashboard-dev dev-up dev-down dev-status demo-baseline deploy-identity deploy-identity-check stack-consoles stack-consoles-down stack-consoles-status
 
 # ===== overnight harness targets (append to your Makefile) =====
 # The overnight runner + helpers are the Single Source of Truth in the overnight-harness
