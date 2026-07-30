@@ -1,6 +1,6 @@
 # DECISIONS — platform-agent
 
-최종 갱신: 2026-07-29
+최종 갱신: 2026-07-30
 
 > 되돌리기 어려운 결정만. 형식: **Decision / Reason / Impact**. 최신이 위.
 
@@ -17,6 +17,24 @@
 > - **GitAIOps 실습서(Notiflex)** (외부 학습 레포) — Rollouts **AnalysisTemplate 메트릭 자동판정**(우리 무기한 pause 게이트의 미완점) · **OTel→Tempo로 4-step 파이프라인 자체 트레이싱** · 런북 **사전확인/사후검증 3단**(우리 `RunbookStep`엔 없음) · **allow/ask/deny 권한통제** · **Sync Wave**. 안티패턴=Kafka·멀티 노드풀·GKE 종속 시크릿·`--dangerously-skip-permissions`. 상세 → `docs/reference/gitaiops-notiflex-book.md`. (검토 2026-07-25)
 
 ---
+
+## D37 — 미상값은 부재로 보존하고, **해소된 값은 기록한다**. 해소점은 층마다 하나다
+
+- **Decision:** 두 규칙을 구분해서 적용한다. ①**미상**(요청 시점에 아무도 정하지 않음 —
+  `environment`)은 **부재로 끝까지 보존**한다(D36). ②**해소된 사실**(실행기가 이미 정하고
+  행동한 값 — 배포의 `namespace`)은 **행에 기록**한다. 그리고 어떤 값이든 **해소점은 정확히
+  한 곳**이다: 네임스페이스의 kubectl 기본값은 `ServiceSpec` 하나에만 살고, 전송 계층(UI ·
+  Next 라우트 · 요청 모델)은 부재를 부재로 넘긴다.
+- **Reason:** 두 규칙을 한 규칙으로 쓰면 양방향으로 틀린다. `environment`를 기본값으로 채우면
+  **아무도 고르지 않은 티어를 durable 행이 주장**하고, `namespace`를 기록하지 않으면 **실행기가
+  이미 아는 사실을 하류가 발명**한다 — 후자는 라이브에서 `rollout undo -n default`가 **엉뚱한
+  워크로드를 되돌리고 성공을 보고**하는 것으로 관측됐다(같은 이름이 두 ns에 있을 때). 해소점을
+  하나로 못 박는 이유는 이번에 네 층이 같은 리터럴을 각자 갖고 있었기 때문이다.
+- **Impact:** DEPLOY 행에 `namespace`(조건부, 프로비저닝 행에는 없음). 승계·cascade가 이어받는다
+  — 빠뜨리면 **다음 롤백의 조준값**이 지워진다. `RollbackRequest.namespace`는 optional. 가드
+  `tests/test_deployment_namespace_provenance.py`는 대시보드 소스 전체를 **파생 스윕**한다:
+  D36의 가드가 두 경계를 열거해 롤백·트리거 라우트에서 같은 결함이 살아 있었고, 스윕이 즉시
+  둘 다 찾아냈다. **새 필드를 더할 때 물을 것: 이 값은 미상인가, 이미 해소됐는가.**
 
 ## D36 — **배포는 테넌트 소유가 아니다**: 파티션도, 테넌트별 모델 rate limit도 하지 않는다
 

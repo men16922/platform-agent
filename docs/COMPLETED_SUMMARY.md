@@ -38,13 +38,14 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
-## M13 — "선언됐지만 아무도 읽지 않는 것들" 13건 (완료, 2026-07-28~29)
+## M13 — "선언됐지만 아무도 읽지 않는 것들" 14건 (완료, 2026-07-28~30)
 
-**gate 1411 → 1552 (+141).** 증거 `docs/evidence/{phase3-tenant-grant-validation,
+**gate 1411 → 1565 (+154).** 증거 `docs/evidence/{phase3-tenant-grant-validation,
 runbook-selectability,capsule-deprecation-metadata,executor-span-approval-path,
 onprem-runbook-matching,declared-unconsumed-sweep,incident-trigger-time,
 cloud-incident-fields,incident-time-to-resolve,rollback-cost-metrics,
-activity-read-model-drift,report-windows,deployment-environment-absence}.log`.
+activity-read-model-drift,report-windows,deployment-environment-absence,
+deployment-namespace-provenance}.log`.
 결정 → `DECISIONS` D33·D34·D35.
 
 Phase 3가 인가를 닫은 뒤 남은 잔여를 우선순위대로 소진했는데, **아홉 건이 전부 같은
@@ -107,6 +108,17 @@ Phase 3가 인가를 닫은 뒤 남은 잔여를 우선순위대로 소진했는
   두 층이 서로 다른 답을 자신 있게 발명한 것. 부재를 끝까지 보존. **내 가드가 잡으려던 홀을
   자기가 갖고 있었다** — 조건부 저장(`item["k"]=v`)을 dict 리터럴 walker가 못 봐서, 그대로
   뒀으면 가드가 **버그 쪽을 편들었을** 것이다(무조건/조건부 분리로 수정).
+- **배포 네임스페이스 출처(1565)**: 위 건과 **같은 축의 반대 면** — 티어는 미상이라 발명이
+  틀렸고, 네임스페이스는 **실행기가 알고 있었는데 안 적었다**(`--namespace`를 정한 게 자기고
+  어댑터가 돌려주기까지 했다). 그래서 하류 **네 층이 각자 `"default"`를** 채웠다: 롤백 버튼 ·
+  Next 라우트 · `RollbackRequest` · 그리고 `ServiceSpec`(유일하게 정당한 곳). **라이브 kind
+  3노드**: 같은 이름이 두 ns에 있으면 `rollout undo -n default`는 **실패하지 않는다** — 찾아서
+  되돌리고 **성공을 보고한다, 엉뚱한 쪽을**(BEFORE default 1.28→1.27, 대상은 1.28 그대로 =
+  운영자가 누른 그 서비스 / AFTER 실 배포→실 행→실 HTTP 롤백→대상만, default 무변). 승계도
+  이어받게 했다 — 사라지는 게 **다음 롤백의 조준값**이라 한 번의 롤백이 다음 것을 위해
+  **버그를 재장전**한다(`cost_metrics` 교훈의 날 선 판본). 그리고 **D36이 세 번째·네 번째
+  경계에서 살아 있었다**: D36 가드가 두 경계를 **열거**해 롤백·트리거 라우트의
+  `environment = "production"`이 남아 있었고, 파생 스윕으로 바꾸니 즉시 나왔다(교훈 ⑤의 실증).
 
 **반복된 교훈(테스트 규율 7종)**: ①가드를 쓰면 **호출부에서** 반증하라 — 새 테스트 20건이
 전부 통과하는데 호출자만 플래그를 잊은 상태였다. ②픽스처는 코드가 아니라 **실제 입력**에서
