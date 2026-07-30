@@ -30,22 +30,30 @@ Isolation tier decides what a credential is scoped *to* (see
 share one cluster by namespace, so the unit is the **tenant**, not the env — a
 per-env kubeconfig would reach co-tenant namespaces on the same cluster.
 
-⚠️ **NO PRODUCTION CALLER MINTS A SCOPE TODAY (measured 2026-07-30).**
-The gate below is correct and its isolation is live-proven, but nothing in
-``src/`` opens it: no signal adapter writes ``source_metadata["attested_approval"]``,
-``sign_approval`` is called only from tests, and neither ``PLATFORM_CREDENTIAL_DIR``
-nor ``PLATFORM_APPROVAL_SIGNING_KEY`` is set by any stack, Makefile or script. So
-``resolve_incident_scope`` returns ``None`` for every real incident and
-``guard_scoped_action`` refuses every live remediation — fail-closed, which is the
-safe direction, but it means **"blast radius = 1 tenant/env" describes a closed
-door, not an enforced boundary.** Invisible so far only because
-``ONPREM_EXECUTOR_LIVE`` defaults to false, so the guard is never reached.
+**Reachability — read this before believing the gate does anything.**
 
-Do not read this as "scoping works". Re-measure with
-``scripts/probe_scope_reachability.py``; the reachability state is asserted by
-``tests/test_scope_producer_reachability.py``, which also fails if someone adds a
-producer *without* provisioning the broker's credentials. Options for closing it →
-``docs/plans/2026-07-30-deploy-request-tenant-scoping.md`` (결정 5).
+Measured 2026-07-30: *nothing in production could open it.* No adapter wrote
+``source_metadata["attested_approval"]``, ``sign_approval`` was called only from
+tests, and neither broker environment variable was set by any stack, Makefile or
+script. Every real incident resolved to ``None`` and every live remediation was
+refused — fail-closed, which is safe, but it meant "blast radius = 1 tenant/env"
+described a closed door rather than an enforced boundary. It stayed invisible
+because ``ONPREM_EXECUTOR_LIVE`` defaults to false, so the gate was never reached.
+
+2026-07-31 (결정 5, option A) added the missing half: :func:`attest_decision` is
+called by the on-prem webhook on both the AUTO and the approval path, and
+``make scope-credentials`` mints the per-tenant kubeconfigs and prints the two
+variables. So the mechanism is now **reachable but opt-in** — with the variables
+unset it still resolves to ``None`` and still refuses, byte for byte as before.
+
+Which means the honest statement is: *scoping works when configured, and silently
+does not when it is not.* ``scripts/probe_scope_reachability.py`` answers which of
+those a given environment is in, and prints REFUSED when it is the second.
+``tests/test_scope_producer_reachability.py`` holds the invariant that a producer
+and the credentials must arrive together — it failed the moment
+:func:`attest_decision` landed without the Makefile target, which is exactly the
+trap it was written for. Options and trade-offs →
+``docs/plans/2026-07-30-deploy-request-tenant-scoping.md``.
 """
 
 from __future__ import annotations
@@ -245,6 +253,99 @@ class TokenBroker:
             approval_id=record.approval_id,
             allowed_namespaces=namespaces,
         )
+
+
+def _incident_of(decision_out: Any) -> Any:
+    """The normalized incident nested inside a decision payload, or None.
+
+    The executor reads ``decision.analyzer.detector.normalized_incident``; this
+    walks the same path on the dict form the in-process pipeline passes around.
+    One traversal rather than one per call site, because there is more than one
+    gate (AUTO and approval) and the second one is always the one that forgets.
+    """
+    node = decision_out
+    for key in ("analyzer", "detector", "normalized_incident"):
+        if node is None:
+            return None
+        node = node.get(key) if isinstance(node, dict) else getattr(node, key, None)
+    return node
+
+
+def _field(incident: Any, name: str) -> str:
+    value = incident.get(name) if isinstance(incident, dict) else getattr(incident, name, "")
+    return str(value or "")
+
+
+def attest_decision(decision_out: Any, *, approval_id: str, log: Any = None) -> bool:
+    """Attach an attested authorization to a decision, so a scope can be minted for it.
+
+    This is the producer the broker was written for and never had. Until now
+    ``sign_approval`` was called only by tests, so ``resolve_incident_scope``
+    returned ``None`` for every real incident and ``guard_scoped_action`` refused
+    every live remediation — a gate that could not be opened
+    (``docs/evidence/deploy-path-authorization.log``).
+
+    Called at the two points where an action becomes *authorized*:
+
+      AUTO      the Guardian policy decided this class of incident may execute
+                without a human. The authorization is the policy decision, so the
+                attestation is minted there.
+      APPROVE   a human resolved the parked approval. The authorization did not
+                exist until then, so neither does the attestation — signing at
+                parking time would attest an action nobody had approved yet.
+
+    **What the signature is worth, precisely.** It binds the tenant/env to the
+    record, so a downstream caller cannot ask the broker for a different tenant
+    than the one that was authorized — that is the property ``TokenBroker.mint``
+    was built around. It is *not* a defence against code execution inside this
+    process, which holds the signing key: an attacker there can sign anything. It
+    buys attribution and it stops routing bugs and payload tampering from widening
+    blast radius. Do not describe it as more than that anywhere.
+
+    Best-effort on purpose. With no signing key configured this returns False and
+    changes nothing, so the current default behaviour is bit-for-bit unchanged: no
+    attestation, no scope, and the gate refuses exactly as it does today. Turning
+    this into a hard failure would make an unconfigured deployment stop working at
+    the moment it tried to remediate, which is worse than the fail-closed refusal
+    it already gets.
+    """
+    incident = _incident_of(decision_out)
+    if incident is None:
+        return False
+
+    tenant, env = _field(incident, "tenant"), _field(incident, "env")
+    if not tenant or not env:
+        # An unattributed incident cannot be authorized for anyone. The detector
+        # already declines to invent these (signals/onprem.py), so absence here
+        # means the alert carried no tenant — not that we failed to look.
+        if log:
+            log.info("scope.attest.skipped", reason="incident names no tenant/env")
+        return False
+
+    try:
+        record = sign_approval(approval_id, tenant, env)
+    except ScopeError as exc:
+        if log:
+            log.info("scope.attest.unavailable", error=str(exc))
+        return False
+
+    metadata = (
+        incident.setdefault("source_metadata", {})
+        if isinstance(incident, dict)
+        else getattr(incident, "source_metadata", None)
+    )
+    if metadata is None:
+        return False
+    metadata["attested_approval"] = {
+        "approval_id": record.approval_id,
+        "tenant": record.tenant,
+        "env": record.env,
+        "signature": record.signature,
+        "nonce": record.nonce,
+    }
+    if log:
+        log.info("scope.attest.signed", approval_id=approval_id, tenant=tenant, env=env)
+    return True
 
 
 def resolve_incident_scope(normalized_incident: Any, log: Any) -> IncidentScope | None:

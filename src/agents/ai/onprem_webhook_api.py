@@ -41,6 +41,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from src.agents.ai import onprem_approvals as approvals
+from src.agents.platform.scope import attest_decision
 from src.agents.ai import onprem_incidents as incidents
 from src.agents.ai import onprem_slack_approval as slack_approval
 from src.agents.ai.canary_judge import judge_canary, judge_observed_canary
@@ -95,7 +96,16 @@ def _gate_on_mode(
     result: dict[str, Any], summary: dict[str, Any], mode: str | None
 ) -> PipelineResult:
     if mode == "AUTO":
-        executor_out = execute_incident(result["stages"]["decision"])
+        # The authorization for an AUTO run is the Guardian policy decision itself,
+        # so the attestation is minted here — the executor cannot mint a scoped
+        # credential without one, and until this existed no production path ever
+        # produced one (docs/evidence/deploy-path-authorization.log).
+        decision = result["stages"]["decision"]
+        attested = attest_decision(
+            decision, approval_id=f"AUTO-{summary.get('runbook_id') or 'unknown'}"
+        )
+        logger.info("onprem_webhook.auto attested=%s", attested)
+        executor_out = execute_incident(decision)
         summary.update(
             {
                 "status": "executed",
@@ -252,6 +262,11 @@ def _apply_approval(approval_id: str) -> PipelineResult:
         raise ValueError(f"Already {record.get('status')}: {approval_id}")
 
     with span("onprem.webhook.approve", {"approval.id": approval_id}):
+        # The authorization exists as of *now*, so this is where the attestation is
+        # minted. Signing at parking time would attest an action nobody had approved
+        # yet, and the record would outlive a rejection.
+        attested = attest_decision(record["decision"], approval_id=approval_id)
+        logger.info("onprem_webhook.approve attested=%s id=%s", attested, approval_id)
         # A new trace, linked to the incident — not a child of it. The gap
         # between the two is a human deciding, and folding that into the
         # incident's span tree would make every latency figure meaningless.

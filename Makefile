@@ -248,6 +248,31 @@ deploy-identity:  ## create + mint the restricted credential the deploy path sho
 	@bash scripts/mint_deploy_kubeconfig.sh
 	@echo "→ export the variable above, then deploys stop running as cluster-admin"
 
+# The two things the incident-scope broker needs before it can mint anything. Until
+# 2026-07-31 nothing produced an attestation and nothing set these, so
+# `guard_scoped_action` refused every live remediation — a gate that could not be
+# opened (docs/evidence/deploy-path-authorization.log). The producer now exists
+# (`attest_decision`); this is the other half.
+#
+# Local development only. The signing key is derived from the cluster name so a
+# `make` run is reproducible, and it is NOT a secret-management story: in a real
+# deployment both values come from a secret manager, and the key must be the same
+# for whoever signs and whoever verifies. Keep them out of the repo.
+SCOPE_CREDENTIAL_DIR ?= $(HOME)/.platform-agent/credentials
+
+scope-credentials:  ## mint per-tenant credentials + print the broker env for this shell
+	@echo "→ context: $$(kubectl config current-context)"
+	@for t in $(PUSH_TENANTS); do \
+		PLATFORM_CREDENTIAL_DIR=$(SCOPE_CREDENTIAL_DIR) bash scripts/mint_tenant_kubeconfig.sh $$t -e dev || exit 1; \
+	done
+	@echo ""
+	@echo "# eval these, then the incident path can actually mint a scope:"
+	@echo "export PLATFORM_CREDENTIAL_DIR=$(SCOPE_CREDENTIAL_DIR)"
+	@echo "export PLATFORM_APPROVAL_SIGNING_KEY=local-dev-$$(kubectl config current-context)"
+	@echo ""
+	@echo "# then verify it is actually reachable (it prints REFUSED when it is not):"
+	@echo "python scripts/probe_scope_reachability.py"
+
 deploy-identity-check:  ## show what the minted deploy credential can and cannot do
 	@test -n "$$PLATFORM_DEPLOY_KUBECONFIG" || { echo "PLATFORM_DEPLOY_KUBECONFIG is not set → deploys run AMBIENT (likely cluster-admin)"; exit 1; }
 	@echo "→ identity: $$(kubectl --kubeconfig $$PLATFORM_DEPLOY_KUBECONFIG auth whoami -o jsonpath='{.status.userInfo.username}')"
@@ -255,7 +280,7 @@ deploy-identity-check:  ## show what the minted deploy credential can and cannot
 		printf "   can-i %-30s : %s\n" "$$q" "$$(kubectl --kubeconfig $$PLATFORM_DEPLOY_KUBECONFIG auth can-i $$q 2>&1 | tail -1)"; \
 	done
 
-.PHONY: mlx-serve mlx-proxy router-api onprem-webhook local-llm-up local-llm-down local-llm-status dashboard-dev dev-up dev-down dev-status demo-baseline deploy-identity deploy-identity-check stack-consoles stack-consoles-down stack-consoles-status
+.PHONY: mlx-serve mlx-proxy router-api onprem-webhook local-llm-up local-llm-down local-llm-status dashboard-dev dev-up dev-down dev-status demo-baseline deploy-identity deploy-identity-check scope-credentials stack-consoles stack-consoles-down stack-consoles-status
 
 # ===== overnight harness targets (append to your Makefile) =====
 # The overnight runner + helpers are the Single Source of Truth in the overnight-harness

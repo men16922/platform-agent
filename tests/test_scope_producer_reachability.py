@@ -75,19 +75,33 @@ def _code_lines(path):
             yield n, raw
 
 
-def _scope_producers():
-    """Production **call sites** of `sign_approval` — the only way to attest a record.
+#: Every way production code can cause an attestation to be minted. `sign_approval`
+#: is the primitive; `attest_decision` is the seam that calls it and attaches the
+#: record to an incident. Both count, because "is the mechanism reachable" is a
+#: question about the *chain*, not about one function name.
+#:
+#: This list started as `{"sign_approval"}` and was wrong within the hour: the
+#: producer was added as `attest_decision` inside `scope.py` — which this sweep skips
+#: as the definition site — so the guard reported "no producer" while production
+#: could plainly mint one. Detecting a mechanism by a single symbol name is the same
+#: brittleness as enumerating boundaries instead of deriving them.
+PRODUCER_ENTRYPOINTS = ("sign_approval", "attest_decision")
 
-    A call, not a mention: `scripts/probe_scope_reachability.py` names the symbol
-    inside a grep argument to *measure* this, and a tool that reports the absence of
-    a producer must not be counted as one. (It was, on the first run.)
+
+def _scope_producers():
+    """Production **call sites** that can mint an attestation.
+
+    A call, not a mention: `scripts/probe_scope_reachability.py` names these symbols
+    inside grep arguments to *measure* this, and a tool that reports the absence of a
+    producer must not be counted as one. (It was, on the first run.)
     """
+    pattern = re.compile(r"\b(" + "|".join(PRODUCER_ENTRYPOINTS) + r")\s*\(")
     hits = []
     for path in _production_files():
         if path == SCOPE_PY:
             continue  # its own definition
         for n, line in _code_lines(path):
-            if re.search(r"\bsign_approval\s*\(", line):
+            if pattern.search(line):
                 hits.append(f"{path.relative_to(REPO)}:{n}")
     return hits
 

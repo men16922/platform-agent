@@ -1,0 +1,137 @@
+# Evidence — the incident scope gate can now actually be opened (결정 5, 옵션 A)
+
+Date: 2026-07-31 · gate 1596 (1584 -> 1596, +12)
+Cluster: kind platform-agent (3 nodes, v1.34.0) — LIVE
+
+Before this, `guard_scoped_action` refused EVERY live remediation because no
+production code could mint a scope. The gate was correct and inert.
+
+## 1. Live: unconfigured -> configured -> the gate opens for its own tenant only
+```
+
+==============================================================================
+0. BEFORE — unconfigured, which is what every deployment looked like
+==============================================================================
+    VERDICT
+    ==============================================================================
+          scope reachable in THIS environment: False
+          A producer EXISTS but this environment is not configured, so every
+          live remediation is still refused. Not a code gap — run:
+              make scope-credentials     # mints credentials, prints the env
+              PLATFORM_CREDENTIAL_DIR: NOT SET
+              PLATFORM_APPROVAL_SIGNING_KEY: NOT SET
+
+==============================================================================
+1. Ensure the tenant boundary + its ServiceAccount exist
+==============================================================================
+Warning: The field `limitRanges` is deprecated and will be removed in a future release. Please migrate to TenantReplications. See: https://projectcapsule.dev/docs/tenants/enforcement/#limitrange-distribution-with-tenantreplications.
+Warning: The field `limitRanges` is deprecated and will be removed in a future release. Please migrate to TenantReplications. See: https://projectcapsule.dev/docs/tenants/enforcement/#limitrange-distribution-with-tenantreplications.
+    namespaces:
+      acme-dev-logging
+      acme-dev-observability
+      acme-dev-progressive
+      acme-dev-tracing
+      globex-dev-observability
+
+==============================================================================
+2. Mint the per-tenant credentials (the half that was never committed)
+==============================================================================
+    wrote /tmp/scope-live-creds/acme.kubeconfig (SA platform-agent in acme-dev-logging, valid 1h)
+      export PLATFORM_CREDENTIAL_DIR=/tmp/scope-live-creds
+    wrote /tmp/scope-live-creds/globex.kubeconfig (SA platform-agent in globex-dev-observability, valid 1h)
+      export PLATFORM_CREDENTIAL_DIR=/tmp/scope-live-creds
+    file: acme.kubeconfig
+    file: globex.kubeconfig
+
+==============================================================================
+3. AFTER — the same probe, configured
+==============================================================================
+    3. So what does the gate do to a LIVE remediation?
+    ==============================================================================
+          [error] onprem_runner.no_scope {'action': 'restart_workload'}
+          -> REFUSED: refusing live action 'restart_workload' without a scoped credential (ambient credential execution was removed in Phase 1a)
+    
+    ==============================================================================
+    4. Are the broker's prerequisites provisioned anywhere?
+    ==============================================================================
+          PLATFORM_CREDENTIAL_DIR
+            in env    : True
+            set by    : ['Makefile', 'scripts/mint_tenant_kubeconfig.sh', 'scripts/probe_scope_reachability.py']
+          PLATFORM_APPROVAL_SIGNING_KEY
+            in env    : True
+            set by    : ['Makefile', 'scripts/probe_scope_reachability.py']
+    
+    ==============================================================================
+    5. Who produces an attested record?
+    ==============================================================================
+          production call sites: ['src/agents/ai/onprem_webhook_api.py:104:        attested = attest_decision(', 'src/agents/ai/onprem_webhook_api.py:268:        attested = attest_decision(record["decision"], approval_id=approval_id)']
+          test call sites      : 22
+    
+    ==============================================================================
+    VERDICT
+    ==============================================================================
+          scope reachable in THIS environment: False
+          A producer EXISTS but this environment is not configured, so every
+          live remediation is still refused. Not a code gap — run:
+              make scope-credentials     # mints credentials, prints the env
+              PLATFORM_CREDENTIAL_DIR: set
+              PLATFORM_APPROVAL_SIGNING_KEY: set
+
+==============================================================================
+4. The end-to-end claim: a real incident now yields a real credential
+==============================================================================
+      [info] scope.attest.signed {'approval_id': 'APR-LIVE-PROBE', 'tenant': 'acme', 'env': 'dev'}
+      attest_decision -> True
+      [info] executor.scope.minted {'scope': {'tenant': 'acme', 'env': 'dev', 'approval_id': 'APR-LIVE-PROBE', 'kubeconfig': 'acme.kubeconfig'}}
+      resolve_incident_scope -> {'tenant': 'acme', 'env': 'dev', 'approval_id': 'APR-LIVE-PROBE', 'kubeconfig': 'acme.kubeconfig'}
+      allowed namespaces: ('acme-dev-observability', 'acme-dev-logging', 'acme-dev-tracing', 'acme-dev-progressive')
+      in-scope namespace  -> PERMITTED
+      [warn] onprem_runner.out_of_scope {'action': 'restart_workload', 'namespace': 'globex-dev-observability', 'scope': {'tenant': 'acme', 'env': 'dev', 'approval_id': 'APR-LIVE-PROBE', 'kubeconfig': 'acme.kubeconfig'}}
+      cross-tenant        -> REFUSED (namespace 'globex-dev-observability' is outside the scope of tenant 'acme')
+    ✓ gate opens for its own tenant and refuses the neighbour
+
+==============================================================================
+5. Tamper: a caller swaps the tenant on a signed record
+==============================================================================
+      forged tenant -> refused (approval 'APR-TAMPER' failed attestation — refusing to mint)
+      caller asks for another tenant -> refused (caller asked for tenant 'globex' but approval 'APR-TAMPER' attests tenant 'acme' — refusing)
+    ✓ the signature binds the tenant
+
+==============================================================================
+6. And the credential is bounded by the API SERVER, not by our code
+==============================================================================
+    $ kubectl --kubeconfig <acme> get deploy -n globex-dev-observability
+      Error from server (Forbidden): deployments.apps is forbidden: User "system:serviceaccount:acme-dev-logging:platform-agent" cannot list resource "deployments" in API group "apps" in the namespace "globex-dev-observability"
+    ✓ Forbidden
+
+==============================================================================
+RESULT
+==============================================================================
+  ALL LIVE ASSERTIONS HELD
+```
+
+## 2. Falsification — each change reverted in isolation
+```
+== baseline ==
+19 passed in 3.56s
+
+== reversions ==
+-- 1 AUTO gate stops attesting => 1 failed, 18 passed in 3.54s
+-- 2 approval gate stops attesting => 1 failed, 18 passed in 3.59s
+-- 3 attest signs a caller-supplied tenant instead of the incident's => 3 failed, 16 passed in 3.58s
+-- 4 attest raises instead of no-op when unconfigured => 2 failed, 17 passed in 3.59s
+-- 5 attest invents a tenant when the incident names none => 3 failed, 16 passed in 3.61s
+-- 6 attest clobbers the alert's own metadata => 1 failed, 18 passed in 3.60s
+-- 7 the signature omits the tenant (record shape only) => 1 failed, 18 passed in 3.62s
+-- 8 the Makefile stops provisioning the broker env => 1 failed, 18 passed in 3.65s
+
+== restored ==
+19 passed in 3.60s
+ M Makefile
+ M scripts/probe_scope_reachability.py
+ M src/agents/ai/onprem_webhook_api.py
+ M src/agents/platform/scope.py
+ M tests/test_scope_producer_reachability.py
+?? scripts/mint_tenant_kubeconfig.sh
+?? tests/test_attest_decision.py
+```

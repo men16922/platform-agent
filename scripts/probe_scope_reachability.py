@@ -68,6 +68,7 @@ def main() -> int:
     from src.agents.adapters.signals.onprem import OnPremAlertmanagerSignalAdapter
     from src.agents.platform.scope import (
         ScopeError,
+        attest_decision,
         guard_scoped_action,
         resolve_incident_scope,
     )
@@ -80,9 +81,17 @@ def main() -> int:
     print(f"      source_metadata keys: {sorted(metadata)}")
     print(f"      carries attested_approval? {'attested_approval' in metadata}")
 
-    bar("2. Can a scope be minted from it? (the only producer in the codebase)")
+    bar("2. Run the production chain: attest, then resolve")
+    # Both steps, because the attestation is minted at the *gate* (AUTO / approval),
+    # not at detection — a raw incident straight off the adapter never carries one,
+    # and asking only `resolve_incident_scope` therefore answers False even in a
+    # correctly configured environment. This probe reported exactly that for one
+    # run after `attest_decision` landed, which would have read as "still broken".
+    decision = {"analyzer": {"detector": {"normalized_incident": incident}}}
+    attested = attest_decision(decision, approval_id="PROBE", log=_Log())
+    print(f"      attest_decision       -> {attested}")
     scope = resolve_incident_scope(incident, _Log())
-    print(f"      resolve_incident_scope -> {scope!r}")
+    print(f"      resolve_incident_scope -> {scope.redacted() if scope else None}")
 
     bar("3. So what does the gate do to a LIVE remediation?")
     try:
@@ -103,22 +112,35 @@ def main() -> int:
         print(f"        set by    : {setters or '(nothing — only its own definition)'}")
 
     bar("5. Who produces an attested record?")
-    prod = [l for l in _grep("sign_approval", "src") if "def sign_approval" not in l]
-    tests = _grep("sign_approval", "tests", "scripts")
-    writes = _grep('"attested_approval"', "src")
-    print(f"      sign_approval callers in src/  : {prod or '(none)'}")
-    print(f"      sign_approval callers in tests/: {len(tests)}")
-    print(f"      writers of attested_approval   : "
-          f"{[l for l in writes if 'scope.py' not in l] or '(none — only the reader)'}")
+    # Call sites, not mentions: the module's own docstrings discuss both symbols at
+    # length, and the first version of this counted those as producers.
+    producers = [
+        line for line in _grep(r"\(sign_approval\|attest_decision\)\s*(", "src")
+        if not line.startswith("src/agents/platform/scope.py")
+    ]
+    print(f"      production call sites: {producers or '(none)'}")
+    print(f"      test call sites      : {len(_grep('sign_approval', 'tests'))}")
 
     bar("VERDICT")
     reachable = scope is not None
-    print(f"      scope reachable from a production incident: {reachable}")
-    if not reachable:
-        print("      The gate is correct and its isolation is live-proven, but nothing")
-        print("      in production opens it. A live remediation is refused for want of a")
-        print("      credential — not because the namespace was out of scope, but because")
-        print("      no scope can exist. Fail-closed, and NOT an enforced boundary.")
+    print(f"      scope reachable in THIS environment: {reachable}")
+    if reachable:
+        print("      Configured. The gate can be opened, so the boundary is enforced")
+        print("      rather than merely closed. Isolation itself is the API server's job.")
+    elif producers:
+        # The distinction that matters operationally: a missing producer is a code
+        # gap somebody has to close; missing credentials are one `make` away. Before
+        # 2026-07-31 these were the same answer, and collapsing them again would hide
+        # a regression behind a config problem.
+        print("      A producer EXISTS but this environment is not configured, so every")
+        print("      live remediation is still refused. Not a code gap — run:")
+        print("          make scope-credentials     # mints credentials, prints the env")
+        for var in ("PLATFORM_CREDENTIAL_DIR", "PLATFORM_APPROVAL_SIGNING_KEY"):
+            print(f"          {var}: {'set' if os.getenv(var) else 'NOT SET'}")
+    else:
+        print("      No production code can open the gate at all. A live remediation is")
+        print("      refused for want of a credential — not because the namespace was out")
+        print("      of scope, but because no scope can exist. NOT an enforced boundary.")
     return 0
 
 
