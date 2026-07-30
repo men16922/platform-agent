@@ -1,13 +1,13 @@
 # NEXT_PLAN — platform-agent
 
-최종 갱신: 2026-07-29
+최종 갱신: 2026-07-31
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(M10=GitAIOps 7/7+멀티테넌트 Phase 0·1a·1b+공급망,
 > M9=eval·하드닝, M8=레퍼런스 8/8) / `PROGRESS_LOG.md`(+`docs/archive/`)를 참조한다. **≤120줄** 유지.
 
-## 현재 상태 (2026-07-30, gate 1565)
+## 현재 상태 (2026-07-31, gate 1596)
 
-**Phase 0·1a·1b·2·3 완결**(M10~M12) + **차단 없는 잔여 소진**(M13, 14건). 남은 잔여는 **결정 4건**(2·3·4 + 새 **결정 5**=배포 인가) **+ 승인 3건**. 결정 1은 D36으로 닫힘.
+**Phase 0·1a·1b·2·3 완결**(M10~M12) + **차단 없는 잔여 소진**(M13, 14건). 남은 잔여는 **결정 3건**(2·3·4) **+ 승인 3건**. 결정 1=D36, **결정 5=D38**(A·B 실행 완료, C·D는 라우터 인증까지 보류)로 닫힘.
 **시연 가능**: `make dev-up` → `make demo-baseline` 두 줄로 영상 시나리오 A가 재현된다.
 
 ## 사용자 게이트 (열린 것만)
@@ -17,17 +17,15 @@
   `docs/plans/2026-07-29-deployment-tenant-ownership.md`, 결정 → `DECISIONS.md` D36.
   되돌릴 조건: 배포 경로가 테넌트-aware해지고 라우터에 인증이 서면 둘 다 열린다.
 - [ ] **⚠️ 결정 2: 무스코프 MCP 읽기를 닫을 것인가** — 닫으면 검증된 익명 kagent 왕복이 깨진다.
+  **A로 절반 풀렸다**(2026-07-31): 스코프를 만들 수단이 이제 있다. 상세는 아래 잔여 섹션.
 - [ ] **⚠️ 결정 3: Capsule `limitRanges` 이관 경로** — 클러스터 스코프(D30 위반) vs 새 SA+RBAC.
 - [ ] **⚠️ 결정 4: k3s를 proven 기판에 넣을 것인가** — 집행은 라이브로 증명됐고 시맨틱은
   미증명(피어 테넌트 부재). 상세는 아래 잔여 섹션.
-- [ ] **⚠️ 결정 5: 어느 쪽을 먼저 세우나 — 스코프 생산자(A) vs 배포 신원 축소(B)**.
-  질문이 "배포를 무엇으로 스코프하나"였는데 **조사에서 전제가 깨졌다**: 인시던트 경로의 그
-  가드는 **프로덕션에서 한 번도 열린 적이 없다**(생산자 0 · 브로커 env 미배선 → 라이브 시 전부
-  거부). 배포 경로는 무가드 **cluster-admin**(`get secrets -A`=yes). 브리프·선택지 4종·추천 →
-  `docs/plans/2026-07-30-deploy-request-tenant-scoping.md`, 증거
-  `docs/evidence/deploy-path-authorization.log`. **추천: B 먼저 단독(답을 기다리지 않는다) → A**
-  (문서가 이미 주장하는 것을 참으로 만든다) → C·D는 라우터 인증까지 보류.
-  **결정 2(무스코프 MCP 읽기)와 같은 뿌리**였다: `MCPServer(scope=...)`도 프로덕션 구성처가 없다.
+- [x] **결정 5 = 완료(2026-07-31) → D38**: **B 배포 신원 축소 + A 스코프 생산자** 둘 다 실행.
+  브리프 `docs/plans/2026-07-30-deploy-request-tenant-scoping.md`, 증거
+  `docs/evidence/{deploy-identity-reduction,scope-producer-live}.log`. **C·D(요청이 테넌트를
+  선언)는 라우터 인증까지 보류** — 인증 없는 자진신고로 가드를 세우면 오류 방어를 공격 방어처럼
+  광고하게 된다. 되돌릴 조건: 라우터에 인증이 서면 C가 열린다.
 - [ ] **(별도 계획) GitAIOps 후속편 아티클** — 논지=책은 AI 자리에 사람이 프롬프트를 넣지만
   우리는 **오프라인 Qwen 에이전트로 루프를 무인으로 닫는다**. 소재는 **자동화하면 새로 깨지는 것**:
   ①롤백↔selfHeal 충돌 ②자격증명=blast radius ③"실행됨≠나아졌음" ④권한 게이트 부재의 과금 누출.
@@ -41,9 +39,10 @@
 **설계**: `docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5) · **MAD**: 같은 폴더 `-mad-history.md`.
 확정 아키텍처: **capability, implementation-pluggable** — Tenant=격리 티어 정책(soft/vcluster/dedicated),
 Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSOT=per-tenant git 레지스트리.
-**최우선 불변식**: blast radius=1 tenant/env(자격증명이 경계) — **아직 집행 아님**(2026-07-30 실측:
-프로덕션에 스코프 생산자가 없어 인시던트 경로는 라이브 시 전부 거부, 배포 경로는 무가드
-cluster-admin) → **결정 5**. **Phase 0·1a·1b·2·3 = 코드 완결**(M10~M12) + **잔여 14건 소진**(M13).
+**최우선 불변식**: blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 옵트인**
+(2026-07-31, D38: 생산자·축소 신원 둘 다 섰고 켜는 건 `make scope-credentials`·`make
+deploy-identity`. 미설정이면 예전처럼 인시던트는 거부, 배포는 ambient). **Phase 0·1a·1b·2·3
+= 완결**(M10~M12) + **잔여 14건 소진**(M13).
 
 - [ ] **Phase 4**(managed 어댑터, billable)·**5**(레지스트리 PR 쓰기) = 다음 후보.
   Phase 5가 열리면 3②를 GitOps-native로 닫을 수 있다(D32 재검토 조건). Phase 4로 넘긴 것:
@@ -82,16 +81,16 @@ cluster-admin) → **결정 5**. **Phase 0·1a·1b·2·3 = 코드 완결**(M10~M
   집행해도 워크로드가 안 깨진다"까지고, **이 집합이 licensing하는 주장**(우리 정책 shape이 같은
   테넌트는 통과·다른 테넌트는 차단)은 미검증이다 — `verify_tenant_isolation.py`가 **k3s-lab에
   피어 테넌트가 없어 못 돈다**. globex/prod를 만들면 실 자원이 프로비저닝되므로 **인프라 결정**.
-- [ ] **⚠️ 두 경로가 반대 방향으로 고장 나 있다(2026-07-30 실측) — 결정 5**. 인시던트 경로:
-  게이트는 옳고 격리는 라이브 증명됐지만 **열 수 없다**(어댑터가 `attested_approval`를 안 쓰고
-  `sign_approval` 프로덕션 호출부 0, 브로커 env 2개 미배선 → 라이브 시 전부 거부. 라이브 모드가
-  기본 OFF라 안 보였다). 배포 경로: **가드 없음 + cluster-admin**(`kubectl apply`에 `--kubeconfig`
-  없음 → `kubernetes-admin`, `delete namespaces -A`·`get secrets -A` 모두 yes). 재측정
-  `scripts/probe_scope_reachability.py`, 상태는 `tests/test_scope_producer_reachability.py`가 단언
-  (생산자가 생겼는데 자격증명이 없으면 red).
-- [ ] **무스코프 MCP 읽기는 여전히 ambient** — 검증된 익명 kagent 왕복을 살리려는 의도적 예외다.
-  읽기가 무해해서가 아니다(남의 로그 = 유출). **결정 5와 같은 뿌리**: `MCPServer(scope=...)`를
-  프로덕션에서 구성하는 곳이 없어 항상 무스코프로 간다 — 스코프 생산자가 서면 함께 닫힌다.
+- [ ] **스코프·배포 신원은 옵트인이다(2026-07-31, D38 이후 남은 것)** — 켜는 건 `make
+  scope-credentials`·`make deploy-identity` 두 줄인데 **기본값은 미설정**이라 그 전까지 인시던트
+  경로는 전부 거부하고 배포는 ambient로 돈다. 어느 상태인지는
+  `scripts/probe_scope_reachability.py`·`make deploy-identity-check`가 답한다. **남은 결정**:
+  기본을 on으로 돌릴지(= 데모/로컬 흐름을 깨는 대가) · **서명키 custody·rotation**(2차 잔여) ·
+  배포 신원의 테넌트 구분(= 결정 5 C/D, 라우터 인증 선행).
+- [ ] **⚠️ 결정 2: 무스코프 MCP 읽기 — A로 절반 풀렸다(2026-07-31)**. 막던 것은
+  "`MCPServer(scope=...)`를 구성할 스코프가 프로덕션에 없다"였고 이제 있다(`attest_decision`).
+  남은 건 kagent 경로가 **어떤 인가로** 스코프를 받느냐 = 결정. 읽기가 무해해서 열어둔 게
+  아니다(남의 로그 = 유출).
 - [ ] **A2A 인증 실집행 결정** — 카드가 광고하던 bearer/JWT를 서버가 안 검사하던 것은 해소했다
   (`A2A_BEARER_TOKEN` 미설정 시 광고도 안 함). 남은 결정은 **기본값을 on으로 돌릴지**(지금은
   라이브 kagent 왕복이 익명이라 opt-in).

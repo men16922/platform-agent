@@ -1,6 +1,6 @@
 # STATUS — platform-agent
 
-최종 갱신: 2026-07-30
+최종 갱신: 2026-07-31
 
 > 현재 구현 상태 / 검증 baseline / active focus / open risks. **≤120줄** 유지.
 
@@ -8,24 +8,26 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` (pytest) → **1572 passed, 1 skipped** (2026-07-30, 1565→1572, +7) —
-  **스코프 도달성 실측 + 가드**(결정 5 조사 → Open Risk 3): **생산자 없는 메커니즘은 테스트에서
-  영원히 초록**이다(스코프 17개 테스트가 전부 자기가 만든 레코드로 통과했다 — M13 "픽스처는
-  실제 입력에서"의 서브시스템 판본). 증거 `docs/evidence/deploy-path-authorization.log`.
-- `make check` → **1565** (2026-07-30, +13) — **배포 네임스페이스 출처**(`6beebbc`, D37): 행이
-  **착지한 네임스페이스를 말하지 않아** 하류 **네 층이 각자 `"default"`를 채웠다**. **라이브 kind
-  3노드**: 같은 이름이 두 ns에 있으면 `rollout undo -n default`는 **실패하지 않고 엉뚱한 쪽을
-  되돌리며 성공을 보고**한다. **D36이 세 번째·네 번째 경계에서 살아 있었다**(가드가 두 경계를
-  **열거**해 롤백·트리거 라우트에 `environment = "production"`이 남아 있었다).
-- `make check` → **1552** (2026-07-29, +8) — **배포 tier 발명 제거**(D36): NL 배포는
-  `environment`를 안 보내는데 HTTP 경계가 `"dev"`를, 매퍼가 부재를 `"production"`으로 채웠다
-  (**한 미상값에 두 층이 서로 다른 답**). 부재를 끝까지 보존. **내 가드가 잡으려던 홀을
-  자기가 갖고 있었다**(첨자 대입 미인식). 증거 `.../deployment-environment-absence.log`.
-- `make check` → **1544** (2026-07-29, +11) — **리포트 창**: `ttl`은 "쓴 시각+90일"인데 두
-  fetch가 시각처럼 읽어, 일일 SLO 필터 `ttl >= now-24h`가 **만료 안 된 모든 행에 참**이었다
-  (90행 중 90 → 2). `ttl` 없는 행은 90일 과거로 떨어져 늘 누락. 둘 다 `created_at`으로 배치,
-  폴백 상수는 **writer AST 파생 검증**. ⚠️**라이브 미실행**(실 AWS 필요) — 과대집계는
-  **추론이지 관측이 아니다**. 증거 `docs/evidence/report-windows.log`.
+- `make check` (pytest) → **1596 passed, 1 skipped** (2026-07-31, 1572→1596, +24) —
+  **결정 5를 추천안대로 실행**(`b92b54e`+`2a21b86`). **B 배포 신원 축소**: 네 어댑터가 맨
+  `kubectl`을 만들어 ambient=**cluster-admin**으로 돌던 걸 seam 하나로 고정(허용은 어댑터가
+  부르는 kubectl에서 **파생**, 금지는 **명시**). **A 스코프 생산자**: `attest_decision()`을
+  **인가가 성립하는 두 지점**에서 호출 + 테넌트 자격증명 민팅 스크립트(Phase 1a 증거의 그것은
+  손으로 만들어 커밋된 적이 없었다). **라이브 kind 양쪽**: 축소 신원으로 `get secrets -A`=no인데
+  실 배포·롤백 정상 · 실 인시던트가 **실제로 스코프를 얻고** 이웃 테넌트는 REFUSED.
+  **기본값 불변**(미설정=예전 동작 + 경고). 증거
+  `docs/evidence/{deploy-identity-reduction,scope-producer-live}.log`.
+- `make check` → **1572** (2026-07-30, +7) — **스코프 도달성 실측 + 가드**(결정 5 조사):
+  **생산자 없는 메커니즘은 테스트에서 영원히 초록**이다(17개 테스트가 전부 자기가 만든
+  레코드로 통과). 증거 `docs/evidence/deploy-path-authorization.log`.
+- `make check` → **1565** (2026-07-30, +13) — **배포 네임스페이스 출처**(D37): 행이 착지한 ns를
+  안 말해 **네 층이 각자 `"default"`를** 채웠다. **라이브**: 같은 이름이 두 ns에 있으면
+  `rollout undo -n default`는 **엉뚱한 쪽을 되돌리며 성공을 보고**한다. **D36이 세 번째·네 번째
+  경계에서 살아 있었다**(가드가 **열거**해서).
+- `make check` → **1552** (2026-07-29, +8) — **배포 tier 발명 제거**(D36): 한 미상값을 경계는
+  `"dev"`로, 매퍼는 `"production"`으로 채웠다. 부재를 끝까지 보존.
+- `make check` → **1544** (2026-07-29, +11) — **리포트 창**: `ttl`을 시각처럼 읽어 일일 SLO의
+  24h 창이 보관 기간 전체였다(90행 중 90 → 2). ⚠️**라이브 미실행**(실 AWS 필요).
 - (이전 이력: gate **1533** 이하 · 2026-07-10~29 → `docs/archive/status-baseline-2026-07.md`
   및 `PROGRESS_LOG`.)
 
@@ -50,11 +52,11 @@
 
 **지금 하는 것**
 
-- **Phase 3(인가 강화) = 코드 완결(M12, 2026-07-28), 그러나 집행은 아니다(→ Risk 3)** — 상세
-  → `COMPLETED_SUMMARY` M12. 다음은 **Phase 4**(managed, billable) 또는 **Phase 5**(레지스트리
-  쓰기 — 열려야 ②를 GitOps-native로 닫는다). **과대 해석 금지 4건**: 스코프 생산자가 프로덕션에
-  **없다**(→ Risk 3) · 자격증명 자체가 테넌트-바운드인 것은 **온프렘뿐**(→ Risk 10) · ②는 조용한
-  되돌림을 거부로 바꿀 뿐(→ D32) · 파티션된 읽기 경로는 **둘뿐**(플릿·인시던트).
+- **Phase 3(인가 강화) = 완결(M12) + 결정 5 A·B로 실제 집행 가능해짐(2026-07-31, → Risk 3)** —
+  다음은 **Phase 4**(managed, billable) 또는 **Phase 5**(레지스트리 쓰기 — 열려야 ②를
+  GitOps-native로 닫는다). **과대 해석 금지 4건**: 스코프도 배포 신원도 **옵트인**이라 미설정
+  환경에선 집행되지 않는다(→ Risk 3) · 자격증명 자체가 테넌트-바운드인 것은 **온프렘뿐**
+  (→ Risk 10) · ②는 조용한 되돌림을 거부로 바꿀 뿐(→ D32) · 파티션된 읽기 경로는 **둘뿐**.
 - **차단 없는 잔여 = 소진 → M13, 14건**(2026-07-28~30) — **열네 번 다 테스트는 초록**이었다
   (상세 → `COMPLETED_SUMMARY` M13). 아홉은 "선언되고 저장되고 **아무도 읽지 않는다**", ⑩**반대
   방향**("읽는데 아무도 안 씀"), ⑪**한 층 위**(선언 자체를 아무도 안 읽음 — importer 0),
@@ -83,16 +85,16 @@
 2. **GCP/Azure 인시던트 스토어는 보관 정책이 없다(2026-07-29)** — Cosmos DefaultTimeToLive 미설정,
    Firestore TTL 정책 부재 + 필드가 정수 → **어느 쪽도 만료 안 됨**. "90일"을 믿지 말 것.
    켜는 건 실 데이터 삭제라 승인 → `NEXT_PLAN`.
-3. **⚠️ 스코프 격리는 아직 집행이 아니다 — 두 경로가 반대 방향으로 고장(2026-07-30 실측)**.
-   ①**인시던트 경로: 게이트는 옳고 격리는 라이브 증명됐지만 프로덕션에서 열 수 없다** —
-   어댑터가 `attested_approval`를 안 쓰고 `sign_approval` 프로덕션 호출부 **0**, 브로커 env 2개를
-   **어느 스택·Makefile·스크립트도 설정하지 않는다**. 실 Alertmanager→어댑터→resolver→게이트 =
-   `scope=None` → **REFUSED**. 라이브 모드 기본 OFF라 안 보였고 **켜면 전부 거부**(fail-closed=
-   안전하지만 집행 아님). Phase 3 증거의 스코프는 스크립트가 브로커를 직접 불러 만든 것
-   (`APR-PHASE3-LIVE`) — 격리는 참, **인시던트에서 나온다는 건 미증명**. ②**배포 경로: 가드 없음
-   + cluster-admin**(`--kubeconfig` 없음 → `kubernetes-admin`; `delete namespaces -A`·
-   `get secrets -A` 모두 yes). 재측정 `scripts/probe_scope_reachability.py` · **결정 5** →
-   `docs/plans/2026-07-30-deploy-request-tenant-scoping.md`(추천: B 먼저 → A).
+3. **⚠️ 스코프 격리는 이제 가능하지만 옵트인이다(2026-07-31, 결정 5 A·B 반영)** — 어제 상태는
+   "두 경로가 반대 방향으로 고장"이었고 **둘 다 닫혔다**: 인시던트 경로에 생산자가 섰고
+   (`attest_decision`), 배포 경로는 축소 신원을 쓸 수 있다. **그러나 기본값은 여전히 미설정**이다
+   — `PLATFORM_{CREDENTIAL_DIR,APPROVAL_SIGNING_KEY}`가 없으면 인시던트 경로는 예전처럼 전부
+   거부하고, `PLATFORM_DEPLOY_KUBECONFIG`가 없으면 배포는 ambient(=kubeadm에서 cluster-admin)로
+   돈다. 즉 **"설정하면 집행되고, 안 하면 조용히 안 된다."** 어느 쪽인지는
+   `python scripts/probe_scope_reachability.py`(REFUSED를 찍는다)와 `make deploy-identity-check`가
+   답한다. 켜기: `make scope-credentials` · `make deploy-identity`. **남은 것**: 배포 신원은
+   테넌트를 구분하지 않는다(무엇을 할 수 있는지만 좁힌다 — 결정 5 C/D는 라우터 인증 선행) ·
+   서명키 custody/rotation 미해결 · 클라우드 3종은 여전히 Risk 10.
 4. **GCP/Azure 실 클러스터 비용** — 실 배포/Remediation 시 클러스터 가동 + WIF OIDC 과금 체크.
 5. **k3s는 NetworkPolicy를 집행하지만 proven 집합엔 없다(2026-07-29 실측)** — 라이브 3종으로
    **집행은 증명**됐으나 이 집합이 licensing하는 주장은 **우리 정책 shape의 시맨틱**이고,
@@ -103,18 +105,15 @@
 7. **TS 타입은 네트워크 데이터를 보증하지 않는다** — 라이브에서 페이지가 `posture.namespaces.length`로
    죽었는데 `tsc`는 내내 초록이었다(구버전 에이전트 페이로드). 롤링 업그레이드 중엔 허브가 두
    버전을 동시에 서빙하므로 **푸시 신규 필드는 항상 optional + 폴백**으로 다룬다.
-8. **PSS restricted 아래에서 애드온 차트는 기본값으로 동작하지 않는다** — `enforce: restricted`가
-   붙으면 차트 기본값으로는 파드가 admission에서 거부되는데 **Argo는 Synced로 보인다**(파드 0개인
-   채). loki·tempo는 seccompProfile을 values로 해소했지만 **새 애드온마다 같은 확인이 필요**하다 —
-   렌더된 파드 스펙을 테넌트 ns에 `kubectl apply --dry-run=server`로 던져 API 서버에 직접 묻는 게
-   가장 싸다. values 파일은 에러가 아니라 **안 읽히는 방식으로** 실패한다(키 철자가 차트마다 다름).
+8. **PSS restricted 아래에서 애드온 차트는 기본값으로 동작하지 않는다** — 파드가 admission에서
+   거부되는데 **Argo는 Synced로 보인다**(파드 0개인 채). **새 애드온마다 확인이 필요**하다 — 렌더된
+   파드 스펙을 테넌트 ns에 `kubectl apply --dry-run=server`로 던져 API 서버에 직접 묻는 게 가장 싸다.
+   values 파일은 에러가 아니라 **안 읽히는 방식으로** 실패한다(키 철자가 차트마다 다름).
 9. **Capsule deprecation — `additionalMetadata` 이관 완료(2026-07-28), `limitRanges`는 남음.**
    기계적 포팅이 아니다: `GlobalTenantResource`는 **클러스터 스코프**라 **D30 위반**이고
    `TenantResource`는 **SA+RBAC 새 권한 표면**이 필요하다(동작하며 경고만 뜬다, 2→1건). ⚠️ 결정 3.
-10. **GCP/Azure 자격증명은 아직 테넌트-바운드가 아니다(Phase 3① 이후 남은 것)** — 스코프는 액션이
-   **어느 네임스페이스를 건드릴지**를 정할 뿐 토큰을 테넌트에 묶지 않는다. GCP는 프로젝트 전역
-   신원 하나, **Azure는 ARM에서 클러스터 admin kubeconfig를 받아온다**(실제 작업 신원이
-   cluster-admin). 자격증명 자체가 경계인 것은 **온프렘뿐** → Phase 4(billable). 덧붙여 advisory
-   `allowed_namespaces`가 실제 RBAC보다 넓고, GKE failover의 `<cluster>-backup` 점프는 무제약.
+10. **GCP/Azure 자격증명은 아직 테넌트-바운드가 아니다** — 스코프는 액션이 **어느 네임스페이스를
+   건드릴지**만 정하고 토큰을 테넌트에 묶지 않는다. GCP는 프로젝트 전역 신원 하나, **Azure는 ARM에서
+   클러스터 admin kubeconfig를 받아온다**. 자격증명 자체가 경계인 것은 **온프렘뿐** → Phase 4.
 11. **Dashboard dependency audit** — Next.js 16.2.10 내부 번들 PostCSS(<8.5.10) moderate 2건(XSS via `</style>` in CSS stringify). **재검증(2026-07-13)**: 16.2.x 패치 없음·`audit fix --force`는 next@9 다운그레이드 → **upstream 대기 확정**. 빌드타임 경로라 런타임 위험 낮음.
 - (해소된 리스크 이력 — Slack App 미연결=07-19 해소·A2A discovery=07-14·추적 IA 실증=07-13·NEXT_PUBLIC 인라인=07-13 — 은 `PROGRESS_LOG`/`docs/archive/` 참조.)

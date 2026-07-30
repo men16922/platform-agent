@@ -4,6 +4,59 @@
 
 ---
 
+## 2026-07-29 — 결정 1을 닫았고, 두 층이 발명하던 tier를 없앴다 (gate 1544→1552)
+
+- Status: 결정 1("배포는 어느 테넌트 소유인가")을 조사→브리프→**결정(D36)**→구현까지.
+  조사에서 **전제 하나가 깨졌다**: 한 개인 줄 알았던 게 세 개(귀속·인가·과금)였고,
+  과금은 **결정 대기가 아니라 구조 대기**였다.
+- Changed(`D36`): ①**deployments/activities 무파티션 확정** + **테넌트별 모델 rate limit
+  안 함 확정** — 요청 시점에 대상이 미상(모델이 도구를 부를 때 정해짐)이고 라우터가 무인증이라
+  본문 테넌트는 자진신고인데, **자진신고 예산은 예산이 아니다**. "테넌트 격리됨"의 범위를
+  **플릿·인시던트 둘로** 못 박았다. ②D36이 딸고 온 코드 변경 — **tier 발명 제거**:
+  대시보드 NL 배포는 `environment`를 안 보내는데 HTTP 경계가 `"dev"`를, 매퍼가 부재를
+  `"production"`을 채웠다(**한 미상값에 두 층이 서로 다른 답**). 경계 기본값 제거 · writer
+  조건부 저장(빈 문자열=부재) · 문서에서 optional로 이동 · 렌더 5곳 정직화. ③분리:
+  **배포 경로 무스코프**(인가 문제, Open Risk 3) · 트리거 폼 tier 표기.
+- Verified: `make check` **1552**(+8) · tsc 클린 · `next build` 성공. 반증 5건 개별 되돌림
+  전부 red, 복원 시 13건 통과. 증거 `docs/evidence/deployment-environment-absence.log`,
+  브리프 `docs/plans/2026-07-29-deployment-tenant-ownership.md`.
+- Blockers: 없음(결정 1은 닫혔다).
+- 품질 메모: **처음 추천이 검증에서 뒤집혔다** — "대상 네임스페이스에서 역조회"가 옳은
+  모양이라 추천하려다, `deploy_service`의 `namespace` 기본값이 `"default"`이고 프롬프트가
+  namespace·tenant를 한 번도 언급하지 않으며 `deploy_recorder`가 namespace를 기록조차 안
+  한다는 걸 확인하고 접었다(오늘 켜면 전부 무테넌트 귀속). 그리고 **내 가드가 잡으려던 홀을
+  자기가 갖고 있었다**: 조건부 저장은 `item["k"]=v`라 dict 리터럴만 보는 walker에 안 잡혀,
+  그대로 뒀으면 가드가 **버그 쪽을 편들었을** 것이다(=environment를 core에 두라고 요구).
+  무조건/조건부를 분리해 고쳤다. 반증 4도 처음엔 초록이었는데 **치환이 no-op**이었다
+  (파일에 `\u2014` 이스케이프가 문자로 들어가 패턴이 안 맞았다) — 아무것도 안 고친 반증은
+  진짜 수정과 똑같이 PASS를 낸다.
+- Next: 잔여는 결정 3건(MCP 읽기·Capsule 경로·k3s 게이트) + 승인 3건 + 분리된 인가 1건.
+
+## 2026-07-29 — k3s는 NetworkPolicy를 집행한다, 그런데 게이트는 안 열었다 (gate 1544 유지)
+
+- Status: 계획의 **비-결정 항목 마지막**(⑥ k3s 검증기 재실행)을 실행했다. flannel 집행은
+  kindnet에서 **전이되지 않으므로** 기판별 실측이 필요했던 항목.
+- Changed(코드 경로 무변경): `tenancy.py`의 기판 주석에 측정 결과와 **왜 아직 안 넣는지**를
+  기록 · 부작용 프로브를 `scripts/probe_netpol_side_effects.sh`로 남김.
+- Verified(라이브, k3s v1.31.4 + flannel + 내장 kube-router): ①`verify_netpol_enforcement.py`
+  → **ENFORCED**(컨트롤 유효 — 무정책 시 B→A 도달을 **먼저** 확인) ②default-deny **아래에서
+  태어난** 파드의 readinessProbe가 Ready → **노드발 프로브는 차단되지 않는다**(어떤
+  namespaceSelector로도 못 잡는 트래픽이라 여기서 막혔으면 며칠 뒤 앱 회귀로 보였을 것)
+  ③같은 정책에서 DNS 정상(`10.43.0.1 kubernetes.default`) → ingress 전용 정책이 egress를
+  안 건드림. `make check` 1544 유지. 증거 `docs/evidence/k3s-netpol-enforcement.log`.
+- Blockers: **게이트(`PROVEN_ENFORCING_SUBSTRATES`)는 열지 않았다** — 3종이 증명한 건
+  "기판이 집행할 수 있고 집행해도 안 깨진다"까지고, **이 집합이 실제로 licensing하는 주장**
+  (우리 정책 shape이 같은 테넌트 통과·다른 테넌트 차단)은 미검증이다. 그걸 보는
+  `verify_tenant_isolation.py`가 **k3s-lab에 피어 테넌트가 없어 못 돈다**(acme/prod가 유일한 env).
+  globex/prod를 만들면 실 네임스페이스·쿼터·애드온이 프로비저닝되므로 **테스트를 돌리려고
+  인프라를 지어내지 않았다** → 결정 4로 올림.
+- 품질 메모: 첫 실행이 **INCONCLUSIVE**("server pod never became Ready")였고 그대로 기록했다 —
+  원인은 VM의 콜드 이미지 캐시(직후 `crictl pull`이 "up to date")였고, 두 실행의 차이는
+  클러스터가 아니라 캐시였다. 검증기 자신의 규율대로 **컨트롤이 안 선 실험은 통과가 아니다**.
+  그리고 kind용으로 확인해둔 "프로브·DNS는 안 깨진다"를 k3s에 **전이시키지 않고 다시 쟀다** —
+  기판이 다르면 CNI도 정책 컨트롤러도 다르다.
+- Next: 결정 4(위) 외 잔여 없음. 나머지는 전부 기존 결정 3건 + 승인 1건.
+
 ## 2026-07-29 — 리포트 창을 시계가 아니라 보관 필드로 재고 있었다 (gate 1533→1544)
 
 - Status: 읽기 모델 건이 연 **TTL 실마리**를 따라갔다. 거기서 `ttl` 커버리지가 writer마다
