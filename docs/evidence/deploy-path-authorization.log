@@ -1,0 +1,114 @@
+# Evidence — the scope gate is correct, and nothing in production can open it
+
+Date: 2026-07-30 · 결정 5 조사 · brief `docs/plans/2026-07-30-deploy-request-tenant-scoping.md`
+Cluster: kind platform-agent (3 nodes, v1.34.0) — LIVE
+
+## 1. Can a production incident mint a scoped credential?
+
+Real Alertmanager payload -> real on-prem signal adapter -> real resolver -> real gate.
+Nothing of ours mocked.
+
+```
+
+==============================================================================
+1. A real incident, built by the real on-prem signal adapter
+==============================================================================
+      provider            : onprem
+      tenant / env        : 'acme' / 'dev'
+      source_metadata keys: ['alertname', 'generator_url', 'labels', 'source_event']
+      carries attested_approval? False
+
+==============================================================================
+2. Can a scope be minted from it? (the only producer in the codebase)
+==============================================================================
+      [info] executor.scope.absent {'reason': 'no attested approval on the incident'}
+      resolve_incident_scope -> None
+
+==============================================================================
+3. So what does the gate do to a LIVE remediation?
+==============================================================================
+      [error] onprem_runner.no_scope {'action': 'restart_workload'}
+      -> REFUSED: refusing live action 'restart_workload' without a scoped credential (ambient credential execution was removed in Phase 1a)
+
+==============================================================================
+4. Are the broker's prerequisites provisioned anywhere?
+==============================================================================
+      PLATFORM_CREDENTIAL_DIR
+        in env    : False
+        set by    : ['scripts/probe_scope_reachability.py']
+      PLATFORM_APPROVAL_SIGNING_KEY
+        in env    : False
+        set by    : ['scripts/probe_scope_reachability.py']
+
+==============================================================================
+5. Who produces an attested record?
+==============================================================================
+      sign_approval callers in src/  : ['src/agents/platform/scope.py:36:``sign_approval`` is called only from tests, and neither ``PLATFORM_CREDENTIAL_DIR``']
+      sign_approval callers in tests/: 25
+      writers of attested_approval   : (none — only the reader)
+
+==============================================================================
+VERDICT
+==============================================================================
+      scope reachable from a production incident: False
+      The gate is correct and its isolation is live-proven, but nothing
+      in production opens it. A live remediation is refused for want of a
+      credential — not because the namespace was out of scope, but because
+      no scope can exist. Fail-closed, and NOT an enforced boundary.
+```
+
+## 2. What identity does the DEPLOY path actually run as?
+
+`OnPremClusterAdapter.deploy` runs `kubectl apply -f - --namespace <ns>` with no
+`--kubeconfig` and no `--context` — i.e. ambient. On the live cluster that ambient is:
+
+```
+ATTRIBUTE                                           VALUE
+Username                                            kubernetes-admin
+Groups                                              [kubeadm:cluster-admins system:authenticated]
+Extra: authentication.kubernetes.io/credential-id   [X509SHA256=a04a4c6225d9b8245c901b7f2c7752e03ccb2b8e7e4c1b0fec7dc9b378e3bdae]
+
+can-i create deployments -A                    : yes
+can-i delete namespaces -A                     : yes
+can-i get secrets -A                           : yes
+can-i delete deployments -n kube-system        : yes
+can-i create clusterrolebindings               : yes
+```
+
+So the two paths fail in opposite directions: the guarded one cannot be opened,
+and the unguarded one holds cluster-admin.
+
+## 3. Falsification of the new guard — load-bearing in both directions
+
+```
+== baseline ==
+7 passed in 3.09s
+
+== A. remove the caveat while the door is still closed ==
+-- => 1 failed, 6 passed in 2.91s
+
+== B. remove the re-measure pointer ==
+-- => 1 failed, 6 passed in 2.92s
+
+== C. delete the probe script (caveat points at nothing) ==
+-- => 1 failed, 6 passed in 3.34s
+
+== D. a production producer appears, credentials NOT provisioned ==
+-- => 1 failed, 6 passed in 4.74s
+
+== E. a producer AND the credentials provisioned (must be green) ==
+-- => 7 passed in 4.37s
+
+== F. an adapter starts attesting while the caveat still denies it ==
+-- => 2 failed, 5 passed in 4.10s
+
+== G. the gate stops refusing a None scope ==
+-- => 1 failed, 6 passed in 3.00s
+
+== restored ==
+7 passed in 2.94s
+ M src/agents/platform/scope.py
+?? docs/evidence/deploy-path-authorization.log
+?? docs/plans/2026-07-30-deploy-request-tenant-scoping.md
+?? scripts/probe_scope_reachability.py
+```

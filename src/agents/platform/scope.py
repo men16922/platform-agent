@@ -29,6 +29,23 @@ Isolation tier decides what a credential is scoped *to* (see
 ``IsolationTier.credential_scope``): under the default soft tier several tenants
 share one cluster by namespace, so the unit is the **tenant**, not the env — a
 per-env kubeconfig would reach co-tenant namespaces on the same cluster.
+
+⚠️ **NO PRODUCTION CALLER MINTS A SCOPE TODAY (measured 2026-07-30).**
+The gate below is correct and its isolation is live-proven, but nothing in
+``src/`` opens it: no signal adapter writes ``source_metadata["attested_approval"]``,
+``sign_approval`` is called only from tests, and neither ``PLATFORM_CREDENTIAL_DIR``
+nor ``PLATFORM_APPROVAL_SIGNING_KEY`` is set by any stack, Makefile or script. So
+``resolve_incident_scope`` returns ``None`` for every real incident and
+``guard_scoped_action`` refuses every live remediation — fail-closed, which is the
+safe direction, but it means **"blast radius = 1 tenant/env" describes a closed
+door, not an enforced boundary.** Invisible so far only because
+``ONPREM_EXECUTOR_LIVE`` defaults to false, so the guard is never reached.
+
+Do not read this as "scoping works". Re-measure with
+``scripts/probe_scope_reachability.py``; the reachability state is asserted by
+``tests/test_scope_producer_reachability.py``, which also fails if someone adds a
+producer *without* provisioning the broker's credentials. Options for closing it →
+``docs/plans/2026-07-30-deploy-request-tenant-scoping.md`` (결정 5).
 """
 
 from __future__ import annotations

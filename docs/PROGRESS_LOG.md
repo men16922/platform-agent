@@ -7,6 +7,36 @@
 
 ---
 
+## 2026-07-30 — 결정 5를 조사했더니 질문이 틀렸다: 그 가드는 한 번도 열린 적이 없다 (gate 1565→1572)
+
+- Status: 결정 5("배포 요청이 무엇으로 테넌트를 말하나")를 D36과 같은 방식으로 조사→브리프까지.
+  **전제가 깨졌다** — 계획은 "인시던트 경로와 같은 가드를 배포에 태운다"였는데, **그 가드는
+  프로덕션에서 열린 적이 없다.**
+- Verified(라이브): 실 Alertmanager 페이로드 → 실 온프렘 시그널 어댑터 → 실 resolver → 실 게이트.
+  `source_metadata`에 `attested_approval` **없음** → `resolve_incident_scope` → **None**
+  (`executor.scope.absent`) → `guard_scoped_action` → **REFUSED**. 원인 셋: 네 어댑터 중 누구도
+  그 키를 안 쓰고 · `sign_approval` 프로덕션 호출부 **0**(테스트 17) · 브로커 env 2개를
+  **어느 스택·Makefile·스크립트도 설정하지 않는다**. 라이브 모드가 기본 OFF라 안 보였고
+  **켜면 전부 거부**된다. 반대편 실측: 배포 경로는 `kubectl apply`에 `--kubeconfig`가 없어
+  `kubernetes-admin`(`delete namespaces -A`·`get secrets -A`·`create clusterrolebindings` 모두
+  yes). `make check` **1572**(+7). 증거 `docs/evidence/deploy-path-authorization.log`.
+- Changed(결정 없이 할 수 있는 것만): ①`scope.py` 모듈 문서에 **도달 불가 사실**을 못 박음
+  (게이트 옆에서 읽는 사람이 "스코프 동작함"으로 오독하지 않게) · ②재측정 도구
+  `scripts/probe_scope_reachability.py`(k3s 프로브와 같은 규약) · ③가드
+  `tests/test_scope_producer_reachability.py` — **양방향 하중**: 닫힌 채로 주석을 지우면 red,
+  생산자가 생겼는데 자격증명이 없으면 red, 생산자+자격증명 둘 다면 **green**(반증 E). ④문서 정직화:
+  NEXT_PLAN 최우선 불변식 "Phase 1a에서 강제 완료" → **아직 집행 아님**, STATUS Risk 3 전면 개정.
+- Blockers: **결정 5는 사용자 결정**. 브리프 `docs/plans/2026-07-30-deploy-request-tenant-scoping.md`
+  — 선택지 4종(A 생산자 세우기 · B 배포 신원 축소 · C 요청 선언 · D 프롬프트/시그니처),
+  **추천 B 먼저 단독 → A**, C·D는 라우터 인증까지 보류.
+- 품질 메모: **생산자 없는 메커니즘은 테스트에서 영원히 초록이다** — 스코프 17개 테스트가 전부
+  자기가 `sign_approval`로 만든 레코드로 통과해, "게이트가 동작한다"는 증명하고 "무엇이 게이트를
+  여는가"는 한 번도 묻지 않았다. M13의 "픽스처는 실제 입력에서"의 **서브시스템 판본**. 그리고
+  **내가 만든 가드가 내 프로브를 생산자로 셌다**(첫 실행 red) — 부재를 보고하는 도구를 생산자로
+  세면 안 되므로 언급이 아니라 **호출**을 보게 고쳤다. 이번에도 수호 장치가 먼저 틀렸다(네 번째).
+- Next: 결정 5 답변 대기. 결정 2(무스코프 MCP 읽기)도 **같은 뿌리**임이 드러났다 —
+  `MCPServer(scope=...)`를 프로덕션에서 구성하는 곳이 없다. 생산자가 서면 둘이 함께 닫힌다.
+
 ## 2026-07-30 — 배포 행이 착지한 네임스페이스를 말하지 않아 롤백이 네 층에서 발명했다 (gate 1552→1565)
 
 - Status: 결정 1(D36) 조사에서 떨어진 선행 항목 — "`deploy_recorder`가 namespace를 기록조차
