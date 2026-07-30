@@ -325,10 +325,40 @@ CLUSTER_TOOLS: frozenset[str] = frozenset({
 
 #: Cluster tools that CHANGE the cluster. These fail closed without a scoped
 #: credential: acting on a boundary we cannot name is exactly when acting is
-#: least safe (the reasoning Phase 1a settled for the executor). Reads stay
-#: available unscoped so the verified anonymous kagent round trip keeps working,
-#: and are pinned to the scope whenever one is present.
+#: least safe (the reasoning Phase 1a settled for the executor).
 MUTATING_CLUSTER_TOOLS: frozenset[str] = frozenset({"kubectl_apply"})
+
+#: Opt-in escape hatch for unscoped cluster *reads*.
+#:
+#: Reads used to pass unscoped, on the stated grounds that "the verified anonymous
+#: kagent round trip goes through them". Checked 2026-07-31: it does not. That round
+#: trip is **outbound** — we call kagent, and `k8s_get_resources` is kagent's own
+#: tool running on kagent's credentials (`docs/evidence/a2a-phase2-live-e2e.log`).
+#: This gateway is not in that path, and in fact nothing in `src/` constructs an
+#: `MCPServer` at all. The exception was held open for a consumer that does not
+#: exist, and the only code exercising it was the test pinning it.
+#:
+#: What it cost meanwhile: `resource` is a free-form string, so one read tool reaches
+#: every resource kind, and unscoped means ambient — measured cluster-admin on kind.
+#: `kubectl_get {"resource": "secrets", "namespace": "kube-system"}` succeeded.
+#: "someone else's logs" undersold it by a lot.
+#:
+#: So reads now fail closed like writes, and this variable brings the old behaviour
+#: back for anyone with a local use I did not find — explicitly, and noisily. It
+#: matters most for the thing that has not happened yet: the reference work
+#: contemplates MCP-over-HTTP, and the day this gateway gets a port, a dormant
+#: ambient read path becomes an unauthenticated cluster-admin read API.
+#: See `docs/plans/2026-07-31-unscoped-mcp-read.md` (결정 2).
+UNSCOPED_READS_ENV = "PLATFORM_MCP_ALLOW_UNSCOPED_READS"
+
+
+def unscoped_reads_allowed() -> bool:
+    """True when an operator has explicitly re-opened unscoped cluster reads.
+
+    Empty is unset, matching `deploy_identity.deploy_kubeconfig`: a shell that
+    exports the name without a value has not opted into anything.
+    """
+    return os.getenv(UNSCOPED_READS_ENV, "").strip().lower() in ("1", "true", "yes")
 
 
 class _NullLog:
@@ -447,18 +477,34 @@ class MCPServer:
             return fn(**args)
 
         if self._scope is None:
+            if not (name in MUTATING_CLUSTER_TOOLS or unscoped_reads_allowed()):
+                # Reads fail closed too, as of 결정 2. `resource` is free-form, so a
+                # read tool is not a narrow one: unscoped it reaches every resource
+                # kind through whatever the ambient context can see.
+                return ToolResult(
+                    success=False,
+                    error=(
+                        f"refusing '{name}' without a scoped credential — an unscoped "
+                        "read reaches whatever the ambient context can (measured: "
+                        f"cluster-admin, including secrets). Set {UNSCOPED_READS_ENV}=true "
+                        "to restore the old behaviour deliberately"
+                    ),
+                )
             if name in MUTATING_CLUSTER_TOOLS:
                 return ToolResult(
                     success=False,
                     error=(
                         f"refusing '{name}' without a scoped credential — this gateway "
                         "no longer inherits the ambient kubeconfig (Phase 1a closed the "
-                        "same path in the executor)"
+                        "same path in the executor). The read escape hatch does not "
+                        "cover writes"
                     ),
                 )
-            # Unscoped read: unchanged behaviour, and it stays ambient. Named
-            # here rather than left implicit so nobody reads the mutating
-            # refusal above as covering the whole gateway.
+            # Explicitly re-opened unscoped read. Say so at the point of use: an
+            # escape hatch that is quiet is just the old default wearing a flag.
+            self._log.warning(
+                "mcp_server.unscoped_read", tool=name, reason=f"{UNSCOPED_READS_ENV} is set"
+            )
             return fn(**args)
 
         # Budget before boundary: an over-budget tenant is refused whether or not

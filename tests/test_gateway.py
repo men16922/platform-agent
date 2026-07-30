@@ -18,6 +18,18 @@ from src.agents.ai.gateway.mcp_server import (
 )
 from src.agents.ai.gateway.a2a_server import A2AServer, TaskState
 from src.agents.ai.gateway.bridge import McpA2aBridge
+from src.agents.platform.scope import IncidentScope
+
+#: These tests exercise dispatch and translation, not the cluster boundary — so they
+#: carry the credential a real caller is supposed to carry. Before 결정 2 they passed
+#: with no scope at all, because unscoped cluster reads fell through to the ambient
+#: kubeconfig. That is the hole those reads have now stopped being.
+#: No `allowed_namespaces` on purpose: the namespace gate is advisory and is
+#: exercised in tests/test_mcp_scope.py; pinning it here would be a second, weaker
+#: copy of that check.
+DISPATCH_SCOPE = IncidentScope(
+    tenant="acme", env="dev", kubeconfig_path="/tmp/acme.kubeconfig", approval_id="APR-TEST"
+)
 
 
 # --- MCP Server Tests ---
@@ -94,7 +106,7 @@ class TestMCPServer:
     @patch("src.agents.ai.gateway.mcp_server._run_cmd")
     def test_call_kubectl_get(self, mock_run):
         mock_run.return_value = ToolResult(success=True, output='{"items": []}')
-        server = MCPServer()
+        server = MCPServer(scope=DISPATCH_SCOPE)
         result = server.call_tool("kubectl_get", {"resource": "pods", "namespace": "default"})
         assert result.success is True
 
@@ -236,7 +248,7 @@ class TestA2AServer:
 class TestMcpA2aBridge:
     @pytest.fixture
     def bridge(self):
-        return McpA2aBridge()
+        return McpA2aBridge(mcp_server=MCPServer(scope=DISPATCH_SCOPE))
 
     @patch("src.agents.ai.gateway.mcp_server._run_cmd")
     def test_mcp_to_a2a(self, mock_run, bridge):

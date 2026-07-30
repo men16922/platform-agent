@@ -1,0 +1,80 @@
+# Evidence — 무스코프 MCP 읽기를 닫았다 (결정 2 → D39)
+
+Date: 2026-07-31 · gate 1605 · brief `docs/plans/2026-07-31-unscoped-mcp-read.md`
+Cluster: kind platform-agent (3 nodes, v1.34.0) — LIVE
+
+## 0. 왜 열려 있었나 — 그 이유가 사실이 아니었다
+
+The stated reason was "unscoped reads must keep working because the verified
+anonymous kagent round trip goes through them". Checked against the code and
+the recorded evidence:
+
+  * that round trip is OUTBOUND — we call kagent, and `k8s_get_resources` is
+    kagent's own tool on kagent's credentials (docs/evidence/a2a-phase2-live-e2e.log)
+  * `a2a_server` routes /message:send to the Supervisor, never to this gateway
+  * nothing in src/ constructs an MCPServer at all — the only exerciser of the
+    unscoped path was the test pinning it
+
+## 1. Live before/after on the real cluster
+```
+
+==============================================================================
+BEFORE — the old default, reproduced via the escape hatch (real cluster)
+==============================================================================
+    unscoped read secrets in kube-system   -> success=True
+    ✓   reachable: secrets in kube-system = True
+    unscoped read nodes (cluster scope)    -> success=True
+    ✓   reachable: nodes (cluster scope) = True
+    unscoped read pods in default          -> success=True
+    ✓   reachable: pods in default = True
+    (one free-form `resource` field; the tool name says 'get', the reach says ambient)
+
+==============================================================================
+AFTER — default, no scope
+==============================================================================
+    unscoped read secrets in kube-system   -> success=False
+    ✓   refused: secrets in kube-system = False
+    unscoped read nodes (cluster scope)    -> success=False
+    ✓   refused: nodes (cluster scope) = False
+    unscoped read pods in default          -> success=False
+    ✓   refused: pods in default = False
+    error: refusing 'kubectl_get' without a scoped credential — an unscoped read reaches whatever the ambient context can (measured: cluster-admin, including sec
+
+==============================================================================
+The write half was already closed, and the read hatch must not open it
+==============================================================================
+    ✓   kubectl_apply with the read hatch on = False
+
+==============================================================================
+A scoped caller is unaffected — this closes a hole, it does not remove a feature
+==============================================================================
+    scoped read dispatched (kubectl ran and failed on the fake kubeconfig): success=False err=error: stat /tmp/nonexistent.kubeconfig: no such file or dir
+    ✓   gate did not refuse it = False
+
+==============================================================================
+RESULT
+==============================================================================
+  ALL LIVE ASSERTIONS HELD
+```
+
+## 2. Falsification
+```
+== baseline ==
+53 passed in 0.95s
+
+== reversions ==
+-- 1 unscoped reads pass again (the old default) => 4 failed, 49 passed in 0.95s
+-- 2 the escape hatch treats empty as opt-in => 1 failed, 52 passed in 0.91s
+-- 3 the read hatch also opens writes => 2 failed, 51 passed in 0.91s
+-- 4 the refusal stops naming the way back => 1 failed, 52 passed in 0.93s
+-- 5 the re-opened read goes quiet => 1 failed, 52 passed in 0.91s
+-- 6 the false kagent justification returns => 1 failed, 52 passed in 0.90s
+
+== restored ==
+53 passed in 0.90s
+ M src/agents/ai/gateway/mcp_server.py
+ M tests/test_gateway.py
+ M tests/test_mcp_scope.py
+?? docs/plans/2026-07-31-unscoped-mcp-read.md
+?? tests/test_carveout_consumers_exist.py
+```
