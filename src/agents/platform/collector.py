@@ -15,8 +15,16 @@ A report says "I am acme/dev". Believing that field is the same mistake the rele
 gate made (D24) — a caller asserting its own identity. Instead the hub looks up the
 signing key *for the claimed identity* and verifies against that one key: claiming
 acme/dev requires acme/dev's key. A report is then rejected outright if it carries
-rows for any other tenant/env, because a spoke agent's blast radius is one
-tenant/env on the read path too.
+rows for any other tenant/env. Live-measured 2026-08-02: unsigned, wrong key,
+key/identity mismatch and cross-tenant rows are all 401.
+
+That bounds what a spoke can **write**, which is the half this module owns. It does
+not bound what a spoke can **read**, and the earlier wording here ("a spoke agent's
+blast radius is one tenant/env on the read path too") claimed it did. It does not:
+`_kubectl` shells out to a bare `kubectl` against the ambient context and reads the
+shared `argocd` namespace, so one tenant's rows are separated from another's in
+Python, not by a credential. See :func:`warn_if_ambient_read` — the process says so
+once — and `docs/evidence/push-identity-ambient.log`.
 
 **2. Silence must be loud.**
 A push model's failure mode is a dead agent, and the default reading of "no new
@@ -34,6 +42,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import logging
 import os
 import subprocess
 from dataclasses import dataclass, field
@@ -207,7 +216,51 @@ def read_applications(namespace: str = "argocd", *, kubectl: Any = None) -> list
         return []
 
 
+#: Set once the process has said what it is reading as. Module-level so a loop
+#: pushing every 60s says it once, not once a minute.
+_warned_ambient = False
+
+
+def warn_if_ambient_read(log: Any = None) -> bool:
+    """Say out loud that the spoke reads with whatever credential is lying around.
+
+    Measured 2026-08-02: :func:`_kubectl` shells out to a bare ``kubectl`` — no
+    ``--kubeconfig``, no ``--context`` — which is the same shape D38 found on the
+    deploy path and closed there. Two things follow, and neither was written down:
+
+      * there is **no in-cluster deployment for the spoke** (no manifest under
+        ``infra/helm``); it runs from the Makefile against the operator's ambient
+        context, which on kind is cluster-admin;
+      * and it reads ``applications.argoproj.io -n argocd`` — a **shared** namespace
+        holding every tenant's Applications. Confinement to one tenant happens
+        afterwards, in Python, by label.
+
+    So on the read path the boundary is **code, not the credential**, and the plan's
+    top invariant ("자격증명이 경계") does not hold here yet. What IS enforced is the
+    other half, at the hub: :func:`verify` rejects a report carrying rows outside
+    the signer's identity, so a spoke cannot *write* another tenant's status even
+    though it can *see* it (live-measured, ``docs/evidence/push-identity-ambient.log``).
+
+    Deliberately a warning and not a refusal, for the same reason as
+    ``deploy_identity.warn_if_ambient``: a fail-closed default here would break
+    ``make dev-up`` and the two-line demo, and a boundary nobody can run is the
+    failure mode this repo already documented once (D38). Returns whether it warned,
+    so a probe can ask without parsing logs.
+    """
+    global _warned_ambient
+    if _warned_ambient:
+        return False
+    _warned_ambient = True
+    (log or logging.getLogger(__name__)).warning(
+        "collector.read.ambient: the spoke reads this cluster with the ambient "
+        "kubectl context and filters tenants in code — on the read path the "
+        "boundary is not the credential (see warn_if_ambient_read)"
+    )
+    return True
+
+
 def _kubectl(*args: str) -> subprocess.CompletedProcess:
+    warn_if_ambient_read()
     return subprocess.run(["kubectl", *args], capture_output=True, text=True, timeout=60)
 
 

@@ -1,0 +1,94 @@
+Push auth was already done; what is open is the spoke's own read identity
+==========================================================================
+Date : 2026-08-02
+Mode : LIVE against the real hub route (`local_deploy_api:/api/platform/status`)
+Gate : make check 1614 -> 1617 (+3)
+
+Plan item : NEXT_PLAN 2차 잔여 "agent→hub push 인증"
+Outcome   : that item is STALE — done 2026-07-26, re-measured here. The real
+            remaining piece is a different one and now says so.
+
+
+1. The write side is enforced, and was already enforced
+---------------------------------------------------------
+Hub started with two per-identity keys, then five attempts against the real route:
+
+    ① acme key, own rows only          : 200 ACCEPTED
+    ② no signature header              : 401 {"detail":"report rejected"}
+    ③ signed with the wrong key        : 401 {"detail":"report rejected"}
+    ④ globex's key claiming acme/dev   : 401 {"detail":"report rejected"}
+    ⑤ acme's key carrying a globex row : 401 {"detail":"report signed by acme/dev
+                                              carries rows for ['globex/dev']"}
+
+②③④ share one message on purpose — distinguishing "no such tenant" from "wrong
+key" would leak the tenant list. All of this landed 2026-07-26 (gate 1219→1251,
+`phase2-push-collector-and-switcher.log` §4). NEXT_PLAN has listed it as remaining
+work for a week.
+
+A NOTE ON MEASURING: the first run of ⑤ returned 200 and looked like a real hole.
+It was not — the probe sent its rows under an `addons` key while `StatusReport`
+reads `statuses`, so the rows never parsed and an empty report was legitimately
+accepted. Recorded rather than tidied away, because a false finding from a
+malformed fixture is the mirror image of the defect this repo keeps hunting: the
+fixture has to be the shape the real producer sends (`to_dict()`), or the
+experiment measures nothing.
+
+
+2. The read side is not bounded by a credential
+--------------------------------------------------
+    src/agents/platform/collector.py
+      def _kubectl(*args): subprocess.run(["kubectl", *args], ...)
+
+No `--kubeconfig`, no `--context` — the same shape D38 found on the deploy path
+and closed there. Three consequences, none of them previously written down:
+
+  * `read_applications` reads `applications.argoproj.io -n argocd`. That namespace
+    is SHARED: it holds every tenant's Applications. Confinement to one tenant
+    happens afterwards, in Python, by label — so on the read path the boundary is
+    code, not the credential.
+  * there is no in-cluster manifest for the spoke. `infra/helm/platform-agent/
+    templates/` ships router, webhook, orphan-sweeper, rbac, pvc — no status
+    pusher. The agent runs from the Makefile (`make dev-up`, `--interval 60`)
+    against the operator's ambient context, which on kind is cluster-admin.
+  * so the module's opening claim — "each cluster runs an agent that reads only
+    itself" — describes an intended deployment, not the one that exists.
+
+The docstring also said "a spoke agent's blast radius is one tenant/env on the read
+path too". That sentence has been replaced with what is actually true: the hub
+bounds what a spoke can WRITE; nothing bounds what it can READ.
+
+
+3. What shipped
+-----------------
+`warn_if_ambient_read()` — the process says once, not once a minute, that its
+cluster read is ambient and that the boundary is not the credential. `_kubectl`
+calls it, so the statement cannot drift away from the behaviour.
+
+Warning, not refusal, for the reason D38 already settled: fail-closed here breaks
+`make dev-up` and the two-line demo, and a boundary nobody can run is the failure
+mode this repo documented once already. No credential seam was added either — D38
+shipped its seam together with `make deploy-identity` to mint against, and adding
+an env var nobody can populate would be that same defect with a new name.
+
+Guards (`tests/test_push_read_identity.py`), each falsified individually:
+    let `_kubectl` bypass the warning        -> "the cluster read did not announce
+                                                its identity"
+    soften the wording to "default kubeconfig" -> "the warning must name what is
+                                                NOT enforced"
+    remove the once-per-process latch          -> "says it once, not once a minute"
+
+
+4. Still open (recorded in NEXT_PLAN, not invented here)
+----------------------------------------------------------
+A scoped read identity for the spoke needs two things this repo does not have yet:
+an in-cluster deployment for the pusher, and a ServiceAccount whose RBAC is narrow
+enough to be worth the claim. Both are infrastructure decisions, and the second
+only means something once the first exists.
+
+
+Reproduce
+-----------
+  PLATFORM_PUSH_KEYS='{"acme/dev":"k1","globex/dev":"k2"}' \
+    uvicorn src.agents.ai.local_deploy_api:app --port 8137
+  # sign with collector.sign(report.to_dict(), key) and POST to /api/platform/status
+  python -m pytest tests/test_push_read_identity.py -v
