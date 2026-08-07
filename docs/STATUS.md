@@ -8,6 +8,12 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` (pytest) → **1636 passed, 1 skipped** (2026-08-08, +18) — **서명키 회전**:
+  결함은 암호가 아니라 **배포 위상**이었다 — 서명자와 검증자가 다른 프로세스인데 키가 하나라
+  교체가 원자적일 수 없고, 그 실패가 `failed attestation`(=위조로 읽힘)이라 **회전은 장애
+  아니면 오경보**였다. `PLATFORM_APPROVAL_SIGNING_KEYS_RETIRING`(검증 전용, 절대 서명 안 함) +
+  **겹침을 유한하게 만드는 건 D42의 TTL**. 반증 4종 red(특히 retiring 레코드에 TTL 미적용).
+  **custody는 미해결이고 거짓 주장도 아니다**(→ Risk 3).
 - `make check` (pytest) → **1618 passed, 1 skipped** (2026-08-08, +1) — **테스트가 상했다**:
   `test_incident_time_to_resolve.py`는 **수정된 적이 없는데** red가 됐다. 픽스처가
   `created_at`을 하드코딩(`2026-07-29`)하는데 생산자는 **살아 있는 시계**로 7일 창을 건다 →
@@ -99,7 +105,10 @@
    `PLATFORM_DEPLOY_KUBECONFIG` 없으면 배포는 ambient(=cluster-admin). 즉 **"설정하면 집행되고,
    안 하면 조용히 안 된다."** 묻기 `scripts/probe_scope_reachability.py`·`make
    deploy-identity-check`, 켜기 `make scope-credentials`·`make deploy-identity`. **남은 것**: 배포
-   신원은 테넌트를 구분 안 함(결정 5 C/D=라우터 인증 선행) · 서명키 custody/rotation · **승인 재사용은 TTL까지만
+   신원은 테넌트를 구분 안 함(결정 5 C/D=라우터 인증 선행) · **서명키 rotation은 닫힘**(2026-08-08,
+   `..._KEYS_RETIRING` 검증 전용 + D42 TTL이 겹침을 유한하게) **단 custody는 미해결** — 로컬은
+   클러스터명 파생이고 `Makefile:256`이 "NOT a secret-management story"라고 **정확히 라벨**해
+   뒀다. 닫으려면 시크릿 매니저 선택 = 인프라·정책 결정(+과금) · **승인 재사용은 TTL까지만
    허용**(D42) · 클라우드 3종은 Risk 10.
 4. **GCP/Azure 실 클러스터 비용** — 실 배포/Remediation 시 클러스터 가동 + WIF OIDC 과금 체크.
 5. **k3s는 집행하지만 proven 집합엔 없다 — 결정 4 = D40으로 닫힘(2026-08-01)** — 집행은 라이브

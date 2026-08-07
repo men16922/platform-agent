@@ -258,6 +258,20 @@ deploy-identity:  ## create + mint the restricted credential the deploy path sho
 # `make` run is reproducible, and it is NOT a secret-management story: in a real
 # deployment both values come from a secret manager, and the key must be the same
 # for whoever signs and whoever verifies. Keep them out of the repo.
+#
+# Rotating that key (2026-08-08). "The key must be the same for whoever signs and
+# whoever verifies" used to mean it could not be rotated without an outage: the
+# signer and the verifier are different processes, so the swap is never atomic and
+# whichever rolled first produced records the other reported as `failed
+# attestation` — i.e. as tampering. PLATFORM_APPROVAL_SIGNING_KEYS_RETIRING (comma
+# separated) is verify-only: it never signs, and D42's TTL is what keeps the
+# overlap bounded. The procedure, each step rolled everywhere before the next:
+#   1. RETIRING=<current key>                       (accepts old + new)
+#   2. SIGNING_KEY=<new key>, RETIRING=<old key>    (signs new, accepts old)
+#   3. wait out PLATFORM_APPROVAL_TTL_SECONDS, unset RETIRING   (accepts new only)
+# Step 3 is not optional and nothing enforces it — a listed key is valid for as
+# long as it is listed. The broker logs `verified_under_retiring_key` for every
+# record that lands on an old key, so step 3 is safe once that has gone quiet.
 SCOPE_CREDENTIAL_DIR ?= $(HOME)/.platform-agent/credentials
 
 scope-credentials:  ## mint per-tenant credentials + print the broker env for this shell

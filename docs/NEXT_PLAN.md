@@ -54,8 +54,13 @@ deploy-identity`. 미설정이면 예전처럼 인시던트는 거부, 배포는
   **코드 필터**다(쓰기는 허브가 막지만 읽기는 아무것도 안 막는다). 인클러스터 배포 매니페스트도
   없다. 지금은 **시끄럽게만** 해 뒀다(`warn_if_ambient_read`) — seam을 만들려면 **민팅 경로가
   선행**이다(D38이 그래서 `make deploy-identity`와 함께 나왔다). 증거
-  `docs/evidence/push-identity-ambient.log`. ② **서명키 custody·rotation** — D42의 TTL(900초)이
-  회전 겹침 창을 유한하게 만들었으니 이제 다룰 수 있다.
+  `docs/evidence/push-identity-ambient.log`. ② ~~서명키 rotation~~ = **닫힘(2026-08-08)** —
+  막고 있던 건 암호가 아니라 **배포 위상**이었다(서명자·검증자가 다른 프로세스 = 교체가
+  원자적일 수 없고, 그 실패가 `failed attestation`이라 **위조로 읽힌다**).
+  `PLATFORM_APPROVAL_SIGNING_KEYS_RETIRING`은 **검증 전용**이고 겹침을 유한하게 만드는 건
+  D42의 TTL이다. 3단 절차는 `Makefile:256` 주석. **남은 것 = custody**: 키가 어디서 오는가는
+  시크릿 매니저 선택이라 **인프라·정책 결정**(+과금)이고, 로컬 라벨은 이미 정확하다
+  ("NOT a secret-management story") → 승인 필요 항목에 가깝다.
 ## 잔여 — 완료 항목에서 의도적으로 남긴 것
 
 > 완료분은 `COMPLETED_SUMMARY.md` **M12**(Phase 3 인가) · **M13**("선언됐지만 아무도 읽지

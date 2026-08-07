@@ -7,6 +7,37 @@
 
 ---
 
+## 2026-08-08 — 서명키는 회전할 수 없었다: 같은 키를 요구하던 문장이 곧 제약이었다 (gate 1618→1636)
+
+- Status: 우선순위 2 = 서명키 custody·rotation. **rotation을 닫았고 custody는 안 건드렸다**(아래).
+- Verified(조사): 결함은 암호가 아니라 **배포 위상**이었다. 서명자(`attest_decision`, 승인
+  경로)와 검증자(`TokenBroker`, 실행기)가 **다른 프로세스**인데 같은
+  `PLATFORM_APPROVAL_SIGNING_KEY` 하나를 읽는다 → 교체가 **원자적일 수 없다**. 먼저 롤한 쪽이
+  만든 레코드는 상대가 거부하고, 그 거부가 하필 **`failed attestation`** — 즉 **위조로 읽힌다**.
+  결과: 회전은 장애 아니면 오경보라서 **실제로는 한 번도 회전하지 않는다**. Makefile의
+  "the key must be the same for whoever signs and whoever verifies"는 **설명이 아니라 제약**이었다.
+- Changed: `PLATFORM_APPROVAL_SIGNING_KEYS_RETIRING`(콤마 구분) — **검증 전용, 절대 서명 안 함**.
+  `_accepted_keys()`(active + retiring) · `_verifying_key_index()`(어느 키로 통과했는지) ·
+  `verify()`는 bool 계약 유지 · **설정이 회전을 흉내 내지 못하게**(active 키를 retiring에
+  나열 = 두 반쪽 다 no-op인데 둘 다 한 것처럼 보인다 → 거부 · 중복 → 거부) ·
+  `_signed_by_a_pre_ttl_version`도 retiring 키를 본다(롤아웃 스큐와 회전이 겹치면 **또 위조로
+  오진**된다) · Makefile에 3단 절차 기록.
+- Verified: **겹침 창을 유한하게 만드는 건 D42의 TTL이다** — 새 암호가 아니라. 옛 키는 그 키로
+  서명된 레코드가 **만료될 때까지만** 살아 있으면 된다. 가드로 고정: 만료된 레코드는 retiring
+  키로도 거부되고, 서명이 `issued_at`을 덮으므로 **백데이트로 TTL을 빠져나갈 수 없다**.
+- Verified: `make check` **1636**(+18). 반증 4종 개별 red — retiring 미수용(6 red) · 로그 제거
+  (1 red) · 설정 검증 제거(2 red) · **retiring 레코드에 TTL 미적용**(1 red, 겹침이 무한해지는
+  바로 그 오구현). ruff clean.
+- Blockers: **custody는 안 닫았다 — 그리고 그건 거짓 주장이 아니었다.** `Makefile:256`이
+  "Local development only… NOT a secret-management story"라고 정확히 라벨해 뒀다. 닫으려면
+  시크릿 매니저를 고르는 **인프라·정책 결정**(+과금)이라 발명하지 않았다.
+- 품질 메모: **집행할 수 없는 절차는 관측 가능하게 만든다.** 3단계(옛 키 제거)는 코드가 강제할
+  수 없다 — 나열된 키는 나열된 동안 유효하다. 대신 옛 키로 통과한 레코드마다 로그를 남겨
+  "회전이 끝났나?"를 **믿음이 아니라 측정**으로 답하게 했다. **침묵이 그 측정이다.**
+  그리고 이번 것도 계열이 같다: 문서가 **제약을 설명으로 적어 두면** 아무도 그게 막고 있는
+  줄 모른다.
+- Next: 승인 3건 → Phase 4/5. custody는 인프라 결정 대기.
+
 ## 2026-08-08 — 달력이 움직이자 red가 됐다: 하드코딩 픽스처가 창 밖으로 밀렸다 (gate 1617→1618)
 
 - Status: `/sync` 직후 Stop 훅의 `make check`가 **5 failed**. 미커밋 소스

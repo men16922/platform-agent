@@ -60,6 +60,7 @@ from __future__ import annotations
 
 import hmac
 import json
+import logging
 import os
 import time
 from dataclasses import dataclass, field
@@ -74,8 +75,35 @@ from src.agents.platform.registry import IsolationTier, Registry
 CREDENTIAL_DIR_ENV = "PLATFORM_CREDENTIAL_DIR"
 
 # Shared secret used to attest approval records. Absent -> attestation cannot be
-# verified, and the broker refuses to mint (fail-closed).
+# verified, and the broker refuses to mint (fail-closed). This is the ONLY key
+# anything signs with; see :data:`RETIRING_KEYS_ENV` for the verify-only set.
 SIGNING_KEY_ENV = "PLATFORM_APPROVAL_SIGNING_KEY"
+
+#: Keys accepted for verification but **never used to sign**. Comma-separated.
+#:
+#: Without this the key cannot be rotated at all. The signer (:func:`attest_decision`,
+#: on the approval path) and the verifier (:class:`TokenBroker`, in the executor) are
+#: different processes, so swapping :data:`SIGNING_KEY_ENV` is never atomic. Records
+#: signed by whichever side rolled first fail :meth:`TokenBroker.verify` and surface
+#: as ``failed attestation`` — which reads as tampering, the exact misdiagnosis
+#: :meth:`TokenBroker._signed_by_a_pre_ttl_version` exists to prevent for the other
+#: rollout skew. Result: rotation means an outage or a false alarm, so in practice
+#: the key never rotates.
+#:
+#: What makes this tractable is the TTL (결정 6 / D42). A record is usable for
+#: :data:`DEFAULT_APPROVAL_TTL_SECONDS`, so the old key only has to stay accepted
+#: until every record it signed has expired — the overlap is **bounded and short**,
+#: not indefinite. The procedure this supports:
+#:
+#:   1. add the current key to ``RETIRING``, roll everything (accepts old + new)
+#:   2. swap ``SIGNING_KEY`` to the new key, roll everything (signs new, accepts old)
+#:   3. wait out the TTL, drop ``RETIRING``, roll everything (accepts new only)
+#:
+#: Step 3 is not optional and nothing here can enforce it: a listed key stays valid
+#: for as long as it is listed. :meth:`TokenBroker.mint` logs every record that
+#: verified under a retiring key so "is the rotation finished?" is answerable by
+#: measurement rather than belief — when that line stops, step 3 is safe.
+RETIRING_KEYS_ENV = "PLATFORM_APPROVAL_SIGNING_KEYS_RETIRING"
 
 # How long an attested approval stays usable, in seconds. Widen it if a real
 # dispatch path is slower than this; never widen it to "fix" a replay complaint.
@@ -96,9 +124,41 @@ DEFAULT_APPROVAL_TTL_SECONDS = 900
 #: attempt to mint something that never expires, and both should be refused.
 CLOCK_SKEW_TOLERANCE_SECONDS = 60
 
+logger = logging.getLogger(__name__)
+
 
 class ScopeError(RuntimeError):
     """Raised when a scoped credential cannot be established. Always fail-closed."""
+
+
+def _parse_retiring_keys(raw: str, signing_key: str) -> tuple[str, ...]:
+    """Parse :data:`RETIRING_KEYS_ENV`, refusing the shapes that fake a rotation.
+
+    Refused on purpose:
+
+    * the active key listed as retiring — the two halves of a rotation are "sign
+      with new" and "still accept old", and a config where they are the same key
+      has done neither while looking like it did both. Left to pass, step 2 of the
+      procedure could be skipped forever and nothing would say so.
+    * a duplicate — harmless to verification, but it means the operator is tracking
+      more keys than they think, and this list is the only record of what is still
+      accepted.
+
+    An empty value is not an error: no rotation in flight is the steady state.
+    """
+    keys = tuple(part.strip() for part in raw.split(",") if part.strip())
+    if signing_key in keys:
+        raise ScopeError(
+            f"{RETIRING_KEYS_ENV} lists the active {SIGNING_KEY_ENV} — that is not a "
+            "rotation, it is the same key twice. Retire the key you are rotating AWAY "
+            "from and sign with the new one"
+        )
+    if len(set(keys)) != len(keys):
+        raise ScopeError(
+            f"{RETIRING_KEYS_ENV} lists the same key more than once — refusing, because "
+            "this list is the only record of which old keys are still accepted"
+        )
+    return keys
 
 
 @dataclass(frozen=True)
@@ -228,6 +288,10 @@ class TokenBroker:
     signing_key: str
     #: Seconds an attested record stays usable. See :data:`DEFAULT_APPROVAL_TTL_SECONDS`.
     ttl_seconds: int = DEFAULT_APPROVAL_TTL_SECONDS
+    #: Keys accepted by :meth:`verify` but never used to sign. Empty is the normal
+    #: steady state; non-empty means a rotation is mid-flight. See
+    #: :data:`RETIRING_KEYS_ENV` for why an empty overlap makes rotation impossible.
+    retiring_keys: tuple[str, ...] = ()
     #: Nonces spent **by this instance**. Kept, and deliberately NOT described as
     #: one-time-use, because measured 2026-08-02 it is not: the only production
     #: caller (:func:`resolve_incident_scope`) builds a broker per call, so this set
@@ -265,6 +329,7 @@ class TokenBroker:
             credential_dir=Path(credential_dir),
             signing_key=signing_key,
             ttl_seconds=ttl,
+            retiring_keys=_parse_retiring_keys(os.getenv(RETIRING_KEYS_ENV, ""), signing_key),
         )
 
     def _legacy_payload(self, record: AttestedApproval) -> str:
@@ -291,13 +356,46 @@ class TokenBroker:
         )
 
     def _signed_by_a_pre_ttl_version(self, record: AttestedApproval) -> bool:
-        """True when the signature is valid for the OLD payload shape. Never grants."""
+        """True when the signature is valid for the OLD payload shape. Never grants.
+
+        Checks the retiring keys too. A rollout that changes the payload shape and a
+        rotation that changes the key can overlap — and if they do, a record that is
+        BOTH pre-TTL and old-key would fall through to "failed attestation" and be
+        read as tampering, which is the one outcome this method exists to prevent.
+        """
         if record.issued_at:
             return False
-        expected = hmac.new(
-            self.signing_key.encode(), self._legacy_payload(record).encode(), sha256
-        ).hexdigest()
-        return hmac.compare_digest(expected, record.signature)
+        payload = self._legacy_payload(record).encode()
+        return any(
+            hmac.compare_digest(
+                hmac.new(key.encode(), payload, sha256).hexdigest(), record.signature
+            )
+            for key in self._accepted_keys()
+        )
+
+    def _accepted_keys(self) -> tuple[str, ...]:
+        """Every key a signature may verify under: the active one, then retiring ones.
+
+        Signing never consults this — :func:`sign_approval` reads
+        :data:`SIGNING_KEY_ENV` alone, so a retiring key can only ever let an old
+        record in, never mint a new one under a key that is on its way out.
+        """
+        return (self.signing_key, *self.retiring_keys)
+
+    def _verifying_key_index(self, record: AttestedApproval) -> int | None:
+        """Index into :meth:`_accepted_keys` of the key that verifies ``record``.
+
+        Every candidate is compared even after a match, so the work does not depend
+        on which key matched; the comparison itself is already constant-time. 0 is
+        the active key — falsy, so callers must test ``is None``.
+        """
+        payload = record.payload().encode()
+        matched: int | None = None
+        for index, key in enumerate(self._accepted_keys()):
+            expected = hmac.new(key.encode(), payload, sha256).hexdigest()
+            if hmac.compare_digest(expected, record.signature) and matched is None:
+                matched = index
+        return matched
 
     def _refuse_if_stale(self, record: AttestedApproval) -> None:
         """Age check. The signature covers ``issued_at``, so this cannot be extended.
@@ -329,9 +427,14 @@ class TokenBroker:
             )
 
     def verify(self, record: AttestedApproval) -> bool:
-        """Constant-time signature check over the blast-radius fields."""
-        expected = hmac.new(self.signing_key.encode(), record.payload().encode(), sha256).hexdigest()
-        return hmac.compare_digest(expected, record.signature)
+        """Constant-time signature check over the blast-radius fields.
+
+        Accepts the active key or any retiring one. Which key matched is not part of
+        this answer — :meth:`mint` asks :meth:`_verifying_key_index` for that, because
+        the distinction is operational (is the rotation finished?) and not a
+        difference in authority.
+        """
+        return self._verifying_key_index(record) is not None
 
     def credential_path(self, tenant: str, env: str) -> Path:
         """
@@ -353,7 +456,8 @@ class TokenBroker:
         refused* rather than silently honoured; it is never used to select the
         credential.
         """
-        if not self.verify(record):
+        verifying_key = self._verifying_key_index(record)
+        if verifying_key is None:
             if self._signed_by_a_pre_ttl_version(record):
                 # Still refused — only the diagnosis changes. Accepting it would
                 # reopen unbounded reuse, which is the whole point of the TTL.
@@ -364,6 +468,21 @@ class TokenBroker:
                     "is on the same build"
                 )
             raise ScopeError(f"approval {record.approval_id!r} failed attestation — refusing to mint")
+
+        if verifying_key:  # 0 is the active key; anything else is on its way out
+            # The only signal that says whether a rotation can be finished. Nothing
+            # here can enforce step 3 (drop the retiring key) — but once this stops
+            # appearing, every record signed by the old key has aged past the TTL and
+            # dropping it is safe. Silence is the measurement.
+            logger.warning(
+                "scope.approval.verified_under_retiring_key",
+                extra={
+                    "approval_id": record.approval_id,
+                    "tenant": record.tenant,
+                    "retiring_key_index": verifying_key - 1,
+                    "ttl_seconds": self.ttl_seconds,
+                },
+            )
 
         # After the signature, because an unsigned record's timestamp means nothing.
         self._refuse_if_stale(record)
