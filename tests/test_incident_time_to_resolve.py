@@ -51,6 +51,20 @@ from src.agents.operations.oncall_reporter import build_weekly_oncall_report, su
 INCIDENT_DATA = Path("dashboard/src/lib/incident-data.ts")
 INCIDENT_TIME = Path("dashboard/src/lib/incident-time.ts")
 
+# The rows below used to hardcode 2026-07-29. `_fetch_incidents_from_dynamo`
+# places a row by `created_at` against a *live* clock, so those fixtures aged out
+# of its 7-day window on 2026-08-05 and took five assertions with them — the file
+# went red without a line of source changing. What these tests measure is
+# duration, not placement, so the fixtures are anchored to `now` (the shape
+# `test_report_windows.py` already uses) and the offsets stay exact.
+_DAY = 86400
+_BASE = int(time.time()) - _DAY  # fixed at import: two calls cannot straddle a second
+
+
+def _ts(offset_seconds: int = 0) -> str:
+    """A timestamp `offset_seconds` after the fixture base, inside the window."""
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(_BASE + offset_seconds))
+
 
 @pytest.fixture(autouse=True)
 def _isolate(monkeypatch, tmp_path):
@@ -137,9 +151,9 @@ def _row(**over) -> dict:
         "root_cause": "pod OOM",
         "runbook_id": "eks-pod-oom",
         "resolved": True,
-        "created_at": "2026-07-29T00:30:00Z",
-        "resolved_at": "2026-07-29T00:30:00Z",
-        "triggered_at": "2026-07-29T00:00:00Z",
+        "created_at": _ts(30 * 60),
+        "resolved_at": _ts(30 * 60),
+        "triggered_at": _ts(0),
         "ttl": int(time.time()) + 90 * 86400,
     }
     row.update(over)
@@ -147,10 +161,18 @@ def _row(**over) -> dict:
 
 
 class TestTheWeeklyReportMeasuresSomething:
+    def test_the_fixture_lands_inside_the_window_the_producer_uses(self):
+        """
+        The producer filters on a live clock. If the fixture drifts out of that
+        window every assertion below degrades into `IndexError` on an empty list,
+        which reads like a reader bug and is not one. Fail here, by name, first.
+        """
+        assert _fetch([_row()]), "fixture aged out of _fetch_incidents_from_dynamo's window"
+
     def test_start_is_the_fire_time_not_the_resolution_time(self):
         fetched = _fetch([_row()])
-        assert fetched[0]["started_at"] == "2026-07-29T00:00:00Z"
-        assert fetched[0]["resolved_at"] == "2026-07-29T00:30:00Z"
+        assert fetched[0]["started_at"] == _ts(0)
+        assert fetched[0]["resolved_at"] == _ts(30 * 60)
 
     def test_mttr_is_the_real_duration(self):
         """
@@ -159,17 +181,17 @@ class TestTheWeeklyReportMeasuresSomething:
         the whole time off a hand-written fixture.
         """
         fetched = _fetch([
-            _row(triggered_at="2026-07-29T00:00:00Z", resolved_at="2026-07-29T00:30:00Z"),
-            _row(triggered_at="2026-07-29T01:00:00Z", resolved_at="2026-07-29T02:00:00Z",
-                 created_at="2026-07-29T02:00:00Z"),
+            _row(triggered_at=_ts(0), resolved_at=_ts(30 * 60)),
+            _row(triggered_at=_ts(3600), resolved_at=_ts(2 * 3600),
+                 created_at=_ts(2 * 3600)),
         ])
         assert summarize_incidents(fetched)["average_mttr_minutes"] == 45.0
 
     def test_row_without_a_fire_time_falls_back_to_when_we_wrote_it(self):
         """Understates the duration, never invents time we cannot account for."""
-        fetched = _fetch([_row(triggered_at=None, created_at="2026-07-29T00:10:00Z",
-                               resolved_at="2026-07-29T00:30:00Z")])
-        assert fetched[0]["started_at"] == "2026-07-29T00:10:00Z"
+        fetched = _fetch([_row(triggered_at=None, created_at=_ts(10 * 60),
+                               resolved_at=_ts(30 * 60))])
+        assert fetched[0]["started_at"] == _ts(10 * 60)
         assert summarize_incidents(fetched)["average_mttr_minutes"] == 20.0
 
     def test_recurring_patterns_group_by_runbook_not_alarm(self):
@@ -187,10 +209,8 @@ class TestTheWeeklyReportMeasuresSomething:
         ]
 
     def test_trend_delta_is_no_longer_structurally_zero(self):
-        current = _fetch([_row(triggered_at="2026-07-29T00:00:00Z",
-                               resolved_at="2026-07-29T01:00:00Z")])
-        previous = _fetch([_row(triggered_at="2026-07-29T00:00:00Z",
-                                resolved_at="2026-07-29T00:30:00Z")])
+        current = _fetch([_row(triggered_at=_ts(0), resolved_at=_ts(3600))])
+        previous = _fetch([_row(triggered_at=_ts(0), resolved_at=_ts(30 * 60))])
         report = build_weekly_oncall_report(current, previous)
         assert report["trend"]["mttr_delta_minutes"] == 30.0
 
