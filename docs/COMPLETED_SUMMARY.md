@@ -1,6 +1,6 @@
 # COMPLETED_SUMMARY — platform-agent
 
-최종 갱신: 2026-07-26
+최종 갱신: 2026-08-02
 
 > 완료된 milestone 압축. current docs 에는 링크만, 상세 체크리스트는 여기로 압축.
 > 도메인 원문 상세는 `bin/docs/archive/`.
@@ -37,6 +37,49 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 ## M6 — CDK deprecation 정리 (완료)
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
+
+## M14 — 열린 결정 6건 전부 닫힘 (완료, 2026-07-29~08-02)
+
+**gate 1565 → 1617 (+52).** 열려 있던 결정을 전부 닫았고(마지막 하나는 조사 중 새로 열려
+같은 세션에 닫혔다), **여섯 번 다 조사가 질문을 바꿨다** — 어느 것도 "선택지 중 하나를
+고르는" 일이 아니었다.
+
+- **D36**(결정 1) — 배포는 테넌트 소유가 아니다. 한 개인 줄 알았던 게 **셋**(귀속·인가·과금)이었고
+  과금은 결정이 아니라 **구조 대기**였다. 무파티션 + 테넌트별 모델 rate limit 안 함 확정.
+- **D38**(결정 5) — **두 경로가 반대 방향으로 고장**이었다: 인시던트는 게이트가 옳은데 **생산자가
+  테스트뿐**이라 열 수 없었고, 배포는 **가드 없이 cluster-admin**이었다. A(스코프 생산자)+B(배포
+  신원 축소) 둘 다 실행, **둘 다 옵트인**(→ `STATUS` Risk 3).
+- **D39**(결정 2) — 예외를 붙잡던 **근거가 사실이 아니었다**. `src/`에 `MCPServer` 생성자가 0이라
+  무스코프 경로를 실행하던 유일한 코드는 **그것을 고정하던 테스트**였다. 읽기도 기본 거부.
+- **D40**(결정 4) — **막는 게 하나가 아니었다**(넷). 기록된 하나는 가장 먼저 걸리지도 않았고,
+  그 아래 **순환 게이트**가 있었다: 승격 도구가 proven 집합을 전제해 **새 기판을 승격시킬 수 없다**.
+  k3s는 넣지 않음(재개 조건: k3s-lab에 실제 워크로드).
+- **D41**(결정 3) — **선택지가 둘이 아니라 셋**이었고 셋째는 **같은 증거 로그 40행 위**에 있었다
+  (형제 필드 `networkPolicies`는 이미 객체 직접 렌더). Capsule 폐기 경고 2→**0**.
+- **D42**(결정 6, Phase 5를 재다가 열렸다) — `nonce`가 one-time-use라고 **적혀만 있었다**:
+  `_spent`가 인스턴스 상태인데 프로덕션이 브로커를 매번 새로 만들어 **3/3 발급**됐고, **수호
+  테스트가 broker 하나를 잡아 유일한 성립 조건을 제공**했다. 진짜 1회용은 **틀린 수정**이었다
+  (실행기가 같은 인시던트로 두 번 해석). **TTL로 대체** — 약속이 줄었고 대신 지켜진다.
+- **부수(결정 아님)** — `2차 잔여`의 "push 인증"은 **일주일째 스테일**이었고(07-26 완료),
+  그 자리의 진짜 구멍은 **스포크의 읽기 신원**이었다: 맨 kubectl + 공유 `argocd` ns라 테넌트
+  구분이 **코드 필터**다. 쓰기는 허브가 401로 막는다(라이브 4종).
+
+**교훈**: 예외의 근거는 **코드로**, 게이트의 근거는 **측정으로** 확인하라 · **질문이 주는
+선택지·블로커 개수를 세지 말 것**(두 번 다 답이 이미 레포 안에 있었다) · **없는 것은 테스트에서
+영원히 초록이다** · 가드는 **파생**시켜라(열거하면 새 경계를 놓친다) · **폐기됐다고 사문화된 건
+아니다** · 가드는 **자기 상태가 살아남는 수명에서만** 집행된다 · **계획 문서도 측정 대상이다**
+(닫힌 항목이 열린 채면 다음 사람은 이미 된 일을 하거나 그 옆의 진짜 구멍을 못 본다) ·
+**픽스처도 측정하라**(필드명 하나 틀린 픽스처가 오탐을 만들었다).
+
+**새 가드 5종** — 전부 반증을 개별로 확인했다: `test_carveout_consumers_exist.py`(D39, 예외의
+근거로 인용된 소비자가 실재하는가) · `test_substrate_promotion_reachable.py`(D40, 멤버십 주장이
+현재 레지스트리로 반증 가능한가) · 파생 LimitRange 가드(D41, 쿼터가 `limits.`를 선언하면 그
+렌더의 **모든** 네임스페이스가 기본값을 가져야 한다) · `test_scope_replay_reachability.py`(D42,
+**프로덕션 함수로** 단언 — 재사용이 실제로 거부되기 시작하면 일부러 red) ·
+`test_push_read_identity.py`(읽기가 ambient임을 프로세스가 말하는가).
+증거 `docs/evidence/{unscoped-mcp-read-closed,deploy-identity-reduction,scope-producer-live,
+k3s-netpol-enforcement,capsule-limitranges-direct,approval-ttl-replay-bound,
+push-identity-ambient}.log`, 조사 `docs/plans/2026-07-29~2026-08-02-*`.
 
 ## M13 — "선언됐지만 아무도 읽지 않는 것들" 14건 (완료, 2026-07-28~30)
 

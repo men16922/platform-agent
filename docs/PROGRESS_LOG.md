@@ -1,99 +1,120 @@
 # PROGRESS_LOG — platform-agent
 
-최종 갱신: 2026-07-31
+최종 갱신: 2026-08-02
 
 > 최신 3–5개 증분. **최신이 위.** **≤120줄.** 넘치면 `/tidy-docs` 로 압축.
-> 이전 이력: `docs/archive/progress-2026-07.md`
+> 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
 
-## 2026-07-31 — 결정 2: 예외를 붙잡던 근거가 사실이 아니었다 (gate 1596→1605)
+## 2026-08-08 — 달력이 움직이자 red가 됐다: 하드코딩 픽스처가 창 밖으로 밀렸다 (gate 1617→1618)
 
-- Status: 브리프의 다음 우선순위(결정 2 = 무스코프 MCP 읽기)를 조사→브리프→실행. **또
-  전제가 깨졌다** — 이번엔 예외를 정당화하던 **문장**이 틀렸다.
-- Verified(조사): "닫으면 검증된 익명 kagent 왕복이 깨진다"는 근거가 **셋 다 반증됐다**.
-  ①kagent 왕복은 **아웃바운드**이고 `k8s_get_resources`는 **kagent 자신의 도구**다
-  (`a2a-phase2-live-e2e.log`) ②`a2a_server`는 Supervisor로 라우팅하고 게이트웨이로 가는
-  경로가 없다 ③**`src/`에 `MCPServer` 생성자가 0**이다 — 무스코프 경로를 실행하던 유일한
-  코드는 **그것을 고정하던 테스트**였다. 즉 **존재하지 않는 소비자를 위한 예외**.
-- Changed(브리프 추천 B): 읽기도 **기본 거부**, 되돌리려면
-  `PLATFORM_MCP_ALLOW_UNSCOPED_READS=true`(빈 문자열=미설정, 켜지면 **호출 시점 경고**,
-  **쓰기는 안 열린다**) · `test_gateway.py`의 디스패치 테스트 둘에 **스코프 부여**(그 둘이
-  무스코프로 통과하던 게 홀의 증상이었다) · 새 가드 `test_carveout_consumers_exist.py`
-  (**예외의 근거로 인용된 소비자가 실재하는지** + MCP-over-HTTP가 붙는 날의 트랩).
-- Verified: `make check` **1605**(+9) · **라이브 kind**: BEFORE(탈출구로 옛 동작 재현)
-  `secrets -n kube-system`·`nodes`·`pods` 전부 성공 → AFTER 전부 거부, 쓰기는 탈출구로도
-  거부, **스코프 가진 호출자는 무영향**. 반증 6건 개별 red. 증거
-  `docs/evidence/unscoped-mcp-read-closed.log`.
-- Blockers: 없음.
-- 품질 메모: **대가가 적어둔 것보다 컸다** — `resource`가 자유 문자열이라 "읽기"는 좁지
-  않다. 도구 이름은 `get`인데 **반경은 ambient의 반경**이고 그건 cluster-admin이다.
-  문서엔 "남의 로그 = 유출"이라 적혀 있었지만 실제론 secrets를 포함한 전부였다. 그리고
-  **반증에서 내 탈출구 경고가 조용해져도 초록이었다** — 조용한 탈출구는 옛 기본값이
-  플래그를 단 것일 뿐이라 어서션을 추가했다. **M13(소비자 없는 필드) → D38(생산자 없는
-  메커니즘) → 결정 2(사용처 없는 예외)** 로 같은 결함이 세 층에서 나왔다.
-- Next: 잔여는 결정 2건(3·4) + 승인 3건.
+- Status: `/sync` 직후 Stop 훅의 `make check`가 **5 failed**. 미커밋 소스
+  (`collector.py`·`scope.py`·`tenancy.py`)가 범인처럼 보였으나 **무관**이었다.
+- Verified(진단): 실패한 `tests/test_incident_time_to_resolve.py`는 **수정된 적이 없다**
+  (gate 1520에 커밋된 그대로). `_row()`가 `created_at="2026-07-29T00:30:00Z"`를 하드코딩하는데
+  생산자 `_fetch_incidents_from_dynamo(days=7)`는 **살아 있는 시계**로 `_in_window`를 건다.
+  실측: 그 행은 **9.96일** 되어 창 `[07-31, 08-07]` 밖 → `_fetch`가 `[]` → `IndexError` /
+  MTTR `0.0`. 즉 **2026-08-05에 코드 한 줄 안 바뀌고 red가 됐다**. 문서의 1617은 거짓이
+  아니라 **유효기간이 지난 것**이었다.
+- Changed: 픽스처를 `now` 기준 상대 배치로 — **이미 green이던 형제**
+  `test_report_windows.py`(`_row(age_days)`)가 쓰던 그 모양. 측정 대상은 **duration이지
+  placement가 아니라서** 오프셋(45.0/20.0/30.0)은 그대로 정확하다 · `_BASE`는 import 시
+  1회 고정(픽스처와 단언이 초 경계를 straddle하지 않게) · 가드 1건(창 밖으로 밀리면
+  `IndexError` 대신 **이름으로** 먼저 실패 — 빈 리스트발 `IndexError`는 리더 버그처럼
+  읽히는데 아니다).
+- Verified: `make check` **1618**(+1). 창 필터를 타는 테스트는 이 **둘뿐**이고 둘 다 통과.
+  나머지 26개 하드코딩 날짜 파일은 살아 있는 시계를 안 탄다 — **후보이지 결함이 아니다**.
+- Changed(정리): 워킹트리에만 있던 gate 1607~1618분을 **커밋 5건**으로 분리
+  (D42 · D41+D40 · 푸시 읽기 신원 · 이번 수정 · 체크포인트). 직전 커밋은 `ed36b30`(1605)였다.
+- Blockers: 없음. **origin 대비 미푸시**는 남아 있다(푸시는 별도 승인).
+- 품질 메모: **이 계열의 시간축 변종이다.** "없는 것은 테스트에서 영원히 초록"이 아니라
+  **달력이 움직이기 전까지만 초록**이었다. 그리고 훅이 지목한 파일 목록(미커밋 소스)은
+  **상관관계지 인과가 아니었다** — 실패 파일이 unmodified인지 먼저 물었으면 1분이었다.
+  게이트 결과에는 **측정 시점이 붙어야 한다**: "1617 passed"는 날짜 없이는 주장이 아니다.
+- Next: 우선순위 2 = **서명키 custody·rotation**(D42의 TTL 900초로 선행 해소).
 
-## 2026-07-31 — 결정 5를 추천안대로 실행: 배포 신원 축소(B) + 스코프 생산자(A) (gate 1572→1596)
+## 2026-08-02 — 계획이 스테일이었다: 막힌 건 푸시 인증이 아니라 스포크의 읽기 (gate 1614→1617)
 
-- Status: 사용자가 추천안을 승인해 **B 먼저 단독 → A** 순으로 실행. 어제 조사가 찾은
-  "두 경로가 반대 방향으로 고장" 둘 다 닫았다.
-- Changed **B**(`b92b54e`, +12): 네 배포 어댑터가 전부 맨 `kubectl`을 만들어 ambient로
-  돌았고 라이브에서 그 ambient는 **cluster-admin**이었다(`get secrets -A`=yes). seam 하나
-  `platform/deploy_identity.py`(넷에 각자 심으면 네 번째가 남는다) · RBAC 렌더러
-  (**허용은 어댑터가 부르는 kubectl에서 파생**, **금지는 명시**) · 1h 민팅 · `make
-  deploy-identity{,-check}` · `ops_tools`도 같은 seam(프로세스를 공유하니 신원도 공유).
-- Changed **A**(`2a21b86`, +12): `attest_decision()`을 **인가가 성립하는 두 지점**에서
-  호출(AUTO=정책 결정 시점, 승인=**사람이 결정한 순간** — 파킹 시점 서명은 아무도 승인하지
-  않은 행동을 attest한다) · `mint_tenant_kubeconfig.sh`(Phase 1a 증거의 자격증명은 **손으로**
-  만들어 커밋된 적이 없었다 = 시연은 되고 재현은 안 됐다) · `make scope-credentials` ·
-  프로브를 **"생산자 없음"(코드 갭) vs "이 환경 미설정"(make 한 번)**으로 분리.
-- Verified: `make check` **1596**(+24) · **라이브 kind 3노드** 양쪽. B: 축소 신원으로
-  `get secrets -A`·`delete namespaces -A`·`create clusterrolebindings` 전부 **no**인데
-  **실 배포 2회 + 실 롤백** 정상(1.27→1.28→1.27), `get secrets -n kube-system`은 **API
-  서버가 Forbidden**. A: 실 Alertmanager→실 어댑터→**실제로 스코프 획득**(tenant=acme),
-  자기 ns PERMITTED·이웃 REFUSED, 서명 변조/caller 불일치 모두 refused, acme 자격증명으로
-  globex 조회는 Forbidden. 반증 B 12건·A 8건 개별 red, no-op 없음. 증거
-  `docs/evidence/{deploy-identity-reduction,scope-producer-live}.log`.
-- Blockers: 없음. **기본값은 둘 다 안 바뀐다** — 배포는 미설정 시 ambient지만 **경고하고**,
-  attest는 키 없으면 no-op이라 게이트가 예전과 동일하게 거부한다. fail-closed가 더 안전한
-  *모양*이지만 틀린 *변경*이다: 두 줄 데모를 깨고, **아무도 돌릴 수 없는 경계**가 바로
-  어제 찾아낸 실패 모드다.
-- 품질 메모: **내 가드가 나를 잡았다** — `attest_decision`을 넣자마자 어제 쓴
-  `test_scope_producer_reachability`가 "생산자는 생겼는데 자격증명이 없다"로 red(정확히 그
-  트랩용). 그런데 **그 가드의 생산자 탐지가 심볼 하나만 봐서** 새 생산자를 못 봤다 — 메커니즘을
-  심볼 하나로 탐지하는 건 경계를 열거하는 것과 같은 취약함이라 체인으로 바꿨다. 그리고
-  **AST 가드가 호출부는 봤지만 이름이 resolve되는지는 못 봐서**, 린터가 지운 import를
-  런타임 NameError로만 알았다(gate 4 red). **읽는 것과 돌리는 것은 다르다.**
-- Next: 잔여는 결정 3건(2·3·4) + 승인 3건. 결정 2는 **A로 절반 풀렸다**(스코프 생산자가
-  섰으니 kagent 경로에 스코프를 줄 수 있다).
+- Status: `2차 잔여` 첫 항목("agent→hub push 인증")을 잰 결과 **일주일째 스테일**이었고,
+  그 자리에 **다른 구멍**이 있었다.
+- Verified(라이브, 실 허브 라우트): 쓰기 쪽은 **이미 집행된다** — ①올바른 서명 200
+  ②무서명 401 ③틀린 키 401 ④globex 키로 acme 자칭 401 ⑤acme 키에 globex 행 섞기
+  → 401 `carries rows for ['globex/dev']`. 2026-07-26(gate 1219→1251)에 이미 끝나 있었다.
+  ⚠️**첫 ⑤는 200이 나와 진짜 구멍처럼 보였다** — 내 페이로드가 행을 `addons` 키로 보냈는데
+  `StatusReport`는 `statuses`를 읽어 **행이 파싱조차 안 된 빈 보고서**였다. 픽스처를 실제
+  생산자 모양(`to_dict()`)으로 바꾸자 정상 거부. **잘못된 픽스처발 오탐은 이 레포가 쫓는
+  결함의 거울상**이라 지우지 않고 증거에 남겼다.
+- Verified(진짜 구멍): 읽기 쪽은 **자격증명이 경계가 아니다** — `_kubectl`이 맨 kubectl이고
+  (`--kubeconfig`/`--context` 없음, D38이 배포에서 닫은 그 모양), 읽는 대상이 **공유 `argocd`
+  네임스페이스**라 테넌트 구분이 **파이썬 라벨 필터**다. 게다가 `infra/helm`에 **스포크
+  배포 매니페스트가 없다**(router·webhook·orphan-sweeper뿐) — 즉 "각 클러스터가 에이전트를
+  돌린다"는 서술은 **의도된 배포지 존재하는 배포가 아니다**.
+- Changed: 모듈 docstring의 과장("읽기 경로에서도 blast radius가 1 tenant/env")을 **측정된
+  사실로 교체** · `warn_if_ambient_read()`(프로세스당 **한 번**, `--interval 60` 루프가 로그
+  노이즈가 되지 않게) · `_kubectl`이 그걸 부르게 해서 **문구가 동작에서 떨어질 수 없게** ·
+  가드 3종 · NEXT_PLAN의 스테일 항목 2개를 사실로 교체.
+- Verified: `make check` **1617**(+3). 반증 3종 개별 red(경고 우회 · 문구 약화 · 래치 제거).
+  증거 `docs/evidence/push-identity-ambient.log`.
+- Blockers: 없음. **seam은 일부러 안 만들었다** — D38이 `make deploy-identity`(민팅 경로)와
+  함께 나온 이유가 그것이고, 채울 수 없는 env var를 추가하면 **같은 결함에 새 이름**을 붙이는
+  것이다. 스코프된 읽기 신원은 **인클러스터 배포가 선행**이라 인프라 결정.
+- 품질 메모: **계획 문서도 측정 대상이다.** 닫힌 항목이 열린 채 남아 있으면 다음 사람은 이미
+  된 일을 하거나, 더 나쁘게 **그 옆의 진짜 구멍을 못 본다**. 그리고 이번엔 **내가 오탐을
+  냈다** — 필드명 하나 틀린 픽스처로. 측정은 도구가 아니라 습관이라 픽스처도 측정해야 한다.
+- Next: 승인 3건 + Phase 4/5. 남은 2차 잔여는 스포크 읽기 신원(인프라 선행) · 서명키 rotation.
 
-## 2026-07-30 — 결정 5를 조사했더니 질문이 틀렸다: 그 가드는 한 번도 열린 적이 없다 (gate 1565→1572)
+## 2026-08-02 — 결정 6 = D42: 승인은 1회용이 아니라 상하는 것 (gate 1611→1614)
 
-- Status: 결정 5("배포 요청이 무엇으로 테넌트를 말하나")를 D36과 같은 방식으로 조사→브리프까지.
-  **전제가 깨졌다** — 계획은 "인시던트 경로와 같은 가드를 배포에 태운다"였는데, **그 가드는
-  프로덕션에서 열린 적이 없다.**
-- Verified(라이브): 실 Alertmanager 페이로드 → 실 온프렘 시그널 어댑터 → 실 resolver → 실 게이트.
-  `source_metadata`에 `attested_approval` **없음** → `resolve_incident_scope` → **None**
-  (`executor.scope.absent`) → `guard_scoped_action` → **REFUSED**. 원인 셋: 네 어댑터 중 누구도
-  그 키를 안 쓰고 · `sign_approval` 프로덕션 호출부 **0**(테스트 17) · 브로커 env 2개를
-  **어느 스택·Makefile·스크립트도 설정하지 않는다**. 라이브 모드가 기본 OFF라 안 보였고
-  **켜면 전부 거부**된다. 반대편 실측: 배포 경로는 `kubectl apply`에 `--kubeconfig`가 없어
-  `kubernetes-admin`(`delete namespaces -A`·`get secrets -A`·`create clusterrolebindings` 모두
-  yes). `make check` **1572**(+7). 증거 `docs/evidence/deploy-path-authorization.log`.
-- Changed(결정 없이 할 수 있는 것만): ①`scope.py` 모듈 문서에 **도달 불가 사실**을 못 박음
-  (게이트 옆에서 읽는 사람이 "스코프 동작함"으로 오독하지 않게) · ②재측정 도구
-  `scripts/probe_scope_reachability.py`(k3s 프로브와 같은 규약) · ③가드
-  `tests/test_scope_producer_reachability.py` — **양방향 하중**: 닫힌 채로 주석을 지우면 red,
-  생산자가 생겼는데 자격증명이 없으면 red, 생산자+자격증명 둘 다면 **green**(반증 E). ④문서 정직화:
-  NEXT_PLAN 최우선 불변식 "Phase 1a에서 강제 완료" → **아직 집행 아님**, STATUS Risk 3 전면 개정.
-- Blockers: **결정 5는 사용자 결정**. 브리프 `docs/plans/2026-07-30-deploy-request-tenant-scoping.md`
-  — 선택지 4종(A 생산자 세우기 · B 배포 신원 축소 · C 요청 선언 · D 프롬프트/시그니처),
-  **추천 B 먼저 단독 → A**, C·D는 라우터 인증까지 보류.
-- 품질 메모: **생산자 없는 메커니즘은 테스트에서 영원히 초록이다** — 스코프 17개 테스트가 전부
-  자기가 `sign_approval`로 만든 레코드로 통과해, "게이트가 동작한다"는 증명하고 "무엇이 게이트를
-  여는가"는 한 번도 묻지 않았다. M13의 "픽스처는 실제 입력에서"의 **서브시스템 판본**. 그리고
-  **내가 만든 가드가 내 프로브를 생산자로 셌다**(첫 실행 red) — 부재를 보고하는 도구를 생산자로
-  세면 안 되므로 언급이 아니라 **호출**을 보게 고쳤다. 이번에도 수호 장치가 먼저 틀렸다(네 번째).
-- Next: 결정 5 답변 대기. 결정 2(무스코프 MCP 읽기)도 **같은 뿌리**임이 드러났다 —
-  `MCPServer(scope=...)`를 프로덕션에서 구성하는 곳이 없다. 생산자가 서면 둘이 함께 닫힌다.
+- Status: 사용자 지시("우선순위 & 추천안에 따라 수행")대로 결정 6을 **추천안 C**로 실행.
+- Changed: `AttestedApproval.issued_at`을 **서명 payload에 포함**(시각을 키 없이 앞당길 수
+  없다) · 브로커가 TTL 초과·미래 스탬프·`issued_at=0`을 거부 ·
+  `PLATFORM_APPROVAL_TTL_SECONDS`(기본 **900초**, `<=0`은 설정 오류로 거부 = **끄는 스위치
+  없음**) · 생산자(`attest_decision`)와 소비자(`resolve_incident_scope`) **양쪽 배선**(저장만
+  하면 M13을 하나 더 만드는 것) · 가드 6종.
+- Verified(라이브, 프로덕션 진입점): ①갓 발행 승인 3회 재사용 → **3회 MINTED**(실행기가 실제로
+  두 번 해석하는 패턴이라 이게 정상) ②TTL 초과 → `960s old, past the 900s TTL` ③시각만
+  앞당김 → 서명 불일치 ④24시간 미래 스탬프 → 거부 ⑤레포 프로브 `probe_scope_reachability.py`
+  → resolve MINTED, 게이트 **PERMITTED**. `make check` **1614**(+6). 반증 3종 개별 red(나이
+  검사 제거=3 red · payload에서 `issued_at` 제거=2 red · 스큐 진단을 수락으로=1 red).
+- Blockers: 없음. **행동 단위 1회용(옵션 B)**은 실행기 3종 상태 저장이 필요 → Phase 4와 함께.
+- 품질 메모: **900초를 발명하지 않았다** — 서명은 인가가 성립하는 순간에 찍히고 실행기가 같은
+  흐름에서 소비하므로 **사이에 사람 대기가 없고**, 들어가야 하는 건 기계 시간뿐이라는 경로의
+  모양에서 나왔다. 그리고 **첫 구현에 도달 불가능한 분기를 만들 뻔했다**: "구버전 레코드"
+  분기를 넣었는데 측정해 보니 `issued_at`이 서명에 들어가 그 레코드는 `verify()`에서 먼저
+  죽는다 — 즉 그 주석이 설명하는 상황에 **영원히 닿지 못한다**. 이번 계열에서 배운 걸 내가
+  바로 반복할 뻔했다. 거부는 유지하되 **이유를 스큐로 분류**하게 고쳤다(롤링 배포 중 "failed
+  attestation"은 위조로 오진된다). **약속이 줄었고 대신 지켜진다** — TTL 안 재사용은
+  가능하고, docstring·계획·테스트에 **그렇게 적었다**.
+- Next: 승인 3건 + Phase 4/5. 열린 결정 없음.
+
+## 2026-08-02 — Phase 5를 재다가 재사용 가드를 찾았다: 상태가 살아남지 못한다 (gate 1608→1611)
+
+- Status: 다음 우선순위(Phase 4·5)를 집으려 실체를 재는 중 **Phase 5는 완전 그린필드**이고
+  설계상 **(선택)**임을 확인, 대신 "선행이 안 끝났는데 이미 출하된" 항목(서명키 custody —
+  결정 5-A의 선행)을 재다가 **옆에서 구멍이 나왔다**. **여섯 번째로 전제가 깨졌다.**
+- Verified(조사): 서명키 자체는 **거짓 주장이 아니었다** — `Makefile:256`이 "Local development
+  only… NOT a secret-management story"라고 정확히 라벨해 두었다. 깨진 건 그 옆
+  `AttestedApproval.nonce`의 **"One-time-use marker; the broker rejects a replayed nonce"**다:
+  ①`_spent`가 **인스턴스 속성**인데 유일한 프로덕션 호출자 `resolve_incident_scope`가 호출마다
+  `TokenBroker.from_env()`를 **새로 만든다** → 프로덕션 경로로 같은 레코드 3회 제출에 **3회
+  발급** ②`test_nonce_replay_is_refused`는 broker 픽스처 **하나**를 잡고 두 번 부른다 —
+  **수호 테스트가 홀을 놓친 게 아니라 유일한 성립 조건을 제공**했다(이 계열 첫 사례)
+  ③그리고 **지금 켜면 정당한 호출자가 깨진다**: `aws/executor.py`가 같은 인시던트로 스코프를
+  **두 번** 해석하고(런북·액션 경로) SFN 재시도가 더 겹친다. 즉 "영속화하자"가 아니라
+  **"1회의 단위가 무엇인가"** 문제다.
+- Verified(영향): **테넌트 경계는 안 깨진다** — 서명이 tenant를 덮어 재사용해도 같은 스코프가
+  다시 나올 뿐이다(가드에 단언으로 고정). 깨지는 건 **감사 주장**("이 승인은 정확히 한 번의
+  행동을 인가했다")이고, 재사용된 행동은 **옛 `approval_id`로 귀속**된다.
+- Changed(모호하지 않은 절반만): 주장 3곳을 사실로 교체(`nonce` 주석 · `_spent` · `mint`) ·
+  기존 테스트 이름을 `..._within_one_broker_instance`로(이름 자체가 주장이었다) · 새 가드
+  `tests/test_scope_replay_reachability.py`는 **프로덕션 함수로** 단언하고, 재사용이 실제로
+  거부되기 시작하면 **일부러 red**가 된다.
+- Verified: `make check` **1611**(+3). 반증: 브로커를 모듈 캐시로 바꾸자 두 가드가 정확히 red.
+  ruff 변경 파일 clean. 조사 `docs/plans/2026-08-02-nonce-replay-scope.md`.
+- Blockers: **결정 6**(소비 단위) — A=인시던트 1회 · **C=TTL로 대체(추천)** · B=행동 1회(영속
+  저장, 실행기 3종 새 의존성 → Phase 4와 함께). TTL 길이·소비 단위는 **정책**이라 발명하지 않음.
+- 품질 메모: **가드는 자기 상태가 살아남는 수명에서만 집행된다.** 그리고 이번엔 **테스트가 그
+  수명을 만들어 줬다** — "수호 테스트 자신이 안티패턴일 수 있다"의 가장 나쁜 형태다. 고칠 때
+  **집행을 켜는 쪽으로 먼저 가지 않은 이유**도 측정에서 나왔다: 켰으면 정상 실행이 깨졌다.
+- Next: 결정 6 + 승인 3건. Phase 5는 그린필드·선택이라 뒤로.
