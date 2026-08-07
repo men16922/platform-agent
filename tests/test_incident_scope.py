@@ -117,7 +117,15 @@ class TestProvenanceBinding:
         record = sign_approval("APR-1", "acme", "dev", key=KEY)
         assert broker.mint(record, requested_tenant="acme").tenant == "acme"
 
-    def test_nonce_replay_is_refused(self, broker):
+    def test_nonce_replay_is_refused_within_one_broker_instance(self, broker):
+        """Named for what it proves, after the old name turned out to be a claim.
+
+        This was `test_nonce_replay_is_refused`, and it passed while production
+        minted three scopes from one replayed record: `_spent` is instance state
+        and `resolve_incident_scope` builds a broker per call, so the only place
+        the guard ever fired was a test holding the instance still. Measured
+        2026-08-02 → `tests/test_scope_replay_reachability.py`.
+        """
         record = sign_approval("APR-1", "acme", "dev", nonce="n-1", key=KEY)
         assert broker.mint(record).tenant == "acme"
         with pytest.raises(ScopeError, match="replay"):

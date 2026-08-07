@@ -61,6 +61,7 @@ from __future__ import annotations
 import hmac
 import json
 import os
+import time
 from dataclasses import dataclass, field
 from hashlib import sha256
 from pathlib import Path
@@ -75,6 +76,25 @@ CREDENTIAL_DIR_ENV = "PLATFORM_CREDENTIAL_DIR"
 # Shared secret used to attest approval records. Absent -> attestation cannot be
 # verified, and the broker refuses to mint (fail-closed).
 SIGNING_KEY_ENV = "PLATFORM_APPROVAL_SIGNING_KEY"
+
+# How long an attested approval stays usable, in seconds. Widen it if a real
+# dispatch path is slower than this; never widen it to "fix" a replay complaint.
+APPROVAL_TTL_ENV = "PLATFORM_APPROVAL_TTL_SECONDS"
+
+#: 15 minutes. Chosen from the shape of the path rather than picked round: the
+#: attestation is minted at the instant authorization exists (AUTO = the Guardian
+#: policy decision, APPROVE = the human resolving the parked approval — see
+#: :func:`attest_decision`), and it is consumed by the executor in the same flow.
+#: There is **no human wait inside that window by design**, so what has to fit is
+#: machine time: dispatch, plus Step Functions retries, plus queue latency. 15
+#: minutes is generous for that and still short enough that a leaked record is not
+#: a standing credential.
+DEFAULT_APPROVAL_TTL_SECONDS = 900
+
+#: Tolerance for a signer whose clock runs ahead of the verifier's. Small on
+#: purpose — a record stamped far in the future is either a broken clock or an
+#: attempt to mint something that never expires, and both should be refused.
+CLOCK_SKEW_TOLERANCE_SECONDS = 60
 
 
 class ScopeError(RuntimeError):
@@ -140,8 +160,15 @@ class AttestedApproval:
     tenant: str
     env: str
     signature: str
-    #: One-time-use marker; the broker rejects a replayed nonce.
+    #: Replay marker. NOT one-time-use — the rejection in :meth:`TokenBroker.mint`
+    #: is per broker INSTANCE and production builds a fresh broker on every call.
+    #: What bounds reuse instead is :attr:`issued_at` plus the broker's TTL; see
+    #: :data:`APPROVAL_TTL_ENV` and docs/plans/2026-08-02-nonce-replay-scope.md.
     nonce: str = ""
+    #: Epoch seconds when the authorization happened. **Signed**, so it cannot be
+    #: pushed forward without the key. Zero means "signed by a version that did not
+    #: record it", which the broker refuses rather than treating as ageless.
+    issued_at: int = 0
 
     def payload(self) -> str:
         """Canonical signed form — field order fixed so signatures are stable."""
@@ -151,20 +178,39 @@ class AttestedApproval:
                 "tenant": self.tenant,
                 "env": self.env,
                 "nonce": self.nonce,
+                "issued_at": self.issued_at,
             },
             sort_keys=True,
             separators=(",", ":"),
         )
 
 
-def sign_approval(approval_id: str, tenant: str, env: str, nonce: str = "", *, key: str | None = None) -> AttestedApproval:
-    """Produce an attested record. Called by the pipeline when parking an approval."""
+def sign_approval(
+    approval_id: str,
+    tenant: str,
+    env: str,
+    nonce: str = "",
+    *,
+    key: str | None = None,
+    issued_at: int | None = None,
+) -> AttestedApproval:
+    """Produce an attested record, stamped with the moment the authorization existed.
+
+    ``issued_at`` defaults to now and is covered by the signature. It is what makes
+    the record perishable: reuse is bounded by age rather than by a spent-nonce set
+    that no production lifetime survives (결정 6 / option C).
+    """
     secret = key if key is not None else os.getenv(SIGNING_KEY_ENV, "")
     if not secret:
         raise ScopeError("cannot attest an approval without a signing key")
-    unsigned = AttestedApproval(approval_id=approval_id, tenant=tenant, env=env, signature="", nonce=nonce)
+    stamp = int(time.time()) if issued_at is None else int(issued_at)
+    unsigned = AttestedApproval(
+        approval_id=approval_id, tenant=tenant, env=env, signature="", nonce=nonce, issued_at=stamp
+    )
     digest = hmac.new(secret.encode(), unsigned.payload().encode(), sha256).hexdigest()
-    return AttestedApproval(approval_id=approval_id, tenant=tenant, env=env, signature=digest, nonce=nonce)
+    return AttestedApproval(
+        approval_id=approval_id, tenant=tenant, env=env, signature=digest, nonce=nonce, issued_at=stamp
+    )
 
 
 @dataclass
@@ -180,7 +226,19 @@ class TokenBroker:
     registry: Registry
     credential_dir: Path
     signing_key: str
-    #: Nonces already spent — replaying an approval must not mint a second token.
+    #: Seconds an attested record stays usable. See :data:`DEFAULT_APPROVAL_TTL_SECONDS`.
+    ttl_seconds: int = DEFAULT_APPROVAL_TTL_SECONDS
+    #: Nonces spent **by this instance**. Kept, and deliberately NOT described as
+    #: one-time-use, because measured 2026-08-02 it is not: the only production
+    #: caller (:func:`resolve_incident_scope`) builds a broker per call, so this set
+    #: starts empty every time — three replays of one record minted three scopes.
+    #:
+    #: It was not turned into real one-time-use because that would refuse a
+    #: legitimate caller: ``aws/executor.py`` resolves the scope for the same
+    #: incident on both the runbook path and the action path, and a retried Step
+    #: Function does it again. What bounds reuse instead is :attr:`ttl_seconds`
+    #: (결정 6, option C) — a weaker promise than one-time-use and one that is
+    #: actually kept. Full reasoning: docs/plans/2026-08-02-nonce-replay-scope.md.
     _spent: set[str] = field(default_factory=set)
 
     @classmethod
@@ -191,7 +249,84 @@ class TokenBroker:
             raise ScopeError(f"{CREDENTIAL_DIR_ENV} is not set — refusing to fall back to ambient credentials")
         if not signing_key:
             raise ScopeError(f"{SIGNING_KEY_ENV} is not set — approval provenance cannot be verified")
-        return cls(registry=registry, credential_dir=Path(credential_dir), signing_key=signing_key)
+        raw_ttl = os.getenv(APPROVAL_TTL_ENV, "").strip()
+        try:
+            ttl = int(raw_ttl) if raw_ttl else DEFAULT_APPROVAL_TTL_SECONDS
+        except ValueError:
+            raise ScopeError(
+                f"{APPROVAL_TTL_ENV}={raw_ttl!r} is not an integer — refusing to guess a TTL"
+            ) from None
+        if ttl <= 0:
+            raise ScopeError(
+                f"{APPROVAL_TTL_ENV}={ttl} would disable expiry; there is no 'never expires' setting"
+            )
+        return cls(
+            registry=registry,
+            credential_dir=Path(credential_dir),
+            signing_key=signing_key,
+            ttl_seconds=ttl,
+        )
+
+    def _legacy_payload(self, record: AttestedApproval) -> str:
+        """The signed form used before ``issued_at`` existed.
+
+        Kept **only to name the failure**, never to accept one. Measured while
+        building the TTL: a record signed by a pre-TTL version does not reach the
+        age check at all, because ``issued_at`` is inside the payload and its
+        absence changes the digest — so it dies at :meth:`verify` reporting
+        "failed attestation", which reads as tampering. During a rolling deploy
+        that is the normal case, and sending an operator to hunt a forgery is the
+        kind of misleading diagnostic this repo keeps paying for. This lets
+        :meth:`mint` say what actually happened.
+        """
+        return json.dumps(
+            {
+                "approval_id": record.approval_id,
+                "tenant": record.tenant,
+                "env": record.env,
+                "nonce": record.nonce,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+
+    def _signed_by_a_pre_ttl_version(self, record: AttestedApproval) -> bool:
+        """True when the signature is valid for the OLD payload shape. Never grants."""
+        if record.issued_at:
+            return False
+        expected = hmac.new(
+            self.signing_key.encode(), self._legacy_payload(record).encode(), sha256
+        ).hexdigest()
+        return hmac.compare_digest(expected, record.signature)
+
+    def _refuse_if_stale(self, record: AttestedApproval) -> None:
+        """Age check. The signature covers ``issued_at``, so this cannot be extended.
+
+        Reached only by records that already verified, which means the zero case
+        here is an *explicitly* unstamped signature (``sign_approval(..., issued_at=0)``)
+        rather than version skew — skew is caught earlier and named in :meth:`mint`.
+        Either way an approval whose age cannot be established is refused, the same
+        reading this module takes everywhere: the caller gets no scope and the
+        action is refused, which is the pre-D38 behaviour rather than a new outage.
+        """
+        if not record.issued_at:
+            raise ScopeError(
+                f"approval {record.approval_id!r} is signed with issued_at=0 — an "
+                "approval whose age cannot be established is not one this broker will "
+                "mint against"
+            )
+        now = int(time.time())
+        age = now - record.issued_at
+        if age > self.ttl_seconds:
+            raise ScopeError(
+                f"approval {record.approval_id!r} is {age}s old, past the "
+                f"{self.ttl_seconds}s TTL — re-authorize rather than reusing it"
+            )
+        if age < -CLOCK_SKEW_TOLERANCE_SECONDS:
+            raise ScopeError(
+                f"approval {record.approval_id!r} is stamped {-age}s in the future — "
+                "refusing (clock skew, or a record built to outlive its TTL)"
+            )
 
     def verify(self, record: AttestedApproval) -> bool:
         """Constant-time signature check over the blast-radius fields."""
@@ -219,7 +354,19 @@ class TokenBroker:
         credential.
         """
         if not self.verify(record):
+            if self._signed_by_a_pre_ttl_version(record):
+                # Still refused — only the diagnosis changes. Accepting it would
+                # reopen unbounded reuse, which is the whole point of the TTL.
+                raise ScopeError(
+                    f"approval {record.approval_id!r} was signed before approval TTLs "
+                    "existed (no issued_at in its payload) — refusing. This is version "
+                    "skew during a rollout, not tampering; it clears once the signer "
+                    "is on the same build"
+                )
             raise ScopeError(f"approval {record.approval_id!r} failed attestation — refusing to mint")
+
+        # After the signature, because an unsigned record's timestamp means nothing.
+        self._refuse_if_stale(record)
 
         if requested_tenant is not None and requested_tenant != record.tenant:
             raise ScopeError(
@@ -227,6 +374,9 @@ class TokenBroker:
                 f"{record.approval_id!r} attests tenant {record.tenant!r} — refusing"
             )
 
+        # Instance-local replay dedupe. NOT one-time-use — see `_spent`. It refuses a
+        # tight loop inside one broker and nothing else, which is worth keeping and
+        # not worth claiming.
         if record.nonce:
             if record.nonce in self._spent:
                 raise ScopeError(f"approval {record.approval_id!r} nonce replayed — refusing to mint")
@@ -342,6 +492,11 @@ def attest_decision(decision_out: Any, *, approval_id: str, log: Any = None) -> 
         "env": record.env,
         "signature": record.signature,
         "nonce": record.nonce,
+        # Written AND read (resolve_incident_scope below). Persisting it without a
+        # consumer would be M13 all over again — and worse here, because the broker
+        # refuses a record whose stamp is missing, so a write-only field would fail
+        # every mint instead of silently doing nothing.
+        "issued_at": record.issued_at,
     }
     if log:
         log.info("scope.attest.signed", approval_id=approval_id, tenant=tenant, env=env)
@@ -383,6 +538,7 @@ def resolve_incident_scope(normalized_incident: Any, log: Any) -> IncidentScope 
             env=attested.get("env", ""),
             signature=attested.get("signature", ""),
             nonce=attested.get("nonce", ""),
+            issued_at=int(attested.get("issued_at", 0) or 0),
         )
         # The incident's own tenant is passed only so a mismatch is REFUSED;
         # the broker never uses it to pick the credential.

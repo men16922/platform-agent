@@ -1,0 +1,112 @@
+Approval reuse is now bounded by age, not by a nonce that never expired anything
+=================================================================================
+Date : 2026-08-02
+Mode : production entry point (`resolve_incident_scope`) + the repo's own probe
+Gate : make check 1611 -> 1614 (+3)
+
+Decision  : DECISIONS.md D42 — 결정 6, option C (perishable, not single-use)
+Brief     : docs/plans/2026-08-02-nonce-replay-scope.md
+
+
+What was wrong (measured 2026-08-02, before the change)
+--------------------------------------------------------
+`AttestedApproval.nonce` was documented "One-time-use marker; the broker rejects a
+replayed nonce". `TokenBroker.mint` did reject one — against `self._spent`, an
+INSTANCE attribute — and the only production caller builds a fresh broker per call:
+
+    동일한 attested 레코드를 프로덕션 경로로 3회 제출:
+      시도 1: MINTED  tenant=acme
+      시도 2: MINTED  tenant=acme
+      시도 3: MINTED  tenant=acme
+
+`test_nonce_replay_is_refused` passed throughout, because it held ONE broker and
+called `mint` twice — the test supplied the only condition under which the guard
+worked.
+
+Real one-time-use was NOT the fix: `aws/executor.py` resolves the scope for the
+same incident on both the runbook path (:172) and the action path (:253), and a
+retried Step Function does it again. Enforcing single-use would refuse legitimate
+callers. So the question was never "persist the set", it was "what is one use".
+
+
+What shipped: option C
+------------------------
+`issued_at` (epoch seconds, stamped at the moment authorization exists) is added to
+the SIGNED payload, and the broker refuses anything older than its TTL.
+
+  TTL default 900s (`PLATFORM_APPROVAL_TTL_SECONDS`). Not a round number picked
+  for comfort: `attest_decision` signs at the instant authorization exists (AUTO =
+  the Guardian policy decision, APPROVE = the human resolving the parked approval),
+  and the executor consumes it in the same flow. There is no human wait inside that
+  window BY DESIGN, so what must fit is machine time — dispatch, SFN retries, queue
+  latency. 15 minutes is generous for that and short enough that a leaked record is
+  not a standing credential.
+
+
+Measured after, through `resolve_incident_scope` (not a hand-held broker)
+---------------------------------------------------------------------------
+  ① fresh approval, submitted 3x (the executor's real pattern)
+       시도 1: MINTED   시도 2: MINTED   시도 3: MINTED
+     Reuse inside the TTL still works. This is the honest limit of option C and it
+     is asserted, not left to be discovered.
+
+  ② past the TTL
+       refused: approval 'APR-old' is 960s old, past the 900s TTL —
+                re-authorize rather than reusing it
+
+  ③ expired record with only the timestamp freshened, signature untouched
+       refused: approval 'APR-old' failed attestation — refusing to mint
+     `issued_at` is inside the signed payload, so the stamp cannot be pushed
+     forward without the key.
+
+  ④ stamped 24h into the future to make it effectively immortal
+       refused: approval 'APR-fut' is stamped 86400s in the future — refusing
+                (clock skew, or a record built to outlive its TTL)
+
+  ⑤ the repo's own probe, end to end
+       scripts/probe_scope_reachability.py -> resolve_incident_scope minted,
+       guard_scoped_action -> PERMITTED, verdict "scope reachable: True"
+
+
+A branch that would have been unreachable, caught by measuring
+----------------------------------------------------------------
+The first version refused `issued_at == 0` with the comment "signed by a pre-TTL
+version". Measured — that scenario never reaches the age check:
+
+    구버전 서명 레코드의 새 payload : {"approval_id":"A","env":"dev","issued_at":0,...}
+    구버전 payload                 : {"approval_id":"A","env":"dev","nonce":"n",...}
+    verify() 통과?  False  → 나이 검사에 도달하지 못한다
+
+`issued_at` is in the payload, so a record signed by the old build fails `verify()`
+first and reported "failed attestation" — true, and during a rolling deploy it is
+also the normal case, so it would send an operator hunting a forgery.
+
+Fixed both halves: `_signed_by_a_pre_ttl_version` recomputes the OLD payload shape
+purely to NAME the failure (it never grants — falsified below), and the zero branch
+is re-documented as what it actually catches, an explicitly unstamped signature.
+
+
+Falsification (each mechanism separately red)
+-----------------------------------------------
+  remove the age check entirely          -> 3 failed  (TTL, config, zero-stamp)
+  drop issued_at from the signed payload -> 2 failed  (skew naming, forge-forward)
+  turn the skew diagnosis into accept    -> 1 failed  ("naming it must never turn
+                                                       into accepting it")
+
+
+What this does NOT claim
+--------------------------
+Reuse within the TTL is possible, and the docstrings, the plan doc and
+`tests/test_scope_replay_reachability.py` all say so in those words. Tenant
+boundary was never the exposure: the signature covers the tenant, so a replayed
+record re-mints the SAME scope and cannot cross — asserted. What the TTL buys is
+that an approval stops being a credential; true one-time-use, keyed per action and
+persisted, remains open as option B and belongs with Phase 4 (it needs state in all
+three executor adapters).
+
+
+Reproduce
+-----------
+  export PLATFORM_CREDENTIAL_DIR=... PLATFORM_APPROVAL_SIGNING_KEY=...
+  python scripts/probe_scope_reachability.py
+  python -m pytest tests/test_scope_replay_reachability.py -v
