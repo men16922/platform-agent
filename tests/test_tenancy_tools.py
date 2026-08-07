@@ -173,13 +173,24 @@ class TestInstallTenantAddons:
 class TestKubectlWarningsAreNotErrors:
     """Found live, not in review: a working chain reported itself failed.
 
-    Applying a tenant emits two Capsule deprecation warnings on stderr. Everything
-    upstream reads a non-empty ``error`` as a failed step (``model_router._step_failed``
-    is ``bool(result.get("error"))``), so the whole run came back ``ok: False`` with
-    every step successful — the dashboard would have recorded a working setup as a
-    failure, and the demo would have filmed it.
+    Applying a tenant used to emit two Capsule deprecation warnings on stderr.
+    Everything upstream reads a non-empty ``error`` as a failed step
+    (``model_router._step_failed`` is ``bool(result.get("error"))``), so the whole
+    run came back ``ok: False`` with every step successful — the dashboard would
+    have recorded a working setup as a failure, and the demo would have filmed it.
+
+    The behaviour under test outlives its example. ``kubectl`` writes warnings to
+    stderr from many sources, and any one of them would re-create the bug.
     """
 
+    #: HISTORICAL, and labelled as such rather than quietly refreshed. This is the
+    #: exact stderr the live cluster produced when the bug was found; both fields
+    #: have since been migrated away (`additionalMetadataList` on 2026-07-28,
+    #: `render_limit_ranges` on 2026-08-02) and applying a tenant now writes
+    #: **nothing** to stderr — measured, `docs/evidence/capsule-limitranges-direct.log`.
+    #: Kept because it is a real observed input and the two-warning case is the one
+    #: that broke; the guard against these particular fields returning lives in
+    #: `test_tenancy.py`, where it can assert the renderer instead of a string.
     CAPSULE_WARNINGS = (
         "Warning: The field `limitRanges` is deprecated and will be removed in a future release.\n"
         "Warning: The field `additionalMetadata` is deprecated and will be removed in a future release."

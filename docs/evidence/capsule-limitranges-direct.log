@@ -1,0 +1,152 @@
+Capsule deprecation: spec.limitRanges -> LimitRange objects rendered directly
+=============================================================================
+Date : 2026-08-02
+Mode : LIVE on kind `kind-platform-agent`, Capsule chart 0.13.10, v1beta2
+Gate : make check 1607 -> 1608 (+1)
+
+Plan item : NEXT_PLAN 결정 3 ("Capsule limitRanges 이관 경로")
+Decision  : DECISIONS.md D41 — option C (render the object), not either replacement
+Brief     : docs/plans/2026-08-02-capsule-limitranges-path.md
+
+
+The question was posed with two answers, and the third was already in the repo
+--------------------------------------------------------------------------------
+Four documents recorded the same fork: `GlobalTenantResource` (cluster-scoped ->
+violates D30) vs `TenantResource` (needs a ServiceAccount + RBAC so Capsule can
+replicate on our behalf). Both cost something, hence "a decision, not a commit".
+
+But `docs/evidence/capsule-deprecation-metadata.log:26` had already written the
+third answer down, for the sibling field deprecated in the same release:
+
+    `networkPolicies` does not apply to us — this repo renders NetworkPolicy
+    objects directly rather than through the Tenant spec.
+
+`limitRanges` takes the same move. A `LimitRange` is namespaced, so nothing
+cluster-scoped is created and D30 is untouched; and no new permission surface is
+needed, because there is no deputy to authorise — the identity that already
+creates this namespace's ServiceAccount, Role, RoleBinding and NetworkPolicy can
+create a LimitRange. `TenantResource` needs RBAC precisely because Capsule, not
+us, would be doing the writing.
+
+What is given up is Capsule's reconciliation. That is the same trade already
+accepted for the NetworkPolicies, and both sets derive from `namespaces_for`, so
+a tenant namespace cannot appear without one.
+
+
+1. Is the field load-bearing, or is this cosmetic?
+----------------------------------------------------
+Load-bearing, and the failure is silent where it matters.
+
+  BEFORE (LimitRange present), pod with `requests` only:
+    $ kubectl apply -f nolimits-pod.yaml       # ns acme-dev-logging
+    pod/lr-probe-nolimits created
+    $ kubectl get pod ... -o jsonpath='{.spec.containers[0].resources}'
+    {"limits":{"cpu":"500m","memory":"512Mi"},
+     "requests":{"cpu":"10m","memory":"32Mi"}}      <- default injected
+
+  The quota renders as `limits.cpu`/`limits.memory` (tenancy.py), and Kubernetes
+  turns a `limits.*` quota into an admission requirement on every container.
+
+  $ kubectl get resourcequota -n acme-dev-logging
+    capsule-acme-dev-0  map[limits.cpu:16 limits.memory:64Gi pods:199]
+
+  None of the four tenant add-on values files (kube-prometheus-stack, loki,
+  tempo, argo-rollouts) sets limits — the only `limits:` under
+  infra/onprem/addons/values/ belongs to capsule itself, which runs in
+  capsule-system. So every tenant workload depends on these defaults. So does
+  `verify_tenant_isolation.py`, whose probe pods set requests only.
+
+  Where it would surface: a chart whose pods are refused at admission still
+  leaves the Argo Application reading Synced, with zero pods (Open Risk 8).
+
+
+2. Does Capsule reclaim its own LimitRange when the field is removed?
+----------------------------------------------------------------------
+Yes — asked the API server instead of reading the docs.
+
+  $ kubectl patch tenant acme-dev --type=json \
+        -p='[{"op":"remove","path":"/spec/limitRanges"}]'
+  tenant.capsule.clastix.io/acme-dev patched
+
+  ~8s later, all four acme LimitRanges are gone; globex (still declaring the
+  field at that point) keeps its own:
+
+    NAMESPACE                  NAME
+    globex-dev-observability   capsule-globex-dev-0
+
+  So the two mechanisms never overlap: Capsule cleans up as we take over.
+
+  And with them gone, the admission requirement bites for real:
+
+    $ kubectl apply -f nolimits-pod.yaml
+    Error from server (Forbidden): pods "lr-probe-nolimits" is forbidden:
+    failed quota: capsule-acme-dev-0: must specify limits.cpu for: c;
+    limits.memory for: c
+
+  This is the state the removal release would have left us in, silently.
+
+
+3. Does the directly-rendered LimitRange work, and does Capsule leave it alone?
+--------------------------------------------------------------------------------
+  $ kubectl apply -f - < render_tenancy.py acme -e dev
+    limitrange/acme-defaults created        (x4, one per tenant namespace)
+  $ kubectl apply -f nolimits-pod.yaml
+    pod/lr-probe-nolimits created
+  $ ... -o jsonpath='{.spec.containers[0].resources.limits}'
+    {"cpu":"500m","memory":"512Mi"}          <- admitted again
+
+  Capsule's webhook stamps its own labels onto our object:
+
+    capsule.clastix.io/managed-by=acme-dev, projectcapsule.dev/tenant=acme-dev
+
+  That label is why "it survived for a minute" was not accepted as an answer —
+  an object Capsule believes it manages is an object Capsule might prune. The
+  strongest available test is a full resync, so the controller was restarted:
+
+    $ kubectl rollout restart deploy/capsule-controller-manager -n capsule-system
+    deployment "capsule-controller-manager" successfully rolled out
+
+    t+15s .. t+120s : LimitRange count = 5, probe pod Running   (8 samples)
+
+  All five survive (4 acme + 1 globex), across a controller that started from
+  scratch with no Tenant declaring `limitRanges`.
+
+
+4. Side effect: the deprecation warnings are now gone entirely
+----------------------------------------------------------------
+    $ kubectl apply -f <rendered acme/dev>  2>apply.err
+    $ wc -c < apply.err
+    0
+
+  Both deprecated fields have now left the Tenant spec (`additionalMetadata` on
+  2026-07-28, `limitRanges` here), so applying a tenant writes nothing to stderr.
+
+  This retires the *example* behind `test_tenancy_tools.py::CAPSULE_WARNINGS` but
+  not the behaviour it guards — kubectl warns from many sources, and any of them
+  re-creates the original bug (warning-only stderr read as a failed step). The
+  fixture is now labelled HISTORICAL rather than quietly refreshed to something
+  nobody observed; the guard against these two fields returning lives in
+  test_tenancy.py, where it asserts the renderer instead of a string.
+
+
+Guards added (both falsified individually)
+--------------------------------------------
+  test_the_deprecated_capsule_field_is_gone
+      remove-and-restore: putting `limitRanges` back ->
+      "AssertionError: the deprecated field is back"
+
+  test_a_limits_quota_is_never_rendered_without_the_defaults_that_satisfy_it
+      DERIVED, not enumerated: for every tenant/env whose rendered quota names a
+      `limits.` resource, every rendered Namespace must have a LimitRange with
+      container defaults. Dropping the emit ->
+      "acme/dev: quota declares ['limits.cpu','limits.memory','pods'] but
+       ['acme-dev-logging',...] get no container defaults"
+      A namespace added later without defaults fails the same way — which is the
+      part an enumerated guard would have missed (the D36/D37 lesson).
+
+
+Reproduce
+-----------
+  kubectl apply -f - <<< "$(python scripts/render_tenancy.py acme -e dev)"
+  kubectl get limitrange -A --show-labels
+  kubectl get tenant acme-dev -o jsonpath='{.spec.limitRanges}'   # empty

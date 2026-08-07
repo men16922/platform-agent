@@ -114,10 +114,60 @@ class TestQuotaIsATenantBound:
             "an empty ResourceQuota reads as 'bounded' while bounding nothing"
         )
 
-    def test_limitrange_default_exists_so_the_quota_means_something(self, acme):
-        """Without a per-container default, one workload can eat the whole tenant quota."""
-        limits = render_capsule_tenant(acme, "dev", owner="x")["spec"]["limitRanges"]["items"][0]["limits"][0]
-        assert limits["default"]["cpu"] and limits["defaultRequest"]["cpu"]
+    def test_the_deprecated_capsule_field_is_gone(self, acme):
+        """`limitRanges` is deprecated; the defaults are rendered as objects instead.
+
+        Asserted by field name for the same reason as `additionalMetadata` below:
+        Capsule ignores unknown spec fields rather than rejecting them, so leaving
+        it here would eventually mean defaults that are declared and never placed.
+        """
+        spec = render_capsule_tenant(acme, "dev", owner="x")["spec"]
+        assert "limitRanges" not in spec, (
+            "the deprecated field is back; see render_limit_ranges for why it left"
+        )
+
+    def test_a_limits_quota_is_never_rendered_without_the_defaults_that_satisfy_it(
+        self, registry
+    ):
+        """A `limits.*` quota is an admission requirement, so the defaults are load-bearing.
+
+        Derived from the render rather than enumerated: whenever the Capsule quota
+        names a `limits.` resource, EVERY namespace in the same render must carry a
+        LimitRange with container defaults. Measured on kind with them absent
+        (docs/evidence/capsule-limitranges-direct.log):
+
+            pods "lr-probe-nolimits" is forbidden: failed quota: must specify
+            limits.cpu for: c; limits.memory for: c
+
+        None of the add-on values files sets limits, so this is every tenant
+        workload, and the symptom hides: pods refused at admission still leave the
+        Argo Application reading Synced (STATUS Open Risk 8).
+        """
+        for tenant_name in registry.tenants:
+            for env_name in registry.tenant(tenant_name).environments:
+                objects = render_tenancy(registry, tenant_name, env_name, owner="x")
+                quotas = [o for o in objects if o["kind"] == "Tenant"]
+                if not quotas:
+                    continue
+                hard = quotas[0]["spec"]["resourceQuotas"]["items"][0]["hard"]
+                if not any(key.startswith("limits.") for key in hard):
+                    continue
+
+                namespaces = {o["metadata"]["name"] for o in objects if o["kind"] == "Namespace"}
+                defaulted = {
+                    o["metadata"]["namespace"]
+                    for o in objects
+                    if o["kind"] == "LimitRange"
+                    and any(
+                        limit.get("default") and limit.get("defaultRequest")
+                        for limit in o["spec"]["limits"]
+                    )
+                }
+                assert namespaces <= defaulted, (
+                    f"{tenant_name}/{env_name}: quota declares {sorted(hard)} but "
+                    f"{sorted(namespaces - defaulted)} get no container defaults — "
+                    "every pod without explicit limits will be refused there"
+                )
 
     def test_pss_labels_ride_the_non_deprecated_metadata_field(self, acme):
         """`additionalMetadata` (singular) is deprecated; the list form replaces it.

@@ -79,12 +79,28 @@ CAPSULE_TENANT_LABEL = "capsule.clastix.io/tenant"
 #:     * DNS resolves under the same policy (policyTypes is [Ingress] only)
 #:   What is still missing is the claim this set actually licenses: that OUR
 #:   rendered policy shape isolates correctly — same-tenant reachable,
-#:   cross-tenant denied. `verify_tenant_isolation.py` exists for exactly that
-#:   and cannot run here, because acme/prod is the only env on `k3s-lab` and the
-#:   probe needs a second tenant on the same cluster to falsify anything.
-#:   Adding one is a registry change that provisions real namespaces and quota,
-#:   so it is the operator's call, not this file's. Until then k3s stays out:
-#:   enforcement proven, semantics unproven. See NEXT_PLAN.
+#:   cross-tenant denied. `verify_tenant_isolation.py` exists for exactly that.
+#:
+#:   This comment used to say the probe "cannot run here because acme/prod is the
+#:   only env on k3s-lab". That was true and was NOT the binding reason — it was
+#:   repeated in four files and none of them named the two that matter (D40,
+#:   docs/plans/2026-08-01-k3s-proven-substrate.md). Measured 2026-08-01:
+#:     * acme/prod subscribes ONE add-on, so it renders ONE namespace; the probe's
+#:       same-tenant leg needs two and exits before it ever looks at the peer.
+#:     * THE GATE IS CIRCULAR. The probe refuses to start unless
+#:       `network_policies_apply_to` is true, and that reads this very set — so a
+#:       candidate substrate fails the precondition no matter how the registry is
+#:       arranged. Promotion means flipping this set FIRST and reverting if the
+#:       probe disagrees. kind passed because kind was already inside; what the
+#:       probe actually performs is regression, not promotion.
+#:     * `k3s-lab` has no tenancy at all — no Capsule, no Flux, zero
+#:       NetworkPolicies, and `acme-prod-*` has never existed on that 20-day-old
+#:       cluster. Nothing reconciles it, so a registry edit provisions nothing,
+#:       and adding k3s here would protect zero workloads today.
+#:   k3s stays out: enforcement proven, semantics unproven, and the value is
+#:   entirely future value. Reopen the moment something actually runs on k3s-lab.
+#:   `tests/test_substrate_promotion_reachable.py` fails if anything is added here
+#:   whose claim the registry cannot falsify.
 PROVEN_ENFORCING_SUBSTRATES = frozenset({"kind"})
 
 #: Namespaces every tenant namespace still accepts ingress from.
@@ -302,6 +318,67 @@ def render_network_policies(
     return objects
 
 
+#: Per-container defaults for tenant namespaces. Kept next to the quota they serve,
+#: because they are only meaningful together — see ``render_limit_ranges``.
+_CONTAINER_DEFAULTS = {
+    "type": "Container",
+    "default": {"cpu": "500m", "memory": "512Mi"},
+    "defaultRequest": {"cpu": "50m", "memory": "64Mi"},
+}
+
+
+def render_limit_ranges(tenant: Tenant, env_name: str) -> list[dict[str, Any]]:
+    """Per-container defaults, one ``LimitRange`` per tenant namespace.
+
+    These are NOT cosmetic, and the live measurement is why this function exists as
+    an object rather than a Capsule ``Tenant`` field. ``render_capsule_tenant``
+    declares the quota in terms of ``limits.cpu``/``limits.memory``, and Kubernetes
+    turns that into an admission requirement: every container in the namespace must
+    state its own limits or be rejected. Measured on kind with the LimitRange
+    removed (docs/evidence/capsule-limitranges-direct.log):
+
+        pods "lr-probe-nolimits" is forbidden: failed quota: capsule-acme-dev-0:
+        must specify limits.cpu for: c; limits.memory for: c
+
+    None of the four add-on values files sets limits, so every tenant workload
+    depends on these defaults. The failure would also be invisible where it matters:
+    a chart whose pods are refused at admission still reports Synced with zero pods
+    (STATUS Open Risk 8).
+
+    Why not Capsule's ``spec.limitRanges``: that field is deprecated in favour of
+    Tenant Replications, and both replacements cost something this repo does not
+    want to pay — ``GlobalTenantResource`` is cluster-scoped (D30 forbids the agent
+    reaching past the tenant) and ``TenantResource`` needs a ServiceAccount plus
+    RBAC so Capsule can do the replicating on our behalf. Rendering the object
+    directly needs neither, because there is no deputy to authorise: the identity
+    that already creates this namespace's ServiceAccount, Role, RoleBinding and
+    NetworkPolicy can create a LimitRange. It is the same move this module already
+    made for ``spec.networkPolicies``, which is deprecated for the same reason.
+
+    What is given up is Capsule's reconciliation — delete this object and nothing
+    restores it. That is the identical trade already accepted for the
+    NetworkPolicies above, and the namespace set comes from ``namespaces_for``
+    either way, so a namespace cannot appear without one.
+    """
+    if tenant.isolation is not IsolationTier.SOFT:
+        raise UnsupportedTier(
+            f"{tenant.name} is {tenant.isolation.value}: its boundary is not the namespace"
+        )
+    return [
+        {
+            "apiVersion": "v1",
+            "kind": "LimitRange",
+            "metadata": {
+                "name": f"{tenant.naming_prefix}-defaults",
+                "namespace": namespace,
+                "labels": {TENANT_LABEL: tenant.name, ENV_LABEL: env_name},
+            },
+            "spec": {"limits": [dict(_CONTAINER_DEFAULTS)]},
+        }
+        for _capability, namespace in namespaces_for(tenant, env_name)
+    ]
+
+
 def service_account_owner(namespace: str, name: str) -> str:
     """Capsule's required owner spelling for a ServiceAccount.
 
@@ -347,16 +424,11 @@ def render_capsule_tenant(
             # scope: Tenant aggregates across the tenant's namespaces. Per-namespace
             # scope would multiply the declared bound by the namespace count.
             "resourceQuotas": {"scope": "Tenant", "items": [{"hard": hard}]},
-            "limitRanges": {"items": [{
-                "limits": [{
-                    "type": "Container",
-                    # A container with no limit can consume the whole tenant quota
-                    # on its own, so a default exists purely to make the quota
-                    # meaningful per-workload rather than first-come-first-served.
-                    "default": {"cpu": "500m", "memory": "512Mi"},
-                    "defaultRequest": {"cpu": "50m", "memory": "64Mi"},
-                }],
-            }]},
+            # NOTE: no `limitRanges` here. It is deprecated in favour of Tenant
+            # Replications, and the per-container defaults it used to carry are now
+            # rendered as plain LimitRange objects — see `render_limit_ranges` for
+            # why that beats both replacements. Capsule reclaims the LimitRanges it
+            # owns when this field disappears (measured), so the two never overlap.
             "namespaceOptions": {
                 # `additionalMetadata` (singular) is deprecated in favour of this
                 # list form. Migrated because of *how* that deprecation will
@@ -414,6 +486,12 @@ def render_tenancy(
     if capsule is not None:
         objects.append(capsule)
     objects.extend(render_namespaces(tenant, env_name))
+    # After the namespaces, before anything that runs in them: the quota above only
+    # admits containers that state limits, and these supply the defaults that let
+    # them. Emitted whenever a Capsule Tenant was emitted, because that is exactly
+    # when a `limits.*` quota exists to satisfy.
+    if capsule is not None:
+        objects.extend(render_limit_ranges(tenant, env_name))
     objects.extend(render_rbac(tenant, env_name, service_account=service_account))
     if include_network_policies and network_policies_apply_to(tenant, env_name):
         objects.extend(render_network_policies(tenant, env_name))

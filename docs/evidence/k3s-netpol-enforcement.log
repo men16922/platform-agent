@@ -90,3 +90,42 @@ Reproduce
   sed -i '' 's#https://127.0.0.1:6443#https://192.168.2.2:6443#' k3s.yaml
   KUBECONFIG=k3s.yaml python scripts/verify_netpol_enforcement.py
   KUBECONFIG=k3s.yaml bash scripts/probe_netpol_side_effects.sh
+
+
+================================================================================
+FOLLOW-UP 2026-08-01 — the reason recorded above was true and not the binding one
+================================================================================
+Everything measured above still holds. What does NOT hold is the section "Why k3s
+is still NOT in PROVEN_ENFORCING_SUBSTRATES", which named ONE blocker (no peer
+tenant on k3s-lab) and priced it as an infrastructure decision. Measured:
+
+  $ python scripts/verify_tenant_isolation.py --tenant acme --env prod \
+        --peer-tenant globex --peer-env prod
+  ERROR: acme/prod has 1 namespace(s); the same-tenant leg needs two
+
+  It stops before it ever looks at the peer. acme/prod subscribes one add-on, so
+  it renders one namespace, and the same-tenant leg has no second endpoint.
+
+  With that AND the peer removed from the equation (temp registry, measured):
+    targets(acme/prod) = ['acme-prod-logging', 'acme-prod-observability'] -> ok
+    peers(globex/prod) = ['globex-prod-observability']                    -> ok
+    network_policies_apply_to(acme,'prod') = False                        -> exit 2
+
+  THE GATE IS CIRCULAR. The probe that decides whether a substrate belongs in the
+  set refuses to run unless the substrate is already in the set. kind passed
+  because kind was already inside; the probe has never promoted anything, it has
+  regression-tested one member.
+
+  And the cost was priced wrong in the other direction. Live on k8s-lab (20d up):
+    kubectl get ns          -> default, kube-node-lease, kube-public, kube-system
+    kubectl get netpol -A   -> No resources found
+    kubectl get crd | grep capsule|flux -> none (argoproj CRDs only, 26 total)
+    non-kube-system pods    -> none
+  `acme-prod-*` has never existed. Nothing reconciles this cluster, so a registry
+  edit provisions nothing — and adding k3s to the set today would emit policies
+  for namespaces that do not exist, protecting zero workloads.
+
+Decision: DECISIONS.md D40 — stays out, for reasons ③ and ④ rather than ②.
+Guard: tests/test_substrate_promotion_reachable.py (a membership claim must be
+falsifiable with the registry as it stands; adding k3s makes it red).
+Investigation: docs/plans/2026-08-01-k3s-proven-substrate.md.
