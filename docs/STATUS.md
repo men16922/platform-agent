@@ -8,19 +8,19 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` → **1676 passed, 1 skipped** (2026-08-08, +8, **로컬·CI 일치**) — **커밋을 경로에
+  한정**: `attach_addon.py`가 시키던 `git commit -am`은 **수정된 모든 추적 파일**을 담아, "한
+  파일만" 불변식을 세우려는 도구가 **자기 지시로 그걸 깨는 경로**를 들고 있었다. 반증 3+2건 red.
+  ⚠️**깨끗한 트리에선 `-a`와 `-- <path>`가 구별되지 않는다** — 가드는 **일부러 더럽힌 채** 잰다.
 - **CI와 로컬이 이제 같은 숫자다 — 그 전엔 아니었다**(2026-08-08) — CI **1666/3** ↔ 로컬
-  **1668/1**, 넘어간 둘이 하필 `test_terraform_validate_passes` 2종(=배포하는 IaC 검증).
-  `skipif`가 `미설치 **OR** 미초기화`인데 러너가 둘 다 만족(`.terraform/`는 gitignore →
-  **설치만 해도 skip**). `gate.yml`에 terraform 1.15.8 핀 + init → CI **1668/1**, 둘 다 PASSED.
-  증거 `docs/evidence/ci-terraform-validate-skipped.log` · → Risk 12②.
-- `make check` → **1668 passed, 1 skipped** (2026-08-08, +17, **로컬·CI 일치**) — **Phase 5 경계**:
-  테넌트 파일 헤더가 Phase 0부터 "이 흐름은 오직 이 파일만 PR한다"고 적어 뒀는데 **반증할
-  수단이 0**이었다. `registry_write` = **텍스트로 편집·의미로 검증**(주석이 자산이라 YAML
-  재직렬화 금지 → 재파싱해 **키 하나만** 바뀌었는지 비교). 반증 4종 red.
+  **1668/1**이고, 넘어간 둘이 하필 terraform 검증 2종이었다(`skipif`의 두 절을 러너가 다 만족
+  — `.terraform/`가 gitignore라 **설치만 해도 skip**). 증거
+  `docs/evidence/ci-terraform-validate-skipped.log` · → Risk 12②.
+- `make check` → **1668** (2026-08-08, +17) — **Phase 5 경계**: 헤더가 Phase 0부터 "이 흐름은
+  오직 이 파일만 PR한다"고 적어 뒀는데 **반증할 수단이 0**이었다. 반증 4종 red.
   ⚠️**안전망을 통째로 지워도 14개가 초록**이었다 — 전부 행복 경로만 태웠다(→ Risk 12③).
-- **`main` 브랜치 보호 = 집행 확인**(2026-08-08) — PR 필수 + `check` 통과 필수, 관리자 포함.
-  직접 push가 실제로 `[remote rejected]` 되는 것까지 보고, PR #1로 CI→병합 흐름을 완주했다.
-  **code-owner 리뷰는 일부러 껐다**(1인 레포=만족 불가) → D43.
+- **`main` 브랜치 보호 = 집행 확인**(2026-08-08) — PR + `check` 필수(관리자 포함). 직접 push가
+  실제로 `[remote rejected]` 되는 것까지 봤다. **code-owner 리뷰는 일부러 껐다** → D43.
 - **실 AWS 왕복**(2026-08-08, gate 무관 — 프로브) — 인시던트 속성 6종이 실
   `incident-history`를 왕복해 **타입까지 보존**됨(`confidence`=`Decimal`). **모킹으로는
   원리상 못 잡는 검증**이다. **남은 한 칸**: 대시보드 TS 리더 미검증.
