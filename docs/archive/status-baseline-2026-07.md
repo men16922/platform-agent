@@ -165,3 +165,11 @@
   `typeof === "number"`가 참이 된다. **모킹으로는 원리상 못 잡는 검증**(목은 float를 받고,
   실제로는 boto3 예외가 `except`에 잡혀 행이 통째로 사라진다).
   `scripts/probe_incident_roundtrip.py` · 증거 `docs/evidence/incident-fields-dynamo-roundtrip.log`.
+
+- `make check` → **1668** (2026-08-08, +17) — **Phase 5 경계**: 헤더가 Phase 0부터 "이 흐름은
+  오직 이 파일만 PR한다"고 적어 뒀는데 **반증할 수단이 0**이었다. 반증 4종 red.
+  ⚠️**안전망을 통째로 지워도 14개가 초록**이었다 — 전부 행복 경로만 태웠다(→ `STATUS` Risk 12③).
+  상세 → `archive/progress-2026-08.md`("Phase 5의 경계부터").
+- **실 AWS 왕복**(2026-08-08, gate 무관 — 프로브) — 인시던트 속성 6종이 실 `incident-history`를
+  왕복해 **타입까지 보존**됨(`confidence`=`Decimal`). **모킹으로는 원리상 못 잡는 검증**이다.
+  ⚠️**남은 한 칸(열린 항목)**: 대시보드 TS 리더 미검증.

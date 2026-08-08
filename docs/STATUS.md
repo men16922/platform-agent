@@ -1,6 +1,6 @@
 # STATUS — platform-agent
 
-최종 갱신: 2026-08-08
+최종 갱신: 2026-08-09
 
 > 현재 구현 상태 / 검증 baseline / active focus / open risks. **≤120줄** 유지.
 
@@ -8,6 +8,12 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` → **1685 passed, 1 skipped** (2026-08-09, +9) — **managed 백엔드를 세 경로가 다르게
+  알고 있었다**: 읽기는 알아보고(`from_managed`), 쓰기는 만들 수 없고, **렌더는 몰랐다** —
+  `desired_addons`가 백엔드를 Helm 차트 이름으로 넘겨 `logging: cloudwatch-logs`가 **Grafana
+  저장소에서 그 이름의 차트를 찾게** 된다(라이브 실증). `ManagedBackendNotRenderable`로 거부하고
+  `is_managed`를 **collector와 같은 콜러블**로 받는다. 반증 2건 red. ⚠️막히지 않는 조합은
+  **네임스페이스 스코프 + managed**뿐이다(클러스터 스코프는 싱글턴 가드가 잡되 **안내가 틀린다**).
 - `make check` → **1676 passed, 1 skipped** (2026-08-08, +8, **로컬·CI 일치**) — **커밋을 경로에
   한정**: `attach_addon.py`가 시키던 `git commit -am`은 **수정된 모든 추적 파일**을 담아, "한
   파일만" 불변식을 세우려는 도구가 **자기 지시로 그걸 깨는 경로**를 들고 있었다. 반증 3+2건 red.
@@ -16,15 +22,9 @@
   **1668/1**이고, 넘어간 둘이 하필 terraform 검증 2종이었다(`skipif`의 두 절을 러너가 다 만족
   — `.terraform/`가 gitignore라 **설치만 해도 skip**). 증거
   `docs/evidence/ci-terraform-validate-skipped.log` · → Risk 12②.
-- `make check` → **1668** (2026-08-08, +17) — **Phase 5 경계**: 헤더가 Phase 0부터 "이 흐름은
-  오직 이 파일만 PR한다"고 적어 뒀는데 **반증할 수단이 0**이었다. 반증 4종 red.
-  ⚠️**안전망을 통째로 지워도 14개가 초록**이었다 — 전부 행복 경로만 태웠다(→ Risk 12③).
 - **`main` 브랜치 보호 = 집행 확인**(2026-08-08) — PR + `check` 필수(관리자 포함). 직접 push가
   실제로 `[remote rejected]` 되는 것까지 봤다. **code-owner 리뷰는 일부러 껐다** → D43.
-- **실 AWS 왕복**(2026-08-08, gate 무관 — 프로브) — 인시던트 속성 6종이 실
-  `incident-history`를 왕복해 **타입까지 보존**됨(`confidence`=`Decimal`). **모킹으로는
-  원리상 못 잡는 검증**이다. **남은 한 칸**: 대시보드 TS 리더 미검증.
-- (이전 baseline — gate **1636 이하** / 2026-07-10~08-08 → `docs/archive/status-baseline-2026-07.md`
+- (이전 baseline — gate **1668 이하** / 2026-07-10~08-08 → `docs/archive/status-baseline-2026-07.md`
   (서명키 회전 1636 · 픽스처 만료 1618 포함) · `docs/archive/progress-2026-08.md` ·
   `COMPLETED_SUMMARY` M13·M14.)
 
@@ -46,9 +46,9 @@
 
 ## Active Focus
 
-**남은 건 Phase 4(billable, 별 승인)뿐이다.** 무과금·무승인으로 열린 작업은 소진됐다.
-Phase 0·1a·1b·2·3 완결(M10~M12) · 잔여 소진(M13) · 결정 7건 닫힘(D36·D38~D43) ·
-공급망 0→집행 + Phase 5 경계 + `main` 보호(M15).
+**Phase 4는 산정까지 끝났고 남은 건 사용자 결정이다**(→ `docs/plans/2026-08-08-phase4-scope-and-cost.md`):
+**4a**(관리형 어댑터, 원격 클러스터 불요) ≈$5/월 · **4b**(원격 클러스터+DR) ≈$185/월 ·
+**$0 선행 둘**(상시 발화 중인 ₩20 예산 재보정 · 결제 내보내기)은 **콘솔 수동이라 사용자 몫**.
 
 **과대 해석 금지(현재 유효한 것만)**
 - 스코프·배포 신원 · 이미지 서명 배포 게이트는 전부 **옵트인**(→ Risk 3·6).

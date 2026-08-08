@@ -62,6 +62,20 @@
 증명하는 데 원격 클러스터가 반드시 필요하지는 않다** — AMP는 `remote_write` 수신자라
 **지금 있는 로컬 kind/k3s가 그대로 소스가 될 수 있다.** 두 반쪽의 비용이 한 자릿수 배 차이난다.
 
+> **범위 정정(2026-08-09)**: 4a의 코드는 **거의 다 있었다.** `from_managed`
+> (`applicable=False`)도 `collector.py`의 managed 분기도 이미 서 있다 — 설계 문서가 Phase 2에서
+> faked 디스크립터로 증명하라던 것이 실제로 되어 있었다. §1의 *"managed 어댑터 구현 없다"*는
+> 부정확했다. 실제로 비어 있던 것은 **렌더 경로 하나**이고, 그건 고쳤다(아래).
+>
+> **찾은 구멍**: 세 경로가 managed를 다르게 알고 있었다 — 읽기는 알아보고, 쓰기는 만들 수 없고
+> (`registry_write`가 `managed=True` 없이 해석), **렌더는 몰랐다**. `desired_addons`가 백엔드를
+> Helm 차트 이름으로 그대로 넘겨서, `logging: cloudwatch-logs`를 선언하면 GitOps가
+> **Grafana 차트 저장소에서 `cloudwatch-logs` 차트를 찾는다**(라이브 실증). `observability`는
+> 클러스터 스코프라 기존 싱글턴 가드가 먼저 잡지만 **안내가 틀린다**("Prometheus CR을 주라" —
+> 관리형엔 설치할 것이 없다). 막히지 않는 건 **네임스페이스 스코프 + managed** 조합
+> (`logging`·`tracing`)이다. → `ManagedBackendNotRenderable`로 거부(gate 1685).
+> **무엇을 렌더해야 하는지는 일부러 발명하지 않았다** — 그건 Phase 4 결정이다.
+
 ### 4a — Managed 어댑터 1종 (원격 클러스터 없음)
 
 `observability` 능력을 **AMP(amazon-managed-prometheus)** 백엔드로 렌더하고, 로컬 클러스터의

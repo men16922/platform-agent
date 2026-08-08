@@ -30,6 +30,27 @@ class ClusterSingletonCapability(ValueError):
     """
 
 
+class ManagedBackendNotRenderable(ValueError):
+    """Raised when a managed backend is handed to a GitOps delivery engine.
+
+    The three paths disagreed about managed backends and only this one was wrong:
+    the collector already recognises them (`from_managed`, `applicable=False`), and
+    `registry_write` cannot produce one (it resolves `backend_for(...)` without
+    `managed=True`). Delivery, though, passes the backend straight through as a
+    Helm chart name — so a hand-written `observability: amazon-managed-prometheus`
+    would have GitOps chase a chart that does not exist in the self-hosted repo.
+
+    An error rather than a silent skip, for the same reason as the singleton guard
+    above: dropping it quietly makes a declared add-on vanish from the render with
+    no signal, which is indistinguishable from delivery lag.
+
+    **What a managed backend *should* render is deliberately not invented here.**
+    It is a Phase 4 design decision (AMP configures `remote_write` on an existing
+    Prometheus; Config Sync is a different shape entirely), and guessing would put
+    a second answer next to the one Phase 4 eventually picks.
+    """
+
+
 @dataclass(frozen=True)
 class DesiredAddon:
     """One (tenant, env, capability) the delivery engine must reconcile."""
@@ -146,6 +167,7 @@ def desired_addons(
     wave_of: Any,
     scope_of: Any = None,
     values_of: Any = None,
+    is_managed: Any = None,
 ) -> list[DesiredAddon]:
     """
     Expand a tenant/env's declared add-ons into DesiredAddon records, wave-sorted.
@@ -154,6 +176,11 @@ def desired_addons(
     ``scope_of`` is (capability -> "cluster"|"namespace"), normally
     ``Registry.scope_of``; omitted, every add-on is treated as namespace-scoped,
     which is only safe for callers that are not about to install anything.
+    ``is_managed`` is (capability, backend -> bool), normally
+    ``Registry.is_managed_backend`` — the same callable the collector already
+    takes, so the read and render paths answer "is this managed?" the same way
+    instead of growing two answers. Omitted, no add-on is treated as managed,
+    which matches today's registry (no tenant declares one).
     Sorting here means every adapter receives the same order regardless of the
     mapping order in YAML.
     """
@@ -162,6 +189,15 @@ def desired_addons(
         parts = declared.split()
         backend = parts[0] if parts else capability
         version = parts[-1] if len(parts) > 1 else None
+        if is_managed and is_managed(capability, backend):
+            raise ManagedBackendNotRenderable(
+                f"{tenant.name}/{env.name} declares {capability}={backend!r}, which the "
+                "catalog lists as a managed backend. A GitOps engine has nothing to "
+                "install for it — passing it through would make the engine chase a Helm "
+                f"chart named {backend!r} that the self-hosted repo does not publish. "
+                "The collector already reports managed backends as applicable=False; "
+                "what delivery should emit for one is a Phase 4 decision."
+            )
         expanded.append(
             DesiredAddon(
                 tenant=tenant.name,
