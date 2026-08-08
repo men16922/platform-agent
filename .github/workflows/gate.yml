@@ -1,0 +1,52 @@
+# The gate, run by a machine instead of only by whoever remembered.
+#
+# Until 2026-08-08 this repo had no CI at all — `.github/workflows/` did not
+# exist — while three documents described signature verification as running "CI
+# 까지". That claim was measured and removed; this file is the other half of the
+# fix, so the sentence can be true rather than deleted.
+#
+# `make check` is the same gate the overnight harness and the local Stop hook
+# use. It is required to be offline and deterministic, which is what makes it
+# runnable here at all.
+name: gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # tests/test_signature_gate_claims.py shells out to `git grep`, which
+          # needs a real work tree — not a detached blob export.
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      # Mirrors infra/onprem/Dockerfile rather than installing the `onprem`
+      # extra: that extra pulls mlx-lm, which is Apple-Silicon only and cannot
+      # resolve on a linux runner. The pieces the suite actually imports are
+      # pydantic-ai-slim and the ASGI stack.
+      - name: install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,state]" fastapi "uvicorn[standard]" pydantic-ai-slim[openai]
+
+      - name: lint
+        run: ruff check src/ tests/
+
+      - name: gate
+        run: make check

@@ -1,0 +1,105 @@
+# Build, publish and KEYLESSLY sign the platform-agent image.
+#
+# WHY KEYLESS. The open question after `make sign-image` was key custody: the
+# local path signs with a dev key that has an empty password, and a real
+# deployment needs somewhere safe to keep a signing key. Keyless answers it by
+# removing the key — cosign gets a short-lived certificate from Fulcio bound to
+# this workflow's OIDC identity, uses it, and throws it away. There is nothing
+# left to store, rotate, or leak. That is why "CI를 만들 것인가" and "키 custody"
+# were one decision, not two.
+#
+# WHAT BECOMES PUBLIC, PERMANENTLY. Keyless signing records the image digest, the
+# signing identity (this repo + workflow ref) and a timestamp in Rekor, the public
+# append-only transparency log. It cannot be withdrawn. This repo is already
+# public, so the identity is not new information — but the record is permanent, and
+# that is the trade keyless makes for having no key.
+#
+# NOT ON EVERY PUSH, ON PURPOSE. Publishing an image per commit fills a registry
+# with artifacts nobody asked for and puts the first publish outside anyone's
+# decision. This runs when a version tag is pushed, or when someone triggers it.
+name: sign-image
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write     # push to GHCR
+  id-token: write     # the OIDC token keyless signing is built on
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  build-sign-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: sigstore/cosign-installer@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The digest is taken from the push, not from a local inspect: what gets
+      # signed has to be what the registry actually holds. A locally-computed id
+      # can differ from the pushed manifest digest, and signing the wrong one
+      # produces a signature that verifies nowhere. Same reasoning as
+      # scripts/build_and_sign_image.sh.
+      - name: build and push
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/onprem/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE }}:${{ github.ref_name }}
+
+      # Sign the DIGEST. A tag is a mutable pointer, and re-pointing it makes
+      # verification fail with "no signatures found" — the live finding recorded
+      # in scripts/verify_image_signature.py's docstring.
+      - name: keyless sign
+        run: cosign sign --yes "${IMAGE}@${DIGEST}"
+        env:
+          IMAGE: ${{ env.IMAGE }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+
+      # Verified through this repo's own gate, not a second `cosign verify`.
+      # That script refuses to report "could not check" as "fine", and a separate
+      # check here would be a second place deciding what "verified" means.
+      #
+      # The identity is pinned to this exact workflow at this exact ref. Verifying
+      # against any identity accepts a signature from anyone who can reach Fulcio.
+      - name: verify through the repo's own gate
+        run: |
+          python scripts/verify_image_signature.py "${IMAGE}@${DIGEST}" \
+            --certificate-identity "${SERVER}/${REPO}/.github/workflows/sign-image.yml@${REF}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+        env:
+          IMAGE: ${{ env.IMAGE }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+          SERVER: ${{ github.server_url }}
+          REPO: ${{ github.repository }}
+          REF: ${{ github.ref }}
+
+      - name: report what to pin
+        run: |
+          echo "### signed image" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "${IMAGE}@${DIGEST}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "Deploy what was verified by pinning the digest:" >> "$GITHUB_STEP_SUMMARY"
+          echo '`--set image.repository='"${IMAGE}"' --set image.digest='"${DIGEST}"'`' >> "$GITHUB_STEP_SUMMARY"
+        env:
+          IMAGE: ${{ env.IMAGE }}
+          DIGEST: ${{ steps.push.outputs.digest }}

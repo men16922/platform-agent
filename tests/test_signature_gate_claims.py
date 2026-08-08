@@ -39,9 +39,16 @@ the ordering that made them findings:
   * the chart's `image.digest` stays empty, because a digest committed here is a
     claim about an image nobody else has.
 
-Still absent on purpose, and not to be over-read: there is no CI, the key is a
-local-dev key with an empty password, and nothing enforces signatures at
-admission. See STATUS Risk 6.
+CI arrived the same day (`.github/workflows/gate.yml` runs the gate,
+`sign-image.yml` builds, publishes and signs **keylessly** — which answers key
+custody by removing the key: cosign gets a short-lived Fulcio certificate bound to
+the workflow's OIDC identity and discards it).
+
+Still not to be over-read: signing on the deploy path is opt-in
+(`PLATFORM_REQUIRE_SIGNED_IMAGES`) and covers one on-prem entry point, the local
+`make sign-image` key is still a dev key with an empty password, `sign-image.yml`
+runs only on a version tag or a manual trigger, and **nothing enforces signatures
+at admission** — the API server still accepts unsigned images. See STATUS Risk 6.
 """
 
 from __future__ import annotations
