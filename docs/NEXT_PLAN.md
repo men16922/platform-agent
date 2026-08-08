@@ -133,10 +133,15 @@ deploy-identity`. 미설정이면 예전처럼 인시던트는 거부, 배포는
   found`) — 호스트 `cosign verify`는 같은 다이제스트에 VERIFIED이고 서명 아티팩트도 레지스트리에
   실재하는데도. ⚠️**첫 시도는 성공처럼 보였다**: 미서명이 거부됐는데 사유가 `connection refused`
   였고, **서명된 것도 같은 이유로 거부**됐다 — 미서명만 돌려 봤으면 "동작한다"고 잘못 적었을
-  것이다. 원인 추정(**미검증**): cosign은 manifest **list**에 서명했고 policy-controller는
-  플랫폼별 manifest를 검증하는 듯하다. **그래서 승인 질문이 바뀐다** — "policy controller를
-  넣어도 되는가"가 아니라 **"우리가 서명하는 것과 어드미션이 검증하는 것이 같은가"**가 선행이다.
-  증거 `docs/evidence/cosign-admission-kind-attempt.log`.
+  것이다. **원인 확정**: 멀티아치 가설은 **반증**됐고(자식 manifest에 서명해도 동일), 진짜 원인은
+  **cosign v3와 policy-controller가 서명을 서로 다른 곳에 둔다**는 것이다 — cosign **v3.1.2**는
+  **Sigstore bundle**을 `sha256-<digest>` 태그에 쓰고, policy-controller **0.13.1**은 cosign v2의
+  `sha256-<digest>`**`.sig`** 태그를 찾는다. 그 태그는 없다. `--registry-referrers-mode=legacy`도
+  되돌리지 못한다. ⚠️**핵심**: 우리 게이트는 같은 이미지에 **VERIFIED**를 준다(같은 cosign v3를
+  부르니까) — 즉 **"검증됨"이 도구마다 다르고, 우리 게이트는 이 불일치를 원리상 못 본다.**
+  클러스터는 우리가 통제하지 않는 자기 검증기를 갖고 있다.
+  **닫는 법(택1, 승인 사항 — 코드가 아니라 버전 선택)**: ①cosign **v2**로 서명 ②Sigstore bundle을
+  읽는 policy-controller로 업그레이드. 증거 `docs/evidence/cosign-admission-kind-attempt.log`.
   → `STATUS` Risk 6·13, 가드 `tests/test_signature_gate_claims.py`·`test_image_trust.py`.
 
 ## 유지 규약 (완료된 리팩토링에서 나온 "하지 말 것")

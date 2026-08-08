@@ -146,7 +146,13 @@
    다이제스트를 커밋하면 아무도 못 가진 이미지에 대한 주장이 된다) ⓓ**어드미션 집행은 여전히
    미도입** — policy controller = 새 클러스터 의존성이고, 실패 모양이 Risk 8이다
    ⓔ**배포 게이트는 옵트인**(`PLATFORM_REQUIRE_SIGNED_IMAGES`, 미설정=검사 0)이고 **온프렘
-   진입점 하나**만 덮는다 — 클라우드 3종과 ArgoCD가 직접 당기는 이미지는 지나가지 않는다.
+   진입점 하나**만 덮는다 — 클라우드 3종과 ArgoCD가 직접 당기는 이미지는 지나가지 않는다
+   ⓕ**어드미션은 kind에서 시도했고 막혔다(2026-08-08)**: policy-controller는 서고 **거부도
+   하는데**, **우리가 서명한 이미지도 거부한다**. 원인 확정 — **cosign v3.1.2는 Sigstore bundle을
+   `sha256-<digest>`에 쓰고 policy-controller 0.13.1은 `…\.sig`를 찾는다**. ⚠️**우리 게이트는
+   같은 이미지에 VERIFIED를 준다**(같은 cosign을 부르니까) → **"검증됨"이 도구마다 다르고 우리는
+   그 불일치를 원리상 못 본다.** 닫는 법은 **버전 선택**(cosign v2로 서명 / policy-controller
+   업그레이드)이라 승인 사항이다. 증거 `docs/evidence/cosign-admission-kind-attempt.log`.
    가드 `tests/test_signature_gate_claims.py`·`tests/test_image_trust.py`.
    **있는 보증을 과대 해석하지 말 것.**
 7. **TS 타입은 네트워크 데이터를 보증하지 않는다** — 라이브에서 페이지가 `posture.namespaces.length`로

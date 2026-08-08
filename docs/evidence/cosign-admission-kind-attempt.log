@@ -63,21 +63,42 @@ Cosign 어드미션 집행 — kind 실측 시도, 2026-08-08
       ... sha256-510619af072cb00fcbfbccca9856dfb04cf465b79b86ca34275331df0f541cf0
 
 --------------------------------------------------------------------------------
-4. 원인 — 측정된 것과 추정인 것을 구분한다
+4. 원인 — 확정됨 (멀티아치 가설은 반증됐다)
 --------------------------------------------------------------------------------
 
-**측정된 것**: 서명은 존재하고 호스트 cosign은 찾는다. policy-controller는 같은
-레지스트리·같은 다이제스트에서 못 찾는다.
+**처음 세운 가설: 멀티아치 인덱스 → 반증.** `510619af`가 manifest list이고
+policy-controller가 자식 manifest를 볼 것이라 추정했다. 그래서 자식
+`3dbb1b19`에도 서명하고 인덱스로 다시 요청했다 → **여전히 no signatures found**.
+자식을 **직접** 요청해도 마찬가지였다. 인덱스 문제가 아니다.
 
-**추정(미검증)**: `510619af`는 `docker build` 출력상 **manifest list**(멀티아치
-인덱스)이고, 같은 빌드가 `3dbb1b19`(image manifest)와 `9f7331ee`(attestation
-manifest)도 만들었다. cosign은 내가 가리킨 **인덱스**에 서명했고, policy-controller는
-노드가 실제로 돌릴 **플랫폼별 manifest**를 해석해 그 다이제스트의 서명을 찾는지도
-모른다. 그렇다면 서명 대상과 검증 대상이 어긋난다.
+**확정된 원인: cosign v3와 policy-controller가 서명을 서로 다른 곳에 둔다.**
 
-**이건 확인하지 않았다.** 확인하는 법: 단일 플랫폼으로 빌드하거나
-(`--provenance=false --platform linux/amd64`) 인덱스가 가리키는 각 manifest에
-서명해 보고 판정이 바뀌는지 본다.
+  $ cosign version → v3.1.2
+  $ curl .../v2/platform-agent/tags/list
+    → sha256-510619af...   (.sig 접미사 **없음**)
+      sha256-3dbb1b19...
+  $ curl .../manifests/sha256-3dbb1b19...
+    {"mediaType":"application/vnd.oci.image.index.v1+json","manifests":[
+      {"artifactType":"application/vnd.dev.sigstore.bundle.v0.3+json"}, ...]}
+
+cosign **v3**는 서명을 **Sigstore bundle**(`application/vnd.dev.sigstore.bundle.v0.3+json`)
+로 `sha256-<digest>` 태그에 쓴다. policy-controller **0.13.1**은 cosign **v2**의
+레거시 배치 — `sha256-<digest>`**`.sig`** 태그 안의 simplesigning — 를 찾는다.
+그 태그는 **존재하지 않는다**. 그래서 "no signatures found"는 정직한 답이었다.
+
+`--registry-referrers-mode=legacy`로 다시 서명해 봐도 `.sig` 태그는 생기지 않았다.
+cosign v3에서는 그 옵션이 이 차이를 되돌리지 못한다.
+
+**여기서 가장 중요한 것.** 우리 게이트(`scripts/verify_image_signature.py`)는 같은
+이미지에 **VERIFIED**를 준다 — 그 스크립트가 서명을 쓴 바로 그 cosign v3를 호출하기
+때문이다. 즉 **"검증됨"이 도구마다 다르다**. 우리 쪽 도구 하나로 판정을 통일해 둔
+설계는 옳았지만, **클러스터는 우리가 통제하지 않는 자기 검증기를 갖고 있다**.
+우리 게이트는 이 불일치를 원리상 볼 수 없다.
+
+**닫는 법(택1, 미실행)**:
+  ① 서명을 cosign v2로 하거나(레거시 배치 생성)
+  ② Sigstore bundle을 읽는 policy-controller로 올린다
+  둘 다 버전 선택이라 승인 사항이다 — 코드 문제가 아니다.
 
 --------------------------------------------------------------------------------
 5. 그래서 무엇을 주장할 수 있나
