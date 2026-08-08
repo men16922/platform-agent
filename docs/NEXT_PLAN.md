@@ -42,7 +42,17 @@ Env=cluster(멀티클라우드), Delivery=ArgoCD|Flux|Config Sync 어댑터, SSO
 deploy-identity`. 미설정이면 예전처럼 인시던트는 거부, 배포는 ambient). **Phase 0·1a·1b·2·3
 = 완결**(M10~M12) + **잔여 14건 소진**(M13).
 
-- [ ] **Phase 4**(managed 어댑터, billable)·**5**(레지스트리 PR 쓰기) = 다음 후보.
+- [ ] **Phase 5 = 경계 부분 착수(2026-08-08)** — UI가 아니라 **"PR이 그 테넌트 파일 하나만
+  건드릴 수 있다"**를 먼저 세웠다(Phase 0부터 모든 테넌트 파일 헤더가 적어 두고 **아무것도
+  반증하지 못하던 문장**). `registry_write.plan_addon_attachment` — **텍스트로 편집하고 의미로
+  검증**한다: 이 파일들은 대부분이 주석이고 그 주석이 이 레포가 재발견에 값을 치른 근거라
+  YAML 재직렬화는 전부 지운다. 그래서 삽입은 외과적이고, **결과를 다시 파싱해 원본과 비교**해
+  더 바뀐 게 있으면 거부한다. 테넌트 이름은 **경로가 되기 전에** 검증한다(`../globex` 거부).
+  `scripts/attach_addon.py`(기본 dry-run) · `.github/CODEOWNERS`(경로 스코프).
+  **아직 아닌 것**: 대시보드 UI · 실제 PR 생성(외부 동작이라 조작자에게 남김) ·
+  ⚠️**CODEOWNERS는 리뷰어 지정일 뿐 아무것도 막지 않는다**(브랜치 보호 미설정) · 팀 이름이
+  틀려도 GitHub는 조용히 무시한다.
+- [ ] **Phase 4**(managed 어댑터, billable) = 다음 후보.
   Phase 5가 열리면 3②를 GitOps-native로 닫을 수 있다(D32 재검토 조건). Phase 4로 넘긴 것:
   GCP/Azure 자격증명의 테넌트 바인딩(상세 → `STATUS` Open Risk 10).
 - [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 수단 선행**(kind엔 CSI 스냅샷터 부재)

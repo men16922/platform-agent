@@ -1,0 +1,32 @@
+# Path-scoped review ownership for the tenant registry.
+#
+# Phase 5's gate. Every tenant file's header has said since Phase 0 that writes
+# here would be gated by path-scoped CODEOWNERS; this is that file. The write
+# path (src/agents/platform/registry_write.py) already refuses to touch more than
+# one tenant file — this is the second half, enforced by review rather than code:
+# a PR that edits acme's registry entry needs acme's owners.
+#
+# ⚠️ WHAT THIS DOES AND DOES NOT DO. CODEOWNERS only requests reviewers. It blocks
+# nothing until branch protection on `main` requires review from code owners, and
+# nothing in this repo does that today. Written down here rather than left to be
+# discovered: this file is a routing rule, not an enforcement mechanism, until
+# that setting is turned on.
+#
+# The teams below do not exist yet either. GitHub silently ignores an owner it
+# cannot resolve — which means a mis-typed team name looks exactly like a working
+# rule. Verify with a test PR before believing it.
+
+# The shared catalog defines capabilities for every tenant; a change here is a
+# platform change, not a tenant one.
+/platform/catalog.yaml          @men16922
+
+# One rule per tenant, matching one file per tenant. This is the shape the
+# registry layout was chosen for.
+/platform/tenants/acme.yaml     @men16922
+/platform/tenants/globex.yaml   @men16922
+
+# The write path and its guards. Loosening these is how the one-file invariant
+# would stop being true without any tenant file appearing in the diff.
+/src/agents/platform/registry_write.py   @men16922
+/tests/test_registry_write.py            @men16922
+/.github/CODEOWNERS                       @men16922
