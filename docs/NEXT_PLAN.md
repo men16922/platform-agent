@@ -74,10 +74,20 @@ deploy-identity`. 미설정이면 예전처럼 인시던트는 거부, 배포는
 - [ ] **`record_route_activity`·`record_agent_activity`의 `cost_metrics` — 의도적으로 남김**.
   둘 다 `deployment_id`가 없어 그 필드를 렌더하는 유일한 뷰에 닿지 않아 **소비자 없는 필드**가 된다.
 
-- [ ] **인시던트 필드 실 DynamoDB 왕복 미검증** — 모킹 테이블 + 직렬화기 확인 + 투영 파싱까지다.
-  새 속성 5종이 실 테이블을 왕복해 대시보드에 읽힌 적은 없다 — 실 AWS 승인 사항.
-- [ ] **GCP/Azure는 90일 보관을 집행하지 않는다(2026-07-29, 승인 필요)** — 둘 다 `ttl`을 쓰지만
-  스토어가 안 켜져 있어 **무기한 남는다**. 켜는 건 실 데이터 삭제 → `STATUS` Risk 2.
+- [x] **인시던트 필드 실 DynamoDB 왕복 = 검증됨(2026-08-08)** — 생산자 `_record_incident`가 실
+  `incident-history`에 행을 남기고(18속성), 여섯 속성이 **타입까지 보존**되며(특히
+  `confidence`가 `Decimal` = DynamoDB N — 문자열이었다면 대시보드가 영원히 "n/a"),
+  생산 리더의 `started_at`이 `triggered_at`에서 온다. 프로브는 자기 행을 지운다:
+  `scripts/probe_incident_roundtrip.py`, 증거 `docs/evidence/incident-fields-dynamo-roundtrip.log`.
+  **남은 한 칸**: 대시보드 **TS 리더**로는 안 읽었다(속성명·별칭 대조까지). 브라우저 렌더는 미확인.
+- [ ] **GCP/Azure 90일 보관 — 승인 항목이 아니었다(2026-08-08 측정)**. "켜는 건 실 데이터
+  삭제"가 **한 번도 측정된 적 없는 절반**이었다: GCP는 platform-agent 프로젝트
+  (`project-ec7809f7`)에 **Firestore API가 켜진 적조차 없고**(다른 3개 프로젝트도 스윕),
+  Azure는 구독 1개·Cosmos 계정 1개에 `platform-agent` DB가 **없다**. 즉 **지울 데이터가 0**이고,
+  없는 컨테이너에 `DefaultTimeToLive`를 걸 수도 없다. **구속 조건이 기록과 반대**다 — 보관을
+  켜려면 **먼저 프로비저닝**해야 하고 그건 billable → **Phase 4로 이관**. 코드 레벨 갭은
+  그대로 유효하다(스토어가 생기는 순간 `ttl`은 써지는데 아무도 만료시키지 않는다).
+  증거 `docs/evidence/gcp-azure-retention-nothing-to-delete.log` · `STATUS` Risk 2.
 - [ ] **GCP/Azure 기록기는 `resolved_at`·`triggered_at`을 안 쓴다** — 읽는 쪽이 없어 지금
   고치면 **소비자 없는 필드**가 된다 → Phase 4.
 - [ ] **analyzer LLM 실패 폴백이 여전히 일괄 P2** — `severity_hint`를 안 본다. 쓰려면 severity

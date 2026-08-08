@@ -8,6 +8,12 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- **실 AWS 왕복**(2026-08-08, gate 무관 — 프로브) — 인시던트 속성 6종이 실
+  `incident-history`를 왕복해 **타입까지 보존**됨. `confidence`=`Decimal`(DynamoDB N)이라
+  대시보드의 `typeof === "number"`가 참이 된다. **모킹으로는 원리상 못 잡는 검증**(목은
+  float를 받고, 실제로는 boto3 예외가 `except`에 잡혀 행이 통째로 사라진다).
+  `scripts/probe_incident_roundtrip.py` · 증거 `docs/evidence/incident-fields-dynamo-roundtrip.log`.
+  **남은 한 칸**: 대시보드 TS 리더 미검증.
 - `make check` (pytest) → **1636 passed, 1 skipped** (2026-08-08, +18) — **서명키 회전**:
   결함은 암호가 아니라 **배포 위상**이었다 — 서명자와 검증자가 다른 프로세스인데 키가 하나라
   교체가 원자적일 수 없고, 그 실패가 `failed attestation`(=위조로 읽힘)이라 **회전은 장애
@@ -96,9 +102,12 @@
 ## Open Risks / Gaps
 
 1. **CDK 배포 시 Vercel context 필수(함정 실화 이력)** — ⚠️ context 미지정 배포가 **실제로 07-11 OIDC provider를 삭제**해(CloudTrail 확인) 대시보드가 조용히 DEMO FALLBACK으로 강등돼 있었음 → **07-18 복구**. diff/deploy는 반드시 `-c vercelTeamSlug=men16922s-projects -c vercelProjectName=platform-agent`. 로컬 pip 번들링(arm64↔amd64) 주의 유지.
-2. **GCP/Azure 인시던트 스토어는 보관 정책이 없다(2026-07-29)** — Cosmos DefaultTimeToLive 미설정,
-   Firestore TTL 정책 부재 + 필드가 정수 → **어느 쪽도 만료 안 됨**. "90일"을 믿지 말 것.
-   켜는 건 실 데이터 삭제라 승인 → `NEXT_PLAN`.
+2. **GCP/Azure 인시던트 스토어는 보관 정책이 없다 — 단 "실 데이터 삭제"는 틀렸다(2026-08-08
+   재측정)** — 코드 갭은 유효: Cosmos DefaultTimeToLive 미설정, Firestore TTL 정책 부재 →
+   스토어가 생기면 **어느 쪽도 만료 안 됨**. 하지만 **스토어가 아예 없다**: GCP는 platform-agent
+   프로젝트에 **Firestore API가 켜진 적조차 없고**, Azure엔 `platform-agent` DB가 없다 →
+   **지울 데이터 0**. 승인 항목이 아니라 **Phase 4(프로비저닝, billable)** 선행 항목이다.
+   증거 `docs/evidence/gcp-azure-retention-nothing-to-delete.log`.
 3. **⚠️ 스코프 격리는 가능하지만 옵트인이다(2026-07-31, D38·D39)** — 세 경로가 닫혔다: 인시던트
    생산자(`attest_decision`) · 배포 축소 신원 · MCP 무스코프 읽기 거부. **기본값은 미설정**이라
    `PLATFORM_{CREDENTIAL_DIR,APPROVAL_SIGNING_KEY}` 없으면 인시던트는 전부 거부,

@@ -1,0 +1,76 @@
+인시던트 속성 실 DynamoDB 왕복 — 2026-08-08
+==========================================
+
+Claim under test (NEXT_PLAN "승인 필요"):
+
+  "인시던트 필드 실 DynamoDB 왕복 미검증 — 모킹 테이블 + 직렬화기 확인 + 투영
+   파싱까지다. 새 속성 5종이 실 테이블을 왕복해 대시보드에 읽힌 적은 없다."
+
+왜 모킹으로는 부족한가. 기존 커버리지는 `put_item.call_args`에서 멈춘다 — 단언
+대상이 **boto3에 건네진 dict**이지, 테이블이 받아들이고 저장하고 돌려주는 값이
+아니다. 이 레포에서 그 차이는 이론이 아니다: `confidence`는 반드시 `Decimal`이어야
+하고, boto3 resource 계층은 파이썬 float를 **거부**하며, `_record_incident`는 본문
+전체를 `except Exception`으로 감싼다 → 타입이 틀리면 필드 하나가 나빠지는 게 아니라
+**행 전체가 조용히 사라진다**. 목은 float를 군말 없이 받는다.
+
+실행: `python scripts/probe_incident_roundtrip.py`
+테이블: `incident-history` (실 계정 908601828278, 1572 items, TTL ENABLED on `ttl`)
+프로브는 생산자→실 테이블→생산 리더 순으로 돌리고 자기 행을 지운다.
+
+--------------------------------------------------------------------------------
+table: incident-history
+========================================================================
+1. WRITE — production writer, production table
+========================================================================
+   row landed, 18 attributes
+
+========================================================================
+2. RAW READ-BACK — presence and type after a real round trip
+========================================================================
+   OK   triggered_at   = '2026-08-08T00:00:00Z'  (str)
+   OK   confidence     = Decimal('0.98')  (Decimal)
+   OK   reconciliation = {'detail': 'argocd in sync', 'gate': 'passed'}  (dict)
+   OK   tenant         = 'acme'  (str)
+   OK   env            = 'dev'  (str)
+   OK   resolved_at    = '2026-08-08T01:53:41Z'
+
+========================================================================
+3. PRODUCTION READER — does the projection see what landed?
+========================================================================
+   OK   started_at = '2026-08-08T00:00:00Z' (must be triggered_at, not created_at)
+   OK   resolved_at= '2026-08-08T01:53:41Z'
+   OK   runbook_id = 'eks-pod-oom'
+
+========================================================================
+4. CLEANUP
+========================================================================
+   OK   probe row removed
+
+========================================================================
+RESULT: ALL CHECKS PASSED
+========================================================================
+--------------------------------------------------------------------------------
+
+무엇이 실제로 증명됐는가
+------------------------
+
+1. `_record_incident`가 실 테이블에 **행을 남긴다**(18속성). 즉 `except Exception`이
+   삼킨 게 없다 — 이 프로브가 잡으려던 1순위 실패 모드가 발생하지 않았다.
+2. 여섯 속성이 **왕복 후에도 타입까지 보존**된다. 특히 `confidence`가 `Decimal`로
+   돌아온다 = DynamoDB N 타입. 대시보드
+   (`dashboard/src/lib/incident-data.ts:84`)가 `typeof item.confidence === "number"`
+   로 읽으므로, 문자열로 저장됐다면 여기서는 통과하면서 화면에는 영원히 "n/a"가
+   떴을 것이다.
+3. 생산 리더 `_fetch_incidents_from_dynamo`의 `started_at`이 `triggered_at`에서
+   온다(= `created_at` 복사본이 아니다). MTTR이 구조적 0.0이던 결함의 반대편이
+   실제 테이블 데이터로 확인됐다.
+4. 프로브가 자기 행을 지운다 — 대시보드에 가짜 인시던트가 남지 않는다.
+
+남은 한 칸
+----------
+
+**대시보드 TS 리더로는 읽지 않았다.** 3번은 파이썬 리더(주간 리포트 경로)까지고,
+`incident-data.ts`의 projection expression은 같은 속성명을 요구하는 것까지만
+대조했다(`triggered_at, #confidence, #reconciliation, tenant, #env` — 예약어
+회피 별칭 포함). 브라우저에서 렌더된 것을 본 것은 아니다. 그 한 칸을 닫으려면
+대시보드를 실 자격증명으로 띄워야 한다.

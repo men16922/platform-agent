@@ -7,6 +7,34 @@
 
 ---
 
+## 2026-08-08 — 승인 3건을 쟀다: 하나는 통과, 하나는 질문이 틀렸고, 하나는 보류
+
+- Status: 사용자 지시("추천안에 따라 승인할테니 해")로 승인 3건 처리. 먼저 푸시(54커밋,
+  `655369f..3908159`) — 그때까지 origin은 **6일 뒤처져** 있었다.
+- Verified(①실 DynamoDB 왕복 = **통과**): 생산자 `_record_incident`가 실 `incident-history`에
+  행을 남기고(18속성), 여섯 속성이 **타입까지 보존**된다. 핵심은 `confidence`가 `Decimal`로
+  돌아온 것 — DynamoDB N 타입이라 대시보드의 `typeof item.confidence === "number"`가 참이 된다.
+  **문자열이었다면 파이썬 쪽은 통과하면서 화면엔 영원히 "n/a"**가 떴을 것이다. 그리고 애초에
+  float를 넣었으면 boto3 예외가 `except`에 잡혀 **행 전체가 사라졌을** 것이다 — 목은 float를
+  군말 없이 받으므로 이건 모킹으로 **원리상** 못 잡는다. 생산 리더의 `started_at`도
+  `triggered_at`에서 온다. 프로브는 자기 행을 지운다. `scripts/probe_incident_roundtrip.py`,
+  증거 `docs/evidence/incident-fields-dynamo-roundtrip.log`. **남은 한 칸**: 대시보드 TS
+  리더로는 안 읽었다(속성명·예약어 별칭 대조까지).
+- Verified(②GCP/Azure 보관 = **질문이 틀렸다**): "켜는 건 실 데이터 삭제"의 **뒷절반이 한 번도
+  측정된 적이 없었다**. GCP는 platform-agent 프로젝트(`project-ec7809f7`)에 **Firestore API가
+  켜진 적조차 없고**, Azure엔 `platform-agent` DB가 없다 → **지울 데이터 0**. 없는 컨테이너에
+  `DefaultTimeToLive`를 걸 수 없으므로 **구속 조건이 기록과 반대**다: 보관을 켜려면 **먼저
+  프로비저닝**해야 하고 그건 billable → Phase 4. ⚠️처음에 **엉뚱한 프로젝트**
+  (`claude-study-501117`)를 보고 결론낼 뻔했고 메모리의 결제 매핑이 잡아 줬다 — 그래서 나머지
+  3개 프로젝트도 스윕했다. 증거 `docs/evidence/gcp-azure-retention-nothing-to-delete.log`.
+- Blockers(③Cosign 어드미션 = **보류 권고, 미실행**): policy controller라는 **새 클러스터
+  의존성**이고, 잘못 서면 Risk 8의 모양으로 실패한다(**Argo는 Synced인데 파드 0개**).
+  승인 3건 중 유일하게 되돌리기 비용이 크다 → kind 선행 + Phase 4와 묶기.
+- 품질 메모: **승인 항목도 측정 대상이다.** 셋 중 하나는 통과, 하나는 **질문 자체가 사실이
+  아니었고**(9일간 "파괴적 승인"으로 대기), 하나만 진짜 승인이 필요했다. D40·D41과 같은
+  계열이다 — 그럴듯한 이유가 문서를 건너 복사되는 동안 **아무도 쿼리를 돌리지 않았다**.
+- Next: Phase 4/5. 열린 승인은 Cosign 하나.
+
 ## 2026-08-08 — 서명키는 회전할 수 없었다: 같은 키를 요구하던 문장이 곧 제약이었다 (gate 1618→1636)
 
 - Status: 우선순위 2 = 서명키 custody·rotation. **rotation을 닫았고 custody는 안 건드렸다**(아래).

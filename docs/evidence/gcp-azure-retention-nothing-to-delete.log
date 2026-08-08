@@ -1,0 +1,90 @@
+GCP/Azure 90-day retention — measured 2026-08-08
+================================================
+
+Claim under test (NEXT_PLAN "승인 필요", STATUS Risk 2):
+
+  "GCP/Azure는 90일 보관을 집행하지 않는다. 둘 다 `ttl`을 쓰지만 스토어가 안 켜져
+   있어 무기한 남는다. 켜는 건 실 데이터 삭제 → 승인 필요."
+
+The first half is true and is a code fact. The second half — "켜는 건 실 데이터
+삭제" — was never measured, and it is what made this an approval item for nine days.
+
+--------------------------------------------------------------------------------
+1. GCP — the Firestore incident store does not exist
+--------------------------------------------------------------------------------
+
+Store per code: `INCIDENT_COLLECTION` default `incident-history`, Firestore
+(`src/agents/operations/gcp/{analyzer,executor}.py`).
+
+platform-agent's GCP project is `project-ec7809f7-0fb5-45d4-b6d` (the billing map:
+it is the only project with an open billing account, and the 2026-07 GKE cost
+incident happened there).
+
+  $ gcloud firestore databases list --project=project-ec7809f7-0fb5-45d4-b6d
+  ERROR: Cloud Firestore API has not been used in project
+         project-ec7809f7-0fb5-45d4-b6d before or it is disabled.
+
+  $ gcloud firestore fields ttls list --database="(default)" \
+        --project=project-ec7809f7-0fb5-45d4-b6d
+  ERROR: PERMISSION_DENIED: Cloud Firestore API has not been used ...
+
+The API has never been enabled, so there is no database, so there is no
+`incident-history` collection and no document in it.
+
+Swept the other reachable projects rather than trusting one:
+
+  claude-study-501117          -> one database `coffee-menu` (unrelated), TTL
+                                  fields list is EMPTY (no TTL policy)
+  gen-lang-client-0123174100   -> Firestore API not enabled
+  gen-lang-client-0983122780   -> Firestore API not enabled
+
+--------------------------------------------------------------------------------
+2. Azure — the Cosmos incident container does not exist
+--------------------------------------------------------------------------------
+
+Store per code: `AZURE_COSMOS_DATABASE` default `platform-agent`,
+`AZURE_INCIDENT_CONTAINER` default `incident-history`
+(`src/agents/operations/azure/{analyzer,executor,decision}.py`).
+
+  $ az account list
+  one subscription: "Azure subscription 1" (23842f7d-...)
+
+  $ az cosmosdb list
+  one account: cosmos-roadpilot / rg-roadpilot
+
+  $ az cosmosdb sql database list --account-name cosmos-roadpilot \
+        --resource-group rg-roadpilot
+  ["roadpilot"]
+
+There is no `platform-agent` database and therefore no `incident-history`
+container. Nothing to expire, nothing to delete.
+
+--------------------------------------------------------------------------------
+3. What this changes
+--------------------------------------------------------------------------------
+
+The approval was framed as "enabling retention deletes real data". It does not,
+because there is no data and no store — and you cannot set `DefaultTimeToLive` on
+a container that does not exist or a Firestore TTL policy on a database that was
+never created.
+
+So the binding constraint is the opposite of the recorded one: enabling retention
+requires PROVISIONING Firestore and Cosmos first, which is billable and belongs
+with Phase 4 (managed adapters) — not a destructive-approval item at all.
+
+The code-level gap stays real and stays worth keeping written down: if those
+stores are ever provisioned, `ttl` is written but nothing expires it, and the
+"90일 보관" claim would be false the moment there is data to be wrong about.
+
+Same shape as D40: a blocker whose recorded reason was true-sounding, repeated
+across documents, and not the one actually binding. Nobody had run the query.
+
+--------------------------------------------------------------------------------
+4. Bound on this measurement
+--------------------------------------------------------------------------------
+
+Scoped to the credentials this machine holds: gcloud accounts
+yeongsigchoe7@gmail.com (active), men16922@gmail.com, aiengmen2@gmail.com; az
+subscription 23842f7d-. If a store exists under credentials not on this machine,
+this log does not see it — but neither does anything in the repo, which reads
+both endpoints from environment variables that are unset here.
