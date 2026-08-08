@@ -22,15 +22,18 @@ The invariants, in the order they matter:
 from __future__ import annotations
 
 import shutil
+import subprocess
 
 import pytest
 import yaml
 
+from src.agents.platform import registry_write
 from src.agents.platform.registry_write import (
     _insert_addon as _INSERT_ADDON,
 )
 from src.agents.platform.registry_write import (
     RegistryWriteError,
+    commit_attachment,
     plan_addon_attachment,
     tenant_path,
 )
@@ -198,3 +201,160 @@ class TestTheRegistryIsTheAuthority:
         plan = plan_addon_attachment("acme", "prod", "logging", "7.1.0", root=registry_root)
         assert plan.backend == "loki"
         assert plan.backend in plan.updated
+
+
+# ---------------------------------------------------------------------------
+# 5. The commit is path-limited — the instruction it replaces was not.
+#
+# Until now this flow ended by telling the operator to run `git commit -am`.
+# `-a` stages every modified tracked file, so an operator with anything else
+# dirty would open a PR touching files the plan never named — the one-file
+# invariant broken by the tool that exists to enforce it. These tests put dirt
+# in the working tree on purpose, because a commit made in a clean tree cannot
+# tell `-a` and `-- <path>` apart. That is exactly how it stayed unnoticed.
+# ---------------------------------------------------------------------------
+
+OTHER_TRACKED = "unrelated.txt"
+
+
+@pytest.fixture
+def git_repo(tmp_path):
+    """A real git repo holding a real copy of the registry, plus unrelated dirt."""
+    shutil.copytree("platform", tmp_path / "platform")
+    (tmp_path / OTHER_TRACKED).write_text("committed\n", encoding="utf-8")
+
+    def git(*args):
+        subprocess.run(
+            ["git", "-C", str(tmp_path), *args], check=True, capture_output=True, text=True
+        )
+
+    git("init", "-q")
+    git("config", "user.email", "guard@example.invalid")
+    git("config", "user.name", "guard")
+    git("add", "-A")
+    git("commit", "-qm", "seed")
+
+    # The dirt. If the commit is not path-limited, this rides along.
+    (tmp_path / OTHER_TRACKED).write_text("modified, and none of the plan's business\n",
+                                          encoding="utf-8")
+    return tmp_path
+
+
+def _committed_files(repo, ref="HEAD"):
+    out = subprocess.run(
+        ["git", "-C", str(repo), "show", "--name-only", "--pretty=format:", ref],
+        capture_output=True, text=True, check=True,
+    ).stdout
+    return sorted(f for f in out.splitlines() if f.strip())
+
+
+class TestTheCommitTouchesOneFile:
+    def test_only_the_tenant_file_is_committed(self, git_repo):
+        """The falsifier: swap `-- <path>` for `-a` and this goes red."""
+        plan = plan_addon_attachment(
+            "acme", "prod", "logging", "7.1.0", root=git_repo / "platform"
+        )
+        commit_attachment(plan, repo_root=git_repo)
+        assert _committed_files(git_repo) == ["platform/tenants/acme.yaml"]
+
+    def test_the_unrelated_dirt_is_left_dirty(self, git_repo):
+        """Not committed *and* not reverted — the plan has no opinion about it."""
+        plan = plan_addon_attachment(
+            "acme", "prod", "logging", "7.1.0", root=git_repo / "platform"
+        )
+        commit_attachment(plan, repo_root=git_repo)
+        status = subprocess.run(
+            ["git", "-C", str(git_repo), "status", "--porcelain", OTHER_TRACKED],
+            capture_output=True, text=True, check=True,
+        ).stdout
+        assert status.strip().endswith(OTHER_TRACKED)
+        assert "none of the plan's business" in (git_repo / OTHER_TRACKED).read_text()
+
+    def test_a_staged_unrelated_file_still_does_not_ride_along(self, git_repo):
+        """`git add` on something else must not widen the commit either."""
+        subprocess.run(["git", "-C", str(git_repo), "add", OTHER_TRACKED],
+                       check=True, capture_output=True)
+        plan = plan_addon_attachment(
+            "acme", "prod", "logging", "7.1.0", root=git_repo / "platform"
+        )
+        commit_attachment(plan, repo_root=git_repo)
+        assert _committed_files(git_repo) == ["platform/tenants/acme.yaml"]
+
+    def test_the_commit_carries_the_plans_title_on_the_plans_branch(self, git_repo):
+        plan = plan_addon_attachment(
+            "acme", "prod", "logging", "7.1.0", root=git_repo / "platform"
+        )
+        sha = commit_attachment(plan, repo_root=git_repo)
+        head = subprocess.run(
+            ["git", "-C", str(git_repo), "log", "-1", "--pretty=%H%n%s%n%D"],
+            capture_output=True, text=True, check=True,
+        ).stdout.splitlines()
+        assert head[0] == sha
+        assert head[1] == plan.title
+        assert plan.branch in head[2]
+
+    def test_a_leftover_branch_is_refused(self, git_repo):
+        """Not "the same attachment twice" — the planner already refuses that one
+        layer earlier ("attaching is not upgrading"), because after a successful
+        run the file itself declares the capability. What this covers is the branch
+        an *abandoned* attempt left behind: the registry still says nothing, so the
+        planner is happy.
+
+        Matched on our own wording on purpose. `git switch -c` fails on an existing
+        branch too, and its message also contains "already exists" — so a looser
+        match is satisfied whether or not this module checks anything, which is a
+        test that cannot fail. The ordering is the part that is ours (see below).
+        """
+        plan = plan_addon_attachment(
+            "acme", "prod", "logging", "7.1.0", root=git_repo / "platform"
+        )
+        subprocess.run(["git", "-C", str(git_repo), "branch", plan.branch],
+                       check=True, capture_output=True)
+        with pytest.raises(RegistryWriteError, match="refusing to add to an open attachment"):
+            commit_attachment(plan, repo_root=git_repo)
+
+    def test_the_refusal_leaves_the_file_alone(self, git_repo):
+        """Fail-closed, and this is what the pre-check actually buys.
+
+        Without it the file is written first and `switch -c` fails afterwards, so
+        the operation "refuses" while leaving the edit sitting in the working tree
+        for the next command to sweep up.
+        """
+        plan = plan_addon_attachment(
+            "acme", "prod", "logging", "7.1.0", root=git_repo / "platform"
+        )
+        subprocess.run(["git", "-C", str(git_repo), "branch", plan.branch],
+                       check=True, capture_output=True)
+        with pytest.raises(RegistryWriteError):
+            commit_attachment(plan, repo_root=git_repo)
+        assert plan.path.read_text(encoding="utf-8") == plan.original
+
+
+class TestTheCommitIsLocal:
+    def test_git_is_never_asked_to_reach_a_remote(self, git_repo, monkeypatch):
+        """Local commit is in scope; push and the GitHub API are the operator's."""
+        seen: list[list[str]] = []
+        real = subprocess.run
+
+        def spy(cmd, *a, **kw):
+            seen.append(list(cmd))
+            return real(cmd, *a, **kw)
+
+        monkeypatch.setattr(registry_write.subprocess, "run", spy)
+        plan = plan_addon_attachment(
+            "acme", "prod", "logging", "7.1.0", root=git_repo / "platform"
+        )
+        commit_attachment(plan, repo_root=git_repo)
+
+        assert seen, "the spy saw nothing — it is guarding the wrong subprocess"
+        reaches_out = {"push", "fetch", "pull", "remote", "clone", "ls-remote"}
+        for cmd in seen:
+            assert not reaches_out.intersection(cmd), f"this commit path ran: {cmd}"
+
+    def test_a_path_outside_the_repo_is_refused(self, git_repo, tmp_path):
+        """`repo_root` is a boundary, not a convenience for building the path."""
+        plan = plan_addon_attachment(
+            "acme", "prod", "logging", "7.1.0", root=git_repo / "platform"
+        )
+        with pytest.raises(RegistryWriteError, match="outside"):
+            commit_attachment(plan, repo_root=tmp_path / "somewhere-else")
