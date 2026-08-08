@@ -24,6 +24,18 @@ gcp = ["google-adk>=1.0", "google-cloud-aiplatform>=1.90"]
 azure = ["agent-framework>=1.0", "azure-identity>=1.15", "azure-ai-projects>=1.0"]
 onprem = ["pydantic-ai-slim[openai]>=2.9", "mlx-lm>=0.19"]
 state = ["psycopg2-binary>=2.9"]
+# Declared 2026-08-08, after the first CI run failed 17 tracing tests that pass on
+# every developer machine. `strands-agents` already pulls opentelemetry api+sdk, so
+# `find_spec("opentelemetry.sdk")` succeeded and the tests' skipif did NOT skip —
+# but `tracing._build_tracer` imports the OTLP **exporter**, which nothing declared.
+# Its ImportError is swallowed by the deliberate `except Exception: return None`
+# (tracing must never break remediation), so tracing silently became a no-op and
+# the spans the tests assert on were never emitted. The gate had been passing on an
+# undeclared package that happened to be installed locally.
+observability = [
+    "opentelemetry-sdk>=1.24",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.24",
+]
 dev = [
     "pytest>=8.1",
     "pytest-asyncio>=0.23",

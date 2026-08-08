@@ -43,7 +43,7 @@ jobs:
       - name: install
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev,state]" fastapi "uvicorn[standard]" pydantic-ai-slim[openai]
+          pip install -e ".[dev,state,observability]" fastapi "uvicorn[standard]" pydantic-ai-slim[openai]
 
       # `make check` only — that IS this repo's gate (Makefile: `check: test`).
       #
