@@ -54,6 +54,37 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev,state,observability]" fastapi "uvicorn[standard]" pydantic-ai-slim[openai]
 
+      # Without this the gate silently stops validating Terraform.
+      #
+      # Both `test_terraform_validate_passes` tests skip on
+      # `terraform not installed OR module not initialised`, and this runner met
+      # BOTH clauses: no terraform binary, and `.terraform/` is gitignored so a
+      # fresh checkout is never initialised. The first CI run therefore reported
+      # `1666 passed, 3 skipped` while every developer machine reported
+      # `1668 passed, 1 skipped` — the two missing tests were exactly the two
+      # that validate the IaC this repo deploys. A skip is not a failure, so the
+      # gate that D43 made a merge condition looked green while checking less
+      # than the machine it replaced.
+      #
+      # 1.15.8 is the version the modules are actually validated on locally,
+      # pinned for the same reason python is pinned to 3.13 above.
+      # `terraform_wrapper: false` keeps `terraform` a plain binary — the tests
+      # invoke it through subprocess and parse its output.
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.8"
+          terraform_wrapper: false
+
+      # `-backend=false`: validation needs the providers, not remote state, so
+      # this stays credential-free. Provider versions come from the committed
+      # `.terraform.lock.hcl` files, which is what keeps the download pinned.
+      # Only the two modules the tests actually read are initialised —
+      # `infra/onprem/terraform` has no test asserting anything about it.
+      - name: terraform init (validate targets only)
+        run: |
+          terraform -chdir=infra/terraform/aws-production init -backend=false -input=false
+          terraform -chdir=infra/onprem/addons init -backend=false -input=false
+
       # `make check` only — that IS this repo's gate (Makefile: `check: test`).
       #
       # The first version of this file also ran `ruff check src/ tests/` and went
