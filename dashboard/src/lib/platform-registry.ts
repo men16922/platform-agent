@@ -13,13 +13,6 @@
  * the design exists to avoid.
  */
 
-/** Isolation strength — and therefore the credential boundary unit. */
-export type IsolationTier = "soft" | "vcluster" | "dedicated";
-
-export type Substrate = "kind" | "k3s" | "eks" | "gke" | "aks";
-
-export type DeliveryEngine = "argocd" | "flux" | "config-sync";
-
 /**
  * Does the cluster match the declared desired state?
  * `n/a` = managed backend with no git-sync concept (see `applicable`).
@@ -33,29 +26,6 @@ export type HealthState =
   | "degraded"
   | "missing"
   | "unknown";
-
-export interface Quota {
-  cpu?: string;
-  memory?: string;
-  pods?: number;
-}
-
-export interface PlatformEnvironment {
-  name: string;
-  cluster: string;
-  substrate: Substrate;
-  delivery: DeliveryEngine;
-  /** capability -> "<chart> <version>" as declared (versions are per-env). */
-  addons: Record<string, string>;
-}
-
-export interface PlatformTenant {
-  name: string;
-  isolation: IsolationTier;
-  namingPrefix: string;
-  quota: Quota;
-  environments: Record<string, PlatformEnvironment>;
-}
 
 /**
  * Two orthogonal axes, never one enum: "drifted from git" and "unhealthy" are
@@ -160,21 +130,24 @@ export function showsSyncAxis(status: NormalizedAddonStatus): boolean {
   return status.applicable && status.sync_state !== "n/a";
 }
 
-/** Credential boundary unit implied by the tier (soft shares a cluster). */
-export function credentialScope(tier: IsolationTier): "tenant" | "env" {
-  // Under soft, several tenants share one cluster by namespace, so a per-env
-  // credential would reach co-tenant namespaces.
-  return tier === "soft" ? "tenant" : "env";
-}
-
-/** Prefixed namespace — structural collision avoidance on a shared cluster. */
-export function namespaceFor(
-  tenant: Pick<PlatformTenant, "namingPrefix">,
-  env: string,
-  component: string,
-): string {
-  return `${tenant.namingPrefix}-${env}-${component}`;
-}
+// REMOVED 2026-08-08: `credentialScope` and `namespaceFor`, plus the tenant/env
+// types that existed only to type them.
+//
+// Both were TypeScript re-implementations of rules that live in Python and are
+// load-bearing there: `IsolationTier.credential_scope` decides the credential
+// boundary unit (registry.py), and `Tenant.namespace_for` names the namespace a
+// tenant's add-on is rendered into (delivery.py, and the scope broker mints
+// against it). Neither TS copy had a single caller — measured across the whole
+// dashboard — and nothing produced a `PlatformTenant` to pass them.
+//
+// Deleted rather than kept "for later" because the risk is not the dead code, it
+// is the second source of truth: a duplicated authorization rule that nothing
+// exercises will drift from the live one silently, and whoever wires it up later
+// will trust it. The dashboard gets tenancy from pushed status
+// (`NormalizedAddonStatus`), not by re-deriving the registry — which is the
+// design note at the top of this file.
+//
+// NEXT_PLAN required "실 레지스트리 대조" before deleting; that is what this was.
 
 /**
  * Group statuses by tenant/env for the switcher, keeping drift visible.

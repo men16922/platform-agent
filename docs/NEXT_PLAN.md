@@ -76,11 +76,14 @@ deploy-identity`. 미설정이면 예전처럼 인시던트는 거부, 배포는
 > 완료분은 `COMPLETED_SUMMARY.md` **M12**(Phase 3 인가) · **M13**("선언됐지만 아무도 읽지
 > 않는 것들" 14건 — 배포 tier 발명·네임스페이스 출처 포함) · `PROGRESS_LOG.md` · `docs/evidence/`.
 
-- [ ] **TS 스윕 잔여 후보 — 사문화이지 손실이 아니다(2026-07-29 확인, 고치지 않음)**. 261필드 중
-  후보 47을 완독했고 **데이터 손실은 `activity-model.ts` 한 건뿐**. 나머지는 죽은 선언이다:
-  `ApprovalRequest.request_*` 3종=렌더 필드의 복사본 · `staleAfterSec`=집행은 Python
-  `collector.py` · `PlatformTenant→…substrate/delivery`+`Quota`=**서로만 참조하는 닫힌 섬**.
-  마지막 건은 **거짓 운영 주장이 없어** 위험도가 다르고, 지우려면 실 레지스트리 대조가 선행이다.
+- [x] **TS 스윕 잔여 — 닫힌 섬은 제거했다(2026-08-08)**. 요구된 **실 레지스트리 대조**를 하고
+  나니 기록보다 컸다: `PlatformTenant`/`PlatformEnvironment`/`Quota`/`Substrate`/`DeliveryEngine`
+  뿐 아니라 **`namespaceFor`·`credentialScope`도 호출자 0**이었고, 둘은 **살아 있는 파이썬 규칙의
+  복제본**이다(`Tenant.namespace_for`=`delivery.py`+스코프 민팅 · `IsolationTier.credential_scope`
+  =`registry.py`). 위험은 죽은 코드가 아니라 **두 번째 진실 공급원**이다 — 아무도 실행하지 않는
+  인가 규칙은 조용히 원본과 어긋나고, 나중에 배선하는 사람은 그걸 믿는다. 제거 후 `tsc` clean.
+  **남은 후보는 그대로 둔다**: `ApprovalRequest.request_*` 3종=렌더 필드 복사본 ·
+  `staleAfterSec`=집행은 Python `collector.py`.
 - [ ] **`record_route_activity`·`record_agent_activity`의 `cost_metrics` — 의도적으로 남김**.
   둘 다 `deployment_id`가 없어 그 필드를 렌더하는 유일한 뷰에 닿지 않아 **소비자 없는 필드**가 된다.
 
