@@ -28,11 +28,13 @@ from src.agents.platform import (
     load_registry,
     validate_registry,
 )
+from src.agents.platform.registry import Environment
 from src.agents.platform.adapters.argocd import RESOURCES_FINALIZER, ArgoCDDeliveryAdapter
 from src.agents.platform.adapters.flux import FluxDeliveryAdapter
 from src.agents.platform.delivery import (
     ClusterSingletonCapability,
     DeliveryAdapter,
+    ManagedBackendNotRenderable,
     desired_addons,
     reject_cluster_singletons,
 )
@@ -686,3 +688,132 @@ class TestTwoAxisStatus:
         assert payload["health_state"] == "healthy"
         assert payload["applicable"] is True
         assert payload["desired_version"] == "7.1.0"
+
+
+class TestManagedBackendsAreNotRenderable:
+    """The three paths disagreed about managed backends; only delivery was wrong.
+
+    The collector recognises them (`from_managed`, applicable=False) and
+    `registry_write` cannot produce one — it resolves `backend_for(...)` without
+    `managed=True`. Delivery passed the backend straight through as a Helm chart
+    name (`adapters/argocd.py`: `"chart": addon.backend`), so a managed declaration
+    would have GitOps chase a chart the self-hosted repo does not publish.
+
+    **The env here is built, not taken from the registry, and that is the point.**
+    Managed backends are substrate-keyed to clouds (`_cloud_of`: eks/gke/aks), and
+    today every env is `kind` or `k3s` — so `backend_for(..., managed=True)` is
+    `None` everywhere and this path is unreachable from the shipped registry. A
+    cloud substrate is exactly what Phase 4 creates; building one here is what lets
+    the guard exist before the billable resource does.
+    """
+
+    CLOUD_SUBSTRATE = "eks"
+    #: Namespace-scoped AND managed — the combination nothing else catches.
+    #: `observability` is also managed but cluster-scoped, so the singleton guard
+    #: fires first (see `test_a_cluster_scoped_managed_backend_...` below).
+    CAPABILITY = "logging"
+
+    def _managed_env(self, registry, capability=CAPABILITY):
+        managed = registry.backend_for(capability, self.CLOUD_SUBSTRATE, managed=True)
+        assert managed, "the catalog declares no managed backend for this cloud"
+        env = Environment(
+            name="prod",
+            cluster="managed-spoke",
+            substrate=self.CLOUD_SUBSTRATE,
+            delivery="argocd",
+            addons={capability: f"{managed} 1.0.0"},
+        )
+        return registry.tenant("acme"), env, managed
+
+    def test_todays_registry_cannot_reach_this_path(self, registry):
+        """Why the guard needs a built env — and what changes when Phase 4 lands."""
+        for tenant in registry.tenants.values():
+            for env in tenant.environments.values():
+                for capability in registry.catalog["capabilities"]:
+                    assert registry.backend_for(capability, env.substrate, managed=True) is None
+
+    def test_the_catalog_really_declares_a_managed_backend(self, registry):
+        """If this fails the rest of the class is vacuous, not passing."""
+        assert registry.backend_for(self.CAPABILITY, self.CLOUD_SUBSTRATE, managed=True)
+
+    def test_the_capability_under_test_is_namespace_scoped(self, registry):
+        """Otherwise the singleton guard fires first and this class proves nothing.
+
+        Pinned rather than assumed: if the catalog ever makes `logging`
+        cluster-scoped, this fails instead of the class quietly measuring the
+        wrong guard.
+        """
+        assert registry.scope_of(self.CAPABILITY) == "namespace"
+
+    def test_a_cluster_scoped_managed_backend_is_caught_but_misadvised(self, registry):
+        """`observability` is managed AND cluster-scoped, so the older guard wins.
+
+        It refuses — but its advice ("install once per cluster; give the tenant an
+        instance, a Prometheus CR") is wrong for a managed backend, where there is
+        nothing to install at all. Recorded, not fixed: reordering the two guards
+        changes an existing error's identity and belongs with the Phase 4 decision
+        about what managed *should* render.
+        """
+        managed = registry.backend_for("observability", self.CLOUD_SUBSTRATE, managed=True)
+        assert managed and registry.scope_of("observability") == "cluster"
+        env = Environment(
+            name="prod", cluster="managed-spoke", substrate=self.CLOUD_SUBSTRATE,
+            delivery="argocd", addons={"observability": f"{managed} 1.0.0"},
+        )
+        tenant = registry.tenant("acme")
+        addons = desired_addons(tenant, env, registry.wave_for, registry.scope_of)
+        with pytest.raises(ClusterSingletonCapability):
+            ArgoCDDeliveryAdapter(repo_url="https://example.invalid").render(tenant, env, addons)
+
+    def test_a_managed_backend_is_refused_before_it_reaches_an_engine(self, registry):
+        tenant, env, _ = self._managed_env(registry)
+        with pytest.raises(ManagedBackendNotRenderable, match="managed backend"):
+            desired_addons(
+                tenant, env, registry.wave_for, registry.scope_of,
+                is_managed=registry.is_managed_backend,
+            )
+
+    def test_the_error_names_the_chart_that_does_not_exist(self, registry):
+        """An error that only says "no" gets worked around."""
+        tenant, env, managed = self._managed_env(registry)
+        with pytest.raises(ManagedBackendNotRenderable) as exc:
+            desired_addons(
+                tenant, env, registry.wave_for, registry.scope_of,
+                is_managed=registry.is_managed_backend,
+            )
+        assert managed in str(exc.value)
+        assert "applicable=False" in str(exc.value), "point at the path that IS right"
+
+    def test_self_hosted_backends_still_render(self, registry):
+        """The refusal must be about managed, not about this capability."""
+        tenant = registry.tenant("acme")
+        env = registry.environment("acme", "dev")
+        addons = desired_addons(
+            tenant, env, registry.wave_for, registry.scope_of,
+            is_managed=registry.is_managed_backend,
+        )
+        assert addons, "the self-hosted fanout still renders"
+        assert all(not registry.is_managed_backend(a.capability, a.backend) for a in addons)
+
+    def test_omitting_the_callable_keeps_todays_behaviour(self, registry):
+        """No existing caller is forced to pass it.
+
+        Without this the guard would be a silent behaviour change for every current
+        caller of `desired_addons` rather than an added refusal.
+        """
+        tenant, env, _ = self._managed_env(registry)
+        addons = desired_addons(tenant, env, registry.wave_for, registry.scope_of)
+        assert any(a.capability == self.CAPABILITY for a in addons)
+
+    def test_the_read_path_and_the_render_path_take_one_answer(self):
+        """Both accept the same callable, so "is this managed?" cannot fork.
+
+        A second predicate here is how the two paths would drift apart with nothing
+        failing — the shape this repo removed from the dashboard (431aeab).
+        """
+        import inspect
+
+        from src.agents.platform import collector as collector_mod
+
+        assert "is_managed" in inspect.signature(desired_addons).parameters
+        assert "is_managed" in inspect.signature(collector_mod.collect).parameters

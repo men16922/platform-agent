@@ -1,11 +1,36 @@
 # PROGRESS_LOG — platform-agent
 
-최종 갱신: 2026-08-08
+최종 갱신: 2026-08-09
 
 > 최신 3–5개 증분. **최신이 위.** **≤120줄.** 넘치면 `/tidy-docs` 로 압축.
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-09 — managed 백엔드를 세 경로가 다르게 알고 있었다 (gate 1676→1685)
+
+- Status: 추천안 2번(4a)의 **과금 없는 코드 부분**을 진행하려다, 4a 코드가 이미 대부분
+  있다는 것과 **렌더 경로 하나만 비어 있다**는 것을 찾았다.
+- Changed(정정): 어제 산정 문서의 *"managed 어댑터 구현 없다"*는 부정확했다. `from_managed`
+  (`applicable=False`)도 `collector.py:451`의 managed 분기도 이미 있다 — 설계 문서가 Phase 2에서
+  faked 디스크립터로 증명하라던 게 실제로 되어 있었다. **세션에서 "없다"를 세 번째로 잘못 말했다.**
+- Changed(진짜 구멍): 세 경로가 서로 다르게 안다 — **읽기**는 알아보고, **쓰기**는 만들 수 없고
+  (`registry_write`가 `managed=True` 없이 해석), **렌더는 모른다**. `desired_addons`가 백엔드를
+  Helm 차트 이름으로 그대로 넘겨(`argocd.py`: `"chart": addon.backend`), `logging: cloudwatch-logs`
+  선언 시 GitOps가 **Grafana 저장소에서 `cloudwatch-logs` 차트를 찾는다**(라이브 실증).
+  `ManagedBackendNotRenderable`로 거부하고, `is_managed`를 **collector와 같은 콜러블**로 받는다
+  (두 경로가 "managed인가"에 두 답을 갖지 않도록 — 431aeab가 지운 모양).
+- Verified: 반증 2건 red(가드 제거 시). `make check` **1685**(+9).
+  ⚠️정밀화 2회: `observability`로 재려다 **클러스터 스코프라 싱글턴 가드가 먼저 잡는 것**을
+  발견 → 막히지 않는 조합은 **네임스페이스 스코프 + managed**(`logging`·`tracing`)뿐이라 그걸로
+  교체 · 현재 레지스트리엔 **클라우드 substrate가 0**이라(kind·k3s) 이 경로가 도달 불가여서
+  테스트가 env를 **짓는다** — 그게 정확히 Phase 4가 만드는 것이다.
+- Blockers: 4a의 나머지는 **과금**이다(AMP 워크스페이스). 승인 대기.
+- 품질 메모: 클러스터 스코프 managed는 싱글턴 가드가 잡되 **안내가 틀린다**("Prometheus CR을
+  주라" — 관리형엔 설치할 것이 없다). 고치지 않고 기록했다 — 가드 순서를 바꾸면 기존 에러의
+  정체가 바뀌고, 그건 "managed가 무엇을 렌더해야 하는가"라는 Phase 4 결정과 같이 가야 한다.
+  **무엇을 렌더할지는 일부러 발명하지 않았다.**
+- Next: 4a 승인(≈$5/월) 또는 $0 선행(예산 재보정·결제 내보내기) — 둘 다 사용자 몫.
+
 ## 2026-08-08 — 커밋을 경로에 한정 + 막힌 근거 재측정 (gate 1668→1676)
 
 - Status: attach UI를 재려다 **그 앞의 구멍**을 먼저 찾았고, 이어서 남은 막힌 항목의
@@ -86,31 +111,4 @@
   가장 먼저 읽는 파일인데 1분 문맥 역할을 못 했다. 최장 줄 **6,057→533자**. **예산은 줄 수가
   아니라 읽는 데 드는 시간으로 재야 한다.**
 - Next: Phase 4(billable, 별 승인)만 남았다.
-
-## 2026-08-08 — 게이트를 집행으로: 브랜치 보호 + TS의 두 번째 진실 공급원 제거
-
-- Status: 무과금으로 남은 두 항목을 소진. 오늘 세운 CI를 **실제 병합 조건**으로 만들고,
-  선행 조건이 갖춰진 TS 스윕 잔여를 닫았다.
-- Changed(TS 닫힌 섬): NEXT_PLAN이 요구한 **실 레지스트리 대조**를 하니 기록보다 컸다 —
-  타입 5종뿐 아니라 **`namespaceFor`·`credentialScope`도 호출자 0**이었고, 둘은 **살아 있는
-  파이썬 규칙의 복제본**이다(`Tenant.namespace_for`=`delivery.py`+스코프 민팅 ·
-  `IsolationTier.credential_scope`=`registry.py`). **지운 이유는 죽은 코드라서가 아니라 두 번째
-  진실 공급원이라서다** — 아무도 실행하지 않는 인가 규칙은 조용히 어긋나고 나중에 배선하는
-  사람은 그걸 믿는다. `Quota`의 "외부 참조" 1건은 **JSX 텍스트**였다. `tsc` clean.
-- Changed(브랜치 보호): `main`에 **PR 필수 + `check`(=`make check`) 통과 필수**, 관리자 포함,
-  force push·브랜치 삭제 금지. ⚠️**`require code owner review`는 일부러 껐다** — 협업자가
-  1명이라 자기 PR을 승인할 수 없어 **만족 불가능한 규칙**이 되고, **우회해야 동작하는 규칙은
-  우회를 습관으로 만든다**. 즉 집행하는 건 **게이트(기계)**이고 소유권은 아직 **라우팅**이다.
-- Verified: 설정 API의 200은 "저장됐다"이지 "막는다"가 아니라 **일부러 직접 push**를 시도했다 →
-  `Changes must be made through a pull request` + `Required status check "check" is expected` →
-  `[remote rejected]`. **두 규칙 모두 발화.** 프로브 커밋은 되돌렸다. 이어서 남은 문서를
-  **PR #1**로 올려 CI 통과→`MERGEABLE/CLEAN`→squash 병합까지 **새 흐름을 끝까지 돌렸다**.
-  `make check` **1668**, 증거 `docs/evidence/branch-protection-enforced.log`.
-- Blockers: **`main` 직접 push 불가 — 나를 포함해서.** 이후 변경은 PR로 들어간다.
-  되돌리기는 설정 하나(`gh api -X DELETE .../branches/main/protection`).
-- 품질 메모: **켰다고 말하기 전에 막는지 물어봐야 한다.** 설정이 저장된 것과 집행되는 것은
-  다르고, 그 차이는 오늘만 네 번 나왔다(서명/소비자/어드미션/보호). 그리고 **만족 불가능한
-  규칙을 켜지 않은 것**도 같은 규율이다 — 집행하지 않는 것을 광고하지 않는 것과, 광고만 하려고
-  집행을 흉내 내지 않는 것은 한 가지다.
-- Next: **Phase 4(billable)만 남았다** — 별 승인 사항.
 
