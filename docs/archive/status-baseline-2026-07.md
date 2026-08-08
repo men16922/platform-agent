@@ -142,3 +142,26 @@
 - (이전 이력: gate **1533** 이하 · 2026-07-10~29 → **이 파일 위쪽 섹션** 및
   `docs/archive/progress-2026-07.md` · `docs/archive/progress-2026-08.md`.)
 
+
+---
+
+## 2026-08-08 baseline 중 STATUS에서 밀려난 것 (2026-08-08 정리)
+
+- `make check` (pytest) → **1636 passed, 1 skipped** (2026-08-08, +18) — **서명키 회전**:
+  결함은 암호가 아니라 **배포 위상**이었다 — 서명자와 검증자가 다른 프로세스인데 키가 하나라
+  교체가 원자적일 수 없고, 그 실패가 `failed attestation`(=위조로 읽힘)이라 **회전은 장애
+  아니면 오경보**였다. `PLATFORM_APPROVAL_SIGNING_KEYS_RETIRING`(검증 전용, 절대 서명 안 함) +
+  **겹침을 유한하게 만드는 건 D42의 TTL**. 반증 4종 red(특히 retiring 레코드에 TTL 미적용).
+  **custody는 미해결이고 거짓 주장도 아니다**(→ `STATUS` Risk 3).
+  상세 → `archive/progress-2026-08.md`("서명키는 회전할 수 없었다").
+- `make check` (pytest) → **1618 passed, 1 skipped** (2026-08-08, +1) — **테스트가 상했다**:
+  `test_incident_time_to_resolve.py`는 **수정된 적이 없는데** red가 됐다. 픽스처가
+  `created_at`을 하드코딩(`2026-07-29`)하는데 생산자는 **살아 있는 시계**로 7일 창을 건다 →
+  **08-05에 이미 깨져 있었다**. `now` 기준 상대 배치로 교체 + 가드 1건.
+  **게이트 숫자에는 측정 날짜가 붙어야 한다** → `STATUS` Risk 12①.
+  상세 → `archive/progress-2026-08.md`("달력이 움직이자 red가 됐다").
+- **실 AWS 왕복**(2026-08-08, gate 무관 — 프로브) — 인시던트 속성 6종이 실 `incident-history`를
+  왕복해 **타입까지 보존**됨. `confidence`=`Decimal`(DynamoDB N)이라 대시보드의
+  `typeof === "number"`가 참이 된다. **모킹으로는 원리상 못 잡는 검증**(목은 float를 받고,
+  실제로는 boto3 예외가 `except`에 잡혀 행이 통째로 사라진다).
+  `scripts/probe_incident_roundtrip.py` · 증거 `docs/evidence/incident-fields-dynamo-roundtrip.log`.
