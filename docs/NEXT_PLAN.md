@@ -124,10 +124,13 @@ deploy-identity`. 미설정이면 예전처럼 인시던트는 거부, 배포는
   라이브에서 미서명 다이제스트는 `cluster.deploy` 호출 **전에** 막힌다. 증거
   `docs/evidence/image-signature-deploy-gate.log`. ⚠️**옵트인**이고
   (`PLATFORM_REQUIRE_SIGNED_IMAGES`) **온프렘 진입점 하나**만 덮는다.
-  **그 전에 붙는 결정 둘**: **CI를 만들 것인가**(지금은 사람이 `make`를 쳐야 돈다 — 이게 서야
-  "게이트가 돈다"고 말할 수 있다) · **키 custody**(로컬 dev 키는 빈 암호 — 실 배포는 KMS/키리스.
-  **키리스는 키를 없애서 custody를 푼다**는 점에서 두 결정은 사실 하나다. 승인 서명키 custody와도
-  같은 결정). → `STATUS` Risk 6, 가드 `tests/test_signature_gate_claims.py`·`test_image_trust.py`.
+  ~~그 전에 붙는 결정 둘(CI · 키 custody)~~ = **둘 다 닫힘(2026-08-08)** — 사실 **한 결정**이었다:
+  **키리스가 키를 없애서 custody를 푼다**. `gate.yml`(게이트를 기계가 돌린다) + `sign-image.yml`
+  (빌드→GHCR→키리스 서명→레포 자신의 게이트로 검증, 라이브 VERIFIED). 대가는 **Rekor 영구 공개
+  기록**(철회 불가). 증거 `docs/evidence/ci-keyless-signing.log`.
+  **그래서 남은 건 ④어드미션 하나뿐이다** — policy controller = 새 클러스터 의존성이고 실패
+  모양이 Risk 8(**Argo는 Synced인데 파드 0개**)이라 kind 선행을 권한다.
+  → `STATUS` Risk 6·13, 가드 `tests/test_signature_gate_claims.py`·`test_image_trust.py`.
 
 ## 유지 규약 (완료된 리팩토링에서 나온 "하지 말 것")
 

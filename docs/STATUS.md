@@ -136,8 +136,13 @@
    **배포 직전**에 거부한다: 라이브에서 미서명 다이제스트는 `cluster.deploy` **호출 전에** 막혔다
    (`docs/evidence/image-signature-deploy-gate.log`). **"could not evaluate"(exit 2)도 거부**한다 —
    검사 실패는 이미지가 괜찮다는 증거가 아니다.
-   **남은 것**: ⓐ키는 **로컬 dev 전용**(빈 암호, `~/.platform-agent/cosign`) — 실 배포는 KMS/키리스
-   ⓑ**CI 없음** — 사람이 `make`를 쳐야 돈다 ⓒ차트의 `digest`는 **비워 둔다**(로컬 레지스트리
+   **CI + 키리스도 섰다(같은 날)** — `.github/workflows/gate.yml`(게이트를 기계가 돌린다) ·
+   `sign-image.yml`(빌드→GHCR→**키리스 서명**→레포 자신의 게이트로 검증, 라이브 **VERIFIED**
+   `ghcr.io/men16922/platform-agent@sha256:112dd9b5...`). **키리스가 custody의 답이다** —
+   Fulcio 단명 인증서라 보관·회전할 키가 없다. 대가: **Rekor 공개 로그에 영구 기록**(철회 불가).
+   증거 `docs/evidence/ci-keyless-signing.log`.
+   **남은 것**: ⓐ**로컬** `make sign-image`는 여전히 **빈 암호 dev 키**(키리스는 CI 경로만)
+   ⓑ`sign-image.yml`은 **태그/수동 트리거**에서만 돈다 ⓒ차트의 `digest`는 **비워 둔다**(로컬 레지스트리
    다이제스트를 커밋하면 아무도 못 가진 이미지에 대한 주장이 된다) ⓓ**어드미션 집행은 여전히
    미도입** — policy controller = 새 클러스터 의존성이고, 실패 모양이 Risk 8이다
    ⓔ**배포 게이트는 옵트인**(`PLATFORM_REQUIRE_SIGNED_IMAGES`, 미설정=검사 0)이고 **온프렘
@@ -163,4 +168,11 @@
    지금 창 필터를 타는 테스트는 **둘뿐**이고 둘 다 `now` 기준이다. **새로 추가할 때 확인할 것**:
    픽스처가 절대 시각이면 그 테스트는 만료일이 있는 주장이다. 그리고 **"1617 passed"는 날짜
    없이는 주장이 아니다** — 기록에는 측정 시점을 함께 남긴다.
+13. **게이트가 검증된 환경이 좁다(2026-08-08, CI 신설로 드러남)** — CI를 세우자 세 번 red가
+   났고 **세 번 다 진짜 결함**이었다: ①`make lint`는 게이트가 아닌데 내가 CI에 넣었다(로컬에서도
+   20건 실패 중) ②**게이트가 선언되지 않은 패키지 위에서 통과하고 있었다** — OTLP exporter가
+   미선언이라 새 클론에서는 tracing 17건이 깨진다(→ `observability` extra 신설) ③**`requires-python
+   = ">=3.11"`은 아무도 확인한 적 없는 주장**이다: 3.11에서 2건이 red(3.13에서는 green). CI는
+   **검증된 3.13**에 고정했고 floor는 **조용히 올리지 않았다** — 3.11 지원 여부는 그 두 테스트에
+   대한 질문이다. 증거 `docs/evidence/ci-keyless-signing.log`.
 - (해소된 리스크 이력 — Slack App 미연결=07-19 해소·A2A discovery=07-14·추적 IA 실증=07-13·NEXT_PUBLIC 인라인=07-13 — 은 `PROGRESS_LOG`/`docs/archive/` 참조.)
