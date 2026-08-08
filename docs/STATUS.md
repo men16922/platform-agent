@@ -8,7 +8,13 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` (pytest) → **1668 passed, 1 skipped** (2026-08-08, +17) — **Phase 5 경계**:
+- **CI와 로컬이 이제 같은 숫자다 — 그 전엔 아니었다**(2026-08-08) — CI는 **1666/3**,
+  로컬은 **1668/1**이었고 넘어간 둘이 하필 `test_terraform_validate_passes` **2종**
+  (=이 레포가 배포하는 IaC 검증). `skipif`가 `terraform 미설치 **OR** 모듈 미초기화`인데
+  러너가 둘 다 만족했다(`.terraform/`는 gitignore → **설치만 해도 skip**). `gate.yml`에
+  terraform 1.15.8 핀 + `init -backend=false` 추가 → CI **1668/1**, 두 테스트 PASSED.
+  증거 `docs/evidence/ci-terraform-validate-skipped.log` · PR #3 · → Risk 12②.
+- `make check` (pytest) → **1668 passed, 1 skipped** (2026-08-08, +17, **로컬·CI 일치**) — **Phase 5 경계**:
   모든 테넌트 파일 헤더가 Phase 0부터 "이 흐름은 오직 이 파일만 PR한다"고 적어 뒀는데
   **반증할 수단이 0**이었다. `registry_write` = **텍스트로 편집·의미로 검증**(주석이 이 파일들의
   자산이라 YAML 재직렬화 금지 → 재파싱해 **키 하나만** 바뀌었는지 비교). 반증 4종 red.
@@ -120,7 +126,11 @@ Phase 0·1a·1b·2·3 완결(M10~M12) · 잔여 소진(M13) · 결정 7건 닫�
    날짜 없이는 주장이 아니다.** ②**환경**: 게이트가 **선언되지 않은 패키지** 위에서 통과하고
    있었다(OTel exporter 미선언 → 새 클론은 아무도 통과 못 함). CI가 잡았고, 로컬에서는 원리상
    안 드러난다. `requires-python = ">=3.11"`도 **아무도 확인한 적 없는 주장**이었다(CI는 검증된
-   3.13 고정). ③**하중**: **행복 경로만 태운 가드는 하중을 받지 않는다** — 안전망을 통째로
-   지워도 14개가 초록이었다. **새 가드를 쓰면 지워 보고 red가 나는지 확인할 것.**
-   증거 `docs/evidence/ci-keyless-signing.log` · M15.
+   3.13 고정). **②의 역방향도 실측됐다**: 로컬이 통과시키고 **CI가 아예 안 도는** 경우 —
+   terraform 검증 2건이 CI에서만 조용히 skip됐다(위 baseline). **skip은 실패가 아니라서
+   검사 안 하는 게이트와 통과한 게이트가 같은 색**이고, 그래서 게이트 숫자에는 날짜뿐
+   아니라 **어느 기계에서 쟀는지**도 붙어야 한다. ③**하중**: **행복 경로만 태운 가드는
+   하중을 받지 않는다** — 안전망을 통째로 지워도 14개가 초록이었다. **새 가드를 쓰면
+   지워 보고 red가 나는지 확인할 것.** 증거 `docs/evidence/{ci-keyless-signing,
+   ci-terraform-validate-skipped}.log` · M15.
 - (해소된 리스크 이력 — Slack App 미연결=07-19 해소·A2A discovery=07-14·추적 IA 실증=07-13·NEXT_PUBLIC 인라인=07-13 — 은 `PROGRESS_LOG`/`docs/archive/` 참조.)
