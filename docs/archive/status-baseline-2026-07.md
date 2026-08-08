@@ -107,3 +107,38 @@
 - `make check` (pytest) → **649 passed, 1 skipped** (2026-07-14) — **provisioning 어댑터 4-provider parity**(신규 GCP/Azure GKE·AKS: plan-first/approved-gated·읽기전용 preflight·teardown 승인 강제·tool preflight-only, +13 test) 포함.
 - `make check` (pytest) → **636 passed, 1 skipped** (2026-07-14) — On-Prem 실 executor **scale**(양수 타깃, kind 2→5 라이브) + **polite drain**(--force 없음·PDB 존중, 3노드 kind 라이브 재배치·아웃티지0) + 인터랙티브 에이전트 **단일 카탈로그**(drift-0 불변식) + A2A Phase 2/PROVISION 격리 + On-Prem PATH B webhook/승인 게이트/인시던트 스토어 포함.
 - `make check` (pytest) → **600 passed, 1 skipped** (2026-07-12) — AI Model Router / Pydantic AI On-Prem 에이전트 / MLX proxy / deploy recorder(+cascade) / ops_tools / provisioning 어댑터 테스트 포함
+
+
+---
+
+## 2026-08-02까지의 baseline (STATUS에서 밀려남, 2026-08-08 정리)
+
+- `make check` (pytest) → **1617 passed, 1 skipped** (2026-08-02, +3) — **푸시 읽기 신원**:
+  push 인증은 **이미 완료**였고(계획이 일주일째 스테일), 실제로 열린 건 **스포크의 읽기**다 —
+  맨 kubectl + 공유 `argocd` ns라 테넌트 구분이 **코드 필터**다. 쓰기는 허브가 401로 막는다
+  (라이브 4종). 시끄럽게만 해 둠. 증거 `docs/evidence/push-identity-ambient.log`.
+- `make check` → **1614** (2026-08-02, +6) — **결정 6 = D42**: 승인
+  재사용을 **TTL로 묶었다**(서명이 덮는 `issued_at`, 기본 900초, 끄는 스위치 없음). one-time-use는
+  **틀린 수정**이었다(실행기가 같은 인시던트로 두 번 해석). 라이브: 만료·미래 스탬프·시각 위조
+  전부 거부, TTL 안 재사용은 **가능하고 그렇게 적었다**. 증거
+  `docs/evidence/approval-ttl-replay-bound.log`.
+- `make check` → **1608** (2026-08-02, +1) — **결정 3 = D41**: Capsule `limitRanges`를 대체 없이
+  **객체 직접 렌더**(→ Risk 9). 라이브 3단(Capsule 회수 · 없으면 `must specify limits.cpu`
+  Forbidden · 전체 리싱크 생존), 경고 2→**0**. 증거 `docs/evidence/capsule-limitranges-direct.log`.
+- `make check` → **1607** (2026-08-01, +2) — **결정 4 = D40**: k3s는 proven 기판에 넣지 않는다
+  (→ Risk 5). 가드 `tests/test_substrate_promotion_reachable.py`.
+- `make check` → **1605** (2026-07-31, +9) — **무스코프 MCP 읽기 차단**(D39): 근거 **"익명
+  kagent 왕복이 이걸 쓴다"가 사실이 아니었다**(`src/`에 `MCPServer` 생성자 0 → 그 경로를 돌리던
+  유일한 코드는 **그것을 고정하던 테스트**). `resource`가 자유 문자열이라 반경은 ambient
+  =cluster-admin이었다(라이브 `secrets -n kube-system`·`nodes` 성공 → 차단). 증거
+  `docs/evidence/unscoped-mcp-read-closed.log`.
+- `make check` → **1596·1572** (2026-07-30~31) — **결정 5 A·B**(D38, 배포 신원 축소 + 스코프
+  생산자, **둘 다 옵트인**) + 그 조사(**생산자 없는 메커니즘은 테스트에서 영원히 초록**).
+  증거 `docs/evidence/{deploy-identity-reduction,scope-producer-live,deploy-path-authorization}.log`.
+- `make check` → **1565·1552·1544** (2026-07-29~30) — M13의 마지막 셋: 배포 네임스페이스
+  출처(D37, 라이브에서 `rollout undo -n default`가 **엉뚱한 워크로드를 되돌리고 성공을 보고**) ·
+  tier 발명 제거(D36) · 리포트 창(`ttl`을 시각으로, 90→2, **라이브 미실행**).
+  상세 → `COMPLETED_SUMMARY` M13.
+- (이전 이력: gate **1533** 이하 · 2026-07-10~29 → **이 파일 위쪽 섹션** 및
+  `docs/archive/progress-2026-07.md` · `docs/archive/progress-2026-08.md`.)
+
