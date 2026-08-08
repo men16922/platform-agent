@@ -1,0 +1,75 @@
+# CI가 Terraform을 검증하지 않고 있었다 — 조용한 skip 2건 (2026-08-08)
+
+D43으로 `main` 병합 조건이 된 CI가, 이 레포가 배포하는 IaC를 한 번도 검증하지
+않았다. red가 아니라 skip이라 초록으로 보였다.
+
+## 1. 불일치 — 같은 커밋, 다른 숫자
+
+    개발 머신 (darwin_arm64)   1668 passed, 1 skipped
+    CI 첫 실행 (run 31250113860)  1666 passed, 3 skipped
+
+수집 총계는 1669로 동일하다. 2개가 pass에서 skip으로 넘어갔을 뿐이다.
+
+## 2. 넘어간 둘 — 하필 IaC 검증
+
+    $ gh run view 31250113860 --log | grep SKIPPED
+    tests/test_capability_runbook_e2e.py::...[onprem-lambda-throttle] SKIPPED  # 의도된 것
+    tests/test_onprem_addons_module.py::test_terraform_validate_passes SKIPPED
+    tests/test_terraform_module.py::test_terraform_validate_passes    SKIPPED
+
+## 3. 원인 — 조건이 두 절이고 러너가 둘 다 만족했다
+
+    @pytest.mark.skipif(
+        shutil.which("terraform") is None or not (MODULE / ".terraform").exists(),
+        reason="terraform not installed or module not initialised",
+    )
+
+- 러너에 terraform 바이너리가 없다.
+- `.terraform/`는 `.gitignore` 40행(`**/.terraform/`) → 새 체크아웃은 초기화된
+  적이 없다. **terraform을 설치하기만 해도 여전히 skip이다.**
+
+로컬 맥은 두 절 다 거짓이라(`/opt/homebrew/bin/terraform` + 세 모듈 init됨)
+통과한다. 즉 이 skip은 **개발 머신에서는 원리상 드러나지 않는다.**
+
+## 4. 고칠 수단이 이미 있었다
+
+    $ git ls-files | grep terraform.lock
+    infra/onprem/addons/.terraform.lock.hcl
+    infra/onprem/terraform/.terraform.lock.hcl
+    infra/terraform/aws-production/.terraform.lock.hcl
+
+lock 파일이 커밋돼 있어 provider 버전은 고정이다 → `init -backend=false`는
+자격증명 없이 결정적으로 돈다. `make check` 자체의 오프라인 성질도 그대로다
+(네트워크는 이미 `pip install` 단계가 쓴다).
+
+## 5. 반증 — 숫자로 판정했다
+
+수정 전 예고: *"이 init 스텝을 지우면 CI는 다시 1666/3이 된다. 1668/1이 나와야
+두 테스트가 하중을 받은 것이다."*
+
+    $ gh run view 31250493800 --log | grep test_terraform_validate_passes
+    tests/test_onprem_addons_module.py::test_terraform_validate_passes PASSED [ 61%]
+    tests/test_terraform_module.py::test_terraform_validate_passes    PASSED [ 99%]
+
+    ================= 1668 passed, 1 skipped, 3 warnings in 39.38s =================
+
+    # init이 실제로 provider를 받았다
+    - Installing hashicorp/aws v5.100.0...
+    - Installing hashicorp/helm v3.2.0...
+    - Installing hashicorp/tls v4.3.0...
+
+CI 숫자가 로컬과 정확히 일치하고, 남은 skip 1건은 의도된 인-테스트 skip
+(`On-prem has no serverless capability`)이다.
+
+## 배운 것
+
+**skip은 실패가 아니라서, 검사하지 않는 게이트와 통과한 게이트가 같은 색이다.**
+Risk 12②(환경)와 같은 계열이되 방향이 반대다 — 기록된 12②는 "로컬만 통과"였는데
+이건 **로컬이 통과시키고 CI가 아예 안 도는** 쪽이다. 그래서 게이트 숫자에는
+날짜(12①)뿐 아니라 **어느 기계에서 잰 것인지**도 붙어야 한다: 문서 baseline
+`1668`은 CI가 돌리던 숫자가 아니었다.
+
+## 참조
+
+- PR #3 · run 31250113860(수정 전) · run 31250493800(수정 후)
+- `.github/workflows/gate.yml` — setup-terraform 1.15.8 핀 + init 스텝

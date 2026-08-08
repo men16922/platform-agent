@@ -2,7 +2,11 @@
 
 최종 갱신: 2026-08-08
 
-> ▶ NEXT SESSION: **남은 건 Phase 4(managed 어댑터·원격 클러스터)뿐이고 billable — 설계 문서가 '별 승인'으로 못박았으니 승인 없이 시작하지 말 것**(`docs/plans/2026-07-21-multi-tenant-env-addons.md`). 착수하면 첫 행동: **어댑터 1종 범위와 월 비용을 먼저 산정**하고 스포크 자격증명의 tenant 파티션·수명·회전 정책을 명시할 것(→ `STATUS` Risk 10). 그 밖에 **무과금·무승인으로 열린 작업은 소진됐다**. ⚠️**`main`은 보호된다 — 직접 push 불가(소유자 포함), PR + CI 통과로만 병합**(D43). ⚠️**새 가드를 쓰면 지워 보고 red가 나는지 확인할 것**(Risk 12③ — 안전망을 통째로 지워도 14개가 초록이었다). 직전 세션 상세 → `COMPLETED_SUMMARY` **M15**.
+> ▶ NEXT SESSION: **남은 건 Phase 4(managed 어댑터)뿐 — billable이고 설계 문서가 '별 승인'으로 못박았다. 승인 없이 시작하지 말 것**(`docs/plans/2026-07-21-multi-tenant-env-addons.md`). 착수 시 첫 행동: **어댑터 1종 범위·월 비용 산정** + 스포크 자격증명의 tenant 파티션·수명·회전 정책 명시(→ `STATUS` Risk 10). **그 밖에 무과금·무승인 작업은 소진됐다.**
+>
+> ⚠️ `main` 보호 — 직접 push 불가(소유자 포함), **PR + CI 통과로만 병합**(D43).
+> ⚠️ 초록에는 조건이 붙는다(Risk 12): **새 가드는 지워 보고 red를 확인**(③) · **skip은 실패가 아니다** — 게이트 숫자엔 **잰 기계**까지 붙일 것(②).
+> 직전 세션 상세 → `COMPLETED_SUMMARY` **M15**.
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 
@@ -22,7 +26,7 @@
 - **동작하는 것:** Operations 4단계 + 3-cloud AI Agent + **On-Prem Ops**(12도구, trace) + Terraform kind/실 Multipass VM Ansible k3s Provision + kagent↔Local Qwen A2A + Agents UI. **On-Prem 오프라인 완결**: Local Qwen **7B**로 NL provision→deploy→validate ~39s, 로컬 JSONL 기록 + 대시보드 **hybrid**(AWS+On-Prem 병합) + 실 **롤백**(app/cluster). **추적 IA**: activity에 `type`(provision/deploy)·`cluster` 연결키, 대시보드 **Provisioning/Deployments/History** 분리 + **중첩 상세**(provisioning⊃deploys), 롤백 **단일-row 승계**·**teardown→deploy cascade**, 자연어 rollback/teardown도 동일 라우팅.
 - **하네스:** overnight-harness 플러그인 기반 (5 engine). `make overnight-kiro-once` 로 smoke. `make dev-up`으로 로컬 스택(MLX+proxy+router+dashboard) 한 방 기동.
 - **Kiro 특화:** aws-ops / cdk-dev / overnight-harness 3개 에이전트 + safety hook + AWS MCP Server.
-- **검증:** `make check` → **1668 passed, 1 skipped** (**2026-08-08 측정** — 게이트 숫자는 날짜 없이는 주장이 아니다, Risk 12①). CI(`gate.yml`)가 **main 병합 조건**이다. 이력·근거는 `STATUS` 검증 Baseline과 `COMPLETED_SUMMARY` **M10~M15**에 있다 — 여기에 다시 적지 말 것.
+- **검증:** `make check` → **1668 passed, 1 skipped** (**2026-08-08 측정, 로컬·CI 일치** — 게이트 숫자는 날짜와 **잰 기계** 없이는 주장이 아니다, Risk 12①②). CI(`gate.yml`)가 **main 병합 조건**이다. 이력·근거는 `STATUS` 검증 Baseline과 `COMPLETED_SUMMARY` **M10~M15**에 있다 — 여기에 다시 적지 말 것.
 - **현재 초점:** **Phase 4(billable, 별 승인)만 남았다.** 공급망은 생산자→소비자→CI 키리스까지 섰고 **어드미션만 업스트림 대기**(cosign v3 ↔ policy-controller 저장 위치 불일치, 양방향 실증). Phase 5는 **경계까지**(UI·PR 생성 없음). ⚠️**과대 해석 금지**: 스코프·배포 신원·이미지 서명 게이트는 전부 **옵트인** · 자격증명이 테넌트-바운드인 건 **온프렘뿐** · CODEOWNERS는 **라우팅** · `main` 보호는 **게이트 집행**이지 리뷰 집행이 아니다. **반복 확인된 것**: 조사할 때마다 **기록된 이유가 진짜 구속 조건이 아니었다** — 새 항목은 **그 이유를 한 번 돌려 보고** 시작할 것.
 
 ## Guardrails

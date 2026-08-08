@@ -6,6 +6,33 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-08 — 게이트가 검사하지 않는 것과 통과하는 것이 같은 색이었다
+
+- Status: 미커밋 `/tidy-docs` 증분을 PR로 랜딩하다가(**PR #2**) CI 로그에서 문서와
+  어긋나는 숫자를 봤다 — 문서 baseline `1668 passed, 1 skipped`인데 CI는 **1666/3**.
+- Changed(원인): 수집 총계는 1669로 같고 **2개가 pass→skip**이었다. 하필
+  `test_terraform_module`·`test_onprem_addons_module`의 `test_terraform_validate_passes`
+  = **이 레포가 배포하는 IaC를 검증하는 둘**. `skipif` 조건이 **`terraform 미설치 OR
+  모듈 미초기화`**인데 러너가 **두 절을 다** 만족했다(바이너리 없음 + `.terraform/`는
+  gitignore라 새 체크아웃은 초기화된 적 없음 → **설치만 해도 여전히 skip**).
+  즉 **D43이 병합 조건으로 삼은 게이트가 자기가 대체한 기계보다 적게 검사했다.**
+- Changed(수정, **PR #3**): `gate.yml`에 `setup-terraform` **1.15.8 핀**
+  (python 3.13 핀과 같은 이유=로컬에서 검증된 버전) + `terraform_wrapper: false`
+  (테스트가 subprocess로 파싱) + `init -backend=false` **두 모듈만**
+  (`infra/onprem/terraform`을 주장하는 테스트는 없다). 버전은 **커밋된 lock 파일**이
+  고정하므로 자격증명 없이 결정적이다.
+- Verified(반증 먼저 선언): *"init을 지우면 1666/3으로 돌아간다"* → 수정 후 CI가
+  **1668/1**, 두 테스트 **PASSED**, 남은 skip 1건은 의도된 인-테스트 skip.
+  run `31250113860`(전)↔`31250493800`(후). 증거
+  `docs/evidence/ci-terraform-validate-skipped.log`. PR #2·#3 병합 완료.
+- Changed(정리 중): 아카이브가 **자기 자신**을 "이전 이력"으로 가리키던 순환 포인터 1건 정정.
+- Blockers: 없음. 남은 건 Phase 4(billable, 별 승인).
+- 품질 메모: **skip은 실패가 아니라서, 검사하지 않는 게이트와 통과한 게이트가 같은
+  색이다.** Risk 12②와 같은 계열이되 방향이 반대다 — 12②는 "로컬만 통과"였는데 이건
+  **로컬이 통과시키고 CI가 안 도는** 쪽. 그래서 게이트 숫자에는 날짜(12①)뿐 아니라
+  **어느 기계에서 쟀는지**도 붙어야 한다.
+- Next: Phase 4(billable, 별 승인)만 남았다.
+
 ## 2026-08-08 — 문서 정리: 예산보다 진입점이 문제였다
 
 - Status: 하루치 증분이 쌓여 `PROGRESS_LOG` 329줄(예산 2.7배) 등 3종이 초과 → `/tidy-docs`.
