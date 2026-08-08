@@ -6,15 +6,23 @@
 # one tenant file — this is the second half, enforced by review rather than code:
 # a PR that edits acme's registry entry needs acme's owners.
 #
-# ⚠️ WHAT THIS DOES AND DOES NOT DO. CODEOWNERS only requests reviewers. It blocks
-# nothing until branch protection on `main` requires review from code owners, and
-# nothing in this repo does that today. Written down here rather than left to be
-# discovered: this file is a routing rule, not an enforcement mechanism, until
-# that setting is turned on.
+# ⚠️ WHAT THIS DOES AND DOES NOT DO — measured 2026-08-08, still true.
 #
-# The teams below do not exist yet either. GitHub silently ignores an owner it
-# cannot resolve — which means a mis-typed team name looks exactly like a working
-# rule. Verify with a test PR before believing it.
+# CODEOWNERS only requests reviewers. Making it *block* requires branch
+# protection with "require review from Code Owners", and that is deliberately
+# NOT enabled here: this repository has exactly one collaborator, GitHub does not
+# let you approve your own pull request, so the rule could never be satisfied —
+# every merge would need an admin bypass. A rule that must be bypassed to work
+# trains people to bypass rules, which is worse than no rule.
+#
+# What IS enforced on `main` (enabled the same day): a pull request is required,
+# and the `check` status check (`.github/workflows/gate.yml` = `make check`) must
+# pass. So the gate is enforced by a machine; ownership here is still routing.
+# When a second reviewer exists, turn on code-owner review and delete this note.
+#
+# The owners below resolve to a real account. GitHub silently ignores an owner it
+# cannot resolve — a mis-typed team name looks exactly like a working rule — so
+# if these are ever changed to teams, verify with a test PR before believing them.
 
 # The shared catalog defines capabilities for every tenant; a change here is a
 # platform change, not a tenant one.
