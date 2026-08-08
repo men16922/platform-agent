@@ -23,15 +23,23 @@ TWO DECISIONS WORTH KNOWING.
    inside the tenants directory. One check is a rule; two checks are a rule and
    a guard against the way the rule gets refactored.
 
-NOT IN HERE, ON PURPOSE: opening the PR. This produces the content and the single
-path it may touch; pushing a branch and calling an API is an outward-facing action
-and belongs to the caller (see ``scripts/attach_addon.py``).
+3. **The commit is path-limited, because the instruction was not.** Until now this
+   module stopped at the edited text and told the operator to run ``git commit -am``.
+   ``-a`` stages every modified tracked file, so following the printed instruction
+   with anything else dirty produces a PR that touches more than the one file —
+   the invariant broken by the tool that exists to enforce it. ``commit_attachment``
+   commits *the path*, not the working tree, so unrelated dirt cannot ride along.
+
+NOT IN HERE, ON PURPOSE: opening the PR. This goes as far as a **local** commit —
+no network, no remote, no API. Pushing a branch and calling GitHub is outward-facing
+and stays with the operator (see ``scripts/attach_addon.py``).
 """
 
 from __future__ import annotations
 
 import difflib
 import re
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -215,3 +223,45 @@ def plan_addon_attachment(
         tenant=tenant, env=env, capability=capability, backend=backend,
         version=version, path=path, original=original, updated=updated,
     )
+
+
+def _git(repo_root: Path, *args: str) -> str:
+    proc = subprocess.run(
+        ["git", "-C", str(repo_root), *args],
+        capture_output=True, text=True,
+    )
+    if proc.returncode != 0:
+        raise RegistryWriteError(
+            f"git {' '.join(args)} failed: {(proc.stderr or proc.stdout).strip()}"
+        )
+    return proc.stdout
+
+
+def commit_attachment(plan: AddonAttachment, *, repo_root: Path | None = None) -> str:
+    """Apply the plan and commit it on its own branch. Local only — never pushes.
+
+    The commit is **path-limited** (``git commit -- <path>``), not
+    ``git commit -a``. That difference is the whole point: ``-a`` sweeps in every
+    modified tracked file, so the printed instruction this replaces could produce
+    a PR touching files the plan never named — from the tool whose one job is that
+    the PR touches exactly one file. A path-limited commit ignores the index and
+    the rest of the working tree, so unrelated dirt physically cannot ride along.
+
+    Returns the new commit's sha. Raises ``RegistryWriteError`` if the branch
+    already exists, so a second run cannot quietly append to the first one's PR.
+    """
+    root = (repo_root or _REPO_ROOT).resolve()
+    if not plan.path.is_relative_to(root):
+        raise RegistryWriteError(f"refusing to commit {plan.path} — it is outside {root}")
+
+    existing = _git(root, "branch", "--list", plan.branch).strip()
+    if existing:
+        raise RegistryWriteError(
+            f"branch {plan.branch!r} already exists — refusing to add to an open attachment"
+        )
+
+    plan.path.write_text(plan.updated, encoding="utf-8")
+    _git(root, "switch", "-c", plan.branch)
+    # `-- <path>`: commit this file's working-tree content and nothing else.
+    _git(root, "commit", "-m", plan.title, "--", str(plan.path.relative_to(root)))
+    return _git(root, "rev-parse", "HEAD").strip()

@@ -5,13 +5,13 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(**M15=공급망 0→집행 + Phase 5 경계 +
 > `main` 보호**, M14=결정 6건, M13=미소비 14건) / `PROGRESS_LOG.md`(+`docs/archive/`). **≤120줄**.
 
-## 현재 상태 (2026-08-08, gate 1668)
+## 현재 상태 (2026-08-08, gate 1676)
 
 **Phase 0·1a·1b·2·3 완결**(M10~M12) + **잔여 소진**(M13) + **결정 7건 닫힘**(D36·D38~D43).
 **공급망은 닫을 수 있는 만큼 닫혔다**: 서명 생산자 → 배포 직전 소비자 → CI + 키리스(custody 해소).
 **어드미션만 남았고 그건 업스트림 대기**다(cosign v3 서명을 policy-controller가 못 읽는다).
-**`main`은 보호된다** — PR + CI 통과로만 병합(D43), 그 CI는 이제 **terraform 검증까지
-실제로 돌린다**(그 전엔 조용히 skip → Risk 12②). **Phase 5는 경계까지** 섰다.
+**`main`은 보호된다** — PR + CI 통과로만 병합(D43), 그 CI는 이제 **terraform 검증까지 실제로
+돌린다**(그 전엔 조용히 skip → Risk 12②). **Phase 5는 경계까지** 섰고 커밋도 **경로 한정**이다.
 **남은 건 Phase 4(billable, 별 승인)뿐**이고, 무과금·무승인으로 열린 작업은 소진됐다.
 **시연 가능**: `make dev-up` → `make demo-baseline` 두 줄로 영상 시나리오 A가 재현된다.
 
@@ -43,9 +43,15 @@ deploy-identity`. 미설정이면 예전처럼 인시던트는 거부, 배포는
 = 완결**(M10~M12) + **잔여 14건 소진**(M13).
 
 - [ ] **Phase 5 = 경계까지 섰다(2026-08-08)** — UI가 아니라 **"PR은 그 테넌트 파일 하나만
-  건드린다"**를 세웠다(→ M15). `registry_write` + `scripts/attach_addon.py`(dry-run) +
-  `.github/CODEOWNERS`. **남은 것**: 대시보드 attach UI(Next+FastAPI 두 층이라 별도 세션) ·
-  실제 PR 생성(외부 동작이라 조작자에게 남김).
+  건드린다"**를 세웠다(→ M15). `registry_write`(+`commit_attachment`, 경로 한정 커밋) +
+  `scripts/attach_addon.py`(`--write`/`--commit`) + `.github/CODEOWNERS`.
+  **남은 것 = attach UI인데 기록된 이유가 틀렸다(2026-08-08 실측)**: "Next+FastAPI 두 층"이
+  아니라 **FastAPI 층이 아예 없다**(Next→OIDC→DynamoDB 직결). 진짜 구속 조건은 **쓰기 대상이
+  git 파일**인데(`platform/tenants/*.yaml`, 로컬 `_REPO_ROOT`) **UI는 Vercel이라 파일시스템·
+  git·python이 없다**는 것 → "실제 PR 생성"은 별개 잔여가 **아니라 이 항목의 구속 조건**이다.
+  우회 없음: OAuth scope는 `read:org user:email`이고 `repo`로 넓히면 **닿는 모든 레포에 쓰기**
+  = blast radius=1과 충돌 · 플래너 TS 이식은 **431aeab가 지운 두 번째 진실 공급원**의 재도입.
+  ⇒ 여는 조건 = **파이썬 플래너를 어디서 돌릴지**(새 배포 대상 = 비용·승인 사안).
 - [ ] **Phase 4**(managed 어댑터, billable) = 다음 후보.
   Phase 5가 열리면 3②를 GitOps-native로 닫을 수 있다(D32 재검토 조건). Phase 4로 넘긴 것:
   GCP/Azure 자격증명의 테넌트 바인딩(상세 → `STATUS` Open Risk 10).
@@ -89,18 +95,13 @@ deploy-identity`. 미설정이면 예전처럼 인시던트는 거부, 배포는
   `MCPServer` 생성자가 0이다. D39로 무스코프 읽기는 닫혔지만 **"닫았다"가 "스코프가 강제된다"는
   뜻은 아니다**: 호출자가 스코프를 넘겨야 하고 넘기는 프로덕션 경로가 없다. MCP-over-HTTP를
   붙일 때 **요청 경로가 스코프를 공급하는지** 확인할 것(가드가 그 트랩을 들고 있다).
-- [ ] **A2A 인증 실집행 결정** — 카드가 광고하던 bearer/JWT를 서버가 안 검사하던 건 해소됐다.
-  남은 결정은 **기본값을 on으로 돌릴지**(라이브 kagent 왕복이 익명이라 opt-in — D39가 밝혔듯
-  그 "익명"은 **우리가 나가는 쪽**이지 누가 들어오는 쪽이 아니다).
-- [ ] **Cosign 어드미션 = 업스트림 대기(2026-08-08 실측)**. 서명 생산자·소비자·CI 키리스는
-  전부 섰다(→ M15). 남은 건 어드미션인데 **켤 수 없다**: policy-controller는 설치·동작하고
-  실제로 거부하지만 **우리가 서명한 이미지도 거부한다**. 원인 확정 — **cosign v3.1.2는 Sigstore
-  bundle을 `sha256-<digest>`에 쓰고 policy-controller는 `…\.sig`를 찾는다**. upstream 최신
-  **v0.15.1**로 올려도 동일하고, **cosign v2로 서명하면 통과함을 양방향 실증**했다.
-  ⚠️**우리 게이트는 같은 이미지에 VERIFIED를 준다**(같은 cosign을 부르니까) — **"검증됨"이
-  도구마다 다르고 우리는 그 불일치를 원리상 못 본다.** 켜려면 서명을 v2로 되돌려야 하는데
-  **CI 키리스가 v3 경로**다 → Risk 11과 같은 모양(upstream 대기).
-  증거 `docs/evidence/cosign-admission-kind-attempt.log`.
+- [ ] **A2A 인증 실집행 결정** — bearer/JWT 미검사는 해소됐고 남은 건 **기본값 on 여부**
+  (라이브 kagent 왕복이 익명이라 opt-in — 그 "익명"은 **나가는 쪽**이다, D39).
+- [ ] **Cosign 어드미션 = 업스트림 대기(2026-08-08 실측)** — 원인·증거·과대해석 금지 항목은
+  **`STATUS` Risk 6이 권위**다(여기 복제하지 말 것). 요약: 켤 수 없다 — cosign v3의 서명 저장
+  위치를 policy-controller가 못 읽고, v2로 되돌려야 하는데 **CI 키리스가 v3 경로**다.
+  **재개 조건**: 둘 중 하나가 업스트림에서 맞춰지는 것.
+
 ## 유지 규약 (완료된 리팩토링에서 나온 "하지 말 것")
 
 `_k8s_rest`는 restart/scale만 공유(rollback은 GKE/AKS 시맨틱 상이). detector/analyzer/decision은 SDK가 90%+
