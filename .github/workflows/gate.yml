@@ -45,8 +45,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev,state]" fastapi "uvicorn[standard]" pydantic-ai-slim[openai]
 
-      - name: lint
-        run: ruff check src/ tests/
-
+      # `make check` only — that IS this repo's gate (Makefile: `check: test`).
+      #
+      # The first version of this file also ran `ruff check src/ tests/` and went
+      # red on 399 findings. `make lint` is a real target but has never been part
+      # of `check`, and it fails locally too (20 findings on this machine's ruff).
+      # So that step was not enforcing the gate, it was silently widening it —
+      # a CI job is a bad place to introduce a standard nobody agreed to. Whether
+      # lint joins the gate is a decision for the repo, and it belongs in
+      # `check:` where the harness and the Stop hook would honour it as well.
       - name: gate
         run: make check
