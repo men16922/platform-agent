@@ -1,0 +1,37 @@
+# Admission enforcement for image signatures — LOCAL KIND ONLY.
+#
+# Requires sigstore policy-controller (a new cluster dependency, which is why
+# this was an approval item):
+#   helm install policy-controller sigstore/policy-controller \
+#     -n cosign-system --create-namespace
+#
+# The key below is the LOCAL DEV public key produced by `make sign-image`
+# (~/.platform-agent/cosign/cosign.pub). It is a public key, so committing it is
+# safe — but it is also a *development* key with an empty-password private half,
+# so this policy proves the mechanism, not a production trust root. CI signs
+# keylessly instead (.github/workflows/sign-image.yml); a cluster that enforced
+# against CI images would use a `keyless:` authority pinned to that workflow
+# identity, not this key.
+#
+# Enforcement is opt-in PER NAMESPACE — policy-controller only inspects
+# namespaces labelled `policy.sigstore.dev/include=true`. That is deliberate here:
+# turning it on cluster-wide would put every existing workload (none of which is
+# signed) behind a policy they cannot satisfy, which is the Risk 8 failure —
+# admission refuses the pods while the GitOps view still reports Synced.
+apiVersion: policy.sigstore.dev/v1beta1
+kind: ClusterImagePolicy
+metadata:
+  name: platform-agent-signed
+spec:
+  images:
+    # Scoped to this image on purpose. A `**` glob would also capture the
+    # cluster's own infrastructure images and deny them.
+    - glob: "**platform-agent**"
+  authorities:
+    - name: local-dev-key
+      key:
+        data: |
+          -----BEGIN PUBLIC KEY-----
+          MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEHhMAj7TIiYvyQl/OAy4J/tPwJXmq
+          1u+zkK+/lkWn83Puvt5GSSDPaE/+6I/Pv4h+pcZKFc/m+SBkTEu4oIjQLg==
+          -----END PUBLIC KEY-----

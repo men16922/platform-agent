@@ -128,8 +128,15 @@ deploy-identity`. 미설정이면 예전처럼 인시던트는 거부, 배포는
   **키리스가 키를 없애서 custody를 푼다**. `gate.yml`(게이트를 기계가 돌린다) + `sign-image.yml`
   (빌드→GHCR→키리스 서명→레포 자신의 게이트로 검증, 라이브 VERIFIED). 대가는 **Rekor 영구 공개
   기록**(철회 불가). 증거 `docs/evidence/ci-keyless-signing.log`.
-  **그래서 남은 건 ④어드미션 하나뿐이다** — policy controller = 새 클러스터 의존성이고 실패
-  모양이 Risk 8(**Argo는 Synced인데 파드 0개**)이라 kind 선행을 권한다.
+  **④어드미션 = kind에서 시도했고 승인 조건이 하나 더 드러났다(2026-08-08)**. policy-controller는
+  설치·동작하고 **실제로 거부한다**. 그런데 **우리가 서명한 이미지도 거부한다**(`no signatures
+  found`) — 호스트 `cosign verify`는 같은 다이제스트에 VERIFIED이고 서명 아티팩트도 레지스트리에
+  실재하는데도. ⚠️**첫 시도는 성공처럼 보였다**: 미서명이 거부됐는데 사유가 `connection refused`
+  였고, **서명된 것도 같은 이유로 거부**됐다 — 미서명만 돌려 봤으면 "동작한다"고 잘못 적었을
+  것이다. 원인 추정(**미검증**): cosign은 manifest **list**에 서명했고 policy-controller는
+  플랫폼별 manifest를 검증하는 듯하다. **그래서 승인 질문이 바뀐다** — "policy controller를
+  넣어도 되는가"가 아니라 **"우리가 서명하는 것과 어드미션이 검증하는 것이 같은가"**가 선행이다.
+  증거 `docs/evidence/cosign-admission-kind-attempt.log`.
   → `STATUS` Risk 6·13, 가드 `tests/test_signature_gate_claims.py`·`test_image_trust.py`.
 
 ## 유지 규약 (완료된 리팩토링에서 나온 "하지 말 것")

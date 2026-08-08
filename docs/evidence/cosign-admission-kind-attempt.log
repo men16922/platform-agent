@@ -1,0 +1,95 @@
+Cosign 어드미션 집행 — kind 실측 시도, 2026-08-08
+================================================
+
+결론부터. **집행은 섰고 거부도 했지만, 서명 때문에 거부한 게 아니다.** 서명된
+이미지와 미서명 이미지가 **같은 이유로** 거부됐다. 그래서 이 시도는 "어드미션이
+동작한다"를 증명하지 못했고, 그렇게 적지 않는다.
+
+--------------------------------------------------------------------------------
+1. 세운 것
+--------------------------------------------------------------------------------
+
+  helm install policy-controller sigstore/policy-controller \
+    --version 0.10.6 -n cosign-system --create-namespace
+  → policy-controller-webhook  1/1 Running
+  → validatingwebhookconfigurations: policy.sigstore.dev,
+    validating.clusterimagepolicy.sigstore.dev
+
+  ClusterImagePolicy `platform-agent-signed` (infra/local/cosign-policy.yaml),
+  authority = `make sign-image`이 만든 로컬 dev 공개키.
+  네임스페이스 `cosign-probe`에 `policy.sigstore.dev/include=true`.
+
+  ⚠️ 집행은 **네임스페이스 옵트인**으로 좁혔다. 클러스터 전역으로 켰다면 서명이
+  하나도 없는 기존 워크로드 전부가 만족할 수 없는 정책 뒤에 갇힌다 — Risk 8의 모양.
+
+--------------------------------------------------------------------------------
+2. 첫 시도 — 성공처럼 보였고, 아니었다
+--------------------------------------------------------------------------------
+
+미서명 이미지:
+  Error from server (BadRequest): admission webhook "policy.sigstore.dev" denied
+  the request: ... signature key validation failed for authority local-dev-key
+  for localhost:5001/platform-agent@sha256:3dbb1b19...:
+  Get "https://localhost:5001/v2/": dial tcp [::1]:5001: connect: connection refused
+
+**거부 사유가 "서명 없음"이 아니라 `connection refused`다.** 웹훅은 파드 안에서
+도는데 `localhost:5001`은 그 파드 자신의 localhost다.
+
+**서명된 이미지도 똑같이 거부됐다** — 같은 connection refused로. 즉 이 시점의
+"거부"는 서명과 무관했다. **미서명만 돌려 보고 멈췄다면 "어드미션이 동작한다"고
+잘못 보고했을 것이다.** 반대쪽을 함께 돌리는 것이 그것을 잡았다.
+
+부수 측정: 이 kind 클러스터에는 **containerd 레지스트리 미러가 설정된 적이 없다**
+(`/etc/containerd/certs.d/` 자체가 없음). `infra/local/setup.sh`가 레지스트리
+컨테이너를 띄우고 kind 네트워크에 붙이지만 containerd 쪽 설정은 하지 않는다.
+즉 이 클러스터는 로컬 레지스트리에서 **pull한 적이 없다**.
+
+--------------------------------------------------------------------------------
+3. 두 번째 시도 — 진짜 판정에 닿았고, 거기서 막혔다
+--------------------------------------------------------------------------------
+
+레지스트리는 kind 네트워크에서 172.23.0.2:5000이다. 그 주소로 바꾸자 판정이 바뀌었다:
+
+  미서명: ... for 172.23.0.2:5000/platform-agent@sha256:3dbb1b19...: no signatures found
+  서명됨: ... for 172.23.0.2:5000/platform-agent@sha256:510619af...: no signatures found
+
+`connection refused` → `no signatures found`. 웹훅이 레지스트리에 닿아 **진짜 서명
+판정**을 내렸다. 그런데 **서명된 것도 "서명 없음"이라고 한다.**
+
+이게 사실이 아니라는 건 확인된다:
+  * 호스트에서 `scripts/verify_image_signature.py`가 같은 다이제스트에 **VERIFIED**
+  * 레지스트리에 서명 아티팩트가 실재한다:
+      $ curl -s http://localhost:5001/v2/platform-agent/tags/list
+      ... sha256-510619af072cb00fcbfbccca9856dfb04cf465b79b86ca34275331df0f541cf0
+
+--------------------------------------------------------------------------------
+4. 원인 — 측정된 것과 추정인 것을 구분한다
+--------------------------------------------------------------------------------
+
+**측정된 것**: 서명은 존재하고 호스트 cosign은 찾는다. policy-controller는 같은
+레지스트리·같은 다이제스트에서 못 찾는다.
+
+**추정(미검증)**: `510619af`는 `docker build` 출력상 **manifest list**(멀티아치
+인덱스)이고, 같은 빌드가 `3dbb1b19`(image manifest)와 `9f7331ee`(attestation
+manifest)도 만들었다. cosign은 내가 가리킨 **인덱스**에 서명했고, policy-controller는
+노드가 실제로 돌릴 **플랫폼별 manifest**를 해석해 그 다이제스트의 서명을 찾는지도
+모른다. 그렇다면 서명 대상과 검증 대상이 어긋난다.
+
+**이건 확인하지 않았다.** 확인하는 법: 단일 플랫폼으로 빌드하거나
+(`--provenance=false --platform linux/amd64`) 인덱스가 가리키는 각 manifest에
+서명해 보고 판정이 바뀌는지 본다.
+
+--------------------------------------------------------------------------------
+5. 그래서 무엇을 주장할 수 있나
+--------------------------------------------------------------------------------
+
+* policy controller는 **설치되고 동작한다**. 어드미션 거부가 실제로 일어난다.
+* 이 레포의 서명은 **이 경로로는 아직 통과하지 못한다**. 따라서 어드미션 집행을
+  켜면 **정상 워크로드도 거부된다** — Risk 8의 모양 그대로.
+* 즉 **승인 조건이 하나 더 남았다**: "policy controller를 넣어도 되는가"가 아니라
+  **"우리가 서명하는 것과 어드미션이 검증하는 것이 같은가"**를 먼저 맞춰야 한다.
+
+정리 상태: ClusterImagePolicy 삭제함. `cosign-probe` 네임스페이스는 남아 있으나
+정책이 없어 무해하다(빈 네임스페이스). policy-controller는 설치된 채로 두었고,
+ClusterImagePolicy가 0개라 **아무것도 집행하지 않는다**.
+되돌리기: `helm uninstall policy-controller -n cosign-system`.
