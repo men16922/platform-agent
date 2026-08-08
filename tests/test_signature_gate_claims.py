@@ -23,13 +23,25 @@ first sentence was not true at all:
     next to a *digest*, which `verify_image_signature.py`'s own docstring says.
     So there is not even an address at which a signature could exist.
 
-Which inverts the approval. Installing a policy controller today would not "start
-enforcing signatures" — it would deny every workload the platform runs, because
-there is no signature to find. The prerequisite is a signing path, and that is
-cheaper to state than to argue about.
+Which inverted the approval. Installing a policy controller in that state would
+not "start enforcing signatures" — it would deny every workload the platform
+runs, because there is no signature to find. The prerequisite was a signing path.
 
-These guards keep both halves honest: the docs may not describe a gate that
-nothing invokes, and admission enforcement may not land before signing does.
+**That path now exists** (`make sign-image` / `scripts/build_and_sign_image.sh`,
+same day): build → push by digest → `cosign sign` → verify through this repo's own
+`verify_image_signature.py`, which gave that script its first production caller.
+So the findings above are history, not current state — what these guards hold is
+the ordering that made them findings:
+
+  * something must still sign, and verification must still go through the repo's
+    own gate (delete either and the supply-chain wording becomes false again);
+  * admission enforcement may not land before signing does;
+  * the chart's `image.digest` stays empty, because a digest committed here is a
+    claim about an image nobody else has.
+
+Still absent on purpose, and not to be over-read: there is no CI, the key is a
+local-dev key with an empty password, and nothing enforces signatures at
+admission. See STATUS Risk 6.
 """
 
 from __future__ import annotations
@@ -40,19 +52,24 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 
-#: Where a claim about the supply chain is allowed to live. Checked as text
-#: because the claim is prose — there is no symbol to assert on.
-CLAIM_DOCS = ("docs/STATUS.md", "docs/NEXT_PLAN.md", "docs/AGENT_BRIEF.md")
-
 #: Paths that are allowed to mention the verifier without being a caller: the
 #: script itself, its unit test, and documentation.
 _NOT_A_CALLER = ("scripts/verify_image_signature.py", "tests/", "docs/", ".md")
 
 
 def _grep(pattern: str) -> list[str]:
-    """Repo-wide search, excluding vendored and generated trees."""
+    """Repo-wide search, excluding vendored and generated trees.
+
+    ``--untracked`` is load-bearing, not tidiness. Without it `git grep` searches
+    only tracked files, so a brand-new script would be invisible to these guards
+    until it was committed — i.e. the guard would go quiet exactly when the change
+    it exists to notice is being written. Caught by this file's own first run:
+    `scripts/build_and_sign_image.sh` added a real caller of the verifier and
+    ``test_the_verifier_has_no_production_caller`` stayed green.
+    """
     result = subprocess.run(
-        ["git", "grep", "-rIn", "-e", pattern, "--", ".", ":!node_modules", ":!*/cdk.out/*"],
+        ["git", "grep", "--untracked", "-rIn", "-e", pattern,
+         "--", ".", ":!node_modules", ":!*/cdk.out/*"],
         cwd=REPO, capture_output=True, text=True,
     )
     return [line for line in result.stdout.splitlines() if line.strip()]
@@ -85,39 +102,40 @@ def _verifier_callers() -> list[str]:
 
 
 class TestTheDocsMayNotClaimAGateThatNothingInvokes:
-    def test_no_doc_claims_a_ci_signature_gate_while_there_is_no_ci(self):
-        """
-        `.github/workflows/` does not exist. A doc saying signature verification
-        runs "CI까지" describes a step that has never executed, and that is the
-        kind of sentence this repo keeps paying for: it reads as a guarantee.
-        """
-        if (REPO / ".github" / "workflows").is_dir():
-            return  # CI exists; this guard has nothing to say
+    # REMOVED 2026-08-08, the same day it was written: a guard that grepped
+    # CLAIM_DOCS for "CI 게이트" near "cosign" and failed while
+    # `.github/workflows/` was absent.
+    #
+    # It caught the real defect once — the docs did claim a CI gate that could
+    # not have run — and then failed the corrected sentence, because the fixed
+    # STATUS line says the CI gate *did not exist* and a regex cannot tell an
+    # assertion from its denial. Patching the pattern would only move where it
+    # misreads Korean prose.
+    #
+    # Deleted rather than weakened, per this repo's own lesson (수호 테스트 자신이
+    # 안티패턴일 수 있다). What actually keeps the docs honest is below: the claim
+    # is derived from code facts, and the code facts are guarded. If signing or
+    # verification disappears, `test_the_verification_gate_has_a_producer` goes
+    # red and the wording has to be revisited by a human who can read the sentence.
 
-        offenders = []
-        for rel in CLAIM_DOCS:
-            text = (REPO / rel).read_text(encoding="utf-8")
-            for line in text.splitlines():
-                if "cosign" not in line.lower():
-                    continue
-                if re.search(r"CI\s*[/·]\s*사람용 게이트|CI 게이트", line):
-                    offenders.append(f"{rel}: {line.strip()[:120]}")
-        assert not offenders, (
-            "a doc claims a CI signature gate, but .github/workflows/ does not exist:\n  "
-            + "\n  ".join(offenders)
+    def test_the_verification_gate_has_a_producer(self):
+        """
+        Inverted the same day it was written. The first version asserted the
+        verifier had NO production caller — true at the time, and designed to go
+        red when one appeared. `scripts/build_and_sign_image.sh` made it red, so
+        the invariant flipped: from here the risk is not "we claim a gate that
+        does not exist" but "the signing path gets deleted and the claim silently
+        becomes false again".
+        """
+        assert _signing_producers(), (
+            "nothing signs an image any more (`cosign sign` has no producer). "
+            "Restore it or downgrade the supply-chain wording in docs/ — a verifier "
+            "with nothing to verify is the state this file was written about."
         )
-
-    def test_the_verifier_has_no_production_caller_and_the_docs_know_it(self):
-        """
-        If a caller appears, this assertion is meant to go red — that is the
-        signal to promote the wording from "도구는 있다" to "게이트가 돈다".
-        Delete the guard then, do not weaken it.
-        """
-        callers = _verifier_callers()
-        assert not callers, (
-            "verify_image_signature.py now has a production caller — the supply-chain "
-            "wording in docs/ can finally be upgraded, and this guard removed:\n  "
-            + "\n  ".join(callers)
+        assert _verifier_callers(), (
+            "scripts/verify_image_signature.py lost its production caller. Signing "
+            "without verifying through the repo's own gate means 'verified' can drift "
+            "away from what that script means by it."
         )
 
 

@@ -47,7 +47,10 @@ local-cluster-status:  ## show cluster node and pod status
 	@echo ""
 	@kubectl get pods -A 2>/dev/null || true
 
-.PHONY: local-cluster local-cluster-down local-cluster-status
+sign-image:  ## build + push by digest + cosign sign + verify through the repo's own gate
+	bash scripts/build_and_sign_image.sh
+
+.PHONY: local-cluster local-cluster-down local-cluster-status sign-image
 
 # ===== Local LLM natural-language deploy stack (AI Model Router) =====
 # MLX-LM (Qwen) -> tool-call proxy -> AI Model Router API. The dashboard Agents

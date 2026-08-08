@@ -54,3 +54,7 @@ infra/onprem/terraform/.terraform/
 
 # Skill scratch output (humanize drafts 등). 산출물은 docs/ 아래 최종본만 남긴다.
 _workspace/
+
+# Local-dev cosign keys (make sign-image). Never commit a signing key.
+cosign.key
+cosign.pub
