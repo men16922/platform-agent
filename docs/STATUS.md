@@ -131,11 +131,19 @@
    `digest: ""`라 **서명이 놓일 주소조차 없었다**. → `make sign-image`로 ①빌드 ②**다이제스트로**
    push ③`cosign sign` ④**레포 자신의 게이트로 검증**(`verify_image_signature.py`의 첫 프로덕션
    호출자)까지 라이브 실증. 미서명 다이제스트는 `NOT SIGNED`(exit 1)로 거부됨.
+   그리고 **소비자도 붙였다** — 서명 경로만 만들었을 때 나는 **소비자 없는 생산자**를 새로
+   만든 것이었다(이 레포가 온종일 사냥한 그 결함). `image_trust.require_trusted_image`가
+   **배포 직전**에 거부한다: 라이브에서 미서명 다이제스트는 `cluster.deploy` **호출 전에** 막혔다
+   (`docs/evidence/image-signature-deploy-gate.log`). **"could not evaluate"(exit 2)도 거부**한다 —
+   검사 실패는 이미지가 괜찮다는 증거가 아니다.
    **남은 것**: ⓐ키는 **로컬 dev 전용**(빈 암호, `~/.platform-agent/cosign`) — 실 배포는 KMS/키리스
    ⓑ**CI 없음** — 사람이 `make`를 쳐야 돈다 ⓒ차트의 `digest`는 **비워 둔다**(로컬 레지스트리
    다이제스트를 커밋하면 아무도 못 가진 이미지에 대한 주장이 된다) ⓓ**어드미션 집행은 여전히
-   미도입** — policy controller = 새 클러스터 의존성이고, 실패 모양이 Risk 8이다.
-   가드 `tests/test_signature_gate_claims.py`. **있는 보증을 과대 해석하지 말 것.**
+   미도입** — policy controller = 새 클러스터 의존성이고, 실패 모양이 Risk 8이다
+   ⓔ**배포 게이트는 옵트인**(`PLATFORM_REQUIRE_SIGNED_IMAGES`, 미설정=검사 0)이고 **온프렘
+   진입점 하나**만 덮는다 — 클라우드 3종과 ArgoCD가 직접 당기는 이미지는 지나가지 않는다.
+   가드 `tests/test_signature_gate_claims.py`·`tests/test_image_trust.py`.
+   **있는 보증을 과대 해석하지 말 것.**
 7. **TS 타입은 네트워크 데이터를 보증하지 않는다** — 라이브에서 페이지가 `posture.namespaces.length`로
    죽었는데 `tsc`는 내내 초록이었다(구버전 에이전트 페이로드). 롤링 업그레이드 중엔 허브가 두
    버전을 동시에 서빙하므로 **푸시 신규 필드는 항상 optional + 폴백**으로 다룬다.

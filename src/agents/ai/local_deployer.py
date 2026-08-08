@@ -39,6 +39,7 @@ from pydantic_ai.providers.openai import OpenAIProvider
 
 
 from src.agents.adapters.deployment import ServiceSpec, get_deployment_adapters
+from src.agents.platform.image_trust import ImageTrustError, require_trusted_image
 
 
 # The ``## Tools`` inventory below is not hand-written — it is rendered from the
@@ -178,6 +179,23 @@ def deploy_to_cluster(
     Returns:
         Dict with deploy result (status, deployment_id, endpoint, error).
     """
+    # Before anything reaches a cluster. `make sign-image` produces signatures;
+    # without a check at the point of use they are build artifacts, not a control
+    # — the producer-without-a-consumer shape this repo keeps finding. Off by
+    # default (PLATFORM_REQUIRE_SIGNED_IMAGES), and when off it checks nothing and
+    # claims nothing.
+    try:
+        require_trusted_image(image_uri)
+    except ImageTrustError as exc:
+        return {
+            "status": "failed",
+            "deployment_id": None,
+            "namespace": namespace,
+            "replicas_desired": replicas,
+            "endpoint": None,
+            "error": f"image signature refused: {exc}",
+        }
+
     spec = ServiceSpec(
         name=service_name,
         image=image,

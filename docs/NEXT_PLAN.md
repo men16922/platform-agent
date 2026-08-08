@@ -119,9 +119,15 @@ deploy-identity`. 미설정이면 예전처럼 인시던트는 거부, 배포는
   핀 → ④그때 어드미션이 의미를 갖는다. **①②는 완료(2026-08-08)** — `make sign-image`가
   빌드→다이제스트 push→서명→**레포 자신의 게이트로 검증**까지 하고, 미서명 다이제스트는
   `NOT SIGNED`로 거부된다(라이브). ③은 **커밋하지 않는다**(로컬 다이제스트는 배포별 값) ·
-  ④만 남은 승인 사항. **그 전에 붙는 결정 둘**: **CI를 만들 것인가**(지금은 사람이 `make`를
-  쳐야 돈다) · **키 custody**(로컬 dev 키는 빈 암호 — 실 배포는 KMS/키리스, 승인 서명키의
-  custody와 같은 결정이다). → `STATUS` Risk 6, 가드 `tests/test_signature_gate_claims.py`.
+  ④만 남은 승인 사항. **소비자도 붙었다**(2026-08-08) — 서명 경로만 만들면 **소비자 없는
+  생산자**가 되므로 `image_trust.require_trusted_image`를 **배포 직전**에 배선했다.
+  라이브에서 미서명 다이제스트는 `cluster.deploy` 호출 **전에** 막힌다. 증거
+  `docs/evidence/image-signature-deploy-gate.log`. ⚠️**옵트인**이고
+  (`PLATFORM_REQUIRE_SIGNED_IMAGES`) **온프렘 진입점 하나**만 덮는다.
+  **그 전에 붙는 결정 둘**: **CI를 만들 것인가**(지금은 사람이 `make`를 쳐야 돈다 — 이게 서야
+  "게이트가 돈다"고 말할 수 있다) · **키 custody**(로컬 dev 키는 빈 암호 — 실 배포는 KMS/키리스.
+  **키리스는 키를 없애서 custody를 푼다**는 점에서 두 결정은 사실 하나다. 승인 서명키 custody와도
+  같은 결정). → `STATUS` Risk 6, 가드 `tests/test_signature_gate_claims.py`·`test_image_trust.py`.
 
 ## 유지 규약 (완료된 리팩토링에서 나온 "하지 말 것")
 
