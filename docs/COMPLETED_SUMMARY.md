@@ -1,6 +1,6 @@
 # COMPLETED_SUMMARY — platform-agent
 
-최종 갱신: 2026-08-02
+최종 갱신: 2026-08-08
 
 > 완료된 milestone 압축. current docs 에는 링크만, 상세 체크리스트는 여기로 압축.
 > 도메인 원문 상세는 `bin/docs/archive/`.
@@ -37,6 +37,30 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 ## M6 — CDK deprecation 정리 (완료)
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
+
+## M15 — 공급망을 0에서 집행까지 + Phase 5 경계 + `main` 보호 (완료, 2026-08-08)
+
+**gate 1617 → 1668 (+51), 커밋 23건.** 하루 전체를 관통한 패턴 하나: **문서에 적힌 이유가
+진짜 구속 조건이 아니었다** — 게이트 red(달력) · 서명키(배포 위상) · 보관(데이터 0) ·
+Cosign(서명 자체가 없음) · 어드미션(cosign 버전).
+
+- **승인 3건을 쟀다** — ①실 DynamoDB 왕복 **통과**(`confidence`가 `Decimal`로 왕복 = 문자열이면
+  화면만 영원히 "n/a", float면 boto3 예외가 `except`에 잡혀 **행 전체 소실**. 목으로는 원리상
+  못 잡는다) ②GCP/Azure 보관은 **질문이 틀렸다**(스토어가 아예 없어 **지울 데이터 0** → 승인이
+  아니라 프로비저닝 선행 = Phase 4) ③Cosign만 진짜 승인이었다.
+- **공급망 0 → 집행**: 서명 생산자(`make sign-image`) → 배포 직전 **소비자**(`image_trust`,
+  exit 2도 거부) → **CI**(`gate.yml`) → **키리스**(Fulcio 단명 인증서 = **custody의 답**).
+  CI가 첫날 세 건을 잡았고 셋 다 진짜 결함(임의로 넓힌 lint · **미선언 OTel exporter** ·
+  **미검증 `>=3.11`**). **어드미션은 업스트림 대기** — cosign v3 서명을 policy-controller가
+  v0.15.1로도 못 읽고, v2로 서명하면 통과함을 **양방향 실증**했다.
+- **서명키 rotation**(D42 TTL이 겹침 창을 유한하게) · **테스트 시효**(소스 무변경 red) ·
+  **레포 원고 동기화**(원고의 "다음 단계" 3건이 이미 사실이 아니었다).
+- **Phase 5 = 경계까지**: UI가 아니라 **"PR은 그 테넌트 파일 하나만 건드린다"**를 세웠다 —
+  Phase 0부터 헤더에 적혀 있었지만 **반증할 수단이 0**이던 문장. 텍스트로 편집·의미로 검증.
+- **`main` 보호 = 집행 확인**(D43) · **TS 닫힌 섬 제거**(인가 규칙의 **두 번째 진실 공급원**).
+- **교훈 3종**: 게이트 숫자는 **날짜 없이는 주장이 아니다**· 게이트가 **말해지지 않은 환경** 위에서
+  통과하고 있었다 · **행복 경로만 태운 가드는 하중을 받지 않는다**(전부 → Risk 12 — 안전망을 통째로 지워도 14개가 초록이었다). 그리고 **내 가드가 네 번 틀렸다**.
+- 상세 → `PROGRESS_LOG` / `docs/archive/progress-2026-08.md` / `docs/evidence/*` / D43.
 
 ## M14 — 열린 결정 6건 전부 닫힘 (완료, 2026-07-29~08-02)
 

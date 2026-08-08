@@ -1,6 +1,6 @@
 # DECISIONS — platform-agent
 
-최종 갱신: 2026-08-02
+최종 갱신: 2026-08-08
 
 > 되돌리기 어려운 결정만. 형식: **Decision / Reason / Impact**. 최신이 위.
 
@@ -17,6 +17,22 @@
 > - **GitAIOps 실습서(Notiflex)** (외부 학습 레포) — Rollouts **AnalysisTemplate 메트릭 자동판정**(우리 무기한 pause 게이트의 미완점) · **OTel→Tempo로 4-step 파이프라인 자체 트레이싱** · 런북 **사전확인/사후검증 3단**(우리 `RunbookStep`엔 없음) · **allow/ask/deny 권한통제** · **Sync Wave**. 안티패턴=Kafka·멀티 노드풀·GKE 종속 시크릿·`--dangerously-skip-permissions`. 상세 → `docs/reference/gitaiops-notiflex-book.md`. (검토 2026-07-25)
 
 ---
+
+## D43 — `main`은 **게이트로** 보호하고, **소유권으로는 보호하지 않는다**
+
+- **Decision:** `main`에 브랜치 보호를 켠다 — **PR 필수 + `check`(=`make check`) 통과 필수**,
+  `enforce_admins: true`, force push·브랜치 삭제 금지, 승인 필요 건수 **0**.
+  **`require review from Code Owners`는 켜지 않는다.**
+- **Reason:** 협업자가 **1명**이고 GitHub은 자기 PR을 승인하게 두지 않는다. 켜면 그 규칙은
+  **만족 불가능**해져 모든 병합이 관리자 우회를 거친다 — **우회해야 동작하는 규칙은 우회를
+  습관으로 만들고**, 그건 규칙이 없는 것보다 나쁘다. 같은 날 만든 CODEOWNERS는 그래서 여전히
+  **라우팅**이고, 그 사실을 파일 안에 적어 두었다(집행하지 않는 것을 광고하지 않는다는 규율의
+  반대편: **광고하려고 집행을 흉내 내지도 않는다**).
+- **Impact:** `main` 직접 push 불가 — **소유자 포함**. 오늘 세운 CI가 장식이 아니라 **실제 병합
+  조건**이 된다. 되돌리기는 설정 하나. **막는지 확인했다**: 일부러 직접 push해 두 규칙이 모두
+  발화하는 것을 보고(`[remote rejected]`), 이어서 PR #1로 CI 통과→병합까지 흐름을 완주했다.
+  두 번째 리뷰어가 생기면 code-owner 리뷰를 켜고 CODEOWNERS의 그 주석을 지운다.
+  증거 `docs/evidence/branch-protection-enforced.log`.
 
 ## D42 — 승인은 **1회용이 아니라 상하는 것**이다 (재사용은 TTL로 묶는다)
 
