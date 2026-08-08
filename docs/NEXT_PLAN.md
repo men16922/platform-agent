@@ -140,8 +140,16 @@ deploy-identity`. 미설정이면 예전처럼 인시던트는 거부, 배포는
   되돌리지 못한다. ⚠️**핵심**: 우리 게이트는 같은 이미지에 **VERIFIED**를 준다(같은 cosign v3를
   부르니까) — 즉 **"검증됨"이 도구마다 다르고, 우리 게이트는 이 불일치를 원리상 못 본다.**
   클러스터는 우리가 통제하지 않는 자기 검증기를 갖고 있다.
-  **닫는 법(택1, 승인 사항 — 코드가 아니라 버전 선택)**: ①cosign **v2**로 서명 ②Sigstore bundle을
-  읽는 policy-controller로 업그레이드. 증거 `docs/evidence/cosign-admission-kind-attempt.log`.
+  **두 후보를 다 돌려 봤다(2026-08-08)**: ②**policy-controller 업그레이드는 안 된다** — upstream
+  최신 **v0.15.1**로 올려도 동일하게 거부한다(v0.14.0의 referrers 지원은 **attestation** 용).
+  ①**cosign v2 서명은 통한다** — v2.6.1로 같은 키·같은 다이제스트에 서명하니 `…\.sig` 태그가
+  생기고 **파드가 허용됐다**(`pod/v2-signed created`). 음성 대조군(v3 형식만)은 여전히 거부.
+  즉 집행은 진짜로 동작하고 **통과/거부를 가르는 건 서명한 cosign의 버전**이다.
+  ⚠️부수: 허용된 파드는 `ErrImagePull`로 멈춘다 — **어드미션은 통과했고 pull이 실패**한 것
+  (containerd 미러 부재). 두 실패를 구분하지 않으면 오독한다.
+  **그래서 이 항목은 "승인하면 켤 수 있다"가 아니라 업스트림 대기다**(Risk 11의 모양) —
+  켜려면 서명을 v2로 되돌려야 하는데 CI **키리스가 v3 경로**이고 v2는 키드 서명도 공개 Rekor에
+  올린다. 증거 `docs/evidence/cosign-admission-kind-attempt.log`.
   → `STATUS` Risk 6·13, 가드 `tests/test_signature_gate_claims.py`·`test_image_trust.py`.
 
 ## 유지 규약 (완료된 리팩토링에서 나온 "하지 말 것")

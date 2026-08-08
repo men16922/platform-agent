@@ -151,8 +151,11 @@
    하는데**, **우리가 서명한 이미지도 거부한다**. 원인 확정 — **cosign v3.1.2는 Sigstore bundle을
    `sha256-<digest>`에 쓰고 policy-controller 0.13.1은 `…\.sig`를 찾는다**. ⚠️**우리 게이트는
    같은 이미지에 VERIFIED를 준다**(같은 cosign을 부르니까) → **"검증됨"이 도구마다 다르고 우리는
-   그 불일치를 원리상 못 본다.** 닫는 법은 **버전 선택**(cosign v2로 서명 / policy-controller
-   업그레이드)이라 승인 사항이다. 증거 `docs/evidence/cosign-admission-kind-attempt.log`.
+   그 불일치를 원리상 못 본다.** **두 후보를 다 돌려 봤다**: policy-controller를 upstream 최신
+   **v0.15.1**로 올려도 동일 거부(v0.14.0 referrers는 attestation 용) · **cosign v2.6.1로 서명하면
+   `…\.sig` 태그가 생기고 파드가 허용된다**(음성 대조군은 여전히 거부 → 집행은 진짜로 동작한다).
+   즉 **업스트림 대기 항목**이다(Risk 11의 모양) — 켜려면 서명을 v2로 되돌려야 하는데 CI
+   **키리스가 v3 경로**다. 증거 `docs/evidence/cosign-admission-kind-attempt.log`.
    가드 `tests/test_signature_gate_claims.py`·`tests/test_image_trust.py`.
    **있는 보증을 과대 해석하지 말 것.**
 7. **TS 타입은 네트워크 데이터를 보증하지 않는다** — 라이브에서 페이지가 `posture.namespaces.length`로
