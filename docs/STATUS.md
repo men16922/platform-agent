@@ -8,7 +8,7 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` → **1737 passed, 1 skipped** (2026-08-09, +18, 로컬 macOS·py3.13) — 프로브를
+- `make check` → **1737 passed, 1 skipped** (2026-08-09, +18, **로컬 ↔ CI 일치**) — 프로브를
   **정기 실행**하려다 **진짜 구속 조건**을 만났다: LaunchAgent는 `~/Desktop` 아래 레포를
   **읽지 못한다**(macOS TCC — 실측 exit 127 + `Operation not permitted`). 뚫으려면 `/bin/zsh`에
   **Full Disk Access** = 모든 zsh 스크립트에 전체 디스크 → **안 했다**. 대신 **이미 허가된**
