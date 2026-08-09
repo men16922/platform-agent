@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/sh
 # Daily wrapper for `watch_cloud_spend.py`, run by launchd.
 #
 # The probe was already right whenever it ran; what it could not fix is that nobody
@@ -13,6 +13,11 @@
 # asking the cloud what we are spending.
 #
 # Exit codes pass through: 0 = quiet, 1 = something new, 2 = could not measure.
+#
+# POSIX sh rather than zsh, and that is not a style choice: the guards below run in
+# CI, CI is Linux, and Linux has no /bin/zsh. Written as zsh first, it failed there
+# — which is the "게이트의 초록에는 환경이 붙는다" trap (Risk 12②) in its plainest form,
+# caught by the machine that does not look like mine.
 #
 # Test seams (used by tests/test_cloud_spend_watch.py, default to the real thing):
 #   SPEND_WATCH_REPO         where to run

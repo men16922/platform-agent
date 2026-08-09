@@ -99,12 +99,27 @@ Risk 12② 그 자체다.
 
 **생존 변이 0.**
 
-## 5. 게이트
+## 5. 내 가드가 내 기계에서만 초록이었다 — CI가 잡았다
+
+래퍼를 zsh로 썼고, 가드도 `["/bin/zsh", wrapper]`로 불렀다. 로컬 1737 초록.
+**CI는 FAILURE, 1733** — 4개가 죽었다:
+
+    FileNotFoundError: [Errno 2] No such file or directory: '/bin/zsh'
+
+**CI는 Linux고 Linux엔 `/bin/zsh`가 없다.** Risk 12②("게이트의 초록에는 환경이 붙는다")를
+**그 문서를 인용해 가며 짠 커밋에서 내가 그대로 밟았다.**
+
+`skipif`로 넘길 수 있었지만 **그게 더 나쁘다** — 같은 Risk 12②가 말하는 대로 **skip은
+실패가 아니라서 검사 안 하는 게이트와 통과한 게이트가 같은 색**이다. 대신 래퍼를
+**POSIX `sh`**로 바꾸고(`sh -n`·`dash -n` 통과) 가드는 **경로로 직접 호출**한다 —
+셸 훅이 실제로 하는 방식 그대로. 이제 네 가드가 **양쪽 기계에서 진짜로 돈다.**
+
+## 6. 게이트
 
     make check → 1737 passed, 1 skipped   (+18)
     2026-08-09 · 로컬 macOS(darwin 25.5.0) · Python 3.13
 
-## 6. 남은 것 / 되돌리는 법
+## 7. 남은 것 / 되돌리는 법
 
 - **되돌리기**: `make spend-watch-uninstall` (블록만 제거). 백업은
   `scratchpad/zshrc.backup`에 떴지만, 블록이 표시돼 있어 필요 없다.

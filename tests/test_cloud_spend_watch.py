@@ -166,6 +166,11 @@ class TestTheUnattendedWrapperIsQuietOnPurpose:
     a new hat. So the wrapper retries once before speaking. That branch is exercised
     here rather than trusted, because the live run that would have covered it happened
     to succeed on the first try, and an unexercised branch carries no weight.
+
+    The wrapper is invoked by path, not by naming an interpreter: that is what the
+    shell hook does, and hard-coding `/bin/zsh` here made these four guards fail on
+    CI, which has no zsh. Skipping them there would have been worse than the bug —
+    a skipped guard and a passing guard are the same colour (Risk 12②).
     """
 
     WRAPPER = REPO / "scripts" / "spend_watch_launchd.sh"
@@ -193,7 +198,7 @@ class TestTheUnattendedWrapperIsQuietOnPurpose:
     def _run(self, tmp_path, codes):
         notifier, notified = self._fake_repo(tmp_path, codes)
         proc = subprocess.run(
-            ["/bin/zsh", str(self.WRAPPER)],
+            [str(self.WRAPPER)],          # run it the way the shell hook does
             capture_output=True, text=True,
             env={**os.environ,
                  "SPEND_WATCH_REPO": str(tmp_path),
