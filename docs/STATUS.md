@@ -8,7 +8,7 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` → **1708 passed, 1 skipped** (2026-08-09, +9, **로컬 macOS·py3.13 ↔ CI
+- `make check` → **1709 passed, 1 skipped** (2026-08-09, +10, CI 일치, **로컬 macOS·py3.13 ↔ CI
   일치**, PR #16) — **`spend-check`가 GCP를 통째로 빼먹고 있었다**. 4-provider 플랫폼에서
   **빠진 provider는 잰 0과 구별되지 않는다** = 08-09 사건의 반복. 이제 GCP엔 **숫자가 아니라
   상태**를 출력한다(낼 숫자가 없다 — 아래 Risk 4). **exit 2로는 안 만들었다**: 매번 빨간

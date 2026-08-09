@@ -240,6 +240,23 @@ class TestUnmeasurableIsSaidOutLoud:
         monkeypatch.delenv(probe.GCP_EXPORT_ENV, raising=False)
         assert probe.gcp_actual_spend()[0] == "NO_TOOLING"
 
+    def test_the_procedure_it_points_at_exists(self, probe, monkeypatch, capsys):
+        """The probe tells the reader where the console steps are. A pointer to a
+        renamed or deleted file is worse than no pointer: it reads as authoritative
+        while sending someone nowhere, and nothing else in the repo would catch it."""
+        runner, _ = fake_run(datasets=["billing_export"])
+        monkeypatch.setattr(probe, "_run", runner)
+        monkeypatch.delenv(probe.GCP_EXPORT_ENV, raising=False)
+        probe.report_gcp()
+        referenced = [
+            word.strip(".,()")
+            for word in capsys.readouterr().out.split()
+            if word.strip(".,()").startswith("docs/") and word.endswith(".md")
+        ]
+        assert referenced, "the probe stopped naming where the procedure is"
+        for path in referenced:
+            assert (REPO / path).is_file(), f"the probe points at a file that is gone: {path}"
+
     def test_a_missing_export_does_not_turn_the_probe_red(self, probe, source, monkeypatch):
         """A known gap is not a failed lookup. A probe that exits nonzero on every
         run trains people to skip it — the same way the ₩20 budget that fired every

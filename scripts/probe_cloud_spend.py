@@ -212,7 +212,8 @@ def report_gcp() -> None:
     print(f"    아직 못 잰다 — {detail}")
     print("    이것은 '₩0'이 아니다. GCP엔 지출을 읽는 API가 없다 — Cloud Billing v1엔")
     print("    비용 메서드가 없고 Budgets API는 설정액만 준다(2026-08-09 discovery 실측).")
-    print("    유일한 길: 콘솔 → 결제 → 결제 내보내기 → BigQuery. 켜면 이 줄이 바뀐다.")
+    print("    유일한 길은 콘솔의 결제 내보내기다 — 절차와 확인법:")
+    print("      docs/GCP_BILLING_EXPORT_SETUP.md   (켜면 이 줄이 바뀐다)")
 
 
 def main() -> int:
