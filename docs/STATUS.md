@@ -8,23 +8,25 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` → **1719 passed, 1 skipped** (2026-08-09, 로컬 macOS·py3.13) — Azure 크레딧
-  상계를 닫았다: 7월 `ActualCost` **=** `AmortizedCost`(소수점 열째 자리까지) · ChargeType
-  `Usage` 한 행 → **상계 없음**. ⚠️단 **예약·절약 플랜이 없어서**지 API 성질이 아니다(사면
-  갈린다). 덤: **429가 실제 실패 모드**라 실패 이유를 출력하게 했다(`_why`).
-  증거 `azure-credit-netting-does-not-apply-yet.log`.
+- `make check` → **1737 passed, 1 skipped** (2026-08-09, +18, 로컬 macOS·py3.13) — 프로브를
+  **정기 실행**하려다 **진짜 구속 조건**을 만났다: LaunchAgent는 `~/Desktop` 아래 레포를
+  **읽지 못한다**(macOS TCC — 실측 exit 127 + `Operation not permitted`). 뚫으려면 `/bin/zsh`에
+  **Full Disk Access** = 모든 zsh 스크립트에 전체 디스크 → **안 했다**. 대신 **이미 허가된**
+  대화형 셸에 태웠다(터미널당 하루 한 번). `make spend-watch` = **무엇이 새로 과금되기
+  시작했는가**(임계값 없음 — 예산이 "얼마나"를 이미 답한다). 변이 10건 전부 red.
+  증거 `spend-watch-launchd-blocked-by-tcc.log`.
+- `make check` → **1719, 1 skipped** (2026-08-09) — Azure 크레딧 상계를 닫았다: 7월
+  `ActualCost` **=** `AmortizedCost`(소수점 열째 자리까지) · ChargeType `Usage` 한 행 →
+  **상계 없음**. ⚠️단 **예약·절약 플랜이 없어서**지 API 성질이 아니다. 덤: **429가 실제
+  실패 모드**라 이유를 출력하게 했다(`_why`). 증거 `azure-credit-netting-does-not-apply-yet.log`.
 - `make check` → **1718, 1 skipped** (2026-08-09) — **Azure는 잴 수 있었다**:
   `az consumption usage list`가 **28행 전부 `pretaxCost` null**로 exit 0 → 합계 0인데 Cost
-  Management는 같은 창에 **₩1,989**(세 번째 같은 계열). 프로브가 **3 provider 전부** 답한다.
-  변이 7건 red. 증거 `azure-consumption-cli-returns-null-cost.log`.
-- `make check` → **1709/1708, 1 skipped** (2026-08-09, **로컬 ↔ CI 일치**, PR #16·#17) —
-  **`spend-check`가 GCP를 통째로 빼먹고 있었다**(빠진 provider는 잰 0과 구별되지 않는다).
-  GCP엔 **숫자가 아니라 상태**를 출력하되 **exit 2로는 안 만들었다**(매번 빨간 프로브는 ₩20
-  예산과 같은 계열). ⚠️처음 쓴 가드가 **게이트에서 라이브 gcloud를 호출**했다(21.97s →
-  0.02s, Risk 12②). 증거 `gcp-actual-spend-has-no-api.log`.
-- `make check` → **1699, 1 skipped** (2026-08-09) — **docstring이 코드보다 오래된 모델을
-  가리켰다**(문서 `gemini-2.5-flash` ↔ 코드 **3.5**); 가드가 `"gemini" in model`만 봐서
-  **원리상 못 잡았다** → 두 값을 서로 고정. ⚠️반증 중 **`.pyc`에 속았다**(바이트 수가 같다)
+  Management는 같은 창에 **₩1,989**(세 번째 같은 계열). 변이 7건 red.
+  증거 `azure-consumption-cli-returns-null-cost.log`.
+- `make check` → **1709/1708/1699** (2026-08-09, **로컬 ↔ CI 일치**, PR #14·#16·#17) —
+  spend-check의 **GCP 누락**(빠진 provider는 잰 0과 구별되지 않는다 · exit 2로는 안 만들었다)
+  · **docstring이 코드보다 낡은 모델**을 가리킴. ⚠️두 함정: 가드가 **게이트에서 라이브
+  gcloud를 호출**했고(21.97s → 0.02s), 반증 중 **`.pyc`에 속았다**(바이트 수가 같다)
   — **반증 루프는 캐시를 지우고 돌릴 것.**
 - (이전 baseline — gate **1697 이하** / 07-10~08-09 및 `main` 보호 확인 →
   `docs/archive/{status-baseline-2026-07,progress-2026-08}.md` · `COMPLETED_SUMMARY` M13·M14.)
@@ -34,11 +36,7 @@
 제품 방향: Day1+Day2를 함께 다루는 AWS-native `platform-agent`. 4 provider 코드 완비 · 하네스
 = overnight-harness 5 engine. 상세는 `COMPLETED_SUMMARY` M0~M15.
 
-1-6. **Operations 파이프라인**(Detector/Analyzer/Decision/Executor + Approval Bridge, 3-Cloud
-   Day2 각 4-step) · **HITL 승인**(Slack→`WaitForTaskToken`+SQS+SFN) · **Day1/1.5** ·
-   **Portability**(`NormalizedIncident` + registry) · **Runbook registry**.
-7-9. **AI Agents** 3종(Strands/ADK/MSFT) · **Guardian**(Policy-as-Code) · **MCP + A2A Gateway**.
-10-12. **On-prem K8s**(`make local-cluster`) · **Deployment/Execution Adapters** 4 provider.
+1-12. **Operations 파이프라인**(Detector/Analyzer/Decision/Executor + Approval Bridge, 3-Cloud Day2 각 4-step) · **HITL 승인**(Slack→`WaitForTaskToken`+SQS+SFN) · **Day1/1.5** · **Portability** · **Runbook registry** · **AI Agents** 3종(Strands/ADK/MSFT) · **Guardian**(Policy-as-Code) · **MCP + A2A Gateway** · **On-prem K8s** · **Deployment/Execution Adapters** 4 provider.
 13. **Dashboard** — Next.js 16 + Tailwind 4, 5페이지, DynamoDB Live 전용 · Auth.js GitHub OAuth + Admin/Operator/Viewer 제어판, 복구 승인, 배포 트리거/롤백, 감사 로그. 프로덕션 배포 완료.
 
 ## Active Focus
@@ -80,7 +78,9 @@
    (7월 **₩22,630** · 8월 MTD ₩1,989 = ACR Basic 고정 요금, **다른 프로젝트 것이라 두었다**).
    ③**GCP는 아예 못 잰다** — Cloud Billing v1 **19 메서드에 지출 0** · Budgets에 실지출 readout
    없음 → **BQ 내보내기(콘솔 수동)가 유일**, 데이터셋은 있고 **테이블 0개**
-   (`docs/GCP_BILLING_EXPORT_SETUP.md`). 셋 다 `make spend-check`가 박아 뒀고 **관측 구멍은
+   (`docs/GCP_BILLING_EXPORT_SETUP.md`). ④**아무도 안 돌린다**가 마지막 구멍이었다 →
+   `make spend-watch`(무엇이 **새로** 과금되기 시작했는가) + 터미널당 하루 한 번 훅;
+   **launchd는 TCC로 막힌다**. 셋 다 `make spend-check`가 박아 뒀고 **관측 구멍은
    이제 GCP 하나**. ₩20 예산 → ₩28,000. 증거 `gcp-budget-always-firing-fixed.log` ·
    `gcp-actual-spend-has-no-api.log` · `azure-consumption-cli-returns-null-cost.log`.
 5. **k3s는 집행하지만 proven 집합엔 없다 — 결정 4 = D40으로 닫힘(2026-08-01)** — 집행은 라이브

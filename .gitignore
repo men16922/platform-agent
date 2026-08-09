@@ -58,3 +58,4 @@ _workspace/
 # Local-dev cosign keys (make sign-image). Never commit a signing key.
 cosign.key
 cosign.pub
+.state/
