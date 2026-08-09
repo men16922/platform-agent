@@ -8,20 +8,24 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` → **1718 passed, 1 skipped** (2026-08-09, +9, 로컬 macOS·py3.13) — **Azure는
-  잴 수 있었다**: `az consumption usage list`가 **28행 전부 `pretaxCost` null**로 exit 0 →
-  합계 0인데 Cost Management는 같은 창에 **₩1,989**(세 번째 같은 계열). 프로브가 이제
-  **3 provider 전부** 답한다. **변이 7건 red, 생존 0**. 증거
-  `docs/evidence/azure-consumption-cli-returns-null-cost.log`.
+- `make check` → **1719 passed, 1 skipped** (2026-08-09, 로컬 macOS·py3.13) — Azure 크레딧
+  상계를 닫았다: 7월 `ActualCost` **=** `AmortizedCost`(소수점 열째 자리까지) · ChargeType
+  `Usage` 한 행 → **상계 없음**. ⚠️단 **예약·절약 플랜이 없어서**지 API 성질이 아니다(사면
+  갈린다). 덤: **429가 실제 실패 모드**라 실패 이유를 출력하게 했다(`_why`).
+  증거 `azure-credit-netting-does-not-apply-yet.log`.
+- `make check` → **1718, 1 skipped** (2026-08-09) — **Azure는 잴 수 있었다**:
+  `az consumption usage list`가 **28행 전부 `pretaxCost` null**로 exit 0 → 합계 0인데 Cost
+  Management는 같은 창에 **₩1,989**(세 번째 같은 계열). 프로브가 **3 provider 전부** 답한다.
+  변이 7건 red. 증거 `azure-consumption-cli-returns-null-cost.log`.
 - `make check` → **1709/1708, 1 skipped** (2026-08-09, **로컬 ↔ CI 일치**, PR #16·#17) —
   **`spend-check`가 GCP를 통째로 빼먹고 있었다**(빠진 provider는 잰 0과 구별되지 않는다).
   GCP엔 **숫자가 아니라 상태**를 출력하되 **exit 2로는 안 만들었다**(매번 빨간 프로브는 ₩20
-  예산과 같은 계열). 변이 5건 red. ⚠️처음 쓴 가드가 **게이트에서 라이브 gcloud를 호출**했다
-  (21.97s → 0.02s, Risk 12②). 증거 `gcp-actual-spend-has-no-api.log`.
+  예산과 같은 계열). ⚠️처음 쓴 가드가 **게이트에서 라이브 gcloud를 호출**했다(21.97s →
+  0.02s, Risk 12②). 증거 `gcp-actual-spend-has-no-api.log`.
 - `make check` → **1699, 1 skipped** (2026-08-09) — **docstring이 코드보다 오래된 모델을
-  가리켰다**(문서 `gemini-2.5-flash` ↔ 코드 **3.5**). 기존 가드는 `"gemini" in model`만 봐서
-  **원리상 못 잡았다** → 두 값을 서로 고정. ⚠️반증 중 **`.pyc`에 속았다**(바이트 수가 같아
-  같은 초 재수정 시 낡은 바이트코드) — **반증 루프는 캐시를 지우고 돌릴 것.**
+  가리켰다**(문서 `gemini-2.5-flash` ↔ 코드 **3.5**); 가드가 `"gemini" in model`만 봐서
+  **원리상 못 잡았다** → 두 값을 서로 고정. ⚠️반증 중 **`.pyc`에 속았다**(바이트 수가 같다)
+  — **반증 루프는 캐시를 지우고 돌릴 것.**
 - (이전 baseline — gate **1697 이하** / 07-10~08-09 및 `main` 보호 확인 →
   `docs/archive/{status-baseline-2026-07,progress-2026-08}.md` · `COMPLETED_SUMMARY` M13·M14.)
 
@@ -35,8 +39,7 @@
    **Portability**(`NormalizedIncident` + registry) · **Runbook registry**.
 7-9. **AI Agents** 3종(Strands/ADK/MSFT) · **Guardian**(Policy-as-Code) · **MCP + A2A Gateway**.
 10-12. **On-prem K8s**(`make local-cluster`) · **Deployment/Execution Adapters** 4 provider.
-13. **Dashboard** — Next.js 16 + Tailwind 4, 5페이지, DynamoDB Live 전용. Auth.js GitHub OAuth +
-   Admin/Operator/Viewer 제어판, 복구 승인, 배포 트리거/롤백, 감사 로그. 프로덕션 배포 완료.
+13. **Dashboard** — Next.js 16 + Tailwind 4, 5페이지, DynamoDB Live 전용 · Auth.js GitHub OAuth + Admin/Operator/Viewer 제어판, 복구 승인, 배포 트리거/롤백, 감사 로그. 프로덕션 배포 완료.
 
 ## Active Focus
 
@@ -96,11 +99,8 @@
    도구마다 다르고 우리는 못 본다**. 증거 `docs/evidence/{ci-keyless-signing,
    image-signature-deploy-gate,cosign-admission-kind-attempt}.log` · M15.
 7. **TS 타입은 네트워크 데이터를 보증하지 않는다** — 라이브에서 페이지가 `posture.namespaces.length`로 죽었는데 `tsc`는 내내 초록이었다(구버전 페이로드). 롤링 업그레이드 중엔 허브가 두 버전을 동시에 서빙하므로 **푸시 신규 필드는 항상 optional + 폴백**.
-8. **PSS restricted 아래에서 애드온 차트는 기본값으로 동작하지 않는다** — 파드가 admission에서
-   거부되는데 **Argo는 Synced로 보인다**(파드 0개인 채). **새 애드온마다 확인이 필요**하다 — 렌더된
-   파드 스펙을 테넌트 ns에 `kubectl apply --dry-run=server`로 던져 API 서버에 직접 묻는 게 가장 싸다.
-   values 파일은 에러가 아니라 **안 읽히는 방식으로** 실패한다(키 철자가 차트마다 다름).
-9. *(해소)* **Capsule deprecation** 두 필드 이관·경고 0건(08-02, D41) · GCP 예산 상시 발화 → ₩28,000(08-09).
+8. **PSS restricted 아래에서 애드온 차트는 기본값으로 동작하지 않는다** — 파드가 admission에서 거부되는데 **Argo는 Synced로 보인다**(파드 0개인 채). **새 애드온마다 확인**할 것 — 렌더된 파드 스펙을 테넌트 ns에 `kubectl apply --dry-run=server`로 던져 API 서버에 직접 묻는 게 가장 싸다. values 파일은 에러가 아니라 **안 읽히는 방식으로** 실패한다(키 철자가 차트마다 다름).
+9. *(해소)* Capsule deprecation(08-02, D41) · GCP 예산 상시 발화 → ₩28,000(08-09).
 10. **GCP/Azure 자격증명은 아직 테넌트-바운드가 아니다** — 스코프는 액션이 **어느 네임스페이스를
    건드릴지**만 정하고 토큰을 테넌트에 묶지 않는다. GCP는 프로젝트 전역 신원 하나, **Azure는 ARM에서
    클러스터 admin kubeconfig를 받아온다**. 자격증명 자체가 경계인 것은 **온프렘뿐** → Phase 4.
@@ -116,4 +116,4 @@
    ③**하중**: **행복 경로만 태운 가드는 하중을 받지 않는다**(안전망을 지워도 14개가 초록)
    → **새 가드는 지워 보고 red를 확인할 것.** 증거
    `docs/evidence/{ci-keyless-signing,ci-terraform-validate-skipped}.log` · M15.
-- (해소된 리스크 이력 — Slack App 미연결=07-19 해소·A2A discovery=07-14·추적 IA 실증=07-13·NEXT_PUBLIC 인라인=07-13 — 은 `PROGRESS_LOG`/`docs/archive/` 참조.)
+- (그 밖의 해소 이력 — Slack App 미연결(07-19)·A2A discovery(07-14)·추적 IA 실증(07-13)·NEXT_PUBLIC 인라인(07-13) — 은 `PROGRESS_LOG`/`docs/archive/` 참조.)
