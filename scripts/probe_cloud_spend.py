@@ -20,6 +20,17 @@ So this probe hard-codes the credit-excluding filter and sweeps every region, an
 construction: it never stops, terminates or deletes anything — that stays a human
 decision, and the guard asserts no mutating verb appears here.
 
+GCP is reported too, and the honest report is not a number. Verified against the
+live discovery documents on 2026-08-09: Cloud Billing v1 exposes 19 methods and
+none of them read spend, and the Budgets API returns the *configured* amount plus
+`spendBasis` — never an actual. The only path to actual GCP spend is the BigQuery
+billing export, whose toggle exists in the console alone. So a repo that says
+nothing about GCP here is making the same mistake in a new place: absence reads as
+zero. This prints whether that export exists yet, and names it as unmeasured when
+it does not. It deliberately does *not* exit 2 for a missing export — that is a
+known, named gap rather than a failed lookup, and a probe that is red every run
+teaches people to skip it (the same lesson as the always-firing budget alert).
+
     python scripts/probe_cloud_spend.py            # month to date
     python scripts/probe_cloud_spend.py --days 30  # trailing window
 
@@ -36,6 +47,7 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import json
+import os
 import subprocess
 import sys
 
@@ -45,9 +57,26 @@ CREDIT_EXCLUDING_FILTER = {
     "Not": {"Dimensions": {"Key": "RECORD_TYPE", "Values": ["Credit", "Refund"]}}
 }
 
+#: Billing export tables are named `gcp_billing_export_v1_<ACCOUNT>` (or
+#: `..._resource_v1_...`) whatever the dataset is called, so the table name is what
+#: identifies an export — not the dataset name, which the console lets you choose.
+GCP_EXPORT_TABLE_PREFIX = "gcp_billing_export"
+
+#: Set to `project:dataset` to skip the sweep when the export location is known.
+GCP_EXPORT_ENV = "PLATFORM_GCP_BILLING_EXPORT"
+
 
 def _aws(*args: str) -> tuple[int, str]:
     proc = subprocess.run(["aws", *args], capture_output=True, text=True)
+    return proc.returncode, (proc.stdout if proc.returncode == 0 else proc.stderr)
+
+
+def _run(*args: str) -> tuple[int, str]:
+    """Any read-only CLI. Returns (code, stdout-or-stderr), never raises."""
+    try:
+        proc = subprocess.run(args, capture_output=True, text=True)
+    except FileNotFoundError:
+        return 127, f"{args[0]} 없음"
     return proc.returncode, (proc.stdout if proc.returncode == 0 else proc.stderr)
 
 
@@ -108,6 +137,84 @@ def running_instances() -> list[tuple[str, str, str, str]] | None:
     return found
 
 
+def _datasets(payload: str) -> list[str]:
+    try:
+        rows = json.loads(payload)
+    except json.JSONDecodeError:
+        return []
+    return [r["datasetReference"]["datasetId"] for r in rows if "datasetReference" in r]
+
+
+def _export_table_in(location: str) -> str | None:
+    """The billing export table inside `project:dataset`, if the toggle was ever set.
+
+    An empty dataset prints nothing rather than `[]`, which is exactly the shape the
+    live account is in: the dataset was made in 2026-07 and the console toggle that
+    fills it never was.
+    """
+    code, out = _run("bq", "--format=json", "ls", location)
+    if code != 0:
+        return None
+    try:
+        rows = json.loads(out)
+    except json.JSONDecodeError:
+        return None
+    for row in rows:
+        table = (row.get("tableReference") or {}).get("tableId", "")
+        if table.startswith(GCP_EXPORT_TABLE_PREFIX):
+            return f"{location}.{table}"
+    return None
+
+
+def gcp_actual_spend() -> tuple[str, str]:
+    """Whether GCP spend is readable at all — MEASURABLE / NOT_EXPORTED / NO_TOOLING.
+
+    Never returns a number, because none is available: Cloud Billing v1 has no
+    method that reads spend and the Budgets API returns the configured amount. The
+    only true answer is whether the BigQuery export exists, so that is what this
+    returns. The dataset is swept for rather than assumed, for the same reason the
+    AWS half sweeps every region: the configured place is not where it turned out
+    to be.
+    """
+    pinned = os.environ.get(GCP_EXPORT_ENV)
+    if pinned:
+        table = _export_table_in(pinned)
+        if table:
+            return "MEASURABLE", table
+        return "NOT_EXPORTED", f"{GCP_EXPORT_ENV}={pinned} 에 내보내기 테이블이 없다"
+
+    code, out = _run("gcloud", "projects", "list", "--format=value(projectId)")
+    if code != 0:
+        return "NO_TOOLING", f"프로젝트 목록을 못 읽었다 ({out.strip().splitlines()[-1:]})"
+    projects = out.split()
+    if not projects:
+        return "NO_TOOLING", "이 자격증명에 보이는 프로젝트가 없다"
+    for project in projects:
+        code, listing = _run("bq", "--project_id", project, "--format=json", "ls")
+        if code != 0:
+            continue          # a project without BigQuery is not a finding
+        for dataset in _datasets(listing):
+            table = _export_table_in(f"{project}:{dataset}")
+            if table:
+                return "MEASURABLE", table
+    return "NOT_EXPORTED", f"프로젝트 {len(projects)}개를 훑었지만 내보내기 테이블이 없다"
+
+
+def report_gcp() -> None:
+    """GCP's answer is a state, not a number — printing nothing would read as ₩0."""
+    print("GCP 실사용")
+    status, detail = gcp_actual_spend()
+    if status == "MEASURABLE":
+        print(f"    잴 수 있다 — 결제 내보내기 테이블 {detail}")
+        print(f"    bq query --use_legacy_sql=false 'SELECT service.description,"
+              f" SUM(cost) FROM `{detail}` GROUP BY 1 ORDER BY 2 DESC'")
+        return
+    print(f"    아직 못 잰다 — {detail}")
+    print("    이것은 '₩0'이 아니다. GCP엔 지출을 읽는 API가 없다 — Cloud Billing v1엔")
+    print("    비용 메서드가 없고 Budgets API는 설정액만 준다(2026-08-09 discovery 실측).")
+    print("    유일한 길: 콘솔 → 결제 → 결제 내보내기 → BigQuery. 켜면 이 줄이 바뀐다.")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--days", type=int, default=None,
@@ -117,28 +224,38 @@ def main() -> int:
     start, end = _window(args.days)
     print(f"AWS 실사용 (크레딧·환불 제외)  {start} ~ {end} (end exclusive)")
 
+    unmeasured = False
     measured = spend_by_service(start, end)
     if measured is None:
         print("\n측정하지 못했다. 이것은 '$0'이 아니다.", file=sys.stderr)
-        return 2
-    total, ranked = measured
-    print(f"  총 ${total:.2f}")
-    for service, amount in ranked:
-        print(f"    {service:<46} ${amount:.2f}")
-    if not ranked:
-        print("    (해당 창에 실사용 없음)")
+        unmeasured = True
+    else:
+        total, ranked = measured
+        print(f"  총 ${total:.2f}")
+        for service, amount in ranked:
+            print(f"    {service:<46} ${amount:.2f}")
+        if not ranked:
+            print("    (해당 창에 실사용 없음)")
 
     print("\n도는 EC2 인스턴스 (전 리전)")
     instances = running_instances()
     if instances is None:
         print("\n측정하지 못했다. 이것은 '0대'가 아니다.", file=sys.stderr)
-        return 2
-    for region, iid, itype, label in instances:
-        print(f"    {region:<16} {iid:<21} {itype:<12} {label}")
-    if not instances:
-        print("    (없음)")
+        unmeasured = True
+    else:
+        for region, iid, itype, label in instances:
+            print(f"    {region:<16} {iid:<21} {itype:<12} {label}")
+        if not instances:
+            print("    (없음)")
+
+    # Reached even when AWS could not be measured: one provider failing must not
+    # delete the other from the report, which is the omission this section is about.
+    print()
+    report_gcp()
 
     print("\n주의: 이 프로브는 아무것도 중지·종료하지 않는다. 조치는 사람이 정한다.")
+    if unmeasured:
+        return 2
     return 0
 
 

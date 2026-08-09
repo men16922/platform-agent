@@ -8,19 +8,20 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` → **1708 passed, 1 skipped** (2026-08-09, +9, **로컬 macOS·py3.13 ↔ CI
+  일치**, PR #16) — **`spend-check`가 GCP를 통째로 빼먹고 있었다**. 4-provider 플랫폼에서
+  **빠진 provider는 잰 0과 구별되지 않는다** = 08-09 사건의 반복. 이제 GCP엔 **숫자가 아니라
+  상태**를 출력한다(낼 숫자가 없다 — 아래 Risk 4). **exit 2로는 안 만들었다**: 매번 빨간
+  프로브는 ₩20 예산과 같은 계열. **변이 5건 전부 red, 생존 0**(Risk 12③). ⚠️처음 쓴 가드가
+  **게이트에서 라이브 gcloud를 호출**했다(21.97s → 0.02s, Risk 12②). 증거
+  `docs/evidence/gcp-actual-spend-has-no-api.log`.
 - `make check` → **1699 passed, 1 skipped** (2026-08-09, +2) — **docstring이 코드보다 오래된
   모델을 가리켰다**: `adk_deployer` 기본값이 문서엔 `gemini-2.5-flash`, 코드엔 **3.5**. 기존
   가드는 `"gemini" in model`만 봐서 **원리상 못 잡았다** → 문서값과 코드값을 서로 고정.
   ⚠️반증 중 **`.pyc`에 속았다** — 두 값의 **바이트 수가 같아** 같은 초 재수정 시 낡은
   바이트코드가 쓰인다. **반증 루프는 캐시를 지우고 돌릴 것.**
-- `make check` → **1697 passed, 1 skipped** (2026-08-09, +12) — **측정법을 프로브로**:
-  손으로 물으면 $0, 제대로 물으면 **$8.80**이던 것을 `make spend-check`
-  (`scripts/probe_cloud_spend.py`)로 박았다 — 크레딧 제외 필터 + 전 리전 스윕, 조회 실패는
-  **exit 2**("못 봤다"가 "$0"으로 렌더되는 게 사건의 전부였다). 반증 2건 red(각각 해당 가드만).
-  증거 `docs/evidence/aws-spend-hand-check-was-zero.log` · → Risk 4.
-- (이전 baseline — gate **1685 이하** / 2026-07-10~08-09 및 `main` 보호 확인 →
-  `docs/archive/status-baseline-2026-07.md` · `docs/archive/progress-2026-08.md` ·
-  `COMPLETED_SUMMARY` M13·M14.)
+- (이전 baseline — gate **1697 이하** / 07-10~08-09 및 `main` 보호 확인 →
+  `docs/archive/{status-baseline-2026-07,progress-2026-08}.md` · `COMPLETED_SUMMARY` M13·M14.)
 
 ## 동작하는 영역 (요약)
 
@@ -28,21 +29,18 @@
 코드 완비. 하네스 = overnight-harness 5 engine. 상세는 `COMPLETED_SUMMARY` M0~M15.
 
 1-6. **Operations 파이프라인**(Detector/Analyzer/Decision/Executor + Approval Bridge, 3-Cloud
-   Day2 각 4-step) · **HITL 승인**(Slack→`WaitForTaskToken`+SQS+SFN callback) · **Day1/1.5**
-   (provisioning·deployment·reporting) · **Portability**(`NormalizedIncident` + provider registry)
-   · **Runbook registry**(catalog + capability 스키마 + CDK seed + scan heuristic).
-7-9. **AI Agents** 3종(Strands/ADK/MSFT, tool calling 검증) · **Guardian**(Policy-as-Code
-   APPROVE/AUTO/REJECT) · **MCP + A2A Gateway**(kubectl/docker 9도구 + FastAPI A2A).
-10-12. **On-prem K8s**(`make local-cluster` = 3노드+registry+ingress) · **Deployment/Execution
-   Adapters** 4 provider(Build→Push→Deploy→Validate→Rollback / capability→action).
+   Day2 각 4-step) · **HITL 승인**(Slack→`WaitForTaskToken`+SQS+SFN) · **Day1/1.5** ·
+   **Portability**(`NormalizedIncident` + registry) · **Runbook registry**.
+7-9. **AI Agents** 3종(Strands/ADK/MSFT) · **Guardian**(Policy-as-Code) · **MCP + A2A Gateway**.
+10-12. **On-prem K8s**(`make local-cluster`) · **Deployment/Execution Adapters** 4 provider.
 13. **Dashboard** — Next.js 16 + Tailwind 4, 5페이지, DynamoDB Live 전용. Auth.js GitHub OAuth +
    Admin/Operator/Viewer 제어판, 복구 승인, 배포 트리거/롤백, 감사 로그. 프로덕션 배포 완료.
 
 ## Active Focus
 
 **Phase 4는 산정까지 끝났고 남은 건 사용자 결정이다**(→ `docs/plans/2026-08-08-phase4-scope-and-cost.md`):
-**4a**(관리형 어댑터, 원격 클러스터 불요) ≈$5/월 · **4b**(원격 클러스터+DR) ≈$185/월 · **$0 선행
-둘**(상시 발화 중인 ₩20 예산 재보정 · 결제 내보내기)은 **콘솔 수동이라 사용자 몫** → Risk 4.
+**4a**(관리형 어댑터, 원격 클러스터 불요) ≈$5/월 · **4b**(원격 클러스터+DR) ≈$185/월. **$0 선행
+둘 중 ₩20 예산은 닫혔고**, 남은 **결제 내보내기**는 콘솔 수동이라 사용자 몫 → Risk 4.
 
 **과대 해석 금지(현재 유효한 것만)**
 - 스코프·배포 신원 · 이미지 서명 배포 게이트는 전부 **옵트인**(→ Risk 3·6).
@@ -51,16 +49,16 @@
 - **어드미션 미도입** · **CODEOWNERS는 라우팅** · Phase 5는 **경계까지**(UI·PR 생성 없음).
 
 **반복 확인**: 기록된 이유가 진짜 구속 조건이 아닐 때가 많다(M13→M15). 단 **늘 그런 건
-아니고**(2026-08-08 재측정 4건 중 3건은 성립), **"없다"는 어떻게 봤는지까지 적어야 한다**(Risk 4).
+아니다** — 08-08 재측정 4건 중 3건, **08-09 GCP 3건은 전부 성립**했다. 그래도 돌려 볼 값은
+있었다(성립을 확인하다 **프로브의 provider 누락**이 나왔다). **"없다"는 어떻게 봤는지까지.**
 
 ## Open Risks / Gaps
 
 1. **CDK 배포 시 Vercel context 필수(함정 실화 이력)** — ⚠️ context 미지정 배포가 **실제로 07-11 OIDC provider를 삭제**해(CloudTrail 확인) 대시보드가 조용히 DEMO FALLBACK으로 강등돼 있었음 → **07-18 복구**. diff/deploy는 반드시 `-c vercelTeamSlug=men16922s-projects -c vercelProjectName=platform-agent`. 로컬 pip 번들링(arm64↔amd64) 주의 유지.
 2. **GCP/Azure 인시던트 스토어는 보관 정책이 없다 — 단 "실 데이터 삭제"는 틀렸다(2026-08-08
-   재측정)** — 코드 갭은 유효(Cosmos DefaultTimeToLive 미설정 · Firestore TTL 정책 부재 →
-   스토어가 생기면 **어느 쪽도 만료 안 됨**). 하지만 **스토어가 아예 없다**: GCP는 **Firestore
-   API가 켜진 적조차 없고** Azure엔 `platform-agent` DB가 없다 → **지울 데이터 0**. 승인
-   항목이 아니라 **Phase 4(billable)** 선행이다. 증거 `gcp-azure-retention-nothing-to-delete.log`.
+   재측정)** — 코드 갭은 유효(Cosmos·Firestore 둘 다 TTL 미설정 → 스토어가 생기면 만료 안 됨).
+   하지만 **스토어가 아예 없다**(Firestore API 미활성 · Azure에 DB 없음) → **지울 데이터 0**.
+   승인 항목이 아니라 **Phase 4** 선행. 증거 `gcp-azure-retention-nothing-to-delete.log`.
 3. **⚠️ 스코프·배포 신원은 집행 가능하지만 옵트인이다(2026-07-31, D38·D39)** — 세 경로가
    닫혔다(인시던트 생산자 · 배포 축소 신원 · MCP 무스코프 읽기 거부). **기본값은 미설정**이라
    `PLATFORM_{CREDENTIAL_DIR,APPROVAL_SIGNING_KEY}` 없으면 인시던트는 전부 거부,
@@ -73,15 +71,17 @@
    보고했고 둘 다 틀렸다(실제 **$8.81**): ①`aws ce`는 **크레딧 포함** 집계 → 예산처럼
    `Not RECORD_TYPE in [Credit,Refund]`로 물을 것 ②EKS/AMP만 보고 **EC2를 안 봤다** → **전 리전
    스윕**. 둘 다 `make spend-check`가 박아 뒀다. 원인은 `slackops-devops-agent`가 07-22부터
-   18일째 돌던 것(~$35/월, **중지함**) — **점검이 아니라 경보가 잡았다**. **GCP 경보는 고쳤다**:
-   계정 전체 ₩20 예산 → **₩28,000**(범위 축소 불가 — 그 이름의 프로젝트가 없다). ⚠️**그래도 GCP
-   실지출은 못 잰다**: Billing API를 켜도 비용 상세가 안 나오고 **GCP Budgets API는 AWS와 달리
-   `ActualSpend`를 안 준다** → **BQ 내보내기(콘솔 수동)가 유일한 길**. 증거 `gcp-budget-always-firing-fixed.log`.
+   18일째 돌던 것(~$35/월, **중지함**) — **점검이 아니라 경보가 잡았다**. ₩20 예산 → **₩28,000**.
+   ⚠️**GCP 실지출은 못 잰다 — 재측정으로 확정(08-09)**: Cloud Billing v1 discovery **19 메서드에
+   지출 읽는 것 0** · Budgets `Budget` 8필드에 **실지출 readout 없음** · `gcloud billing`엔
+   export 없음 → **BQ 내보내기(콘솔 수동)가 유일**, 데이터셋은 있고 **테이블 0개**. 이제
+   `make spend-check`가 **그 상태를 출력**(빠지면 ₩0으로 읽힌다) = 켠 뒤 확인할 수단.
+   ⚠️**Azure는 빠져 있다 — "못 잰다"가 아니라 "안 쟀다"**. 증거
+   `gcp-budget-always-firing-fixed.log` · `gcp-actual-spend-has-no-api.log`.
 5. **k3s는 집행하지만 proven 집합엔 없다 — 결정 4 = D40으로 닫힘(2026-08-01)** — 집행은 라이브
-   증명(07-29), 시맨틱은 미증명. 네 문서가 반복한 "피어 테넌트 부재"는 **참이지만 구속력이
-   없었다**: 실제로는 넷 — ①acme/prod는 **네임스페이스 1개**(피어 보기 전에 exit) ③**순환**
-   (프로브가 proven 집합을 전제 = **승격하려면 먼저 승격해야 한다**) ④**k3s-lab에 테넌시 실체
-   0** → 넣어도 **보호 대상 0**. 열리는 조건: k3s-lab에 워크로드. → D40, `docs/plans/2026-08-01-k3s-proven-substrate.md`.
+   증명(07-29), 시맨틱은 미증명. 문서들이 반복한 "피어 테넌트 부재"는 **참이지만 구속력이
+   없었다**(실제 이유는 넷: 네임스페이스 1개 · **순환**(승격하려면 먼저 승격해야 한다) ·
+   **k3s-lab에 테넌시 실체 0**). 열리는 조건: k3s-lab에 워크로드 → D40, `docs/plans/2026-08-01-k3s-proven-substrate.md`.
 6. **공급망: 생산자·소비자·CI 키리스는 섰고, 어드미션은 업스트림 대기(2026-08-08)** —
    아침까지 보증은 **0**이었다(`cosign sign` 0건 · CI 없음 · 검증기 호출자가 자기 테스트뿐 ·
    맨 태그라 서명이 놓일 주소도 없음). 지금은 `make sign-image`(다이제스트 서명→**레포 자신의
@@ -100,7 +100,7 @@
    거부되는데 **Argo는 Synced로 보인다**(파드 0개인 채). **새 애드온마다 확인이 필요**하다 — 렌더된
    파드 스펙을 테넌트 ns에 `kubectl apply --dry-run=server`로 던져 API 서버에 직접 묻는 게 가장 싸다.
    values 파일은 에러가 아니라 **안 읽히는 방식으로** 실패한다(키 철자가 차트마다 다름).
-9. *(해소, 2026-08-02)* **Capsule deprecation** — 두 필드 다 이관, 경고 0건 → D41.
+9. *(해소)* **Capsule deprecation** 두 필드 이관·경고 0건(08-02, D41) · GCP 예산 상시 발화 → ₩28,000(08-09).
 10. **GCP/Azure 자격증명은 아직 테넌트-바운드가 아니다** — 스코프는 액션이 **어느 네임스페이스를
    건드릴지**만 정하고 토큰을 테넌트에 묶지 않는다. GCP는 프로젝트 전역 신원 하나, **Azure는 ARM에서
    클러스터 admin kubeconfig를 받아온다**. 자격증명 자체가 경계인 것은 **온프렘뿐** → Phase 4.
