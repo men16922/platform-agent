@@ -6,6 +6,31 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-09 — Azure는 잴 수 있었다, 이름이 맞는 명령이 0을 줄 뿐 (gate 1709→1718)
+
+- Status: 어제 Azure를 **일부러 남겼다** — "못 잰다"가 아니라 "안 쟀다"였고 확인 없이 적지
+  않았다. 확인했다: **잴 수 있고, 쓰고 있었고, 아무도 못 보고 있었다.**
+- Verified(같은 창, 두 명령, 다른 답): `az consumption usage list`는 08-01~08-09에 **28행을
+  exit 0으로** 돌려주는데 **`pretaxCost`가 28행 전부 null** → 합계 **정확히 0**. 같은 창을
+  Cost Management로 물으면 **₩1,989.33**. 이 레포 **세 번째** 같은 계열이고 가장 깨끗한 표본
+  (AWS=크레딧 상계 · GCP=provider 누락 · Azure=cost 없는 행) — **셋 다 호출이 성공한다.**
+- Verified(실지출): 7월 **₩22,630**(Foundry Models 17,950 · ACR 4,394 · VM 134 · 그 외).
+  8월 MTD **₩1,989 전부 `acrroadpilot23842f7d`**(Container Registry **Basic**, `rg-roadpilot`,
+  07-14 생성) = **월 ~₩6,600 고정 요금**. ⚠️**다른 프로젝트 리소스**라 slackops 때와 같이
+  **보고만 하고 두었다**(종료는 소유자 판단).
+- Verified(기록 하나는 성립): "**Azure Foundry 유휴 ≈$0**"은 **참**이다 — 8월 MTD ₩0이고
+  7월 ₩17,950은 유휴가 아니라 **실사용**(소비 기반). 단 "Azure=≈$0"으로 **넓혀 읽으면 틀린다**
+  (ACR 고정 요금은 유휴와 무관).
+- Changed: 프로브가 **세 provider를 전부** 답한다. Cost Management API 사용(가드가 **호출
+  인자에 `consumption`이 나오면 red** — 문자열이 아니라 실제 호출을 본다) · **전 구독 스윕** ·
+  **창을 명시 전달**(`TheLastMonth`는 API가 **거부**한다 → 과거를 묻는 순간 깨진다) ·
+  **통화를 들고 다닌다**($ 가정 시 한 리포트에 두 단위가 섞인다) · POST는 **query 엔드포인트
+  하나로 URL 고정**. 실패는 **exit 2**(GCP와 다른 이유: 읽을 API가 **있는데** 못 읽은 것).
+- Verified(하중): 변이 **7건 전부 red, 생존 0**. `make check` **1718**(+9), 2026-08-09,
+  로컬 macOS·py3.13. 증거 `azure-consumption-cli-returns-null-cost.log`.
+- Next: 비용 관측의 구멍은 **GCP 하나**뿐 — 콘솔 토글에 막혀 있다. Azure의 크레딧 상계
+  (`ActualCost` vs `AmortizedCost`) 여부는 **물어본 적 없어 적지 않았다**.
+
 ## 2026-08-09 — 콘솔 수동 작업에 절차와 확인법을 붙였다 (gate 1708→1709)
 
 - Status: 남은 $0 선행(BQ 결제 내보내기)은 **API가 없어 손으로 해야 한다**는 게 확정됐으니,
@@ -90,21 +115,3 @@
   (mtime+size로만 검증). 원복했는데도 red가 나서 코드를 의심할 뻔했다. **반증 루프는 캐시를
   지우고 돌려야 한다.** 오늘 반복된 것과 같은 계열 — 도구의 기본값이 틀린 답을 준다.
 - Next: 사용자 결정 대기(4a 승인 · GCP 예산 재보정 · 결제 내보내기).
-
-## 2026-08-09 — 측정법을 산문이 아니라 프로브로 (gate 1685→1697)
-
-- Status: 비용 오보 재발을 막는 건 승인이 필요 없다. 문서에만 적어 두면 다음에 또 손으로
-  잘못 묻는다 — 레포의 프로브 관례로 박았다.
-- Changed: `scripts/probe_cloud_spend.py` + `make spend-check`. **크레딧 제외 필터**
-  (`Not RECORD_TYPE in [Credit,Refund]`)와 **전 리전 스윕**을 코드에 고정. 조회 실패는
-  **exit 2** — "못 봤다"가 "$0"으로 렌더되는 것이 이 사건의 전부였다. 읽기 전용이고
-  아무것도 중지·종료하지 않는다(가드가 mutating 동사 부재를 확인한다).
-- Verified: 라이브 — 손으로 물으면 $0이던 계정이 프로브로는 **$8.80**. 반증 2건: 필터를
-  빼면 `test_the_cost_call_actually_passes_it`, 단일 리전으로 바꾸면
-  `test_the_instance_query_is_run_per_region`만 red(**해당 가드만** 정확히 반응).
-  `make check` **1697**(+12). 증거 `docs/evidence/aws-spend-hand-check-was-zero.log`.
-- Blockers: 없음. GCP 예산 재보정·결제 내보내기는 콘솔 수동이라 사용자 몫.
-- 품질 메모: **네 metric(Unblended/NetUnblended/Amortized/Blended)을 전부 시도해도 ≈0이었다**
-  — metric을 바꾸는 것으로는 안 나온다. 필터가 문제였고, 그래서 가드도 metric이 아니라
-  **필터의 존재와 실제 전달**을 잰다(상수만 선언하고 안 쓰는 것도 red).
-- Next: 4a 승인(≈$5/월) 또는 GCP $0 선행 — 둘 다 사용자 결정.

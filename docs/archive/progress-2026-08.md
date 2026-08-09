@@ -4,6 +4,24 @@
 
 ---
 
+## 2026-08-09 — 측정법을 산문이 아니라 프로브로 (gate 1685→1697)
+
+- Status: 비용 오보 재발을 막는 건 승인이 필요 없다. 문서에만 적어 두면 다음에 또 손으로
+  잘못 묻는다 — 레포의 프로브 관례로 박았다.
+- Changed: `scripts/probe_cloud_spend.py` + `make spend-check`. **크레딧 제외 필터**
+  (`Not RECORD_TYPE in [Credit,Refund]`)와 **전 리전 스윕**을 코드에 고정. 조회 실패는
+  **exit 2** — "못 봤다"가 "$0"으로 렌더되는 것이 이 사건의 전부였다. 읽기 전용이고
+  아무것도 중지·종료하지 않는다(가드가 mutating 동사 부재를 확인한다).
+- Verified: 라이브 — 손으로 물으면 $0이던 계정이 프로브로는 **$8.80**. 반증 2건: 필터를
+  빼면 `test_the_cost_call_actually_passes_it`, 단일 리전으로 바꾸면
+  `test_the_instance_query_is_run_per_region`만 red(**해당 가드만** 정확히 반응).
+  `make check` **1697**(+12). 증거 `docs/evidence/aws-spend-hand-check-was-zero.log`.
+- Blockers: 없음. GCP 예산 재보정·결제 내보내기는 콘솔 수동이라 사용자 몫.
+- 품질 메모: **네 metric(Unblended/NetUnblended/Amortized/Blended)을 전부 시도해도 ≈0이었다**
+  — metric을 바꾸는 것으로는 안 나온다. 필터가 문제였고, 그래서 가드도 metric이 아니라
+  **필터의 존재와 실제 전달**을 잰다(상수만 선언하고 안 쓰는 것도 red).
+- Next: 4a 승인(≈$5/월) 또는 GCP $0 선행 — 둘 다 사용자 결정.
+
 ## 2026-08-09 — "AWS 이번 달 $0"을 두 번 보고했고 두 번 다 틀렸다 (실제 $8.81)
 
 - Status: 사용자가 AWS 예산 경보($8.50 임계, 실제 $8.81)를 전달했다. 내가 같은 날 두 번
