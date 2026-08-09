@@ -173,3 +173,6 @@
 - **실 AWS 왕복**(2026-08-08, gate 무관 — 프로브) — 인시던트 속성 6종이 실 `incident-history`를
   왕복해 **타입까지 보존**됨(`confidence`=`Decimal`). **모킹으로는 원리상 못 잡는 검증**이다.
   ⚠️**남은 한 칸(열린 항목)**: 대시보드 TS 리더 미검증.
+- **CI와 로컬이 이제 같은 숫자다 — 그 전엔 아니었다**(2026-08-08) — CI **1666/3** ↔ 로컬
+  **1668/1**, 넘어간 둘이 하필 terraform 검증이었다(`.terraform/`가 gitignore라 **설치만 해도
+  skip**). 교훈은 `STATUS` Risk 12②, 증거는 `docs/evidence/ci-terraform-validate-skipped.log`.
