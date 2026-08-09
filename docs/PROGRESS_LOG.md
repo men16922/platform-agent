@@ -6,6 +6,24 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-09 — 측정법을 산문이 아니라 프로브로 (gate 1685→1697)
+
+- Status: 비용 오보 재발을 막는 건 승인이 필요 없다. 문서에만 적어 두면 다음에 또 손으로
+  잘못 묻는다 — 레포의 프로브 관례로 박았다.
+- Changed: `scripts/probe_cloud_spend.py` + `make spend-check`. **크레딧 제외 필터**
+  (`Not RECORD_TYPE in [Credit,Refund]`)와 **전 리전 스윕**을 코드에 고정. 조회 실패는
+  **exit 2** — "못 봤다"가 "$0"으로 렌더되는 것이 이 사건의 전부였다. 읽기 전용이고
+  아무것도 중지·종료하지 않는다(가드가 mutating 동사 부재를 확인한다).
+- Verified: 라이브 — 손으로 물으면 $0이던 계정이 프로브로는 **$8.80**. 반증 2건: 필터를
+  빼면 `test_the_cost_call_actually_passes_it`, 단일 리전으로 바꾸면
+  `test_the_instance_query_is_run_per_region`만 red(**해당 가드만** 정확히 반응).
+  `make check` **1697**(+12). 증거 `docs/evidence/aws-spend-hand-check-was-zero.log`.
+- Blockers: 없음. GCP 예산 재보정·결제 내보내기는 콘솔 수동이라 사용자 몫.
+- 품질 메모: **네 metric(Unblended/NetUnblended/Amortized/Blended)을 전부 시도해도 ≈0이었다**
+  — metric을 바꾸는 것으로는 안 나온다. 필터가 문제였고, 그래서 가드도 metric이 아니라
+  **필터의 존재와 실제 전달**을 잰다(상수만 선언하고 안 쓰는 것도 red).
+- Next: 4a 승인(≈$5/월) 또는 GCP $0 선행 — 둘 다 사용자 결정.
+
 ## 2026-08-09 — "AWS 이번 달 $0"을 두 번 보고했고 두 번 다 틀렸다 (실제 $8.81)
 
 - Status: 사용자가 AWS 예산 경보($8.50 임계, 실제 $8.81)를 전달했다. 내가 같은 날 두 번
@@ -85,31 +103,4 @@
   호출로 보인다**. 후자는 **D39가 이미 밟은 함정**이라 이번엔 결론이 아니라 **세는 방법**을
   계획에 적었다.
 - Next: Phase 4(billable, 별 승인)와 attach UI(플래너를 어디서 돌릴지) 둘 다 승인 사안.
-
-## 2026-08-08 — 게이트가 검사하지 않는 것과 통과하는 것이 같은 색이었다
-
-- Status: 미커밋 `/tidy-docs` 증분을 PR로 랜딩하다가(**PR #2**) CI 로그에서 문서와
-  어긋나는 숫자를 봤다 — 문서 baseline `1668 passed, 1 skipped`인데 CI는 **1666/3**.
-- Changed(원인): 수집 총계는 1669로 같고 **2개가 pass→skip**이었다. 하필
-  `test_terraform_module`·`test_onprem_addons_module`의 `test_terraform_validate_passes`
-  = **이 레포가 배포하는 IaC를 검증하는 둘**. `skipif` 조건이 **`terraform 미설치 OR
-  모듈 미초기화`**인데 러너가 **두 절을 다** 만족했다(바이너리 없음 + `.terraform/`는
-  gitignore라 새 체크아웃은 초기화된 적 없음 → **설치만 해도 여전히 skip**).
-  즉 **D43이 병합 조건으로 삼은 게이트가 자기가 대체한 기계보다 적게 검사했다.**
-- Changed(수정, **PR #3**): `gate.yml`에 `setup-terraform` **1.15.8 핀**
-  (python 3.13 핀과 같은 이유=로컬에서 검증된 버전) + `terraform_wrapper: false`
-  (테스트가 subprocess로 파싱) + `init -backend=false` **두 모듈만**
-  (`infra/onprem/terraform`을 주장하는 테스트는 없다). 버전은 **커밋된 lock 파일**이
-  고정하므로 자격증명 없이 결정적이다.
-- Verified(반증 먼저 선언): *"init을 지우면 1666/3으로 돌아간다"* → 수정 후 CI가
-  **1668/1**, 두 테스트 **PASSED**, 남은 skip 1건은 의도된 인-테스트 skip.
-  run `31250113860`(전)↔`31250493800`(후). 증거
-  `docs/evidence/ci-terraform-validate-skipped.log`. PR #2·#3 병합 완료.
-- Changed(정리 중): 아카이브가 **자기 자신**을 "이전 이력"으로 가리키던 순환 포인터 1건 정정.
-- Blockers: 없음. 남은 건 Phase 4(billable, 별 승인).
-- 품질 메모: **skip은 실패가 아니라서, 검사하지 않는 게이트와 통과한 게이트가 같은
-  색이다.** Risk 12②와 같은 계열이되 방향이 반대다 — 12②는 "로컬만 통과"였는데 이건
-  **로컬이 통과시키고 CI가 안 도는** 쪽. 그래서 게이트 숫자에는 날짜(12①)뿐 아니라
-  **어느 기계에서 쟀는지**도 붙어야 한다.
-- Next: Phase 4(billable, 별 승인)만 남았다.
 
