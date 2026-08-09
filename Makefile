@@ -300,6 +300,56 @@ spend-check:  ## what AWS/Azure are actually spending + whether GCP is readable 
 	@# export on yet?) rather than a number. Saying nothing would read as zero.
 	@python scripts/probe_cloud_spend.py
 
+spend-watch:  ## has anything started costing money since the last look? (read-only)
+	@# Budgets answer "how much", eventually — the AWS one worked, 18 days late. This
+	@# answers "what is new", which is the shape every incident here has had. Exit 1 =
+	@# something is charging that was not before, so it is usable as a cron signal.
+	@# Deliberately no threshold: a rule you cannot satisfy teaches people to route
+	@# around it, which is what the ₩20 budget cost us.
+	python scripts/watch_cloud_spend.py
+
+spend-watch-baseline:  ## accept the current spend as the new baseline (no report)
+	python scripts/watch_cloud_spend.py --baseline
+
+SPEND_WATCH_HOOK := $(HOME)/.zshrc
+
+spend-watch-install:  ## run spend-watch once a day when a terminal opens (read-only)
+	@# NOT launchd, and that is a finding rather than a preference: this repo lives
+	@# under ~/Desktop, which macOS TCC protects. A LaunchAgent gets "Operation not
+	@# permitted" reading the repo at all (measured — exit 127), and the only way
+	@# through is granting Full Disk Access to /bin/zsh, which hands every zsh script
+	@# on the machine the whole disk. An interactive shell already has the access it
+	@# needs, so the check rides on the thing that is already permitted.
+	@grep -q 'platform-agent spend-watch' $(SPEND_WATCH_HOOK) 2>/dev/null \
+	  && { echo "already installed in $(SPEND_WATCH_HOOK)"; exit 0; } || true
+	@printf '%s\n' \
+	  '' \
+	  '# >>> platform-agent spend-watch >>>' \
+	  '# Once a day, ask whether anything started costing money. Silent unless it did.' \
+	  '# Remove with: make spend-watch-uninstall (in $(CURDIR))' \
+	  '(  _sw_stamp="$(CURDIR)/.state/last-watch"' \
+	  '   if [ ! -f "$$_sw_stamp" ] || [ -z "$$(find "$$_sw_stamp" -mtime -1 2>/dev/null)" ]; then' \
+	  '     mkdir -p "$(CURDIR)/.state" && touch "$$_sw_stamp"' \
+	  '     ( "$(CURDIR)/scripts/spend_watch_launchd.sh" >/dev/null 2>&1 & ) ' \
+	  '   fi ) 2>/dev/null' \
+	  '# <<< platform-agent spend-watch <<<' >> $(SPEND_WATCH_HOOK)
+	@echo "installed in $(SPEND_WATCH_HOOK) — 새 터미널에서 하루 한 번, 발견 시에만 알림"
+	@$(MAKE) --no-print-directory spend-watch-status
+
+spend-watch-uninstall:  ## remove the daily spend-watch hook
+	@if grep -q 'platform-agent spend-watch' $(SPEND_WATCH_HOOK) 2>/dev/null; then \
+	  sed -i '' '/# >>> platform-agent spend-watch >>>/,/# <<< platform-agent spend-watch <<</d' $(SPEND_WATCH_HOOK); \
+	  echo "removed from $(SPEND_WATCH_HOOK)"; \
+	else echo "not installed"; fi
+
+spend-watch-status:  ## is the daily spend-watch hook installed, and when did it last run?
+	@grep -q 'platform-agent spend-watch' $(SPEND_WATCH_HOOK) 2>/dev/null \
+	  && echo "spend-watch: 설치됨 ($(SPEND_WATCH_HOOK))" \
+	  || echo "spend-watch: 설치 안 됨 — 'make spend-watch-install'"
+	@test -f $(CURDIR)/.state/last-watch \
+	  && echo "  마지막 실행: $$(date -r $(CURDIR)/.state/last-watch '+%Y-%m-%d %H:%M')" \
+	  || echo "  마지막 실행: 없음"
+
 deploy-identity-check:  ## show what the minted deploy credential can and cannot do
 	@test -n "$$PLATFORM_DEPLOY_KUBECONFIG" || { echo "PLATFORM_DEPLOY_KUBECONFIG is not set → deploys run AMBIENT (likely cluster-admin)"; exit 1; }
 	@echo "→ identity: $$(kubectl --kubeconfig $$PLATFORM_DEPLOY_KUBECONFIG auth whoami -o jsonpath='{.status.userInfo.username}')"
