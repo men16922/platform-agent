@@ -290,10 +290,12 @@ scope-credentials:  ## mint per-tenant credentials + print the broker env for th
 	@echo "# then verify it is actually reachable (it prints REFUSED when it is not):"
 	@echo "python scripts/probe_scope_reachability.py"
 
-spend-check:  ## what is this account actually spending, and what is running (read-only)
+spend-check:  ## AWS actual spend + whether GCP spend is readable at all (read-only)
 	@# Asks the question a hand check gets wrong: Cost Explorer nets out credits by
 	@# default, so a credited account reads as $$0 while it consumes. Also sweeps every
 	@# region — the forgotten instance was not in the configured one. Changes nothing.
+	@# GCP prints a state, not a number: there is no cost API, so the true answer is
+	@# whether the BigQuery billing export exists yet. Saying nothing would read as ₩0.
 	@python scripts/probe_cloud_spend.py
 
 deploy-identity-check:  ## show what the minted deploy credential can and cannot do

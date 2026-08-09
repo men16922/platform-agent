@@ -1,0 +1,132 @@
+# GCP 실지출은 API로 못 읽는다 — 그리고 프로브가 그 사실을 말하지 않고 있었다 (2026-08-09)
+
+레포 규약대로 **기록된 이유를 먼저 돌려 봤다**(M13~M15에서 반복 확인: 기록된 구속 조건이
+진짜가 아닐 때가 많다). 이번엔 **셋 다 성립했다.** 그리고 성립을 확인하는 과정에서
+**다른 것**이 나왔다 — `make spend-check`가 GCP를 통째로 빼먹고 있었다.
+
+## 1. 기록된 이유 3건 재측정 — 전부 성립
+
+### (a) "Cloud Billing API를 켜도 비용 상세가 안 나온다"
+
+라이브 discovery 문서를 직접 받아 메서드를 전수했다:
+
+    $ curl -s 'https://cloudbilling.googleapis.com/$discovery/rest?version=v1'
+    → 19개 메서드:
+      organizations.billingAccounts.{move,list,create}
+      projects.{getBillingInfo,updateBillingInfo}
+      services.list · services.skus.list
+      billingAccounts.{get,list,create,patch,move}
+      billingAccounts.{setIamPolicy,getIamPolicy,testIamPermissions}
+      billingAccounts.subAccounts.{list,create} · billingAccounts.projects.list
+
+    $ grep -oiE '"[a-zA-Z]*(export|bigquery)[a-zA-Z]*"' <discovery>
+    → 0건
+
+`services.skus.list`는 **가격표**(rate card)지 사용량이 아니다. 지출을 읽는 메서드가 없다.
+
+### (b) "Budgets API는 `ActualSpend`를 안 준다"
+
+    $ curl -s 'https://billingbudgets.googleapis.com/$discovery/rest?version=v1'
+    Budget 스키마 = 8필드:
+      name · displayName · budgetFilter · amount · thresholdRules ·
+      notificationsRule · etag · ownershipScope
+
+    전 스키마에서 spend/actual/cost 이름을 가진 속성:
+      GoogleCloudBillingBudgetsV1ThresholdRule.spendBasis   ← 규칙의 *기준* enum뿐
+
+`amount`는 **내가 설정한 금액**이다. 실지출 readout은 없다. 2026-08-09 예산 작업 때
+"₩28,000으로 고쳤다"는 확인이 가능했던 것과, "얼마 썼나"를 못 읽는 것은 **다른 질문**이다.
+
+### (c) "BQ 내보내기 토글은 콘솔 수동"
+
+    $ gcloud billing --help
+    GROUPS: accounts · budgets · projects        ← export 없음
+    (beta도 동일. alpha는 컴포넌트 미설치 — 위 (a)의 discovery가 이미 API 부재를 보인다)
+
+### (d) 데이터셋은 있는데 테이블이 0개
+
+    $ bq --project_id=project-ec7809f7-0fb5-45d4-b6d ls
+      billing_export · ev_data_schema · housing_dataset
+
+    $ bq --project_id=project-ec7809f7-0fb5-45d4-b6d ls project-...:billing_export
+    (출력 없음)
+
+    description: "Cloud Billing export (per-SKU cost)"
+    creationTime: 1784576924317  → 2026-07-21
+
+2026-07-21에 **그릇만 만들고 토글은 못 켰다**는 메모리 기록과 일치한다. ⚠️ 빈 데이터셋의
+`bq ls`는 `[]`가 아니라 **아무것도 출력하지 않는다** — JSON으로 파싱하면 예외가 난다.
+그 예외를 "찾음"으로 처리하면 **거짓 초록**이 된다(아래 M4가 그걸 잡는다).
+
+## 2. 진짜 발견 — 프로브가 GCP를 빼먹고 있었다
+
+`scripts/probe_cloud_spend.py`에 `gcp|google|azure` 언급 **0건**. 4-provider 플랫폼에서
+`make spend-check`는 AWS만 답하고 GCP는 **출력에 없었다**. 08-09 사건의 교훈이
+"**못 봤다가 $0으로 렌더되면 안 된다**"였는데, **빠진 provider는 잰 0과 구별되지 않는다**.
+같은 실패를 한 칸 옆에서 반복하고 있었다.
+
+그리고 그 사실은 **산문에만** 있었다(STATUS Risk 4, PROGRESS_LOG). `make spend-check`를
+만든 이유 자체가 "문서에만 적어 두면 다음에 또 손으로 잘못 묻는다"였다.
+
+## 3. 고친 것
+
+프로브가 GCP에 대해 **숫자가 아니라 상태**를 출력한다 — 낼 수 있는 숫자가 없기 때문이다:
+
+    GCP 실사용
+        아직 못 잰다 — 프로젝트 4개를 훑었지만 내보내기 테이블이 없다
+        이것은 '₩0'이 아니다. GCP엔 지출을 읽는 API가 없다 — Cloud Billing v1엔
+        비용 메서드가 없고 Budgets API는 설정액만 준다(2026-08-09 discovery 실측).
+        유일한 길: 콘솔 → 결제 → 결제 내보내기 → BigQuery. 켜면 이 줄이 바뀐다.
+
+설계 판단 3개:
+
+- **exit 2로 만들지 않았다.** AWS의 exit 2는 "돌릴 줄 아는 질의가 실패했다"이고, GCP는
+  "질의 자체가 존재하지 않는다"다. 후자로 매번 빨간 프로브는 **건너뛰는 습관**을 만든다 —
+  이번 주에 고친 **상시 발화 ₩20 예산과 정확히 같은 계열**이다. 대신 출력에 이름을 박았다.
+- **데이터셋 이름이 아니라 테이블 이름으로 찾는다.** 콘솔은 내보내기 대상 데이터셋을
+  아무 이름으로나 고를 수 있다. 식별자는 `gcp_billing_export_v1_*` 테이블 쪽이다.
+- **프로젝트를 훑는다.** 활성 프로젝트만 보는 건 EC2를 한 리전만 본 것과 같은 실패다.
+  (`PLATFORM_GCP_BILLING_EXPORT=project:dataset`로 고정하면 스윕을 건너뛴다.)
+
+**부수 효과 = 사용자 콘솔 작업의 검증 수단.** 지금까지 토글을 켜도 **먹혔는지 확인할
+방법이 없었다**. 이제 `make spend-check` 한 줄이 답한다("저장≠집행"은 예산 때 이미 밟았다).
+
+## 4. 가드가 하중을 받는지 — 변이 5건 전부 red (Risk 12③)
+
+행복 경로만 태운 가드는 안전망을 지워도 초록이다. 그래서 프로브를 **실제로 망가뜨려** 봤다:
+
+    M1 스윕 대신 활성 프로젝트 하나       → 2 failed  (every_project_is_swept,
+                                                       missing_tooling_is_not_missing_export)
+    M2 테이블명 대신 데이터셋명으로 판정   → 2 failed  (identified_by_table_name,
+                                                       pinned_location_skips_sweep)
+    M3 "'₩0'이 아니다" 문장 삭제          → 1 failed  (names_itself_and_refuses_to_imply_zero)
+    M4 파싱 실패를 "찾음"으로 처리         → 3 failed  (empty_dataset_is_not_an_export 외)
+    M5 AWS 실패 시 GCP 전에 early return  → 1 failed  (gcp_is_reached_even_when_aws_failed)
+    원복                                   → 21 passed
+
+**살아남은 변이 0건.** M5는 "한 provider의 실패가 다른 provider를 출력에서 지우면 안 된다"
+— 이 항목의 주제 자체다.
+
+⚠️ 변이 루프는 매번 `__pycache__`를 지우고 돌렸다(08-09에 바이트 수가 같은 수정에서
+낡은 `.pyc`에 속은 적이 있다).
+
+## 5. 테스트가 라이브를 건드리고 있었다 (같은 세션에서 잡음)
+
+처음 쓴 가드 중 하나가 `_run`을 대체하지 않고 `report_gcp()`를 불러 **실제 gcloud/bq를
+호출**했다. 게이트 파일 하나가 **21.97초** 걸렸고, 자격증명이 없는 기계에선 결과가 달라진다
+(= Risk 12②의 "환경" 계열). `_run` 대체 후 **0.02초**.
+
+## 6. 게이트
+
+    make check → 1708 passed, 1 skipped   (+9)
+    2026-08-09 · 로컬 macOS(darwin 25.5.0) · Python 3.13 (anaconda)
+    ⚠️ CI 미확인 — 이 숫자는 이 기계의 것이다 (Risk 12②)
+
+## 7. 남은 것
+
+- **BQ 결제 내보내기 토글** = 여전히 콘솔 수동, 사용자 몫. 이제 켠 뒤 확인할 수단은 있다.
+- **`MEASURABLE` 분기의 실제 질의는 안 만들었다.** 오늘 라이브로 태울 데이터가 없어서
+  검증할 수 없다 — 대신 상태와 실행할 `bq query`를 출력한다. 데이터가 생기면 그때 만든다.
+  (안 태워 본 분기를 늘리는 게 이 문서 §4가 반대하는 바로 그것이다.)
+- **Azure는 여전히 빠져 있다.** 이번엔 손대지 않았다 — GCP와 달리 Cost Management API가
+  실지출을 준다고 알려져 있어 **"못 잰다"가 아니라 "안 쟀다"**이고, 확인 없이 적지 않는다.

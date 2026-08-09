@@ -17,15 +17,18 @@ answers a *different, reassuring* question:
 that make removing either one go red, because a probe that quietly loses its filter
 is worse than no probe: it carries the authority of a measurement.
 
-Static assertions on purpose — the probe talks to a live account, so exercising it
-for real would need credentials and would make the gate non-deterministic. What is
-falsifiable here is that the *right question* is baked in, which is exactly what was
-wrong when it was asked by hand.
+The AWS guards are static assertions on purpose — that half talks to a live account,
+so exercising it for real would need credentials and would make the gate
+non-deterministic. What is falsifiable there is that the *right question* is baked
+in, which is exactly what was wrong when it was asked by hand. The GCP guards below
+are behavioural instead, with the CLI layer replaced: they still never touch the
+network, but they can execute a branch (`MEASURABLE`) that no live run reaches today.
 """
 
 from __future__ import annotations
 
 import ast
+import importlib.util
 import json
 from pathlib import Path
 
@@ -142,3 +145,142 @@ class TestTheWindowIsRight:
         """Cost Explorer's End is exclusive; end=today silently drops today."""
         assert "timedelta(days=1)" in source
         assert "end exclusive" in source or "exclusive" in source
+
+
+# ---------------------------------------------------------------------------
+# GCP: the same false zero, one provider over.
+#
+# The AWS half above was written after "$0" was reported twice for an account that
+# was spending. GCP was then left out of this probe entirely — and on a four-provider
+# platform an omitted provider reads exactly like a measured zero. It is worse here,
+# because GCP genuinely cannot be measured today: Cloud Billing v1 has no method
+# that reads spend (19 methods, checked against the live discovery document on
+# 2026-08-09) and the Budgets API returns the amount you configured. So the probe
+# cannot print a number and must print the *state* instead.
+#
+# These are behavioural rather than static: the branch that says "not measurable"
+# is the one running today, so the branch that says "measurable" would otherwise
+# never be executed by anything, and an unexercised branch carries no weight.
+# `_run` is replaced, so nothing here shells out.
+# ---------------------------------------------------------------------------
+
+EXPORT_TABLE = "gcp_billing_export_v1_010556_A2B7AE_292490"
+
+
+@pytest.fixture(scope="module")
+def probe():
+    spec = importlib.util.spec_from_file_location("probe_cloud_spend", PROBE)
+    assert spec and spec.loader, "the probe this file guards is not importable"
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)          # import alone must not shell out
+    return mod
+
+
+def fake_run(datasets=(), tables=(), projects=("p1",), gcloud_ok=True):
+    """A stand-in for every CLI the GCP half calls; returns (runner, calls-it-made)."""
+    calls: list[tuple[str, ...]] = []
+
+    def _run(*args: str) -> tuple[int, str]:
+        calls.append(args)
+        if args[0] == "gcloud":
+            return (0, "\n".join(projects)) if gcloud_ok else (1, "API not enabled")
+        if args[-1] == "ls":              # dataset listing for a project
+            return 0, json.dumps(
+                [{"datasetReference": {"datasetId": d}} for d in datasets]
+            )
+        # table listing for `project:dataset` — an empty dataset prints nothing,
+        # not `[]`, which is the shape the live account is actually in.
+        if not tables:
+            return 0, ""
+        return 0, json.dumps([{"tableReference": {"tableId": t}} for t in tables])
+
+    return _run, calls
+
+
+class TestGcpIsNotSilentlyOmitted:
+    def test_the_probe_reports_gcp_at_all(self, source):
+        assert "GCP 실사용" in source, (
+            "a provider missing from the report is indistinguishable from a zero"
+        )
+
+    def test_gcp_is_reached_even_when_aws_could_not_be_measured(self, source):
+        """The early `return 2` used to sit above everything else, so a broken AWS
+        lookup deleted GCP from the output entirely."""
+        body = source.split("def main(")[-1]
+        assert body.index("report_gcp()") < body.index("return 2"), (
+            "report_gcp must run before main can bail out on an AWS failure"
+        )
+
+
+class TestUnmeasurableIsSaidOutLoud:
+    def test_a_missing_export_names_itself_and_refuses_to_imply_zero(self, probe, monkeypatch, capsys):
+        runner, _ = fake_run(datasets=["billing_export"])
+        monkeypatch.setattr(probe, "_run", runner)
+        monkeypatch.delenv(probe.GCP_EXPORT_ENV, raising=False)
+        status, _ = probe.gcp_actual_spend()
+        assert status == "NOT_EXPORTED"
+        probe.report_gcp()
+        out = capsys.readouterr().out
+        assert "아직 못 잰다" in out
+        assert "'₩0'이 아니다" in out, "the whole point is that absence is not zero"
+        assert "결제 내보내기" in out, "say which console toggle would fix it"
+
+    def test_an_empty_dataset_is_not_an_export(self, probe, monkeypatch):
+        """`bq ls` on an empty dataset prints nothing at all rather than `[]` — parsing
+        that as JSON raises, and treating the raise as 'found' would be a false green."""
+        runner, _ = fake_run(datasets=["billing_export"], tables=())
+        monkeypatch.setattr(probe, "_run", runner)
+        monkeypatch.delenv(probe.GCP_EXPORT_ENV, raising=False)
+        assert probe.gcp_actual_spend()[0] == "NOT_EXPORTED"
+
+    def test_missing_tooling_is_not_the_same_answer_as_missing_export(self, probe, monkeypatch):
+        """"gcloud cannot look" and "the export is off" need different fixes."""
+        runner, _ = fake_run(gcloud_ok=False)
+        monkeypatch.setattr(probe, "_run", runner)
+        monkeypatch.delenv(probe.GCP_EXPORT_ENV, raising=False)
+        assert probe.gcp_actual_spend()[0] == "NO_TOOLING"
+
+    def test_a_missing_export_does_not_turn_the_probe_red(self, probe, source, monkeypatch):
+        """A known gap is not a failed lookup. A probe that exits nonzero on every
+        run trains people to skip it — the same way the ₩20 budget that fired every
+        month trained everyone to ignore it."""
+        runner, _ = fake_run(datasets=["billing_export"])
+        monkeypatch.setattr(probe, "_run", runner)
+        monkeypatch.delenv(probe.GCP_EXPORT_ENV, raising=False)
+        assert probe.report_gcp() is None
+        assert "unmeasured = True" not in source.split("report_gcp()")[-1]
+
+
+class TestTheExportIsFoundWhereverItIs:
+    def test_it_is_identified_by_table_name_not_dataset_name(self, probe, monkeypatch):
+        """The console lets you point the export at any dataset, so keying off the
+        dataset name would miss a real export that happens to be called something else."""
+        runner, _ = fake_run(datasets=["anything_at_all"], tables=[EXPORT_TABLE])
+        monkeypatch.setattr(probe, "_run", runner)
+        monkeypatch.delenv(probe.GCP_EXPORT_ENV, raising=False)
+        status, detail = probe.gcp_actual_spend()
+        assert status == "MEASURABLE"
+        assert detail == f"p1:anything_at_all.{EXPORT_TABLE}"
+
+    def test_every_project_is_swept_rather_than_the_configured_one(self, probe, monkeypatch):
+        """Same failure as the single-region EC2 query: the thing was not where the
+        active configuration pointed."""
+        runner, calls = fake_run(datasets=["d"], tables=(), projects=("p1", "p2"))
+        monkeypatch.setattr(probe, "_run", runner)
+        monkeypatch.delenv(probe.GCP_EXPORT_ENV, raising=False)
+        assert probe.gcp_actual_spend()[0] == "NOT_EXPORTED"
+        assert any(c[0] == "gcloud" and "projects" in c for c in calls), (
+            "the project list must be asked for, not assumed from gcloud config"
+        )
+        looked_at = {c[2] for c in calls if c[0] == "bq" and c[1] == "--project_id"}
+        assert looked_at == {"p1", "p2"}, (
+            "a project that was never listed cannot be ruled out — reporting "
+            f"'no export anywhere' after looking at {looked_at} is the false zero again"
+        )
+
+    def test_a_pinned_location_skips_the_sweep(self, probe, monkeypatch):
+        runner, calls = fake_run(tables=[EXPORT_TABLE])
+        monkeypatch.setattr(probe, "_run", runner)
+        monkeypatch.setenv(probe.GCP_EXPORT_ENV, "proj:ds")
+        assert probe.gcp_actual_spend() == ("MEASURABLE", f"proj:ds.{EXPORT_TABLE}")
+        assert not any(c[0] == "gcloud" for c in calls)
