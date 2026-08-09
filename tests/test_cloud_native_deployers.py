@@ -354,14 +354,48 @@ class TestAdkDeployerAgent:
         assert gcp_validate_deployment in GCP_DEPLOY_TOOLS
         assert gcp_rollback_deployment in GCP_DEPLOY_TOOLS
 
-    def test_default_model(self):
+    def test_default_model(self, monkeypatch):
         from src.agents.ai.adk_deployer import create_adk_deployer_agent
 
         # The mocked Agent just records calls
+        monkeypatch.delenv("GEMINI_MODEL", raising=False)
         _mock_adk_agents.Agent.reset_mock()
         create_adk_deployer_agent()
         call_kwargs = _mock_adk_agents.Agent.call_args[1]
         assert "gemini" in call_kwargs["model"]
+
+    def test_the_docstring_names_the_default_the_code_actually_uses(self, monkeypatch):
+        """The old assertion was `"gemini" in model`, which passes for any Gemini.
+
+        So when the code default moved to 3.5 the docstring kept saying 2.5 and
+        nothing failed — a reader configuring from the docstring would pin an older
+        model. The model ID is load-bearing (capability, cost, and any "3.5 or
+        newer" requirement), so the documented default and the real one are pinned
+        to each other rather than both being pinned to the word "gemini".
+        """
+        import re
+
+        from src.agents.ai.adk_deployer import create_adk_deployer_agent
+
+        monkeypatch.delenv("GEMINI_MODEL", raising=False)
+        _mock_adk_agents.Agent.reset_mock()
+        create_adk_deployer_agent()
+        actual = _mock_adk_agents.Agent.call_args[1]["model"]
+
+        documented = re.findall(r"gemini-[\w.\-]+", create_adk_deployer_agent.__doc__ or "")
+        assert documented, "the docstring stopped naming a default at all"
+        assert documented[-1].rstrip(".") == actual, (
+            f"docstring says {documented[-1]!r}, code uses {actual!r}"
+        )
+
+    def test_the_env_var_still_wins(self, monkeypatch):
+        """The documented override must keep working, or the doc is wrong again."""
+        from src.agents.ai.adk_deployer import create_adk_deployer_agent
+
+        monkeypatch.setenv("GEMINI_MODEL", "gemini-3.5-pro")
+        _mock_adk_agents.Agent.reset_mock()
+        create_adk_deployer_agent()
+        assert _mock_adk_agents.Agent.call_args[1]["model"] == "gemini-3.5-pro"
 
     def test_custom_model(self):
         from src.agents.ai.adk_deployer import create_adk_deployer_agent

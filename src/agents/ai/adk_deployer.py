@@ -88,7 +88,7 @@ def create_adk_deployer_agent(
     """Create an ADK deployer agent configured for GCP.
 
     Args:
-        model: Gemini model ID. Defaults to GEMINI_MODEL env var or gemini-2.5-flash.
+        model: Gemini model ID. Defaults to GEMINI_MODEL env var or gemini-3.5-flash.
         **kwargs: Additional AdkAgent constructor arguments.
 
     Returns:

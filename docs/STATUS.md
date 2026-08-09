@@ -8,16 +8,16 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` → **1699 passed, 1 skipped** (2026-08-09, +2) — **docstring이 코드보다 오래된
+  모델을 가리켰다**: `adk_deployer` 기본값이 문서엔 `gemini-2.5-flash`, 코드엔 **3.5**. 기존
+  가드는 `"gemini" in model`만 봐서 **원리상 못 잡았다** → 문서값과 코드값을 서로 고정.
+  ⚠️반증 중 **`.pyc`에 속았다** — 두 값의 **바이트 수가 같아** 같은 초 재수정 시 낡은
+  바이트코드가 쓰인다. **반증 루프는 캐시를 지우고 돌릴 것.**
 - `make check` → **1697 passed, 1 skipped** (2026-08-09, +12) — **측정법을 프로브로**:
   손으로 물으면 $0, 제대로 물으면 **$8.80**이던 것을 `make spend-check`
   (`scripts/probe_cloud_spend.py`)로 박았다 — 크레딧 제외 필터 + 전 리전 스윕, 조회 실패는
   **exit 2**("못 봤다"가 "$0"으로 렌더되는 게 사건의 전부였다). 반증 2건 red(각각 해당 가드만).
   증거 `docs/evidence/aws-spend-hand-check-was-zero.log` · → Risk 4.
-- `make check` → **1685 passed, 1 skipped** (2026-08-09, +9, **로컬·CI 일치**) — **managed
-  백엔드를 세 경로가 다르게 알고 있었다**: 읽기는 알아보고, 쓰기는 만들 수 없고, **렌더는
-  몰랐다** — 백엔드를 Helm 차트 이름으로 넘겨 `logging: cloudwatch-logs`가 **Grafana 저장소에서
-  그 차트를 찾게** 된다(라이브). `ManagedBackendNotRenderable`로 거부, `is_managed`는 collector와
-  **같은 콜러블**. 반증 2건 red. ⚠️막히지 않는 조합은 **네임스페이스 스코프 + managed**뿐.
 - **`main` 브랜치 보호 = 집행 확인**(2026-08-08) — PR + `check` 필수(관리자 포함), 직접 push가
   실제로 `[remote rejected]` 되는 것까지 봤다. **code-owner 리뷰는 일부러 껐다** → D43.
 - (이전 baseline — gate **1676 이하** / 2026-07-10~08-08 → `docs/archive/status-baseline-2026-07.md`
