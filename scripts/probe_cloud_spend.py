@@ -65,6 +65,29 @@ GCP_EXPORT_TABLE_PREFIX = "gcp_billing_export"
 #: Set to `project:dataset` to skip the sweep when the export location is known.
 GCP_EXPORT_ENV = "PLATFORM_GCP_BILLING_EXPORT"
 
+#: Azure *does* have a spend API — but the obvious CLI does not reach it. Measured
+#: 2026-08-09: `az consumption usage list` returned 28 rows for 08-01~08-09 with
+#: `pretaxCost` null in **every one**, so summing them gives exactly 0.0 while Cost
+#: Management reports ₩1,989.33 for the same window. Third instance of one shape —
+#: a call that succeeds, returns plausible rows, and renders as zero. Keeping the
+#: query as a literal so the guard can assert the probe asks the right question.
+AZURE_COST_QUERY = {
+    "type": "ActualCost",
+    "dataset": {
+        "granularity": "None",
+        "aggregation": {"totalCost": {"name": "Cost", "function": "Sum"}},
+        "grouping": [{"type": "Dimension", "name": "ServiceName"}],
+    },
+}
+
+#: `TheLastMonth` is rejected by this API ("currently not supported"), so windows are
+#: always passed explicitly — which also keeps --days meaning the same thing for
+#: every provider.
+AZURE_COST_URL = (
+    "https://management.azure.com/subscriptions/{sub}/providers"
+    "/Microsoft.CostManagement/query?api-version=2023-03-01"
+)
+
 
 def _aws(*args: str) -> tuple[int, str]:
     proc = subprocess.run(["aws", *args], capture_output=True, text=True)
@@ -200,6 +223,70 @@ def gcp_actual_spend() -> tuple[str, str]:
     return "NOT_EXPORTED", f"프로젝트 {len(projects)}개를 훑었지만 내보내기 테이블이 없다"
 
 
+def azure_spend(start: str, end: str) -> list[tuple[str, str, list[tuple[str, float]]]] | None:
+    """Per-subscription actual cost, grouped by service. None when it cannot be read.
+
+    Sweeps every subscription the login can see rather than the default one, for the
+    same reason the AWS half sweeps every region: the spend was not where the active
+    configuration pointed.
+
+    The Cost Management query is a POST, which is worth saying out loud in a probe
+    that promises to change nothing — it is a query endpoint, not a write. The guard
+    pins the URL so no other POST can be added quietly.
+    """
+    code, out = _run("az", "account", "list", "--output", "json")
+    if code != 0:
+        print(f"  ! 구독 목록 조회 실패: {out.strip().splitlines()[-1:]}", file=sys.stderr)
+        return None
+    try:
+        subscriptions = [(s["id"], s.get("name", s["id"])) for s in json.loads(out)]
+    except (json.JSONDecodeError, KeyError, TypeError):
+        return None
+
+    body = dict(AZURE_COST_QUERY)
+    body["timeframe"] = "Custom"
+    body["timePeriod"] = {"from": f"{start}T00:00:00Z", "to": f"{end}T00:00:00Z"}
+
+    found: list[tuple[str, str, list[tuple[str, float]]]] = []
+    for sub_id, name in subscriptions:
+        code, out = _run(
+            "az", "rest", "--method", "post",
+            "--url", AZURE_COST_URL.format(sub=sub_id),
+            "--body", json.dumps(body), "--output", "json",
+        )
+        if code != 0:
+            print(f"  ! {name}: 비용 조회 실패", file=sys.stderr)
+            return None
+        try:
+            rows = json.loads(out)["properties"]["rows"]
+        except (json.JSONDecodeError, KeyError, TypeError):
+            return None
+        currency = rows[0][-1] if rows else ""
+        ranked = sorted(((r[1], float(r[0])) for r in rows if float(r[0]) > 0),
+                        key=lambda kv: -kv[1])
+        found.append((name, currency, ranked))
+    return found
+
+
+def report_azure(start: str, end: str) -> bool:
+    """Prints Azure's answer. Returns False when it could not be measured."""
+    print("Azure 실사용 (ActualCost, 전 구독)")
+    measured = azure_spend(start, end)
+    if measured is None:
+        print("\n측정하지 못했다. 이것은 '0'이 아니다.", file=sys.stderr)
+        return False
+    for name, currency, ranked in measured:
+        total = sum(amount for _, amount in ranked)
+        print(f"    {name} — 총 {total:,.2f} {currency}")
+        for service, amount in ranked:
+            print(f"      {service:<44} {amount:>12,.2f}")
+        if not ranked:
+            print("      (해당 창에 실사용 없음)")
+    if not measured:
+        print("    (이 로그인에 보이는 구독이 없다)")
+    return True
+
+
 def report_gcp() -> None:
     """GCP's answer is a state, not a number — printing nothing would read as ₩0."""
     print("GCP 실사용")
@@ -250,7 +337,11 @@ def main() -> int:
             print("    (없음)")
 
     # Reached even when AWS could not be measured: one provider failing must not
-    # delete the other from the report, which is the omission this section is about.
+    # delete the others from the report, which is the omission this section is about.
+    print()
+    if not report_azure(start, end):
+        unmeasured = True
+
     print()
     report_gcp()
 

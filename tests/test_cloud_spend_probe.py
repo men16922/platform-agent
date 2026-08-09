@@ -268,6 +268,115 @@ class TestUnmeasurableIsSaidOutLoud:
         assert "unmeasured = True" not in source.split("report_gcp()")[-1]
 
 
+# ---------------------------------------------------------------------------
+# Azure: the same false zero a third time, and this one is the cleanest sample.
+#
+# Azure *does* expose actual spend — unlike GCP — so the failure here is not
+# "unmeasurable", it is "measured with the wrong call". On 2026-08-09
+# `az consumption usage list` returned 28 rows for 08-01~08-09 with `pretaxCost`
+# null in every single one; summing them gives exactly 0.0. Cost Management,
+# asked about the identical window, said ₩1,989.33. Anyone reaching for the
+# obviously-named command gets a confident zero for a subscription that spent
+# ₩22,630 the month before.
+# ---------------------------------------------------------------------------
+
+WINDOW = ("2026-08-01", "2026-08-10")
+
+
+def fake_az(subs=(("sub-1", "one"),), rows=(("Container Registry", 1989.33),), fail=None):
+    """Stands in for the az CLI; `fail` is "account" or "rest"."""
+    calls: list[tuple[str, ...]] = []
+
+    def _run(*args: str) -> tuple[int, str]:
+        calls.append(args)
+        if fail is not None and args[1] == fail:
+            return 1, "boom"
+        if args[1] == "account":
+            return 0, json.dumps([{"id": i, "name": n} for i, n in subs])
+        return 0, json.dumps(
+            {"properties": {"rows": [[amt, svc, "KRW"] for svc, amt in rows]}}
+        )
+
+    return _run, calls
+
+
+class TestAzureAsksTheRightCall:
+    def test_the_command_that_returns_a_false_zero_is_never_used(self, probe, monkeypatch):
+        """`az consumption usage list` succeeds, returns rows, and has no cost in
+        them. Using it would be indistinguishable from a working probe."""
+        runner, calls = fake_az()
+        monkeypatch.setattr(probe, "_run", runner)
+        probe.azure_spend(*WINDOW)
+        assert not any("consumption" in part for c in calls for part in c), (
+            "the probe reached for the CLI whose pretaxCost is null on every row"
+        )
+
+    def test_it_asks_for_actual_cost(self, module):
+        q = module.get("AZURE_COST_QUERY")
+        assert q, "the probe no longer declares what it asks Cost Management"
+        assert q["type"] == "ActualCost"
+        assert q["dataset"]["aggregation"]["totalCost"]["function"] == "Sum"
+        assert q["dataset"]["grouping"][0]["name"] == "ServiceName"
+
+    def test_the_window_is_sent_explicitly(self, probe, monkeypatch):
+        """`TheLastMonth` is rejected by this API ("currently not supported"), so a
+        named timeframe would fail at exactly the moment someone asked for history."""
+        runner, calls = fake_az()
+        monkeypatch.setattr(probe, "_run", runner)
+        probe.azure_spend(*WINDOW)
+        bodies = [json.loads(c[c.index("--body") + 1]) for c in calls if "--body" in c]
+        assert bodies, "no query was sent"
+        assert bodies[0]["timeframe"] == "Custom"
+        assert bodies[0]["timePeriod"]["from"].startswith(WINDOW[0])
+        assert bodies[0]["timePeriod"]["to"].startswith(WINDOW[1])
+
+    def test_only_the_cost_query_endpoint_is_posted_to(self, probe, monkeypatch):
+        """This probe promises to change nothing, and it issues a POST. That is fine
+        for a query endpoint and not fine for anything else, so pin the URL."""
+        runner, calls = fake_az()
+        monkeypatch.setattr(probe, "_run", runner)
+        probe.azure_spend(*WINDOW)
+        for call in calls:
+            if "post" in call:
+                url = call[call.index("--url") + 1]
+                assert "/Microsoft.CostManagement/query?" in url, f"unexpected POST: {url}"
+
+
+class TestAzureSweepsAndFailsLoudly:
+    def test_every_subscription_is_swept(self, probe, monkeypatch):
+        runner, calls = fake_az(subs=(("sub-1", "one"), ("sub-2", "two")))
+        monkeypatch.setattr(probe, "_run", runner)
+        result = probe.azure_spend(*WINDOW)
+        assert [name for name, _, _ in result] == ["one", "two"]
+        queried = {c[c.index("--url") + 1] for c in calls if "--url" in c}
+        assert len(queried) == 2, "a subscription never queried cannot be ruled out"
+
+    @pytest.mark.parametrize("broken", ["account", "rest"])
+    def test_a_failed_lookup_is_none_not_an_empty_report(self, probe, monkeypatch, broken):
+        """Returning [] here would print a clean, totally empty Azure section — the
+        false zero wearing a different hat."""
+        runner, _ = fake_az(fail=broken)
+        monkeypatch.setattr(probe, "_run", runner)
+        assert probe.azure_spend(*WINDOW) is None
+
+    def test_an_unmeasured_azure_makes_the_probe_exit_nonzero(self, probe, source, monkeypatch):
+        """Unlike GCP, Azure spend *is* knowable — so failing to read it is a failed
+        lookup, not a known gap, and must be treated like the AWS failure."""
+        runner, _ = fake_az(fail="account")
+        monkeypatch.setattr(probe, "_run", runner)
+        assert probe.report_azure(*WINDOW) is False
+        assert "if not report_azure(start, end):\n        unmeasured = True" in source
+
+    def test_currency_is_carried_not_assumed(self, probe, monkeypatch, capsys):
+        """The AWS half prints dollars; this subscription bills in KRW. Printing a
+        bare number, or a $, would silently mix two units in one report."""
+        runner, _ = fake_az()
+        monkeypatch.setattr(probe, "_run", runner)
+        probe.report_azure(*WINDOW)
+        out = capsys.readouterr().out
+        assert "KRW" in out and "$" not in out
+
+
 class TestTheExportIsFoundWhereverItIs:
     def test_it_is_identified_by_table_name_not_dataset_name(self, probe, monkeypatch):
         """The console lets you point the export at any dataset, so keying off the

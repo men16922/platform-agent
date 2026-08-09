@@ -8,25 +8,27 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` → **1709 passed, 1 skipped** (2026-08-09, +10, CI 일치, **로컬 macOS·py3.13 ↔ CI
-  일치**, PR #16) — **`spend-check`가 GCP를 통째로 빼먹고 있었다**. 4-provider 플랫폼에서
-  **빠진 provider는 잰 0과 구별되지 않는다** = 08-09 사건의 반복. 이제 GCP엔 **숫자가 아니라
-  상태**를 출력한다(낼 숫자가 없다 — 아래 Risk 4). **exit 2로는 안 만들었다**: 매번 빨간
-  프로브는 ₩20 예산과 같은 계열. **변이 5건 전부 red, 생존 0**(Risk 12③). ⚠️처음 쓴 가드가
-  **게이트에서 라이브 gcloud를 호출**했다(21.97s → 0.02s, Risk 12②). 증거
-  `docs/evidence/gcp-actual-spend-has-no-api.log`.
-- `make check` → **1699 passed, 1 skipped** (2026-08-09, +2) — **docstring이 코드보다 오래된
-  모델을 가리켰다**: `adk_deployer` 기본값이 문서엔 `gemini-2.5-flash`, 코드엔 **3.5**. 기존
-  가드는 `"gemini" in model`만 봐서 **원리상 못 잡았다** → 문서값과 코드값을 서로 고정.
-  ⚠️반증 중 **`.pyc`에 속았다** — 두 값의 **바이트 수가 같아** 같은 초 재수정 시 낡은
-  바이트코드가 쓰인다. **반증 루프는 캐시를 지우고 돌릴 것.**
+- `make check` → **1718 passed, 1 skipped** (2026-08-09, +9, 로컬 macOS·py3.13) — **Azure는
+  잴 수 있었다**: `az consumption usage list`가 **28행 전부 `pretaxCost` null**로 exit 0 →
+  합계 0인데 Cost Management는 같은 창에 **₩1,989**(세 번째 같은 계열). 프로브가 이제
+  **3 provider 전부** 답한다. **변이 7건 red, 생존 0**. 증거
+  `docs/evidence/azure-consumption-cli-returns-null-cost.log`.
+- `make check` → **1709/1708, 1 skipped** (2026-08-09, **로컬 ↔ CI 일치**, PR #16·#17) —
+  **`spend-check`가 GCP를 통째로 빼먹고 있었다**(빠진 provider는 잰 0과 구별되지 않는다).
+  GCP엔 **숫자가 아니라 상태**를 출력하되 **exit 2로는 안 만들었다**(매번 빨간 프로브는 ₩20
+  예산과 같은 계열). 변이 5건 red. ⚠️처음 쓴 가드가 **게이트에서 라이브 gcloud를 호출**했다
+  (21.97s → 0.02s, Risk 12②). 증거 `gcp-actual-spend-has-no-api.log`.
+- `make check` → **1699, 1 skipped** (2026-08-09) — **docstring이 코드보다 오래된 모델을
+  가리켰다**(문서 `gemini-2.5-flash` ↔ 코드 **3.5**). 기존 가드는 `"gemini" in model`만 봐서
+  **원리상 못 잡았다** → 두 값을 서로 고정. ⚠️반증 중 **`.pyc`에 속았다**(바이트 수가 같아
+  같은 초 재수정 시 낡은 바이트코드) — **반증 루프는 캐시를 지우고 돌릴 것.**
 - (이전 baseline — gate **1697 이하** / 07-10~08-09 및 `main` 보호 확인 →
   `docs/archive/{status-baseline-2026-07,progress-2026-08}.md` · `COMPLETED_SUMMARY` M13·M14.)
 
 ## 동작하는 영역 (요약)
 
-제품 방향: Day1+Day2를 함께 다루는 AWS-native `platform-agent`. 4 provider(AWS/GCP/Azure/On-Prem)
-코드 완비. 하네스 = overnight-harness 5 engine. 상세는 `COMPLETED_SUMMARY` M0~M15.
+제품 방향: Day1+Day2를 함께 다루는 AWS-native `platform-agent`. 4 provider 코드 완비 · 하네스
+= overnight-harness 5 engine. 상세는 `COMPLETED_SUMMARY` M0~M15.
 
 1-6. **Operations 파이프라인**(Detector/Analyzer/Decision/Executor + Approval Bridge, 3-Cloud
    Day2 각 4-step) · **HITL 승인**(Slack→`WaitForTaskToken`+SQS+SFN) · **Day1/1.5** ·
@@ -67,17 +69,17 @@
    deploy-identity-check` · 켜기 `make scope-credentials`·`make deploy-identity`.
    **남은 것**: 배포 신원은 테넌트를 구분 안 함(결정 5 C/D=라우터 인증 선행) · **키 custody**
    (rotation은 닫힘) · 클라우드 3종은 Risk 10.
-4. **비용 조회는 기본값이 안심시키는 답을 준다(2026-08-09 실측)** — "AWS 8월 $0"을 두 번
-   보고했고 둘 다 틀렸다(실제 **$8.81**): ①`aws ce`는 **크레딧 포함** 집계 → 예산처럼
-   `Not RECORD_TYPE in [Credit,Refund]`로 물을 것 ②EKS/AMP만 보고 **EC2를 안 봤다** → **전 리전
-   스윕**. 둘 다 `make spend-check`가 박아 뒀다. 원인은 `slackops-devops-agent`가 07-22부터
-   18일째 돌던 것(~$35/월, **중지함**) — **점검이 아니라 경보가 잡았다**. ₩20 예산 → **₩28,000**.
-   ⚠️**GCP 실지출은 못 잰다 — 재측정으로 확정(08-09)**: Cloud Billing v1 discovery **19 메서드에
-   지출 읽는 것 0** · Budgets `Budget` 8필드에 **실지출 readout 없음** · `gcloud billing`엔
-   export 없음 → **BQ 내보내기(콘솔 수동)가 유일**, 데이터셋은 있고 **테이블 0개**. 이제
-   `make spend-check`가 **그 상태를 출력**(빠지면 ₩0으로 읽힌다) = 켠 뒤 확인할 수단.
-   ⚠️**Azure는 빠져 있다 — "못 잰다"가 아니라 "안 쟀다"**. 증거
-   `gcp-budget-always-firing-fixed.log` · `gcp-actual-spend-has-no-api.log`.
+4. **세 클라우드 다 기본값이 안심시키는 답을 준다 — 셋 다 호출은 성공한다(2026-08-09 실측)**
+   ①**AWS**: `aws ce`는 **크레딧 포함** 집계라 "$0"을 두 번 보고했다(실제 **$8.81**) →
+   `Not RECORD_TYPE in [Credit,Refund]` + **전 리전 스윕**(원인 `slackops-devops-agent` 18일째,
+   **중지함** — **점검이 아니라 경보가 잡았다**). ②**Azure**: `az consumption usage list`가
+   **cost 없는 행**을 주고(28행 전부 null → 합계 0) **Cost Management만 실지출을 준다**
+   (7월 **₩22,630** · 8월 MTD ₩1,989 = ACR Basic 고정 요금, **다른 프로젝트 것이라 두었다**).
+   ③**GCP는 아예 못 잰다** — Cloud Billing v1 **19 메서드에 지출 0** · Budgets에 실지출 readout
+   없음 → **BQ 내보내기(콘솔 수동)가 유일**, 데이터셋은 있고 **테이블 0개**
+   (`docs/GCP_BILLING_EXPORT_SETUP.md`). 셋 다 `make spend-check`가 박아 뒀고 **관측 구멍은
+   이제 GCP 하나**. ₩20 예산 → ₩28,000. 증거 `gcp-budget-always-firing-fixed.log` ·
+   `gcp-actual-spend-has-no-api.log` · `azure-consumption-cli-returns-null-cost.log`.
 5. **k3s는 집행하지만 proven 집합엔 없다 — 결정 4 = D40으로 닫힘(2026-08-01)** — 집행은 라이브
    증명(07-29), 시맨틱은 미증명. 문서들이 반복한 "피어 테넌트 부재"는 **참이지만 구속력이
    없었다**(실제 이유는 넷: 네임스페이스 1개 · **순환**(승격하려면 먼저 승격해야 한다) ·
@@ -93,9 +95,7 @@
    v2 서명은 통과 — 양방향 실증). ⚠️**우리 게이트는 같은 이미지에 VERIFIED를 준다** = **"검증됨"이
    도구마다 다르고 우리는 못 본다**. 증거 `docs/evidence/{ci-keyless-signing,
    image-signature-deploy-gate,cosign-admission-kind-attempt}.log` · M15.
-7. **TS 타입은 네트워크 데이터를 보증하지 않는다** — 라이브에서 페이지가 `posture.namespaces.length`로
-   죽었는데 `tsc`는 내내 초록이었다(구버전 에이전트 페이로드). 롤링 업그레이드 중엔 허브가 두
-   버전을 동시에 서빙하므로 **푸시 신규 필드는 항상 optional + 폴백**으로 다룬다.
+7. **TS 타입은 네트워크 데이터를 보증하지 않는다** — 라이브에서 페이지가 `posture.namespaces.length`로 죽었는데 `tsc`는 내내 초록이었다(구버전 페이로드). 롤링 업그레이드 중엔 허브가 두 버전을 동시에 서빙하므로 **푸시 신규 필드는 항상 optional + 폴백**.
 8. **PSS restricted 아래에서 애드온 차트는 기본값으로 동작하지 않는다** — 파드가 admission에서
    거부되는데 **Argo는 Synced로 보인다**(파드 0개인 채). **새 애드온마다 확인이 필요**하다 — 렌더된
    파드 스펙을 테넌트 ns에 `kubectl apply --dry-run=server`로 던져 API 서버에 직접 묻는 게 가장 싸다.
@@ -109,12 +109,11 @@
    ①**시간**: 픽스처가 절대 시각을 하드코딩하고 생산자가 살아 있는 시계로 창을 걸면 통과는
    **달력이 움직이기 전까지만** 참이다(07-29 픽스처 + 7일 창 → 08-05 만료). **게이트 숫자는
    날짜 없이는 주장이 아니다.** ②**환경**: 게이트가 **선언되지 않은 패키지** 위에서 통과하고
-   있었다(OTel exporter 미선언 → 새 클론은 아무도 통과 못 함). CI가 잡았고, 로컬에서는 원리상
-   안 드러난다. `requires-python = ">=3.11"`도 **아무도 확인한 적 없는 주장**이었다(CI는 검증된
-   3.13 고정). **역방향도 실측**: 로컬이 통과시키고 **CI가 안 도는** 경우(terraform 검증
-   2건이 CI에서만 skip). **skip은 실패가 아니라서 검사 안 하는 게이트와 통과한 게이트가 같은
-   색**이다 → 게이트 숫자엔 날짜뿐 아니라 **잰 기계**도 붙일 것. ③**하중**: **행복 경로만
-   태운 가드는 하중을 받지 않는다** — 안전망을 통째로 지워도 14개가 초록. **새 가드를 쓰면
-   지워 보고 red가 나는지 확인할 것.** 증거 `docs/evidence/{ci-keyless-signing,
-   ci-terraform-validate-skipped}.log` · M15.
+   있었다(OTel exporter 미선언 → 새 클론은 아무도 통과 못 함). CI가 잡았고 로컬에서는 원리상
+   안 드러난다(`requires-python = ">=3.11"`도 **아무도 확인한 적 없는 주장**). **역방향도
+   실측**: 로컬이 통과시키고 **CI가 안 도는** 경우 — **skip은 실패가 아니라서 검사 안 하는
+   게이트와 통과한 게이트가 같은 색**이다 → 숫자엔 날짜와 **잰 기계**를 붙일 것.
+   ③**하중**: **행복 경로만 태운 가드는 하중을 받지 않는다**(안전망을 지워도 14개가 초록)
+   → **새 가드는 지워 보고 red를 확인할 것.** 증거
+   `docs/evidence/{ci-keyless-signing,ci-terraform-validate-skipped}.log` · M15.
 - (해소된 리스크 이력 — Slack App 미연결=07-19 해소·A2A discovery=07-14·추적 IA 실증=07-13·NEXT_PUBLIC 인라인=07-13 — 은 `PROGRESS_LOG`/`docs/archive/` 참조.)
