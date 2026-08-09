@@ -184,3 +184,6 @@
   알고 있었다**: 읽기는 알아보고, 쓰기는 만들 수 없고, **렌더는 몰랐다**(백엔드를 Helm 차트
   이름으로 넘겨 `logging: cloudwatch-logs`가 Grafana 저장소에서 그 차트를 찾게 된다).
   `ManagedBackendNotRenderable`로 거부. 막히지 않는 조합은 **네임스페이스 스코프 + managed**뿐.
+- **`main` 브랜치 보호 = 집행 확인**(2026-08-08) — PR + `check` 필수(관리자 포함), 직접 push가
+  실제로 `[remote rejected]` 되는 것까지 봤다. **code-owner 리뷰는 일부러 껐다**(1인 레포=만족
+  불가) → D43. 이 규약 자체는 계속 유효하다(STATUS Active Focus·AGENT_BRIEF 참조).

@@ -1,0 +1,82 @@
+# 상시 발화하던 GCP 예산을 참말하게 만들었다 (2026-08-09)
+
+계정 전체 예산 하나가 이름과 약 1,400배 어긋난 금액으로 설정돼 **매달 확정적으로**
+발화하고 있었다. 그러면 Phase 4의 진짜 초과 경보도 같은 채널에서 구별되지 않는다.
+D43에 이미 적은 것과 같은 계열 — **만족 불가능한 규칙은 우회를 습관으로 만든다.**
+
+## 1. 조회 방법 (기본값으로는 안 보인다)
+
+`gcloud billing budgets list`는 **활성 프로젝트**를 쿼터 프로젝트로 쓴다. 활성 프로젝트
+(`claude-study-501117`)에 billingbudgets API가 꺼져 있어 실패한다. 설정을 바꾸지 않고
+명령 단위로 지정해야 보인다:
+
+    gcloud billing budgets list \
+      --billing-account=010556-A2B7AE-292490 \
+      --billing-project=project-ec7809f7-0fb5-45d4-b6d
+
+⚠️ 그리고 **`| head`로 자르면 안 된다** — `thresholdRules`가 13번째 줄부터 나오는데,
+잘라 읽고 "임계 규칙이 없다 = 관측 수단 0"이라고 오판했다(2026-08-08 초판).
+
+## 2. 측정 — 두 예산 다 계정 전체다
+
+    DISPLAY_NAME                CURRENCY  UNITS  SCOPE  THRESHOLDS
+    monthly-10usd-alert         KRW       14000  (없음)  0.8 / 1.0
+    Smart-EV demo budget 20USD  KRW          20  (없음)  0.5 / 1.0
+
+`budgetFilter.projects`가 **둘 다 비어 있다 = 계정 전체**. 두 번째는 이름이 "20USD"인데
+값이 **₩20**(≈$0.015)이다.
+
+**그리고 이름이 가리키는 프로젝트가 이 계정에 없다:**
+
+    $ gcloud projects list --format="value(projectId,name)"
+    claude-study-501117             Claude Study
+    gen-lang-client-0123174100      Hermes Agent
+    project-ec7809f7-0fb5-45d4-b6d  My First Project
+    gen-lang-client-0983122780      Gemini API
+    → Smart-EV 없음
+
+즉 이 예산은 **존재하지 않는 대상의 이름을 달고 계정 전체에 걸려 있으면서**,
+`monthly-10usd-alert`가 주지 않는 신호를 **하나도 더 주지 않는다**. 차이는 상시 발화뿐이다.
+
+## 3. 왜 "금액을 올린다"가 맞는 수정인가
+
+- **₩20에서는 발화가 항상 거짓이다** — 어떤 클라우드 사용액도 ₩20은 넘는다.
+- **₩28,000($20 상당)에서는 발화하면 참이다** — 그 시점엔 ₩14,000 예산도 이미 울렸을
+  것이므로 두 경보가 **같은 진실**을 말한다.
+
+즉 이 수정은 금액을 바꾼 게 아니라 **거짓말하던 경보를 참말하게** 바꾼 것이다.
+
+삭제하지 않은 이유: 남의 프로젝트 이름을 단 예산이고, 삭제는 되돌리기 어렵다.
+범위를 좁히지 않은 이유: **좁힐 대상 프로젝트가 존재하지 않는다.**
+
+## 4. 적용과 확인
+
+    $ gcloud billing budgets update f549e5d4-6e00-425f-aa1a-09a6d73158ff \
+        --billing-account=010556-A2B7AE-292490 \
+        --billing-project=project-ec7809f7-0fb5-45d4-b6d \
+        --budget-amount=28000KRW
+    Updated budget [f549e5d4-...].
+
+    # 저장된 것과 집행되는 것은 다르므로 다시 읽었다
+    Smart-EV demo budget 20USD  KRW  28000  (계정 전체)  0.5 / 1.0
+    thresholdRules: 0.5, 1.0        ← 보존됨
+
+롤백: `--budget-amount=20KRW` (직전 상태는 scratchpad의 `budget-smartev-before.yaml`).
+
+## 5. 고치지 못한 것 — 여전히 GCP 지출을 못 잰다
+
+**AWS Budgets는 `CalculatedSpend.ActualSpend`를 돌려주는데 GCP Budgets API는 돌려주지
+않는다.** 그래서 이 예산이 실제로 지금 몇 %인지 확인할 수 없다. GCP 실지출을 보려면
+**BigQuery 결제 내보내기**(콘솔 수동, 2026-07-21부터 미완)가 필요하다 — Cloud Billing API를
+켜도 **비용 상세는 안 나온다**(계정·프로젝트 연결만 준다).
+
+그래서 이번 조치는 **"경보가 참을 말하게" 만든 것**이지 **"얼마 쓰는지 알게" 만든 게 아니다.**
+후자는 여전히 사용자의 콘솔 작업이 필요하다.
+
+⚠️ `notificationsRule`이 둘 다 비어 있다 = **Pub/Sub 없음, 이메일뿐** → 프로그램이 경보에
+반응할 수 없다. Phase 4에서 자동 대응을 원하면 이게 선행이다.
+
+## 참조
+
+- 결제 계정 `010556-A2B7AE-292490` · 예산 `f549e5d4-6e00-425f-aa1a-09a6d73158ff`
+- `docs/plans/2026-08-08-phase4-scope-and-cost.md` §2 · `STATUS` Risk 4

@@ -18,10 +18,8 @@
   (`scripts/probe_cloud_spend.py`)로 박았다 — 크레딧 제외 필터 + 전 리전 스윕, 조회 실패는
   **exit 2**("못 봤다"가 "$0"으로 렌더되는 게 사건의 전부였다). 반증 2건 red(각각 해당 가드만).
   증거 `docs/evidence/aws-spend-hand-check-was-zero.log` · → Risk 4.
-- **`main` 브랜치 보호 = 집행 확인**(2026-08-08) — PR + `check` 필수(관리자 포함), 직접 push가
-  실제로 `[remote rejected]` 되는 것까지 봤다. **code-owner 리뷰는 일부러 껐다** → D43.
-- (이전 baseline — gate **1676 이하** / 2026-07-10~08-08 → `docs/archive/status-baseline-2026-07.md`
-  (서명키 회전 1636 · 픽스처 만료 1618 포함) · `docs/archive/progress-2026-08.md` ·
+- (이전 baseline — gate **1685 이하** / 2026-07-10~08-09 및 `main` 보호 확인 →
+  `docs/archive/status-baseline-2026-07.md` · `docs/archive/progress-2026-08.md` ·
   `COMPLETED_SUMMARY` M13·M14.)
 
 ## 동작하는 영역 (요약)
@@ -72,11 +70,13 @@
    **남은 것**: 배포 신원은 테넌트를 구분 안 함(결정 5 C/D=라우터 인증 선행) · **키 custody**
    (rotation은 닫힘) · 클라우드 3종은 Risk 10.
 4. **비용 조회는 기본값이 안심시키는 답을 준다(2026-08-09 실측)** — "AWS 8월 $0"을 두 번
-   보고했고 둘 다 틀렸다(실제 **$8.81**): ①`aws ce`는 **크레딧 포함** 집계라 순액이 0으로 보인다
-   → 예산처럼 `Not RECORD_TYPE in [Credit,Refund]`로 **총사용액**을 물을 것 ②EKS/AMP만 보고
-   **EC2를 안 봤다** → **전 리전 스윕**. 원인은 `slackops-devops-agent`가 07-22부터 18일째
-   돌던 것(~$35/월, **중지함**). **점검이 아니라 예산 경보가 잡았다** — 7월 GKE와 같은 모양인데
-   GCP는 그 경보마저 ₩20 예산이 상시 발화라 무의미하다. 실클러스터 가동 시 WIF OIDC도 확인.
+   보고했고 둘 다 틀렸다(실제 **$8.81**): ①`aws ce`는 **크레딧 포함** 집계 → 예산처럼
+   `Not RECORD_TYPE in [Credit,Refund]`로 물을 것 ②EKS/AMP만 보고 **EC2를 안 봤다** → **전 리전
+   스윕**. 둘 다 `make spend-check`가 박아 뒀다. 원인은 `slackops-devops-agent`가 07-22부터
+   18일째 돌던 것(~$35/월, **중지함**) — **점검이 아니라 경보가 잡았다**. **GCP 경보는 고쳤다**:
+   계정 전체 ₩20 예산 → **₩28,000**(범위 축소 불가 — 그 이름의 프로젝트가 없다). ⚠️**그래도 GCP
+   실지출은 못 잰다**: Billing API를 켜도 비용 상세가 안 나오고 **GCP Budgets API는 AWS와 달리
+   `ActualSpend`를 안 준다** → **BQ 내보내기(콘솔 수동)가 유일한 길**. 증거 `gcp-budget-always-firing-fixed.log`.
 5. **k3s는 집행하지만 proven 집합엔 없다 — 결정 4 = D40으로 닫힘(2026-08-01)** — 집행은 라이브
    증명(07-29), 시맨틱은 미증명. 네 문서가 반복한 "피어 테넌트 부재"는 **참이지만 구속력이
    없었다**: 실제로는 넷 — ①acme/prod는 **네임스페이스 1개**(피어 보기 전에 exit) ③**순환**
