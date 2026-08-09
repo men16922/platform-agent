@@ -8,19 +8,19 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` → **1697 passed, 1 skipped** (2026-08-09, +12) — **측정법을 프로브로**:
+  손으로 물으면 $0, 제대로 물으면 **$8.80**이던 것을 `make spend-check`
+  (`scripts/probe_cloud_spend.py`)로 박았다 — 크레딧 제외 필터 + 전 리전 스윕, 조회 실패는
+  **exit 2**("못 봤다"가 "$0"으로 렌더되는 게 사건의 전부였다). 반증 2건 red(각각 해당 가드만).
+  증거 `docs/evidence/aws-spend-hand-check-was-zero.log` · → Risk 4.
 - `make check` → **1685 passed, 1 skipped** (2026-08-09, +9, **로컬·CI 일치**) — **managed
   백엔드를 세 경로가 다르게 알고 있었다**: 읽기는 알아보고, 쓰기는 만들 수 없고, **렌더는
   몰랐다** — 백엔드를 Helm 차트 이름으로 넘겨 `logging: cloudwatch-logs`가 **Grafana 저장소에서
-  그 차트를 찾게** 된다(라이브 실증). `ManagedBackendNotRenderable`로 거부, `is_managed`는
-  **collector와 같은 콜러블**. 반증 2건 red. ⚠️막히지 않는 조합은 **네임스페이스 스코프 +
-  managed**뿐(클러스터 스코프는 싱글턴 가드가 잡되 **안내가 틀린다**).
-- `make check` → **1676 passed, 1 skipped** (2026-08-08, +8, **로컬·CI 일치**) — **커밋을 경로에
-  한정**: `attach_addon.py`가 시키던 `git commit -am`은 **수정된 모든 추적 파일**을 담아, "한
-  파일만" 불변식을 세우려는 도구가 **자기 지시로 그걸 깨는 경로**를 들고 있었다. 반증 3+2건 red.
-  ⚠️**깨끗한 트리에선 `-a`와 `-- <path>`가 구별되지 않는다** — 가드는 **일부러 더럽힌 채** 잰다.
+  그 차트를 찾게** 된다(라이브). `ManagedBackendNotRenderable`로 거부, `is_managed`는 collector와
+  **같은 콜러블**. 반증 2건 red. ⚠️막히지 않는 조합은 **네임스페이스 스코프 + managed**뿐.
 - **`main` 브랜치 보호 = 집행 확인**(2026-08-08) — PR + `check` 필수(관리자 포함), 직접 push가
   실제로 `[remote rejected]` 되는 것까지 봤다. **code-owner 리뷰는 일부러 껐다** → D43.
-- (이전 baseline — gate **1668 이하** / 2026-07-10~08-08 → `docs/archive/status-baseline-2026-07.md`
+- (이전 baseline — gate **1676 이하** / 2026-07-10~08-08 → `docs/archive/status-baseline-2026-07.md`
   (서명키 회전 1636 · 픽스처 만료 1618 포함) · `docs/archive/progress-2026-08.md` ·
   `COMPLETED_SUMMARY` M13·M14.)
 

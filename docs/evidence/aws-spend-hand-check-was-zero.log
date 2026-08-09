@@ -1,0 +1,76 @@
+# 손으로 물으면 $0, 프로브로 물으면 $8.80 (2026-08-09)
+
+AWS 예산 경보(임계 $8.50 / 실제 $8.81)가 도착했다. 같은 날 같은 계정을 손으로
+두 번 확인하고 두 번 다 "8월 $0"이라고 보고한 직후다. 점검이 아니라 경보가 잡았다.
+
+## 같은 계정, 같은 창, 다른 질문
+
+    $ aws sts get-caller-identity --query Account
+    "908601828278"          ← 경보의 계정과 동일. 다른 계정을 본 게 아니다.
+
+    # 손으로 물은 것 — 크레딧 포함(기본값)
+    $ aws ce get-cost-and-usage --time-period Start=2026-08-01,End=2026-08-10 \
+        --granularity MONTHLY --metrics UnblendedCost
+    → 3.18e-08   ≈ $0
+
+    # 예산이 묻는 것 — 크레딧·환불 제외
+    $ aws budgets describe-budgets --account-id 908601828278
+      "Metrics": ["UnblendedCost"],
+      "FilterExpression": {"Not": {"Dimensions": {
+          "Key": "RECORD_TYPE", "Values": ["Credit","Refund"]}}}
+      "ActualSpend": {"Amount": "8.807"}
+
+네 가지 metric(Unblended/NetUnblended/Amortized/Blended)을 전부 시도해도 ≈0이었다.
+**metric을 바꾸는 것으로는 안 나온다 — 필터가 문제였다.**
+
+## 원인
+
+    $ aws ce get-cost-and-usage ... \
+        --filter '{"Not":{"Dimensions":{"Key":"RECORD_TYPE","Values":["Credit","Refund"]}}}'
+    8월 실사용 총액  $8.81
+       Amazon Elastic Compute Cloud - Compute   $7.54
+       Amazon Virtual Private Cloud             $0.92   ← 인스턴스의 공인 IPv4
+       EC2 - Other / DynamoDB / RDS / CE         $0.33
+
+    $ aws ec2 describe-instances --region us-east-1
+       i-06195c75e8adf3904  t3.medium  running
+       Name/Project = slackops-devops-agent
+       LaunchTime   = 2026-07-22T09:33:56+00:00   ← 18일째
+
+두 번째 실수: EKS·AMP만 보고 **EC2를 안 봤다**. 기본 리전은 us-west-2인데
+인스턴스는 us-east-1에 있었다 — 전 리전 스윕에서 running은 이것 하나뿐이었다.
+
+## 일별 — 방치가 그래프로 보인다
+
+    2026-07-25 ~ 08-07   매일 $1.16  (거의 일정)
+    2026-08-08           $0.66       (부분 반영)
+    2026-08-09           $0.00       (당일, 미집계)
+
+## 조치 — 중지(종료 아님)
+
+    $ aws ec2 stop-instances --region us-east-1 --instance-ids i-06195c75e8adf3904
+    running → stopping → stopped ✅   공인 IP: 해제 ✅
+    남는 것: vol-08ec0e2be92fc3c2a (gp3 8GB) ~$0.64/월
+    중지 후 전 리전 running: 0대
+
+다른 프로젝트 리소스(`Project=slackops-devops-agent`)라 **종료는 소유자 판단**으로 남겼다.
+
+## 재발 방지 — 측정법을 산문이 아니라 프로브로
+
+    $ make spend-check        # scripts/probe_cloud_spend.py
+
+크레딧 제외 필터와 전 리전 스윕을 코드에 박았고, `tests/test_cloud_spend_probe.py`가
+**둘 중 하나라도 빠지면 red**로 만든다(반증 확인: 각각 해당 가드만 실패).
+그리고 조회 실패는 **exit 2**다 — "못 봤다"가 "$0"으로 렌더되는 것이 이 사건의 전부였다.
+
+## 배운 것
+
+**기본값이 안심시키는 답을 주는 도구가 있다.** 크레딧 포함 집계 · `head`로 자른 출력 ·
+단일 리전 조회 — 이 셋이 오늘 하루에 각각 "관측 수단 0" · "managed 어댑터 없음" ·
+"AWS $0"을 만들었다. 전부 **"없다"를 성급히 주장**한 것이고, "없다"는 "안 보였다"보다
+강한 주장이라 **어떻게 봤는지를 함께 적어야 한다.**
+
+## 참조
+
+- 계정 908601828278 · 예산 `My Monthly Cost Budget` · 인스턴스 i-06195c75e8adf3904
+- `docs/plans/2026-08-08-phase4-scope-and-cost.md` §2.5 · `STATUS` Risk 4
