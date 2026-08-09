@@ -367,6 +367,18 @@ class TestAzureSweepsAndFailsLoudly:
         assert probe.report_azure(*WINDOW) is False
         assert "if not report_azure(start, end):\n        unmeasured = True" in source
 
+    def test_the_reason_for_a_failure_reaches_the_reader(self, probe, monkeypatch, capsys):
+        """Cost Management answers 429 "Too many requests" when asked a few times in
+        a row — hit live on 2026-08-09. That is transient and the fix is to wait a
+        minute, but a bare "could not measure" makes it look like a broken credential
+        and sends someone off checking logins instead."""
+        runner, _ = fake_az(fail="rest")
+        monkeypatch.setattr(probe, "_run", runner)
+        probe.report_azure(*WINDOW)
+        assert "boom" in capsys.readouterr().err, (
+            "the failure was reported without saying what went wrong"
+        )
+
     def test_currency_is_carried_not_assumed(self, probe, monkeypatch, capsys):
         """The AWS half prints dollars; this subscription bills in KRW. Printing a
         bare number, or a $, would silently mix two units in one report."""

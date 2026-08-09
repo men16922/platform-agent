@@ -94,6 +94,19 @@ def _aws(*args: str) -> tuple[int, str]:
     return proc.returncode, (proc.stdout if proc.returncode == 0 else proc.stderr)
 
 
+def _why(output: str) -> str:
+    """The last meaningful line of a failure, for printing.
+
+    A probe that says only "could not measure" makes every cause look alike. The one
+    that actually happens here is transient — Cost Management answers 429 "Too many
+    requests" when asked a few times in a row (hit live on 2026-08-09) — and knowing
+    that is the difference between retrying in a minute and going to look for a
+    broken credential.
+    """
+    lines = [line for line in output.strip().splitlines() if line.strip()]
+    return lines[-1].strip() if lines else "(이유 없음)"
+
+
 def _run(*args: str) -> tuple[int, str]:
     """Any read-only CLI. Returns (code, stdout-or-stderr), never raises."""
     try:
@@ -122,7 +135,7 @@ def spend_by_service(start: str, end: str) -> tuple[float, list[tuple[str, float
         "--group-by", "Type=DIMENSION,Key=SERVICE",
     )
     if code != 0:
-        print(f"  ! Cost Explorer 조회 실패: {out.strip().splitlines()[-1:]}", file=sys.stderr)
+        print(f"  ! Cost Explorer 조회 실패 — {_why(out)}", file=sys.stderr)
         return None
     rows: dict[str, float] = {}
     for period in json.loads(out).get("ResultsByTime", []):
@@ -138,7 +151,7 @@ def running_instances() -> list[tuple[str, str, str, str]] | None:
     code, out = _aws("ec2", "describe-regions", "--query", "Regions[].RegionName",
                      "--output", "text")
     if code != 0:
-        print(f"  ! 리전 목록 조회 실패: {out.strip().splitlines()[-1:]}", file=sys.stderr)
+        print(f"  ! 리전 목록 조회 실패 — {_why(out)}", file=sys.stderr)
         return None
     found: list[tuple[str, str, str, str]] = []
     for region in out.split():
@@ -208,7 +221,7 @@ def gcp_actual_spend() -> tuple[str, str]:
 
     code, out = _run("gcloud", "projects", "list", "--format=value(projectId)")
     if code != 0:
-        return "NO_TOOLING", f"프로젝트 목록을 못 읽었다 ({out.strip().splitlines()[-1:]})"
+        return "NO_TOOLING", f"프로젝트 목록을 못 읽었다 — {_why(out)}"
     projects = out.split()
     if not projects:
         return "NO_TOOLING", "이 자격증명에 보이는 프로젝트가 없다"
@@ -236,7 +249,7 @@ def azure_spend(start: str, end: str) -> list[tuple[str, str, list[tuple[str, fl
     """
     code, out = _run("az", "account", "list", "--output", "json")
     if code != 0:
-        print(f"  ! 구독 목록 조회 실패: {out.strip().splitlines()[-1:]}", file=sys.stderr)
+        print(f"  ! 구독 목록 조회 실패 — {_why(out)}", file=sys.stderr)
         return None
     try:
         subscriptions = [(s["id"], s.get("name", s["id"])) for s in json.loads(out)]
@@ -255,7 +268,7 @@ def azure_spend(start: str, end: str) -> list[tuple[str, str, list[tuple[str, fl
             "--body", json.dumps(body), "--output", "json",
         )
         if code != 0:
-            print(f"  ! {name}: 비용 조회 실패", file=sys.stderr)
+            print(f"  ! {name}: 비용 조회 실패 — {_why(out)}", file=sys.stderr)
             return None
         try:
             rows = json.loads(out)["properties"]["rows"]
