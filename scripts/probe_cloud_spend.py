@@ -49,7 +49,6 @@ import datetime as _dt
 import json
 import os
 import subprocess
-import sys
 
 #: Budgets exclude these record types; Cost Explorer includes them unless told not
 #: to. Keeping the literal here (rather than inline) so the guard can assert on it.
@@ -107,6 +106,22 @@ def _why(output: str) -> str:
     return lines[-1].strip() if lines else "(이유 없음)"
 
 
+def _unmeasured(subject: str) -> None:
+    """Says "could not look" *inside* the section it belongs to.
+
+    On stdout, not stderr. On a terminal stdout is line-buffered and the two streams
+    interleave in the right order, which is how this read correctly while it was being
+    written. Through a pipe — which is how it is actually read: evidence logs,
+    `make spend-check | tee`, anything captured — stdout is block-buffered and every
+    warning is hoisted above every heading. Measured 2026-08-10 with all three CLIs
+    failing: the reader got three warnings at the top and then `AWS 실사용`,
+    `도는 EC2 인스턴스`, `Azure 실사용` **all three visibly empty**. An empty section
+    under a heading reads as zero, which is the one mistake this probe exists to stop
+    — the reporter was making it about itself. Exit 2 stays the machine-readable half.
+    """
+    print(f"    측정하지 못했다. 이것은 {subject} 아니다.")
+
+
 def _run(*args: str) -> tuple[int, str]:
     """Any read-only CLI. Returns (code, stdout-or-stderr), never raises."""
     try:
@@ -135,7 +150,7 @@ def spend_by_service(start: str, end: str) -> tuple[float, list[tuple[str, float
         "--group-by", "Type=DIMENSION,Key=SERVICE",
     )
     if code != 0:
-        print(f"  ! Cost Explorer 조회 실패 — {_why(out)}", file=sys.stderr)
+        print(f"    Cost Explorer 조회 실패 — {_why(out)}")
         return None
     rows: dict[str, float] = {}
     for period in json.loads(out).get("ResultsByTime", []):
@@ -151,7 +166,7 @@ def running_instances() -> list[tuple[str, str, str, str]] | None:
     code, out = _aws("ec2", "describe-regions", "--query", "Regions[].RegionName",
                      "--output", "text")
     if code != 0:
-        print(f"  ! 리전 목록 조회 실패 — {_why(out)}", file=sys.stderr)
+        print(f"    리전 목록 조회 실패 — {_why(out)}")
         return None
     found: list[tuple[str, str, str, str]] = []
     for region in out.split():
@@ -249,7 +264,7 @@ def azure_spend(start: str, end: str) -> list[tuple[str, str, list[tuple[str, fl
     """
     code, out = _run("az", "account", "list", "--output", "json")
     if code != 0:
-        print(f"  ! 구독 목록 조회 실패 — {_why(out)}", file=sys.stderr)
+        print(f"    구독 목록 조회 실패 — {_why(out)}")
         return None
     try:
         subscriptions = [(s["id"], s.get("name", s["id"])) for s in json.loads(out)]
@@ -268,7 +283,7 @@ def azure_spend(start: str, end: str) -> list[tuple[str, str, list[tuple[str, fl
             "--body", json.dumps(body), "--output", "json",
         )
         if code != 0:
-            print(f"  ! {name}: 비용 조회 실패 — {_why(out)}", file=sys.stderr)
+            print(f"    {name}: 비용 조회 실패 — {_why(out)}")
             return None
         try:
             rows = json.loads(out)["properties"]["rows"]
@@ -286,7 +301,7 @@ def report_azure(start: str, end: str) -> bool:
     print("Azure 실사용 (ActualCost, 전 구독)")
     measured = azure_spend(start, end)
     if measured is None:
-        print("\n측정하지 못했다. 이것은 '0'이 아니다.", file=sys.stderr)
+        _unmeasured("'0'이")
         return False
     for name, currency, ranked in measured:
         total = sum(amount for _, amount in ranked)
@@ -328,7 +343,7 @@ def main() -> int:
     unmeasured = False
     measured = spend_by_service(start, end)
     if measured is None:
-        print("\n측정하지 못했다. 이것은 '$0'이 아니다.", file=sys.stderr)
+        _unmeasured("'$0'이")
         unmeasured = True
     else:
         total, ranked = measured
@@ -341,7 +356,7 @@ def main() -> int:
     print("\n도는 EC2 인스턴스 (전 리전)")
     instances = running_instances()
     if instances is None:
-        print("\n측정하지 못했다. 이것은 '0대'가 아니다.", file=sys.stderr)
+        _unmeasured("'0대'가")
         unmeasured = True
     else:
         for region, iid, itype, label in instances:
