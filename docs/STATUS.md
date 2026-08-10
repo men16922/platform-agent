@@ -1,6 +1,6 @@
 # STATUS — platform-agent
 
-최종 갱신: 2026-08-09
+최종 갱신: 2026-08-10
 
 > 현재 구현 상태 / 검증 baseline / active focus / open risks. **≤120줄** 유지.
 
@@ -8,6 +8,10 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` → **1743 passed, 1 skipped** (2026-08-10, +6, **로컬 macOS·py3.13 ↔ CI 일치**,
+  PR #22) — **리포터가 리포트의 실패를 자기가 저질렀다**: 본문은 stdout, 판정은 stderr라
+  **파이프에선 세 절이 전부 빈다**(TTY에선 멀쩡 = 저자가 본 것). 못 잡은 이유 → Risk 12④.
+  변이 6건 red. 증거 `spend-probe-report-split-across-streams.log`.
 - `make check` → **1737 passed, 1 skipped** (2026-08-09, +18, **로컬 ↔ CI 일치**) — 프로브를
   **정기 실행**하려다 **진짜 구속 조건**을 만났다: LaunchAgent는 `~/Desktop` 아래 레포를
   **읽지 못한다**(macOS TCC — 실측 exit 127 + `Operation not permitted`). 뚫으려면 `/bin/zsh`에
@@ -81,7 +85,10 @@
    (`docs/GCP_BILLING_EXPORT_SETUP.md`). ④**아무도 안 돌린다**가 마지막 구멍이었다 →
    `make spend-watch`(무엇이 **새로** 과금되기 시작했는가) + 터미널당 하루 한 번 훅;
    **launchd는 TCC로 막힌다**. 셋 다 `make spend-check`가 박아 뒀고 **관측 구멍은
-   이제 GCP 하나**. ₩20 예산 → ₩28,000. 증거 `gcp-budget-always-firing-fixed.log` ·
+   이제 GCP 하나**. ₩20 예산 → ₩28,000. ⑤**08-10 실측**: 중지는 **먹혔다**(EC2 Compute 일
+   $0.998 → $0.043 → 0, 도는 인스턴스 0대 · MTD $9.64는 거의 전부 중지 이전 누적). **단
+   측정 자체가 과금된다** — Cost Explorer **요청당 $0.01**(MTD $0.27), `spend-watch` 하루
+   한 번 = 월 ~$0.30. 증거 `gcp-budget-always-firing-fixed.log` ·
    `gcp-actual-spend-has-no-api.log` · `azure-consumption-cli-returns-null-cost.log`.
 5. **k3s는 집행하지만 proven 집합엔 없다 — 결정 4 = D40으로 닫힘(2026-08-01)** — 집행은 라이브
    증명(07-29), 시맨틱은 미증명. 문서들이 반복한 "피어 테넌트 부재"는 **참이지만 구속력이
@@ -114,6 +121,10 @@
    실측**: 로컬이 통과시키고 **CI가 안 도는** 경우 — **skip은 실패가 아니라서 검사 안 하는
    게이트와 통과한 게이트가 같은 색**이다 → 숫자엔 날짜와 **잰 기계**를 붙일 것.
    ③**하중**: **행복 경로만 태운 가드는 하중을 받지 않는다**(안전망을 지워도 14개가 초록)
-   → **새 가드는 지워 보고 red를 확인할 것.** 증거
-   `docs/evidence/{ci-keyless-signing,ci-terraform-validate-skipped}.log` · M15.
+   → **새 가드는 지워 보고 red를 확인할 것.** ④**관측 지점(2026-08-10)**: `capsys`가
+   `.out`/`.err`를 **갈라** 주므로 "이유가 독자에게 닿는다"는 테스트가 **독자의 사본이
+   갈라진 걸 원리상 못 봤다** — 그 사이 비용 리포트는 파이프에서 빈 절로 나갔다. **가드는
+   독자가 읽는 그 물건에 대고 물을 것.** ⚠️같은 맹점을 **한 건만 확인했다.** 증거
+   `docs/evidence/{ci-keyless-signing,ci-terraform-validate-skipped,
+   spend-probe-report-split-across-streams}.log` · M15·M16.
 - (그 밖의 해소 이력 — Slack App 미연결(07-19)·A2A discovery(07-14)·추적 IA 실증(07-13)·NEXT_PUBLIC 인라인(07-13) — 은 `PROGRESS_LOG`/`docs/archive/` 참조.)
