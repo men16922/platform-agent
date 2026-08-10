@@ -1,6 +1,6 @@
 # DECISIONS — platform-agent
 
-최종 갱신: 2026-08-08
+최종 갱신: 2026-08-09
 
 > 되돌리기 어려운 결정만. 형식: **Decision / Reason / Impact**. 최신이 위.
 
@@ -17,6 +17,36 @@
 > - **GitAIOps 실습서(Notiflex)** (외부 학습 레포) — Rollouts **AnalysisTemplate 메트릭 자동판정**(우리 무기한 pause 게이트의 미완점) · **OTel→Tempo로 4-step 파이프라인 자체 트레이싱** · 런북 **사전확인/사후검증 3단**(우리 `RunbookStep`엔 없음) · **allow/ask/deny 권한통제** · **Sync Wave**. 안티패턴=Kafka·멀티 노드풀·GKE 종속 시크릿·`--dangerously-skip-permissions`. 상세 → `docs/reference/gitaiops-notiflex-book.md`. (검토 2026-07-25)
 
 ---
+
+## D46 — 정기 비용 검사를 위해 **Full Disk Access를 주지 않는다** (launchd 대신 대화형 셸)
+
+- **Decision / Reason:** 레포가 `~/Desktop` 아래라 LaunchAgent는 **레포를 읽지 못한다**
+  (macOS TCC — 실측 exit 127 + `Operation not permitted`; 같은 명령이 대화형 셸에선 exit 0).
+  뚫으려면 `/bin/zsh`에 FDA를 줘야 하는데 그건 **이 기계의 모든 zsh 스크립트에 전체 디스크**를
+  여는 것이고, blast radius=1을 최우선 불변식으로 건 레포에서 **비용 리포트 하나에 치를 값이
+  아니다**. `cron`도 같은 벽. CI 스케줄은 **세 클라우드 자격증명을 시크릿으로 올리는 별개 결정**.
+- **Impact:** `make spend-watch-install`이 `~/.zshrc`에 **표시된 블록**을 넣고 uninstall이 그
+  블록만 지운다(하루 한 번). **한계는 명시**: 터미널을 안 열면 검사도 없다. **재검토 조건**:
+  레포가 `~/Desktop` 밖으로 옮겨지면 `StartCalendarInterval`이 더 낫다. → `spend-watch-launchd-blocked-by-tcc.log`
+
+## D45 — **게이트는 라이브 클라우드에 의존하지 않는다** (비용 검사는 게이트 밖)
+
+- **Decision / Reason:** `make check`에 비용 조회를 걸면 **자격증명 없는 기계에서 게이트가
+  달라진다** = Risk 12②. 가정이 아니라 실측이다 — 이번에 가드 하나가 `_run`을 대체하지 않아
+  **게이트가 라이브 gcloud를 호출**했고 파일 하나가 **21.97초**였다(대체 후 0.02초). 버그로
+  취급해 고쳤다.
+- **Impact:** 비용 검사는 **별도 타깃**(`spend-check`/`spend-watch`) + 셸 훅. 프로브 가드는
+  전부 **CLI 층을 대체한 행동 테스트**이고 네트워크에 닿지 않는다.
+
+## D44 — 비용 프로브의 **exit 2는 "못 봤다"에만** 쓴다 (알려진 갭은 빨갛게 만들지 않는다)
+
+- **Decision / Reason:** **GCP는 읽을 API가 없다**(Cloud Billing v1 19 메서드에 지출 0,
+  Budgets는 설정액만) — 이건 **조회 실패가 아니라 알려진 갭**이라 **상태를 출력하고 exit 0**.
+  **AWS·Azure는 읽을 수 있는데 못 읽은 것**이라 **exit 2**. 알려진 갭까지 빨갛게 만들면 프로브가
+  **매번 빨갛고**, 그건 **상시 발화하던 ₩20 예산과 같은 계열**이다(우회를 습관으로 만든다).
+- **Impact:** `scripts/probe_cloud_spend.py`. GCP 절은 **숫자가 아니라 상태**를 출력하고,
+  내보내기가 켜지면 그 줄이 바뀐다 = **콘솔 작업의 검증 수단**. 실패는 **이유까지** 출력한다
+  (`_why` — 429는 일시적이고 대응이 "1분 뒤 다시"인데, 이유 없는 실패는 자격증명 문제로 보인다).
 
 ## D43 — `main`은 **게이트로** 보호하고, **소유권으로는 보호하지 않는다**
 
