@@ -126,8 +126,14 @@ class TestUnmeasuredIsNotZero:
 
     def test_a_failed_lookup_returns_none_not_zero(self, source):
         assert "return None" in source
-        assert "이것은 '$0'이 아니다" in source
-        assert "이것은 '0대'가 아니다" in source
+
+    @pytest.mark.parametrize("subject", ["'$0'이", "'0대'가"])
+    def test_the_words_it_says_instead_of_a_number(self, probe, capsys, subject):
+        """Asserted on the rendered line rather than on the source text: the wording
+        is now assembled, and grepping the file would pass on a string that no run
+        ever prints."""
+        probe._unmeasured(subject)
+        assert f"이것은 {subject} 아니다" in capsys.readouterr().out
 
     def test_it_exits_nonzero_when_it_could_not_look(self, source):
         assert "return 2" in source, (
@@ -375,8 +381,10 @@ class TestAzureSweepsAndFailsLoudly:
         runner, _ = fake_az(fail="rest")
         monkeypatch.setattr(probe, "_run", runner)
         probe.report_azure(*WINDOW)
-        assert "boom" in capsys.readouterr().err, (
-            "the failure was reported without saying what went wrong"
+        captured = capsys.readouterr()
+        assert "boom" in captured.out, (
+            "the failure was reported without saying what went wrong — and it has to "
+            "land in the report itself, not beside it (see TestTheReportIsOneStream)"
         )
 
     def test_currency_is_carried_not_assumed(self, probe, monkeypatch, capsys):
@@ -422,3 +430,89 @@ class TestTheExportIsFoundWhereverItIs:
         monkeypatch.setenv(probe.GCP_EXPORT_ENV, "proj:ds")
         assert probe.gcp_actual_spend() == ("MEASURABLE", f"proj:ds.{EXPORT_TABLE}")
         assert not any(c[0] == "gcloud" for c in calls)
+
+
+# ---------------------------------------------------------------------------
+# The reporter made the report's own mistake.
+#
+# Every guard above checks that the probe *says* the right thing. None of them
+# checked what a reader *receives*, and those came apart on 2026-08-10: the
+# "could not measure" lines went to stderr while the headings went to stdout. On a
+# terminal that reads correctly, because stdout is line-buffered — which is how it
+# was written and why nobody saw it. Through a pipe stdout is block-buffered, so
+# every warning is flushed first and the reader gets three warnings at the top
+# followed by `AWS 실사용`, `도는 EC2 인스턴스` and `Azure 실사용` **all empty**.
+# An empty section under a heading reads as zero. That is the single failure this
+# whole file exists to prevent, committed by the thing preventing it.
+#
+# It survived because `capsys` hands back `.out` and `.err` as separate strings, so
+# a test that asserts on `.err` cannot see that the reader's copy came apart. These
+# guards assert on the stream the reader actually reads.
+# ---------------------------------------------------------------------------
+
+SECTION_HEADINGS = ("AWS 실사용", "도는 EC2 인스턴스", "Azure 실사용", "GCP 실사용")
+
+
+def _sections(out: str) -> dict[str, list[str]]:
+    """Split the report at its headings, keeping each section's non-blank body."""
+    found: dict[str, list[str]] = {}
+    current: str | None = None
+    for line in out.splitlines():
+        heading = next((h for h in SECTION_HEADINGS if line.startswith(h)), None)
+        if heading:
+            current = heading
+            found[heading] = []
+        elif current and line.strip() and not line.startswith("주의:"):
+            found[current].append(line.strip())
+    return found
+
+
+class TestTheReportIsOneStream:
+    @pytest.fixture
+    def blind_run(self, probe, monkeypatch, capsys):
+        """Every CLI fails — the state in which an empty section is most dangerous."""
+        monkeypatch.setattr(probe, "_aws", lambda *a: (1, "boom: aws unavailable"))
+        monkeypatch.setattr(probe, "_run", lambda *a: (1, "boom: cli unavailable"))
+        monkeypatch.delenv(probe.GCP_EXPORT_ENV, raising=False)
+        monkeypatch.setattr("sys.argv", ["probe_cloud_spend.py"])
+        code = probe.main()
+        return code, capsys.readouterr()
+
+    def test_no_section_is_empty_when_nothing_could_be_measured(self, blind_run):
+        _, captured = blind_run
+        sections = _sections(captured.out)
+        assert set(sections) == set(SECTION_HEADINGS), (
+            f"a heading vanished from the report: {sorted(sections)}"
+        )
+        empty = [h for h, body in sections.items() if not body]
+        assert not empty, (
+            f"{empty} printed a heading and then nothing. A blank section under "
+            "'Azure 실사용' is read as ₩0 — the exact false zero this probe exists "
+            "to stop."
+        )
+
+    def test_every_section_says_it_could_not_look(self, blind_run):
+        _, captured = blind_run
+        sections = _sections(captured.out)
+        for heading in ("AWS 실사용", "도는 EC2 인스턴스", "Azure 실사용"):
+            body = " ".join(sections[heading])
+            assert "측정하지 못했다" in body, (
+                f"{heading} did not say it failed, in its own section"
+            )
+            assert "boom" in body, f"{heading} did not say *why* it failed"
+        # GCP is a known gap rather than a failed lookup (D44), so it says so
+        # differently — but it must still not be blank.
+        assert "이것은 '₩0'이 아니다" in " ".join(sections["GCP 실사용"])
+
+    def test_the_reader_needs_nothing_from_the_other_stream(self, blind_run):
+        """Whoever reads this pipes it, tees it, or captures it into an evidence log.
+        Anything only on stderr is out of order at best and dropped at worst."""
+        _, captured = blind_run
+        assert captured.err == "", (
+            f"the report is split across two streams again: {captured.err!r}"
+        )
+
+    def test_it_still_exits_two(self, blind_run):
+        """Saying it on stdout does not make it a success."""
+        code, _ = blind_run
+        assert code == 2
