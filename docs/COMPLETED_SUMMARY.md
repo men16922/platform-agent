@@ -1,6 +1,6 @@
 # COMPLETED_SUMMARY — platform-agent
 
-최종 갱신: 2026-08-08
+최종 갱신: 2026-08-09
 
 > 완료된 milestone 압축. current docs 에는 링크만, 상세 체크리스트는 여기로 압축.
 > 도메인 원문 상세는 `bin/docs/archive/`.
@@ -37,6 +37,35 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 ## M6 — CDK deprecation 정리 (완료)
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
+
+## M16 — 비용 관측: 세 클라우드가 다 "안심시키는 0"을 주고 있었다 (완료, 2026-08-09)
+
+**목적**: "AWS 8월 $0"을 두 번 보고했고 둘 다 틀린 뒤(실제 $8.81), **측정 자체를 믿을 수 있게** 만든다.
+
+**같은 실패가 세 번, 매번 다른 얼굴로 — 셋 다 호출은 성공하고 결과도 그럴듯하다:**
+
+| provider | 안심시키는 기본값 | 실제 |
+|---|---|---|
+| AWS | `aws ce`가 **크레딧 상계** → 순액 ≈$0 | **$8.81** (t3.medium 18일째) |
+| Azure | `az consumption usage list`가 **28행 전부 `pretaxCost` null** → 합계 0 | **₩1,989** MTD (7월 ₩22,630) |
+| GCP | 프로브에 **provider 자체가 없음** → 잰 0과 구별 불가 | **여전히 못 잼**(비용 API 부재) |
+
+**산출**: `make spend-check`(3 provider, 크레딧 필터·전 리전/구독/프로젝트 스윕) ·
+`make spend-watch`(**무엇이 새로** 과금되기 시작했는가 — 임계값 없음) + 셸 훅(하루 한 번) ·
+`docs/GCP_BILLING_EXPORT_SETUP.md`(콘솔 5클릭 + 함정) · GCP 예산 ₩20 → **₩28,000** ·
+결정 **D44~D46** · 증거 5건(`aws-spend-hand-check-was-zero` · `gcp-budget-always-firing-fixed` ·
+`gcp-actual-spend-has-no-api` · `azure-consumption-cli-returns-null-cost` ·
+`azure-credit-netting-does-not-apply-yet` · `spend-watch-launchd-blocked-by-tcc`).
+
+**검증**: gate **1699 → 1737**(로컬 macOS·py3.13 **↔ CI 일치**) · 변이 **22건 전부 red, 생존 0**.
+
+**과대 해석 금지**: GCP는 **여전히 못 잰다**(콘솔 토글 하나에 막혀 있다) · Azure 크레딧 상계는
+**"지금 없다"지 "없는 성질"이 아니다**(예약을 사면 갈린다) · **터미널을 안 열면 검사도 없다**
+(launchd는 TCC로 막힌다) · ACR 월 ~₩6,600은 **다른 프로젝트 것이라 두었다**.
+
+**내가 틀린 것 3건(전부 기록)**: 게이트에서 **라이브 gcloud를 부르는 가드**(21.97s → 0.02s) ·
+`mtime` 초 단위에 속아 **정상 동작을 실패로 읽은 테스트** · **CI에 없는 `/bin/zsh`**
+— Risk 12②를 **인용해 가며 짠 커밋에서** 그대로 밟았고, CI가 잡았다.
 
 ## M15 — 공급망을 0에서 집행까지 + Phase 5 경계 + `main` 보호 (완료, 2026-08-08)
 
