@@ -253,6 +253,7 @@ Risk 12②(skip과 pass가 같은 색)는 초록이 아니라 **같은 숫자**�
 $ make check
   1773 passed, 1 skipped   (2026-08-11, 로컬 macOS · python 3.13)
   1743 → 1769 → 1773
+CI(PR #25, ubuntu): `1773 passed, 1 skipped in 32.81s` — **숫자까지 로컬과 같다.**
 
 - **버퍼링은 1건만 실측**했다(위 (2)). 나머지 16개 REPORT는 논증.
 - **verify_tenant_isolation · verify_tenancy_adoption은 라이브 미실행**(테넌시가

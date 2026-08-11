@@ -49,8 +49,8 @@
 - Changed(문서): `/tidy-docs` — 08-09 3건을 `archive/progress-2026-08.md`로(최신이 위 유지) ·
   status의 baseline 5건은 M16 포인터로, "동작하는 영역"은 `AGENT_BRIEF` Snapshot과 **중복이라
   접었다** · 완료 2건 → **M17 신설**. **넷 다 예산 내.**
-- Verified: `make check` **1743 → 1769 → 1773**(+30), 2026-08-11, 로컬 macOS·py3.13;
-  **1769 지점에서 CI 1769 일치**(PR #24 — 초록이 아니라 **같은 숫자**로 Risk 12②를 배제).
+- Verified: `make check` **1743 → 1769 → 1773**(+30), 2026-08-11, 로컬 macOS·py3.13
+  **↔ CI 1773 일치**(PR #24·#25 — 초록이 아니라 **같은 숫자**로 Risk 12②를 배제).
   증거 `report-streams-swept-across-all-clis.log`.
 - Blockers: 없음.
 - Next: 남은 경계는 **버퍼링을 1건만 실측했다**는 것뿐. Phase 4는 **사용자 결정 대기**.

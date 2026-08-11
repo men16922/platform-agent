@@ -61,7 +61,7 @@ DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `l
 단 **1건은 처음에 살아남았다**, 아래) · 낡은 가드 정확히 3건이 red로 잡혀 `.out`으로 ·
 **실제 서브프로세스 파이프**로 교차 확인(고친 것을 되돌리면 `capsys` 가드와 파이프 가드가
 **함께** red) · `verify_netpol_enforcement`는 kind에 **라이브로 돌려** ENFORCED 전문이
-stdout에 도착함을 확인. `make check` **1743 → 1769 → 1773**. 증거
+stdout에 도착함을 확인. `make check` **1743 → 1769 → 1773**, **로컬 ↔ CI 숫자 일치**(PR #24·#25). 증거
 `docs/evidence/{spend-probe-report-split-across-streams,report-streams-swept-across-all-clis}.log`.
 
 **남긴 경계**: `src/`는 `sys.stderr` 사용 **0건**이라 REPORT 계열 결함이 없다(DOCUMENT 진입점
