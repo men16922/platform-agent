@@ -26,6 +26,13 @@ import sys
 REPO = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
+# `_report_logging` lives beside this file; `watch_cloud_spend` imports its sibling
+# the same way. Needed because sys.path[0] is only `scripts/` when the script is
+# run directly — a test that imports it by path gets neither.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+
+from _report_logging import send_library_logs_to_the_report  # noqa: E402
+
 
 class _Log:
     def _emit(self, level: str, event: str, **kw) -> None:
@@ -65,6 +72,7 @@ def bar(title: str) -> None:
 
 
 def main() -> int:
+    send_library_logs_to_the_report()
     from src.agents.adapters.signals.onprem import OnPremAlertmanagerSignalAdapter
     from src.agents.platform.scope import (
         ScopeError,

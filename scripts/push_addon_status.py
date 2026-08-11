@@ -35,7 +35,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import logging
 import os
 import sys
 import time
@@ -43,6 +42,9 @@ import urllib.error
 import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from _report_logging import send_library_logs_to_the_report  # noqa: E402
 
 from src.agents.platform.collector import (  # noqa: E402
     build_report,
@@ -122,7 +124,7 @@ def main() -> int:
     # tenants in Python afterwards. That is the most security-relevant line this
     # process emits, and it was arriving on the stream the report is not on — with no
     # `print` involved, so nothing in the stream sweep would ever have found it.
-    logging.basicConfig(stream=sys.stdout, format="%(levelname)s %(message)s", force=True)
+    send_library_logs_to_the_report()
 
     key = os.getenv(PUSH_KEY_ENV, "").strip()
     if not key:

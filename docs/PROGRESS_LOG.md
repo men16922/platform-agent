@@ -6,7 +6,7 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
-## 2026-08-11 — 맹점을 나머지 전부에 대고 물었다: 결함이 더 넓었다 (gate 1743→1779)
+## 2026-08-11 — 맹점을 나머지 전부에 대고 물었다: 결함이 더 넓었다 (gate 1743→1787)
 
 - Status: 어제 남긴 "`capsys` 맹점은 한 건만 봤다"를 소진했다. **훑는 방향을 뒤집은 게
   결정적** — `readouterr` 사용처(5파일 19곳)를 뒤지면 **테스트에 이름조차 없는 스크립트는
@@ -43,16 +43,28 @@
   — 아무것도 안 바꿨다): netpol **ENFORCED** · adoption **둘 다 adopted ✓** · isolation
   **ISOLATION HOLDS**(4/4, 크로스 테넌트 차단). 셋 다 **stdout만 읽어도** 전문이 도착한다.
 - Verified(**세 번째 문 — `print`가 없는 곳에서도 스트림은 골라진다**): "`src/` 로깅은 훑기
-  밖"이라 적어 놓고 확인해 보니 **밖이 아니었다**. `src/`엔 **핸들러를 붙이는 코드가 0줄**이라
-  레코드가 `logging.lastResort`로 떨어지고 그건 **WARNING 이상을 stderr로 쓴다** — 즉 `print`도
-  `sys.stderr`도 없는 경로로 리포트가 갈린다(그래서 8절까지의 훑기로는 **원리상 못 찾는다**).
-  실제로 열린 CLI가 하나: `push_addon_status`의 읽기 경로가 첫 `_kubectl`에서
-  `warn_if_ambient_read`를 쏜다 — **"스포크는 아무 자격증명이나 들고 읽는다"**, 이 프로세스가
-  내는 **가장 보안적으로 중요한 한 줄**이 리포트와 다른 스트림으로 나가고 있었다.
-  ⚠️오늘 실제로 잃지는 않는다(`make dev-up`이 `2>&1`) — **그런데 그게 정확히 netpol 증거
-  로그가 멀쩡해 보였던 이유다.** `main`이 로깅을 stdout으로. 변이 L1·L2 red. 가드는
-  **서브프로세스**로 — 인프로세스면 pytest 핸들러 때문에 `lastResort`가 안 타서
-  **버그가 원리상 안 보인다**(`capsys` 맹점과 같은 모양이 한 층 아래).
+  밖"이라 적어 놓고 확인하니 **밖이 아니었다**. `src/`엔 **핸들러가 0줄**이라 레코드가
+  `logging.lastResort`로 떨어지고 그건 **WARNING+ 를 stderr로 쓴다**. 임포트 그래프 감사 →
+  17개 중 **4개**가 닿는다(`push_addon_status`=ambient read · `live_net_demo`=**STS 폴백,
+  in-account 자격증명으로 내려감** · `probe_scope_reachability` · `probe_incident_roundtrip`).
+  **둘 다 자격증명 경계 사건**이다. 넷 다 `_report_logging.send_library_logs_to_the_report()`.
+  ⚠️**감사 자신이 먼저 틀렸다** — 첫 판이 `push_addon_status`를 "안전"으로 봤다(수신자가
+  `log or logging.getLogger(...)`라 `ast.Name` 매칭이 놓쳤다). **알려진 양성이 없었으면 빈
+  감사가 초록으로 지나갔다** → 그 양성을 가드로 박았다(변이 A2 red).
+- Verified(**넷째 문 — 잡히지 않은 예외**; "나머지는 클러스터가 필요하다"를 시험한 결과):
+  그건 **기록된 이유지 잰 이유가 아니었다**. `PATH=/usr/bin:/bin`으로 벗겨 돌리니 넷이
+  **트레이스백으로 죽었다**(stdout 0B·stderr·**exit 1**). `probe_cloud_spend`는 **`AWS 실사용`
+  헤딩만 찍고 죽어** 08-10에 고친 그 결함이 다른 문으로 돌아왔고, `watch_cloud_spend`는
+  exit **1** = 이 스크립트에선 "**새로 과금되기 시작했다**" — 못 쟀는데 경보를 울린다.
+  원인이 정확했다: `_run`은 **처음부터** `FileNotFoundError`를 잡고 "never raises"라 적었는데
+  **형제 `_aws`가 그걸 안 했다**. 네 러너 전부 `OSError`를 기존 "못 봤다" 경로로 흘린다 →
+  넷 다 **exit 2 · stderr 0B**. ⚠️**변이 T4가 처음에 살아남았다** — 같은 가드가
+  `verify_tenant_isolation`에선 **닿는 행이 없어 하중을 안 받고 있었다**(Risk 12③). 행을
+  추가하니 red. 덤: `live_*` 등 다섯은 **자기 docstring의 `python scripts/X.py`가
+  ModuleNotFoundError로 죽었다** — 넷은 부트스트랩으로 고치고 `slack_live_approval`은
+  **안 고쳤다**(임포트가 untracked `cdk.out`에만 있는 경로 + 덮어쓰는 이름 6개 중 **4개가
+  부재** → 고치면 **돌아가면서 조용히 아무것도 안 한다**. 올바른 이름은 데모를 Slack에
+  태워 봐야 안다 → 발명하지 않았다).
 - Changed(문서): `/tidy-docs` — 08-09 3건을 `archive/progress-2026-08.md`로(최신이 위 유지) ·
   status의 baseline 5건은 M16 포인터로, "동작하는 영역"은 `AGENT_BRIEF` Snapshot과 **중복이라
   접었다** · 완료 2건 → **M17 신설**. **넷 다 예산 내.**
@@ -61,9 +73,12 @@
   Risk 12②를 배제한다. 변이 누계 **30건 red, 생존 0**.
   증거 `report-streams-swept-across-all-clis.log`.
 - Blockers: 없음.
-- Next: 남은 것 둘 — 나머지 **13개 REPORT는 실제 파이프 뒤가 없다**(클러스터·자격증명이
-  있어야 실패 경로에 닿고, 그걸 요구하는 가드는 **skip되는 가드**라 Risk 12②를 새로 만든다) ·
-  **로깅 문은 한 건만 닫았다**. Phase 4는 **사용자 결정 대기**.
+- Next: **못 하는 것과 안 한 것을 구분해 남긴다**(상세는 증거 로그 13절) — 못 함: 남은 CLI는
+  라이브 자격증명·기동한 스택이 필요하거나 **강제할 실패 경로가 없다**(빈 레포에서도 exit 0);
+  그걸 요구하는 가드는 **skip되는 가드**라 Risk 12②를 새로 만든다. ⚠️`live_tier2_demo`는
+  스택이 없으면 본문 stdout + 트레이스백 stderr로 **같은 결함**인데, 고치려면 검증 수단(기동한
+  스택)이 선행. 안 함: **`slack_live_approval` 이중 노후화** · 로깅 문은 **REPORT 4개만**.
+  Phase 4는 **사용자 결정 대기**.
 
 ## 2026-08-09 — 정기 실행을 붙이다 진짜 구속 조건을 만났다 (macOS TCC, gate 1719→1737)
 

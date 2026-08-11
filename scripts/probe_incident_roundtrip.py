@@ -27,6 +27,13 @@ from decimal import Decimal
 REPO = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
+# `_report_logging` lives beside this file; `watch_cloud_spend` imports its sibling
+# the same way. Needed because sys.path[0] is only `scripts/` when the script is
+# run directly — a test that imports it by path gets neither.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+
+from _report_logging import send_library_logs_to_the_report  # noqa: E402
+
 from src.agents.models import (  # noqa: E402
     AlarmContext,
     AnalyzerOutput,
@@ -88,6 +95,7 @@ def _decision() -> DecisionOutput:
 
 
 def main() -> int:
+    send_library_logs_to_the_report()
     table = reporting._DYNAMO.Table(reporting._INCIDENT_TABLE)
     key = {"alarm_name": ALARM, "incident_id": INCIDENT_ID}
     failures: list[str] = []

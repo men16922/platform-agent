@@ -16,6 +16,15 @@ import os
 from collections import Counter
 from urllib import request
 
+import sys
+from pathlib import Path
+
+# `python scripts/live_tier2_demo.py` — the invocation this file's own docstring gives —
+# died with ModuleNotFoundError until 2026-08-11: running a script puts
+# `scripts/` on sys.path, not the repo root, so `from src...` never resolved.
+# Every sibling that is actually exercised does this; these five were not.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from src.agents.ai.orchestration import route_with_self_consistency
 from src.agents.ai.reconciliation import apply_gate, reconcile
 from src.agents.ai.supervisor import AgentRole, RouteDecision

@@ -63,6 +63,7 @@ kubectl apply -f -` still parses.
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 import json
 import os
@@ -487,6 +488,28 @@ PIPEABLE = [
     ("preflight/no-release",
      ["preflight_gitops_handoff.py", "nosuch-release", "-n", "nosuch-ns"],
      {"PATH": "/usr/bin:/bin"}, "ERROR"),
+    # Added 2026-08-11. These four were written off as "needs a cluster or
+    # credentials" — and that was a recorded reason, not a measured one. Stripping
+    # PATH to /usr/bin:/bin drives all four, and doing so found that every one of
+    # them answered a missing binary with an **uncaught traceback**: stdout empty,
+    # cause on stderr, exit 1 rather than the documented 2. For `watch_cloud_spend`
+    # exit 1 is not merely wrong, it is the code for "something is newly charging".
+    ("probe-spend/no-cli",
+     ["probe_cloud_spend.py"], {"PATH": "/usr/bin:/bin"}, "측정하지 못했다"),
+    ("watch-spend/no-cli",
+     ["watch_cloud_spend.py"], {"PATH": "/usr/bin:/bin"}, "'새 과금 없음'이 아니다"),
+    ("netpol/no-kubectl",
+     ["verify_netpol_enforcement.py"], {"PATH": "/usr/bin:/bin"}, "ERROR"),
+    ("adoption/no-kubectl",
+     ["verify_tenancy_adoption.py"], {"PATH": "/usr/bin:/bin"}, "ERROR"),
+    # Added after the row above it let a mutation live: the peer-is-self row exits
+    # before `_kubectl` is ever called, so that script's missing-binary guard was
+    # carrying no load. This row reaches it. A guard nothing drives is decoration —
+    # which is Risk 12③, found here by the falsification loop rather than by reading.
+    ("isolation/no-kubectl",
+     ["verify_tenant_isolation.py", "--tenant", "acme", "--env", "dev",
+      "--peer-tenant", "globex", "--peer-env", "dev"],
+     {"PATH": "/usr/bin:/bin"}, "ERROR"),
 ]
 
 
@@ -525,16 +548,20 @@ class TestARealPipeAgrees:
         )
 
     def test_the_pipeable_set_is_not_quietly_shrinking(self):
-        """6 invocations over 5 CLIs: **4 of the 17 REPORT** plus the report mode
+        """11 invocations over 9 CLIs: **8 of the 17 REPORT** plus the report mode
         of one DUAL. Written down so shrinking it is an edit, not a drift.
 
-        The other 13 REPORT CLIs are still covered by the `capsys` guards above.
-        What they do not have is a real pipe behind them, and that limit belongs
-        in writing rather than in the gap between two test names.
+        It was 4 until the claim "the rest need a cluster or credentials" was
+        tested instead of repeated. Four of them needed neither — and all four
+        were broken. The nine that remain uncovered genuinely cannot be driven
+        from nothing: five need live credentials or a running local stack, and
+        four have no failure path at all (they exit 0 on an empty repo). A guard
+        that needs credentials is a guard that gets skipped, which would create a
+        Risk 12② rather than close one.
         """
-        assert len(PIPEABLE) == 6
+        assert len(PIPEABLE) == 11
         covered = {argv[0] for _, argv, _, _ in PIPEABLE}
-        assert len(covered) == 5
+        assert len(covered) == 9
         # A DUAL CLI belongs here only via the mode where stdout is prose — hence
         # no `--json` anywhere in PIPEABLE. (Both assertions caught their own
         # author: first filing preflight under REPORT, then counting invocations
@@ -544,7 +571,7 @@ class TestARealPipeAgrees:
             "a --json invocation is a DOCUMENT stream; asserting prose on it would "
             "guard the opposite of the rule"
         )
-        assert len(covered & REPORT) == 4 and len(covered & DUAL) == 1
+        assert len(covered & REPORT) == 8 and len(covered & DUAL) == 1
 
 
 class TestTheLibraryUsesTheSameDoor:
@@ -566,6 +593,103 @@ class TestTheLibraryUsesTheSameDoor:
     captured together" is exactly the reasoning that made the netpol evidence logs
     look fine while the script was broken.
     """
+
+    # ---- the audit, recomputed rather than remembered -------------------------
+    _LEVELS = {"warning", "warn", "error", "critical", "exception", "log"}
+
+    def _can_warn(self, path: Path) -> bool:
+        """Does this module call `<something with 'log' in it>.warning(...)`?
+
+        Matches on the *unparsed receiver* rather than on a bare Name, because the
+        first version of this check did the latter and reported
+        `collector.warn_if_ambient_read` — the known positive that started all of
+        this — as clean. Its receiver is `log or logging.getLogger(__name__)`, a
+        BoolOp. `test_the_detector_finds_the_case_that_started_this` is the ground
+        truth that caught it and keeps catching it.
+        """
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+        except (OSError, SyntaxError):
+            return False
+        for node in ast.walk(tree):
+            if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                    and node.func.attr in self._LEVELS):
+                try:
+                    receiver = ast.unparse(node.func.value)
+                except Exception:                       # pragma: no cover - defensive
+                    receiver = ""
+                if "log" in receiver.lower():
+                    return True
+        return False
+
+    def _src_imports(self, path: Path) -> set[str]:
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+        except (OSError, SyntaxError):
+            return set()
+        found = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and (node.module or "").startswith("src."):
+                found.add(node.module)
+            elif isinstance(node, ast.Import):
+                found |= {a.name for a in node.names if a.name.startswith("src.")}
+        return found
+
+    def _module_file(self, dotted: str) -> Path | None:
+        direct = REPO / (dotted.replace(".", "/") + ".py")
+        if direct.is_file():
+            return direct
+        package = REPO / dotted.replace(".", "/") / "__init__.py"
+        return package if package.is_file() else None
+
+    def _clis_that_can_warn(self) -> set[str]:
+        leaking = set()
+        for name in REPORT:
+            seen: set[str] = set()
+            stack = list(self._src_imports(SCRIPTS / name))
+            while stack:
+                module = stack.pop()
+                if module in seen:
+                    continue
+                seen.add(module)
+                path = self._module_file(module)
+                if path is None:
+                    continue
+                if self._can_warn(path):
+                    leaking.add(name)
+                    break
+                stack.extend(self._src_imports(path) - seen)
+        return leaking
+
+    def test_the_detector_finds_the_case_that_started_this(self):
+        """Ground truth. Without it the audit below can be quietly empty and green."""
+        assert self._can_warn(REPO / "src/agents/platform/collector.py"), (
+            "the detector no longer sees warn_if_ambient_read — the audit that "
+            "depends on it cannot be trusted while this is red"
+        )
+
+    def test_every_cli_that_can_warn_points_logging_at_the_report(self):
+        """Recomputed from the import graph, so adding a warning-capable import
+        turns this red until the CLI routes logging to stdout.
+
+        Structural for three of the four: reaching their real warning needs
+        credentials or a running stack. The fourth is exercised end to end below —
+        one behavioural anchor, and the limit said out loud rather than implied.
+        """
+        for name in sorted(self._clis_that_can_warn()):
+            source = (SCRIPTS / name).read_text(encoding="utf-8")
+            assert "send_library_logs_to_the_report()" in source, (
+                f"{name} can reach a WARNING+ from src/, and src/ attaches no "
+                "handler — so that record goes to stderr via logging.lastResort "
+                "while the report is on stdout. Call "
+                "`send_library_logs_to_the_report()` at the top of main()."
+            )
+
+    def test_the_audit_is_not_vacuous(self):
+        """An audit that finds nothing is indistinguishable from one that is broken."""
+        leaking = self._clis_that_can_warn()
+        assert "push_addon_status.py" in leaking, "the known-positive CLI vanished"
+        assert len(leaking) >= 4, f"the audit collapsed to {sorted(leaking)}"
 
     def test_an_ambient_read_warning_reaches_the_report(self):
         """Driven as a real subprocess so the logging config is the real one.

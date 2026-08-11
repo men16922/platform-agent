@@ -61,7 +61,7 @@ DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `l
 단 **1건은 처음에 살아남았다**, 아래) · 낡은 가드 정확히 3건이 red로 잡혀 `.out`으로 ·
 **실제 서브프로세스 파이프**로 교차 확인(고친 것을 되돌리면 `capsys` 가드와 파이프 가드가
 **함께** red) · `verify_netpol_enforcement`는 kind에 **라이브로 돌려** ENFORCED 전문이
-stdout에 도착함을 확인. `make check` **1743 → 1769 → 1773 → 1779**, CI가 **세 지점 전부 숫자까지 일치**(#24·#25·#26). 증거
+stdout에 도착함을 확인. `make check` **1743 → … → 1787**, CI가 **세 지점 전부 숫자까지 일치**(#24·#25·#26). 증거
 `docs/evidence/{spend-probe-report-split-across-streams,report-streams-swept-across-all-clis}.log`.
 
 **세 번째 문(08-11 추가)**: `src/`는 `sys.stderr` **0건**인데 **로깅 핸들러도 0건**이라
@@ -71,9 +71,17 @@ stdout에 도착함을 확인. `make check` **1743 → 1769 → 1773 → 1779**,
 `main`이 로깅을 stdout으로. 가드는 **서브프로세스**로 돌린다 — 인프로세스면 pytest 핸들러가
 `lastResort`를 가려 **버그가 원리상 안 보인다**(`capsys` 맹점의 한 층 아래 판박이).
 
-**남긴 경계**: 실제 파이프 뒤가 있는 건 **6 invocation / 5 CLI**뿐, 나머지 13개 REPORT는
-`capsys` + `stderr == ""` 논증(클러스터·자격증명을 요구하는 가드는 **skip되는 가드**라
-Risk 12②를 새로 만든다) · **로깅 문은 한 건만 닫았다**.
+**넷째 문(08-11 추가) — 잡히지 않은 예외**: "나머지는 클러스터가 필요하다"를 **시험했더니**
+넷은 아니었고 **넷 다 깨져 있었다**. `PATH`를 벗기면 트레이스백으로 죽어 stdout 0B·**exit 1**
+— `probe_cloud_spend`는 헤딩만 찍고 죽어 08-10의 결함이 다른 문으로 돌아왔고,
+`watch_cloud_spend`의 exit 1은 "**새로 과금되기 시작했다**"라 **못 쟀는데 경보를 울린다**.
+원인이 정확했다: `_run`은 처음부터 막고 "never raises"라 적었는데 **형제 `_aws`가 안 했다**.
+
+**남긴 경계**: 실제 파이프 뒤 **11 invocation / 9 CLI**(4→8 REPORT는 "클러스터 필요"를 시험한
+결과) · 나머지는 라이브 자격증명·기동한 스택이 필요하거나 **강제할 실패 경로가 없다** ·
+로깅 문은 **REPORT 4개만** · **`slack_live_approval`은 안 고쳤다**(임포트가 untracked
+`cdk.out`에만 있는 경로 + 덮어쓰는 이름 6개 중 4개 부재 → 고치면 **돌아가면서 조용히
+아무것도 안 한다**. 올바른 이름은 데모를 Slack에 태워야 안다 → 발명하지 않았다).
 
 ## M16 — 비용 관측: 세 클라우드가 다 "안심시키는 0"을 주고 있었다 (완료, 2026-08-09)
 

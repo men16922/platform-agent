@@ -22,6 +22,14 @@ import os
 from pathlib import Path
 from urllib import request
 
+import sys
+
+# `python scripts/live_model_sweep.py` — the invocation this file's own docstring gives —
+# died with ModuleNotFoundError until 2026-08-11: running a script puts
+# `scripts/` on sys.path, not the repo root, so `from src...` never resolved.
+# Every sibling that is actually exercised does this; these five were not.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from src.agents.ai.model_sweep import (
     SweepConfig,
     SweepPoint,
