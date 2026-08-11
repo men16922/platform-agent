@@ -467,42 +467,132 @@ class TestTheDocumentStreamStaysParseable:
         assert "Usage" in proc.stdout
 
 
+#: REPORT CLIs whose failure path can be driven with no cluster, no network and no
+#: credentials — so they can be run as real subprocesses through a real pipe.
+#: (label, argv, env-overrides, expected marker on stdout)
+PIPEABLE = [
+    ("image-signature/no-identity",
+     ["verify_image_signature.py", "some/image:tag"], {}, "CANNOT EVALUATE"),
+    ("image-signature/no-cosign",
+     ["verify_image_signature.py", "some/image:tag", "--key", "k.pub"],
+     {"PATH": "/usr/bin:/bin"}, "CANNOT EVALUATE"),
+    ("tenant-isolation/peer-is-self",
+     ["verify_tenant_isolation.py", "--tenant", "acme", "--env", "dev",
+      "--peer-tenant", "acme", "--peer-env", "dev"], {}, "ERROR"),
+    ("attach-addon/unknown-tenant",
+     ["attach_addon.py", "nosuch", "dev", "tracing", "1.24.4"], {}, "REFUSED"),
+    ("push-status/no-key",
+     ["push_addon_status.py", "--tenant", "acme", "--env", "dev"],
+     {"PLATFORM_PUSH_KEY": ""}, "ERROR"),
+    ("preflight/no-release",
+     ["preflight_gitops_handoff.py", "nosuch-release", "-n", "nosuch-ns"],
+     {"PATH": "/usr/bin:/bin"}, "ERROR"),
+]
+
+
 class TestARealPipeAgrees:
-    """The one case run as an actual subprocess, through an actual pipe.
+    """Run them the way the reader runs them: a real pipe, `stderr` discarded.
 
     Everything above reasons: nothing is written to stderr, therefore nothing can
     be lost on it, therefore buffering cannot matter. The reasoning is sound and
     it is still reasoning — and reasoning about what the reader receives is the
-    thing this file exists because of. So one CLI is run the way the reader runs
-    it, with `stderr` discarded, and asked whether the verdict survived.
+    thing this file exists because of.
 
-    `verify_image_signature.py` is the one chosen: no cluster, no network, no
-    credentials, and it is the CLI where the stream used to depend on which
-    failure occurred — so it is where a pipe could most easily disagree.
+    Not every REPORT CLI can be driven here: the rest need a cluster, a network or
+    credentials to reach a failure path, and a guard that needs those is a guard
+    that will be skipped, which is Risk 12② (skip and pass are the same colour).
+    `PIPEABLE` is therefore the subset that can be driven from nothing — and
+    `test_the_pipeable_set_is_not_quietly_shrinking` keeps it from being trimmed
+    to whatever currently passes.
     """
 
-    def _piped(self, *argv: str) -> tuple[int, str]:
+    def _piped(self, argv: list[str], env: dict) -> tuple[int, str]:
         proc = subprocess.run(
-            [sys.executable, str(SCRIPTS / "verify_image_signature.py"), *argv],
-            cwd=REPO, capture_output=True, text=True,
-            env={**os.environ, "PATH": "/usr/bin:/bin"},   # no cosign on this PATH
+            [sys.executable, str(SCRIPTS / argv[0]), *argv[1:]],
+            cwd=REPO, capture_output=True, text=True, env={**os.environ, **env},
         )
         return proc.returncode, proc.stdout
 
-    def test_the_verdict_survives_a_real_pipe_with_stderr_discarded(self):
-        code, out = self._piped("some/image:tag", "--key", "cosign.pub")
-        assert code == 2
-        assert "CANNOT EVALUATE" in out, (
-            "through a real pipe the reader got no verdict — the `.err == ''` "
-            f"reasoning does not hold in practice. stdout was: {out!r}"
+    @pytest.mark.parametrize("label,argv,env,marker", PIPEABLE,
+                             ids=[row[0] for row in PIPEABLE])
+    def test_the_verdict_survives_a_real_pipe(self, label, argv, env, marker):
+        code, out = self._piped(argv, env)
+        assert code != 0, f"{label}: expected a failure path, got exit 0"
+        assert marker in out, (
+            f"{label}: through a real pipe with stderr discarded the reader got no "
+            f"verdict — the `.err == ''` reasoning does not hold here. "
+            f"stdout was: {out!r}"
         )
-        assert "UNVERIFIED" in out
 
-    def test_the_other_pre_cosign_exit_survives_it_too(self):
-        """The path that used to be silent: no identity, so cosign never runs."""
-        code, out = self._piped("some/image:tag")
-        assert code == 2
-        assert "CANNOT EVALUATE" in out, f"stdout was: {out!r}"
+    def test_the_pipeable_set_is_not_quietly_shrinking(self):
+        """6 invocations over 5 CLIs: **4 of the 17 REPORT** plus the report mode
+        of one DUAL. Written down so shrinking it is an edit, not a drift.
+
+        The other 13 REPORT CLIs are still covered by the `capsys` guards above.
+        What they do not have is a real pipe behind them, and that limit belongs
+        in writing rather than in the gap between two test names.
+        """
+        assert len(PIPEABLE) == 6
+        covered = {argv[0] for _, argv, _, _ in PIPEABLE}
+        assert len(covered) == 5
+        # A DUAL CLI belongs here only via the mode where stdout is prose — hence
+        # no `--json` anywhere in PIPEABLE. (Both assertions caught their own
+        # author: first filing preflight under REPORT, then counting invocations
+        # as if they were scripts.)
+        assert covered <= REPORT | DUAL, f"unclassified: {sorted(covered - REPORT - DUAL)}"
+        assert not any("--json" in argv for _, argv, _, _ in PIPEABLE), (
+            "a --json invocation is a DOCUMENT stream; asserting prose on it would "
+            "guard the opposite of the rule"
+        )
+        assert len(covered & REPORT) == 4 and len(covered & DUAL) == 1
+
+
+class TestTheLibraryUsesTheSameDoor:
+    """A stream is also chosen where no `print` appears.
+
+    Found 2026-08-11, after the sweep above had already been called finished.
+    `src/` contains no `sys.stderr` at all — and no logging handler either, which
+    is the part that matters: an unhandled record falls through to Python's
+    `logging.lastResort`, **which writes WARNING and above to stderr**. So a
+    library warning lands on the stream the report is not on, by a route with no
+    `print` in it, which is why sweeping `print`/`sys.stderr` could never find it.
+
+    One REPORT CLI demonstrably hits this on its live path: `push_addon_status`
+    calls into `collector._kubectl`, whose first invocation fires
+    `warn_if_ambient_read` — "the spoke reads this cluster with the ambient kubectl
+    context and filters tenants in code". The most security-relevant line the
+    process emits, leaving by the wrong door. Today nothing is actually lost,
+    because `make dev-up` redirects `2>&1` into one file — but "it happens to be
+    captured together" is exactly the reasoning that made the netpol evidence logs
+    look fine while the script was broken.
+    """
+
+    def test_an_ambient_read_warning_reaches_the_report(self):
+        """Driven as a real subprocess so the logging config is the real one.
+
+        In-process this would be meaningless: pytest installs its own handlers, so
+        `lastResort` never runs and the bug is invisible — the same shape as the
+        `capsys` blind spot, one layer down.
+        """
+        probe = (
+            "import sys; sys.path.insert(0, '.');"
+            "import scripts.push_addon_status as m;"          # noqa: E501
+            "import src.agents.platform.collector as c;"
+            "sys.argv = ['push', '--tenant', 'acme', '--env', 'dev', '--once'];"
+            "m.push_once = lambda *a, **k: (c.warn_if_ambient_read(), (0, 'pushed'))[1];"
+            "import os; os.environ['PLATFORM_PUSH_KEY'] = 'k';"
+            "raise SystemExit(m.main())"
+        )
+        proc = subprocess.run(
+            [sys.executable, "-c", probe], cwd=REPO, capture_output=True, text=True,
+        )
+        assert "collector.read.ambient" in proc.stdout, (
+            "the ambient-read warning did not reach the report's stream. "
+            f"stdout={proc.stdout!r} stderr={proc.stderr!r}"
+        )
+        assert "collector.read.ambient" not in proc.stderr, (
+            "the warning is still going out the logging door onto stderr"
+        )
 
 
 class TestDualModeObeysTheModeItIsIn:
