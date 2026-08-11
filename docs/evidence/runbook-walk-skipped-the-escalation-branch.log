@@ -1,0 +1,156 @@
+2026-08-12 — 게이트 줄의 `1 skipped`를 이름 부르다 62%짜리 walk를 찾았다
+============================================================================
+
+발단: `NEXT_PLAN`의 열린 항목이 전부 승인·외부 자원 대기라 "무과금 소진"으로 보였다.
+그런데 그 문서 자신이 **"소진은 목록의 상태지 사실이 아니다"**를 네 번 적어 놨다.
+목록을 다시 읽는 대신, 매번 인용하면서도 **아무도 이름 부른 적 없는 것**을 골랐다 —
+게이트 줄의 `1789 passed, **1 skipped**`. Risk 12②가 정확히 그 얘기다:
+**skip은 실패가 아니라서, 검사 안 하는 게이트와 통과한 게이트가 같은 색이다.**
+
+----------------------------------------------------------------------------
+0. 먼저 훑은 것 — 레포의 탐지기 둘 (결과: 새 결함 0)
+----------------------------------------------------------------------------
+
+`find_unwritten_keys`(9 후보) · `find_unconsumed_fields`(19 후보) = 28건.
+**전부 이미 판정된 것이었다.** 추정하지 않고 따라갔다:
+
+  - `grounded`/`grounding_ratio`/`mode_override` — 환각 게이트 표시라 값이 커서 먼저
+    봤다. 체인은 **완결**돼 있다: `reconciliation.py:118` 계산 → `decision.py:87`
+    `to_dict()` → `executor.py:558` `item["reconciliation"]=` → `incident-data.ts:100`.
+    탐지기가 놓친 건 버그가 아니라 **docstring이 예고한 설계 한계**(nested literal:
+    헬퍼가 dict를 만들고 호출자가 쓴다 — 예시로 `cost_metrics`까지 적어 뒀다).
+  - `reasoning_steps`/`tool_calls_*`/`input_tokens` — 전부 `deploy_recorder.py:263-268`
+    한 dict. 같은 클래스.
+  - `slack_ts` — 3개 클라우드 executor가 잡아서 모델에 넣는데 읽는 곳 0, `thread_ts`는
+    레포에 아예 없다. "후속 메시지가 스레드에 안 붙나?" 싶었으나 **M13이 이미 판정**
+    (`declared-unconsumed-sweep.log:31` — *"response/DTO surface serialised out to
+    callers. Unread here by design."*). 문서가 스레드를 약속한 곳도 없어 거짓 주장 아님.
+
+**탐지기가 덮는 범위는 깨끗하다.** 그래서 덮지 않는 곳으로 갔다.
+
+----------------------------------------------------------------------------
+1. skip은 정당했다 — 지워 보고 확인했다
+----------------------------------------------------------------------------
+
+    SKIPPED [1] tests/test_capability_runbook_e2e.py:271:
+               On-prem has no serverless capability
+
+사유는 그럴듯하다. 이 레포의 규율은 **그럴듯한가가 아니라 지워 보고 red가 나오는가**다.
+
+    $ (skip 제거) pytest tests/test_capability_runbook_e2e.py
+      FAILED ...::test_walk_all_steps[onprem-lambda-throttle]
+      E  where 0 = len([])
+
+**하중을 받는다.** 온프렘은 lambda 런북의 어떤 스텝도 resolve하지 못하므로, 이 skip은
+안 도는 검사를 숨기는 게 아니라 **정말로 적용 불가한 조합**을 표시한다. Risk 12② 질문은
+이 게이트 줄에 대해 닫혔다.
+
+----------------------------------------------------------------------------
+2. 그런데 그걸 읽다가 — 이름과 단언이 다른 말을 하고 있었다
+----------------------------------------------------------------------------
+
+    def test_walk_all_steps(...):
+        """Walk every step and verify resolution ..."""
+        ...
+        assert len(resolved_actions) >= 1          # ← every 가 아니라 at least one
+
+측정(고치기 전):
+
+    runbook                  steps  walked   조건이 걸러낸 것
+    eks-pod-oom                  2       1   scale_out[previous_step_failed: True]
+    rds-cpu-high                 2       1   scale_database_read[...]
+    kafka-lag-spike              2       1   rebalance_consumer[...]
+    disk-full                    2       1   expand_storage[...]
+    health-check-failure         2       1   rollback_release[...]
+    certificate-expiry           2       1   open_change_request[...]
+    network-latency-high         2       2
+    lambda-throttle / generic-recovery  1개씩
+
+    선언된 16스텝 중 걷는 것 10개 = **62%**
+
+**안 걷는 6개는 예외 없이 `previous_step_failed: True` 분기** — 즉 **플랫폼이 가진
+에스컬레이션 스텝 전부**이고, 운영상 무거운 것들이 거기 있다(`rollback_release`,
+`open_change_request`).
+
+**왜 닿을 수 없었는지가 핵심이다.** 컨텍스트가 `previous_step_failed=False`로 시작하고
+그 플래그는 **`except ValueError` 안에서만** True가 된다. 즉 **뭔가 이미 깨져 있어야만**
+둘째 분기가 열린다. 그런데 아무것도 안 깨진다 — 그 6스텝은 4개 provider에서
+**24/24 전부 resolve된다**(아래). 그래서 행복 경로만 태운 walk에서 둘째 분기는
+**원리상 도달 불가**였다. Risk 12③ 그 자체다.
+
+단언도 같은 모양이었다: `>= 1`은 1개가 풀렸든 전부 풀렸든 **같은 색**을 준다.
+
+----------------------------------------------------------------------------
+3. 구현은 멀쩡했다 — 고칠 것은 테스트였다
+----------------------------------------------------------------------------
+
+실패 분기를 직접 태워서 물어봤다:
+
+    runbook / step                              aws   gcp  azure onprem
+    eks-pod-oom / scale_out                      ok    ok    ok    ok
+    rds-cpu-high / scale_database_read           ok    ok    ok    ok
+    kafka-lag-spike / rebalance_consumer         ok    ok    ok    ok
+    disk-full / expand_storage                   ok    ok    ok    ok
+    health-check-failure / rollback_release      ok    ok    ok    ok
+    certificate-expiry / open_change_request     ok    ok    ok    ok
+
+**24/24.** 잠복 결함은 없다. **테스트가 안 걸었을 뿐이다** — 그리고 그게 이 로그의 요지다:
+"통과했다"가 "확인했다"가 아니었던 구간이 6스텝 × 4 provider 있었다.
+
+고침(전부 테스트 쪽, `src/` 무변경):
+  - `started_failed` 파라미터 축 추가 → **양 분기를 명시적으로** 걷는다(뭔가 깨지길
+    기다리지 않는다).
+  - 단언을 `>= 1` → **조건이 맞은 모든 스텝이 resolve돼야 한다**로. `ValueError`는
+    **모아서 보고**한다(예전엔 삼키고 플래그만 세웠다 — 그래서 "resolve 못 함"과
+    "도달 안 함"이 구별되지 않았다).
+  - `>= 1`은 **공허 통과 방지용으로 남겼다**(조건이 전부 걸러낸 런북).
+  - 반공허 가드 `test_the_escalation_branch_is_actually_reached`: 둘째 분기가 **실제로
+    스텝을 더 걷는지**와 `BRANCHES`가 양쪽을 덮는지. 없으면 같은 10스텝을 두 이름으로
+    두 번 걷고도 "커버리지 2배"로 보인다.
+
+----------------------------------------------------------------------------
+4. 하중 (변이) — 그리고 내 변이가 두 번 틀렸다
+----------------------------------------------------------------------------
+
+    W1  catalog.py  "capability": "rollback_release" → _TYPO      RED (5 failed)
+    W2  catalog.py  "capability": "scale_out"        → _TYPO      RED (4 failed)
+    W3  test        BRANCHES = [False, False]                     RED
+    W4  test        assert not unresolved 무력화 (클린 상태)      생존 — 정상
+    W4' test        같은 단언 무력화 + W1 결함 동시                5건 중 4건이 사라짐
+                    → 이 단언이 탐지의 4/5를 책임진다
+
+⚠️ **첫 시도에서 W1·W2가 살아남았다.** 원인은 레포가 아니라 **내 변이가 엉뚱한 줄을
+쳤다**는 것 — `.replace(old, new, 1)`이 첫 등장만 바꾸는데, `"rollback_release"`의 첫
+등장은 **`BUILTIN_RUNBOOKS`(레거시 dict)의 메타데이터 목록**(catalog.py:93)이고 실제
+스텝은 304행이다. 정확히 겨냥하니 red.
+
+⚠️ **그 오발이 두 번째 오판을 낳을 뻔했다.** 메타데이터를 고쳐도 안 깨지길래
+"`capabilities` 리터럴과 steps에서 파생된 값이 발산하는 것 아니냐"로 갔고, 측정하니
+**9/9 불일치**로 나왔다. 구조를 확인하니 **비교 자체가 틀렸다** — `BUILTIN_RUNBOOKS`
+(레거시, `capabilities`+`actions`)와 `CAPABILITY_RUNBOOKS`(신규, `steps`)는 **다른
+dict**이고 `decision.py:135`가 `steps`가 있으면 그쪽을, 없으면 `capabilities`를 쓴다.
+두 모양이 공존하는 설계이지 발산이 아니다. **주장하기 전에 확인해서 안 적었다.**
+
+----------------------------------------------------------------------------
+5. 게이트
+----------------------------------------------------------------------------
+
+$ make check
+  **1825 passed, 2 skipped**   (2026-08-12, 로컬 macOS · python 3.13)
+  1789 → 1825 (**+36**)
+
+`test_capability_runbook_e2e.py` 자체는 **85 → 120**. skip이 1→2인 것은 정상이다 —
+onprem/lambda 조합이 이제 양 분기에서 각각 걸린다(사유도 양쪽에서 동일하게 참).
+
+----------------------------------------------------------------------------
+6. 남은 것 / 안 한 것
+----------------------------------------------------------------------------
+
+- **`BUILTIN_RUNBOOKS`의 `capabilities` 메타데이터**는 이 파일의 대상이 아니다. 4절의
+  오발이 보여주듯 **거기를 고쳐도 이 테스트는 안 깨진다** — 레거시 dict를 덮는 테스트가
+  따로 있는지는 **안 봤다**. 다음에 볼 값이 있는 지점.
+- **조건 축은 `previous_step_failed`만 넓혔다.** `severity`는 여전히 `"P2"` 하나로
+  고정이라, `severity_in` 조건을 가진 스텝이 생기면 같은 함정이 재발한다.
+  (지금 카탈로그엔 그런 스텝이 없어서 가드를 만들지 않았다 — 없는 문제에 대한 가드는
+  하중을 못 받는다.)
+- `src/`는 한 줄도 안 고쳤다. 구현은 처음부터 옳았다.
