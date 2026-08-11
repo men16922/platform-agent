@@ -10,6 +10,14 @@ src/agents/platform/collector.py for the trust argument.
         --hub http://127.0.0.1:8077 [--once|--interval 60]
 
 Exit codes: 0 = pushed, 1 = hub rejected or unreachable, 2 = cannot render a report.
+
+ONE STREAM, FLUSHED EVERY LINE. The reader here is `tail -f logs/push-acme.log`,
+and `make dev-up` redirects both streams into that one file. Choosing the stream
+by outcome (`sys.stderr if code else sys.stdout`) put the successes on a
+block-buffered stream and the failures on an unbuffered one, into the same file:
+a log where the failures arrive promptly, the successes arrive minutes later in
+8KB bursts, and the interleaving is therefore a lie about when things happened.
+For a loop whose whole output is a timeline, that is the timeline being wrong.
 """
 
 from __future__ import annotations
@@ -97,22 +105,22 @@ def main() -> int:
     key = os.getenv(PUSH_KEY_ENV, "").strip()
     if not key:
         print(f"ERROR: {PUSH_KEY_ENV} is unset — the hub authenticates by key, and an "
-              "unsigned report is not a report", file=sys.stderr)
+              "unsigned report is not a report", flush=True)
         return 2
 
     registry = load_registry()
     try:
         tenant = registry.tenant(args.tenant)
     except KeyError:
-        print(f"ERROR: no tenant {args.tenant!r} in the registry", file=sys.stderr)
+        print(f"ERROR: no tenant {args.tenant!r} in the registry", flush=True)
         return 2
     if args.env not in tenant.environments:
-        print(f"ERROR: tenant {args.tenant!r} has no env {args.env!r}", file=sys.stderr)
+        print(f"ERROR: tenant {args.tenant!r} has no env {args.env!r}", flush=True)
         return 2
 
     while True:
         code, line = push_once(args.hub, tenant, args.env, key, scope_of=registry.scope_of)
-        print(f"[{time.strftime('%H:%M:%S')}] {line}", file=sys.stderr if code else sys.stdout)
+        print(f"[{time.strftime('%H:%M:%S')}] {line}", flush=True)
         if args.interval <= 0:
             return code
         # A failed push is not fatal to the loop: the hub going away must not stop

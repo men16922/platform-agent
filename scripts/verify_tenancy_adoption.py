@@ -22,6 +22,14 @@ Usage:
   python scripts/verify_tenancy_adoption.py [--tenant NAME] [--wait 60]
 
 Exit codes: 0 = adopted and bounded, 1 = a gap remains, 2 = cannot check.
+
+EVERY LINE GOES TO STDOUT, INCLUDING THE FAILURES — see the same note in
+`verify_netpol_enforcement.py`. The paragraph explaining what a ✗ *means* ("not a
+slow rebuild — an unbounded namespace that reads as finished") used to go to
+stderr while the ✗ itself went to stdout, so the piped copy kept the symptom and
+dropped the reason. "cannot check" was worse: it left stdout holding one
+`context:` line and no verdict at all, which is this script's own thesis —
+**not looking is not a finding** — committed by the script.
 """
 
 from __future__ import annotations
@@ -114,7 +122,7 @@ def main() -> int:
         ["kubectl", "config", "current-context"], capture_output=True, text=True
     )
     if context.returncode != 0:
-        print("ERROR: no kubectl context", file=sys.stderr)
+        print("ERROR: no kubectl context")
         return 2
     current_cluster = context.stdout.strip()
     print(f"context: {current_cluster}")
@@ -128,7 +136,7 @@ def main() -> int:
         and (args.tenant is None or name == args.tenant)
     ]
     if not selected:
-        print("ERROR: no soft-tier tenant/env matched", file=sys.stderr)
+        print("ERROR: no soft-tier tenant/env matched")
         return 2
 
     # Only envs whose cluster is the one we are pointed at can be checked. The first
@@ -144,9 +152,9 @@ def main() -> int:
         )
     targets = [(t, e) for t, e, _ in targets]
     if not targets:
-        print(f"nothing to check: no selected env runs on {current_cluster!r}", file=sys.stderr)
+        print(f"nothing to check: no selected env runs on {current_cluster!r}")
         for name, env_name, cluster in [(t.name, e, c) for t, e, c in elsewhere]:
-            print(f"  {name}/{env_name} lives on {cluster}", file=sys.stderr)
+            print(f"  {name}/{env_name} lives on {cluster}")
         return 2
 
     deadline = time.time() + max(args.wait, 0)
@@ -179,8 +187,7 @@ def main() -> int:
             "\nA namespace outside its tenant is not a slow rebuild — it is an "
             "unbounded namespace on a shared cluster that reads as finished.\n"
             "Re-run with --wait 60 to allow for reconcile lag; if it persists, the "
-            "applying identity is probably not in Capsule's `administrators` list.",
-            file=sys.stderr,
+            "applying identity is probably not in Capsule's `administrators` list."
         )
     return 1 if failed else 0
 

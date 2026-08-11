@@ -6,6 +6,42 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-11 — 맹점을 나머지 전부에 대고 물었다: 결함이 더 넓었다 (gate 1743→1769)
+
+- Status: 어제 남긴 "`capsys` 계열 맹점은 한 건만 봤다"를 소진했다. 훑는 방향을 한 번
+  바꾼 게 결정적이었다 — `readouterr` 사용처(5파일 19곳)를 뒤지면 **테스트에 이름조차
+  없는 스크립트는 목록에 없다.** `git grep sys.stderr -- scripts/*.py`(11개)로 뒤집으니
+  `attach_addon.py`·`preflight_gitops_handoff.py`가 나왔고 **둘 다 깨져 있었다.**
+- Verified(재현, 네트워크 0·가짜 kubectl): 파이프로 읽으면 `verify_netpol_enforcement`는
+  `probing context:` 한 줄, `verify_tenancy_adoption`은 `context:` 한 줄, 서명 검증기는
+  **완전히 빈 출력**에 exit 2. 가장 나쁜 건 netpol — 성공 경로가 stdout에 찍은
+  `baseline: … ✓` 뒤에 판정이 stderr로 가서 **독자의 마지막 줄이 ✓**다. **✓로 끝나고 멈춘
+  리포트는 끝난 리포트로 읽힌다**, 그리고 그 판정이 `PROVEN_ENFORCING_SUBSTRATES` 승격을
+  정한다. ⚠️기존 evidence 로그가 실제로 판정을 잃은 사례는 **없다**(잃을 수 **있었다**).
+- Changed(분류가 먼저였다): 11개를 다 고치려다 멈췄다 — `render_tenancy.py`는 **처음부터
+  옳다**(stdout=매니페스트, 진단은 전부 `#` 접두로 stderr). 규칙은 "stderr 금지"가 아니라
+  **"독자의 스트림이 독자가 필요한 걸 날라야 한다"**이고 독자가 파서면 의무가 **거꾸로** 선다.
+  `scripts/*.py` **22개 전수**를 REPORT(17)/DOCUMENT(3)/DUAL(2)로 분류.
+- Changed(수정 8건, exit code 전부 유지): verify_netpol/tenant_isolation/tenancy_adoption ·
+  verify_image_signature(**스트림이 실패 종류마다 달랐다**) · attach_addon(`--commit` 거부가
+  diff 뒤라 **"committed 줄이 없다"가 유일한 실패 신호였다 — 없는 줄은 판정이 아니다**) ·
+  watch_cloud_spend(어제 "두었다"를 뒤집었다 — 근거가 파일 사정이지 독자 사정이 아니었다) ·
+  push_addon_status(**결과에 따라 스트림을 골랐다** → 한 스트림+`flush`; 같은 로그 안에서
+  실패가 먼저·성공이 뭉텅이로 뒤 = **타임라인이 틀린 것**) · preflight(**모드 의존**으로).
+- Verified(하중): 변이 **16건 전부 red, 생존 0**. D1~D3은 **거울 방향**(진단을 문서
+  스트림에 밀어 넣는 변이)이고, A1은 **미분류 새 스크립트** — 이 훑기를 스냅샷이 아니라
+  규칙으로 만드는 지점. `make check`가 낡은 가드 **정확히 3건**을 red로 잡았다(전부
+  `.err`에 묻던 것) → `.out`으로. 남은 `.err` 읽기 2곳은 **둘 다 옳다**.
+- Verified: `make check` **1769**(+26), 2026-08-11, 로컬 macOS·py3.13 **↔ CI 1769 일치**
+  (PR #24). 증거 `report-streams-swept-across-all-clis.log`.
+- Changed(덤) + Verified(같은 실수 재발): CE **요청당 $0.01**(MTD $0.27) · `spend-watch`
+  하루 한 번 = 월 **~$0.30**를 프로브·워처 docstring에 명시. 가드 3개 중 하나가 **반증에서
+  살아남았다** — **주장**("오늘 줄의 0은 잰 0이 아니다")만 묻고 **지시**("마지막 줄 말고 앞
+  며칠을 읽어라")는 안 물었다. 물건은 맞췄고 **물건의 절반만** 물은 것. 고쳐서 둘 다 red.
+- Blockers: 없음.
+- Next: `src/`의 로깅 경로는 이 훑기 **밖**이다(대상은 `scripts/` CLI 22개뿐).
+  ⚠️`docs/` 3개가 예산 초과(log 138·status 130·plan 127) → `/tidy-docs` 필요.
+
 ## 2026-08-10 — 비용 리포터가 리포트의 실패를 자기가 저질렀다 (gate 1737→1743)
 
 - Status: `/sync` 뒤 프로브를 그냥 한 번 돌렸다. Azure가 429로 실패했는데 리포트의

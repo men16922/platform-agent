@@ -21,6 +21,16 @@ Exit codes:
   0 = signature verified
   1 = image is not validly signed (no signature, or signed by another key)
   2 = could not evaluate (cosign missing, registry unreachable, bad usage)
+
+EVERYTHING GOES TO STDOUT — the verdict and the cosign output that justifies it.
+Until 2026-08-10 the *stream depended on which failure it was*: "cosign is not
+installed — UNVERIFIED" and the no-identity refusal went to stderr, while the
+CANNOT EVALUATE that came back from a real cosign run went to stdout. So
+`... 2>/dev/null` printed nothing at all on precisely the two paths where nothing
+was checked, which is the direction the paragraph above calls worse than no step.
+`image_trust.py` concatenates both streams and was never affected — which is the
+point: the reader who was affected is the human with a pipe, and no guard was
+asking on their behalf.
 """
 
 from __future__ import annotations
@@ -28,7 +38,6 @@ from __future__ import annotations
 import argparse
 import shutil
 import subprocess
-import sys
 
 COSIGN_MISSING = 2
 NOT_SIGNED = 1
@@ -42,6 +51,16 @@ _UNSIGNED_MARKERS = (
     "no matching signatures",
     "none of the expected identities matched",
 )
+
+
+def _indent(output: str) -> str:
+    """cosign's own words, kept under the verdict rather than beside it.
+
+    Indented so a reader can see at a glance where the tool's verdict ends and
+    the tool it called starts — the distinction that used to be carried by the
+    stream, back when carrying it that way lost it.
+    """
+    return "\n".join(f"  {line}" for line in output.strip()[:500].splitlines())
 
 
 def build_command(args: argparse.Namespace) -> list[str]:
@@ -81,18 +100,17 @@ def main() -> int:
 
     if not args.key and not args.certificate_identity:
         print(
-            "ERROR: pass --key, or --certificate-identity with --certificate-oidc-issuer.\n"
+            "CANNOT EVALUATE: pass --key, or --certificate-identity with "
+            "--certificate-oidc-issuer.\n"
             "  Verifying against 'any signature' accepts a signature from anyone, which is\n"
-            "  indistinguishable from not checking.",
-            file=sys.stderr,
+            "  indistinguishable from not checking."
         )
         return COSIGN_MISSING
 
     if shutil.which("cosign") is None:
         print(
             f"CANNOT EVALUATE: cosign is not installed — {args.image} is UNVERIFIED.\n"
-            "  Exiting 2 on purpose: a missing verifier must not read as a pass.",
-            file=sys.stderr,
+            "  Exiting 2 on purpose: a missing verifier must not read as a pass."
         )
         return COSIGN_MISSING
 
@@ -104,10 +122,10 @@ def main() -> int:
         print(f"VERIFIED: {args.image}")
     elif verdict == NOT_SIGNED:
         print(f"NOT SIGNED: {args.image} carries no signature from this identity.")
-        print(combined.strip()[:500], file=sys.stderr)
+        print(_indent(combined))
     else:
         print(f"CANNOT EVALUATE: {args.image} — cosign failed before reaching a verdict.")
-        print(combined.strip()[:500], file=sys.stderr)
+        print(_indent(combined))
     return verdict
 
 
