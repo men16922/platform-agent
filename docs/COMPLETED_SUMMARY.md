@@ -61,11 +61,19 @@ DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `l
 단 **1건은 처음에 살아남았다**, 아래) · 낡은 가드 정확히 3건이 red로 잡혀 `.out`으로 ·
 **실제 서브프로세스 파이프**로 교차 확인(고친 것을 되돌리면 `capsys` 가드와 파이프 가드가
 **함께** red) · `verify_netpol_enforcement`는 kind에 **라이브로 돌려** ENFORCED 전문이
-stdout에 도착함을 확인. `make check` **1743 → 1769 → 1773**, **로컬 ↔ CI 숫자 일치**(PR #24·#25). 증거
+stdout에 도착함을 확인. `make check` **1743 → 1769 → 1773 → 1779**, CI가 두 지점에서 **숫자까지 일치**(PR #24·#25). 증거
 `docs/evidence/{spend-probe-report-split-across-streams,report-streams-swept-across-all-clis}.log`.
 
-**남긴 경계**: `src/`는 `sys.stderr` 사용 **0건**이라 REPORT 계열 결함이 없다(DOCUMENT 진입점
-하나만 있었고 고쳤다) · 버퍼링 자체는 **한 건만 실측**했다(나머지는 `stderr == ""` 충분조건).
+**세 번째 문(08-11 추가)**: `src/`는 `sys.stderr` **0건**인데 **로깅 핸들러도 0건**이라
+`logger.warning`이 `logging.lastResort`로 **stderr에 나간다** — `print`가 없는 경로라 스트림
+훑기로는 **원리상 못 찾는다**. 실제로 `push_addon_status`가 읽기 경로에서
+`warn_if_ambient_read`("스포크는 아무 자격증명이나 들고 읽는다")를 그리로 흘리고 있었다.
+`main`이 로깅을 stdout으로. 가드는 **서브프로세스**로 돌린다 — 인프로세스면 pytest 핸들러가
+`lastResort`를 가려 **버그가 원리상 안 보인다**(`capsys` 맹점의 한 층 아래 판박이).
+
+**남긴 경계**: 실제 파이프 뒤가 있는 건 **6 invocation / 5 CLI**뿐, 나머지 13개 REPORT는
+`capsys` + `stderr == ""` 논증(클러스터·자격증명을 요구하는 가드는 **skip되는 가드**라
+Risk 12②를 새로 만든다) · **로깅 문은 한 건만 닫았다**.
 
 ## M16 — 비용 관측: 세 클라우드가 다 "안심시키는 0"을 주고 있었다 (완료, 2026-08-09)
 

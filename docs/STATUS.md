@@ -8,13 +8,14 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` → **1773 passed, 1 skipped** (2026-08-11, 1737→**+36**, **로컬 macOS·py3.13
-  ↔ CI 1773 일치**, PR #22·#24·#25) — **리포트가 독자에게 갈린 채 도착하고
+- `make check` → **1779 passed, 1 skipped** (2026-08-11, 1737→**+42**, 로컬 macOS·py3.13;
+  CI가 1769·1773 두 지점에서 **숫자까지 일치**, PR #22·#24·#25·#26) — **리포트가 독자에게 갈린 채 도착하고
   있었다**(본문 stdout / 판정 stderr → 파이프에선 절이 빈다), 그리고 **가드가 그걸 원리상
   못 봤다**(→ Risk 12④). 프로브 1건 → `scripts/` CLI **22개 전수** + `src/` 확인까지.
   **훑는 방향을 뒤집은 게 결정적**: `readouterr` 사용처가 아니라 **`sys.stderr`를 쓰는
-  프로그램**을 뒤지니 **테스트에 이름조차 없던 2개**가 나왔다. 변이 **24+6건 red, 생존 0**.
-  경위·산출은 **M17이 권위**. 증거 `spend-probe-report-split-across-streams.log` ·
+  프로그램**을 뒤지니 **테스트에 이름조차 없던 2개**가 나왔다. 그리고 **세 번째 문**이 있었다
+  — `src/`는 핸들러를 안 붙여 `logger.warning`이 `lastResort`로 **stderr**에 나간다(`print`
+  없는 경로). 변이 **30건 red, 생존 0**. 경위·산출은 **M17이 권위**. 증거 `spend-probe-report-split-across-streams.log` ·
   `report-streams-swept-across-all-clis.log`.
 - `make check` → **1737 passed, 1 skipped** (2026-08-09, +18, **로컬 ↔ CI 일치**) — 프로브를
   **정기 실행**하려다 **진짜 구속 조건**을 만났다: LaunchAgent는 `~/Desktop` 아래 레포를
@@ -66,15 +67,12 @@
    켜기 `make scope-credentials`·`make deploy-identity`. **남은 것**: 배포 신원의 테넌트 구분
    (결정 5 C/D=라우터 인증 선행) · **키 custody**(rotation은 닫힘) · 클라우드 3종은 Risk 10.
 4. **세 클라우드 다 기본값이 안심시키는 답을 준다 — 셋 다 호출은 성공한다** — 어떻게 셋 다
-   틀렸는지(AWS 크레딧 상계 · Azure의 cost 없는 행 · GCP의 없는 API)는 **`COMPLETED_SUMMARY`
-   M16이 권위**. **지금 유효한 것만**: 셋 다 `make spend-check`에 박혔고 **관측 구멍은 GCP
-   하나**(BQ 내보내기 = 콘솔 수동, 데이터셋은 있고 **테이블 0개** →
-   `docs/GCP_BILLING_EXPORT_SETUP.md`) · ₩20 예산 → **₩28,000** · `make spend-watch`는
-   터미널당 하루 한 번(**launchd는 TCC로 막힌다**) · **측정 자체가 과금된다**(CE 요청당
-   $0.01 = 월 ~$0.30, docstring 명시 + 가드) · ⚠️**CE는 당일치를 늦게 보고한다 — 오늘 줄의
-   0은 잰 0이 아니다** · 8월 Azure MTD는 **다른 프로젝트의 ACR 고정 요금**이라 두었다.
-   증거 `gcp-budget-always-firing-fixed.log` · `gcp-actual-spend-has-no-api.log` ·
-   `azure-consumption-cli-returns-null-cost.log`.
+   틀렸는지는 **M16이 권위**(증거 3건도 거기). **지금 유효한 것만**: 셋 다 `make spend-check`에
+   박혔고 **관측 구멍은 GCP 하나**(BQ 내보내기 = 콘솔 수동, 데이터셋은 있고 **테이블 0개** →
+   `docs/GCP_BILLING_EXPORT_SETUP.md`) · ₩20 예산 → **₩28,000** · `spend-watch`는 터미널당
+   하루 한 번(**launchd는 TCC로 막힌다**) · **측정 자체가 과금된다**(CE 요청당 $0.01 = 월
+   ~$0.30) · ⚠️**CE는 당일치를 늦게 보고한다 — 오늘 줄의 0은 잰 0이 아니다** · 8월 Azure
+   MTD는 **다른 프로젝트의 ACR 고정 요금**이라 두었다.
 5. **k3s는 집행하지만 proven 집합엔 없다 — 결정 4 = D40으로 닫힘(2026-08-01)** — 집행은 라이브
    증명(07-29), 시맨틱은 미증명. 문서들이 반복한 "피어 테넌트 부재"는 **참이지만 구속력이
    없었다**(진짜 이유는 넷 — 네임스페이스 1개 · **순환**(승격하려면 먼저 승격해야 한다) ·
@@ -114,6 +112,9 @@
    REPORT/DOCUMENT/DUAL로 분류하고 미분류를 red로 막았다(`src/`는 stderr 0건이나
    DOCUMENT 진입점 하나가 **유효 YAML로** 오염되고 있었다). ⓒ**절반만 묻는 가드**: 경고의
    **주장**만 묻고 **지시**를 안 물으면 지시를 지우는 변이가 산다(같은 날 재발, 실측).
+   ⓓ**문이 하나가 아니다**: `src/`엔 로깅 핸들러가 0건이라 `logger.warning`이 `lastResort`로
+   **stderr**에 나간다 — **`print`가 없는 경로**라 스트림 훑기로는 원리상 못 찾는다. **남은
+   것**: 실제 파이프 뒤는 6 invocation뿐(나머지 13은 논증) · 로깅 문은 **한 건만** 닫았다.
    증거 `docs/evidence/{ci-keyless-signing,ci-terraform-validate-skipped,
    spend-probe-report-split-across-streams,report-streams-swept-across-all-clis}.log` · M15·M16.
 - (그 밖의 해소 이력 — Slack App 미연결(07-19)·A2A discovery(07-14)·추적 IA 실증(07-13)·NEXT_PUBLIC 인라인(07-13) — 은 `PROGRESS_LOG`/`docs/archive/` 참조.)

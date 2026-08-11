@@ -6,81 +6,64 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
-## 2026-08-11 — 맹점을 나머지 전부에 대고 물었다: 결함이 더 넓었다 (gate 1743→1773)
+## 2026-08-11 — 맹점을 나머지 전부에 대고 물었다: 결함이 더 넓었다 (gate 1743→1779)
 
 - Status: 어제 남긴 "`capsys` 맹점은 한 건만 봤다"를 소진했다. **훑는 방향을 뒤집은 게
   결정적** — `readouterr` 사용처(5파일 19곳)를 뒤지면 **테스트에 이름조차 없는 스크립트는
-  목록에 없다.** `git grep sys.stderr -- scripts/*.py`(11개)로 물으니 attach_addon ·
-  preflight_gitops_handoff가 나왔고 **둘 다 깨져 있었다.**
+  목록에 없다.** `git grep sys.stderr -- scripts/*.py`로 물으니 attach_addon ·
+  preflight가 나왔고 **둘 다 깨져 있었다.**
 - Verified(재현, 네트워크 0·가짜 kubectl): 파이프로 읽으면 두 verify는 `context:` 한 줄,
-  서명 검증기는 **완전히 빈 출력**에 exit 2. 가장 나쁜 건 netpol — 성공 경로가 stdout에 찍은
+  서명 검증기는 **완전히 빈 출력**에 exit 2. 가장 나쁜 건 netpol — stdout에 찍은
   `baseline: … ✓` 뒤에 판정이 stderr로 가서 **독자의 마지막 줄이 ✓**다. **✓로 끝나고 멈춘
-  리포트는 끝난 리포트로 읽힌다**, 그리고 그 판정이 `PROVEN_ENFORCING_SUBSTRATES` 승격을
-  정한다. ⚠️기존 evidence 로그가 실제로 판정을 잃은 사례는 **없다**(잃을 수 **있었다**).
-- Changed(분류가 먼저였다): 11개를 다 고치려다 멈췄다 — `render_tenancy.py`는 **처음부터
-  옳다**(stdout=매니페스트, 진단은 전부 `#` 접두로 stderr). 규칙은 "stderr 금지"가 아니라
-  **"독자의 스트림이 독자가 필요한 걸 날라야 한다"**이고 독자가 파서면 의무가 **거꾸로** 선다.
-  `scripts/*.py` **22개 전수**를 REPORT(17)/DOCUMENT(3)/DUAL(2)로 분류.
-- Changed(수정 8건, exit code 전부 유지): verify_netpol/tenant_isolation/tenancy_adoption ·
-  verify_image_signature(**스트림이 실패 종류마다 달랐다**) · attach_addon(`--commit` 거부가
-  diff 뒤라 **"committed 줄이 없다"가 유일한 실패 신호 — 없는 줄은 판정이 아니다**) ·
-  watch_cloud_spend(어제 "두었다"를 뒤집었다 — 근거가 파일 사정이지 독자 사정이 아니었다) ·
-  push_addon_status(**결과에 따라 스트림을 골랐다** → 한 스트림+`flush`; 실패가 먼저, 성공이
-  뭉텅이로 뒤 = **타임라인이 틀린 것**) · preflight(**모드 의존**).
+  리포트는 끝난 리포트로 읽히고**, 그 판정이 `PROVEN_ENFORCING_SUBSTRATES` 승격을 정한다.
+  ⚠️기존 evidence 로그가 실제로 판정을 잃은 사례는 **없다**(잃을 수 **있었다**).
+- Changed(분류가 먼저였다 — 수정 목록·근거는 **M17이 권위**): 11개를 다 고치려다 멈췄다 —
+  `render_tenancy.py`는 **처음부터 옳다**. 규칙은 "stderr 금지"가 아니라 **"독자의 스트림이
+  독자가 필요한 걸 날라야 한다"**이고 독자가 파서면 의무가 **거꾸로** 선다. `scripts/*.py`
+  **22개 전수**를 REPORT(17)/DOCUMENT(3)/DUAL(2)로 분류하고 미분류를 red로 막았다.
+  수정 9건(+`src/` 1건), exit code 전부 유지. 대표적으로 attach_addon은 `--commit` 거부가
+  diff 뒤라 **"committed 줄이 없다"가 유일한 실패 신호였다 — 없는 줄은 판정이 아니다**.
 - Verified(하중): 변이 **16건 red, 생존 0** — D1~D3은 **거울 방향**(진단을 문서 스트림에
   밀어 넣는 변이), A1은 **미분류 새 스크립트**(훑기를 스냅샷이 아니라 규칙으로 만드는 지점).
   게이트가 낡은 가드 **정확히 3건**을 잡았고 전부 `.err`에 묻던 것 → `.out`으로.
-- Changed(덤) + Verified(같은 실수 재발): CE **요청당 $0.01**(MTD $0.27) · `spend-watch`
-  하루 한 번 = 월 **~$0.30**를 프로브·워처 docstring에 명시. 가드 3개 중 하나가 **반증에서
-  살아남았다** — **주장**("오늘 줄의 0은 잰 0이 아니다")만 묻고 **지시**("마지막 줄 말고 앞
-  며칠을 읽어라")는 안 물었다. 물건은 맞췄고 **물건의 절반만** 물은 것. 고쳐서 둘 다 red.
+- Changed(덤) + Verified(같은 실수 재발): CE **요청당 $0.01** · `spend-watch` 월 **~$0.30**을
+  프로브·워처 docstring에 명시. 가드 3개 중 하나가 **반증에서 살아남았다** — **주장**("오늘
+  줄의 0은 잰 0이 아니다")만 묻고 **지시**("앞 며칠을 읽어라")는 안 물었다. 물건은 맞췄고
+  **물건의 절반만** 물었다. 고쳐서 둘 다 red.
 - Verified(같은 날 후속 — 남겨 둔 경계 셋을 전부 닫았다):
   ①**`src/`는 밖이 아니라 확인 대상이었다** — `sys.stderr` **0건**이라 REPORT 계열 결함은
   **없다**. 다만 DOCUMENT 진입점 **하나**가 깨져 있었다: `manifest_generator`를 인자 없이
-  리다이렉트하면 usage가 파일에 앉고 **exit 0**인데 `yaml.safe_load`는 그걸
-  **`{'Usage': …}` 유효 매핑**으로 읽는다 — 파싱 에러도 실패 종료도 아니고 **`kind` 없는
-  매니페스트로 한참 뒤에** 터진다. → stderr + exit 2(`--help`는 **그대로 stdout/0**,
-  독자가 산문을 요청한 경우는 다르다). 변이 S1~S3 red.
-  ②**버퍼링을 실제로 쟀다** — 지금까지는 `stderr == ""`라는 **충분조건 논증**이었다.
-  진짜 서브프로세스 + 진짜 파이프 + `2>/dev/null`로 1건 교차 검증(P1: 고친 걸 되돌리면
-  `capsys` 가드와 파이프 가드가 **함께** red = 논증이 실물과 일치).
-  ③**kind에 라이브로 돌렸다** — `verify_netpol_enforcement`의 `ENFORCED` 전문이 **stdout만
-  읽어도** 도착한다(오프라인 테스트가 못 덮는 성공 경로).
+  리다이렉트하면 usage가 파일에 앉고 **exit 0**인데 `yaml.safe_load`는 그걸 **`{'Usage': …}`
+  유효 매핑**으로 읽는다 — 파싱 에러도 실패 종료도 아니고 **`kind` 없는 매니페스트로 한참
+  뒤에** 터진다. → stderr + exit 2(`--help`는 그대로 stdout/0). 변이 S1~S3 red.
+  ②**버퍼링을 실제로 쟀다** — `stderr == ""`는 **충분조건 논증**이었다. 진짜 서브프로세스
+  + 진짜 파이프 + `2>/dev/null`로 **6 invocation / 5 CLI**(`PIPEABLE` 표에 이름으로).
+  되돌리면 `capsys` 가드와 파이프 가드가 **함께** red = 논증과 실물이 일치.
+  ③**verify_* 3종을 전부 라이브로 돌렸다**(클러스터에 이미 acme·globex 테넌시가 서 있었다
+  — 아무것도 안 바꿨다): netpol **ENFORCED** · adoption **둘 다 adopted ✓** · isolation
+  **ISOLATION HOLDS**(4/4, 크로스 테넌트 차단). 셋 다 **stdout만 읽어도** 전문이 도착한다.
+- Verified(**세 번째 문 — `print`가 없는 곳에서도 스트림은 골라진다**): "`src/` 로깅은 훑기
+  밖"이라 적어 놓고 확인해 보니 **밖이 아니었다**. `src/`엔 **핸들러를 붙이는 코드가 0줄**이라
+  레코드가 `logging.lastResort`로 떨어지고 그건 **WARNING 이상을 stderr로 쓴다** — 즉 `print`도
+  `sys.stderr`도 없는 경로로 리포트가 갈린다(그래서 8절까지의 훑기로는 **원리상 못 찾는다**).
+  실제로 열린 CLI가 하나: `push_addon_status`의 읽기 경로가 첫 `_kubectl`에서
+  `warn_if_ambient_read`를 쏜다 — **"스포크는 아무 자격증명이나 들고 읽는다"**, 이 프로세스가
+  내는 **가장 보안적으로 중요한 한 줄**이 리포트와 다른 스트림으로 나가고 있었다.
+  ⚠️오늘 실제로 잃지는 않는다(`make dev-up`이 `2>&1`) — **그런데 그게 정확히 netpol 증거
+  로그가 멀쩡해 보였던 이유다.** `main`이 로깅을 stdout으로. 변이 L1·L2 red. 가드는
+  **서브프로세스**로 — 인프로세스면 pytest 핸들러 때문에 `lastResort`가 안 타서
+  **버그가 원리상 안 보인다**(`capsys` 맹점과 같은 모양이 한 층 아래).
 - Changed(문서): `/tidy-docs` — 08-09 3건을 `archive/progress-2026-08.md`로(최신이 위 유지) ·
   status의 baseline 5건은 M16 포인터로, "동작하는 영역"은 `AGENT_BRIEF` Snapshot과 **중복이라
   접었다** · 완료 2건 → **M17 신설**. **넷 다 예산 내.**
-- Verified: `make check` **1743 → 1769 → 1773**(+30), 2026-08-11, 로컬 macOS·py3.13
-  **↔ CI 1773 일치**(PR #24·#25 — 초록이 아니라 **같은 숫자**로 Risk 12②를 배제).
+- Verified: `make check` **1743 → 1769 → 1773 → 1779**(+36), 2026-08-11, 로컬 macOS·py3.13;
+  CI가 1769·1773 두 지점에서 **숫자까지 일치**(PR #24·#25 — 초록이 아니라 **같은 숫자**로
+  Risk 12②를 배제). 변이 누계 **30건 red, 생존 0**.
   증거 `report-streams-swept-across-all-clis.log`.
 - Blockers: 없음.
-- Next: 남은 경계는 **버퍼링을 1건만 실측했다**는 것뿐. Phase 4는 **사용자 결정 대기**.
-
-## 2026-08-10 — 비용 리포터가 리포트의 실패를 자기가 저질렀다 (gate 1737→1743)
-
-- Status: `/sync` 뒤 프로브를 그냥 한 번 돌렸다. Azure가 429로 실패했는데 리포트의
-  **`Azure 실사용` 헤딩 아래가 비어 있었다** — 판정은 맨 위, AWS 절보다도 앞에.
-- Verified(재현, 네트워크 0): 세 CLI를 exit 1 스텁으로 바꾸니 **AWS·EC2·Azure 세 절이 전부
-  빈다**. 본문은 stdout, 판정·이유는 stderr인데 **TTY에선 줄 버퍼링이라 멀쩡하다** = 저자가
-  만들며 본 것. 읽는 경로는 전부 파이프(evidence 로그·`| tee`·캡처) → **읽히는 모든 경로에서
-  깨져 있었다.** 멀쩡하던 절은 GCP뿐인데 GCP만 "상태를 절 안에서 stdout에" 찍고 있었다.
-- Verified(가드가 못 잡은 이유가 더 크다): PR #19의 `..._reaches_the_reader`가
-  `capsys.readouterr().err`를 봤다. **capsys는 두 스트림을 갈라 주므로 독자의 사본이 갈라진
-  걸 원리상 못 본다** → **Risk 12의 넷째 얼굴 = 관측 지점**(①시간 ②환경 ③하중에 이어).
-  ⚠️`capsys` 계열 전반이 같은 맹점 — **한 건만 봤다.**
-- Changed: 본문을 **stdout 한 스트림**으로(`_unmeasured()` 한 곳, 이유는 절 안). **exit 2는
-  그대로** · **측정값은 안 건드렸다** · `watch_cloud_spend.py:108`은 한 줄 찍고 즉시 return이라
-  **두었다**. 새 가드 `TestTheReportIsOneStream`은 `main()`을 통째로 돌려 **독자가 읽는
-  스트림**에 묻는다. 정적 가드 `assert "…'$0'이 아니다" in source`도 갈아치웠다 — 문구가
-  조립되니 **소스 grep은 어떤 실행도 찍지 않는 문자열에 초록**을 준다.
-- Verified: 변이 **M1~M6 전부 red, 생존 0**. `make check` **1743**(+6), 2026-08-10, 로컬
-  macOS·py3.13 **↔ CI 1743 일치**(PR #22). 증거 `spend-probe-report-split-across-streams.log`.
-- Verified(실측 2건, 코드 아님): ①**08-09 중지가 먹혔다** — EC2 Compute 일 **$0.998 → $0.043
-  → 0**, VPC $0.12 → $0.005, 도는 인스턴스 0대(MTD $9.64는 거의 전부 중지 이전 누적).
-  ②**측정 자체가 과금된다** — Cost Explorer **요청당 $0.01**(3건=$0.03 · 24건=$0.24 ·
-  MTD $0.27), `spend-watch` 하루 한 번 = 월 ~$0.30. **아무 문서에도 없었다.**
-- Blockers: 없음. 관측 구멍은 여전히 **GCP 하나**(콘솔 토글).
-- Next: CE 요청당 $0.01을 프로브에 명시할지 · 나머지 `capsys` 가드 훑기.
-  ⚠️**CE는 당일치를 늦게 보고한다** — 오늘 줄의 0은 잰 0이 아니다.
+- Next: 남은 것 둘 — 나머지 **13개 REPORT는 실제 파이프 뒤가 없다**(클러스터·자격증명이
+  있어야 실패 경로에 닿고, 그걸 요구하는 가드는 **skip되는 가드**라 Risk 12②를 새로 만든다) ·
+  **로깅 문은 한 건만 닫았다**. Phase 4는 **사용자 결정 대기**.
 
 ## 2026-08-09 — 정기 실행을 붙이다 진짜 구속 조건을 만났다 (macOS TCC, gate 1719→1737)
 

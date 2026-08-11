@@ -11,19 +11,31 @@ src/agents/platform/collector.py for the trust argument.
 
 Exit codes: 0 = pushed, 1 = hub rejected or unreachable, 2 = cannot render a report.
 
-ONE STREAM, FLUSHED EVERY LINE. The reader here is `tail -f logs/push-acme.log`,
-and `make dev-up` redirects both streams into that one file. Choosing the stream
-by outcome (`sys.stderr if code else sys.stdout`) put the successes on a
+ONE STREAM, FLUSHED EVERY LINE — AND THAT INCLUDES THE LIBRARY'S. The reader here
+is `tail -f logs/push-acme.log`, and `make dev-up` redirects both streams into that
+one file. Choosing the stream by outcome (`sys.stderr if code else sys.stdout`)
+put the successes on a
 block-buffered stream and the failures on an unbuffered one, into the same file:
 a log where the failures arrive promptly, the successes arrive minutes later in
 8KB bursts, and the interleaving is therefore a lie about when things happened.
 For a loop whose whole output is a timeline, that is the timeline being wrong.
+
+The second half was found on 2026-08-11 by asking where ELSE a stream is chosen.
+`src/` contains no `sys.stderr` and no logging handler at all — so `logger.warning`
+falls through to `logging.lastResort`, **which writes to stderr**. This agent's read
+path fires one on its first `_kubectl` (`collector.warn_if_ambient_read`: the spoke
+reads with the ambient context and confines tenants in Python afterwards), so the
+most security-relevant line here was leaving by a door with no `print` in it. `main`
+now points logging at stdout. Today the loss is only latent — `make dev-up` redirects
+`2>&1` into one file — but "it happens to be captured together" is the same reasoning
+that made the netpol evidence logs look fine.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 import sys
 import time
@@ -101,6 +113,16 @@ def main() -> int:
     args = parser.parse_args()
     if args.once:
         args.interval = 0
+
+    # THE THIRD DOOR ONTO THE SPLIT — see the module docstring. `src/` configures no
+    # logging handler anywhere, so a `logger.warning` from the library falls through
+    # to Python's `logging.lastResort`, which writes to **stderr**. This agent's read
+    # path fires exactly one on its first `_kubectl`: collector.warn_if_ambient_read,
+    # saying the spoke reads with whatever credential is lying around and confines
+    # tenants in Python afterwards. That is the most security-relevant line this
+    # process emits, and it was arriving on the stream the report is not on — with no
+    # `print` involved, so nothing in the stream sweep would ever have found it.
+    logging.basicConfig(stream=sys.stdout, format="%(levelname)s %(message)s", force=True)
 
     key = os.getenv(PUSH_KEY_ENV, "").strip()
     if not key:
