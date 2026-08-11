@@ -8,8 +8,8 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` → **1787 passed, 1 skipped** (2026-08-11, 1737→**+50**, **로컬 macOS·py3.13
-  ↔ CI 1787 일치**; #24·#25·#26·#27 **네 지점 전부** 숫자가 같다) — **리포트가 독자에게 갈린 채 도착하고
+- `make check` → **1789 passed, 1 skipped** (2026-08-11, 1737→**+52**, 로컬 macOS·py3.13;
+  CI가 #24~#27 **네 지점 전부** 숫자까지 일치, 최종은 #28) — **리포트가 독자에게 갈린 채 도착하고
   있었다**(본문 stdout / 판정 stderr → 파이프에선 절이 빈다), 그리고 **가드가 그걸 원리상
   못 봤다**(→ Risk 12④). 프로브 1건 → `scripts/` CLI **22개 전수** + `src/` 확인까지.
   **훑는 방향을 뒤집은 게 결정적**: `readouterr` 사용처가 아니라 **`sys.stderr`를 쓰는
@@ -112,8 +112,9 @@
    핸들러 0건 → `lastResort`가 WARNING+ 를 stderr로; REPORT 4개가 닿고 **둘은 자격증명 경계
    사건**)과 **잡히지 않은 예외**(트레이스백=stderr·exit 1; `watch_cloud_spend`에선 1이
    "**새로 과금됐다**"라 **못 쟀는데 경보가 된다**) · ⓔ**"클러스터가 필요하다"는 잰 게
-   아니었다**(벗겨 돌리니 넷은 불필요했고 **넷 다 깨져 있었다**). **남은 것**: 파이프 뒤
-   11 invocation/9 CLI · 로깅 문은 REPORT 4개만 · `slack_live_approval`은 **이중 노후화**.
+   아니었다** — **두 번** 그랬다(둘째는 "자격증명·스택이 필요하다"). 매번 그 문장은 **성공
+   경로**를 묘사했고 **실패 경로는 공짜였다**; 시험할 때마다 결함이 나왔다(합 6건). 파이프 뒤
+   4→**13 invocation/11 CLI**. **남은 것**: 로깅 문은 REPORT 4개 · `slack_live_approval` 이중 노후화.
    증거 `docs/evidence/{ci-keyless-signing,ci-terraform-validate-skipped,
    spend-probe-report-split-across-streams,report-streams-swept-across-all-clis}.log` · M15·M16.
 - (그 밖의 해소 이력 — Slack App 미연결(07-19)·A2A discovery(07-14)·추적 IA 실증(07-13)·NEXT_PUBLIC 인라인(07-13) — 은 `PROGRESS_LOG`/`docs/archive/` 참조.)
