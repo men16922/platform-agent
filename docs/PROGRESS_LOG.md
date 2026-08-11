@@ -68,10 +68,10 @@
 - Changed(문서): `/tidy-docs` — 08-09 3건을 `archive/progress-2026-08.md`로(최신이 위 유지) ·
   status의 baseline 5건은 M16 포인터로, "동작하는 영역"은 `AGENT_BRIEF` Snapshot과 **중복이라
   접었다** · 완료 2건 → **M17 신설**. **넷 다 예산 내.**
-- Verified: `make check` **1743 → 1769 → 1773 → 1779**(+36), 2026-08-11, 로컬 macOS·py3.13;
-  **↔ CI 1779 일치** — 세 지점(#24·#25·#26) 전부 숫자가 같다. 초록이 아니라 **같은 숫자**로
-  Risk 12②를 배제한다. 변이 누계 **30건 red, 생존 0**.
-  증거 `report-streams-swept-across-all-clis.log`.
+- Verified: `make check` **1743 → … → 1787**(+44), 2026-08-11, 로컬 macOS·py3.13
+  **↔ CI 1787 일치** — #24·#25·#26·#27 **네 지점 전부** 숫자가 같다. 초록이 아니라 **같은
+  숫자**로 Risk 12②를 배제한다. 변이 누계 **41건 red, 생존 0**(T4는 1회 생존 후 하중을 붙여
+  red). 실제 파이프 뒤 **11 invocation / 9 CLI**. 증거 `report-streams-swept-across-all-clis.log`.
 - Blockers: 없음.
 - Next: **못 하는 것과 안 한 것을 구분해 남긴다**(상세는 증거 로그 13절) — 못 함: 남은 CLI는
   라이브 자격증명·기동한 스택이 필요하거나 **강제할 실패 경로가 없다**(빈 레포에서도 exit 0);
