@@ -510,6 +510,20 @@ PIPEABLE = [
      ["verify_tenant_isolation.py", "--tenant", "acme", "--env", "dev",
       "--peer-tenant", "globex", "--peer-env", "dev"],
      {"PATH": "/usr/bin:/bin"}, "ERROR"),
+    # And these two, after "needs a running stack / needs credentials" was tested
+    # rather than repeated a second time. Only the *success* path needs those; the
+    # failure path is free, and both were answering it with a traceback.
+    # Port 1 rather than the real default: a developer with `make dev-up` running
+    # would otherwise send this guard down the success path and make it flaky.
+    ("tier2-demo/no-endpoint",
+     ["live_tier2_demo.py"], {"ONPREM_LLM_ENDPOINT": "http://127.0.0.1:1/v1"},
+     "CANNOT RUN"),
+    # A non-existent profile fails while *constructing* the client, so this reaches
+    # no network at all — the gate must never call live AWS (2026-08-09's trap).
+    ("incident-roundtrip/no-creds",
+     ["probe_incident_roundtrip.py"],
+     {"AWS_PROFILE": "__nonexistent__", "AWS_CONFIG_FILE": "/dev/null",
+      "AWS_SHARED_CREDENTIALS_FILE": "/dev/null"}, "CANNOT RUN"),
 ]
 
 
@@ -548,20 +562,26 @@ class TestARealPipeAgrees:
         )
 
     def test_the_pipeable_set_is_not_quietly_shrinking(self):
-        """11 invocations over 9 CLIs: **8 of the 17 REPORT** plus the report mode
-        of one DUAL. Written down so shrinking it is an edit, not a drift.
+        """13 invocations over 11 CLIs: **10 of the 17 REPORT** plus the report
+        mode of one DUAL. Written down so shrinking it is an edit, not a drift.
 
-        It was 4 until the claim "the rest need a cluster or credentials" was
-        tested instead of repeated. Four of them needed neither — and all four
-        were broken. The nine that remain uncovered genuinely cannot be driven
-        from nothing: five need live credentials or a running local stack, and
-        four have no failure path at all (they exit 0 on an empty repo). A guard
-        that needs credentials is a guard that gets skipped, which would create a
-        Risk 12② rather than close one.
+        It was 4. Twice now the reason for the gap — "needs a cluster", then
+        "needs credentials or a running stack" — turned out to describe the
+        *success* path while the failure path was free, and both times the CLIs
+        behind the excuse were broken. Six were added that way, and six defects
+        came with them.
+
+        The seven still uncovered are a different shape, and the distinction is
+        the point: `find_unconsumed_fields`, `find_unwritten_keys`,
+        `probe_scope_reachability` and `slack_live_approval` have **no failure
+        path to force** (they exit 0 against an empty repo), `live_model_sweep`
+        answers with argparse (stderr, by universal convention, correctly), and
+        `live_net_demo` / `provision_gke_live` already put their verdict on
+        stdout. Nothing here is waiting on a resource.
         """
-        assert len(PIPEABLE) == 11
+        assert len(PIPEABLE) == 13
         covered = {argv[0] for _, argv, _, _ in PIPEABLE}
-        assert len(covered) == 9
+        assert len(covered) == 11
         # A DUAL CLI belongs here only via the mode where stdout is prose — hence
         # no `--json` anywhere in PIPEABLE. (Both assertions caught their own
         # author: first filing preflight under REPORT, then counting invocations
@@ -571,7 +591,7 @@ class TestARealPipeAgrees:
             "a --json invocation is a DOCUMENT stream; asserting prose on it would "
             "guard the opposite of the rule"
         )
-        assert len(covered & REPORT) == 8 and len(covered & DUAL) == 1
+        assert len(covered & REPORT) == 10 and len(covered & DUAL) == 1
 
 
 class TestTheLibraryUsesTheSameDoor:

@@ -43,8 +43,20 @@ from src.agents.models import (  # noqa: E402
     RemediationMode,
     Severity,
 )
-from src.agents.operations.aws import reporting  # noqa: E402
-from src.agents.operations.aws.executor import _record_incident  # noqa: E402
+# Guarded because `reporting` builds its DynamoDB resource **at import time**
+# (`_DYNAMO = boto3.resource(...)`), so an unusable profile raises here — before
+# main() exists to say anything. Unguarded, `python scripts/probe_incident_roundtrip.py`
+# with no credentials produced a traceback on stderr and an EMPTY stdout at exit 1:
+# a probe that checked nothing, saying nothing, on the stream nobody was reading.
+try:                                                                # noqa: E402
+    from src.agents.operations.aws import reporting
+    from src.agents.operations.aws.executor import _record_incident
+except Exception as _exc:               # botocore raises several shapes here
+    reporting = None                    # type: ignore[assignment]
+    _record_incident = None             # type: ignore[assignment]
+    _AWS_UNAVAILABLE: Exception | None = _exc
+else:
+    _AWS_UNAVAILABLE = None
 
 #: Sorts to the end of the table and names itself, so a row left behind by a crashed
 #: run is obvious rather than looking like a real incident on the dashboard.
@@ -96,6 +108,12 @@ def _decision() -> DecisionOutput:
 
 def main() -> int:
     send_library_logs_to_the_report()
+    if _AWS_UNAVAILABLE is not None:
+        print(f"CANNOT RUN: no usable AWS client — "
+              f"{type(_AWS_UNAVAILABLE).__name__}: {_AWS_UNAVAILABLE}")
+        print("  This probe does a real DynamoDB write/read/delete, so it needs real")
+        print("  credentials. Exiting 2: nothing was checked, which is not a pass.")
+        return 2
     table = reporting._DYNAMO.Table(reporting._INCIDENT_TABLE)
     key = {"alarm_name": ALARM, "incident_id": INCIDENT_ID}
     failures: list[str] = []

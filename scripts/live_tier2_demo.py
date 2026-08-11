@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import os
 from collections import Counter
-from urllib import request
+from urllib import error, request
 
 import sys
 from pathlib import Path
@@ -175,10 +175,31 @@ def demo_reconciliation() -> None:
              else "(unexpectedly grounded — rerun; LLM guess happened to overlap evidence)"))
 
 
-if __name__ == "__main__":
+def main() -> int:
+    """A missing prerequisite is a verdict, not a traceback.
+
+    Without MLX-LM listening this used to print the first half of the demo to
+    stdout and then die with `URLError: Connection refused` on stderr, exit 1. A
+    reader piping the run got a body with no ending — the shape the whole stream
+    sweep exists to remove (tests/test_report_streams.py). Exit 2 for "could not
+    run", matching the probes: not a failed demo, a demo that never started.
+    """
     print(f"endpoint={ENDPOINT}  model={MODEL}")
-    demo_self_consistency()
-    demo_reconciliation()
+    try:
+        demo_self_consistency()
+        demo_reconciliation()
+    except (error.URLError, TimeoutError, ConnectionError, OSError) as exc:
+        print(f"\nCANNOT RUN: {ENDPOINT} did not answer — {exc}")
+        print("  This demo needs a live MLX-LM endpoint. Start one with `make dev-up`,")
+        print("  or point ONPREM_LLM_ENDPOINT at a running server.")
+        print("  Exiting 2 on purpose: nothing was demonstrated, which is not a pass")
+        print("  and is not a failure of the code under test either.")
+        return 2
     print("\n" + "=" * 78)
     print("DONE — all paths above executed the shipped orchestration/reconciliation code.")
     print("=" * 78)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

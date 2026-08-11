@@ -356,37 +356,59 @@ PIPEABLE의 그 행이 `_kubectl`에 닿기 전에 종료해서 **하중을 안 
 pytest 핸들러가 `lastResort`를 가려 버그가 원리상 안 보인다).
 
 ----------------------------------------------------------------------------
-13. 최종 게이트 / 아직 안 한 것
+13. 같은 변명을 두 번째로 시험했다 — 또 틀렸고, 또 둘이 깨져 있었다
+----------------------------------------------------------------------------
+
+11절에서 "클러스터가 필요하다"를 시험해 넷을 찾고도, **남은 것들에 대해 같은 종류의
+문장을 다시 썼다**: "라이브 자격증명이나 기동한 스택이 필요하다." 시험해 보니
+그 문장은 **성공 경로**를 묘사하고 있었다. **실패 경로는 공짜다.**
+
+    ONPREM_LLM_ENDPOINT=http://127.0.0.1:1/v1 python scripts/live_tier2_demo.py
+      → 본문 일부 stdout + URLError 트레이스백 stderr, exit 1
+
+    AWS_PROFILE=__nonexistent__ AWS_CONFIG_FILE=/dev/null …
+      python scripts/probe_incident_roundtrip.py
+      → stdout 0B + ProfileNotFound 트레이스백 stderr, exit 1
+
+둘 다 넷째 문(잡히지 않은 예외)이고 둘 다 고쳤다. 후자는 **`main()`이 실행되기도
+전에** 죽는다 — `reporting`이 `_DYNAMO = boto3.resource(...)`를 **임포트 시점에**
+만들기 때문이다. 그래서 가드도 임포트에 걸었다.
+
+고친 뒤 둘 다 **exit 2 · stderr 0B**, stdout에 "CANNOT RUN: …"과 **무엇이 없어서
+못 돌렸는지**. "아무것도 시연되지 않았다"는 통과도 아니고 코드의 실패도 아니다.
+
+⚠️**가드가 flaky해질 뻔했다**: `live_tier2_demo`를 기본 엔드포인트로 걸면 `make
+dev-up`을 띄워 둔 개발자에게는 **성공 경로**로 간다. 포트 1로 고정했다.
+⚠️**게이트에서 라이브 AWS를 부르지 않는다**: 없는 프로필은 **클라이언트를 만드는
+중에** 터지므로 네트워크에 닿지 않는다(08-09의 "가드가 라이브 gcloud를 불렀다" 함정).
+
+**그리고 이건 기록해야 한다**: 10절의 감사를 돌리며 `PATH`만 벗기고
+`probe_incident_roundtrip`을 돌렸는데, **`PATH`는 boto3의 자격증명을 벗기지 않는다.**
+그 실행은 **실제 DynamoDB에 write/read/delete를 했다**(프로브의 설계된 동작이고
+스스로 지웠다, 비용 무시 가능). 의도한 라이브 호출이 아니었다 —
+**"오프라인으로 돌렸다"는 것도 어떻게 확인했는지까지 말해야 한다.**
+
+파이프 뒤: **4 → 8 → 13 invocation / 11 CLI**. 두 번의 "시험해 보니 아니었다"가
+**여섯 개의 결함**을 가져왔다.
+
+----------------------------------------------------------------------------
+14. 최종 게이트 / 남은 것
 ----------------------------------------------------------------------------
 
 $ make check
-  1787 passed, 1 skipped   (2026-08-11, 로컬 macOS · python 3.13)
-  1743 → 1769 → 1773 → 1779 → 1787
-CI: #24=1769 · #25=1773 · #26=1779 · #27=1787 — 네 번 다 숫자까지 로컬과 같다.
+  1789 passed, 1 skipped   (2026-08-11, 로컬 macOS · python 3.13)
+  1743 → 1769 → 1773 → 1779 → 1787 → 1789
+CI: #24=1769 · #25=1773 · #26=1779 · #27=1787 · #28=1789 — 다섯 번 다 숫자까지 같다.
 
-실제 파이프 뒤: **11 invocation / 9 CLI**(REPORT 8 + DUAL 1). 4 → 8로 늘어난 건
-"클러스터가 필요하다"를 **시험했기** 때문이다.
-
-**남은 것 — 못 하는 것과 안 한 것을 구분해서:**
-
-*못 한다(가드가 skip되면 Risk 12②를 새로 만든다):*
-- `live_model_sweep`·`live_tier2_demo`·`slack_live_approval`·`provision_gke_live`·
-  `probe_incident_roundtrip` — 라이브 자격증명이나 기동 중인 로컬 스택이 필요하다.
-  ⚠️`live_tier2_demo`는 스택이 없으면 **본문을 stdout에 찍고 트레이스백을 stderr로**
-  낸다(exit 1) — 위 넷과 같은 결함인데, 고치려면 데모의 사전조건 처리를 새로
-  설계해야 하고 그건 검증할 수단(기동한 스택)이 있어야 한다.
+**파이프 뒤에 없는 일곱 — 이제 "자원 대기"가 아니다:**
 - `find_unconsumed_fields`·`find_unwritten_keys`·`probe_scope_reachability`·
-  `probe_incident_roundtrip` — **강제할 실패 경로가 없다**(빈 레포에서도 exit 0).
+  `slack_live_approval` — **강제할 실패 경로가 없다**(빈 레포에서도 exit 0).
+- `live_model_sweep` — argparse가 답한다(stderr, **관용상 옳다**).
+- `live_net_demo`·`provision_gke_live` — **이미 stdout에 판정을 낸다**.
 
-*안 했다(발명하지 않기로 한 것):*
-- **`slack_live_approval.py`는 두 겹으로 낡았다.** ①임포트가
-  `src.agents.operations.approval_bridge`인데 그 경로는 **untracked `cdk.out`에만**
-  있다(추적되는 건 `...operations.aws.approval_bridge` 하나뿐 — NEXT_PLAN이 적어 둔
-  "`cdk.out`이 grep에 잡힌다" 함정의 정확한 재발). ②임포트를 고쳐도 스크립트가
-  덮어쓰는 여섯 이름 중 **넷이 그 모듈에 없다**(`_SLACK_WEBHOOK`·
-  `_SLACK_SIGNING_SECRET`·`_APPROVAL_REQUEST_TABLE`·`_approval_request_table`).
-  즉 **임포트만 고치면 돌아가면서 조용히 아무것도 안 한다** — 실패보다 나쁘다.
-  올바른 이름은 `slack_interactive`/`request_store`로 옮겨 간 것으로 보이나,
-  **어느 것이 맞는지는 데모를 실제로 Slack에 태워 봐야 안다.** 발명하지 않았다.
-- **로깅 문은 REPORT 4개만 닫았다** — DOCUMENT/DUAL은 안 봤다(그쪽은 의무가
-  거꾸로라 stderr가 정답일 수 있어 판단이 다르다).
+**안 한 것(발명하지 않기로 한 것), 하나뿐:**
+- **`slack_live_approval.py` 이중 노후화** — 임포트가 untracked `cdk.out`에만 있는
+  경로 + 덮어쓰는 이름 6개 중 4개 부재 → **고치면 돌아가면서 조용히 아무것도 안
+  한다**. 올바른 이름은 데모를 실제 Slack에 태워야 확정된다. NEXT_PLAN에 있다.
+- 로깅 문은 **REPORT 4개**(닿을 수 있는 전부)만. DOCUMENT/DUAL은 의무가 거꾸로라
+  판단이 다르고, 안 봤다.
