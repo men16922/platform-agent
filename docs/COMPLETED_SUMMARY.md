@@ -1,6 +1,6 @@
 # COMPLETED_SUMMARY — platform-agent
 
-최종 갱신: 2026-08-09
+최종 갱신: 2026-08-11
 
 > 완료된 milestone 압축. current docs 에는 링크만, 상세 체크리스트는 여기로 압축.
 > 도메인 원문 상세는 `bin/docs/archive/`.
@@ -37,6 +37,35 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 ## M6 — CDK deprecation 정리 (완료)
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
+
+## M17 — 리포트가 독자에게 갈린 채 도착하고 있었다 (완료, 2026-08-10~11)
+
+**목적**: 비용 프로브가 본문을 stdout, 판정을 stderr로 내보내 **파이프에서 세 절이 전부 비어**
+있었다(TTY에선 멀쩡 = 저자가 본 것). 고치고 나니 **가드가 못 잡은 이유**가 더 컸다 — `capsys`가
+`.out`/`.err`를 갈라 주므로 `.err`에 묻는 테스트는 **독자의 사본이 갈라진 걸 원리상 못 본다**
+(STATUS Risk 12④). 그 맹점을 `scripts/` CLI **22개 전수**에 대고 물었다.
+
+**결과**
+- **분류가 먼저였다** — "stderr 금지"가 아니라 **"독자의 스트림이 독자가 필요한 걸 날라야
+  한다"**이고, 독자가 파서면 의무가 거꾸로 선다. `scripts/*.py` 22개 = **REPORT(17) /
+  DOCUMENT(3) / DUAL(2)**, 미분류 신규 스크립트는 red. `render_tenancy.py`는 처음부터 옳았다.
+- **수정 9건**(exit code 전부 유지) — verify_netpol/tenant_isolation/tenancy_adoption ·
+  verify_image_signature(**스트림이 실패 종류마다 달랐다**) · attach_addon(`--commit` 거부가
+  diff 뒤 = **없는 줄이 유일한 실패 신호**) · watch_cloud_spend · push_addon_status(한 스트림
+  +flush) · preflight(모드 의존) · **`src/`의 manifest_generator**(인자 없이 리다이렉트하면
+  usage가 **유효 YAML 매핑**으로 파일에 앉고 exit 0).
+- **덤**: CE **요청당 $0.01** · `spend-watch` 월 **~$0.30** · "당일 줄의 0은 잰 0이 아니다"를
+  명시(아무 문서에도 없었다).
+
+**검증**: 변이 **24건 전부 red, 생존 0**(거울 방향 3 · 미분류 스크립트 1 · `src/` 3 포함 —
+단 **1건은 처음에 살아남았다**, 아래) · 낡은 가드 정확히 3건이 red로 잡혀 `.out`으로 ·
+**실제 서브프로세스 파이프**로 교차 확인(고친 것을 되돌리면 `capsys` 가드와 파이프 가드가
+**함께** red) · `verify_netpol_enforcement`는 kind에 **라이브로 돌려** ENFORCED 전문이
+stdout에 도착함을 확인. `make check` **1743 → 1769 → 1773**, **로컬 ↔ CI 숫자 일치**(PR #24·#25). 증거
+`docs/evidence/{spend-probe-report-split-across-streams,report-streams-swept-across-all-clis}.log`.
+
+**남긴 경계**: `src/`는 `sys.stderr` 사용 **0건**이라 REPORT 계열 결함이 없다(DOCUMENT 진입점
+하나만 있었고 고쳤다) · 버퍼링 자체는 **한 건만 실측**했다(나머지는 `stderr == ""` 충분조건).
 
 ## M16 — 비용 관측: 세 클라우드가 다 "안심시키는 0"을 주고 있었다 (완료, 2026-08-09)
 

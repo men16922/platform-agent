@@ -5,16 +5,16 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(**M15=공급망 0→집행 + Phase 5 경계 +
 > `main` 보호**, M14=결정 6건, M13=미소비 14건) / `PROGRESS_LOG.md`(+`docs/archive/`). **≤120줄**.
 
-## 현재 상태 (2026-08-11, gate 1769 — 로컬 macOS·py3.13 ↔ CI 일치)
+## 현재 상태 (2026-08-11, gate 1773 — 로컬 macOS·py3.13)
 
 **Phase 0·1a·1b·2·3 완결**(M10~M12) + **잔여 소진**(M13) + **결정 7건 닫힘**(D36·D38~D43).
-**공급망은 닫을 수 있는 만큼 닫혔다**: 서명 생산자 → 배포 직전 소비자 → CI + 키리스(custody 해소).
-**어드미션만 남았고 그건 업스트림 대기**다(cosign v3 서명을 policy-controller가 못 읽는다).
-**`main`은 보호된다** — PR + CI 통과로만 병합(D43), 그 CI는 이제 **terraform 검증까지 실제로
-돌린다**(그 전엔 조용히 skip → Risk 12②). **Phase 5는 경계까지** 섰고 커밋도 **경로 한정**이다.
-**남은 건 Phase 4(billable, 별 승인)뿐** — 단 "무과금 작업 소진"은 **이제 세 번 틀렸다**
-(08-09 두 번, **08-10 한 번** — 이번엔 목록을 뒤진 게 아니라 **프로브를 그냥 한 번 돌리자**
-리포터 자신의 결함이 나왔다). **소진은 목록의 상태지 사실이 아니다 — 그리고 목록 밖에도 있다.**
+**공급망은 닫을 수 있는 만큼 닫혔다**(어드미션만 업스트림 대기) · **`main`은 보호된다**
+(PR + CI 통과로만 병합, D43) · **Phase 5는 경계까지** 섰고 커밋도 **경로 한정**이다.
+**남은 건 Phase 4(billable, 별 승인)뿐** — 단 "무과금 작업 소진"은 **이제 네 번 틀렸다**
+(08-09 두 번 · 08-10 · **08-11**). 마지막 두 번이 특히 같은 말을 한다: 목록을 뒤진 게 아니라
+**프로브를 한 번 돌리자** 리포터 자신의 결함이 나왔고, 그 뒤 **목록의 방향을 뒤집자**
+테스트에 이름조차 없던 결함 둘이 나왔다. **소진은 목록의 상태지 사실이 아니다 — 목록 밖에도
+있고, 목록이 무엇의 그림자인지도 물어야 한다.**
 **시연 가능**: `make dev-up` → `make demo-baseline` 두 줄로 영상 시나리오 A가 재현된다.
 
 ## 사용자 게이트 — 전부 닫힘 (재개 조건만)
@@ -70,11 +70,6 @@ deploy-identity`. 미설정이면 예전처럼 인시던트는 거부, 배포는
 > 완료분은 `COMPLETED_SUMMARY.md` **M12**(Phase 3 인가) · **M13**("선언됐지만 아무도 읽지
 > 않는 것들" 14건 — 배포 tier 발명·네임스페이스 출처 포함) · `PROGRESS_LOG.md` · `docs/evidence/`.
 
-- [x] ~~측정 자체의 값을 안 적었다~~ **닫힘(2026-08-11)** — CE 요청당 $0.01 · 월 ~$0.30 ·
-  "당일 줄의 0은 잰 0이 아니다"를 프로브·워처 docstring에 명시, 가드 3개.
-- [x] ~~`capsys` 계열 가드의 맹점은 한 건만 봤다~~ **닫힘(2026-08-11)** — `scripts/` CLI
-  22개 전수. 상세·교훈 셋은 **`STATUS` Risk 12④가 권위**(여기 복제하지 말 것).
-  남긴 경계: **`src/`의 로깅 경로는 이 훑기 밖**이다.
 - [ ] **`record_route_activity`·`record_agent_activity`의 `cost_metrics` — 의도적으로 남김**.
   둘 다 `deployment_id`가 없어 그 필드를 렌더하는 유일한 뷰에 닿지 않아 **소비자 없는 필드**가
   된다(`activity-model.ts`가 `deployment_id`로 접는다 — 2026-08-08 재확인).
@@ -110,17 +105,16 @@ deploy-identity`. 미설정이면 예전처럼 인시던트는 거부, 배포는
 
 ## 유지 규약 (완료된 리팩토링에서 나온 "하지 말 것")
 
-`_k8s_rest`는 restart/scale만 공유(rollback은 GKE/AKS 시맨틱 상이). detector/analyzer/decision은 SDK가 90%+
-상이해 **의도적으로 DRY 안 함**. `approval_bridge` 추가 분해도 하지 않는다(→ D15). 포괄 `gcloud:*`류 권한
-allow를 되살리지 않는다(D16 우회 재발) → D22.
+`_k8s_rest`는 restart/scale만 공유(rollback은 GKE/AKS 시맨틱 상이) · detector/analyzer/decision은
+SDK가 90%+ 상이해 **의도적으로 DRY 안 함** · `approval_bridge` 추가 분해 금지(D15) · 포괄
+`gcloud:*`류 allow를 되살리지 않는다(D16 우회 재발 → D22).
 
 ## 캘린더 / 메모
 
-- **ADK 재평가(2026-03 GA 후)**: workflow-graph API가 Gemini 서브에이전트 경로(`adk_deployer.py`)를 개선하는지 재평가 — 우리 Orchestrator는 클라우드-중립이라 코어 대체 아님.
-- 안티패턴 메모(범위 밖): A2A "Dynamic Autonomy"·agents-cli(GCP lock-in·Pre-GA)·CMA 베타 API 채택 금지(계약/방법론만); 정적 무조건 fan-out은 self-consistency 라우팅 회귀라 금지; 자유텍스트 spawn_subagent 핵 금지.
+- **ADK 재평가(2026-03 GA 후)**: workflow-graph API가 Gemini 서브에이전트 경로(`adk_deployer.py`)를 개선하는지 — 우리 Orchestrator는 클라우드-중립이라 코어 대체 아님.
+- 안티패턴(범위 밖): A2A "Dynamic Autonomy"·agents-cli(GCP lock-in·Pre-GA)·CMA 베타 API 채택 금지(계약/방법론만) · 정적 무조건 fan-out(self-consistency 라우팅 회귀) · 자유텍스트 spawn_subagent 금지.
 
 ## 작업 규칙
 
-- 멀티파일 변경 후 `make check` 실행, pass/fail 보고.
-- 묶음 완료 시 `/checkpoint`로 PROGRESS_LOG append + STATUS 갱신.
+- 멀티파일 변경 후 `make check` 실행, pass/fail 보고 · 묶음 완료 시 `/checkpoint`.
 - 요청 범위 밖 기능 추가 금지. 하드-투-리버스(클러스터 변경/클라우드/대규모 리팩터)는 승인 후.

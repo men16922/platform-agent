@@ -196,12 +196,67 @@ CI(PR #24, ubuntu): `1769 passed, 1 skipped in 49.23s` — **숫자까지 로컬
 Risk 12②(skip과 pass가 같은 색)는 초록이 아니라 **같은 숫자**로 배제된다.
 
 ----------------------------------------------------------------------------
-9. 남은 것 / 안 한 것
+9. 같은 날 후속 — 남겨 뒀던 경계 셋을 닫았다
 ----------------------------------------------------------------------------
 
-- **버퍼링 자체는 안 쟀다.** 가드는 `stderr == ""`로 묻는다 — 아무것도 안 쓰인
-  스트림에서는 잃을 것이 없으므로 TTY/파이프 차이가 결과를 바꾸지 못한다. 이건
-  충분조건이지 버퍼링 실측이 아니다.
-- **`src/`의 로깅 경로는 이 훑기 밖이다.** 대상은 `scripts/`의 CLI 22개뿐.
-- **verify_* 3종은 라이브로 안 돌렸다**(클러스터 필요). 실패 경로만 오프라인으로
-  강제해 확인했다. 성공 경로의 출력은 원래 stdout이었고 건드리지 않았다.
+위 8절까지 쓰고 "안 한 것" 셋을 남겼다. 셋 다 그날 안에 닫혔고, **하나는 경계가
+아니라 결함이었다.**
+
+(1) "`src/`는 이 훑기 밖이다" → **밖이 아니라 확인 대상이었다.**
+
+    $ git grep -c "sys.stderr" -- 'src/'
+    (0건)
+
+    REPORT 계열 결함은 **없다** — 갈릴 스트림이 없다. 그런데 `src/`에는 stdout이
+    **문서**인 진입점이 하나 있고, 그게 깨져 있었다:
+
+    $ python -m src.agents.provisioning.manifest_generator > out.yaml 2>/dev/null
+    $ echo $?
+    0                                      ← 성공이라고 말한다
+    $ cat out.yaml
+    Usage: python -m src.agents.provisioning.manifest_generator <spec.yaml> …
+    $ python -c "import yaml;print(yaml.safe_load(open('out.yaml')))"
+    {'Usage': 'python -m src.agents.provisioning.manifest_generator <spec.yaml> …'}
+
+    **파싱 에러가 아니다. 유효한 YAML 매핑이다.** exit 0이고, 실패는 한참 뒤에
+    "`kind`가 없는 매니페스트"로 나타난다 — 출처를 되짚을 단서 없이. 이 레포에서
+    본 조용한 실패 중 가장 조용하다.
+    고침: 인자 없음 → stderr + **exit 2**. `--help`는 **그대로 stdout/exit 0**
+    (독자가 산문을 **요청한** 경우는 다르다 — 규칙의 자구가 아니라 이유를 따른다).
+    변이 S1(원상복구)·S2(exit만 0으로)·S3(--help를 stderr로) 전부 red.
+
+(2) "버퍼링 자체는 안 쟀다" → **한 건 쟀다.**
+
+    `stderr == ""`는 충분조건 **논증**이었고, 이 파일의 존재 이유가 바로 "독자가
+    무엇을 받는가에 대한 논증이 틀렸던 것"이다. 그래서 진짜 서브프로세스 + 진짜
+    파이프 + `2>/dev/null`로 `TestARealPipeAgrees` 2건을 추가했다.
+    교차 검증(P1): `verify_image_signature`의 고침을 되돌리면 **capsys 가드와
+    파이프 가드가 함께 red**(2 failed) = 논증과 실물이 일치한다.
+    ⚠️**한 건만 쟀다.** 나머지 16개 REPORT는 여전히 논증에 기대고 있다.
+
+(3) "verify_* 3종은 라이브로 안 돌렸다" → **netpol은 돌렸다.**
+
+    $ python scripts/verify_netpol_enforcement.py 2>/dev/null      # kind-platform-agent
+      probing context: kind-platform-agent
+      baseline: B -> A reachable (no policy) ✓
+      ENFORCED: default-deny blocked the cross-namespace connection.
+        This substrate may be added to PROVEN_ENFORCING_SUBSTRATES in …
+        (전문 8줄, stdout만 읽어도 전부 도착)
+
+    오프라인 테스트가 못 덮는 **성공 경로**다. 나머지 둘(tenant_isolation ·
+    tenancy_adoption)은 테넌시가 적용된 클러스터가 필요해 **여전히 안 돌렸다**.
+
+----------------------------------------------------------------------------
+10. 최종 게이트 / 아직 안 한 것
+----------------------------------------------------------------------------
+
+$ make check
+  1773 passed, 1 skipped   (2026-08-11, 로컬 macOS · python 3.13)
+  1743 → 1769 → 1773
+CI(PR #25, ubuntu): `1773 passed, 1 skipped in 32.81s` — **숫자까지 로컬과 같다.**
+
+- **버퍼링은 1건만 실측**했다(위 (2)). 나머지 16개 REPORT는 논증.
+- **verify_tenant_isolation · verify_tenancy_adoption은 라이브 미실행**(테넌시가
+  선 클러스터 필요). 실패 경로만 오프라인으로 강제해 확인했다.
+- `src/`의 **`logging` 핸들러 구성**은 보지 않았다 — 이 훑기의 대상은 프로세스가
+  **직접 쓰는 두 스트림**이지 로깅 설정이 아니다.
