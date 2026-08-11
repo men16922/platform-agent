@@ -32,13 +32,13 @@
   스트림에 밀어 넣는 변이)이고, A1은 **미분류 새 스크립트** — 이 훑기를 스냅샷이 아니라
   규칙으로 만드는 지점. `make check`가 낡은 가드 **정확히 3건**을 red로 잡았다(전부
   `.err`에 묻던 것) → `.out`으로. 남은 `.err` 읽기 2곳은 **둘 다 옳다**.
-- Verified: `make check` **1769**(+26), 2026-08-11, 로컬 macOS·py3.13.
-  증거 `report-streams-swept-across-all-clis.log`.
+- Verified: `make check` **1769**(+26), 2026-08-11, 로컬 macOS·py3.13 **↔ CI 1769 일치**
+  (PR #24). 증거 `report-streams-swept-across-all-clis.log`.
 - Changed(덤) + Verified(같은 실수 재발): CE **요청당 $0.01**(MTD $0.27) · `spend-watch`
   하루 한 번 = 월 **~$0.30**를 프로브·워처 docstring에 명시. 가드 3개 중 하나가 **반증에서
   살아남았다** — **주장**("오늘 줄의 0은 잰 0이 아니다")만 묻고 **지시**("마지막 줄 말고 앞
   며칠을 읽어라")는 안 물었다. 물건은 맞췄고 **물건의 절반만** 물은 것. 고쳐서 둘 다 red.
-- Blockers: 없음. ⚠️CI 일치는 **PR에서 확인해야 한다**(로컬 초록만으로는 Risk 12② 미배제).
+- Blockers: 없음.
 - Next: `src/`의 로깅 경로는 이 훑기 **밖**이다(대상은 `scripts/` CLI 22개뿐).
   ⚠️`docs/` 3개가 예산 초과(log 138·status 130·plan 127) → `/tidy-docs` 필요.
 

@@ -8,8 +8,8 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` → **1769 passed, 1 skipped** (2026-08-11, +26, 로컬 macOS·py3.13,
-  **CI 일치는 PR에서 확인 필요**) — Risk 12④를 `scripts/` CLI **22개 전수**로 훑었다.
+- `make check` → **1769 passed, 1 skipped** (2026-08-11, +26, **로컬 macOS·py3.13 ↔ CI
+  1769 일치**, PR #24) — Risk 12④를 `scripts/` CLI **22개 전수**로 훑었다.
   훑는 방향을 뒤집은 게 결정적: `readouterr` 사용처가 아니라 **`sys.stderr`를 쓰는
   프로그램**을 뒤지니 **테스트에 이름조차 없던 2개**가 나왔다. 결함 8건 수정 + 스트림
   계약 분류(REPORT/DOCUMENT/DUAL) + 미분류 스크립트 차단. 변이 16건 red.
