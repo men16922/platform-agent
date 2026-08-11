@@ -39,6 +39,14 @@ was asserting on `.err` for something the reader needed on `.out`. Asserting
 nothing is written to cannot be a stream anything is lost on — no buffering, TTY
 or pipe, changes that.
 
+That is a sufficiency argument, though, not a measurement, and the whole point of
+this file is that arguments about what a reader receives have been wrong here
+before. So `TestARealPipeAgrees` runs one CLI as an actual subprocess with an
+actual pipe on stdout and `stderr` thrown away — the reader's exact situation, the
+one `capsys` reasons about rather than reproduces. One case, deliberately: it
+exists to check that the reasoning above holds in the real world, not to be
+duplicated for all seventeen.
+
 TWO KINDS OF STDOUT. The rule is not "never use stderr"; it is "the reader's stream
 must carry what the reader needs", and for some of these the reader is a program:
 
@@ -57,6 +65,9 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
+import subprocess
+import sys
 import types
 from pathlib import Path
 
@@ -424,6 +435,74 @@ class TestTheDocumentStreamStaysParseable:
         documents = [d for d in yaml.safe_load_all(captured.out) if d]
         assert documents, "the manifest stream is empty"
         assert all(isinstance(d, dict) and "kind" in d for d in documents)
+
+    # The sweep was extended past scripts/ on 2026-08-11. `src/` writes to stderr
+    # nowhere at all, so it has none of the REPORT defect — but it has exactly one
+    # module with a DOCUMENT stdout, and that one was corrupting it. The guard
+    # lives here, with the rule, rather than beside the module.
+    def test_the_one_document_cli_in_src_does_not_answer_with_prose(self):
+        """`python -m …manifest_generator > out.yaml` after a typo used to write
+        the usage line into out.yaml and exit 0 — and `yaml.safe_load` returns
+        `{'Usage': '…'}` for that, a **valid mapping**. Not a parse error and not
+        a failed exit: it fails later, as a manifest with no `kind`."""
+        proc = subprocess.run(
+            [sys.executable, "-m", "src.agents.provisioning.manifest_generator"],
+            cwd=REPO, capture_output=True, text=True,
+        )
+        assert proc.stdout == "", (
+            f"prose landed on the manifest stream: {proc.stdout!r}"
+        )
+        assert proc.returncode != 0, "a missing argument exited 0"
+        assert "Usage" in proc.stderr, "the reader was told nothing at all"
+
+    def test_help_is_still_prose_on_stdout(self):
+        """The case that is NOT the same: a reader asking for text gets text.
+        Routing `--help` to stderr to satisfy the rule above would be obeying the
+        letter of it — nobody redirects `--help` into a manifest."""
+        proc = subprocess.run(
+            [sys.executable, "-m", "src.agents.provisioning.manifest_generator", "--help"],
+            cwd=REPO, capture_output=True, text=True,
+        )
+        assert proc.returncode == 0
+        assert "Usage" in proc.stdout
+
+
+class TestARealPipeAgrees:
+    """The one case run as an actual subprocess, through an actual pipe.
+
+    Everything above reasons: nothing is written to stderr, therefore nothing can
+    be lost on it, therefore buffering cannot matter. The reasoning is sound and
+    it is still reasoning — and reasoning about what the reader receives is the
+    thing this file exists because of. So one CLI is run the way the reader runs
+    it, with `stderr` discarded, and asked whether the verdict survived.
+
+    `verify_image_signature.py` is the one chosen: no cluster, no network, no
+    credentials, and it is the CLI where the stream used to depend on which
+    failure occurred — so it is where a pipe could most easily disagree.
+    """
+
+    def _piped(self, *argv: str) -> tuple[int, str]:
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS / "verify_image_signature.py"), *argv],
+            cwd=REPO, capture_output=True, text=True,
+            env={**os.environ, "PATH": "/usr/bin:/bin"},   # no cosign on this PATH
+        )
+        return proc.returncode, proc.stdout
+
+    def test_the_verdict_survives_a_real_pipe_with_stderr_discarded(self):
+        code, out = self._piped("some/image:tag", "--key", "cosign.pub")
+        assert code == 2
+        assert "CANNOT EVALUATE" in out, (
+            "through a real pipe the reader got no verdict — the `.err == ''` "
+            f"reasoning does not hold in practice. stdout was: {out!r}"
+        )
+        assert "UNVERIFIED" in out
+
+    def test_the_other_pre_cosign_exit_survives_it_too(self):
+        """The path that used to be silent: no identity, so cosign never runs."""
+        code, out = self._piped("some/image:tag")
+        assert code == 2
+        assert "CANNOT EVALUATE" in out, f"stdout was: {out!r}"
 
 
 class TestDualModeObeysTheModeItIsIn:

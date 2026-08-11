@@ -4,6 +4,24 @@ Manifest Generator — converts ServiceSpec YAML into Kubernetes manifests.
 Usage:
     python -m src.agents.provisioning.manifest_generator examples/orders-api.yaml
     python -m src.agents.provisioning.manifest_generator examples/orders-api.yaml --output /tmp/out.yaml
+
+STDOUT IS THE MANIFEST STREAM — the same contract `scripts/render_tenancy.py` and
+`scripts/render_addons.py` keep (tests/test_report_streams.py classifies those as
+DOCUMENT). This is the one entry point in `src/` with that shape, found on
+2026-08-11 while extending the report-stream sweep past `scripts/`.
+
+Running it with no argument used to print the usage line to **stdout** and exit
+**0**, so `python -m … > out.yaml` after a typo produced:
+
+    $ cat out.yaml
+    Usage: python -m src.agents.provisioning.manifest_generator <spec.yaml> …
+    $ python -c "import yaml; print(yaml.safe_load(open('out.yaml')))"
+    {'Usage': 'python -m src.agents.provisioning.manifest_generator <spec.yaml> …'}
+
+**Valid YAML.** Not a parse error, not a non-zero exit — a mapping, which fails
+later as a manifest with no `kind` and no trace of where it came from. A missing
+argument now goes to stderr and exits 2. `--help`, which is a reader *asking* for
+prose rather than for a document, still prints to stdout and exits 0.
 """
 
 from __future__ import annotations
@@ -167,9 +185,16 @@ def main(argv: list[str] | None = None) -> None:
     """CLI entry point."""
     args = argv or sys.argv[1:]
 
-    if not args or args[0] in ("-h", "--help"):
-        print("Usage: python -m src.agents.provisioning.manifest_generator <spec.yaml> [--output <path>]")
+    usage = ("Usage: python -m src.agents.provisioning.manifest_generator "
+             "<spec.yaml> [--output <path>]")
+    if args and args[0] in ("-h", "--help"):
+        print(usage)
         sys.exit(0)
+    if not args:
+        # Not the same case as --help: nobody asked for prose, and stdout is
+        # holding a redirect that expects manifests. See the module docstring.
+        print(usage, file=sys.stderr)
+        sys.exit(2)
 
     spec_path = args[0]
     output_path = None
