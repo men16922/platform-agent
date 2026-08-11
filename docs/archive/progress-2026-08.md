@@ -4,6 +4,82 @@
 
 ---
 
+## 2026-08-11 — 맹점을 나머지 전부에 대고 물었다: 결함이 더 넓었다 (gate 1743→1787)
+
+- Status: 어제 남긴 "`capsys` 맹점은 한 건만 봤다"를 소진했다. **훑는 방향을 뒤집은 게
+  결정적** — `readouterr` 사용처(5파일 19곳)를 뒤지면 **테스트에 이름조차 없는 스크립트는
+  목록에 없다.** `git grep sys.stderr -- scripts/*.py`로 물으니 attach_addon ·
+  preflight가 나왔고 **둘 다 깨져 있었다.**
+- Verified(재현, 네트워크 0·가짜 kubectl): 파이프로 읽으면 두 verify는 `context:` 한 줄,
+  서명 검증기는 **완전히 빈 출력**에 exit 2. 가장 나쁜 건 netpol — stdout에 찍은
+  `baseline: … ✓` 뒤에 판정이 stderr로 가서 **독자의 마지막 줄이 ✓**다. **✓로 끝나고 멈춘
+  리포트는 끝난 리포트로 읽히고**, 그 판정이 `PROVEN_ENFORCING_SUBSTRATES` 승격을 정한다.
+  ⚠️기존 evidence 로그가 실제로 판정을 잃은 사례는 **없다**(잃을 수 **있었다**).
+- Changed(분류가 먼저였다 — 수정 목록·근거는 **M17이 권위**): 11개를 다 고치려다 멈췄다 —
+  `render_tenancy.py`는 **처음부터 옳다**. 규칙은 "stderr 금지"가 아니라 **"독자의 스트림이
+  독자가 필요한 걸 날라야 한다"**이고 독자가 파서면 의무가 **거꾸로** 선다. `scripts/*.py`
+  **22개 전수**를 REPORT(17)/DOCUMENT(3)/DUAL(2)로 분류하고 미분류를 red로 막았다.
+  수정 9건(+`src/` 1건), exit code 전부 유지. 대표적으로 attach_addon은 `--commit` 거부가
+  diff 뒤라 **"committed 줄이 없다"가 유일한 실패 신호였다 — 없는 줄은 판정이 아니다**.
+- Verified(하중): 변이 **16건 red, 생존 0** — D1~D3은 **거울 방향**, A1은 **미분류 새
+  스크립트**. 게이트가 낡은 가드 **정확히 3건**을 잡았고 전부 `.err`에 묻던 것 → `.out`.
+- Changed(덤) + Verified(같은 실수 재발): CE **요청당 $0.01** · `spend-watch` 월 **~$0.30**을
+  프로브·워처 docstring에 명시. 가드 3개 중 하나가 **반증에서 살아남았다** — **주장**("오늘
+  줄의 0은 잰 0이 아니다")만 묻고 **지시**("앞 며칠을 읽어라")는 안 물었다. 물건은 맞췄고
+  **물건의 절반만** 물었다. 고쳐서 둘 다 red.
+- Verified(같은 날 후속 — 남겨 둔 경계 셋을 전부 닫았다):
+  ①**`src/`는 밖이 아니라 확인 대상이었다** — `sys.stderr` **0건**이라 REPORT 계열 결함은
+  **없다**. 다만 DOCUMENT 진입점 **하나**가 깨져 있었다: `manifest_generator`를 인자 없이
+  리다이렉트하면 usage가 파일에 앉고 **exit 0**인데 `yaml.safe_load`는 그걸 **`{'Usage': …}`
+  유효 매핑**으로 읽는다 — **`kind` 없는 매니페스트로 한참 뒤에** 터진다. 변이 S1~S3 red.
+  ②**버퍼링을 실제로 쟀다**(`stderr == ""`는 논증이었다) — 진짜 서브프로세스·파이프로.
+  ③**verify_* 3종 전부 라이브**(클러스터에 이미 테넌시가 서 있어 **아무것도 안 바꿨다**):
+  netpol **ENFORCED** · adoption **둘 다 ✓** · isolation **ISOLATION HOLDS**(4/4).
+- Verified(**세 번째 문 — `print`가 없는 곳에서도 스트림은 골라진다**): "`src/` 로깅은 훑기
+  밖"이라 적어 놓고 확인하니 **밖이 아니었다**. `src/`엔 **핸들러가 0줄**이라 레코드가
+  `logging.lastResort`로 떨어지고 그건 **WARNING+ 를 stderr로 쓴다**. 임포트 그래프 감사 →
+  17개 중 **4개**가 닿는다(`push_addon_status`=ambient read · `live_net_demo`=**STS 폴백,
+  in-account 자격증명으로 내려감** · `probe_scope_reachability` · `probe_incident_roundtrip`).
+  **둘 다 자격증명 경계 사건**이다. 넷 다 `_report_logging.send_library_logs_to_the_report()`.
+  ⚠️**감사 자신이 먼저 틀렸다** — 첫 판이 `push_addon_status`를 "안전"으로 봤다(수신자가
+  `log or logging.getLogger(...)`라 `ast.Name` 매칭이 놓쳤다). **알려진 양성이 없었으면 빈
+  감사가 초록으로 지나갔다** → 그 양성을 가드로 박았다(변이 A2 red).
+- Verified(**넷째 문 — 잡히지 않은 예외**; "나머지는 클러스터가 필요하다"를 시험한 결과):
+  그건 **기록된 이유지 잰 이유가 아니었다**. `PATH`를 벗기니 넷이 **트레이스백으로 죽었다**
+  (stdout 0B·**exit 1**). `probe_cloud_spend`는 **헤딩만 찍고 죽어** 08-10의 결함이 다른 문으로
+  돌아왔고, `watch_cloud_spend`의 exit **1**은 "**새로 과금되기 시작했다**" — 못 쟀는데 경보다.
+  원인이 정확했다: `_run`은 처음부터 막고 "never raises"라 적었는데 **형제 `_aws`가 안 했다**.
+  ⚠️**변이 T4가 처음에 살아남았다** — 같은 가드가 `verify_tenant_isolation`에선 **닿는 행이
+  없어 하중을 안 받고 있었다**(Risk 12③). 덤: 다섯은 **자기 docstring의 실행법이
+  ModuleNotFoundError로 죽었다**(넷은 부트스트랩; `slack_live_approval`은 → NEXT_PLAN).
+- Changed(문서): `/tidy-docs` — 08-09 3건을 `archive/progress-2026-08.md`로(최신이 위 유지) ·
+  status의 baseline 5건은 M16 포인터로, "동작하는 영역"은 `AGENT_BRIEF` Snapshot과 **중복이라
+  접었다** · 완료 2건 → **M17 신설**. **넷 다 예산 내.**
+- Verified(**같은 변명을 두 번째로 시험했다 — 또 틀렸다**): 11절에서 "클러스터가 필요하다"를
+  깨고도 남은 것들에 **같은 종류의 문장**을 다시 썼다("자격증명·기동한 스택이 필요하다").
+  그 문장은 **성공 경로**를 묘사하고 있었다 — **실패 경로는 공짜다.** `live_tier2_demo`(포트
+  거부)와 `probe_incident_roundtrip`(없는 프로필) 둘 다 **트레이스백·exit 1**이었고 고쳤다.
+  후자는 **`main()` 전에** 죽는다(`reporting`이 임포트 시점에 boto3 리소스를 만든다) → 가드를
+  임포트에 걸었다. 변이 V1~V4 red. ⚠️`live_tier2_demo` 가드는 **포트 1로 고정**했다(기본
+  엔드포인트면 `make dev-up`을 띄운 개발자에게 성공 경로로 가 flaky) · 없는 프로필은
+  **클라이언트 생성 중** 터져 **네트워크에 안 닿는다**(게이트가 라이브 AWS를 부르지 않는다).
+- Verified(**기록해야 할 실수**): 10절 감사 때 `PATH`만 벗기고 `probe_incident_roundtrip`을
+  돌렸는데 **`PATH`는 boto3 자격증명을 안 벗긴다** — 그 실행은 **실제 DynamoDB에
+  write/read/delete를 했다**(설계된 동작, 스스로 정리, 비용 무시 가능). 의도한 라이브 호출이
+  아니었다. **"오프라인으로 돌렸다"도 어떻게 확인했는지까지 말해야 한다.**
+- Verified: `make check` **1743 → … → 1789**(+46), 2026-08-11, 로컬 macOS·py3.13; CI가
+  #24~#28 **다섯 지점 전부 숫자까지 일치** — 초록이 아니라 **같은 숫자**로 Risk 12②를
+  배제한다. 변이 누계 **45건 red, 생존 0**(T4는 1회 생존 후 하중을 붙여 red). 파이프 뒤
+  **4 → 8 → 13 invocation / 11 CLI** — 두 번의 "시험해 보니 아니었다"가 **결함 6건**을 가져왔다.
+  증거 `report-streams-swept-across-all-clis.log`.
+- Blockers: 없음.
+- Next: **못 하는 것과 안 한 것을 구분해 남긴다**(상세는 증거 로그 13절) — 못 함: 남은 CLI는
+  라이브 자격증명·기동한 스택이 필요하거나 **강제할 실패 경로가 없다**(빈 레포에서도 exit 0);
+  그걸 요구하는 가드는 **skip되는 가드**라 Risk 12②를 새로 만든다. ⚠️`live_tier2_demo`는
+  스택이 없으면 본문 stdout + 트레이스백 stderr로 **같은 결함**인데, 고치려면 검증 수단(기동한
+  스택)이 선행. 안 함: **`slack_live_approval` 이중 노후화** · 로깅 문은 **REPORT 4개만**.
+  Phase 4는 **사용자 결정 대기**.
+
 ## 2026-08-10 — 비용 리포터가 리포트의 실패를 자기가 저질렀다 (gate 1737→1743)
 
 - Status: `/sync` 뒤 프로브를 그냥 한 번 돌렸다. Azure가 429로 실패했는데 리포트의

@@ -253,12 +253,43 @@ class TestServerlessResolution:
 # ---------------------------------------------------------------------------
 
 class TestRunbookStepWalk:
-    """Simulate walking through all steps of a runbook for each provider."""
+    """Walk every step of every runbook, on both branches, for each provider.
 
+    MEASURED 2026-08-12, BEFORE THIS WAS WIDENED. The test was named
+    `test_walk_all_steps` and its docstring said "walk every step", and it walked
+    **10 of the 16 declared steps (62%)**. The six it never reached were, without
+    exception, the `{"previous_step_failed": True}` branches:
+
+        eks-pod-oom/scale_out            rds-cpu-high/scale_database_read
+        kafka-lag-spike/rebalance_consumer   disk-full/expand_storage
+        health-check-failure/rollback_release
+        certificate-expiry/open_change_request
+
+    That is every escalation step the platform has — what it does when the first
+    remediation did not work — and the operationally severe ones are in that list
+    (`rollback_release`, `open_change_request`).
+
+    They were unreachable for a reason worth naming: the context was seeded
+    `previous_step_failed=False` and only flipped inside `except ValueError`, so
+    the flag could turn True *only if something had already broken*. Nothing does
+    (24/24 of those steps resolve on all four providers — the implementation was
+    never the problem). A happy-path-only walk therefore made the second branch
+    structurally unreachable, which is STATUS Risk 12③: a guard that takes no load.
+
+    The old assertion matched: `len(resolved_actions) >= 1` passed identically
+    whether one step resolved or all of them did.
+    """
+
+    #: Both branches are walked explicitly rather than waiting for a failure to
+    #: flip the flag — the point is to exercise the escalation path *without*
+    #: needing something to be broken first.
+    BRANCHES = [False, True]
+
+    @pytest.mark.parametrize("started_failed", BRANCHES, ids=["first-attempt", "after-failure"])
     @pytest.mark.parametrize("runbook_id", list(CAPABILITY_RUNBOOKS.keys()))
     @pytest.mark.parametrize("provider", PROVIDERS)
-    def test_walk_all_steps(self, runbook_id, provider):
-        """Walk every step and verify resolution — skip steps that legitimately don't apply."""
+    def test_walk_all_steps(self, runbook_id, provider, started_failed):
+        """Every step whose condition matches must resolve — not merely one of them."""
         rb = CapabilityRunbook.from_dict(CAPABILITY_RUNBOOKS[runbook_id])
         adapter = get_execution_adapter(provider)
 
@@ -266,30 +297,62 @@ class TestRunbookStepWalk:
         resource_types = rb.resource_types
         primary_type = resource_types[0] if resource_types else "cloud-resource"
 
-        # Skip entire runbook if it's serverless-only on onprem
+        # Skip entire runbook if it's serverless-only on onprem. Load-bearing:
+        # removing it fails with `0 == len([])` (verified 2026-08-12), so it marks
+        # a genuinely inapplicable combination rather than hiding an unrun check.
         if provider == "onprem" and primary_type == "lambda-function":
             pytest.skip("On-prem has no serverless capability")
 
         incident = _make_incident(provider, primary_type)
 
-        context = {"severity": "P2", "provider": provider, "previous_step_failed": False}
+        context = {
+            "severity": "P2",
+            "provider": provider,
+            "previous_step_failed": started_failed,
+        }
         resolved_actions = []
+        unresolved = []
 
         for step in rb.steps:
             if not evaluate_condition(step.condition, context):
                 continue
-
             try:
-                result = adapter.resolve_action(step.capability, incident)
-                resolved_actions.append(result)
-                context["previous_step_failed"] = False
-            except ValueError:
-                # Some capabilities may not be applicable to specific provider+resource combos
-                context["previous_step_failed"] = True
+                resolved_actions.append(adapter.resolve_action(step.capability, incident))
+            except ValueError as exc:
+                # Collected, not swallowed. The previous version set a flag here and
+                # carried on, so an unresolvable capability was indistinguishable
+                # from one that was never reached.
+                unresolved.append(f"{step.capability}: {exc}")
 
-        # At least one step should resolve successfully
+        assert not unresolved, (
+            f"{runbook_id} on {provider} ({primary_type}, "
+            f"previous_step_failed={started_failed}) could not resolve: {unresolved}"
+        )
+        # A runbook whose every condition filtered out would otherwise pass vacuously.
         assert len(resolved_actions) >= 1, (
-            f"No steps resolved for {runbook_id} on {provider} ({primary_type})"
+            f"No steps applied for {runbook_id} on {provider} ({primary_type}, "
+            f"previous_step_failed={started_failed})"
+        )
+
+    def test_the_escalation_branch_is_actually_reached(self):
+        """The walk above is only wider if the second branch adds steps.
+
+        Without this, someone could seed both branches identically — or a runbook
+        could lose its escalation step — and the parametrisation would still look
+        like it doubled the coverage while walking the same 10 steps twice.
+        """
+        assert set(self.BRANCHES) == {False, True}, (
+            f"BRANCHES={self.BRANCHES} no longer covers both sides, so the walk "
+            "runs the same steps twice under two names"
+        )
+        first, after = 0, 0
+        for raw in CAPABILITY_RUNBOOKS.values():
+            for step in CapabilityRunbook.from_dict(raw).steps:
+                first += evaluate_condition(step.condition, {"previous_step_failed": False})
+                after += evaluate_condition(step.condition, {"previous_step_failed": True})
+        assert after > first, (
+            f"the after-failure branch walks {after} steps and the first-attempt "
+            f"branch {first} — the second parametrisation is not adding anything"
         )
 
 
