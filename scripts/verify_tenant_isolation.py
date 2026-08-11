@@ -76,7 +76,12 @@ _SECURITY_CONTEXT = {
 
 
 def _kubectl(*args: str, timeout: int = 120) -> subprocess.CompletedProcess:
-    return subprocess.run(["kubectl", *args], capture_output=True, text=True, timeout=timeout)
+    """Never raises for a missing binary — see the note in verify_netpol_enforcement."""
+    try:
+        return subprocess.run(["kubectl", *args], capture_output=True, text=True,
+                              timeout=timeout)
+    except OSError as exc:
+        return subprocess.CompletedProcess(args, 127, "", f"kubectl 실행 실패: {exc}")
 
 
 def _apply(manifest: dict) -> None:

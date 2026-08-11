@@ -283,26 +283,110 @@ Risk 12②(skip과 pass가 같은 색)는 초록이 아니라 **같은 숫자**�
 같은 모양이 한 층 아래에 있었다.
 
 ----------------------------------------------------------------------------
-11. 최종 게이트 / 아직 안 한 것
+11. "나머지는 클러스터가 필요하다"를 시험했더니 — 넷은 아니었고, 넷 다 깨져 있었다
+----------------------------------------------------------------------------
+
+10절까지 쓰고 "나머지 13개 REPORT는 클러스터·네트워크·자격증명이 필요해 실제
+파이프를 못 건다"고 남겼다. **그건 기록된 이유지 잰 이유가 아니었다** — 이 레포가
+반복해서 배운 바로 그것. `PATH=/usr/bin:/bin`으로 벗겨서 그냥 돌려 봤다.
+
+    probe_cloud_spend        exit=1  stdout=81B   stderr=1766B  Traceback
+    watch_cloud_spend        exit=1  stdout=0B    stderr=1886B  Traceback
+    verify_netpol_enforcement exit=1 stdout=0B    stderr=1612B  Traceback
+    verify_tenancy_adoption  exit=1  stdout=0B    stderr=1319B  Traceback
+
+**넷째 문: 잡히지 않은 예외.** 트레이스백은 항상 stderr로 가고 종료 코드는 항상
+1이다. 결과는 이 파일이 존재하는 이유 그 자체다 —
+
+  * `probe_cloud_spend`: stdout에 **`AWS 실사용` 헤딩 한 줄만** 찍고 죽는다.
+    **헤딩 아래가 비어 있다** = 08-10에 고친 그 결함이, 다른 문으로 되돌아왔다.
+  * `watch_cloud_spend`: stdout **완전히 빔**에 **exit 1**. 이 스크립트에서 1은
+    "**무언가 새로 과금되기 시작했다**"이다. 못 쟀는데 경보를 울린다.
+
+원인은 정확히 짚였다: `probe_cloud_spend._run`은 **처음부터** `FileNotFoundError`를
+잡고 docstring에 "never raises"라고 적어 뒀는데, **형제 함수 `_aws`가 그걸 안 했다.**
+보호가 필요하다는 걸 저자가 알았고, 한 곳에만 적용한 것이다.
+
+고침: 네 러너 전부 `OSError`를 잡아 **기존의 "못 봤다" 경로로 흘려보낸다**(그 경로는
+이미 stdout에 말하고 exit 2를 낸다). 고친 뒤:
+
+    probe_cloud_spend        exit=2  stderr=0B  "측정하지 못했다. 이것은 '$0'이 아니다."
+    watch_cloud_spend        exit=2  stderr=0B  "…이것은 '새 과금 없음'이 아니다."
+    verify_netpol_enforcement exit=2 stderr=0B  "ERROR: no kubectl context…"
+    verify_tenancy_adoption  exit=2  stderr=0B  "ERROR: kubectl 실행 실패…"
+
+⚠️**변이 하나가 처음에 살아남았다(T4)** — `verify_tenant_isolation`의 같은 가드는
+PIPEABLE의 그 행이 `_kubectl`에 닿기 전에 종료해서 **하중을 안 받고 있었다**.
+닿는 행을 추가하니 red. **가드를 늘렸더니 그 가드가 비어 있었다** = Risk 12③을
+반증 루프가 잡은 것.
+
+또 하나: `live_*`·`slack_live_approval`·`provision_gke_live` 다섯은 **자기 docstring이
+적어 준 `python scripts/X.py`가 ModuleNotFoundError로 죽었다** — 스크립트를 직접
+돌리면 sys.path[0]이 `scripts/`이지 레포 루트가 아니다. 넷은 부트스트랩을 붙여
+고쳤다. `slack_live_approval`은 **고치지 않았다**(아래 12절).
+
+----------------------------------------------------------------------------
+12. 로깅 문 — 감사를 돌렸고, 감사 자신이 먼저 틀렸다
+----------------------------------------------------------------------------
+
+"다른 REPORT CLI가 경고를 내는지는 안 훑었다"를 닫았다. 각 CLI의 `src.*` 임포트
+그래프를 걸어 WARNING+ 호출에 닿는지 센다.
+
+**첫 판이 `push_addon_status`를 "안전"으로 보고했다 — 내가 직접 실증한 그 CLI를.**
+탐지기가 `logger.warning` 꼴(`ast.Name`)만 봤는데 `warn_if_ambient_read`의 수신자는
+`log or logging.getLogger(__name__)`, 즉 BoolOp였다. **알려진 양성이 없었으면
+빈 감사가 초록으로 지나갔다.** 수신자를 `ast.unparse`로 보게 고치고, 그 알려진
+양성을 **가드로 박았다**(`test_the_detector_finds_the_case_that_started_this`).
+
+결과 — 17개 중 **4개**가 WARNING+ 에 닿는다:
+
+    live_net_demo             → aws_session: "STS assume_role failed …
+                                 **falling back to in-account credentials**"
+    probe_incident_roundtrip  → 10개 모듈
+    probe_scope_reachability  → platform.scope
+    push_addon_status         → collector.warn_if_ambient_read
+
+**둘 다 자격증명 경계 사건이다.** 넷 다 `scripts/_report_logging.py`의
+`send_library_logs_to_the_report()`를 부른다. 실증: `live_net_demo`의 STS 폴백 줄이
+이제 **stdout에 오고 stderr는 0바이트**다.
+
+감사는 **기억이 아니라 재계산**이라 경고 가능한 임포트가 늘면 게이트가 red가 된다.
+⚠️넷 중 셋은 **구조적 검사**다(진짜 경고에 닿으려면 자격증명·기동 중인 스택 필요),
+행동 검증은 `push_addon_status` 한 건 — **서브프로세스로** 돌린다(인프로세스면
+pytest 핸들러가 `lastResort`를 가려 버그가 원리상 안 보인다).
+
+----------------------------------------------------------------------------
+13. 최종 게이트 / 아직 안 한 것
 ----------------------------------------------------------------------------
 
 $ make check
-  1779 passed, 1 skipped   (2026-08-11, 로컬 macOS · python 3.13)
-  1743 → 1769 → 1773 → 1779
-CI: #24=1769 · #25=1773 · #26=1779 — **세 번 다 숫자까지 로컬과 같다.**
+  1787 passed, 1 skipped   (2026-08-11, 로컬 macOS · python 3.13)
+  1743 → 1769 → 1773 → 1779 → 1787
+CI: #24=1769 · #25=1773 · #26=1779 · #27=1787 — 네 번 다 숫자까지 로컬과 같다.
 
-닫힌 것:
-- **버퍼링**: 1건 → **6 invocation / 5 CLI**(REPORT 4 + DUAL 1의 리포트 모드).
-  `PIPEABLE` 표에 이름으로 적혀 있어 줄이면 **편집이지 표류가 아니다**.
-- **verify_* 3종 전부 라이브 실행** — netpol=ENFORCED · tenancy_adoption=acme/globex
-  둘 다 adopted ✓ · tenant_isolation=**ISOLATION HOLDS**(4/4, 크로스 테넌트 차단).
-  셋 다 **stdout만 읽어도** 전문이 도착한다.
-- **`src/` 로깅** — 위 10절.
+실제 파이프 뒤: **11 invocation / 9 CLI**(REPORT 8 + DUAL 1). 4 → 8로 늘어난 건
+"클러스터가 필요하다"를 **시험했기** 때문이다.
 
-여전히 안 한 것:
-- **나머지 13개 REPORT는 실제 파이프 뒤가 없다**(`capsys` + `stderr == ""` 논증).
-  클러스터·네트워크·자격증명이 있어야 실패 경로에 닿는 것들이고, 그걸 요구하는
-  가드는 **skip되는 가드**라 Risk 12②를 새로 만든다.
-- **로깅 문은 `push_addon_status` 한 건만 닫았다** — 나머지 REPORT CLI가 자기
-  경로에서 WARNING을 내는지는 **안 훑었다**. 판정 기준은 같다: 그 경고가
-  독자에게 필요한가.
+**남은 것 — 못 하는 것과 안 한 것을 구분해서:**
+
+*못 한다(가드가 skip되면 Risk 12②를 새로 만든다):*
+- `live_model_sweep`·`live_tier2_demo`·`slack_live_approval`·`provision_gke_live`·
+  `probe_incident_roundtrip` — 라이브 자격증명이나 기동 중인 로컬 스택이 필요하다.
+  ⚠️`live_tier2_demo`는 스택이 없으면 **본문을 stdout에 찍고 트레이스백을 stderr로**
+  낸다(exit 1) — 위 넷과 같은 결함인데, 고치려면 데모의 사전조건 처리를 새로
+  설계해야 하고 그건 검증할 수단(기동한 스택)이 있어야 한다.
+- `find_unconsumed_fields`·`find_unwritten_keys`·`probe_scope_reachability`·
+  `probe_incident_roundtrip` — **강제할 실패 경로가 없다**(빈 레포에서도 exit 0).
+
+*안 했다(발명하지 않기로 한 것):*
+- **`slack_live_approval.py`는 두 겹으로 낡았다.** ①임포트가
+  `src.agents.operations.approval_bridge`인데 그 경로는 **untracked `cdk.out`에만**
+  있다(추적되는 건 `...operations.aws.approval_bridge` 하나뿐 — NEXT_PLAN이 적어 둔
+  "`cdk.out`이 grep에 잡힌다" 함정의 정확한 재발). ②임포트를 고쳐도 스크립트가
+  덮어쓰는 여섯 이름 중 **넷이 그 모듈에 없다**(`_SLACK_WEBHOOK`·
+  `_SLACK_SIGNING_SECRET`·`_APPROVAL_REQUEST_TABLE`·`_approval_request_table`).
+  즉 **임포트만 고치면 돌아가면서 조용히 아무것도 안 한다** — 실패보다 나쁘다.
+  올바른 이름은 `slack_interactive`/`request_store`로 옮겨 간 것으로 보이나,
+  **어느 것이 맞는지는 데모를 실제로 Slack에 태워 봐야 안다.** 발명하지 않았다.
+- **로깅 문은 REPORT 4개만 닫았다** — DOCUMENT/DUAL은 안 봤다(그쪽은 의무가
+  거꾸로라 stderr가 정답일 수 있어 판단이 다르다).

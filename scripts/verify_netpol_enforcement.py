@@ -43,9 +43,19 @@ _IMAGE = "registry.k8s.io/e2e-test-images/agnhost:2.47"
 
 
 def _kubectl(*args: str, check: bool = False, timeout: int = 120) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        ["kubectl", *args], capture_output=True, text=True, check=check, timeout=timeout
-    )
+    """Never raises for a missing binary — a traceback is a report with no verdict.
+
+    Without this, `kubectl` not being installed ended the run with an uncaught
+    FileNotFoundError: **stdout empty**, cause on stderr, exit 1. Every "could not
+    look" path below already says so on stdout and exits 2; this just makes the
+    missing-binary case reach them instead of bypassing them.
+    """
+    try:
+        return subprocess.run(
+            ["kubectl", *args], capture_output=True, text=True, check=check, timeout=timeout
+        )
+    except OSError as exc:
+        return subprocess.CompletedProcess(args, 127, "", f"kubectl 실행 실패: {exc}")
 
 
 def _apply(manifest: dict) -> None:

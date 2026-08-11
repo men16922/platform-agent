@@ -101,7 +101,19 @@ AZURE_COST_URL = (
 
 
 def _aws(*args: str) -> tuple[int, str]:
-    proc = subprocess.run(["aws", *args], capture_output=True, text=True)
+    """Like :func:`_run`, and for the same reason it must never raise.
+
+    `_run` has caught a missing binary since it was written; this sibling did not,
+    so on a machine without the AWS CLI the probe printed the `AWS 실사용` heading
+    and then **died mid-report with a traceback** — heading on stdout, cause on
+    stderr, exit 1. That is the empty-section-reads-as-zero failure this file
+    exists to prevent, arriving through the one door the fix did not cover, and
+    with the wrong exit code on top (1, not the documented 2).
+    """
+    try:
+        proc = subprocess.run(["aws", *args], capture_output=True, text=True)
+    except OSError as exc:
+        return 127, f"aws 실행 실패: {exc}"
     return proc.returncode, (proc.stdout if proc.returncode == 0 else proc.stderr)
 
 

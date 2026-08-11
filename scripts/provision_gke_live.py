@@ -35,6 +35,14 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
+from pathlib import Path
+
+# `python scripts/provision_gke_live.py` — the invocation this file's own docstring gives —
+# died with ModuleNotFoundError until 2026-08-11: running a script puts
+# `scripts/` on sys.path, not the repo root, so `from src...` never resolved.
+# Every sibling that is actually exercised does this; these five were not.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from src.agents.adapters.provisioning import ProvisionSpec, get_provisioning_adapter
 
 _DEFAULT_TTL_MIN = int(os.getenv("GKE_LIVE_TTL_MIN", "30"))

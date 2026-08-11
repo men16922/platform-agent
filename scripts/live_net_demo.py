@@ -18,6 +18,22 @@ import json
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+import sys
+from pathlib import Path
+
+# `python scripts/live_net_demo.py` — the invocation this file's own docstring gives —
+# died with ModuleNotFoundError until 2026-08-11: running a script puts
+# `scripts/` on sys.path, not the repo root, so `from src...` never resolved.
+# Every sibling that is actually exercised does this; these five were not.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+# `_report_logging` lives beside this file; `watch_cloud_spend` imports its sibling
+# the same way. Needed because sys.path[0] is only `scripts/` when the script is
+# run directly — a test that imports it by path gets neither.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from _report_logging import send_library_logs_to_the_report  # noqa: E402
+
 from src.agents.adapters.aws_session import assume_role_session
 from src.agents.ai.circuit_breaker import CircuitBreaker
 from src.agents.ai.gateway.mcp_server import MCPServer, post_mcp_call, remote_mcp_tool
@@ -126,6 +142,7 @@ def boto3_account() -> str:
 
 
 if __name__ == "__main__":
+    send_library_logs_to_the_report()
     demo_mcp_over_http()
     demo_sts_fallback()
     print("\n" + "=" * 78)

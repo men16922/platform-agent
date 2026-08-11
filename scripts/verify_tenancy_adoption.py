@@ -118,9 +118,17 @@ def main() -> int:
                         help="seconds to allow for adoption before failing")
     args = parser.parse_args()
 
-    context = subprocess.run(
-        ["kubectl", "config", "current-context"], capture_output=True, text=True
-    )
+    # OSError, not just a non-zero exit: without kubectl installed this raised
+    # FileNotFoundError and the run ended with a traceback — stdout empty, cause on
+    # stderr, exit 1. "not looking is not a finding" is this script's own thesis,
+    # and a traceback is the loudest possible way to not say it.
+    try:
+        context = subprocess.run(
+            ["kubectl", "config", "current-context"], capture_output=True, text=True
+        )
+    except OSError as exc:
+        print(f"ERROR: kubectl 실행 실패: {exc}")
+        return 2
     if context.returncode != 0:
         print("ERROR: no kubectl context")
         return 2
