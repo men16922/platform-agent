@@ -122,11 +122,15 @@ class TestSomethingNewIsTheSignal:
 
 class TestAnUnmeasuredRunIsNotAQuietRun:
     def test_it_exits_two_rather_than_reporting_nothing_new(self, wired, capsys):
+        # `.err` until 2026-08-10 — the one line this watcher prints on the path
+        # that matters most, asked for on the stream a piped reader is not
+        # holding. Every other case in this file reads `.out`, so the failure was
+        # the only outcome whose report could go missing without a guard noticing.
         state, run, _ = wired
         run()
         state["aws"] = None
         assert run() == 2
-        assert "'새 과금 없음'이 아니다" in capsys.readouterr().err
+        assert "'새 과금 없음'이 아니다" in capsys.readouterr().out
 
     def test_a_failed_run_does_not_overwrite_the_baseline(self, wired):
         """Otherwise one unreadable night resets what "new" means, and the next real

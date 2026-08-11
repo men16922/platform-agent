@@ -18,6 +18,12 @@ never named, from the tool whose one job is that the PR touches exactly one file
 Exit codes:
   0 = a plan was produced (and applied, with --write/--commit)
   1 = refused — the registry, the catalog, the blast-radius rule, or git said no
+
+REFUSED GOES TO STDOUT, next to the plan it refused. The `--commit` refusal comes
+*after* the file/branch/title/diff have already been printed, so with REFUSED on
+stderr a piped copy showed a complete-looking plan and no sign that nothing was
+committed. The reader's evidence of failure was the absence of the "committed
+<sha>" line — and an absent line is not a verdict.
 """
 
 from __future__ import annotations
@@ -55,10 +61,10 @@ def main() -> int:
     try:
         plan = plan_addon_attachment(args.tenant, args.env, args.capability, args.version)
     except RegistryWriteError as exc:
-        print(f"REFUSED: {exc}", file=sys.stderr)
+        print(f"REFUSED: {exc}")
         return 1
     except Exception as exc:  # registry/catalog rejections carry their own wording
-        print(f"REFUSED: {exc}", file=sys.stderr)
+        print(f"REFUSED: {exc}")
         return 1
 
     print(f"file   : {plan.path.relative_to(REPO)}")
@@ -75,7 +81,7 @@ def main() -> int:
         try:
             sha = commit_attachment(plan)
         except RegistryWriteError as exc:
-            print(f"REFUSED: {exc}", file=sys.stderr)
+            print(f"REFUSED: {exc}")
             return 1
         print(f"\ncommitted {sha[:12]} on {plan.branch} — one file, {plan.path.relative_to(REPO)}.")
         print("Nothing was pushed. Open the PR yourself:")

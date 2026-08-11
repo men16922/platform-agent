@@ -20,6 +20,14 @@ never report ENFORCED from an experiment whose control did not work.
 
 Usage: python scripts/verify_netpol_enforcement.py [--keep]
 Exit codes: 0 = ENFORCED, 1 = NOT ENFORCED, 2 = inconclusive/error.
+
+EVERY LINE GOES TO STDOUT, INCLUDING THE FAILURES. This report is read through a
+pipe — teed into `docs/evidence/`, captured, scrolled. Until 2026-08-10 the run
+log went to stdout and the INCONCLUSIVE verdict went to stderr, so a reader of
+the captured copy saw `baseline: B -> A reachable ✓` and then nothing at all, and
+a report that stops after a ✓ reads as a report that finished. That is the exact
+shape of the false green this probe exists to rule out, one level up. The verdict
+must arrive on the stream the reader is holding.
 """
 
 from __future__ import annotations
@@ -27,7 +35,6 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
-import sys
 import time
 
 _SERVER_NS = "netpol-probe-server"
@@ -164,7 +171,7 @@ def main() -> int:
 
     context = _kubectl("config", "current-context")
     if context.returncode != 0:
-        print("ERROR: no kubectl context — is a cluster running?", file=sys.stderr)
+        print("ERROR: no kubectl context — is a cluster running?")
         return 2
     print(f"probing context: {context.stdout.strip()}")
 
@@ -175,7 +182,7 @@ def main() -> int:
         _apply(_service())
 
         if not _wait_ready(_SERVER_NS, "app=server"):
-            print("INCONCLUSIVE: server pod never became Ready", file=sys.stderr)
+            print("INCONCLUSIVE: server pod never became Ready")
             return 2
 
         # Control: without any policy the two namespaces must be able to talk.
@@ -183,8 +190,7 @@ def main() -> int:
         if not _can_reach(attempts=6):
             print(
                 "INCONCLUSIVE: baseline cross-namespace connectivity failed, so a later "
-                "failure would prove nothing about NetworkPolicy",
-                file=sys.stderr,
+                "failure would prove nothing about NetworkPolicy"
             )
             return 2
         print("baseline: B -> A reachable (no policy) ✓")
@@ -217,7 +223,7 @@ def main() -> int:
         )
         return 0
     except (RuntimeError, subprocess.TimeoutExpired, OSError) as exc:
-        print(f"INCONCLUSIVE: {exc}", file=sys.stderr)
+        print(f"INCONCLUSIVE: {exc}")
         return 2
     finally:
         if args.keep:

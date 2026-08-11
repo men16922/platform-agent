@@ -1,6 +1,6 @@
 # STATUS — platform-agent
 
-최종 갱신: 2026-08-10
+최종 갱신: 2026-08-11
 
 > 현재 구현 상태 / 검증 baseline / active focus / open risks. **≤120줄** 유지.
 
@@ -8,6 +8,12 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` → **1769 passed, 1 skipped** (2026-08-11, +26, 로컬 macOS·py3.13,
+  **CI 일치는 PR에서 확인 필요**) — Risk 12④를 `scripts/` CLI **22개 전수**로 훑었다.
+  훑는 방향을 뒤집은 게 결정적: `readouterr` 사용처가 아니라 **`sys.stderr`를 쓰는
+  프로그램**을 뒤지니 **테스트에 이름조차 없던 2개**가 나왔다. 결함 8건 수정 + 스트림
+  계약 분류(REPORT/DOCUMENT/DUAL) + 미분류 스크립트 차단. 변이 16건 red.
+  증거 `report-streams-swept-across-all-clis.log`.
 - `make check` → **1743 passed, 1 skipped** (2026-08-10, +6, **로컬 macOS·py3.13 ↔ CI 일치**,
   PR #22) — **리포터가 리포트의 실패를 자기가 저질렀다**: 본문은 stdout, 판정은 stderr라
   **파이프에선 세 절이 전부 빈다**(TTY에선 멀쩡 = 저자가 본 것). 못 잡은 이유 → Risk 12④.
@@ -121,10 +127,15 @@
    실측**: 로컬이 통과시키고 **CI가 안 도는** 경우 — **skip은 실패가 아니라서 검사 안 하는
    게이트와 통과한 게이트가 같은 색**이다 → 숫자엔 날짜와 **잰 기계**를 붙일 것.
    ③**하중**: **행복 경로만 태운 가드는 하중을 받지 않는다**(안전망을 지워도 14개가 초록)
-   → **새 가드는 지워 보고 red를 확인할 것.** ④**관측 지점(2026-08-10)**: `capsys`가
-   `.out`/`.err`를 **갈라** 주므로 "이유가 독자에게 닿는다"는 테스트가 **독자의 사본이
-   갈라진 걸 원리상 못 봤다** — 그 사이 비용 리포트는 파이프에서 빈 절로 나갔다. **가드는
-   독자가 읽는 그 물건에 대고 물을 것.** ⚠️같은 맹점을 **한 건만 확인했다.** 증거
+   → **새 가드는 지워 보고 red를 확인할 것.** ④**관측 지점(2026-08-10, 08-11 전수 훑기로
+   소진)**: `capsys`가 `.out`/`.err`를 **갈라** 주므로 "이유가 독자에게 닿는다"는 테스트가
+   **독자의 사본이 갈라진 걸 원리상 못 봤다**. **가드는 독자가 읽는 그 물건에 대고 물을 것.**
+   08-11 훑기의 결론 셋 — ⓐ**맹점보다 결함이 넓었다**: 잘못 물은 가드는 3건뿐인데 깨진
+   프로그램은 8건, 그중 둘은 **테스트에 이름조차 없었다**(그래서 `readouterr` 목록으로
+   훑으면 안 나온다 — **결함을 그 그림자로 세지 말 것**). ⓑ**"stderr 금지"가 아니다**:
+   독자가 파서면 의무가 거꾸로 선다 → `scripts/*.py` 22개를 REPORT/DOCUMENT/DUAL로 분류하고
+   미분류를 red로 막았다. ⓒ**절반만 묻는 가드**: 경고의 **주장**만 묻고 **지시**를 안 물으면
+   지시를 지우는 변이가 산다(같은 날 재발, 실측). 증거
    `docs/evidence/{ci-keyless-signing,ci-terraform-validate-skipped,
-   spend-probe-report-split-across-streams}.log` · M15·M16.
+   spend-probe-report-split-across-streams,report-streams-swept-across-all-clis}.log` · M15·M16.
 - (그 밖의 해소 이력 — Slack App 미연결(07-19)·A2A discovery(07-14)·추적 IA 실증(07-13)·NEXT_PUBLIC 인라인(07-13) — 은 `PROGRESS_LOG`/`docs/archive/` 참조.)

@@ -1,0 +1,207 @@
+2026-08-11 — 같은 맹점을 나머지 CLI 전부에 대고 물었다 (Risk 12④ 소진)
+============================================================================
+
+발단: 08-10에 비용 프로브가 "본문은 stdout, 판정은 stderr"로 갈려 있는 걸 고쳤다.
+그때 더 큰 발견은 **가드가 못 잡은 이유**였다 — `capsys`가 `.out`/`.err`를 갈라
+주므로 `.err`에 대고 묻는 테스트는 **독자의 사본이 갈라진 걸 원리상 못 본다**.
+NEXT_PLAN에 "나머지 `readouterr` 사용처는 안 봤다 — 한 건만 봤다"로 남겨 뒀다.
+오늘 그 나머지를 훑었다.
+
+판정 기준(기록된 그대로): **"이 가드는 독자가 읽는 그 물건에 대고 묻는가."**
+
+----------------------------------------------------------------------------
+0. 훑는 방향을 한 번 바꿨다
+----------------------------------------------------------------------------
+
+`readouterr`를 쓰는 테스트는 5개 파일 19곳뿐이라 금방 끝난다. 그런데 그건
+**결함이 아니라 결함의 그림자**다. 결함은 테스트가 아니라 **두 스트림에 나눠
+찍는 프로그램**에 있고, 그런 프로그램은 가드가 아예 없어도 깨져 있을 수 있다.
+그래서 대상을 뒤집었다:
+
+    $ git grep -ln "sys.stderr" -- 'scripts/*.py'
+    attach_addon.py  preflight_gitops_handoff.py  push_addon_status.py
+    render_addons.py  render_tenancy.py  sweep_orphan_clusters.py
+    verify_image_signature.py  verify_netpol_enforcement.py
+    verify_tenancy_adoption.py  verify_tenant_isolation.py
+    watch_cloud_spend.py                                        → 11개
+
+`readouterr` 기준으로 훑었으면 `attach_addon.py`·`preflight_gitops_handoff.py`는
+**테스트에서 이름조차 안 나오므로 목록에 없다.** 둘 다 결함이 있었다.
+
+----------------------------------------------------------------------------
+1. 재현 — 독자의 사본(stdout만) (네트워크 0, 가짜 kubectl)
+----------------------------------------------------------------------------
+
+$ cat <fakebin>/kubectl
+  #!/bin/sh
+  if [ "$1" = "config" ]; then echo "kind-kind"; exit 0; fi
+  echo "error: boom — the cluster went away" >&2
+  exit 1
+
+$ PATH=<fakebin>:$PATH python scripts/verify_netpol_enforcement.py 2>/dev/null
+  probing context: kind-kind
+                                        ← 판정 없음. 끝.
+
+$ PATH=<fakebin>:$PATH python scripts/verify_tenancy_adoption.py 2>/dev/null
+  context: kind-kind
+                                        ← 판정 없음. 끝.
+
+$ python scripts/verify_image_signature.py foo 2>/dev/null
+                                        ← 완전히 빈 출력. exit 2.
+
+$ env PATH=/usr/bin:/bin <py> scripts/verify_image_signature.py foo --key /dev/null 2>/dev/null
+                                        ← 완전히 빈 출력. exit 2.
+
+**가장 나쁜 건 netpol이다.** 저 스크립트는 성공 경로에서 stdout에
+`baseline: B -> A reachable (no policy) ✓`를 찍고, 그 다음 단계가 죽으면
+INCONCLUSIVE를 stderr로 보낸다. 파이프로 읽는 사람의 마지막 줄은 **✓**다.
+
+    probing context: kind-kind
+    baseline: B -> A reachable (no policy) ✓
+                                        ← ENFORCED도 NOT ENFORCED도 INCONCLUSIVE도 없다
+
+**✓로 끝나고 멈춘 리포트는 끝난 리포트로 읽힌다.** 그리고 이 스크립트의 판정이
+바로 `PROVEN_ENFORCING_SUBSTRATES`에 기판을 넣을지를 정한다 — 즉 **"NOT
+ENFORCED"를 잃는 것이 정책을 무시하는 CNI가 승격되는 경로**다. 08-10에 프로브
+한 건에서 본 "빈 절은 0으로 읽힌다"와 정확히 같은 계열인데, 값이 아니라
+**보안 판정**에 붙어 있다.
+
+⚠️ 실제 evidence 로그가 판정을 잃었다는 증거는 **없다**(`k3s-netpol-enforcement.log`
+에는 판정이 들어 있다). 여기서 확인한 건 **잃을 수 있었다**는 것이고, 그 로그가
+멀쩡한 이유는 설계가 아니라 **그날 캡처 방식이 두 스트림을 다 받았기 때문**이다.
+
+----------------------------------------------------------------------------
+2. 분류 — "stderr 금지"가 아니다. 독자가 프로그램인 경우가 있다
+----------------------------------------------------------------------------
+
+11개를 다 고치려다 멈췄다. `render_tenancy.py`는 **처음부터 옳았다**:
+
+    stdout  = 매니페스트(= `| kubectl apply -f -`가 먹는 문서)
+    stderr  = 진단 전부, 게다가 전부 `#` 접두 → `2>&1`로 섞여도 YAML이 깨지지 않는다
+
+여기에 진단을 stdout으로 옮기면 **문서가 오염된다**. 즉 규칙은 "stderr 쓰지 마라"가
+아니라 **"독자의 스트림이 독자가 필요한 걸 날라야 한다"**이고, 독자가 파서일 때는
+의무가 **거꾸로** 선다. 그래서 세 갈래로 분류했다(전수, `tests/test_report_streams.py`):
+
+    REPORT   (17) stdout은 사람이 읽는 산문 → 필요한 것이 stderr에 있으면 안 된다
+    DOCUMENT ( 3) stdout은 파서가 읽는 문서 → 진단이 stdout에 있으면 안 된다
+    DUAL     ( 2) `--json`이 둘을 스위치 → 모드마다 제 규칙을 진다
+
+`scripts/*.py` 22개가 전부 어느 한 칸에 들어간다. 새 스크립트가 분류 없이
+추가되면 `test_no_script_is_unclassified`가 red — 이 훑기가 **스냅샷이 아니라
+규칙**이 되는 지점이다(A1에서 실증).
+
+----------------------------------------------------------------------------
+3. 고친 것 (판정을 독자의 스트림으로. exit code는 전부 그대로)
+----------------------------------------------------------------------------
+
+REPORT 8건:
+  verify_netpol_enforcement.py   ERROR / INCONCLUSIVE ×3 → stdout
+  verify_tenant_isolation.py     ERROR ×6 / INCONCLUSIVE → stdout
+                                 (4단계 리포트라 갈리면 `[1/4] ✓ [2/4] ✓ …침묵`)
+  verify_tenancy_adoption.py     ERROR ×2 / "nothing to check" / ✗의 해설 → stdout
+  verify_image_signature.py      **스트림이 실패 종류에 따라 달랐다** — cosign 부재와
+                                 신원 미지정은 stderr, 실제 cosign 실패는 stdout.
+                                 전부 stdout + cosign 원문은 판정 아래 들여쓰기.
+  attach_addon.py                REFUSED ×3 → stdout. `--commit` 거부는 **diff를
+                                 이미 찍은 뒤**라, 독자에겐 "committed 줄이 없다"가
+                                 유일한 실패 신호였다 — **없는 줄은 판정이 아니다.**
+  watch_cloud_spend.py           "측정하지 못했다" → stdout
+  push_addon_status.py           `file=sys.stderr if code else sys.stdout` →
+                                 한 스트림 + `flush=True` (아래 4절)
+  preflight_gitops_handoff.py    **모드 의존**으로 고침(`--json`이면 stderr 유지)
+
+DOCUMENT 3건 / DUAL의 json 모드: **안 고쳤다.** 옳으므로.
+`sweep_orphan_clusters.py`도 이미 옳았다 — stderr WARN은 **중복**이고, 진짜 판정
+(`COVERAGE INCOMPLETE` + 사유, json의 `"unswept"`)은 원래 독자의 스트림에 있다.
+
+----------------------------------------------------------------------------
+4. 한 스트림으로도 부족한 경우가 하나 있었다 (push_addon_status)
+----------------------------------------------------------------------------
+
+이건 데몬이고 독자는 `tail -f logs/push-acme.log`다. `make dev-up`이 두 스트림을
+**같은 파일**로 넣으므로 아무것도 "사라지지" 않는다. 그런데 결과에 따라 스트림을
+고르면 — 성공은 블록 버퍼링(8KB), 실패는 무버퍼 — **같은 파일 안에서 실패가 먼저,
+성공이 한참 뒤 뭉텅이로 도착한다.** 출력 전체가 타임라인인 루프에서 그건
+**타임라인이 틀린 것**이다. 한 스트림 + 매 줄 flush.
+
+가드는 `flush()`를 세는 스트림 객체를 끼워서 **행동으로** 묻는다(소스에
+`flush=True`가 있는지 grep하지 않는다 — 08-10에 비판한 그 방식이다).
+
+----------------------------------------------------------------------------
+5. 하중 (변이 16건, 생존 0)
+----------------------------------------------------------------------------
+
+각 변이는 판정 하나를 **독자가 안 보는 스트림으로 되돌린다**(= 오늘 지운 결함을
+그대로 재도입). `.pyc`는 매 회차 삭제 — 08-09의 함정(바이트 수가 같으면 캐시에
+속는다).
+
+    R1  verify_netpol_enforcement.py   RED   R9   attach_addon.py            RED
+    R2  verify_netpol_enforcement.py   RED   R10  watch_cloud_spend.py       RED
+    R3  verify_tenant_isolation.py     RED   R11  push_addon_status.py       RED
+    R4  verify_tenancy_adoption.py     RED   R12  preflight_gitops_handoff   RED
+    R5  verify_tenancy_adoption.py     RED   D1   render_tenancy.py          RED
+    R6  verify_image_signature.py      RED   D2   sweep_orphan_clusters.py   RED
+    R7  verify_image_signature.py      RED   D3   preflight_gitops_handoff   RED
+    R8  verify_image_signature.py      RED   A1   미분류 새 스크립트          RED
+
+D1~D3은 **거울 방향**이다: 진단을 문서 스트림에 **밀어 넣는** 변이도 red여야
+분류가 의미를 갖는다. D3은 특히 `--json`에 산문을 찍는 변이 — R12(반대 방향)와
+쌍으로 있어야 "모드마다 제 규칙"이 실제로 집행된다.
+
+----------------------------------------------------------------------------
+6. 낡은 가드 3건이 red로 잡혔다 — 예상대로, 그리고 그게 전부였다
+----------------------------------------------------------------------------
+
+$ make check
+  FAILED tests/test_cloud_spend_watch.py::…::test_it_exits_two_rather_than_reporting_nothing_new
+  FAILED tests/test_image_signature.py::TestUsage::test_missing_cosign_exits_could_not_evaluate
+  FAILED tests/test_image_signature.py::TestUsage::test_no_identity_is_refused
+
+세 개 다 `capsys.readouterr().err`에 대고 묻던 가드다 — **맹점 그 자체**. `.out`으로
+돌렸다. 훑고 나서 `tests/`에 남은 `.err` 읽기는 둘뿐이고 **둘 다 옳다**:
+프로브의 `assert captured.err == ""`(스트림이 갈렸는지를 묻는 그 가드)와
+`test_render_addons.py`(DOCUMENT라 진단이 `.err`에 있는 게 정답).
+
+즉 19곳 중 잘못 물은 건 셋이고 나머지는 처음부터 맞게 묻고 있었다.
+훑기의 결론: **맹점은 널리 퍼져 있지 않았다. 결함이 널리 퍼져 있었다.**
+가드가 있었기 때문에 안 깨진 게 아니라, **가드가 없는 곳이 깨져 있었다** —
+`attach_addon.py`·`preflight_gitops_handoff.py`는 테스트에 이름조차 없었다.
+
+----------------------------------------------------------------------------
+7. 덤 — 측정 자체의 값을 적으면서 내 가드가 반쯤 비어 있는 걸 봤다
+----------------------------------------------------------------------------
+
+Cost Explorer **요청당 $0.01**(08-10 실측, MTD $0.27) · `spend-watch` 하루 한 번
+= 월 ~$0.30. 프로브·워처 docstring에 명시하고 가드 3개를 붙였다.
+
+그 중 "오늘 줄의 0은 잰 0이 아니다" 가드를 **반증해 보니 살아남았다(C2)** —
+가드가 **주장**("잰 0이 아니다")만 물었고 **지시**("마지막 줄 말고 앞 며칠을
+읽어라")는 안 물었다. 지시를 지우는 변이가 통과한다. 둘 다 묻도록 고치고
+재반증(C2a·C2b) → 둘 다 red.
+
+**같은 실수를 오늘 안에 다시 했다.** 08-10의 교훈이 "독자가 읽는 물건에 물어라"
+였는데, 여기선 물건은 맞췄고 **물건의 절반만** 물었다. 경고에서 독자가 실제로
+행동하는 절반은 지시 쪽이다.
+
+----------------------------------------------------------------------------
+8. 게이트
+----------------------------------------------------------------------------
+
+$ make check
+  1769 passed, 1 skipped   (2026-08-11, 로컬 macOS · python 3.13 / anaconda)
+  이전 1743 → **+26**
+
+⚠️ CI 일치 여부는 **PR에서 확인해야 한다** — 로컬 초록만으로는 Risk 12②
+(skip과 pass가 같은 색)를 배제하지 못한다.
+
+----------------------------------------------------------------------------
+9. 남은 것 / 안 한 것
+----------------------------------------------------------------------------
+
+- **버퍼링 자체는 안 쟀다.** 가드는 `stderr == ""`로 묻는다 — 아무것도 안 쓰인
+  스트림에서는 잃을 것이 없으므로 TTY/파이프 차이가 결과를 바꾸지 못한다. 이건
+  충분조건이지 버퍼링 실측이 아니다.
+- **`src/`의 로깅 경로는 이 훑기 밖이다.** 대상은 `scripts/`의 CLI 22개뿐.
+- **verify_* 3종은 라이브로 안 돌렸다**(클러스터 필요). 실패 경로만 오프라인으로
+  강제해 확인했다. 성공 경로의 출력은 원래 stdout이었고 건드리지 않았다.

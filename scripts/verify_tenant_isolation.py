@@ -32,6 +32,12 @@ Usage:
       --peer-tenant globex --peer-env dev [--keep]
 
 Exit codes: 0 = isolation holds, 1 = a claim was violated, 2 = inconclusive/error.
+
+EVERY LINE GOES TO STDOUT, INCLUDING THE FAILURES — see the same note in
+`verify_netpol_enforcement.py`. A four-claim report is the worst possible thing to
+split across two streams: through a pipe the reader would get `[1/4] ✓` and
+`[2/4] ✓` and then silence, because the INCONCLUSIVE that ended the run went to
+the stream they were not holding. Two ✓ and no verdict reads as a pass.
 """
 
 from __future__ import annotations
@@ -222,8 +228,7 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.tenant == args.peer_tenant:
-        print("ERROR: peer must be a different tenant, or 'cross-tenant' means nothing",
-              file=sys.stderr)
+        print("ERROR: peer must be a different tenant, or 'cross-tenant' means nothing")
         return 2
 
     registry = load_registry()
@@ -231,7 +236,7 @@ def main() -> int:
         tenant = registry.tenant(args.tenant)
         peer = registry.tenant(args.peer_tenant)
     except KeyError as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
+        print(f"ERROR: {exc}")
         return 2
 
     targets = _policied_namespaces(tenant, args.env)
@@ -239,19 +244,17 @@ def main() -> int:
     if len(targets) < 2:
         print(
             f"ERROR: {args.tenant}/{args.env} has {len(targets)} namespace(s); the "
-            "same-tenant leg needs two",
-            file=sys.stderr,
+            "same-tenant leg needs two"
         )
         return 2
     if not peers:
-        print(f"ERROR: {args.peer_tenant}/{args.peer_env} has no namespaces", file=sys.stderr)
+        print(f"ERROR: {args.peer_tenant}/{args.peer_env} has no namespaces")
         return 2
 
     if not network_policies_apply_to(tenant, args.env):
         print(
             f"ERROR: no NetworkPolicy is rendered for {args.tenant}/{args.env} "
-            "(unproven substrate) — there is nothing to verify here",
-            file=sys.stderr,
+            "(unproven substrate) — there is nothing to verify here"
         )
         return 2
 
@@ -265,8 +268,7 @@ def main() -> int:
     # connectivity test wearing a security test's name.
     policy = _kubectl("get", "networkpolicy", "-n", server_ns, "deny-cross-tenant", "-o", "json")
     if policy.returncode != 0:
-        print(f"ERROR: no deny-cross-tenant policy in {server_ns} — apply tenancy first",
-              file=sys.stderr)
+        print(f"ERROR: no deny-cross-tenant policy in {server_ns} — apply tenancy first")
         return 2
     spec = json.loads(policy.stdout)["spec"]
     print(f"policy in place: policyTypes={spec.get('policyTypes')} "
@@ -329,7 +331,7 @@ def main() -> int:
             print("[4/4] DNS resolution FAILED ✗")
 
     except (RuntimeError, subprocess.TimeoutExpired, OSError) as exc:
-        print(f"INCONCLUSIVE: {exc}", file=sys.stderr)
+        print(f"INCONCLUSIVE: {exc}")
         return 2
     finally:
         if args.keep:

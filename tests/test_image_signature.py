@@ -57,17 +57,22 @@ class TestClassify:
 
 
 class TestUsage:
+    # These two asked `.err` until 2026-08-10, which is how they missed that
+    # `2>/dev/null` made both of these paths print nothing at all — a script that
+    # checked nothing and said nothing, which its own docstring calls worse than
+    # having no step. They ask `.out` now; the split itself is guarded once, for
+    # every CLI in scripts/, in tests/test_report_streams.py.
     def test_missing_cosign_exits_could_not_evaluate(self, monkeypatch, capsys):
         monkeypatch.setattr(verify.shutil, "which", lambda _: None)
         monkeypatch.setattr("sys.argv", ["v", "img", "--key", "k.pub"])
         assert verify.main() == verify.COSIGN_MISSING
-        assert "UNVERIFIED" in capsys.readouterr().err
+        assert "UNVERIFIED" in capsys.readouterr().out
 
     def test_no_identity_is_refused(self, monkeypatch, capsys):
         """Verifying against 'any signature' accepts a signature from anyone."""
         monkeypatch.setattr("sys.argv", ["v", "img"])
         assert verify.main() == verify.COSIGN_MISSING
-        assert "--key" in capsys.readouterr().err
+        assert "--key" in capsys.readouterr().out
 
     def test_keyed_command_shape(self):
         args = verify.argparse.Namespace(

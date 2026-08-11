@@ -31,6 +31,18 @@ it does not. It deliberately does *not* exit 2 for a missing export — that is 
 known, named gap rather than a failed lookup, and a probe that is red every run
 teaches people to skip it (the same lesson as the always-firing budget alert).
 
+READ-ONLY IS NOT FREE. Cost Explorer bills **$0.01 per request** (measured
+2026-08-10: 3 calls = $0.03, 24 calls = $0.24, MTD $0.27 under `APS$USE` — the
+one line in this account's bill that this repo put there itself). A full run makes
+several CE calls, and `make spend-watch` once a day comes to roughly $0.30/month.
+That is cheap and worth it, but it belonged in writing: a tool whose subject is
+forgotten recurring charges should not be a forgotten recurring charge, and this
+number appeared in no document until it was looked for.
+
+⚠️ CE ALSO REPORTS THE CURRENT DAY LATE. A 0 on today's row is not a measured
+zero — it is a row that has not filled in yet. Read the trailing days, not the
+last one, before concluding something was switched off.
+
     python scripts/probe_cloud_spend.py            # month to date
     python scripts/probe_cloud_spend.py --days 30  # trailing window
 

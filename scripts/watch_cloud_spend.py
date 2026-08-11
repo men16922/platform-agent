@@ -26,10 +26,22 @@ those already).
     make spend-watch          # compare against the last snapshot
     make spend-watch-baseline # accept current state as the new baseline
 
+This is the recurring cost of the check itself: Cost Explorer bills $0.01 per
+request, so once a day is roughly **$0.30/month** (see the probe's docstring for
+the measurement). Worth it against an $8.81 surprise, and stated rather than
+absorbed — a watcher for forgotten recurring charges should not quietly be one.
+
 Exit codes:
   0 = nothing newly charged (or first run, which only records a baseline)
   1 = something is charging that was not before (usable as a cron signal)
   2 = could not measure, so "nothing new" cannot be read as "nothing there"
+
+ONE STREAM, like the probe it imports. When the probe was fixed on 2026-08-10 this
+line was left on stderr because it prints once and returns immediately, so nothing
+here could interleave. That reasoning was about *this* file rather than about the
+reader: piped, exit 2 leaves stdout completely empty, and an empty spend report is
+read the same way an empty section was — as nothing to see. The two halves of one
+feature also should not disagree about where their failures go.
 """
 
 from __future__ import annotations
@@ -105,7 +117,7 @@ def main() -> int:
 
     current = observe()
     if current is None:
-        print("측정하지 못했다. 이것은 '새 과금 없음'이 아니다.", file=sys.stderr)
+        print("측정하지 못했다. 이것은 '새 과금 없음'이 아니다.")
         return 2
     current["observed_at"] = _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds")
 

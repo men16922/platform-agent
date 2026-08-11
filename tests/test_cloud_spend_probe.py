@@ -121,6 +121,49 @@ class TestTheProbeCannotChangeAnything:
         )
 
 
+class TestTheCostOfMeasuringIsWrittenDown:
+    """Read-only is not free, and this repo found that out by looking.
+
+    Cost Explorer bills $0.01 per request. Measured 2026-08-10: 24 calls put $0.24
+    on the bill under `APS$USE`, and `spend-watch` once a day comes to ~$0.30/month
+    — a recurring charge created by the tool whose subject is forgotten recurring
+    charges. It was in no document.
+
+    These are source assertions and can only prove the sentence is still there,
+    not that the number is still right; the number is a live measurement and
+    nothing in a gate can re-take it. What they do prevent is the specific way this
+    fact would disappear — someone tidying a long docstring.
+    """
+
+    def test_the_probe_states_the_per_request_price(self, source):
+        assert "$0.01 per request" in source, (
+            "the probe stopped saying that calling it costs money"
+        )
+
+    def test_the_probe_warns_that_today_is_reported_late(self, source):
+        """Both halves: the claim, and what to do about it.
+
+        The first draft of this guard asked only for the claim, and a mutation that
+        deleted the instruction survived — a warning that says a number is wrong
+        without saying which number to read instead is half a warning, and the half
+        it drops is the one a reader acts on.
+        """
+        flat = " ".join(source.split())
+        assert "not a measured zero" in flat, (
+            "a 0 on today's row is an unfilled row, not a measurement — the probe "
+            "stopped warning about the one way its own output misleads"
+        )
+        assert "Read the trailing days, not the last one" in flat, (
+            "the warning kept the claim and lost the instruction"
+        )
+
+    def test_the_daily_watcher_states_its_monthly_cost(self):
+        watcher = (REPO / "scripts" / "watch_cloud_spend.py").read_text(encoding="utf-8")
+        assert "$0.30/month" in watcher, (
+            "the thing that actually runs daily stopped naming what daily costs"
+        )
+
+
 class TestUnmeasuredIsNotZero:
     """The failure being guarded is a false zero, so silence must not read as zero."""
 

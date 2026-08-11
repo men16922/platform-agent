@@ -155,8 +155,13 @@ def main() -> int:
 
     revision = _helm_revision(args.release, args.namespace)
     if revision is None:
+        # Which stream depends on what stdout *is* in this mode. Without --json
+        # stdout is a report a person reads through a pipe, and a verdict that
+        # lands on the other stream is a report that ends in silence. With --json
+        # stdout is a document a parser reads, and prose on it is a corrupt one —
+        # so the failure stays on stderr and the exit code carries the verdict.
         print(f"ERROR: no helm release {args.release!r} in namespace {args.namespace!r}",
-              file=sys.stderr)
+              file=sys.stderr if args.json else sys.stdout)
         return 2
 
     resources = _release_resources(args.release, args.namespace)
