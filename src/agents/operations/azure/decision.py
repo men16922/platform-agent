@@ -82,23 +82,30 @@ def _select_runbook(analyzer: AnalyzerOutput) -> tuple[str, list[str], int | Non
     if cosmos_runbook:
         runbook_id = cosmos_runbook.get("runbook_id", alarm_name)
         actions = _resolve_actions_from_runbook(cosmos_runbook, normalized)
-        rto = cosmos_runbook.get("estimated_rto_sec")
+        rto = cosmos_runbook.get("rto_sec")
         return runbook_id, actions, rto
 
     # 2. Capability-based catalog scan
     if normalized and normalized.recommended_capabilities:
+        recommended = set(normalized.recommended_capabilities)
         for rb_id, rb in BUILTIN_RUNBOOKS.items():
-            if not validate_runbook(rb):
+            # `validate_runbook` returns the list of problems — empty means valid.
+            # Skip on problems; the inverted form skipped every valid runbook and
+            # made this whole tier unreachable.
+            if validate_runbook(rb):
                 continue
-            rb_capabilities = {
-                step.get("capability") for step in rb.get("steps", [])
-            }
-            if rb_capabilities & set(normalized.recommended_capabilities):
+            # The match surface is the runbook's own `capabilities` list, which is
+            # what the schema contract declares and what the AWS action resolver
+            # reads. `steps` belongs to CAPABILITY_RUNBOOKS, not here — reading it
+            # off a built-in entry always produced the empty set.
+            if set(rb.get("capabilities", ())) & recommended:
                 actions = _resolve_actions_from_capabilities(
                     normalized.recommended_capabilities, normalized
                 )
-                rto = rb.get("estimated_rto_sec", 300)
-                return rb_id, actions, rto
+                # First entry wins on overlap, as in the AWS catalog: `catalog.py`
+                # documents that later entries are appended so they cannot steal a
+                # selection an earlier one already made.
+                return rb_id, actions, rb.get("rto_sec")
 
     # 3. Generic fallback
     actions = _resolve_actions_from_capabilities(

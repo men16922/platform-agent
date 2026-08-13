@@ -1,0 +1,196 @@
+2026-08-13 — 레거시 dict를 덮는 테스트를 찾다가, 그 dict를 읽는 코드가 죽어 있었다
+============================================================================
+
+발단: 직전 세션(08-12)이 명시적으로 남긴 Next — **"`BUILTIN_RUNBOOKS`(레거시 dict)를
+덮는 테스트가 있는지 안 봤다"**. 변이 오발이 그 dict의 `capabilities` 메타데이터를
+쳤는데도 `test_capability_runbook_e2e`가 안 깨졌다는 것이 근거였다.
+
+**질문을 그대로 따라갔다: 그 dict의 `capabilities`를 누가 읽는가.**
+답은 세 곳이었고, 그중 둘에서 읽는 코드가 **원리상 도달 불가**였다.
+
+----------------------------------------------------------------------------
+1. 읽는 쪽 전수 — `git grep`으로 (파일 grep 아님)
+----------------------------------------------------------------------------
+
+  $ git grep -n '"capabilities"' -- src/
+
+  src/agents/operations/aws/decision.py:352   capabilities = runbook.get("capabilities", [])   ← 옳다
+  src/agents/operations/gcp/decision.py:90    (아래)
+  src/agents/operations/azure/decision.py:91  (아래)
+
+GCP/Azure `_select_runbook` 티어 2 — **두 파일에 같은 블록이 복사돼 있다**:
+
+    for rb_id, rb in BUILTIN_RUNBOOKS.items():
+        if not validate_runbook(rb):          # ①
+            continue
+        rb_capabilities = {
+            step.get("capability") for step in rb.get("steps", [])   # ②
+        }
+        if rb_capabilities & set(normalized.recommended_capabilities):
+            actions = _resolve_actions_from_capabilities(...)
+            rto = rb.get("estimated_rto_sec", 300)                   # ③
+            return rb_id, actions, rto
+
+열두 줄에 **결함 셋이 겹쳐 있다**:
+
+① `validate_runbook`은 **문제의 목록**을 돌려준다 — 빈 리스트가 "유효"다.
+   `not []` = True → **유효한 런북마다 continue**. 이 티어에 도달하는 건 오직
+   **깨진 런북**뿐이다. `schema.py:79`에 불리언 형태인 `is_valid_runbook`이
+   **바로 그 용도로** 있고, AWS(`decision.py:199`)는 극성을 맞게 쓴다.
+
+② `steps`는 `CAPABILITY_RUNBOOKS`의 필드다. `BUILTIN_RUNBOOKS` 엔트리는
+   `capabilities`(평평한 리스트)를 선언한다. 9개 전부 `steps` 키가 **없다** →
+   파생 집합은 항상 `set()` → 교집합은 **절대 비지 않을 수 없다**.
+
+③ 스키마 계약 필드는 `rto_sec`다(`schema.py:19`, AWS는 `runbook.get("rto_sec")`).
+   `estimated_rto_sec`는 **출력 쪽**(`DecisionOutput`) 이름이다.
+
+----------------------------------------------------------------------------
+2. 재현 — 고치기 전에 먼저 (오프라인, 자격증명 벗김)
+----------------------------------------------------------------------------
+
+  $ PYTHONPATH=. AWS_PROFILE=__nonexistent__ AWS_CONFIG_FILE=/dev/null \
+      AWS_SHARED_CREDENTIALS_FILE=/dev/null python3 probe_capability_scan.py
+
+  === GCP ===   (Azure도 동일)
+    caps=['restart_workload', 'scale_out']      -> runbook_id='generic-recovery' rto=None
+    caps=['cleanup_disk_space', 'expand_storage'] -> runbook_id='generic-recovery' rto=None
+    caps=['rollback_release']                   -> runbook_id='generic-recovery' rto=None
+    caps=['renew_certificate']                  -> runbook_id='generic-recovery' rto=None
+
+카탈로그 엔트리와 **정확히 일치하는** capability를 줘도 티어 2는 한 번도 안 걸린다.
+**GCP·Azure의 모든 인시던트는 `generic-recovery`로 떨어진다.**
+
+⚠️**터지지 않는 게 핵심이다.** actions는 티어 3에서 analyzer의
+`recommended_capabilities`로 **정상 resolve된다** → 결정은 채워진 것처럼 보인다.
+틀린 것은 **자기가 따르고 있다고 주장하는 런북과 그 RTO**뿐이다.
+`schema.py:88`의 docstring이 예고한 바로 그 실패 모드다 — *"every incident fell back
+to generic-recovery (notify only)"* — 이번엔 원인이 Decimal이 아니라 필드 이름이다.
+
+----------------------------------------------------------------------------
+3. 왜 게이트가 못 봤나 — 가드가 결함이 통과시키는 질문만 물었다
+----------------------------------------------------------------------------
+
+이 경로의 기존 커버리지는 두 줄이 전부였다:
+
+  tests/test_gcp_day2_operations.py:256    assert "runbook_id" in result
+  tests/test_gcp_day2_operations.py:396    assert executor_out["decision"]["runbook_id"] != ""
+
+**둘 다 `"generic-recovery"`에 대해 영원히 참이다.** Risk 12④ 그대로 —
+가드가 **독자가 읽는 그 물건**(어느 런북이 골렸는가)이 아니라 **필드의 존재**를 물었다.
+Azure 쪽도 같은 두 줄(244·387)이다.
+
+----------------------------------------------------------------------------
+4. 고침 (`src/` 양쪽, 같은 모양)
+----------------------------------------------------------------------------
+
+  - ① `if validate_runbook(rb): continue` — 극성 정정.
+  - ② `set(rb.get("capabilities", ())) & recommended` — 계약이 선언한 매치 면으로.
+  - ③ `rb.get("rto_sec")` — 계약 필드로. 기본값 300은 **없앴다**: 이 티어가 한 번도
+       안 돌았으므로 보존할 동작이 없고, `generic-recovery`가 매치될 때 티어 2와
+       티어 3이 **같은 답**(None)을 주게 된다.
+  - 겹칠 때 **첫 엔트리가 이긴다**는 것을 주석으로 명시했다. 발명이 아니라
+    `catalog.py:56-59`가 이미 문서화한 성질이다(뒤에 붙인 넷은 앞의 선택을 못 뺏는다).
+
+**티어 1도 같이 고쳤다** — `firestore_runbook.get("estimated_rto_sec")` /
+`cosmos_runbook.get("estimated_rto_sec")` → `rto_sec`. ⚠️**이건 잠복이지 라이브가
+아니다**: Firestore/Cosmos 런북 스토어에 **문서가 0개**이고 시더도 없다
+(`durable_functions.py:269`가 컨테이너만 만든다 — Risk 2와 같은 모양).
+문서화된 계약을 따른 운영자가 RTO를 못 받았을 것이라는 **계약 불일치**를 닫은 것이다.
+
+  $ 재현 스크립트 재실행 (같은 명령)
+  === GCP ===
+    caps=['restart_workload', 'scale_out']      -> runbook_id='eks-pod-oom' rto=180
+    caps=['cleanup_disk_space', 'expand_storage'] -> runbook_id='disk-full' rto=300
+    caps=['rollback_release']                   -> runbook_id='health-check-failure' rto=240
+    caps=['renew_certificate']                  -> runbook_id='certificate-expiry' rto=600
+
+----------------------------------------------------------------------------
+5. 하중 — 변이 8건, 생존 0 (⚠️두 번 틀렸고 둘 다 여기 적는다)
+----------------------------------------------------------------------------
+
+**틀린 것 하나: 변이 하네스 자신이 고장나 있었다.**
+1차 하네스의 `restore()`가 `git checkout --`였다. 고침이 **커밋 전**이므로 그건
+HEAD = **결함이 있는 원본**으로 되돌린다. M2 이후 모든 변이는 **원본을 변이시킨
+것**이고 그 red는 아무것도 증명하지 않았다. 알아챈 건 마지막 줄 —
+*"restored → 24 failed"*. **초록으로 안 돌아오는 복구는 복구가 아니다.**
+2차는 스크래치 스냅샷에서 복구하고, 끝에 `diff`로 작업 트리가 원상인지 확인한다.
+
+**틀린 것 둘: 내 RTO 가드가 결함을 통과시켰다(M3·M8 생존).**
+`test_..._carries_the_catalogs_rto`가 `cleanup_disk_space` → `disk-full`을 골랐는데
+그 `rto_sec`이 **정확히 300** — ③이 쓰던 기본값과 같은 값이다. 가드가 **우연으로**
+초록이었다. 고침: 여덟 케이스(**서로 다른 RTO 여섯**) 전부에서 rto를 단언하고,
+**카탈로그가 서로 다른 RTO를 갖고 있는지** 자체를 묻는 가드를 하나 더 뒀다
+(전부 한 값으로 재조정되면 위 단언이 **red 없이 조용해진다**).
+⚠️**기본값과 같은 값을 고른 픽스처는 가드가 아니다.**
+
+  M0  변이 없음                                 -> 32 passed
+  M1  validity 검사 재역전 (gcp)                -> 13 failed
+  M2  capabilities 대신 steps 읽기 (gcp)        -> 13 failed
+  M3  티어 2 rto를 estimated_rto_sec로 (gcp)    ->  6 failed   (수정 전: 생존)
+  M4  validity 검사 통째 삭제 (gcp)             ->  1 failed   (미끼 런북 가드)
+  M5  티어 1 rto를 estimated_rto_sec로 (gcp)    ->  1 failed
+  M6  무엇이든 매치 (gcp)                       -> 11 failed   (과잉 수정 방지 쪽)
+  M7  gcp만 고치고 azure는 역전인 채            -> 13 failed   (양쪽 일치 가드)
+  M8  티어 2 rto를 기본값으로 (azure)           ->  6 failed   (수정 전: 생존)
+  M0' 복구 후                                   -> 32 passed  + diff clean
+
+`.pyc`는 매 변이마다 지운다(08-09에 바이트 수가 같아 속은 적 있음).
+
+----------------------------------------------------------------------------
+6. 새 가드가 묻는 것 — `tests/test_capability_catalog_scan.py` (32건)
+----------------------------------------------------------------------------
+
+**알람 쪽이 아니라 capability 쪽에서 들어간다** — "어느 런북이 골렸는가"를 묻는다.
+
+  - capability 8종 × provider 2 → **기대한 런북 id**와 **카탈로그의 rto**.
+  - 카탈로그의 모든 엔트리가 **자기가 선언한 capability로 도달 가능**한가.
+    (겹침 때문에 "자기 자신"은 요구하지 않는다 — **fallback이 아닐 것**만 요구.)
+  - 반대편 하중 둘: 모르는 capability → `generic-recovery` · capability 없음 → 동일.
+  - **미끼 런북**: 매치되고 **첫 자리**인데 스키마 위반(`rto_sec: "soon"`).
+    validity 검사를 지우면 이게 뽑힌다 → M4가 red.
+  - 티어 1이 계약 필드 `rto_sec`을 읽는가(운영자 등록 문서를 mock).
+  - **두 provider가 같은 런북을 고르는가** — 결함이 "한 블록이 두 파일에 복사된 것"
+    이었으므로, 한쪽만 고쳐 두는 것이 **정확히 이 결함이 살아남는 방식**이다.
+
+한 파일에 둔 이유: 이 결함은 provider 구현의 차이가 아니라 **카탈로그↔선택의 계약**
+이다. 세 번째 provider가 같은 블록을 복사하면 `PROVIDERS`에 문자열 하나만 더하면 된다.
+(런북 유지 규약의 "detector/analyzer/decision은 의도적으로 DRY 안 함"은 `src/`의
+SDK 차이에 대한 것이고, 여기서 공유되는 것은 SDK가 아니라 계약이다.)
+
+  $ make check → **1856 passed, 2 skipped** (2026-08-13, 로컬 macOS·py3.13, 1825 → +31)
+
+----------------------------------------------------------------------------
+7. 남긴 것 (고치지 않았다 — 발명 안 함)
+----------------------------------------------------------------------------
+
+ⓐ **`kafka-lag-spike`의 두 dict가 어긋난다** — `BUILTIN_RUNBOOKS`의 `capabilities`는
+  `['scale_out_workers']`인데 `CAPABILITY_RUNBOOKS`의 스텝은 `rebalance_consumer`를
+  더 갖는다(9개 중 **이것 하나만** 어긋난다, 나머지 8은 일치). 어긋난 쪽이
+  **에스컬레이션 스텝**이라는 것이 08-12 발견과 같은 계열이다. 다만 어느 쪽이
+  진실인지는 **정책 결정**이라 안 건드렸다: `capabilities`에 더하면 매치 면이
+  넓어지고, 빼면 스텝이 줄어든다. 둘 다 동작 변경이다.
+
+ⓑ **`renew_certificate`는 GCP/Azure 어댑터에 매핑이 없다** → `certificate-expiry`가
+  이제 선택은 되는데 `actions=[]`다. **회귀는 아니다**(전에도 `generic-recovery` +
+  `actions=[]`였다) — 달라진 건 라벨이 정직해졌다는 것뿐이고, 그래서 **이 구멍이
+  이제 보인다**. 카탈로그가 AWS 모양이라 생기는 문제라 어댑터 결정 사안.
+
+ⓒ **티어 2는 첫 매치가 이긴다 — 점수가 아니다.** AWS는 `_match_runbook_registry`로
+  네임스페이스·키워드에 점수를 매긴다. GCP/Azure는 capability 교집합의 첫 히트다.
+  예: `restart_workload`는 `eks-pod-oom`(1번)과 `health-check-failure`(6번) 둘 다에
+  있고 앞이 이긴다. **지금 그것을 테스트가 고정했으므로 우연이 아니라 결정이다.**
+  점수제로 올리는 건 휴리스틱 발명이라 안 했다.
+
+----------------------------------------------------------------------------
+8. 이번에 확인된 것
+----------------------------------------------------------------------------
+
+- **직전 세션의 Next를 그대로 따라간 것이 값을 냈다.** "그 dict를 덮는 테스트가
+  있나"의 답은 "있다(5개 파일)"였는데, **전부 dict의 모양만 묻고 읽는 쪽을 안 물었다.**
+  진짜 답은 **읽는 쪽으로 가서** 나왔다.
+- **한 블록에 결함 셋이 겹쳐 있으면 하나만 고쳐도 여전히 죽어 있다** — ①만 고치면
+  ②가 죽이고, ②만 고치면 ①이 죽인다. 그래서 **재현을 먼저** 했고 각 결함을 개별
+  변이로 분리했다.
+- **복구가 초록으로 안 돌아오면 하네스를 의심할 것**(5절) · **기본값과 같은 값을
+  고른 픽스처는 가드가 아니다**(5절).
