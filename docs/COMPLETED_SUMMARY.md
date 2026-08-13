@@ -369,6 +369,10 @@ fail-closed로 올려 게이트 27개 파손).
   `IncidentScope` + provenance 바인딩 `TokenBroker`, 라이브 RBAC `Forbidden`으로 증명) ·
   Phase 1b(argocd/flux 어댑터 2개 + 핸드오프 프리플라이트 5검사 + **rollouts-demo 소유권 TF→ArgoCD 이관 실행**).
 - **런북이 선언대로 실행됨**: capability step(순서·조건·on_failure·per-step verify)을 executor가 실제 소비.
+  ⚠️**단 `verify`가 실제로 도는 건 onprem뿐이다**(`executor.py:221` `if provider == "onprem"`) —
+  AWS/GCP/Azure는 계획에 싣고 실행하지 않으며, 그래서 `verified`를 True가 아니라 **None(unknown)**
+  으로 정직하게 보고한다(코드가 명시·가드도 있음). 2026-08-13에 **잰 것**이고, 그 전까지 이
+  줄은 무조건이었다 — "과대 해석 금지"는 완료 요약에도 걸린다.
 
 **이 마일스톤에서 반복해 나온 결함 형태 — 전부 "선언은 됐는데 소비/전달이 없음":**
 `llm.endpoint`(차트에 있는데 webhook이 못 받음 → 모든 판정 unknown) · `capability_schema.steps`

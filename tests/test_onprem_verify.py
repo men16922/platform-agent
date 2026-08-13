@@ -243,3 +243,73 @@ class TestDeclaredCapability:
         assert result is not None
         assert result.passed is False, "a check we cannot run must not count as verified"
         assert result.step_name == "scale"
+
+
+class TestEveryDeclaredCheckIsImplemented:
+    """The audit `test_unknown_declared_capability_fails…` implies but never runs.
+
+    That test proves an unimplemented check cannot pass. It does not ask whether
+    the catalog currently declares one — which is the question that decides
+    whether any runbook is quietly shipping a verification it can never perform.
+
+    Measured 2026-08-13, and the measuring got it wrong first: a verify capability
+    has **two** declaration sources, and the first pass read only the catalog.
+    `verify_onprem_action` resolves `capability or VERIFY_FOR_ACTION.get(action)`,
+    so the action→check table declares them too — `assert_node_unschedulable` lives
+    only there and looked orphaned until the second source was counted. Same shape
+    as the two defects found earlier the same day: a set-based check that walks one
+    member of a family. Hence `_declared()` below reads both, by construction.
+    """
+
+    def _declared(self) -> dict[str, list[str]]:
+        from src.agents.runbooks.catalog import CAPABILITY_RUNBOOKS
+
+        sources: dict[str, list[str]] = {}
+        for rb_id, runbook in CAPABILITY_RUNBOOKS.items():
+            for step in runbook.get("steps", []):
+                capability = (step.get("verify") or {}).get("capability")
+                if capability:
+                    sources.setdefault(capability, []).append(f"catalog:{rb_id}.{step['name']}")
+        for action, capability in onprem_verify.VERIFY_FOR_ACTION.items():
+            sources.setdefault(capability, []).append(f"action-table:{action}")
+        return sources
+
+    def test_the_audit_reads_both_declaration_sources(self):
+        """Ground truth. Reading only the catalog reported a false orphan."""
+        declared = self._declared()
+        assert "assert_node_unschedulable" in declared, (
+            "the action→check table is no longer being read, so this audit is "
+            "back to walking one member of the family"
+        )
+        assert any(s.startswith("catalog:") for v in declared.values() for s in v), (
+            "the catalog is no longer being read"
+        )
+
+    #: Declared with no implementation, deliberately. Listed rather than tolerated
+    #: so that shrinking or growing it is an edit somebody makes on purpose.
+    KNOWN_UNIMPLEMENTED = {
+        # lambda-throttle's verify. On-prem is the only provider that runs checks
+        # at all, and it can resolve no step of a lambda runbook — the reason the
+        # gate carries a justified skip. Implementing it would be an unreachable
+        # check; `verify_onprem_action` already refuses to call it a pass.
+        "assert_concurrency_applied",
+    }
+
+    def test_every_declared_verify_capability_has_a_check(self):
+        declared = self._declared()
+        missing = sorted(set(declared) - set(onprem_verify._CHECKS) - self.KNOWN_UNIMPLEMENTED)
+
+        assert missing == [], (
+            f"{missing} are declared as verification but no check implements them, "
+            "so a runbook that reaches one reports `passed=False` — a remediation "
+            "that may well have worked, recorded as unverified. Implement the "
+            "check, or add it to KNOWN_UNIMPLEMENTED with the reason."
+        )
+
+    def test_the_known_gap_is_still_a_gap(self):
+        """Keeps the exception list from outliving its reason."""
+        stale = sorted(self.KNOWN_UNIMPLEMENTED & set(onprem_verify._CHECKS))
+        assert stale == [], f"{stale} are implemented now — drop them from KNOWN_UNIMPLEMENTED"
+
+        undeclared = sorted(self.KNOWN_UNIMPLEMENTED - set(self._declared()))
+        assert undeclared == [], f"{undeclared} are no longer declared — drop them"

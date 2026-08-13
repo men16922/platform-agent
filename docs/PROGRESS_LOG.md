@@ -6,6 +6,42 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-13 — 형제 집합 중 하나만 도는 가드를 사냥하다, 그 도구 안에서 같은 함정을 밟았다 (gate 1859→1862)
+
+- Status: 오늘 두 건이 **같은 모양**이었다 — 가드가 **쓰는 쪽만**(티어 2) · 감사가
+  **`for name in REPORT:`**(로깅 문). 목록을 다시 읽는 대신 **그 패턴 자체**를 물었다:
+  형제가 N개인 집합을 **진부분집합만 도는 가드**가 또 있는가.
+- Verified(**내 자신부터**): 새 가드의 `PROVIDERS = ["gcp","azure"]`가 좁은 게 아닌지 봤다 —
+  `decision.py`는 셋뿐이고 onprem은 `runners/`를 타며 **AWS는 같은 블록이 아니라 다른
+  구현**(점수제)이다. **둘이 맞다.**
+- Verified(**전수 행렬, 아무도 잰 적 없다**): capability 17종 × provider 4종. 실행 어댑터가
+  못 푸는 건 `increase_function_concurrency`/**onprem 하나뿐**이고 그건 **이미 알려진 정당한
+  skip**이다(게이트의 `2 skipped`) → 감사가 **알려진 참을 재현** = 비공허.
+  ⚠️`assert_*` 넷이 "아무도 못 푼다"로 나온 건 **내 탐지기가 틀린 것** — `verify`는 실행
+  어댑터가 아니라 **별도 레지스트리 `_CHECKS`**가 푼다. **틀린 해소기에 물었다.**
+- Verified(**그러다 진짜 질문**): `executor.py:221`이 `if provider == "onprem":`다 —
+  **검증은 onprem에서만 돈다.** 나머지 셋은 `verify`를 계획에 싣고 실행하지 않는다.
+  **그런데 결함이 아니다**: 코드가 경계를 **명시**하고(`executor.py:75`) `verified`를 True가
+  아니라 **None(unknown)**으로 정직하게 보고하며, **그 정직성도 이미 가드돼 있다**.
+- Changed(**문서 한 줄 — `src/` 무변경**): `COMPLETED_SUMMARY`가 *"per-step verify를 executor가
+  실제 소비"*를 **무조건**으로 적고 있었다. 코드는 말하는데 요약은 안 해서, 그 줄만 읽는
+  독자는 넷 다 검증한다고 믿는다 → **onprem 한정**임을 명시. **"과대 해석 금지"는 `STATUS`
+  에만 걸리는 규칙이 아니다.**
+- Verified(⚠️**스윕이 나에게 걸렸다 — 오늘 세 번째, 그것을 찾는 도구 안에서**): 카탈로그의
+  `verify.capability`와 `_CHECKS`를 맞대 "구현됐는데 아무도 선언 안 함:
+  `assert_node_unschedulable`"이 나왔는데 **틀렸다** — `verify_onprem_action:237`이
+  `capability or VERIFY_FOR_ACTION.get(action)`라 **선언처가 둘**이고 나는 그 표를 안 봤다.
+  **형제 집합은 세는 순간 전부 세지 않으면 하나가 조용히 빠진다.**
+- Changed(정정 후 가드 4건, `TestEveryDeclaredCheckIsImplemented`): 진짜 불일치는
+  **`assert_concurrency_applied` 하나**(구현 없음, 단 온프렘이 lambda 스텝을 못 resolve해
+  **도달 불가**). 감사는 **선언처 둘을 다 읽고**, **양쪽을 읽는지 자체를 ground truth로**
+  묻고, 예외는 `KNOWN_UNIMPLEMENTED`에 **이유와 함께** 두되 **이유보다 오래 못 살게** 한다.
+- Verified: 변이 5건 red·생존 0, 복구 후 diff clean. `make check` **1862**(+3), 2026-08-13,
+  로컬 macOS·py3.13. 증거 `verify-capabilities-declared-vs-implemented.log`.
+- Blockers: 없음.
+- Next: **패턴 사냥이 준 것은 결함이 아니라 범위였다**(오늘 두 번째). `src/`는 안 바꿨고
+  **고칠 게 없다는 것도 측정**이다. 남은 무과금 항목은 전부 정책 판단이거나 외부 자원 대기.
+
 ## 2026-08-13 — 같은 변명을 세 번째로 시험했다. 이번엔 참이었고, 대신 가드가 반쪽이었다 (gate 1856→1859)
 
 - Status: `PROGRESS_LOG`가 남긴 마지막 줄 — **"로깅 문은 REPORT 4개만. DOCUMENT/DUAL은
@@ -77,34 +113,4 @@
   **매핑 없음** → `certificate-expiry`가 선택은 되는데 `actions=[]`(회귀 아님, 라벨이
   정직해져서 **이제 보인다**) · ⓒ티어 2는 **첫 매치가 이긴다**(AWS는 점수제) — 지금
   테스트가 고정했으니 우연이 아니라 결정이다.
-
-## 2026-08-12 — "지금 비용 나가는 거 있어?" — MTD는 그 질문에 답하지 않는다
-
-- Status: 코드 변경 없음, **측정 세션**. 세 클라우드에 "지금 도는 것"을 물었다.
-- Verified(AWS): MTD **$9.73**을 그대로 읽으면 틀린다 — 일별로 가르니 **$8.03(EC2 Compute)은
-  전부 08-09 중지 이전 누적**이고 08-10부터 0, 도는 인스턴스 전 리전 **0대**. "이번 달"로
-  "지금"을 답하면 **15배쯤 크게** 본다. 남는 건 **중지된 인스턴스에 붙은 EBS 8GB**
-  (~**$0.64/월** — **중지는 볼륨을 끄지 않는다**) + RDS 수동 스냅샷 1개. 미연결 EIP는 없다.
-- Verified(**경고를 실물로 확인했고, 동시에 그 경고가 부정확했다**): `EC2-Other`가 08-11·08-12에
-  0으로 찍혔는데 **볼륨은 지금도 `in-use`다** → 그 0은 **CE 지연**. 08-10에 적어 둔
-  "당일 줄의 0은 잰 0이 아니다"가 처음으로 **증명 대상을 갖췄고**, 동시에 **지연은 하루가
-  아니라 이틀 이상**임이 드러났다(문서는 "당일"이라고 썼다).
-- Verified(**GCP를 처음 전수 조사**, `.env`의 `project-ec7809f7-…`): **금액은 여전히 못 잰다**
-  (`billing_export` 데이터셋은 있고 **테이블 0개** — 콘솔 토글 미완). 대신 자원을 물었다:
-  GKE·VM·디스크·고정IP·LB·**Vertex 엔드포인트**·CloudSQL·AlloyDB **전부 0**(7월 GKE 방치
-  잔재 없음). **상시 과금은 스토리지뿐 ~$0.72/월** — Artifact Registry **7.31GB**(그중
-  `cloud-run-source-deploy` **6.85GB**, 리비전 **84개** 누적) + GCS 1.88GB.
-  Cloud Run `mythos-api`는 **scale-to-zero**(마지막 활동 08-10) → 메모리가 적은 "지속 지출
-  = Vertex ~₩48K/월"은 **사용량 기반이고 지금은 발생 안 함**. 단 같은 메모리의 *"지속 지출은
-  Vertex뿐"*은 **불완전**하다 — 스토리지가 호출과 무관하게 돈다.
-- Verified(방법): **`PATH`를 벗기는 건 "오프라인"이 아니다** — boto3는 `PATH`가 아니라
-  `~/.aws`를 본다. 08-11에 그렇게 돌린 `probe_incident_roundtrip`은 **실제 DynamoDB에
-  write/read/delete를 했다**(설계된 동작, 자동 정리, 비용 무시 가능). 자격증명까지 벗기려면
-  `AWS_PROFILE=__nonexistent__ AWS_CONFIG_FILE=/dev/null AWS_SHARED_CREDENTIALS_FILE=/dev/null`.
-- Blockers: **GCP 금액**은 콘솔 토글 전까지 못 잰다(사용자 몫). 조치는 **아무것도 안 했다** —
-  EBS·스냅샷·AR 이미지는 되돌릴 수 없는 삭제이고, 인스턴스와 ACR은 **다른 프로젝트 소유**다.
-- Next: **BQ 결제 내보내기 토글이 여전히 최우선**($0, 콘솔 수동, Phase 4 선행).
-  ⚠️`.env`가 대화에 노출됐다 — `.gitignore:21`이 잡고 히스토리에도 없어 **레포는 깨끗**하지만
-  세션 로그에는 남았다(AWS 키·Slack 웹훅·GitHub OAuth·서명 시크릿) → 회전 권고.
-  증거 `what-is-actually-billing-2026-08-12.log`.
 
