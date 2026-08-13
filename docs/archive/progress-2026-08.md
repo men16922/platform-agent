@@ -4,6 +4,46 @@
 
 ---
 
+## 2026-08-12 — 게이트 줄의 `1 skipped`를 이름 불렀더니 62%짜리 walk가 나왔다 (gate 1789→1825)
+
+- Status: `NEXT_PLAN`의 열린 항목이 전부 승인·외부 자원 대기라 "무과금 소진"으로 보였다.
+  그 문서 자신이 **"소진은 목록의 상태지 사실이 아니다"**를 네 번 적어 놨으므로, 목록을 다시
+  읽는 대신 **매번 인용하면서 아무도 이름 부른 적 없는 것**을 골랐다 — `1 skipped`.
+- Verified(탐지기 둘, 결과 0): `find_unwritten_keys` 9 + `find_unconsumed_fields` 19 = **28건
+  전부 이미 판정된 것**. 추정 없이 따라갔다 — `grounded`/`grounding_ratio`는 체인이 **완결**
+  (`reconciliation.py:118`→`decision.py:87`→`executor.py:558`→`incident-data.ts:100`)이고
+  탐지기가 놓친 건 **docstring이 예고한 nested-literal 한계**. `slack_ts`는 **M13이 이미 판정**
+  (DTO surface, unread by design). **탐지기가 덮는 범위는 깨끗하다** → 덮지 않는 곳으로.
+- Verified(skip은 정당): 지워 보니 `0 = len([])`로 red. 온프렘은 lambda 런북의 어떤 스텝도
+  resolve 못 하므로 **안 도는 검사를 숨긴 게 아니다**. 이 게이트 줄의 Risk 12② 질문은 닫혔다.
+- Verified(**그걸 읽다가 진짜가 나왔다**): `test_walk_all_steps`는 이름과 docstring이
+  "every step"인데 단언이 **`>= 1`**이었고, 선언된 **16스텝 중 10개(62%)**만 걸었다.
+  **안 걷는 6개는 예외 없이 `previous_step_failed: True` 분기** = **에스컬레이션 스텝 전부**
+  (`rollback_release`·`open_change_request` 포함). 도달 불가였던 이유가 핵심 — 플래그가
+  **`except ValueError` 안에서만** True가 되니 **뭔가 이미 깨져야** 둘째 분기가 열리는데,
+  그 6스텝은 4 provider에서 **24/24 전부 resolve된다**. 행복 경로만 태운 walk에서 둘째
+  분기는 **원리상 도달 불가**(Risk 12③).
+- Changed(**전부 테스트 쪽, `src/` 무변경 — 구현은 처음부터 옳았다**): `started_failed` 축으로
+  **양 분기를 명시적으로** 걷는다(깨지길 기다리지 않는다) · 단언을 **"조건이 맞은 모든 스텝이
+  resolve"**로, `ValueError`는 **삼키지 않고 모아서 보고**(예전엔 "resolve 못 함"과 "도달 안
+  함"이 구별되지 않았다) · `>= 1`은 **공허 통과 방지용으로 존치** · 반공허 가드로 **둘째
+  분기가 실제로 스텝을 더 걷는지**와 `BRANCHES`가 양쪽을 덮는지를 묻는다.
+- Verified(하중): W1·W2(카탈로그의 에스컬레이션 capability 오타) **red 5건·4건** · W3
+  (`BRANCHES=[False,False]`) red · W4는 클린 상태에서 생존이 **정상**이고, 결함이 있을 때
+  **5건 중 4건을 그 단언이 책임진다**(W4′). ⚠️**내 변이가 두 번 틀렸다** — `replace(...,1)`이
+  첫 등장만 바꿔 **레거시 `BUILTIN_RUNBOOKS`의 메타데이터**를 쳤고, 그 오발을 쫓다
+  "리터럴 vs 파생 9/9 불일치"라는 **틀린 측정**까지 갔다. 구조를 확인하니 두 dict는 **다른
+  모양이고 `decision.py:135`가 갈라 쓴다** — 발산이 아니다. **주장 전에 확인해서 안 적었다.**
+- Verified: `make check` **1825**(+36), 2026-08-12, 로컬 macOS·py3.13. 해당 파일 **85→120**.
+  skip 1→2는 정상(onprem/lambda가 양 분기에서 각각 걸리고 사유는 양쪽 다 참).
+  증거 `runbook-walk-skipped-the-escalation-branch.log`.
+- Blockers: 없음.
+- Next: **`BUILTIN_RUNBOOKS`(레거시 dict)를 덮는 테스트가 있는지 안 봤다** — 4절의 오발이
+  거길 고쳐도 안 깨진다는 걸 보여 줬다. 그리고 조건 축은 `previous_step_failed`만 넓혔고
+  **`severity`는 여전히 `"P2"` 고정**이라, `severity_in` 스텝이 생기면 같은 함정이 재발한다
+  (지금 카탈로그엔 없어서 **가드를 안 만들었다** — 없는 문제의 가드는 하중을 못 받는다).
+
+
 ## 2026-08-11 — 맹점을 나머지 전부에 대고 물었다: 결함이 더 넓었다 (gate 1743→1787)
 
 - Status: 어제 남긴 "`capsys` 맹점은 한 건만 봤다"를 소진했다. **훑는 방향을 뒤집은 게

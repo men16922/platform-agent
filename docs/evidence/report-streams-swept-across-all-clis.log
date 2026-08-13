@@ -412,3 +412,71 @@ CI: #24=1769 · #25=1773 · #26=1779 · #27=1787 · #28=1789 — 다섯 번 다 
   한다**. 올바른 이름은 데모를 실제 Slack에 태워야 확정된다. NEXT_PLAN에 있다.
 - 로깅 문은 **REPORT 4개**(닿을 수 있는 전부)만. DOCUMENT/DUAL은 의무가 거꾸로라
   판단이 다르고, 안 봤다.
+
+----------------------------------------------------------------------------
+15. 2026-08-13 — 세 번째로 같은 변명을 시험했다. 이번엔 변명이 참이었다
+----------------------------------------------------------------------------
+
+14절이 남긴 마지막 줄: *"로깅 문은 REPORT 4개(닿을 수 있는 전부)만. DOCUMENT/DUAL은
+의무가 거꾸로라 판단이 다르고, **안 봤다**."* 11절·13절에서 같은 꼴의 문장을 두 번
+시험해 여섯 결함을 얻었으므로, 세 번째도 시험했다.
+
+**이번엔 그 문장이 참이었다.** 감사(12절의 탐지기를 **재구현하지 않고 임포트해서**)를
+DOCUMENT·DUAL에 돌렸다:
+
+    DOCUMENT  render_addons · render_deploy_identity · render_tenancy
+              → 셋 다 WARNING+ 호출에 **안 닿는다**
+    DUAL      preflight_gitops_handoff · sweep_orphan_clusters
+              → 둘 다 **안 닿는다**
+
+즉 오늘 로깅 문으로 새는 DOCUMENT/DUAL은 **없다**. 기본값(lastResort → stderr)이
+이들에게는 **이미 옳은 스트림**이라, **고칠 것이 없다**. 세 번째 시험은 결함을
+주지 않았다 — 그것도 결과다.
+
+**그런데 가드는 절반만 묻고 있었다(Risk 12④ⓒ).**
+`_clis_that_can_warn()`은 `for name in REPORT:`다. 감사는 **REPORT의 의무**만 강제하고
+(경고 낼 수 있으면 stdout으로 당겨라), **DOCUMENT의 거울 의무**는 아무 데서도
+안 묻는다: DOCUMENT CLI가 같은 `send_library_logs_to_the_report()`를 부르면
+`WARNING …`이 **kubectl이 파싱할 문서 안으로** 들어간다. 그걸 red로 만드는 게 없었다.
+
+**결과가 실재하는지 실증했다**(서브프로세스 — 인프로세스면 pytest 핸들러가
+`lastResort`를 가린다):
+
+    $ python -c "…send_library_logs_to_the_report(); logger.warning(…);
+                 runpy.run_path('scripts/render_tenancy.py')" > out.yaml
+    $ head -2 out.yaml
+      WARNING the spoke reads this cluster with the ambient kubectl context
+      apiVersion: capsule.clastix.io/v1beta2
+    $ python -c "yaml.safe_load_all(open('out.yaml'))"
+      yaml.scanner.ScannerError: mapping values are not allowed here, line 2 col 11
+
+⚠️**이건 4절의 `manifest_generator` 사례보다 시끄럽게 깨진다** — 거긴 `{'Usage': …}`
+라는 **유효한 매핑**이 나와 나중에 실패했고, 이건 **아예 파싱이 안 된다**.
+
+⚠️**내 첫 실증은 틀렸다**: 인프로세스로 `sys.stdout`을 버퍼로 갈아끼운 뒤 경고를
+냈더니 경고가 **진짜 stdout**으로 갔다. `basicConfig(stream=sys.stdout)`은
+**호출 시점의 스트림 객체를 붙잡는다**. 실제 CLI는 `main()` 첫 줄에서 부르므로
+진짜 stdout이 묶이고, 사용자의 `> out.yaml`이 바로 그 스트림이다.
+**리다이렉션을 흉내 내지 말고 실제로 걸 것.**
+
+**추가한 가드 셋** (`TestTheLibraryUsesTheSameDoor`):
+  - DOCUMENT CLI는 리다이렉트를 **부르지 않는다** (부르면 문서가 깨진다)
+  - DUAL CLI는 **무조건적으로** 부르지 않는다 — `--json`이 stdout을 문서로 만들기
+    때문. **모드마다 의무가 뒤집힌다.**
+  - 위 두 규칙이 스타일이 아니라 규칙인 이유를 **행동으로** 박은 앵커
+    (실제 DOCUMENT CLI + 실제 서브프로세스 + `pytest.raises(yaml.YAMLError)`)
+
+**안 만든 것**: DUAL의 **모드 조건부 리다이렉트**. 둘 다 지금 경고에 못 닿으므로
+아무도 태울 수 없는 가드가 된다 — 08-12의 `severity_in`과 같은 판단
+(**없는 문제의 가드는 하중을 못 받는다**). 어느 쪽이 정답인지만 테스트에 적어 뒀다.
+
+하중: 변이 5건 전부 red, 생존 0. 깨끗한 변이(임포트까지 넣은 것)에서는 **의도한
+가드 하나만** 실패한다 — render_addons → DOCUMENT 규칙 · sweep_orphan_clusters ·
+preflight_gitops_handoff → DUAL 규칙 · `_report_logging`이 stderr로 돌아가면
+기존 앵커가 잡는다. 복구 후 46 passed + diff clean.
+
+$ make check → **1859 passed, 2 skipped** (2026-08-13, 로컬 macOS·py3.13, 1856 → +3)
+
+**세 번 시험해서 얻은 것**: 11절·13절은 **결함**을, 15절은 **범위**를 줬다.
+시험하지 않았으면 "안 봤다"가 계속 남았을 것이고, 시험하니 **볼 게 없다는 것**이
+측정으로 바뀌었다 — 그리고 **그 과정에서 절반만 묻던 가드가 나왔다**.

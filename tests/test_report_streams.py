@@ -711,6 +711,79 @@ class TestTheLibraryUsesTheSameDoor:
         assert "push_addon_status.py" in leaking, "the known-positive CLI vanished"
         assert len(leaking) >= 4, f"the audit collapsed to {sorted(leaking)}"
 
+    # ---- the half of the question that was not asked -------------------------
+    #
+    # The audit above enforces REPORT's duty: a CLI whose stdout is prose must
+    # pull library warnings onto stdout. It says nothing about the CLIs whose
+    # stdout is a document, and for those the same call is the defect — it moves
+    # `WARNING …` into the thing kubectl parses.
+    #
+    # Measured 2026-08-13: no DOCUMENT or DUAL CLI reaches a WARNING+ call today,
+    # which is why the recorded excuse ("the duty runs the other way, so the
+    # judgement differs") was true. It was still only half a guard: nothing made
+    # a DOCUMENT CLI adding the REPORT fix go red, and the consequence is not
+    # soft — see the behavioural anchor below.
+
+    def test_no_document_cli_routes_library_logging_into_its_document(self):
+        for name in sorted(DOCUMENT):
+            source = (SCRIPTS / name).read_text(encoding="utf-8")
+            assert "send_library_logs_to_the_report()" not in source, (
+                f"{name} writes a document to stdout, so routing WARNING+ there "
+                "puts prose inside what the parser receives. Library warnings "
+                "belong on stderr here — which is already where lastResort puts "
+                "them, so the correct action is none."
+            )
+
+    def test_no_dual_cli_routes_library_logging_unconditionally(self):
+        """DUAL is the hard one: the duty flips with the mode.
+
+        `--json` makes stdout a document, so an unconditional redirect is wrong
+        there for the same reason as DOCUMENT — while in report mode it would be
+        right. Neither DUAL CLI can reach a WARNING+ call today, so the fix is not
+        written: a mode-conditional redirect nobody can currently exercise would
+        be a guard under no load. This records which one it is.
+        """
+        for name in sorted(DUAL):
+            source = (SCRIPTS / name).read_text(encoding="utf-8")
+            assert "send_library_logs_to_the_report()" not in source, (
+                f"{name} switches between prose and a document on stdout, so the "
+                "redirect cannot be unconditional — in --json mode it corrupts "
+                "the payload. Make it depend on the mode, and guard both."
+            )
+
+    def test_a_warning_on_the_document_stream_actually_breaks_the_parser(self):
+        """Why the two rules above are rules and not style.
+
+        Runs a real DOCUMENT CLI as a subprocess with the REPORT fix installed and
+        one library warning emitted — the exact mistake — and asks yaml what it
+        makes of the result. Subprocess for the same reason as the anchor above:
+        in-process, pytest's own handlers mean `lastResort` never runs.
+
+        Note this fails *louder* than the `manifest_generator` case guarded in
+        `TestTheDocumentStreamStaysParseable`: that one produced a valid mapping
+        (`{'Usage': …}`) and failed later, this one will not parse at all.
+        """
+        mistake = (
+            "import sys, logging, runpy;"
+            "sys.path.insert(0, '.'); sys.path.insert(0, 'scripts');"
+            "from _report_logging import send_library_logs_to_the_report;"
+            "send_library_logs_to_the_report();"
+            "logging.getLogger('src.agents.platform.collector')"
+            ".warning('the spoke reads this cluster with the ambient context');"
+            "sys.argv = ['render_tenancy.py', 'acme', '--env', 'prod'];"
+            "runpy.run_path('scripts/render_tenancy.py', run_name='__main__')"
+        )
+        proc = subprocess.run(
+            [sys.executable, "-c", mistake], cwd=REPO, capture_output=True, text=True,
+        )
+
+        assert proc.stdout.startswith("WARNING "), (
+            "the mistake did not reproduce, so this test proves nothing about it; "
+            f"stdout began {proc.stdout[:80]!r}"
+        )
+        with pytest.raises(yaml.YAMLError):
+            list(yaml.safe_load_all(proc.stdout))
+
     def test_an_ambient_read_warning_reaches_the_report(self):
         """Driven as a real subprocess so the logging config is the real one.
 
