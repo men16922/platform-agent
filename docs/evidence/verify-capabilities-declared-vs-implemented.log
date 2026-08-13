@@ -1,0 +1,136 @@
+2026-08-13 — 형제 집합 중 하나만 순회하는 가드를 찾다가, 스윕이 나에게 걸렸다
+============================================================================
+
+발단: 오늘 두 건이 **같은 모양**으로 걸렸다.
+  - GCP/Azure 티어 2 — 가드가 **쓰는 쪽**(dict의 모양)만 묻고 **읽는 쪽**을 안 물었다.
+  - 로깅 문 감사 — `for name in REPORT:` 로 **형제 집합 중 하나만** 순회했다.
+그래서 목록을 다시 읽는 대신 **그 패턴 자체**를 전수로 물었다: *레포에 형제가 N개인
+집합이 있고, 가드가 그중 진부분집합만 도는 곳이 또 있는가.*
+
+----------------------------------------------------------------------------
+1. 먼저 내 자신의 오늘 작업에 걸었다
+----------------------------------------------------------------------------
+
+새 가드 `test_capability_catalog_scan.py`는 `PROVIDERS = ["gcp","azure"]`인데
+`test_capability_runbook_e2e.py`는 **넷**(aws·gcp·azure·onprem)을 쓴다. 내가 방금
+경고한 그 결함을 내가 저질렀나?
+
+    $ ls src/agents/operations/*/decision.py
+      aws/decision.py  azure/decision.py  gcp/decision.py     ← 셋
+    $ git grep -ln "_select_runbook" -- src/                  ← 같은 셋
+
+onprem은 `decision.py`가 없다(`runners/`를 탄다). AWS는 같은 블록이 아니라 **다른
+구현**(네임스페이스·키워드 점수제)이다. **둘이 맞다** — 그 블록을 공유하는 것은 정확히
+gcp·azure 둘뿐이고, 테스트가 그렇게 적어 뒀다.
+
+----------------------------------------------------------------------------
+2. capability × provider 해소 행렬 (아무도 전수로 잰 적 없다)
+----------------------------------------------------------------------------
+
+`renew_certificate`가 GCP/Azure에서 비어 있던 건 **일화 하나**였다. 전수로 쟀다:
+
+    선언된 capability 17종 × provider 4종
+
+    → 실행 어댑터가 못 푸는 것: `increase_function_concurrency` / **onprem 하나뿐**
+      이건 **이미 알려진 정당한 skip**이다(온프렘은 lambda 런북의 어떤 스텝도 resolve
+      못 한다 — 게이트의 `2 skipped`가 그것). 감사가 **알려진 참을 재현**했다 = 비공허.
+
+    → `assert_*` 넷은 "아무 provider도 못 푼다"로 나왔다.
+      ⚠️**이건 내 탐지기가 틀린 것이다.** `verify` capability는 실행 어댑터가 아니라
+      **별도 레지스트리 `_CHECKS`**(`runners/onprem_verify.py`)가 푼다. **틀린 해소기에
+      물었다.** 12절의 "감사 자신이 먼저 틀렸다"와 같은 자리.
+
+----------------------------------------------------------------------------
+3. 그걸 고치다 진짜 질문이 나왔다 — 검증은 어느 provider에서 도는가
+----------------------------------------------------------------------------
+
+    src/agents/operations/aws/executor.py:221
+        if provider == "onprem":
+            from ...onprem_verify import verify_onprem_action
+
+**검증은 onprem에서만 돈다.** AWS/GCP/Azure는 `verify` 블록을 decision이 계획에
+싣지만(`decision.py:346`) 실행기가 **쓰지 않는다**.
+
+**그런데 이건 결함이 아니다** — 코드가 그 경계를 **명시하고 정직하게 처리한다**:
+
+    executor.py:75
+        # With no verifications (AWS/GCP/Azure paths, or actions with nothing
+        # declared to check) this is exactly the historical rule … and `verified`
+        # reports None ("unknown") rather than claiming proof.
+
+정직성 자체도 **이미 가드돼 있다**(`test_onprem_verify.py:208` —
+*"absent evidence must read as unknown, not proven"*). 건드릴 것이 없다.
+
+**틀린 건 문서 한 줄이었다.** `COMPLETED_SUMMARY`가 무조건으로 적고 있었다:
+
+    - **런북이 선언대로 실행됨**: capability step(순서·조건·on_failure·per-step
+      verify)을 executor가 실제 소비.
+
+`per-step verify`가 **onprem 한정**이라는 말이 없다. 코드는 말하는데 요약은 안 한다 →
+그 줄만 읽는 독자(미래의 나 포함)는 넷 다 검증한다고 믿는다. **"과대 해석 금지"는
+`STATUS`에만 있는 규칙이 아니다.** 사실에 맞게 한정했다.
+
+----------------------------------------------------------------------------
+4. 그리고 스윕이 나에게 걸렸다 — 선언처가 둘인데 하나만 봤다
+----------------------------------------------------------------------------
+
+카탈로그의 `verify.capability`와 `_CHECKS`를 맞대 봤다:
+
+    선언됐는데 구현 없음:      ['assert_concurrency_applied']
+    구현됐는데 아무도 선언 안 함: ['assert_node_unschedulable']    ← **틀렸다**
+
+`assert_node_unschedulable`은 고아가 아니다. `verify_onprem_action:237`이
+
+    capability = capability or VERIFY_FOR_ACTION.get(action)
+
+라서 **선언처가 둘**이다 — `VERIFY_FOR_ACTION`에 `ONPREM-DrainNode →
+assert_node_unschedulable`이 있다. **나는 그 표를 안 봤다.**
+
+⚠️**오늘 세 번째로 같은 모양이고, 이번엔 그걸 찾으려고 만든 스윕 안에서 그랬다.**
+"형제 집합 중 하나만 순회하는 가드"를 사냥하면서 **형제 집합 중 하나만 순회했다.**
+
+정정된 결과 — **진짜 불일치는 하나**:
+  `assert_concurrency_applied` (lambda-throttle의 verify)가 **구현 없음**.
+  도달 가능한가? 검사를 도는 provider는 onprem뿐이고 온프렘은 lambda 런북의 어떤
+  스텝도 resolve 못 한다 → **오늘 도달 불가**. 코드는 이미 정직하다(`passed=False`,
+  "no check implemented" — *"A declared check we cannot run is not a pass"*).
+
+----------------------------------------------------------------------------
+5. 만든 것 — `TestEveryDeclaredCheckIsImplemented` (4건)
+----------------------------------------------------------------------------
+
+기존 `test_unknown_declared_capability_fails_rather_than_silently_passing`은
+**구현 없는 검사가 통과하지 못함**을 증명한다. 그런데 **카탈로그가 지금 그런 걸
+선언하고 있는지는 묻지 않는다** — 어떤 런북이 *영영 수행할 수 없는 검증을 달고
+출하 중인지*를 결정하는 건 그 질문이다.
+
+  - `_declared()`는 **선언처 둘을 다 읽는다**(구조적으로 — 4절이 그 이유다).
+  - `test_the_audit_reads_both_declaration_sources` — ground truth. 한쪽만 읽으면 red.
+  - `test_every_declared_verify_capability_has_a_check` — 예외는
+    `KNOWN_UNIMPLEMENTED`에 **이유와 함께 명시**한다(관용이 아니라 **누군가 일부러
+    하는 편집**이 되도록).
+  - `test_the_known_gap_is_still_a_gap` — 예외 목록이 **이유보다 오래 살지 못하게**.
+    구현되면 red, 선언이 사라져도 red.
+
+하중 (변이 5건, 생존 0, 복구 후 diff clean):
+
+    P1 카탈로그에 검사 없는 verify 추가   -> ...has_a_check                    red
+    P2 `_CHECKS`에서 검사 하나 제거        -> ...has_a_check (+ 그 검사 자신)   red
+    P3 감사가 action 표를 안 읽음          -> ...reads_both_declaration_sources red
+    P4 감사가 카탈로그를 안 읽음           -> ...reads_both (+ known_gap)       red
+    P5 알려진 갭이 구현됨                  -> ...known_gap_is_still_a_gap       red
+
+$ make check → **1862 passed, 2 skipped** (2026-08-13, 로컬 macOS·py3.13, 1859 → +3)
+
+----------------------------------------------------------------------------
+6. 이번에 확인된 것
+----------------------------------------------------------------------------
+
+- **패턴 사냥은 값이 있었지만, 준 것은 결함이 아니라 세 가지다**: ①내 어제 작업이
+  옳다는 확인(provider 둘이 맞다) ②전수 행렬 — 구멍은 **이미 알려진 정당한 skip 하나**
+  ③**문서 한 줄의 과대 주장**과 **선언처가 둘인 곳의 미검사 불일치 하나**.
+- **`src/` 무변경.** 검증이 onprem 한정인 것은 **결함이 아니라 기록된 경계**이고
+  코드가 이미 정직하다. **고칠 게 없다는 것도 측정이어야 한다.**
+- ⚠️**같은 함정을 세 번째로, 그것을 찾는 도구 안에서 밟았다** — 형제 집합은
+  **세는 순간 전부 세지 않으면 하나가 조용히 빠진다.** 이제 그 감사에는
+  **양쪽을 읽는지 묻는 ground truth**가 붙어 있다.

@@ -8,18 +8,14 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` → **1859 passed, 2 skipped** (2026-08-13, +3, 로컬 macOS·py3.13) — "로깅 문은
-  DOCUMENT/DUAL을 **안 봤다**"를 시험했다. **이번엔 변명이 참**(다섯 다 WARNING+에 안 닿음)
-  이었고, 대신 **가드가 절반만 묻고 있었다**(감사가 `for name in REPORT:`라 **DOCUMENT의
-  거울 의무**를 안 물었다 — 문서 스트림에 `WARNING` → `yaml` **ScannerError**로 실증).
-  변이 5건 red. 증거 로그 **15절**.
-- `make check` → **1856 passed, 2 skipped** (2026-08-13, +31) — 직전 세션의 Next("레거시
-  dict를 덮는 테스트가 있나")를 따라갔더니 **덮는 테스트는 5개 있었고 전부 dict의 모양만
-  물었다**. 읽는 쪽으로 가니 GCP/Azure `_select_runbook` **티어 2가 원리상 도달 불가** —
-  열두 줄에 결함 셋(validity 극성 역전 · `steps`↔`capabilities` · `estimated_rto_sec`↔
-  `rto_sec`), **두 파일에 복사된 채**. 결과는 크래시가 아니라 **모든 GCP/Azure 인시던트가
-  `generic-recovery`**. 변이 8건 red, 생존 0.
-  증거 `gcp-azure-capability-scan-was-unreachable.log`.
+- `make check` → **1862 / 1859 / 1856** (2026-08-13, 1825→**+37**, 로컬 macOS·py3.13) — 상세는
+  `PROGRESS_LOG` 상단 3건과 증거가 권위. **여기 남길 것**: ①**GCP/Azure `_select_runbook`
+  티어 2가 원리상 도달 불가**였다(열두 줄에 결함 셋, **두 파일에 복사된 채** → 모든 GCP/Azure
+  인시던트가 `generic-recovery`) — **고쳤다** · ②로깅 문의 **DOCUMENT 거울 의무**와
+  ③**검증(`verify`)이 onprem 한정**인 것은 **결함이 아니라 안 물어진 범위**였고, ③은
+  `COMPLETED_SUMMARY`의 무조건 주장만 한정했다(`src/` 무변경). 변이 8+5+5 red, 생존 0.
+  증거 `{gcp-azure-capability-scan-was-unreachable,report-streams-swept-across-all-clis(15절),
+  verify-capabilities-declared-vs-implemented}.log`.
 - `make check` → **1825 passed, 2 skipped** (2026-08-12, +36) — 게이트 줄의 **`1 skipped`를
   이름 불렀다**(skip은 정당했다). 그걸 읽다 `test_walk_all_steps`가 **선언된 16스텝 중
   10개(62%)**만 걷는 걸 찾았다 — 안 걷는 6개는 **에스컬레이션 분기 전부**. 구현은 멀쩡,
@@ -91,7 +87,7 @@
 10. **GCP/Azure 자격증명은 아직 테넌트-바운드가 아니다** — 스코프는 **어느 네임스페이스를
    건드릴지**만 정하고 토큰을 테넌트에 안 묶는다(GCP는 프로젝트 전역 신원 하나, Azure는 ARM에서 클러스터 admin kubeconfig). 자격증명 자체가 경계인 건 **온프렘뿐** → Phase 4.
 11. **Dashboard dependency audit** — Next.js 16.2.10 번들 PostCSS(<8.5.10) moderate 2건. 16.2.x 패치 없음 · `audit fix --force`는 next@9 다운그레이드(07-13 재검증) → **upstream 대기 확정**, 빌드타임 경로라 런타임 위험 낮음.
-12. **게이트의 초록에는 조건이 붙는다 — 다섯이 같은 계열(2026-08-08~13)** —
+12. **게이트의 초록에는 조건이 붙는다 — 여섯이 같은 계열(2026-08-08~13)** —
    ①**시간**: 픽스처가 절대 시각을 하드코딩하고 생산자가 살아 있는 시계로 창을 걸면 통과는
    **달력이 움직이기 전까지만** 참이다(07-29 픽스처 → 08-05 만료). ②**환경**: 게이트가
    **선언되지 않은 패키지** 위에서 통과하고 있었다(새 클론은 아무도 통과 못 함) — CI가
@@ -115,6 +111,10 @@
    가드가 아니다.** 같은 날 **변이 하네스 자신**도 고장나 있었다(`git checkout --`가 커밋
    안 된 고침을 날렸다) — **초록으로 안 돌아오는 복구는 복구가 아니다.** 그리고 결함이
    **한 블록 두 파일**이면 한쪽만 고치는 게 그것이 살아남는 방식 → **provider 간 일치를
-   묻는 가드**를 같이 둘 것. 증거 `docs/evidence/{report-streams-swept-across-all-clis,
-   gcp-azure-capability-scan-was-unreachable}.log`.
+   묻는 가드**를 같이 둘 것. ⚠️**⑥형제 집합(08-13, 하루에 세 번)**: 가드가 **형제 중 하나만
+   순회**하면 나머지는 안 물어진 채다(쓰는 쪽만 · `for name in REPORT:` · **선언처가 둘인데
+   하나만**). 세 번째는 **그걸 찾으려고 만든 스윕 안에서** 밟았다 → **세는 순간 전부 세고,
+   "양쪽을 읽는가"를 ground truth로 박을 것.** 증거 `docs/evidence/{report-streams-swept-
+   across-all-clis,gcp-azure-capability-scan-was-unreachable,
+   verify-capabilities-declared-vs-implemented}.log`.
 - (그 밖의 해소 이력은 `PROGRESS_LOG`/`docs/archive/` 참조.)
