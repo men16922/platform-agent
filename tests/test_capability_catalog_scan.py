@@ -432,3 +432,21 @@ class TestSelectionRespectsResourceType:
         )
 
         assert runbook_id == "eks-pod-oom"
+
+    @pytest.mark.parametrize("provider", PROVIDERS)
+    def test_the_fallback_is_never_gated_by_resource_type(self, provider):
+        """AWS states this outright (`test_generic_recovery_is_never_gated`).
+
+        `generic-recovery` declares `cloud-resource` and is the answer when
+        nothing else fits, so filtering it by resource type would leave those
+        incidents with no runbook at all. Here it holds because tier 3 returns it
+        unconditionally rather than because tier 2 exempts it — which is exactly
+        why it is worth asserting: the reason is structural and invisible, and a
+        later tidy-up that pushed the filter down into tier 3 would break it
+        without touching anything this file otherwise reads.
+        """
+        runbook_id, _actions, _rto = _decision(provider)._select_runbook(
+            _analyzer(["open_change_request"], provider, resource_type="streaming-consumer")
+        )
+
+        assert runbook_id == "generic-recovery"
