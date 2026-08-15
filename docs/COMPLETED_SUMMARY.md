@@ -1,6 +1,6 @@
 # COMPLETED_SUMMARY — platform-agent
 
-최종 갱신: 2026-08-13
+최종 갱신: 2026-08-15
 
 > 완료된 milestone 압축. current docs 에는 링크만, 상세 체크리스트는 여기로 압축.
 > 도메인 원문 상세는 `bin/docs/archive/`.
@@ -37,6 +37,45 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 ## M6 — CDK deprecation 정리 (완료)
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
+
+## M19 — 런북이 "이 자원엔 안 맞는다"고 선언해 뒀는데 두 provider가 그 줄을 안 읽었다 (완료, 2026-08-15)
+
+**목적**: `NEXT_PLAN`의 열린 항목 **ⓑ**("`renew_certificate`가 GCP/Azure 어댑터에 매핑
+없음")를 "기록된 이유를 한 번 돌려 보고 시작할 것"에 따라 시험했다. 시작 전에 **직전
+세션의 M18/D47 문서 체크포인트가 커밋 안 된 채** 트리에 있어 먼저 닫았다(PR #33).
+
+**결과 — ⓑ는 틀렸고, 그 옆에 진짜 결함이 있었다**
+- **ⓑ는 오기였다(stale 아님)**: 읽지 말고 **돌려서** 재니 **네 provider 전부** 풀린다.
+  `git log -L`로 매핑은 **2026-07-09**부터 — 그 기록이 쓰인 08-14 커밋보다 **한 달 앞선다**.
+- **#34 결함(고침)**: 티어 2가 런북의 **`resource_types`를 안 읽는다**. AWS는
+  `_fits_resource`로 **이미 배제 중**이고, 어긋난 쌍 **67 / 81**이 GCP/Azure에선 그대로
+  선택된다. ⚠️**AWS보다 조용하다**: AWS는 하드코딩 액션으로 폴백해 **다른 provider의
+  액션**을 넘기지만(시끄럽다), GCP/Azure는 풀리지 않는 capability를 **버리고 짧아진 목록**을
+  돌려준다 → `certificate-expiry`가 kubernetes-workload에 선택되고 **RTO 600을 단 채
+  notify만 한다**. 규칙은 `runbooks/schema.py::fits_resource` **한 곳**으로(세 provider가
+  읽고 AWS는 위임) — **공유되는 게 SDK가 아니라 계약**인 블록이라 복사본을 안 늘렸다.
+- **가드 +32**: ground truth를 **함수가 아니라 카탈로그가 선언한 데이터**에 댔다(두 구현이
+  똑같이 틀리면 통과하는 가드를 피하려고). 전수 스윕(9타입 × 전 런북 × 2 provider) +
+  **역방향 셋**(선언한 타입은 뽑힌다 · unknown은 아무것도 배제 안 한다 · **폴백은 게이팅
+  안 된다** — AWS엔 있고 여기엔 없던 짝). 역방향이 없으면 **"전부 배제"가 통과한다**.
+
+**검증**: `make check` **1862 → 1892 → 1894**(+32, 2026-08-15, 로컬 macOS·py3.13;
+**CI도 1894 — 숫자 일치**). 변이 **6건 전부 red, 생존 0**, 복구 후 0 modified.
+
+**⚠️ 내가 틀린 것 셋**: **형제 함정 네 번째** — 두 파일에 같은 필터를 넣었는데 **Azure만
+import가 되돌아가** 죽어 있었다(GCP만 초록인 걸 보고서야 알았다) · **변이 "생존"을 잘못
+읽었다** — **틀린 테스트 파일**에 물었고 실제 가드는 `test_runbook_selectability.py`에
+있었다(*"생존"은 어디에 물었는지까지 말할 것*) · **대기 조건이 "출력 파일이 비어 있지
+않다"**여서 pytest가 도는 중에 트리를 되돌렸다(*변이·실행·복구는 한 스크립트 안에*).
+그리고 **기존 테스트 2건이 red가 됐고 그게 옳았다** — 픽스처가 모든 런북을 **k8s인 척** 물었다.
+
+**⚠️ 남긴 것 — 그리고 건드리면 안 되는 것**: ⓐ(`kafka-lag-spike` 두 dict 불일치)·ⓒ(첫-매치-
+승리)는 **정책 사안**. 계약 필드 일곱을 훑어 보니 **`provider`는 AWS 포함 아무도 안 읽는데
+빌트인 9개가 전부 `"aws"`**라, 읽기 시작하면 GCP/Azure는 **전부 `generic-recovery`로
+떨어진다**(=#30 이전). ⇒ **"선언됐는데 안 읽힌다"는 자동으로 결함이 아니다. 기준은 읽는
+쪽의 provider 간 비대칭이다.**
+
+증거 `docs/evidence/resource-types-declared-and-unread.log` · PR #33·#34
 
 ## M18 — 가드가 형제 집합 중 **하나만** 순회하고 있었다 (완료, 2026-08-13)
 
