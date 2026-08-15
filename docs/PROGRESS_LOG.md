@@ -6,6 +6,33 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-15 — 직전 고침이 남긴 기준을 다음 계약에 댔더니, 형제 집합이 다섯 번째로 걸렸다 (gate 1894→1912)
+
+- Status: M19의 결론(**판단 기준은 읽는 쪽의 provider 간 비대칭**)을 `NormalizedIncident`에
+  그대로 적용했다. `severity_hint`는 **네 시그널 어댑터가 전부 채우는데**(Azure
+  `essentials.severity` · GCP `incident.severity` · onprem 라벨 · AWS 알람 상태) **읽는 곳은
+  `aws/analyzer.py:200` 하나**였다.
+- Verified(⚠️**레포가 스스로 적어 뒀는데 가드가 안 지켰다**): `test_analyzer_prompt_evidence.py`
+  도크스트링이 **네 어댑터를 정확히 열거**하고 *"severity가 AUTO냐 APPROVE냐를 정한다 —
+  07-29 라이브 관측: `warning` 규칙이 P1으로 등급 매겨져 즉시 조치됐다"*라고 쓴다. 그런데
+  그 파일의 임포트는 **`aws.analyzer` 한 줄**이다 → **산문이 참이어도 임포트 줄이 범위다.**
+- Verified(재현): 실제 `_build_prompt` — aws는 severity·alert detail 둘 다 YES,
+  **gcp/azure는 둘 다 NO**. 두 정규화 블록은 **AWS의 고치기 전 다섯 줄과 글자 그대로 같다**.
+  onprem은 `onprem_incident_pipeline.py:34`가 AWS analyzer를 임포트해 **이미 덮인다**.
+- Changed: 프롬프트 두 줄 + **시스템 프롬프트 안전장치**("강한 증거지만 **구속력은 없다**")를
+  같이 이식. ⚠️**안전장치 없이 라벨만 넣으면 구멍보다 나쁘다** — 라벨이 지시로 읽혀
+  AUTO/APPROVE를 혼자 정한다. 어휘 → P1/P2/P3 **매핑은 안 한다**(정책, AWS도 안 했다).
+- Changed(가드 +18): 기존 파일을 세 analyzer로 parametrize — 이식 전 **16 red**, **AWS 11은
+  내내 초록**. 역방향 둘(힌트 없으면 줄 안 붙임 · 시스템 프롬프트가 "not binding"을 말함).
+  onprem을 목록에서 뺀 이유를 **코드에 적었다**(빠진 것과 덮인 것은 구별돼야 한다).
+- Verified: 변이 **6건 전부 red·생존 0**(무조건 붙이기 · 안전장치 제거 · 어휘 정규화 포함),
+  복구 후 0 modified. `make check` **1912**(+18) · CI도 **1912** — 일치. 2026-08-15,
+  로컬 macOS·py3.13. 증거 `operator-severity-never-reached-two-models.log`. PR #37.
+- Blockers: 없음.
+- Next: **"무과금 소진"이 일곱 번째로 틀렸고, 이번엔 목록 밖이 아니라 목록이 만든 기준에서
+  나왔다.** 다음 수도 같은 자리에 있다 — **가드 파일의 임포트를 그 파일이 주장하는 범위와
+  맞대 볼 것**(`observations`·`triggered_at`도 AWS만 읽는다).
+
 ## 2026-08-15 — 틀린 기록을 시험하러 갔더니, 옆에서 AWS가 이미 닫은 결함이 두 provider에 살아 있었다 (gate 1862→1894)
 
 - Status: 먼저 **직전 세션의 문서 체크포인트가 커밋 안 된 채** 트리에 있었다(코드는
@@ -34,6 +61,7 @@
   **`provider`도 아무도 안 읽는데** 빌트인 9개가 **전부 `"aws"`**라, 읽기 시작하면 GCP/Azure는
   **전부 `generic-recovery`로 떨어진다**(=#30 이전 상태). 판단 기준은 **읽는 쪽의 비대칭**이지
   선언의 고아 상태가 아니다. 남은 무과금은 ⓐ·ⓒ(정책) · `slack_live_approval`(Slack 데모 선행).
+
 ## 2026-08-13 — 형제 집합 중 하나만 도는 가드를 사냥하다, 그 도구 안에서 같은 함정을 밟았다 (gate 1859→1862)
 
 - Status: 오늘 두 건이 **같은 모양**이었다 — 가드가 **쓰는 쪽만**(티어 2) · 감사가
@@ -69,35 +97,3 @@
 - Blockers: 없음.
 - Next: **패턴 사냥이 준 것은 결함이 아니라 범위였다**(오늘 두 번째). `src/`는 안 바꿨고
   **고칠 게 없다는 것도 측정**이다. 남은 무과금 항목은 전부 정책 판단이거나 외부 자원 대기.
-
-## 2026-08-13 — 같은 변명을 세 번째로 시험했다. 이번엔 참이었고, 대신 가드가 반쪽이었다 (gate 1856→1859)
-
-- Status: `PROGRESS_LOG`가 남긴 마지막 줄 — **"로깅 문은 REPORT 4개만. DOCUMENT/DUAL은
-  의무가 거꾸로라 판단이 다르고, **안 봤다**."** 같은 꼴의 문장을 두 번 시험해 결함 여섯을
-  얻었으므로(증거 로그 11·13절) 세 번째도 시험했다.
-- Verified(**이번엔 변명이 참이었다**): 12절의 탐지기를 **재구현하지 않고 임포트해서**
-  DOCUMENT 3개·DUAL 2개에 돌렸더니 **다섯 다 WARNING+ 호출에 안 닿는다**. 기본값
-  (lastResort → stderr)이 이들에겐 **이미 옳은 스트림**이라 **고칠 게 없다**.
-  세 번째 시험은 결함을 안 줬다 — **그것도 결과다**(안 본 것이 **볼 게 없다는 측정**이 됐다).
-- Verified(**대신 가드가 절반만 묻고 있었다**, Risk 12④ⓒ): `_clis_that_can_warn()`이
-  `for name in REPORT:`다. 감사는 **REPORT의 의무**만 강제하고 **DOCUMENT의 거울 의무**는
-  아무 데서도 안 묻는다 — DOCUMENT CLI가 같은 리다이렉트를 부르면 `WARNING …`이
-  **kubectl이 파싱할 문서 안으로** 들어가는데 그걸 red로 만드는 게 없었다.
-- Verified(결과 실증, 서브프로세스): `render_tenancy` stdout 첫 줄이 `WARNING …`이 되고
-  `yaml.safe_load_all`이 **`ScannerError`로 터진다**. ⚠️`manifest_generator` 사례(4절)보다
-  **시끄럽게** 깨진다 — 거긴 `{'Usage': …}`라는 **유효한 매핑**이었다.
-  ⚠️**내 첫 실증이 틀렸다**: 인프로세스로 `sys.stdout`을 갈아끼웠는데 경고는 **진짜
-  stdout**으로 갔다 — `basicConfig(stream=sys.stdout)`은 **호출 시점의 스트림 객체를
-  붙잡는다**. **리다이렉션은 흉내 내지 말고 실제로 걸 것.**
-- Changed(**테스트만, `scripts/`·`src/` 무변경**): 가드 셋 — DOCUMENT는 리다이렉트를 부르지
-  않는다 · DUAL은 **무조건적으로** 부르지 않는다(`--json`이 stdout을 문서로 만든다 =
-  **모드마다 의무가 뒤집힌다**) · 이 둘이 스타일이 아니라 규칙인 이유를 **행동으로** 박은
-  앵커(실제 CLI + 서브프로세스 + `pytest.raises(yaml.YAMLError)`).
-- Changed(**안 만든 것**): DUAL의 **모드 조건부 리다이렉트**. 둘 다 지금 경고에 못 닿아
-  **아무도 태울 수 없는 가드**가 된다 — 08-12 `severity_in`과 같은 판단. 정답만 적어 뒀다.
-- Verified: 변이 5건 red·생존 0. 깨끗한 변이(임포트까지 넣은 것)에선 **의도한 가드 하나만**
-  실패한다. 복구 후 46 passed + diff clean. `make check` **1859**(+3), 2026-08-13,
-  로컬 macOS·py3.13. 증거 `report-streams-swept-across-all-clis.log` **15절**.
-- Blockers: 없음.
-- Next: 파이프 뒤 나머지 일곱은 **강제할 실패 경로가 없거나 이미 옳다**(재확인 불필요).
-  남은 건 `slack_live_approval` 이중 노후화 하나인데 **데모를 실제 Slack에 태워야** 확정된다.
