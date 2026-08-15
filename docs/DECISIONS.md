@@ -1,6 +1,6 @@
 # DECISIONS — platform-agent
 
-최종 갱신: 2026-08-09
+최종 갱신: 2026-08-13
 
 > 되돌리기 어려운 결정만. 형식: **Decision / Reason / Impact**. 최신이 위.
 
@@ -17,6 +17,20 @@
 > - **GitAIOps 실습서(Notiflex)** (외부 학습 레포) — Rollouts **AnalysisTemplate 메트릭 자동판정**(우리 무기한 pause 게이트의 미완점) · **OTel→Tempo로 4-step 파이프라인 자체 트레이싱** · 런북 **사전확인/사후검증 3단**(우리 `RunbookStep`엔 없음) · **allow/ask/deny 권한통제** · **Sync Wave**. 안티패턴=Kafka·멀티 노드풀·GKE 종속 시크릿·`--dangerously-skip-permissions`. 상세 → `docs/reference/gitaiops-notiflex-book.md`. (검토 2026-07-25)
 
 ---
+
+## D47 — 운영자가 등록하는 런북의 RTO 필드는 **`rto_sec` 하나다** (GCP/Azure도 AWS 계약을 따른다)
+
+- **Decision / Reason:** GCP/Azure `_select_runbook`의 티어 1이 Firestore/Cosmos 문서에서
+  `estimated_rto_sec`를 읽고 있었다. 그건 **출력 쪽**(`DecisionOutput`) 이름이고, 런북 아이템의
+  계약 필드는 `rto_sec`이다(`runbooks/schema.py`가 유일한 정의, AWS의 DynamoDB 경로도 그걸
+  읽는다). **문서화된 계약을 따른 운영자가 RTO를 못 받는** 상태였다. 세 provider가 같은
+  스키마를 쓰는데 읽는 이름이 갈리면 **두 번째 진실 공급원**이 된다.
+- **Impact:** 이 결정은 **레포 밖 사람의 입력 형식**을 못 박는다 — `incident-runbooks`
+  컬렉션/컨테이너에 등록하는 문서는 `rto_sec`을 쓴다. **지금이 가장 싼 시점이다**: 두 스토어
+  모두 **문서 0개**이고 시더도 없어(Risk 2와 같은 모양) 마이그레이션할 데이터가 없다.
+  **스토어가 실제로 생기는 건 Phase 4**이므로 그때 이 줄이 계약이다.
+  ⚠️ 되돌리려면 세 provider를 같이 되돌려야 한다(하나만 바꾸면 그게 결함이 살아남는 방식).
+  → `gcp-azure-capability-scan-was-unreachable.log` 4절
 
 ## D46 — 정기 비용 검사를 위해 **Full Disk Access를 주지 않는다** (launchd 대신 대화형 셸)
 
