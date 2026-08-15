@@ -1,6 +1,6 @@
 # COMPLETED_SUMMARY — platform-agent
 
-최종 갱신: 2026-08-11
+최종 갱신: 2026-08-13
 
 > 완료된 milestone 압축. current docs 에는 링크만, 상세 체크리스트는 여기로 압축.
 > 도메인 원문 상세는 `bin/docs/archive/`.
@@ -37,6 +37,48 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 ## M6 — CDK deprecation 정리 (완료)
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
+
+## M18 — 가드가 형제 집합 중 **하나만** 순회하고 있었다 (완료, 2026-08-13)
+
+**목적**: 직전 세션이 남긴 Next("`BUILTIN_RUNBOOKS`를 덮는 테스트가 있나")를 그대로 따라간
+것이 시작이다. 답은 **"있다, 5개 파일"**이었는데 **전부 dict의 모양만** 물었다(길이·키
+집합·deepcopy). **읽는 쪽으로 가니 죽은 코드가 있었다.** 그 뒤 같은 모양이 두 번 더 나왔고,
+셋을 묶는 것은 하나다 — **가드가 형제 중 하나만 순회하면 나머지는 안 물어진 채다.**
+
+**결과 — PR 3건, 진짜 결함은 하나**
+- **#30 결함(고침)**: GCP/Azure `_select_runbook` **티어 2가 원리상 도달 불가**였다. 같은 12줄이
+  **두 파일에 복사**된 채 결함 셋이 겹쳐 있었다 — ①`if not validate_runbook(rb)`(그 함수는
+  **문제의 목록**을 돌려주니 빈 리스트=유효 → **유효한 런북마다 skip**) ②`rb.get("steps")`
+  (`steps`는 `CAPABILITY_RUNBOOKS` 것) ③`estimated_rto_sec`(계약은 `rto_sec` → **D47**).
+  ⚠️**터지지 않는 게 핵심**: actions는 티어 3에서 정상 resolve되니 결정은 채워져 보이고,
+  **자기가 따른다고 주장하는 런북과 RTO만** 틀렸다 = **모든 GCP/Azure 인시던트가
+  `generic-recovery`**. 기존 커버리지는 `"runbook_id" in result`와 `!= ""` 두 줄로,
+  **둘 다 `"generic-recovery"`에 영원히 참**이었다.
+- **#31 범위(`src/` 무변경)**: "로깅 문은 DOCUMENT/DUAL을 **안 봤다**"를 시험했더니 **변명이
+  참**(다섯 다 WARNING+에 안 닿음 = 고칠 것 없음). **대신 감사가 `for name in REPORT:`**라
+  **DOCUMENT의 거울 의무**를 안 물었다 — DOCUMENT CLI가 같은 리다이렉트를 부르면
+  `yaml.safe_load_all`이 **ScannerError**로 터진다(실증). 가드 3건.
+- **#32 범위(`src/` 무변경)**: capability **17종 × provider 4종** 전수 행렬 — 구멍은 **이미
+  알려진 정당한 skip 하나**뿐. **검증(`verify`)이 onprem 한정**인 것은 **기록된 경계**이고
+  코드가 정직하다(`verified=None`) → 틀린 건 **이 파일의 무조건 주장 한 줄**이라 한정했다.
+  가드 4건(선언처가 **둘**이므로 **양쪽을 읽는지 자체가 ground truth**).
+
+**검증**: `make check` **1825 → 1856 → 1859 → 1862**(+37, 2026-08-13, 로컬 macOS·py3.13;
+CI도 세 지점 전부 통과). 변이 **8+5+5 = 18건 전부 red, 생존 0**, 복구 후 diff clean.
+
+**⚠️ 내가 틀린 것 넷 — 전부 증거 로그에 있다**: 변이 하네스의 `restore()`가 `git checkout --`라
+**커밋 안 된 고침을 날렸다**(*초록으로 안 돌아오는 복구는 복구가 아니다*) · 새 RTO 가드의
+픽스처가 **틀린 기본값과 같은 300**이라 결함을 통과시켰다(*기본값과 같은 값을 고른 픽스처는
+가드가 아니다*) · `basicConfig(stream=sys.stdout)`이 **호출 시점의 스트림을 붙잡는** 걸 놓쳐
+첫 실증이 헛돌았다(*리다이렉션은 흉내 내지 말고 실제로 걸 것*) · `verify`를 **틀린 해소기**에
+물었다. 그리고 **선언처가 둘인데 하나만 본 것 — 그걸 찾으려고 만든 스윕 안에서**.
+
+**남긴 것(정책 판단이라 발명 안 함)**: `kafka-lag-spike`의 두 dict 불일치 ·
+`renew_certificate`의 GCP/Azure 어댑터 매핑 부재 · 티어 2의 첫-매치-승리 ·
+DUAL의 모드 조건부 리다이렉트(**하중을 못 받는 가드**) · `assert_concurrency_applied`(도달 불가).
+
+증거 `docs/evidence/{gcp-azure-capability-scan-was-unreachable,
+report-streams-swept-across-all-clis(15절),verify-capabilities-declared-vs-implemented}.log`
 
 ## M17 — 리포트가 독자에게 갈린 채 도착하고 있었다 (완료, 2026-08-10~11)
 
