@@ -38,6 +38,45 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
+## M20 — 운영자가 알람 규칙에 써 둔 severity가 두 모델에는 끝내 안 닿았다 (완료, 2026-08-15)
+
+**목적**: **M19가 남긴 기준을 그대로 다음 계약에 댔다** — *"선언됐는데 안 읽힌다"가 아니라
+"읽는 쪽이 provider 간에 비대칭이다"*. `NormalizedIncident`는 provider 경계를 넘는 유일한
+봉투라 그 필드들을 **읽는 쪽으로** 훑었다.
+
+**찾은 것 — 형제 집합, 다섯 번째**
+- `severity_hint`는 **네 시그널 어댑터가 전부 채운다**(Azure `essentials.severity` · GCP
+  `incident.severity` · onprem Alertmanager 라벨 · AWS 알람 상태). **읽는 곳은
+  `aws/analyzer.py:200` 하나**였다. `observations`(→ `Alert detail`)도 같다.
+- ⚠️**이 레포가 스스로 적어 뒀는데 가드가 안 지켰다**: `test_analyzer_prompt_evidence.py`
+  도크스트링(07-29)이 **네 어댑터를 정확히 열거**하고 *"severity가 **AUTO냐 APPROVE냐**를
+  정한다 — 라이브 관측: `severity: warning` 규칙이 **P1으로 등급 매겨져 즉시 조치됐다**"*라고
+  쓴다. 그런데 그 파일의 임포트는 **`aws.analyzer` 한 줄**이다.
+- **재현**: 실제 `_build_prompt` — aws는 둘 다 YES, **gcp/azure는 둘 다 NO**. 두 정규화
+  블록은 **AWS의 고치기 전 다섯 줄과 글자 그대로 같다**. **onprem은 이미 덮인다**
+  (`onprem_incident_pipeline.py:34`가 AWS analyzer를 임포트 — 07-29 관측이 그 경로).
+
+**고침(발명 없음)**: 프롬프트 두 줄과 **함께 시스템 프롬프트의 안전장치**를 이식했다 —
+*"강한 증거로 다루되 벗어나면 root_cause에 이유를 써라. **구속력은 없다** … **말없이
+어긋나는 것**이 이 항목이 막으려는 것이다."* ⚠️**안전장치 없이 라벨만 넣으면 구멍보다
+나쁘다**: 라벨이 지시로 읽혀 **AUTO/APPROVE를 라벨 혼자 정한다.** severity 어휘 →
+P1/P2/P3 **매핑은 안 한다**(정책 결정, AWS도 안 했다).
+
+**가드 +18**: 기존 파일을 **세 analyzer로 parametrize**. 이식 전 **16 red**, **AWS 11건은
+내내 초록**. 역방향 둘 — **힌트가 없으면 줄을 안 붙인다**(무조건 붙이는 구현이면 나머지가
+전부 통과한다) · **시스템 프롬프트가 "not binding"을 말한다**. onprem을 목록에서 뺀 이유를
+**코드에 적었다**(빠진 것과 덮인 것은 구별돼야 한다).
+
+**검증**: `make check` **1894 → 1912**(+18, 2026-08-15, 로컬 macOS·py3.13; **CI도 1912 —
+일치**). 변이 **6건 전부 red, 생존 0**(무조건 붙이기 · 안전장치 제거 · 어휘 정규화 포함),
+복구 후 0 modified.
+
+**⇒ 이번에 확인된 것**: **직전 고침이 남긴 기준이 다음 결함을 찾는다**(M19 → M20, 하루 만에).
+그리고 ⚠️**고침을 설명하는 산문이 그 고침의 범위를 넘겨 말할 수 있다** — 07-29 도크스트링은
+네 어댑터를 정확히 열거했는데 **코드는 하나만 고쳤다**. **산문이 참이어도 임포트 줄이 범위다.**
+
+증거 `docs/evidence/operator-severity-never-reached-two-models.log` · PR #37
+
 ## M19 — 런북이 "이 자원엔 안 맞는다"고 선언해 뒀는데 두 provider가 그 줄을 안 읽었다 (완료, 2026-08-15)
 
 **목적**: `NEXT_PLAN`의 열린 항목 **ⓑ**("`renew_certificate`가 GCP/Azure 어댑터에 매핑
