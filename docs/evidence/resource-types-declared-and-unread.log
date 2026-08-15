@@ -1,0 +1,164 @@
+2026-08-15 — 틀린 기록을 시험하러 갔다가, 그 옆에서 AWS가 이미 닫은 결함이 두 provider에 살아 있는 걸 봤다
+============================================================================
+
+발단: `NEXT_PLAN`의 열린 항목 ⓑ — **"`renew_certificate`가 GCP/Azure 어댑터에
+매핑이 없어 `certificate-expiry`가 `actions=[]`"**(08-14 증거 로그 7절).
+"기록된 이유를 한 번 돌려 보고 시작할 것"이라 돌려 봤다.
+
+----------------------------------------------------------------------------
+1. ⓑ는 틀렸다 — 그리고 stale이 아니라 쓰일 때부터 틀렸다
+----------------------------------------------------------------------------
+
+읽어서가 아니라 **돌려서** 쟀다(실제 어댑터 + 실제 `NormalizedIncident`):
+
+  certificate-expiry.capabilities   = ['renew_certificate', 'open_change_request']
+  certificate-expiry.resource_types = ['certificate', 'cloud-resource']
+
+  aws     rt=certificate     -> ['AWS-RenewACMCertificate',          'AWS-SendSlackAlert']
+  aws     rt=cloud-resource  -> ['AWS-RenewACMCertificate',          'AWS-SendSlackAlert']
+  gcp     rt=certificate     -> ['GCP-RenewManagedCertificate',      'GCP-NotifyOperations']
+  gcp     rt=cloud-resource  -> ['GCP-RenewManagedCertificate',      'GCP-NotifyOperations']
+  azure   rt=certificate     -> ['AZURE-RenewAppServiceCertificate', 'AZURE-NotifyOperations']
+  azure   rt=cloud-resource  -> ['AZURE-RenewAppServiceCertificate', 'AZURE-NotifyOperations']
+  onprem  rt=certificate     -> ['ONPREM-RenewCertificate',          'ONPREM-CreateChangeRequest']
+
+**네 provider 전부, 선언된 두 자원타입 전부에서 풀린다.** `actions=[]`는 없다.
+
+언제부터 있었나 — 매핑이 나중에 생긴 거라면 기록은 stale일 뿐이다:
+
+  $ git log --oneline -L 48,49:src/agents/adapters/execution/gcp.py
+  9c41fd1 2026-07-09 feat: capability-based runbook schema 확장 — 9 런북 × 4 provider
+  $ git merge-base --is-ancestor 9c41fd1 fcee1a1 && echo YES
+  YES   ← fcee1a1 = 08-14의 PR #30(그 증거 로그가 쓰인 커밋)
+
+**한 달 앞선다.** stale이 아니라 **쓰일 때부터 틀렸다.**
+끝에서 끝까지도 확인(티어 1은 라이브 Firestore/Cosmos라 패치해서 막았다 —
+08-09에 가드가 게이트에서 라이브 `gcloud`를 부른 함정과 같은 꼴):
+
+  gcp    rt=certificate    -> runbook='certificate-expiry' rto=600 actions=[2개 다]
+  azure  rt=cloud-resource -> runbook='certificate-expiry' rto=600 actions=[2개 다]
+
+----------------------------------------------------------------------------
+2. 대신 그 자리에 있던 것 — 티어 2가 `resource_types`를 안 읽는다
+----------------------------------------------------------------------------
+
+ⓑ의 주장("선택은 되는데 actions가 빈다")이 성립할 조건을 거꾸로 물었다:
+**티어 2는 capability 교집합만 본다. 자원타입이 안 맞으면 어떻게 되나.**
+
+  gcp    rt=kubernetes-workload -> runbook='certificate-expiry' actions=['GCP-NotifyOperations']
+  gcp    rt=database-instance   -> runbook='certificate-expiry' actions=['GCP-NotifyOperations']
+  azure  rt=storage-volume      -> runbook='certificate-expiry' actions=['AZURE-NotifyOperations']
+
+→ **인증서를 갱신한다고 주장하면서 notify만 하는 계획**이, RTO 600을 달고 나온다.
+
+AWS는 이걸 **이미 닫아 뒀다** — `aws/decision.py:222 _fits_resource`, 도크스트링:
+
+    "``resource_types`` has been declared on every runbook since the catalog
+     existed ... and never consulted by selection. So nothing stopped an RDS
+     runbook being chosen for a Kubernetes workload"
+
+블라스트 반경(AWS가 배제하는데 GCP/Azure는 그대로 선택하는 쌍):
+
+  pairs AWS excludes but GCP/Azure do not: 67 / 81
+
+⚠️**실패 방식이 AWS보다 조용하다.** AWS는 하드코딩된 액션 이름으로 폴백해 **다른
+provider의 액션**을 executor에 넘긴다(시끄럽다). GCP/Azure는 풀리지 않는
+capability를 `except (ValueError, KeyError): continue`로 **버리고** 짧아진 목록을
+돌려준다 — 결정은 채워져 보이고, **줄어든 것을 아무도 모른다.**
+
+----------------------------------------------------------------------------
+3. 고침 — 복사본을 늘리지 않았다
+----------------------------------------------------------------------------
+
+규칙을 `runbooks/schema.py::fits_resource` **한 곳**에 두고 세 provider가 다 읽는다
+(AWS의 `_fits_resource`는 위임만 한다). `NEXT_PLAN` 유지 규약이 **바로 이 티어를 예로**
+적어 뒀다 — *"공유되는 게 SDK가 아니라 계약인 블록이 있다 ... provider 간 일치를 묻는
+가드로 묶을 것."* 복사본 둘은 다음 고침이 한쪽에만 닿는 방식이다.
+
+**"양쪽 unknown이면 배제 안 함"**은 AWS가 내린 결정을 그대로 옮겼다(휴리스틱 발명 아님).
+
+----------------------------------------------------------------------------
+4. 가드 (+32) — ground truth를 함수가 아니라 선언된 데이터에 댔다
+----------------------------------------------------------------------------
+
+두 구현이 **똑같이 틀리면 통과하는** 가드가 되지 않도록, 비교 대상은 카탈로그가
+선언한 `resource_types` 자체다.
+
+- 전수 스윕: 9 자원타입 × 전 런북 × 2 provider. 한 쌍씩 묻는 형태는 **티어가 죽어
+  있던 동안에도 통과하던 모양**이라 쓰지 않았다.
+- 역방향 셋(없으면 "전부 배제"가 통과한다 = 티어가 죽어 있던 그 상태):
+  ① 선언한 타입은 여전히 뽑힌다 ② 추론 못 한 타입은 아무것도 배제하지 않는다
+  ③ **폴백은 게이팅되지 않는다** — AWS의 `test_generic_recovery_is_never_gated`에
+  짝이 없던 자리다. GCP/Azure에서 지금 성립하는 이유는 **티어 2의 면제가 아니라
+  티어 3의 무조건 반환**이라 구조적이고 눈에 안 보인다.
+
+⚠️**기존 테스트 2건이 red가 됐고 그게 옳았다**: 픽스처가 모든 런북을
+**kubernetes-workload인 척** 물었다(lambda 런북을 k8s 인시던트로 조회). 선택이
+`resource_types`를 무시하는 동안에만 성립하던 질문이라, 각 런북이 **선언한 타입**으로
+묻도록 고쳤다.
+
+----------------------------------------------------------------------------
+5. 변이 6건 — 전부 red, 생존 0
+----------------------------------------------------------------------------
+
+  baseline                       green  (63 passed)
+  GCP 필터 제거                   red    (13 failed)
+  Azure 필터 제거                 red    (13 failed)
+  fits_resource 항상 허용         red    (26 failed)
+  unknown을 배제로 반전            red    (2 failed)
+  AWS 위임 스텁                   red    (test_runbook_selectability)
+  폴백까지 게이팅                  red    (22 failed)
+  복구 후                         green  (63 passed, 0 modified)
+
+----------------------------------------------------------------------------
+6. 내가 틀린 것 셋
+----------------------------------------------------------------------------
+
+ⓐ **형제 함정을 또 밟았다**(08-13에 세 번 걸린 그것). 두 파일에 같은 필터를 넣었는데
+   **Azure만 import가 되돌아가** NameError로 죽어 있었다 — 편집 도구가 sed 이전 상태를
+   썼다. GCP만 초록이고 Azure만 빨간 걸 보고서야 알았다. **세 import를 전수로 확인.**
+
+ⓑ **변이 5를 "생존"으로 잘못 읽었다.** AWS 위임을 스텁하고 `test_decision.py`에
+   물었더니 초록이라 "AWS의 고침엔 가드가 없다"고 결론했다. **틀렸다** — 실제 가드는
+   `test_runbook_selectability.py::TestResourceTypeGate`에 있고, 전체 스위트로 물으니
+   red다. **틀린 파일에 물으면 "없다"가 나온다**(08-13에 `verify`를 틀린 해소기에
+   물은 것과 같은 계열).
+
+ⓒ **그 재측정에서 대기 조건이 틀렸다.** 백그라운드 실행을 **"출력 파일이 비어 있지
+   않다"**로 기다렸는데, 스크립트 첫 줄(grep)이 쓰이는 순간 참이 됐다 → **pytest가
+   도는 중에 `git checkout --`로 트리를 되돌렸다.** 결과를 버리고, 변이·실행·복구를
+   **한 스크립트 안**에 넣어 창을 없앤 뒤 다시 쟀다.
+
+----------------------------------------------------------------------------
+7. 남긴 것 — 그리고 ⚠️건드리면 안 되는 것
+----------------------------------------------------------------------------
+
+계약 필드 일곱을 전수로 훑었다(`actions capabilities namespaces keywords
+resource_types provider rto_sec`).
+
+- `namespaces`/`keywords`를 GCP/Azure가 안 읽는 것 = **이미 알려진 ⓒ**(AWS는 점수제,
+  GCP/Azure는 첫 매치). 정책 사안이라 그대로 둔다.
+- `actions`를 GCP/Azure가 안 읽는 것 = **옳다.** 하드코딩된 AWS 액션 이름을 읽는 것이
+  바로 AWS 쪽 실패 방식이다.
+- ⚠️**`provider`는 AWS 포함 아무 decision 경로도 안 읽는다** — 그런데 빌트인 9개가
+  **전부 `"aws"`**다(`Counter({'aws': 9})`). "선언됐는데 안 읽힌다"를 이유로 이걸 읽기
+  시작하면 **GCP/Azure는 아무것도 못 고르고 전부 `generic-recovery`로 떨어진다** —
+  #30이 고친 바로 그 상태다.
+
+**⇒ "선언됐는데 안 읽힌다"는 자동으로 결함이 아니다.** `resource_types`가 결함이었던
+이유는 안 읽혀서가 아니라, **AWS가 같은 필드를 읽으며 이미 배제하고 있었고 두
+provider만 안 하고 있었기** 때문이다. 판단 기준은 **읽는 쪽의 비대칭**이지
+**선언의 고아 상태**가 아니다.
+
+(부수 확인: 9개 전부 `resource_types`를 선언 → "선언 없으면 통과" 분기로 새는 런북
+없음. 필터가 전수로 하중을 받는다.)
+
+----------------------------------------------------------------------------
+8. 게이트
+----------------------------------------------------------------------------
+
+  make check → 1894 passed, 2 skipped   (1862 → +32, 2026-08-15, 로컬 macOS·py3.13)
+  CI(gate.yml) → 1894 passed, 2 skipped (57.54s) — **로컬 ↔ CI 숫자 일치**
+
+PR #34(squash `bbb72a0`). 앞서 PR #33(`e9897bc`)으로 직전 세션의 M18/D47 문서
+체크포인트가 커밋 안 된 채 트리에 남아 있던 것을 먼저 닫았다.
