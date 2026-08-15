@@ -1,0 +1,175 @@
+2026-08-15 — 레포는 GCP/Azure의 정답을 이미 갖고 있었다. 한쪽 진입 경로에만 있었다
+============================================================================
+
+발단: `AGENT_BRIEF`의 `▶ NEXT SESSION`이 가리킨 자리 — *"가드 파일의 임포트를 그 파일이
+주장하는 범위와 맞대 볼 것(`observations`·`triggered_at`도 AWS만 읽는다)"*. M19가 세우고
+M20이 재사용한 기준(**읽는 쪽의 provider 간 비대칭**)의 세 번째 적용이다.
+
+----------------------------------------------------------------------------
+1. 적힌 항목은 이미 닫혀 있었다 — 그리고 그 옆에 진짜가 있었다
+----------------------------------------------------------------------------
+
+`observations`를 물었더니 **세 analyzer가 전부 읽는다**(M20이 닫았다):
+
+    aws/analyzer.py:184     observations = normalized.observations or {}
+    azure/analyzer.py:169   observations = normalized.observations or {}
+    gcp/analyzer.py:161     observations = normalized.observations or {}
+
+**닫힌 항목이었다.** 그런데 같은 grep이 **detector 층의 비대칭**을 같이 보여 줬다 —
+`aws/detector.py:162`는 `observations`를 읽는데 GCP/Azure detector엔 **주석만** 있었다.
+
+그 자리의 함수가 이렇게 쓰여 있다(`_incident_reason`):
+
+    """...
+    Provider-neutral by construction: each adapter names the rule differently
+    (Alertmanager `alertname`, GCP `policy_name`/`condition_name`, Azure
+    `alert_rule`), so the keys are looked up rather than special-cased.
+    """
+
+**도크스트링이 GCP와 Azure의 키를 이름으로 부른다.** 호출자를 전수로 셌다:
+
+    $ git grep -n "_incident_reason" -- src tests
+    src/agents/operations/aws/detector.py:133:        reason=_incident_reason(incident),
+    src/agents/operations/aws/detector.py:146:def _incident_reason(...)
+
+**호출자 하나. 테스트 0개.** ⚠️ M19가 적은 그대로다 — **산문이 참이어도 임포트 줄이 범위다.**
+
+GCP/Azure는 각자 한 줄로 때웠다:
+
+    gcp/detector.py:139     reason=incident_data.get("summary", "")
+    azure/detector.py:124   reason=essentials.get("description", "")
+
+----------------------------------------------------------------------------
+2. ⚠️ 더 날카로운 것 — 같은 인시던트가 진입 경로에 따라 다른 답을 받았다
+----------------------------------------------------------------------------
+
+`aws/detector.py`에는 **non-AWS 이벤트용 경로**가 따로 있다:
+
+    aws/detector.py:58   provider = _detect_provider(event)      # gcp/azure/onprem 판별
+    aws/detector.py:79   alarm = _synthetic_alarm(normalized_incident, provider)
+    aws/detector.py:133      reason=_incident_reason(incident)   # ← 풍부
+
+즉 **같은 GCP 알림이 두 갈래로 흐른다:**
+
+    GCP alert → aws.detector.lambda_handler          → _synthetic_alarm      → 풍부
+    GCP alert → gcp.detector.cloud_function_handler  → _build_alarm_context  → 얇음
+
+**결함은 "GCP/Azure가 안 읽었다"가 아니라 "레포가 정답을 이미 갖고 있었는데 한쪽
+경로에만 뒀다"이다.** 이건 M18의 형제 집합과 같은 계열이되, 형제가 provider가 아니라
+**같은 provider의 진입점**이다.
+
+----------------------------------------------------------------------------
+3. 실측 — 무엇을 잃었나 (읽지 말고 돌렸다)
+----------------------------------------------------------------------------
+
+어댑터가 도크스트링이 명시한 키를 **실제로 채운다**(`signals/gcp.py:38-40`,
+`signals/azure.py:53`). 즉 함수는 GCP/Azure용으로 쓰였고 입력도 준비돼 있었다.
+
+    --- GCP ---
+      detector가 만든 reason : 'Disk usage is high'
+      _incident_reason 이 줄 것: 'disk-full-policy disk utilization above 90% Disk usage is high'
+    --- Azure ---
+      detector가 만든 reason : 'Disk usage is high'
+      _incident_reason 이 줄 것: 'disk-full-rule Disk usage is high'
+
+**잃는 것 = 운영자가 규칙에 붙인 이름.**
+
+----------------------------------------------------------------------------
+4. 그래서 무엇이 틀어지나 — 등급이 두 단계 뒤집힌다
+----------------------------------------------------------------------------
+
+`reason`을 읽는 쪽을 따라갔다. GCP/Azure에는 **AWS엔 없는 소비자**가 있다 —
+`_fallback_analysis`(LLM 불가 시 휴리스틱 등급):
+
+    gcp/analyzer.py:126    if any(w in reason for w in ("down","outage","unavailable","crash")): P1
+    gcp/analyzer.py:128    elif any(w in reason for w in ("high","spike","oom","throttl")):      P2
+    (azure/analyzer.py:129~ 동일)
+
+**즉 등급 판정이 `reason`의 낱말을 본다.** 운영자가 증상을 규칙 이름에 적고 summary는
+중립으로 둔 흔한 형태로 재현:
+
+    policy_name = "checkout service outage" / summary = "Threshold exceeded"
+
+    --- GCP ---   지금 reason='Threshold exceeded'                  -> P3
+                  규칙명 포함                                        -> P1   ⚠️뒤집힘
+    --- Azure --- 지금 reason='Threshold exceeded'                  -> P3
+                  규칙명 포함                                        -> P1   ⚠️뒤집힘
+
+`models.py`가 정의한 대로 **P1 = "Critical — auto-execute remediation"**,
+**P3 = "Medium — human approval required"**. ⚠️ **AUTO냐 사람이냐가 갈린다** —
+M20이 `severity_hint`로 닫은 것과 **같은 축이고, 같은 두 provider다.**
+
+⚠️ 첫 시도는 뒤집히지 않았다(둘 다 P2). 첫 분기 `signal_type == "reliability"`가
+먼저 걸려 낱말 축까지 **도달하지 않았기** 때문이다 — 조건 축을 값으로 명시해 걸어야
+한다는 Risk 12③의 둘째 얼굴을 재현한 셈이다. metric을 바꿔 `availability`로 만든 뒤
+낱말 분기가 실제로 돌았다.
+
+----------------------------------------------------------------------------
+5. 고침 — 계약 모듈에 한 벌 (M19 선례)
+----------------------------------------------------------------------------
+
+`NEXT_PLAN` 유지 규약: *"공유되는 게 SDK가 아니라 계약인 블록은 계약 모듈에 한 벌만
+두고 provider 간 일치를 묻는 가드로 묶는다."* `_incident_reason`은 **어느 키가 규칙
+이름을 나르는가**라는 계약이지 SDK 세부가 아니다 → `adapters/base.py`로 옮겼다
+(키를 쓰는 쪽이 `adapters/signals/*`이므로 같은 패키지가 맞다).
+
+    adapters/base.py::incident_reason      ← 한 벌
+    aws/detector.py::_incident_reason      ← 위임 (기존 호출자 유지)
+    gcp/detector.py::_build_alarm_context  ← reason=incident_reason(normalized)
+    azure/detector.py::_build_alarm_context← reason=incident_reason(normalized)
+
+**발명하지 않은 것**: 낱말→P1/P2 매핑은 안 건드렸다(정책). 규칙 이름을 `reason`에
+넣기만 했고, 그건 AWS가 이미 내린 결정을 **옮긴 것**이다.
+
+----------------------------------------------------------------------------
+6. 가드 — 17건, 변이 7건 전부 red · 생존 0
+----------------------------------------------------------------------------
+
+`tests/test_incident_reason_parity.py` (신규). **이 함수엔 테스트가 하나도 없었다.**
+
+  TestEntryPointParity      두 진입 경로가 같은 답을 주는가 (§2의 결함을 직접 고정)
+  TestReasonReachesTheGrader 읽는 쪽에 대고 물음 — 등급이 P1이 되는가 / 얇으면 P3인가
+  TestReasonContract        역방향 셋 — 설명 보존 · 키 없으면 signal_type 폴백 · 공백 중복
+  TestSingleCopy            `_RULE_NAME_KEYS`를 정의하는 모듈이 **정확히 하나**인가 +
+                            세 detector가 전부 계약을 임포트하는가
+
+변이(**변이·실행·복구를 한 스크립트 안에서** — Risk 12⑦):
+
+    M1 GCP를 옛 동작으로        RED    M5 signal_type 폴백 제거     RED
+    M2 Azure를 옛 동작으로      RED    M6 AWS를 원래 결함으로       RED
+    M3 규칙명 키 통째 제거      RED    M7 설명 키 제거(역방향)      RED
+    M4 condition_name만 제거    RED
+
+**물은 대상**(Risk 12⑦ — "어디에 물었는지까지"): 신규 파일 + **변경 모듈을 임포트하는
+테스트 13개 전부**(`git grep -l`로 산출, `scope.txt`). 전체 스위트가 아닌 이유는
+4분 26초 × 7회 = 31분이기 때문이고, **범위를 임포트로 정의**해 좁게 물어 "생존"으로
+오독하는 것을 막았다.
+
+게이트: **1929 passed, 2 skipped** (1912 → **+17**), 2026-08-15, 로컬 macOS·py3.13.
+복구 후 재실행도 **1929** — 초록으로 돌아왔다.
+
+----------------------------------------------------------------------------
+7. ⚠️ 이 작업이 스스로 밟은 함정 — Risk 12⑤를 그대로 재현했다
+----------------------------------------------------------------------------
+
+변이 하네스가 **10분 타임아웃에 잘렸고**, `finally`의 복구 블록이 **돌지 못했다**.
+`base.py`가 `_RULE_NAME_KEYS = ()` 상태로 남았다.
+
+레포가 08-13에 적어 둔 것과 **글자 그대로 같다**: *"초록으로 안 돌아오는 복구는
+복구가 아니다."* 그때는 `git checkout --`이 커밋 안 된 고침을 날린 것이었고, 나는
+그걸 피하려고 **원문을 메모리에 담아 복원**하도록 짰다 — **그 설계는 맞았는데
+프로세스가 죽으면 메모리도 같이 죽는다는 것을 안 봤다.**
+
+**그래서 규칙에 하나가 붙는다:**
+
+  ⚠️ **복구는 프로세스 밖에도 있어야 한다.** in-memory 복원은 정상 종료를 전제한다.
+     타임아웃·kill에서 살아남으려면 원문을 **디스크에 먼저 떨궈** 두거나, 변이 대상을
+     **한 번에 하나**로 줄여 각 호출이 타임아웃 안에 끝나게 해야 한다.
+
+그리고 **한 가지가 이번엔 잘 됐다**: 하네스가 죽자마자 파일 상태를 먼저 검사했고
+(`grep`으로 네 파일 전부), 복원 후 **전체 게이트로 초록을 확인**한 뒤에야 다음으로
+갔다. 08-13의 실패는 그 확인을 안 한 것이었다.
+
+============================================================================
+측정: 2026-08-15, 로컬 macOS · py3.13 (/opt/anaconda3/bin/python3.13)
+게이트: 1929 passed / 2 skipped (fix 전 1912) · 변이 7건 red · 생존 0

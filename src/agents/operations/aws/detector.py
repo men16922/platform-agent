@@ -21,6 +21,7 @@ from typing import Any
 import boto3
 import structlog
 
+from src.agents.adapters.base import incident_reason
 from src.agents.adapters.registry import get_signal_adapter
 from src.agents.models import AlarmContext, DetectorOutput, NormalizedIncident
 
@@ -136,13 +137,6 @@ def _synthetic_alarm(incident: NormalizedIncident, provider: str) -> AlarmContex
     )
 
 
-# Where each provider puts the human-readable name of the rule that fired, and
-# the text describing it. Runbook matching scores keywords over the alarm's
-# `reason`, so anything not surfaced here is invisible to selection.
-_RULE_NAME_KEYS = ("alertname", "policy_name", "condition_name", "alert_rule")
-_DESCRIPTION_KEYS = ("summary", "description")
-
-
 def _incident_reason(incident: NormalizedIncident) -> str:
     """What actually fired, in words — the text runbook matching reads.
 
@@ -154,23 +148,12 @@ def _incident_reason(incident: NormalizedIncident) -> str:
     selection — which is why an on-prem disk alert resolved to generic-recovery
     while a `disk-full` runbook sat in the catalog.
 
-    Provider-neutral by construction: each adapter names the rule differently
-    (Alertmanager `alertname`, GCP `policy_name`/`condition_name`, Azure
-    `alert_rule`), so the keys are looked up rather than special-cased.
+    The rule itself now lives in ``adapters/base.py`` — it was written
+    provider-neutral (it looks up GCP and Azure keys) but only this file called
+    it, so GCP and Azure lost their own rule names. This delegates rather than
+    keeping a second copy.
     """
-    metadata = incident.source_metadata or {}
-    observations = incident.observations or {}
-    parts = [
-        str(metadata.get(key, "")).strip()
-        for key in _RULE_NAME_KEYS
-    ] + [
-        str(observations.get(key, "")).strip()
-        for key in _DESCRIPTION_KEYS
-    ]
-    reason = " ".join(part for part in parts if part)
-    # Falling back to signal_type keeps the previous behaviour for any adapter
-    # that carries none of these, rather than handing matching an empty string.
-    return reason or (incident.signal_type or "")
+    return incident_reason(incident)
 
 
 # ------------------------------------------------------------------
