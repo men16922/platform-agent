@@ -53,7 +53,11 @@ def _decision(provider: str):
     return importlib.import_module(f"src.agents.operations.{provider}.decision")
 
 
-def _analyzer(capabilities: list[str], provider: str = "gcp") -> AnalyzerOutput:
+def _analyzer(
+    capabilities: list[str],
+    provider: str = "gcp",
+    resource_type: str = "kubernetes-workload",
+) -> AnalyzerOutput:
     alarm = AlarmContext(
         alarm_name="capability-scan-alarm",
         alarm_arn="arn:...",
@@ -68,7 +72,7 @@ def _analyzer(capabilities: list[str], provider: str = "gcp") -> AnalyzerOutput:
             normalized_incident=NormalizedIncident(
                 provider=provider,
                 service="checkout-api",
-                resource_type="kubernetes-workload",
+                resource_type=resource_type,
                 resource_id="deploy/api",
                 signal_type="reliability",
                 recommended_capabilities=capabilities,
@@ -119,8 +123,16 @@ class TestCapabilityScanReachesTheCatalog:
     def test_recommended_capabilities_select_the_matching_runbook(
         self, provider, capabilities, expected
     ):
+        # Ask each entry as the kind of resource it declares. The fixture used to
+        # ask every one of them as a Kubernetes workload, which only worked while
+        # selection ignored `resource_types` — a lambda runbook is not reachable
+        # from a Kubernetes incident and should not be.
         runbook_id, _actions, rto = _decision(provider)._select_runbook(
-            _analyzer(capabilities, provider)
+            _analyzer(
+                capabilities,
+                provider,
+                resource_type=BUILTIN_RUNBOOKS[expected]["resource_types"][0],
+            )
         )
 
         assert runbook_id == expected, (
@@ -154,10 +166,12 @@ class TestCapabilityScanReachesTheCatalog:
     def test_every_catalog_entry_is_reachable_through_its_own_capabilities(self, provider):
         """No entry may be selectable in name only.
 
-        Asks each entry with its own first declared capability. An entry that
-        answers with a *different* runbook is legitimate — capabilities overlap
-        and the first match wins — so the claim is the weaker, honest one: some
-        catalog entry answers, and it is never the fallback.
+        Asks each entry with its own first declared capability, on a resource
+        type it declares — the pairing the entry actually claims to handle.
+        An entry that answers with a *different* runbook is legitimate —
+        capabilities overlap and the first match wins — so the claim is the
+        weaker, honest one: some catalog entry answers, and it is never the
+        fallback.
         """
         select = _decision(provider)._select_runbook
 
@@ -165,8 +179,11 @@ class TestCapabilityScanReachesTheCatalog:
         for rb_id, rb in BUILTIN_RUNBOOKS.items():
             if rb_id == "generic-recovery":
                 continue  # its capability *is* the fallback's
+            resource_type = (rb.get("resource_types") or [""])[0]
             for capability in rb["capabilities"]:
-                chosen, _actions, _rto = select(_analyzer([capability], provider))
+                chosen, _actions, _rto = select(
+                    _analyzer([capability], provider, resource_type=resource_type)
+                )
                 if chosen == "generic-recovery":
                     unmatched.append((rb_id, capability))
 
@@ -296,3 +313,122 @@ class TestProvidersAgree:
         assert len(set(chosen.values())) == 1, (
             f"{capabilities} selects different runbooks per provider: {chosen}"
         )
+
+
+# ------------------------------------------------------------------
+# The tier reads the resource type the runbook declares
+# ------------------------------------------------------------------
+
+# Every resource type the catalog names, so the sweep below cannot silently
+# shrink when a runbook adds one.
+ALL_RESOURCE_TYPES = sorted(
+    {rt for rb in BUILTIN_RUNBOOKS.values() for rt in (rb.get("resource_types") or [])}
+)
+
+
+class TestSelectionRespectsResourceType:
+    """Tier 2 matched on capabilities alone and never read `resource_types`.
+
+    AWS closed this: `aws/decision.py::_fits_resource` excludes a runbook whose
+    declared types do not contain the incident's, because "nothing stopped an
+    RDS runbook being chosen for a Kubernetes workload". The field has been
+    declared on every catalog entry since the catalog existed, and on GCP/Azure
+    it had no consumer in the selection path at all — 67 of 81
+    (runbook, resource_type) pairs that AWS excludes were still selectable here.
+
+    The failure is quiet, and quieter than the AWS one. AWS falls back to the
+    runbook's hardcoded action names and hands the executor another provider's
+    actions; GCP/Azure drop the unresolvable capability and return a *shorter*
+    action list. So `certificate-expiry` on a Kubernetes workload came back
+    selected, with rto=600, carrying only the notify action — a plan that
+    claims to renew a certificate and does not.
+
+    Ground truth here is the catalog's own declaration, not a provider's helper,
+    so the guard cannot be satisfied by the two implementations agreeing on
+    something wrong.
+    """
+
+    @pytest.mark.parametrize("provider", PROVIDERS)
+    @pytest.mark.parametrize(
+        "capability,resource_type,must_not_select",
+        [
+            # eks-pod-oom and health-check-failure both declare `restart_workload`
+            # and neither declares a database.
+            ("restart_workload", "database-instance", {"eks-pod-oom", "health-check-failure"}),
+            # disk-full declares three types; a function is not one of them.
+            ("cleanup_disk_space", "lambda-function", {"disk-full"}),
+            # kafka-lag-spike is the only holder of `scale_out_workers`.
+            ("scale_out_workers", "certificate", {"kafka-lag-spike"}),
+            # certificate-expiry: the pair that made this visible.
+            ("renew_certificate", "kubernetes-workload", {"certificate-expiry"}),
+        ],
+    )
+    def test_runbook_is_not_selected_for_a_type_it_does_not_declare(
+        self, provider, capability, resource_type, must_not_select
+    ):
+        runbook_id, _actions, _rto = _decision(provider)._select_runbook(
+            _analyzer([capability], provider, resource_type=resource_type)
+        )
+
+        assert runbook_id not in must_not_select, (
+            f"{provider} selected {runbook_id!r} for resource_type={resource_type!r}, "
+            f"which it does not declare: {BUILTIN_RUNBOOKS[runbook_id]['resource_types']}"
+        )
+
+    @pytest.mark.parametrize("provider", PROVIDERS)
+    @pytest.mark.parametrize("resource_type", ALL_RESOURCE_TYPES)
+    def test_whatever_is_selected_declares_the_incident_resource_type(
+        self, provider, resource_type
+    ):
+        """The sweep: every runbook, every resource type it does not declare.
+
+        Asking one pair at a time is how the previous version of this file
+        passed while the tier was dead — so drive every capability the catalog
+        knows against every type it knows, and assert the invariant on whatever
+        comes back rather than on a runbook named in advance.
+        """
+        offenders = []
+        for rb_id, rb in BUILTIN_RUNBOOKS.items():
+            for capability in rb.get("capabilities", ()):
+                selected, _actions, _rto = _decision(provider)._select_runbook(
+                    _analyzer([capability], provider, resource_type=resource_type)
+                )
+                if selected == "generic-recovery":
+                    continue  # tier 3 is the unconditional fallback
+                declared = BUILTIN_RUNBOOKS[selected].get("resource_types") or []
+                if declared and resource_type not in declared:
+                    offenders.append((capability, selected, declared))
+
+        assert not offenders, (
+            f"{provider}: resource_type={resource_type!r} selected runbooks that do "
+            f"not declare it: {offenders}"
+        )
+
+    @pytest.mark.parametrize("provider", PROVIDERS)
+    def test_a_declared_type_still_selects_its_runbook(self, provider):
+        """Load-bearing in the other direction.
+
+        A filter that excluded everything would satisfy the tests above and
+        leave every incident on `generic-recovery` — which is the exact state
+        tier 2 was already in before it was repaired.
+        """
+        runbook_id, _actions, rto = _decision(provider)._select_runbook(
+            _analyzer(["restart_workload"], provider, resource_type="kubernetes-workload")
+        )
+
+        assert runbook_id == "eks-pod-oom"
+        assert rto == BUILTIN_RUNBOOKS["eks-pod-oom"]["rto_sec"]
+
+    @pytest.mark.parametrize("provider", PROVIDERS)
+    def test_an_uninferred_resource_type_excludes_nothing(self, provider):
+        """AWS's rule is "unknown on either side means do not exclude".
+
+        An incident whose resource type could not be inferred must not lose
+        every candidate — otherwise adding this filter silently downgrades the
+        detectors that do not set the field.
+        """
+        runbook_id, _actions, _rto = _decision(provider)._select_runbook(
+            _analyzer(["restart_workload"], provider, resource_type="")
+        )
+
+        assert runbook_id == "eks-pod-oom"

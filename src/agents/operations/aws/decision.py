@@ -33,7 +33,7 @@ from src.agents.models import (
     Severity,
 )
 from src.agents.runbooks.catalog import BUILTIN_RUNBOOKS, CAPABILITY_RUNBOOKS
-from src.agents.runbooks.schema import normalise_runbook, validate_runbook
+from src.agents.runbooks.schema import fits_resource, normalise_runbook, validate_runbook
 
 logger = structlog.get_logger(__name__)
 
@@ -230,14 +230,11 @@ def _fits_resource(runbook: dict[str, Any], resource_type: str | None) -> bool:
     back to the runbook's **hardcoded AWS action names**, handing the executor
     actions for the wrong provider entirely.
 
-    Unknown on either side means "do not exclude" — a runbook that declares no
-    resource types is as broad as it was yesterday, and an incident whose
-    resource type could not be inferred must not lose every candidate.
+    The rule itself now lives with the contract that declares the field
+    (`runbooks/schema.py::fits_resource`) because GCP and Azure need the same
+    one; this stays as the local name the matcher below reads.
     """
-    declared = runbook.get("resource_types") or []
-    if not declared or not resource_type:
-        return True
-    return resource_type in declared
+    return fits_resource(runbook, resource_type)
 
 
 def _match_runbook_registry(
