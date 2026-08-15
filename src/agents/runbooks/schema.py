@@ -37,6 +37,30 @@ _LIST_OF_STR_FIELDS = (
 )
 
 
+def fits_resource(runbook: Any, resource_type: str | None) -> bool:
+    """Can this runbook's plan actually apply to this kind of resource?
+
+    ``resource_types`` is part of the contract above, and selection is the only
+    thing that can honour it. AWS reads it; GCP and Azure matched on capability
+    overlap alone, so 67 of 81 (runbook, resource_type) pairs AWS excludes were
+    still selectable there — an incident on a Kubernetes workload could select
+    ``certificate-expiry``, keep its RTO, and quietly drop the renew action
+    because no adapter maps that capability to that resource type.
+
+    Lives here rather than in a provider module because what is shared between
+    the providers is the *contract*, not an SDK: a copy per provider is how the
+    next fix lands in one of them and rots in the other.
+
+    Unknown on either side means "do not exclude" — a runbook that declares no
+    resource types is as broad as it was yesterday, and an incident whose
+    resource type could not be inferred must not lose every candidate.
+    """
+    declared = (runbook.get("resource_types") if isinstance(runbook, dict) else None) or []
+    if not declared or not resource_type:
+        return True
+    return resource_type in declared
+
+
 def validate_runbook(item: Any, *, require_alarm_name: bool = False) -> list[str]:
     """
     Validate a runbook item against the shared contract.

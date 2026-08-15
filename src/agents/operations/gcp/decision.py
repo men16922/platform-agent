@@ -27,7 +27,7 @@ from src.agents.models import (
     Severity,
 )
 from src.agents.runbooks.catalog import BUILTIN_RUNBOOKS
-from src.agents.runbooks.schema import validate_runbook
+from src.agents.runbooks.schema import fits_resource, validate_runbook
 
 logger = structlog.get_logger(__name__)
 
@@ -97,6 +97,14 @@ def _select_runbook(analyzer: AnalyzerOutput) -> tuple[str, list[str], int | Non
             # what the schema contract declares and what the AWS action resolver
             # reads. `steps` belongs to CAPABILITY_RUNBOOKS, not here — reading it
             # off a built-in entry always produced the empty set.
+            # Capability overlap alone chose runbooks for resources they do not
+            # apply to — and it failed quietly, because the unresolvable
+            # capability is dropped rather than raised: `certificate-expiry` on
+            # a Kubernetes workload came back selected, with its RTO, carrying
+            # only the notify action. AWS has read this field since it added
+            # `_fits_resource`; the rule is shared from `runbooks/schema.py`.
+            if not fits_resource(rb, normalized.resource_type):
+                continue
             if set(rb.get("capabilities", ())) & recommended:
                 actions = _resolve_actions_from_capabilities(
                     normalized.recommended_capabilities, normalized
