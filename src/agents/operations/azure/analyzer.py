@@ -76,6 +76,12 @@ Severity guide:
   P2 — significant degradation, auto-remediable (e.g. pod OOM, function throttling)
   P3 — early warning, human review (e.g. CPU trending up, disk filling)
 
+When an "Operator-declared severity" is given, it is the classification a human
+put in the alert rule ahead of time. Treat it as strong evidence and say in the
+root_cause why you departed from it if you do. It is not binding — the evidence
+can show an alert is worse or milder than its label — but disagreeing with it
+silently is what it exists to prevent.
+
 Return ONLY the JSON. No markdown fences.
 """
 
@@ -157,6 +163,24 @@ def _build_prompt(detector: DetectorOutput) -> str:
             f"Signal:     {normalized.signal_type}\n"
             f"Capabilities: {', '.join(normalized.recommended_capabilities) or '(none)'}"
         )
+        # The alert's own summary/description is often the single richest piece of
+        # evidence (e.g. "OOMKilled, memory limit 256Mi exceeded") — surface it so
+        # the model can reason about the actual failure, not just the signal type.
+        observations = normalized.observations or {}
+        alert_text = " ".join(
+            str(observations.get(k, "")) for k in ("summary", "description")
+        ).strip()
+        if alert_text:
+            normalized_summary += f"\nAlert detail: {alert_text}"
+        # The severity the *operator* wrote into the alert rule. This adapter has
+        # populated it since it was written, and until now only the AWS analyzer
+        # read it — so on this provider the one classification a human made in
+        # advance was normalised, stored, and dropped, leaving severity to be
+        # inferred from prose. Severity is what decides AUTO vs APPROVE.
+        # Surfaced as evidence, not as an override — the mapping from a
+        # provider's severity vocabulary to P1/P2/P3 is a policy call.
+        if normalized.severity_hint:
+            normalized_summary += f"\nOperator-declared severity: {normalized.severity_hint}"
 
     return f"""\
 ## Alert
