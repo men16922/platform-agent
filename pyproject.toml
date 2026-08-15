@@ -20,9 +20,31 @@ dependencies = [
 # `[project.optional-dependencies.<name>]` + `dependencies = [...]` shape was
 # invalid metadata — latent until the reference #7 image ran `pip install .`.
 [project.optional-dependencies]
-gcp = ["google-adk>=1.0", "google-cloud-aiplatform>=1.90"]
-azure = ["agent-framework>=1.0", "azure-identity>=1.15", "azure-ai-projects>=1.0"]
+# Every entry below is imported inside a `try: ... except ImportError:` that falls
+# back to a *warning*, so an undeclared one does not fail an install — it ships an
+# agent that is quietly missing a limb. Swept 2026-08-15 (see the observability
+# note below: that lesson was learned for one package and the siblings were never
+# counted). `tests/test_optional_dependencies_declared.py` now counts them.
+gcp = [
+    "google-adk>=1.0",
+    "google-cloud-aiplatform>=1.90",   # vertexai — analyzer LLM
+    "google-cloud-firestore>=2.16",    # analyzer/decision/executor — incident store
+    "google-cloud-logging>=3.10",      # detector — log enrichment
+    "google-cloud-monitoring>=2.19",   # detector — monitoring_v3 metrics
+]
+azure = [
+    "agent-framework>=1.0",
+    "azure-identity>=1.15",
+    "azure-ai-projects>=1.0",
+    "azure-cosmos>=4.6",               # analyzer/decision/executor — incident store
+    "azure-monitor-query>=1.3",        # detector — Logs/Metrics query
+    "openai>=1.30",                    # analyzer — AzureOpenAI, i.e. the LLM itself
+]
 onprem = ["pydantic-ai-slim[openai]>=2.9", "mlx-lm>=0.19"]
+# `make dev-up` runs `uvicorn src.agents.ai.local_deploy_api:app` and the on-prem
+# webhook the same way, and nothing declared either — a fresh clone cannot start
+# the documented local stack.
+serving = ["fastapi>=0.110", "uvicorn>=0.29"]
 state = ["psycopg2-binary>=2.9"]
 # Declared 2026-08-08, after the first CI run failed 17 tracing tests that pass on
 # every developer machine. `strands-agents` already pulls opentelemetry api+sdk, so
