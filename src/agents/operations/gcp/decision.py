@@ -27,7 +27,7 @@ from src.agents.models import (
     Severity,
 )
 from src.agents.runbooks.catalog import BUILTIN_RUNBOOKS
-from src.agents.runbooks.schema import fits_resource, validate_runbook
+from src.agents.runbooks.schema import fits_resource, is_destructive_action, validate_runbook
 
 logger = structlog.get_logger(__name__)
 
@@ -186,18 +186,14 @@ def _resolve_actions_from_capabilities(
 # Mode determination
 # ------------------------------------------------------------------
 
-_DANGEROUS_PATTERNS = {"Delete", "Drop", "Terminate", "Destroy"}
-
-
 def _determine_mode(severity: Severity, actions: list[str]) -> RemediationMode:
     """
     P1 → AUTO, P2 → APPROVE, P3 → MANUAL.
     Safety: dangerous actions force APPROVE regardless of severity.
     """
     # Safety override
-    for action in actions:
-        if any(pattern in action for pattern in _DANGEROUS_PATTERNS):
-            return RemediationMode.APPROVE
+    if any(is_destructive_action(a) for a in actions):
+        return RemediationMode.APPROVE
 
     if severity == Severity.P1:
         return RemediationMode.AUTO

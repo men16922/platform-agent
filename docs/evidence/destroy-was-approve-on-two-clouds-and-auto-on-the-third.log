@@ -1,0 +1,166 @@
+2026-08-15 — 파괴 액션 하나가 두 클라우드에선 APPROVE였고 세 번째에선 AUTO였다
+============================================================================
+
+발단: M22가 `AnalyzerOutput`을 닫았으니 **렌즈를 다시 한 층 아래**(`DecisionOutput`)로.
+
+----------------------------------------------------------------------------
+1. 먼저 나온 것은 범위였다 (결함 아님)
+----------------------------------------------------------------------------
+
+`DecisionOutput` 7필드를 채우는 쪽·읽는 쪽으로 셌다:
+
+  필드                채우는 쪽              읽는 쪽                  판정
+  ──────────────────────────────────────────────────────────────────────────
+  runbook_id          셋 다                  셋 다                    대칭
+  remediation_mode    셋 다                  셋 다                    ★아래
+  actions             셋 다                  셋 다                    대칭
+  estimated_rto_sec   셋 다                  셋 다 + 공유 executor    대칭
+  steps               **aws만**              **aws executor만**       범위
+  reconciliation      **aws만**              **aws executor만**       범위
+
+⚠️ `steps`·`reconciliation`은 **결함이 아니다.** `_executor_common.py`(gcp·azure 공유)에도
+두 executor에도 **steps 처리 코드가 아예 없다** → M19식 "원리상 도달 불가한 분기"가
+**아니라** 일관된 부재다. capability step과 grounding 게이트는 **AWS 전용 기능**이고,
+GCP/Azure는 끝에서 끝까지 그것을 모른다. 읽는 쪽이 비대칭이 아니라 **양쪽 다 없다.**
+(`reconcile()`의 호출자도 `aws/decision.py:63` 하나. onprem은 AWS decision을 타서 덮인다.)
+
+----------------------------------------------------------------------------
+2. 그 다음 `remediation_mode` — 가장 위험한 필드를 열었더니 나왔다
+----------------------------------------------------------------------------
+
+severity 매핑은 **셋 다 동일**(P1→AUTO, P2→APPROVE, P3→MANUAL). 다른 건 **안전 오버라이드**다:
+
+    gcp/decision.py:189    _DANGEROUS_PATTERNS = {"Delete","Drop","Terminate","Destroy"}   ← 4
+    azure/decision.py:203  _DANGEROUS_PATTERNS = {"Delete","Drop","Terminate","Destroy"}   ← 4 (사본)
+    aws/decision.py        if any("Delete" in a or "Drop" in a or "Terminate" in a ...)    ← 3, 인라인
+
+**AWS에만 `Destroy`가 없다.** 실행해서 확인했다:
+
+    액션                 aws        gcp        azure
+    DeleteVolume         APPROVE    APPROVE    APPROVE
+    DropDatabase         APPROVE    APPROVE    APPROVE
+    TerminateInstance    APPROVE    APPROVE    APPROVE
+    DestroyCluster       **AUTO**   APPROVE    APPROVE     ⚠️불일치
+
+`Severity` enum이 정의한 대로 **AUTO = "Critical — auto-execute remediation"**.
+즉 **`AWS-DestroyStack` 같은 액션이 P1이면 사람 없이 실행된다.**
+
+`AGENT_BRIEF` 가드레일은 이렇게 쓴다: *"`Delete/Drop/Terminate` 액션은 강제 APPROVE"* —
+**AWS는 그 문구 그대로였고, GCP/Azure는 이미 그것을 넘어 자라 있었다.** 셋 중 하나만
+뒤처진 게 아니라, **뒤처진 쪽이 하필 파괴 경로**였다.
+
+⚠️ **네 번째 사본도 있다**: `src/agents/ai/policies/deploy-policy.yaml:42`가
+`["delete","drop","terminate","destroy"]`(소문자, REJECT). **다른 서브시스템**(배포 정책)이라
+직접 비교 대상은 아니지만, **정본 의도가 4개**임을 보여 준다. 그 rule의 description은
+*"(delete, drop, terminate)"* — **자기 values와도 어긋나 있다.**
+
+----------------------------------------------------------------------------
+3. 도달 가능한가 — 정직하게
+----------------------------------------------------------------------------
+
+**빌트인 카탈로그로는 오늘 도달 불가**다. 액션 이름이 전부 `AWS-PascalCase`이고
+`Destroy` 계열이 하나도 없다:
+
+    AWS-CleanupEBSVolume · AWS-DrainEKSNode · AWS-RestartEKSPod · …(12종)
+
+**그런데 런북은 운영자가 등록한다.** `runbooks/schema.py` 도크스트링이 그렇게 쓰고
+(*"Operators register overrides out-of-band (directly into the `incident-runbooks`
+DynamoDB table)"*), decision의 스캔 티어가 그 테이블을 읽는다. 즉 **`AWS-DestroyStack`은
+빌트인이 아니라 운영자가 만드는 이름**이고, 그게 정확히 이 갭이 열리는 자리다.
+
+⇒ **잠재적이지만 가설이 아니다.** "런북 walk ②"처럼 *존재하지 않는 스텝 타입*을 위한
+가드가 아니라, **이미 존재하는 세 구현이 서로 어긋나 있는 것**을 맞춘 것이다.
+
+### 소문자는 고치지 않았다 (범위)
+
+    destroy-stack   aws=AUTO  gcp=AUTO  azure=AUTO      ← 셋 다 통과시킨다
+
+패턴이 대소문자 구분이라 소문자 파괴 동사는 **세 provider 모두** 빠져나간다.
+`models.py`가 `actions`를 *"SSM doc names / kubectl cmds"*로 선언하니 kubectl(소문자)이
+오면 문제가 된다. **그런데 네 실행 어댑터 전부 `PROVIDER-PascalCase`만 낸다**
+(`AWS-CleanupEBSVolume`·`ONPREM-RolloutRestartWorkload`, 4×~29 매핑 전수 확인).
+⇒ **아무도 만들지 않는 형태를 위한 가드는 하중을 못 받는다.** 넓히지 않았다 —
+대신 **전제를 가드로 고정**했다(§5의 `TestCaseSensitivityIsALoadBearingChoice`):
+어댑터가 소문자 액션을 내기 시작하면 그 테스트가 red가 되고 넓힐 자리를 가리킨다.
+
+----------------------------------------------------------------------------
+4. 고침 — 계약 모듈에 한 벌 (M19 선례)
+----------------------------------------------------------------------------
+
+`runbooks/schema.py`에 `DESTRUCTIVE_ACTION_PATTERNS` + `is_destructive_action()`를 두고
+세 decision이 읽는다. 그 모듈을 고른 이유는 도크스트링이 스스로 말한다 —
+*"this contract is the single place that defines what a valid runbook item looks like"*
+이고 `actions`가 그 필드다. M19의 `fits_resource`와 **같은 자리·같은 이유**.
+
+**발명하지 않은 것**: 네 번째 동사 `Destroy`는 GCP·Azure가 이미 쓰던 것이다.
+셋 중 다수를 따랐지, 새 정책을 만들지 않았다.
+
+----------------------------------------------------------------------------
+5. 가드 — 79건, 변이 8건 전부 red · 생존 0
+----------------------------------------------------------------------------
+
+`tests/test_destructive_action_gate.py` (신규):
+
+  TestEveryProviderRefusesToAutomateDestruction  4동사 × 3provider × 3severity 전수
+  TestTheOverrideDoesNotSwallowEverything        역방향 — 안전 액션은 severity 매핑 유지
+                                                 (**상시 발화하는 게이트는 게이트가 아니다**)
+  TestProvidersAgree                             같은 액션·같은 severity면 셋이 같은 답
+  TestSingleCopy                                 `_DANGEROUS_PATTERNS` 정의가 0개인가
+  TestCaseSensitivityIsALoadBearingChoice        **전제를 검사** — 어댑터가 PascalCase를 내는가
+
+변이:
+
+    M1 Destroy 제거(원래 결함)   RED    M5 대소문자 무시로 확장     RED
+    M2 집합 통째로 비움          RED    M6 AWS 오버라이드 우회      RED
+    M3 판정기 항상 False         RED    M7 GCP 오버라이드 우회      RED
+    M4 판정기 항상 True          RED    M8 Azure 오버라이드 우회    RED
+
+물은 대상: 신규 + `decision`/`runbooks.schema`를 임포트하는 테스트 중
+**`test_gcp_day2_operations.py`를 뺀 것**(§7). 게이트: **2021 passed, 2 skipped**
+(1942 → **+79**), 2026-08-15, 로컬 macOS·py3.13.
+
+----------------------------------------------------------------------------
+6. ⚠️ 내 가드가 레포가 경고한 함정을 밟았다 — 그리고 M21 것도 같았다
+----------------------------------------------------------------------------
+
+`TestSingleCopy`의 초판이 `root.rglob("*.py")`로 "누가 정의하나"를 셌고 **red가 났다**:
+
+    AssertionError: ['stacks/cdk.out/asset.0f86.../azure/decision.py', ... 22건 더]
+
+`src/stacks/cdk.out/`은 **untracked 빌드 산출물**인데 이 트리 전체의 사본을 품는다.
+`NEXT_PLAN` 유지 규약이 정확히 이걸 적어 뒀다 — **`git grep`을 쓸 것.**
+(이 세션에서 파일 수를 셀 때 이미 한 번 밟았고, 이번이 두 번째다.)
+
+⚠️ **더 중요한 것**: **M21의 `test_only_the_contract_module_defines_the_keys`도 같은
+결함이었다.** 그건 초록이었는데, `_RULE_NAME_KEYS`가 **너무 새것이라 아직 번들되지
+않았을 뿐**이다 — 다음 `cdk synth`에 red가 됐을 것이다. **초록이 옳음의 증거가 아니었다.**
+둘 다 `git ls-files` 기반으로 고쳤다.
+
+  ⚠️ **"누가 이걸 정의하나"를 파일시스템에 묻지 말 것. 빌드 산출물이 답에 낀다.**
+
+----------------------------------------------------------------------------
+7. ⚠️ 변이 하네스가 또 잘렸다 — 그런데 이번엔 복구가 살아남았다
+----------------------------------------------------------------------------
+
+10분 타임아웃에 또 걸렸다(35개 테스트 파일 × 8변이). **그런데 M22에서 만든 디스크
+백업이 그대로 동작했다** — 복구 스크립트가 `gcp/decision.py`가 **M7 변이 상태로 남아
+있는 것을 잡아내 되돌렸다.** M21에서는 이 상황이 트리를 오염시킨 채 끝났었다.
+
+  ✅ **복구 수단이 복구가 필요한 상황보다 오래 살았다.** (M22의 교훈이 값을 했다.)
+
+⚠️ 남은 문제는 **범위 산정**이었다. 그래서 파일별로 시간을 쟀고:
+
+    tests/test_destructive_action_gate.py     0.19s
+    tests/test_decision.py                    0.20s
+    tests/test_capability_catalog_scan.py     0.09s
+    tests/test_azure_day2_operations.py       0.43s
+    **tests/test_gcp_day2_operations.py     200.66s**   ← 전체 게이트 288초 중 200초
+
+**게이트 4분 48초 중 한 파일이 3분 20초다.** Azure의 대응 파일은 0.43초로 같은 28건을
+돈다 — 즉 **형제 중 하나만 느리다.** 08-09에 이미 같은 계열을 잡은 적이 있다
+(*"가드가 게이트에서 라이브 `gcloud`를 호출(21.97s → 0.02s)"* — STATUS 검증 Baseline).
+**이번 커밋 범위 밖이라 손대지 않았고, 열린 항목으로 남긴다.**
+
+============================================================================
+측정: 2026-08-15, 로컬 macOS · py3.13 (/opt/anaconda3/bin/python3.13)
+게이트: 2021 passed / 2 skipped (fix 전 1942) · 변이 8건 red · 생존 0

@@ -184,15 +184,27 @@ class TestSingleCopy:
     """
 
     def test_only_the_contract_module_defines_the_keys(self):
-        import pathlib
+        """Walks `git ls-files`, not the filesystem.
 
-        root = pathlib.Path(__file__).resolve().parents[1] / "src"
+        `src/stacks/cdk.out/` is an untracked build artefact holding whole copies
+        of this tree, so an rglob-based "who defines this?" answers about a build
+        directory. This guard passed by luck when written — `_RULE_NAME_KEYS` was
+        too new to have been bundled yet — and would have gone red on the next
+        `cdk synth`. The repo already wrote the rule down: **use `git`.**
+        """
+        import pathlib
+        import subprocess
+
+        root = pathlib.Path(__file__).resolve().parents[1]
+        tracked = subprocess.run(
+            ["git", "ls-files", "src/*.py", "src/**/*.py"],
+            cwd=root, capture_output=True, text=True, check=True,
+        ).stdout.split()
         definers = [
-            path.relative_to(root).as_posix()
-            for path in root.rglob("*.py")
-            if "_RULE_NAME_KEYS = (" in path.read_text(encoding="utf-8")
+            rel for rel in tracked
+            if "_RULE_NAME_KEYS = (" in (root / rel).read_text(encoding="utf-8")
         ]
-        assert definers == ["agents/adapters/base.py"], definers
+        assert definers == ["src/agents/adapters/base.py"], definers
 
     @pytest.mark.parametrize("module", [
         "src.agents.operations.aws.detector",
