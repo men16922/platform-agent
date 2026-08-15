@@ -170,6 +170,52 @@ M20이 `severity_hint`로 닫은 것과 **같은 축이고, 같은 두 provider�
 (`grep`으로 네 파일 전부), 복원 후 **전체 게이트로 초록을 확인**한 뒤에야 다음으로
 갔다. 08-13의 실패는 그 확인을 안 한 것이었다.
 
+----------------------------------------------------------------------------
+8. 스윕을 닫았다 — `_synthetic_alarm`의 **나머지 필드 전부**를 셌다
+----------------------------------------------------------------------------
+
+**형제 집합은 세는 순간 전부 센다**(Risk 12⑥). `reason` 하나만 고치고 멈추면 같은
+자리에서 다시 걸린다. `AlarmContext` 8필드를 **읽는 쪽까지** 따라갔다:
+
+  필드           `_synthetic_alarm`이 넣는 값     읽는 쪽                          판정
+  ─────────────────────────────────────────────────────────────────────────────────
+  reason         _incident_reason                aws/decision 점수 · reconcile ·  ★결함
+                                                 **GCP/Azure _fallback_analysis**  (고침)
+  triggered_at   (미설정 → now())                signals/aws.py:58 **하나**        범위
+                                                 = AWS 전용 역경로, 여기 안 닿음
+  metric_name    incident.signal_type            aws/decision:259 점수식           범위
+  alarm_name     incident.service                signals/aws.py · reconcile        범위
+  alarm_arn      ""                              signals/aws.py:52                 범위
+  dimensions     (미설정 → {})                   signals/aws.py                    범위
+  namespace      f"{PROVIDER}/{resource_type}"   점수식 +2 · 프롬프트              범위
+  state          "ALARM"                         프롬프트 · aws/detector:394       범위
+
+**⚠️ `triggered_at`은 결함이 아니다 — 이 문서를 쓴 나 자신의 직전 기록이 틀렸다.**
+`_synthetic_alarm`이 이 필드를 안 채워 기본값 `datetime.now()`(= **처리 시각**, 발화
+시각 아님)가 들어간다. 그런데 `alarm.triggered_at`을 읽는 곳은 `signals/aws.py:58`
+**하나**고 그건 `from_alarm_context`(호출자 = `aws/detector.py:387`, **AWS 네이티브 경로**)
+이므로 non-AWS는 **도달하지 않는다.** 대시보드가 보는 `triggered_at`은 스토어에서 오고
+스토어는 `executor.py:540`이 **`normalized_incident.triggered_at`**으로 채운다 — 정상 경로다.
+
+**⚠️ `metric_name`도 결함이 아니다 — 재서 확인했다.** 점수식
+(`decision.py:259`)에 실제로 들어가지만, 빌트인 런북 9개의 키워드·네임스페이스가
+**전부 AWS 모양**(`disk_used_percent`·`AWS/EKS`…)이라 GCP 메트릭
+`kubernetes.io/node/ephemeral_storage/used_bytes`를 살려 줘도 **선택은 그대로
+generic-recovery**다:
+
+    지금  metric_name='availability'                              -> generic-recovery
+    가정  metric_name='kubernetes.io/node/ephemeral_storage/...'  -> generic-recovery
+
+이건 M19가 이미 적어 둔 사실에 삼켜진다 — *"빌트인 9개가 전부 `provider="aws"`라
+GCP/Azure는 전부 폴백으로 떨어진다."* **더 큰 사실이 덮고 있는 차이는 고쳐도
+관측되지 않는다.**
+
+**그래서 이 스윕의 결론**: `reason`이 **유일하게** 읽는 쪽에 닿는 필드였고, M21은
+정확히 그것만 고쳤다. 나머지 일곱은 **결함이 아니라 범위**다. ⚠️ 이 표를 남기는
+이유는, 다음 세션이 *"`triggered_at`은 아직 AWS만 저장한다"*를 열린 항목으로 읽고
+다시 걸어 들어오는 것을 막기 위해서다 — **M19가 ⓑ에서 정확히 그 값을 치렀다.**
+
 ============================================================================
 측정: 2026-08-15, 로컬 macOS · py3.13 (/opt/anaconda3/bin/python3.13)
 게이트: 1929 passed / 2 skipped (fix 전 1912) · 변이 7건 red · 생존 0
+스윕: AlarmContext 8필드 × 읽는 쪽 — 결함 1 · 범위 7
