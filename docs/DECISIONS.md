@@ -1,6 +1,6 @@
 # DECISIONS — platform-agent
 
-최종 갱신: 2026-08-13
+최종 갱신: 2026-08-15
 
 > 되돌리기 어려운 결정만. 형식: **Decision / Reason / Impact**. 최신이 위.
 
@@ -17,6 +17,25 @@
 > - **GitAIOps 실습서(Notiflex)** (외부 학습 레포) — Rollouts **AnalysisTemplate 메트릭 자동판정**(우리 무기한 pause 게이트의 미완점) · **OTel→Tempo로 4-step 파이프라인 자체 트레이싱** · 런북 **사전확인/사후검증 3단**(우리 `RunbookStep`엔 없음) · **allow/ask/deny 권한통제** · **Sync Wave**. 안티패턴=Kafka·멀티 노드풀·GKE 종속 시크릿·`--dangerously-skip-permissions`. 상세 → `docs/reference/gitaiops-notiflex-book.md`. (검토 2026-07-25)
 
 ---
+
+## D48 — **4a를 승인한다. 단 remote_write는 허용목록 없이 붙이지 않는다**
+
+- **Decision:** Phase **4a**(AMP 관리형 어댑터, 원격 클러스터 불요)를 **비용 최소화 근거로
+  승인**한다(2026-08-15, 사용자). **단 착수 순서를 뒤집는다** — 워크스페이스 생성이 아니라
+  **`write_relabel_configs` 허용목록 확정이 먼저**다. 허용목록은 **job 단위가 아니라 메트릭
+  단위**여야 한다.
+- **Reason:** 승인 근거였던 "≈$5/월"은 **재지 않은 가정** 위에 서 있었다. 실측하니
+  `kind-platform-agent`가 **52,438 시계열 / 월 5.13B 샘플**이고(계획서 가정의 **약 100배**),
+  필터 없이 remote_write하면 **첫 20억 샘플만 $180** — **4b(≈$185)보다 비싸다.** 즉 4a를
+  고른 이유(40배 격차)가 **필터가 있어야만 존재한다.** job 단위로는 부족한 것도 실측이다:
+  kube-state-metrics만 통과시켜도 **$16.28**로 승인액의 3배다.
+  근거 `docs/evidence/4a-cost-assumed-a-hundredth-of-the-cluster.log`.
+- **Impact:** 4a의 첫 산출물은 인프라가 아니라 **허용목록 결정**이다(계획서 §3이
+  *"무엇을 렌더할지는 일부러 발명하지 않았다"*로 남긴 항목 — **이제 비용이 값을 매겼다**).
+  예산 번역: **$5 = 60초 간격 약 1,285 시계열**(전체의 **2.5%**). AMP 워크스페이스는 보유
+  자체가 무과금이므로 **생성을 서두를 이유가 없다.** ⚠️ **2B 초과 요율은 미확인**이라
+  위 금액은 전부 **하한**이다. ⚠️ 프리티어(40M)에 기대지 않는다 — 이 계정은
+  `freetier` API에서 **"12 Month Free" 0건**이라 첫 12개월 창을 지났다.
 
 ## D47 — 운영자가 등록하는 런북의 RTO 필드는 **`rto_sec` 하나다** (GCP/Azure도 AWS 계약을 따른다)
 

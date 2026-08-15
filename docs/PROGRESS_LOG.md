@@ -6,6 +6,31 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-15 — 4a를 "비용 최소화"로 승인하고 그 비용을 처음 쟀더니, 전제가 100배 틀렸다 (코드 변경 없음)
+
+- Status: 사용자가 **비용 근거로 4a를 승인**했다(≈$5/월, 4b의 1/40). 승인이 났으니 계획서가
+  스스로 적어 둔 *"승인 전 재확인할 것"*을 수행했다. **재확인해야 했던 건 정가가 아니라
+  그 옆 칸의 가정이었다.**
+- Verified(실측 2회, 재현): `kind-platform-agent`에 직접 물었다 — **52,275→52,438 시계열**,
+  **1,979.7→1,981.0 samples/sec** = **월 5.13 B 샘플**. 역산 스크랩 간격 26.4초로 차트
+  기본 30초와 일치(두 측정이 서로를 교차검증). §4 가정 "랩 규모 수백 시계열"의 **약 100배**.
+- Verified(가격): AMP 정가 $0.90/1천만 샘플은 **맞았다**(AWS 자체 예시 892.8M→$80.93로 교차
+  확인). ⚠️**2B 초과 요율은 페이지에 표가 없어 미확인** → 총액은 **하한**이다.
+  프리티어(40M)는 **기대지 않는다**: `aws freetier get-free-tier-usage`가 이 계정에서
+  "Always Free" 12건 · **"12 Month Free" 0건** → 첫 12개월 창을 지났다.
+- Verified(허용목록 견적): job별 분해에서 **apiserver+kubelet이 67%**. 데모 룰이 쓰는 메트릭은
+  `kube_pod_container_status_restarts_total` **하나(50 시계열)**. 후보별 월비용@60s —
+  A+D(72개) **$0.28** · C(2,671) $10.39 · **E=kube-state-metrics 전부(4,188) $16.28** ·
+  **필터 없음(52,361) ≥$180**. ⚠️**필터 없는 4a는 4b($185)보다 비싸다** = 승인 근거가 소멸한다.
+- Changed(문서만): 증거 `4a-cost-assumed-a-hundredth-of-the-cluster.log` 신규 ·
+  계획서 §4·§5·§7 정정(**틀린 표는 남겨 두고 정정 박스를 얹었다**) · 진입점 3곳의 "≈$5/월".
+  **코드·게이트 무관**(1912 그대로, 안 돌렸다).
+- Blockers: 없음. **단 4a 착수 전 결정이 하나 생겼다** — `write_relabel_configs` 허용목록.
+  승인받은 $5는 **60초 간격에서 약 1,285 시계열**(전체의 2.5%)을 산다.
+- Next: **추정표는 어느 칸이 측정이고 어느 칸이 가정인지 표시할 것.** 총액을 지배한 건
+  가정 쪽이었다. ⚠️그리고 **권위 문서가 틀리면 복제본이 그걸 사실로 굳힌다** — 진입점
+  3곳이 "$5"를 복제해 승인까지 갔다. **복제 금지 규약이 겨냥한 실패가 실제로 일어났다.**
+
 ## 2026-08-15 — 직전 고침이 남긴 기준을 다음 계약에 댔더니, 형제 집합이 다섯 번째로 걸렸다 (gate 1894→1912)
 
 - Status: M19의 결론(**판단 기준은 읽는 쪽의 provider 간 비대칭**)을 `NormalizedIncident`에
@@ -62,38 +87,3 @@
   **전부 `generic-recovery`로 떨어진다**(=#30 이전 상태). 판단 기준은 **읽는 쪽의 비대칭**이지
   선언의 고아 상태가 아니다. 남은 무과금은 ⓐ·ⓒ(정책) · `slack_live_approval`(Slack 데모 선행).
 
-## 2026-08-13 — 형제 집합 중 하나만 도는 가드를 사냥하다, 그 도구 안에서 같은 함정을 밟았다 (gate 1859→1862)
-
-- Status: 오늘 두 건이 **같은 모양**이었다 — 가드가 **쓰는 쪽만**(티어 2) · 감사가
-  **`for name in REPORT:`**(로깅 문). 목록을 다시 읽는 대신 **그 패턴 자체**를 물었다:
-  형제가 N개인 집합을 **진부분집합만 도는 가드**가 또 있는가.
-- Verified(**내 자신부터**): 새 가드의 `PROVIDERS = ["gcp","azure"]`가 좁은 게 아닌지 봤다 —
-  `decision.py`는 셋뿐이고 onprem은 `runners/`를 타며 **AWS는 같은 블록이 아니라 다른
-  구현**(점수제)이다. **둘이 맞다.**
-- Verified(**전수 행렬, 아무도 잰 적 없다**): capability 17종 × provider 4종. 실행 어댑터가
-  못 푸는 건 `increase_function_concurrency`/**onprem 하나뿐**이고 그건 **이미 알려진 정당한
-  skip**이다(게이트의 `2 skipped`) → 감사가 **알려진 참을 재현** = 비공허.
-  ⚠️`assert_*` 넷이 "아무도 못 푼다"로 나온 건 **내 탐지기가 틀린 것** — `verify`는 실행
-  어댑터가 아니라 **별도 레지스트리 `_CHECKS`**가 푼다. **틀린 해소기에 물었다.**
-- Verified(**그러다 진짜 질문**): `executor.py:221`이 `if provider == "onprem":`다 —
-  **검증은 onprem에서만 돈다.** 나머지 셋은 `verify`를 계획에 싣고 실행하지 않는다.
-  **그런데 결함이 아니다**: 코드가 경계를 **명시**하고(`executor.py:75`) `verified`를 True가
-  아니라 **None(unknown)**으로 정직하게 보고하며, **그 정직성도 이미 가드돼 있다**.
-- Changed(**문서 한 줄 — `src/` 무변경**): `COMPLETED_SUMMARY`가 *"per-step verify를 executor가
-  실제 소비"*를 **무조건**으로 적고 있었다. 코드는 말하는데 요약은 안 해서, 그 줄만 읽는
-  독자는 넷 다 검증한다고 믿는다 → **onprem 한정**임을 명시. **"과대 해석 금지"는 `STATUS`
-  에만 걸리는 규칙이 아니다.**
-- Verified(⚠️**스윕이 나에게 걸렸다 — 오늘 세 번째, 그것을 찾는 도구 안에서**): 카탈로그의
-  `verify.capability`와 `_CHECKS`를 맞대 "구현됐는데 아무도 선언 안 함:
-  `assert_node_unschedulable`"이 나왔는데 **틀렸다** — `verify_onprem_action:237`이
-  `capability or VERIFY_FOR_ACTION.get(action)`라 **선언처가 둘**이고 나는 그 표를 안 봤다.
-  **형제 집합은 세는 순간 전부 세지 않으면 하나가 조용히 빠진다.**
-- Changed(정정 후 가드 4건, `TestEveryDeclaredCheckIsImplemented`): 진짜 불일치는
-  **`assert_concurrency_applied` 하나**(구현 없음, 단 온프렘이 lambda 스텝을 못 resolve해
-  **도달 불가**). 감사는 **선언처 둘을 다 읽고**, **양쪽을 읽는지 자체를 ground truth로**
-  묻고, 예외는 `KNOWN_UNIMPLEMENTED`에 **이유와 함께** 두되 **이유보다 오래 못 살게** 한다.
-- Verified: 변이 5건 red·생존 0, 복구 후 diff clean. `make check` **1862**(+3), 2026-08-13,
-  로컬 macOS·py3.13. 증거 `verify-capabilities-declared-vs-implemented.log`.
-- Blockers: 없음.
-- Next: **패턴 사냥이 준 것은 결함이 아니라 범위였다**(오늘 두 번째). `src/`는 안 바꿨고
-  **고칠 게 없다는 것도 측정**이다. 남은 무과금 항목은 전부 정책 판단이거나 외부 자원 대기.
