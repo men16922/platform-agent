@@ -22,6 +22,25 @@ refuses to auto-execute an ungrounded analysis ran on AWS only).
 asymmetries and hides them — the eight `['aws', 'gcp']` rows below are invisible
 to it. The closure is the instrument; the direct count was the shadow.
 
+**Axes already swept, and what each returned (2026-08-16).** Recorded here so the
+next session does not re-dig the same ground — a dry sweep is a measurement too
+(M26). Finding more defects will take a *new* lens, not more of this one.
+
+    계약 필드(dict 키)     M19~M26   결함 5 · M26에서 말랐다(ExecutorOutput)
+    공용 심볼(이 파일)      M28~M32   결함 4 · 이제 게이트
+    provider 액션 컬렉션    M31       결함 1 (ROLLBACK_ACTIONS) · 어댑터에서 유도하게 바꿈
+    환경변수                —         **말랐다**. 비대칭은 전부 provider 고유 저장소·모델
+                                    설정이고 `APPROVAL_DEFAULT_DECISION`은 AWS 전용
+                                    approval bridge의 것(기본값 `reject`=fail-closed).
+                                    `LOG_LOOKBACK_SEC`는 셋 다 읽는다.
+    테스트의 손-작성 목록    —         **말랐다**. "every/all"을 주장하며 provider를 일부만
+                                    센 테스트는 둘뿐이고 **둘 다 정당**했다:
+                                    `test_registry_resolves_all_providers`(온프렘엔 관리형
+                                    호스팅이 없고 옆 테스트가 ValueError를 못 박는다) ·
+                                    `test_every_provider_branch_is_covered_by_the_test_above`
+                                    (seam 소스에서 유도 + 부분집합이 아니라 **등호** 비교).
+                                    M31은 이 패턴이 흔해서가 아니라 심볼을 따라가다 나왔다.
+
 **Why a table of reasons rather than "no asymmetry".** Most of these are correct:
 DynamoDB pagination has no meaning for Firestore, and AWS is the multi-cloud
 dispatcher so it legitimately reaches all three runners. Banning asymmetry would
