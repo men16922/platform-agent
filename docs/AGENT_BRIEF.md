@@ -6,8 +6,8 @@
 > 허용목록**(`docs/plans/2026-08-08-phase4-scope-and-cost.md` **§4 정정 박스가 권위**).
 > ⚠️**승인 근거였던 "≈$5/월"이 100배 틀렸다**: 실측 **52,438 시계열 = 월 5.13B 샘플** →
 > 필터 없이 remote_write하면 **≥$180/월**로 4b(≈$185)를 넘본다. $5는 **60초 간격 1,285
-> 시계열**(전체의 2.5%)을 산다 — job 단위론 부족하고(kube-state-metrics만 해도 $16) **메트릭
-> 단위**여야 한다. 견적·job 분해는 `docs/evidence/4a-cost-assumed-a-hundredth-of-the-cluster.log`.
+> 시계열**(전체의 2.5%)을 산다. ✅**허용목록 제안서 나왔다** —
+> `docs/plans/2026-08-15-4a-remote-write-allowlist.md`(메트릭 4종·**308 시계열**·**$1.20/월**). **승인만 남았다.**
 > ⚠️**$0 선행**: BQ 결제 내보내기만 남았다(콘솔 수동 → `docs/GCP_BILLING_EXPORT_SETUP.md`,
 > 확인은 `make spend-check`).
 > **무과금으로 이어서 할 것**: capability 스캔 잔여 **ⓐ·ⓒ**(정책) · "런북 walk ②"(`severity` 축) ·

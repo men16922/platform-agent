@@ -45,12 +45,12 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
 - [ ] **Phase 4 — 4a 승인됨(08-15). 착수 전 결정이 하나 남았다.** **`docs/plans/2026-08-08-phase4-scope-and-cost.md`가
   권위**(복제 금지 — ⚠️**이 규약이 겨냥한 실패가 실제로 났다**: 진입점 3곳이 "≈$5/월"을 복제해
   승인까지 갔는데 **100배 틀렸다**). 실측 **52,438 시계열 = 월 5.13B 샘플** → 필터 없는 4a는
-  **≥$180/월**(4b ≈$185) ⇒ **선행 = `write_relabel_configs` 허용목록**($5 = 60초 간격 1,285 시계열).
-  ⚠️**$0 선행: BQ 결제 내보내기**만 남았다(`GCP_BILLING_EXPORT_SETUP.md`, 콘솔 수동 · `make spend-check`).
+  **≥$180/월**(4b ≈$185) ⇒ **선행 = `write_relabel_configs` 허용목록** — **제안서 나옴**:
+  `docs/plans/2026-08-15-4a-remote-write-allowlist.md`(메트릭 4종 **308 시계열=0.59%** → **$1.20/월**). **승인 대기.**
+  ⚠️**$0 선행: BQ 결제 내보내기**만(`GCP_BILLING_EXPORT_SETUP.md`, 콘솔 수동 · `make spend-check`).
   ⚠️4a는 자격증명 파티션 **미증명**(Risk 10=4b) · **30분 TTL 가드**가 상시와 안 맞는다 ·
-  Phase 5가 열리면 3②를 GitOps-native로(D32) · **런북 스토어도 여기서 처음 생긴다** — RTO
-  필드는 **`rto_sec`**(**D47**, 지금은 문서 0개라 마이그레이션 없음).
-- [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 수단 선행**(kind엔 CSI 스냅샷터 부재).
+  Phase 5가 열리면 3②를 GitOps-native로(D32) · **런북 스토어도 여기서 처음** — RTO 필드는 **`rto_sec`**(**D47**).
+- [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 선행**(kind엔 CSI 스냅샷터 부재).
 - **2차 잔여 = 하나**: **스포크의 읽기 신원** — 공유 `argocd` ns를 맨 kubectl로 읽어 테넌트 구분이
   **코드 필터**다(쓰기는 401, 읽기는 안 막는다). **시끄럽게만** 해 뒀고(`warn_if_ambient_read`,
   M17), seam은 **인클러스터 배포·민팅 선행**이라 인프라 결정.
