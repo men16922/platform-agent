@@ -5,7 +5,7 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(**M15=공급망 0→집행 + Phase 5 경계 +
 > `main` 보호**, M14=결정 6건, M13=미소비 14건) / `PROGRESS_LOG.md`(+`docs/archive/`). **≤120줄**.
 
-## 현재 상태 (2026-08-16, gate 2128 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
+## 현재 상태 (2026-08-16, gate 2135 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
 
 **Phase 0·1a·1b·2·3 완결**(M10~M12) + **잔여 소진**(M13) + **결정 7건 닫힘**(D36·D38~D43).
 **공급망은 닫을 수 있는 만큼 닫혔다**(어드미션만 업스트림 대기) · **`main`은 보호된다**
@@ -22,10 +22,8 @@
 
 - 라우터에 인증이 서면 **결정 5 C**와 **결정 1의 파티션**이 열린다 · k3s-lab에 워크로드가 서면
   **결정 4**(경로=옵션 A) · 두 번째 리뷰어가 생기면 **CODEOWNERS 리뷰 필수**를 켠다(D43).
-- [ ] **(별도 계획) GitAIOps 후속편 아티클** — 논지=우리는 **오프라인 Qwen 에이전트로 루프를
-  무인으로 닫는다**. 소재=**자동화하면 새로 깨지는 것**: ①롤백↔selfHeal ②자격증명=blast radius
-  ③"실행됨≠나아졌음" ④과금 누출 · 소비자 없는 선언 14건(M13) · **수호 테스트 자신이 같은
-  안티패턴**(8회+, M17~M20이 사례집). **집필·발행은 착수하지 않는다**(지시 2026-07-25).
+- [ ] **(별도 계획) GitAIOps 후속편 아티클** — 논지=오프라인 Qwen로 루프를 무인으로 닫는다. 소재=**자동화하면 새로 깨지는 것**(①롤백↔selfHeal ②자격증명=blast radius ③**"실행됨≠나아졌음"** ④과금 누출) · 미소비 선언 14건(M13) · **수호 테스트 자신이 같은 안티패턴**(M17~M20·M27이 사례집).
+  ⚠️③의 **산 사례가 생겼다**: Azure는 실행조차 안 하고 해결됨을 보고한다(아래). **집필·발행은 착수하지 않는다**(지시 2026-07-25).
 - [ ] (선택) **Azure Foundry 정리** — 유휴 ≈$0는 **참**. 단 구독 전체는 아니다: ACR Basic이 월 ~₩6,600 고정이고 **다른 프로젝트 것**(08-12 재확인).
 
 ## 진행 중 — 멀티테넌트/멀티-클라우드 플랫폼 + per-env Add-on
@@ -49,6 +47,13 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
   ⚠️**$0 선행: BQ 결제 내보내기**만(`GCP_BILLING_EXPORT_SETUP.md`, 콘솔 수동 · `make spend-check`).
   ⚠️4a는 자격증명 파티션 **미증명**(Risk 10=4b) · **30분 TTL 가드**가 상시와 안 맞는다 ·
   Phase 5가 열리면 3②를 GitOps-native로(D32) · **런북 스토어도 여기서 처음** — RTO 필드는 **`rto_sec`**(**D47**).
+- [ ] ⚠️**Azure executor는 하지 않은 조치를 "해결됨"으로 보고한다(08-16 실측, 승인 사안)** —
+  `_execute_single_action`이 로그만 찍고 `success: True`를 돌려 → `executed`에 쌓이고 →
+  `resolved=True`로 **Slack에 올라가고 기록된다**. `runners/azure_runner.py`는 **311줄 실구현**
+  (GCP 러너 308줄과 대등)인데 **Azure executor만 자기 러너를 안 부른다**(GCP는 Phase 3에 배선됨).
+  **안 고쳤다 — 배선하면 라이브 ARM/AKS 변경이 시작된다**(하드-투-리버스는 승인 후). `success: False`로
+  낮추는 것도 출력을 바꾸므로 **선택**이다. 근거 `docs/evidence/azure-executor-reports-resolved-without-executing.log`
+  · 가드 `test_executor_dispatches_to_runner.py`(**설명 없는 비대칭 금지**).
 - [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 선행**(kind엔 CSI 스냅샷터 부재).
 - **2차 잔여 = 하나**: **스포크의 읽기 신원** — 공유 `argocd` ns를 맨 kubectl로 읽어 테넌트 구분이
   **코드 필터**다(쓰기는 401, 읽기는 안 막는다). **시끄럽게만** 해 뒀고(`warn_if_ambient_read`,
@@ -58,10 +63,8 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
 
 > 완료분은 `COMPLETED_SUMMARY.md` **M12**·**M13** · `PROGRESS_LOG.md` · `docs/evidence/`.
 
-- [x] ~~`slack_live_approval.py` 이중 노후화~~ → **닫힘(08-16)**. *"Slack 데모를 태워야 확정"*은
-  **틀린 기록**이었다 — 다섯 이름이 각각 **정확히 한 서브모듈**에 있고, 스크립트 자신의
-  `simulate`가 **오프라인**이라 끝까지 검증됐다(PENDING→HMAC 콜백→SFN resume→APPROVED).
-  ⚠️남은 것: DUAL 모드 조건부 리다이렉트(**하중을 못 받는 가드**라 안 만듦).
+- [ ] **DUAL 모드 조건부 리다이렉트** — `slack_live_approval`은 닫혔고(08-16) 이것만 남았다.
+  **하중을 못 받는 가드**가 되므로 안 만들었다.
 - [ ] **런북 walk가 남긴 ②(08-12)** — 조건 축은 `previous_step_failed`만 넓혔고 **`severity`는
   `"P2"` 고정**이라 `severity_in` 스텝이 생기면 재발한다 — 카탈로그에 없어 **가드를 안 만들었다**.
 - [ ] **capability 스캔 잔여 ⓐ·ⓒ — 정책 사안이라 안 고쳤다(ⓑ는 08-15에 닫힘, M19가 권위)**
@@ -70,15 +73,14 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
   **둘 다 동작 변경** · ⓒ**티어 2는 첫 매치가 이긴다**(AWS는 점수제) — 테스트가 고정했으니
   **우연이 아니라 결정**이다.
 - [ ] **`cost_metrics` — 의도적으로 남김**: `deployment_id`가 없어 렌더하는 뷰에 안 닿는다(08-08).
-- [x] ~~`Resource:"*"` 이유 주석 5건 누락~~ → **닫힘(08-16)**. AWS 권한 레퍼런스를 **JSON 미러**
-  (`iann0036/iam-dataset`)로 읽어 7건 전부 근거 확인·주석화, 가드로 집행.
 - [ ] **⚠️`pip install .[azure]`가 안 된다(08-15 실측)** — `agent-framework>=1.0` 단독 **150초
   타임아웃**(`core[all]`만 요구 → pip 무한 역추적). **더 나가**: `msft_deployer.py:19`의
   `AzureOpenAIResponsesClient`이 core 1.14.0에 **없다**(테스트가 `sys.modules`를 스텁해 통과 —
   **진짜 라이브러리에 대고 실행된 적이 없다**). **안 고쳤다 — 현재 API를 모르고 추측은 발명.**
   재개 = 업스트림이 `[all]` 강제를 풀거나 설치 성공. 증거 `the-azure-extra-cannot-be-installed.log`.
 - [ ] **GCP/Azure 90일 보관** — **`STATUS` Risk 2가 권위**(스토어가 없어 지울 데이터 0 → Phase 4).
-  기록기의 `resolved_at`도 읽는 쪽이 없다 · **analyzer 폴백 severity 매핑은 정책**이라 발명 안 함.
+  ⚠️"`resolved_at`은 읽는 쪽이 없다"는 **틀렸다**(08-16 재측정): `oncall_reporter._minutes_between`이
+  `started_at`과 짝지어 읽고 `aws/reporting.py:239`가 넘긴다 · **analyzer 폴백 severity는 정책**.
 - [ ] **k3s 승격은 닫혔다(D40) — 여는 조건 "k3s-lab에 워크로드"** — **`STATUS` Risk 5**가 권위.
   경로는 **옵션 A**(네임스페이스·netpol만, 비용 0) — ⚠️**실체 없는 선언 2건**을 더하므로 재평가.
 - [ ] **스코프·배포 신원은 옵트인(D38 이후)** — 상태는 `probe_scope_reachability.py`·`make

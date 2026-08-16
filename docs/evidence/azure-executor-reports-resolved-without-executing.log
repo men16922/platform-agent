@@ -1,0 +1,88 @@
+2026-08-16 — Azure는 하지 않은 조치로 인시던트를 "해결됨"이라 보고한다
+============================================================================
+
+**결론부터**: `azure/executor.py`의 `_execute_single_action`은 **아무것도 실행하지
+않는다**. capability를 풀고 로그를 찍은 뒤 `{"success": True, ...}`를 돌려준다.
+그 성공이 `executed`에 쌓이고 → `resolution_verdict(executed, skipped).resolved`가
+**True**가 되고 → **Slack에 "resolved"가 올라가고 `_record_incident`가 그렇게
+기록한다.** 조치는 일어나지 않았다.
+
+**완성된 구현이 import 한 줄 거리에 있다.** `runners/azure_runner.py`는 311줄
+실구현이다(ARM 토큰 → AKS 자격증명 → `_k8s_rest.rollout_restart`/`scale_up`,
+functionapp restart/swap). `gcp_runner.py`는 308줄로 대등하다. GCP의 executor는
+자기 러너를 부른다. Azure의 executor는 안 부른다.
+
+----------------------------------------------------------------------------
+1. 어떻게 찾았나 — 심볼 독자 수 세기
+----------------------------------------------------------------------------
+
+M28에서 쓴 방법을 **넓혔다**. 처음엔 공용 모듈 셋(`runbooks/schema.py`,
+`adapters/base.py`, `_executor_common.py`)만 셌는데, 그것 자체가 형제를 다 안 센
+것이다. provider 폴더 **밖의 모든** `src/agents/` 모듈로 넓혔다:
+
+    공용 심볼 408개 · provider가 읽는 것 35개 · 비대칭 20개
+
+20건 중 18건은 AWS 전용이 정당하다(DynamoDB·Slack webhook·aws_session — AWS에만
+있는 저장소/전송 계층). 남은 둘이 2/3 모양이었다:
+
+    resolve_incident_scope    platform.scope                 ['aws', 'gcp']
+    run_gcp_action            runners.gcp_runner             ['aws', 'gcp']
+
+`resolve_incident_scope`를 따라간 것이 이 결함이다. **스코프는 테넌트 경계**다
+(STATUS Risk 3·10).
+
+----------------------------------------------------------------------------
+2. 잰 것
+----------------------------------------------------------------------------
+
+  gcp/executor.py:140-143
+      from src.agents.platform.scope import resolve_incident_scope
+      incident_scope = resolve_incident_scope(incident, logger)
+      run_gcp_action(action, parameters, logger, incident_scope)
+
+  azure/executor.py:127-139  — 러너 호출 없음. 로그 + return success:True.
+
+  run_azure_action 을 부르는 곳 (git grep, 전수):
+      src/agents/operations/aws/executor.py:668     ← 멀티클라우드 디스패처
+      tests/test_multicloud_runners.py:187
+      tests/test_scope_all_runners.py:111,165
+  → **azure/executor.py 는 없다.**
+
+GCP 쪽 주석이 자기 이력을 적어 뒀다: *"this path forwarded no credential handle at
+all before Phase 3, so a GKE remediation's blast radius rested on routing
+correctness alone."* — **GCP는 Phase 3에 고쳐졌고 Azure는 안 고쳐졌다.**
+
+----------------------------------------------------------------------------
+3. 기록이 이걸 설명하는가 — 아니다
+----------------------------------------------------------------------------
+
+`docs/`·`src/` 어디에도 Azure executor를 stub/scaffold/미구현이라 적은 줄이 없다
+(정규식 전수: `azure.{0,30}(stub|scaffold|미구현|시뮬|not implemented|placeholder)`
+→ 0건). M4가 "비-AWS는 scaffold"라고 했지만 그 뒤 GCP는 실행 경로를 얻었고,
+**Azure만 남았다는 사실은 어디에도 없다.**
+
+----------------------------------------------------------------------------
+4. 왜 가드가 못 잡았나 — 대칭인 쪽을 물었다
+----------------------------------------------------------------------------
+
+`tests/test_scope_all_runners.py`는 **러너 셋 전부**에 스코프를 묻는다. 러너들은
+대칭이라 전부 초록이다. **비대칭인 것은 executor인데 아무도 executor에 안 물었다.**
+Risk 12④ⓐ 그대로 — *결함을 그 그림자로 세지 말 것* / *가드는 독자가 읽는 그
+물건에 대고 물을 것*.
+
+----------------------------------------------------------------------------
+5. 안 고쳤다 — 이건 승인 사안이다
+----------------------------------------------------------------------------
+
+배선하면 Azure executor가 **실제 ARM/AKS 변경을 치기 시작한다**. 작업 규칙:
+*"하드-투-리버스(클러스터 변경/클라우드/대규모 리팩터)는 승인 후."* 추측으로 켤
+경로가 아니다.
+
+`success: True`를 `False`로 바꾸는 쪽도 **선택**이다 — Slack·기록 출력이 바뀌고,
+누군가 이 경로를 "mock 모드"로 여기고 있을 수 있다. 어느 쪽이든 사용자 판단이라
+**측정만 남긴다.**
+
+가드는 넣었다(`tests/test_executor_dispatches_to_runner.py`): 각 provider executor가
+자기 러너를 부르는지를 **명시적 레지스트리와 대조**한다. Azure 항목은 "안 부른다 +
+이유"를 들고 있어야 통과한다 — `test_iam_wildcard_justified.py`와 같은 규칙
+(**설명 없는 비대칭 금지**). 배선하는 순간 red가 나서 기록을 같이 고치게 된다.
