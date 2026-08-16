@@ -33,6 +33,16 @@ next session does not re-dig the same ground — a dry sweep is a measurement to
                                     설정이고 `APPROVAL_DEFAULT_DECISION`은 AWS 전용
                                     approval bridge의 것(기본값 `reject`=fail-closed).
                                     `LOG_LOOKBACK_SEC`는 셋 다 읽는다.
+    시간(Risk 12①)         —         **말랐다** → `test_no_expiring_fixtures.py`가 게이트로
+                                    집행한다(절대시각 90건, 살아 있는 시계와 같은 함수에
+                                    있는 것 0건).
+    하중(Risk 12③)         —         **모듈 단위에선 말랐다**. 테스트가 전이적으로 안 싣는
+                                    src 모듈은 0개다 — 처음 27개로 보였지만 전부 `__init__.py`
+                                    연쇄를 모델링 못 한 계기의 산물이었다. ⚠️**분기 단위는 못
+                                    쟀다**: 커버리지 도구가 없고, 도입은 레포 결정이다
+                                    (gate.yml이 ruff에 대해 같은 이유로 경고한다 —
+                                    *"a CI job is a bad place to introduce a standard
+                                    nobody agreed to"*). 재려면 그 결정이 먼저다.
     테스트의 손-작성 목록    —         **말랐다**. "every/all"을 주장하며 provider를 일부만
                                     센 테스트는 둘뿐이고 **둘 다 정당**했다:
                                     `test_registry_resolves_all_providers`(온프렘엔 관리형
