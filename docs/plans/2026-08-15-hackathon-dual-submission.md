@@ -271,10 +271,13 @@ AWS 09-11 12:00 PT. 크레딧 없이 시작하면 §9-1을 어기게 된다.
 - [x] ~~Google Official Rules 원문 확인~~ → **완료(08-15)**. Notion 요약과 일치했고
       **레포 요건 차이 하나**가 추가로 나왔다(Google은 private 허용·라이선스 불요).
 
-⚠️ **별건이지만 남아 있다**: 워킹트리에 `docs/generate_architecture.py`·`JOURNEY.md` 삭제가
-커밋 안 된 채 떠 있다. **Diagram 생성 수단**이고 `JOURNEY.md`는
-`docs/plans/2026-07-20-onprem-platform-addons.md`가 7곳에서 참조한다. **이 계획과 무관하게**
-의도 확인이 필요하다.
+✅ **해소(08-15)**: `JOURNEY.md`·`docs/generate_architecture.py` 삭제를 **둘 다 확정**했다.
+⚠️ **그 과정에서 내 판단이 한 번 틀렸다** — 생성기를 *"Diagram 생성 수단이니 되돌리자"*고
+권했는데, 재서 보니 **완전히 고아**였다: 출력물 `architecture-diagram.png`를 참조하는 곳이
+**자기 자신뿐**이고, README는 **손으로 디자인한** `docs/architecture.png`를,
+`ARCHITECTURE.md`는 `docs/images/`의 다른 셋을 쓴다. 생성기는 `diagrams` 라이브러리로
+**전혀 다른 산출물**을 만든다(258KB vs 1.7MB, 스타일 상이 — 둘 다 직접 열어 확인).
+⇒ **제출용 Diagram은 이미 있고 생성기와 무관하다.** 이 계획의 Diagram 항목에 영향 없음.
 
 ## 11. 이 계획이 하지 않는 것
 
