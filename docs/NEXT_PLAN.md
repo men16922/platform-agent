@@ -5,7 +5,7 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(**M15=공급망 0→집행 + Phase 5 경계 +
 > `main` 보호**, M14=결정 6건, M13=미소비 14건) / `PROGRESS_LOG.md`(+`docs/archive/`). **≤120줄**.
 
-## 현재 상태 (2026-08-16, gate 2207 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
+## 현재 상태 (2026-08-16, gate 2208 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
 
 **Phase 0·1a·1b·2·3 완결**(M10~M12) + **잔여 소진**(M13) + **결정 7건 닫힘**(D36·D38~D43).
 **공급망은 닫을 수 있는 만큼 닫혔다**(어드미션만 업스트림 대기) · **`main`은 보호된다**
@@ -65,8 +65,6 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
 
 - [ ] **DUAL 모드 조건부 리다이렉트** — `slack_live_approval`은 닫혔고(08-16) 이것만 남았다.
   **하중을 못 받는 가드**가 되므로 안 만들었다.
-- [ ] **런북 walk가 남긴 ②(08-12)** — 조건 축은 `previous_step_failed`만 넓혔고 **`severity`는
-  `"P2"` 고정**이라 `severity_in` 스텝이 생기면 재발한다 — 카탈로그에 없어 **가드를 안 만들었다**.
 - [ ] **capability 스캔 잔여 ⓐ·ⓒ — 정책 사안이라 안 고쳤다(ⓑ는 08-15에 닫힘, M19가 권위)**
   ⓐ**`kafka-lag-spike`만 두 dict가 어긋난다**(스텝엔 `rebalance_consumer`, `capabilities`엔 없음
   — **어긋난 쪽이 또 에스컬레이션 스텝**): 더하면 매치 면이 넓어지고 빼면 스텝이 준다,

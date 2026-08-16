@@ -38,6 +38,28 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
+## M33 — 08-12 기록의 전제는 틀렸는데 그것이 가리킨 가드 공백은 진짜였다 (완료, 2026-08-16)
+
+**기록**: *"런북 walk ② — 조건 축은 `previous_step_failed`만 넓혔고 **`severity`는 `"P2"`
+고정**이라 `severity_in` 스텝이 생기면 재발한다 — 카탈로그에 없어 가드를 안 만들었다."*
+
+**전제는 틀렸다.** `src` 어디에도 조건 컨텍스트에 P2 고정이 없다. `git log -L
+175,175:…/aws/executor.py`가 `"severity": decision.analyzer.severity.value`를 **gate
+1191**로 지목한다 — 08-12 기록(gate 1825)보다 한참 전이다. **stale이 아니라 쓰일 때부터
+틀린 기록**(M19 ⓑ와 같은 모양). 그리고 `severity_in` 가드도 *이미 둘* 있었다.
+
+**그런데 그 둘이 두 구현을 구별하지 못했다.** AWS 쪽 executor walk 테스트는 조건
+`["P1"]`에 실제 severity **P3**로 스킵을 단언한다 — **"P2" 고정이어도 똑같이 스킵된다.**
+유일하게 태운 경우가 **옳은 구현과 틀린 구현이 일치하는 경우**였다. Risk 12⑤ 그대로:
+*기본값과 같은 값을 고른 픽스처는 가드가 아니다.*
+
+**고친 것**: 양성 방향을 넣었다 — 같은 조건에 **P1 인시던트**면 스텝이 **실행돼야** 한다.
+**검증**: 기록이 주장한 상태(`"severity": "P2"`)를 실제로 만들어 보니 **기존 테스트는
+그대로 초록**이고 **새 테스트만 red**였다. gate 2207→2208.
+
+⇒ **틀린 기록도 값이 난다**(M19 이후 네 번째). 다만 값이 난 건 기록이 말한 결함이
+아니라 **그 자리를 지키던 가드**였다.
+
 ## M32 — 근거 없는 분석이 두 클라우드에선 사람 없이 실행됐다 + 스윕을 게이트로 (완료, 2026-08-16)
 
 **결함**: `apply_gate`/`reconcile`을 읽는 provider가 **AWS 하나**였다. `reconcile`이
