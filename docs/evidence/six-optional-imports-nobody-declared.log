@@ -1,0 +1,127 @@
+2026-08-15 — 레포가 08-08에 배운 교훈을 한 패키지에만 적용했다. 형제 여섯을 안 셌다
+============================================================================
+
+발단: D49(게이트가 Gemini를 과금 호출)의 원인이 *"`except ImportError` 폴백이 원리상
+도달 불가"*였다. **그 패턴을 일반화해서 물었다** — `try: import X / except ImportError:`가
+붙은 임포트가 전부 **선언된 의존성인가**.
+
+`pyproject.toml`이 이미 그 교훈을 **한 패키지 분량으로** 적어 두고 있었다:
+
+    # Declared 2026-08-08, after the first CI run failed 17 tracing tests ...
+    # The gate had been passing on an undeclared package that happened to be
+    # installed locally.
+
+**형제를 안 셌다.**
+
+----------------------------------------------------------------------------
+1. 스윕 — `except ImportError` 뒤의 서드파티 임포트 전수
+----------------------------------------------------------------------------
+
+`git ls-files`로 추적 소스만, AST로 `try/except ImportError` 블록 안의 임포트만
+(표준 라이브러리·`src.*` 제외):
+
+    모듈                                선언?      쓰는 곳
+    ─────────────────────────────────────────────────────────────────────────
+    vertexai / vertexai.generative_models  ✅      gcp/analyzer          (LLM)
+    azure.identity                         ✅      azure/{analyzer,decision,detector,executor}
+    google.auth / google.oauth2            ✅*     runners/gcp_auth      (*전이 의존)
+    google.protobuf.timestamp_pb2          ✅*     gcp/detector
+    ─────────────────────────────────────────────────────────────────────────
+    google.cloud (firestore)              ⚠️**없음**  gcp/{analyzer,decision,executor}
+    google.cloud (logging)                ⚠️**없음**  gcp/detector
+    google.cloud (monitoring_v3)          ⚠️**없음**  gcp/detector
+    azure.cosmos                          ⚠️**없음**  azure/{analyzer,decision,executor}
+    azure.monitor.query                   ⚠️**없음**  azure/detector
+    openai                                ⚠️**없음**  azure/analyzer        ← **LLM 자체**
+    fastapi / fastapi.responses           ⚠️**없음**  ai/{gateway/a2a_server,local_deploy_api,onprem_webhook_api}
+
+----------------------------------------------------------------------------
+2. 왜 조용한가 — 폴백이 **에러가 아니라 warning**이다
+----------------------------------------------------------------------------
+
+전부 이 모양이다:
+
+    except ImportError:
+        logger.warning("gcp_detector.cloud_logging.not_available", ...)
+        return []
+
+**선언이 빠져도 설치가 실패하지 않는다.** 대신 **팔다리가 없는 에이전트가 배포된다.**
+설치 명령별로 옮기면:
+
+    pip install .[gcp]     → detector가 **로그를 못 읽고**(google-cloud-logging)
+                             **메트릭을 못 읽고**(google-cloud-monitoring)
+                             **인시던트 스토어가 없다**(google-cloud-firestore)
+    pip install .[azure]   → **스토어 없음**(azure-cosmos) · **로그/메트릭 없음**
+                             (azure-monitor-query) · ⚠️**LLM 없음**(openai —
+                             `AzureOpenAI`가 analyzer의 모델이다)
+    make dev-up            → **fastapi/uvicorn을 아무도 선언 안 했다** →
+                             새 클론은 **문서화된 로컬 스택을 못 띄운다**
+
+⚠️ `make dev-up`은 `AGENT_BRIEF` Snapshot이 *"`make dev-up`으로 로컬 스택 한 방 기동"*
+이라고 광고하는 경로다. **광고된 명령이 새 클론에서 안 돈다.**
+
+⚠️ 그리고 이건 오늘 이미 두 번 나온 계열이다 — Risk 12②(**환경**): *"게이트가 선언되지
+않은 패키지 위에서 통과하고 있었다"*. 08-08엔 CI가 잡았고, 오늘은 **아무도 안 잡았다**
+(이 코드들은 CI에서도 폴백으로 조용히 통과한다).
+
+----------------------------------------------------------------------------
+3. 고침 — 선언만 고쳤다 (동작 무변경)
+----------------------------------------------------------------------------
+
+`pyproject.toml`:
+
+    gcp     += google-cloud-firestore · google-cloud-logging · google-cloud-monitoring
+    azure   += azure-cosmos · azure-monitor-query · openai
+    serving  = fastapi · uvicorn          (신규 extra — `make dev-up`이 쓰는 것)
+
+**코드는 한 줄도 안 바꿨다.** 폴백은 그대로 유효하다 — 진짜로 설치 안 한 배포에선
+여전히 필요하다. 바뀐 것은 *"설치하겠다고 말한 것을 실제로 설치한다"*뿐이다.
+
+----------------------------------------------------------------------------
+4. 가드 — 19건, 이 결함이 재발할 수 없게
+----------------------------------------------------------------------------
+
+`tests/test_optional_dependencies_declared.py` (신규). **설치 상태가 아니라 소스↔선언을
+비교한다** — "여기선 되는데"가 정확히 이걸 숨긴 것이기 때문이다(Risk 12②).
+
+  test_declared_in_pyproject          매핑된 13개가 전부 선언돼 있는가 (parametrized)
+  test_no_guarded_import_is_unmapped  **소스에 새 optional 임포트가 생기면 red** ← 방어선
+  test_the_table_has_no_dead_entries  역방향 — 아무도 안 하는 임포트가 표에 남았는가
+  test_the_serving_stack_is_installable  fastapi/uvicorn + **Makefile이 아직 uvicorn을 쓰는가**
+
+변이(기준선 19 passed):
+
+    M1 firestore 선언 제거   RED (1)    M4 매핑 표에서 한 줄 제거   RED (1)
+    M2 openai 선언 제거      RED (1)    M5 표에 죽은 항목 추가      RED (2)
+    M3 serving extra 제거    RED (4)    M6 비공허 검사 무력화       **GREEN — 생존**
+
+⚠️ **M6은 생존했고 숨기지 않는다.** `assert len(_guarded_imports()) >= 10`을 `assert True`로
+바꿔도 아무도 안 죽는다 — **가드의 가드는 없다.** 그래서 **진짜 실패 모드**를 따로 물었다:
+
+    M7 스윕이 `{}`를 반환           RED (2 failed)
+    M8 스윕이 stdlib 필터를 잃음    RED (1 failed)
+
+즉 **스윕이 실제로 깨지면 `test_the_table_has_no_dead_entries`가 잡는다**(모든 표 항목이
+stale로 읽힌다). 비공허 assert는 **보호가 아니라 문서**이고, 그 사실을 그 테스트의
+도크스트링에 적었다.
+
+  ⚠️ **생존한 변이는 "가드가 없다"가 아니라 "무엇이 진짜 보호인지"를 묻게 한다.**
+
+게이트: **2046 passed, 2 skipped · 38.81s** (직전 2027), 2026-08-15, 로컬 macOS·py3.13.
+
+----------------------------------------------------------------------------
+5. 이 로그가 하지 않은 것
+----------------------------------------------------------------------------
+
+- **설치해서 확인하지 않았다.** `pip install .[gcp]`를 빈 환경에서 돌려 정말 로그를 못
+  읽는지는 **미검증**이다 — 근거는 **선언 목록과 임포트 목록의 대조**다. 이 머신엔 전부
+  설치돼 있어(전이 의존으로 딸려 온 것들) 여기서는 증상이 안 보인다.
+  ⚠️ **바로 그 점이 이 결함이 오래 산 이유다.**
+- **버전 하한은 정가가 아니라 관례로 골랐다**(`>=2.16` 등). 실제 최소 호환 버전을
+  이분 탐색하지 않았다.
+- **전이 의존(`google.auth`·`protobuf`)은 명시 선언하지 않았다** — `google-cloud-*`가
+  끌어온다. 표에는 그렇게 적어 두었다.
+
+============================================================================
+측정: 2026-08-15, 로컬 macOS · py3.13 (/opt/anaconda3/bin/python3.13)
+게이트: 2046 passed / 2 skipped · 38.81s (직전 2027) · 변이 5 red · 1 생존(설명함) · 2 보강 red

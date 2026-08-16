@@ -1,0 +1,2 @@
+{"config": {"model": "mlx-community/Qwen3.8-27B-4bit", "thinking": false, "effort": "low"}, "successes": 20, "total": 20, "cost_usd": 0.0, "seconds": 15.136, "trials": 1, "pass_rate": 1.0, "cost_per_success": 0.0, "seconds_per_success": 0.7567984854496899}
+{"config": {"model": "mlx-community/Qwen3.8-27B-4bit", "thinking": false, "effort": "high"}, "successes": 20, "total": 20, "cost_usd": 0.0, "seconds": 15.579, "trials": 1, "pass_rate": 1.0, "cost_per_success": 0.0, "seconds_per_success": 0.7789483999978983}

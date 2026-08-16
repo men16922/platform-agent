@@ -1,0 +1,107 @@
+2026-08-15 — 내가 고친 extra는 설치가 안 된다. 그리고 그 안의 임포트는 없는 심볼을 부른다
+============================================================================
+
+발단: M25에서 `pyproject.toml`의 extra에 미선언 패키지 여섯을 추가했다. **내가 넣은 이름과
+버전 하한이 실제로 해석되는지 확인하지 않았다** — 틀렸으면 내가 결함을 넣은 것이므로 쟀다.
+
+----------------------------------------------------------------------------
+1. 내가 추가한 것은 문제없다
+----------------------------------------------------------------------------
+
+    pip install --dry-run  google-cloud-{firestore,logging,monitoring} \
+                           azure-cosmos azure-monitor-query openai fastapi uvicorn
+    → exit 0 (수 초)
+
+extra 단위로도:
+
+    pip install .[gcp]      OK
+    pip install .[serving]  OK
+    pip install .[onprem]   OK
+    pip install .[azure]    ⚠️ **해석 안 됨**
+
+----------------------------------------------------------------------------
+2. `.[azure]`는 내 변경 이전부터 설치가 안 된다
+----------------------------------------------------------------------------
+
+원인을 좁혔다(각각 단독으로):
+
+    agent-framework>=1.0      ⚠️ **150초 타임아웃**   ← 변경 전부터 있던 선언
+    azure-identity>=1.15      exit 0
+    azure-ai-projects>=1.0    exit 0
+    (내가 추가한 셋)          exit 0
+
+버전을 고정해도 마찬가지다: `agent-framework==1.14.0` → **150초 타임아웃**.
+휠 메타데이터가 이유를 말한다:
+
+    Requires-Dist: agent-framework-core[all]==1.14.0
+
+**우산 패키지가 오직 `[all]` extra 하나만 요구**하고, 그 그래프에서 pip이 fastapi 버전을
+끝없이 역추적한다(`fastapi-0.123.3 … 0.121.0 …`). 반면:
+
+    agent-framework-core      exit 0 (수 초)
+    agent-framework-azure-ai  exit 0 (수 초)
+
+⇒ **`.[azure]`는 설치할 수 없다. 내 M25 수정은 옳지만, 아무도 설치할 수 없는 extra를 고친 것이다.**
+
+----------------------------------------------------------------------------
+3. 더 나간 곳 — 그 임포트는 없는 심볼을 부른다
+----------------------------------------------------------------------------
+
+`agent-framework-core`로 바꾸면 되나 싶어 **휠 안을 봤다.** 바꿨으면 깰 뻔했다:
+
+    src/agents/ai/msft_deployer.py:18   from agent_framework import tool
+    src/agents/ai/msft_deployer.py:19   from agent_framework.azure import AzureOpenAIResponsesClient
+
+    agent_framework_core-1.14.0.whl
+      top-level        : agent_framework   (azure 서브패키지 **포함**)
+      agent_framework.tool                     → **있음**
+      agent_framework.azure.AzureOpenAIResponsesClient → **없음**
+
+`agent_framework/azure/__init__.py`는 **심볼 → (모듈, 배포판) 지연 re-export 맵**이고,
+노출하는 심볼은 **12개뿐**이다:
+
+    AgentCallbackContext · AgentFunctionApp · AgentResponseCallbackProtocol
+    AzureAISearchContextProvider · AzureAISearchSettings · CosmosHistoryProvider
+    DurableAIAgent · DurableAIAgentClient · DurableAIAgentOrchestrationContext
+    DurableAIAgentWorker · DurableWorkflowClient · WorkflowHitlContext
+
+**`AzureOpenAIResponsesClient`은 그 맵에 아예 없다.** Chat/OpenAI 클라이언트 계열 심볼도 없다.
+
+----------------------------------------------------------------------------
+4. 왜 아무도 몰랐나 — 테스트가 모듈을 스텁한다
+----------------------------------------------------------------------------
+
+    $ python -c "import agent_framework"
+    ModuleNotFoundError: No module named 'agent_framework'      ← 이 머신에 없다
+
+    tests/test_cloud_native_deployers.py:32
+        sys.modules.setdefault("agent_framework", _mock_af)
+        sys.modules.setdefault("agent_framework.azure", _mock_af_azure)
+
+`msft_deployer.py`는 **모듈 레벨에서** 그것을 임포트한다(폴백 없음). 그런데 유일한 테스트가
+`sys.modules`에 가짜를 심는다 → **이 임포트는 진짜 라이브러리에 대고 한 번도 실행된 적이 없다.**
+그리고 확인하려면 `.[azure]`를 설치해야 하는데 **그게 안 된다.**
+
+오늘 하루의 주제가 여기서 다시 나온다 — **초록은 환경에 대한 주장이다**(Risk 12②).
+M24는 자격증명이 *있어서* 라이브로 샜고, 여기는 패키지가 *없어서* 스텁으로 통과한다.
+**둘 다 게이트가 실제 환경을 반영하지 않는다는 같은 말이다.**
+
+----------------------------------------------------------------------------
+5. 고치지 않은 이유
+----------------------------------------------------------------------------
+
+- **선언을 `agent-framework-core`로 바꾸지 않았다** — `tool`은 되지만
+  `AzureOpenAIResponsesClient`이 없어 **다른 방식으로 깨진다.**
+- **임포트를 고치지 않았다** — 현재 올바른 API가 무엇인지 **모른다.** 알려면 우산 패키지를
+  설치해야 하고 그게 해석되지 않는다. **추측으로 심볼 이름을 바꾸는 것은 발명이다.**
+- **`[all]` 우회(constraints 파일·`--no-deps`)를 넣지 않았다** — 설치 정책 결정이다.
+
+⇒ **열린 항목으로 남긴다.** 재개 조건은 둘 중 하나: 업스트림이 `agent-framework`의
+`[all]` 강제를 푸는 것, 또는 **한 번 성공적으로 설치해 현재 API를 확인하는 것**
+(그때 `msft_deployer`의 임포트 두 줄이 정답을 얻는다).
+
+⚠️ **이 로그가 확인하지 않은 것**: `[all]`이 실제로 *해석 불가*인지 **아주 느린 것**인지는
+가르지 않았다 — 150초/420초에서 끊었을 뿐이다. 실무적으로는 같지만 **논리적으로는 다르다.**
+
+============================================================================
+측정: 2026-08-15, 로컬 macOS · py3.13 · pip dry-run(설치 없음) · 휠 메타데이터 직접 판독

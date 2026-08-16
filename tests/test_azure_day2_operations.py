@@ -259,9 +259,33 @@ class TestAzureDecision:
 
         analyzer_out = analyze(detector_output_dict)
         analyzer_out["severity"] = "P1"
+        # Confidence too, because a P1 is a *claim* and the reconciliation gate
+        # asks whether the model actually backed it. Raising severity alone built
+        # a P1 at confidence 0.30 — exactly the ungrounded case the gate exists to
+        # refuse — and this test then asserted it auto-executes. The gate was
+        # wired here 2026-08-16 (AWS has had it all along); before that the state
+        # was unreachable in production but assertable in a fixture.
+        analyzer_out["confidence"] = 0.9
         result = decide(analyzer_out)
 
         assert result["remediation_mode"] == "AUTO"
+
+    def test_p1_the_model_did_not_back_is_not_auto_executed(self, detector_output_dict):
+        """The other half of the gate wired in on 2026-08-16.
+
+        A P1 asserted at confidence 0.30 is a claim the analyzer did not stand
+        behind. AWS has refused to auto-execute that since `apply_gate` existed;
+        this provider auto-executed it. `apply_gate` only ever downgrades, so the
+        worst case of getting this wrong is an extra human approval.
+        """
+        from src.agents.operations.azure.decision import azure_function_handler as decide
+        from src.agents.operations.azure.analyzer import azure_function_handler as analyze
+
+        analyzer_out = analyze(detector_output_dict)
+        analyzer_out["severity"] = "P1"
+        analyzer_out["confidence"] = 0.3
+
+        assert decide(analyzer_out)["remediation_mode"] == "APPROVE"
 
     def test_decision_p2_approve_mode(self, detector_output_dict):
         from src.agents.operations.azure.analyzer import azure_function_handler as analyze

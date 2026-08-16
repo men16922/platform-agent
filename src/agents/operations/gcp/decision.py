@@ -26,8 +26,10 @@ from src.agents.models import (
     RemediationMode,
     Severity,
 )
+from src.agents.ai.reconciliation import apply_gate, reconcile
+from src.agents.runbooks.capability_schema import evaluate_condition
 from src.agents.runbooks.catalog import BUILTIN_RUNBOOKS
-from src.agents.runbooks.schema import fits_resource, validate_runbook
+from src.agents.runbooks.schema import fits_resource, is_destructive_action, validate_runbook
 
 logger = structlog.get_logger(__name__)
 
@@ -49,6 +51,28 @@ def cloud_function_handler(event: dict[str, Any]) -> dict[str, Any]:
 
     runbook_id, actions, rto = _select_runbook(analyzer)
     mode = _determine_mode(analyzer.severity, actions)
+
+    # Reconciliation gate — the same one AWS has applied since it was written.
+    # Measured 2026-08-16 by counting readers of each shared symbol: `apply_gate`
+    # and `reconcile` were read by AWS alone, so an **ungrounded** analysis
+    # (alarm not firing / no evidence at all / P1 asserted at low confidence /
+    # a root_cause whose vocabulary never appears in the evidence) still
+    # auto-executed here while the identical case was escalated to a human on
+    # AWS. Same family as the destructive-action gate (M23): a safety rule that
+    # existed in the contract and was read by one provider.
+    #
+    # Safe to share: `reconcile` is pure — `re`, dataclasses, and the two
+    # provider-neutral contract types — no network, no model call, no SDK. And
+    # `apply_gate` only ever downgrades AUTO → APPROVE; it never upgrades a
+    # human-gated decision, so this can add approvals but never remove one.
+    recon = reconcile(analyzer.detector, analyzer)
+    gated_mode = apply_gate(mode, recon)
+    if gated_mode != mode:
+        log.warning(
+            "gcp_decision.reconciliation.downgrade",
+            from_mode=mode.value, to_mode=gated_mode.value, issues=recon.issues,
+        )
+    mode = gated_mode
     log.info("gcp_decision.runbook", runbook_id=runbook_id, mode=mode, actions=actions, rto=rto)
 
     output = DecisionOutput(
@@ -79,10 +103,37 @@ def _select_runbook(analyzer: AnalyzerOutput) -> tuple[str, list[str], int | Non
     # 1. Try Firestore exact match
     firestore_runbook = _lookup_firestore_runbook(alarm_name)
     if firestore_runbook:
-        runbook_id = firestore_runbook.get("runbook_id", alarm_name)
-        actions = _resolve_actions_from_runbook(firestore_runbook, normalized)
-        rto = firestore_runbook.get("rto_sec")
-        return runbook_id, actions, rto
+        # Operator overrides are registered out-of-band, so a malformed one falls
+        # back to the catalog instead of producing a broken decision downstream —
+        # the reason AWS has validated its DynamoDB reads all along. Tier 2 below
+        # was validating `BUILTIN_RUNBOOKS`, i.e. the *one* source that cannot be
+        # hand-edited, while this tier used whatever the store returned.
+        #
+        # `require_alarm_name` stays at its default False: the lookup key here is
+        # the **document id**, so a valid document need not repeat `alarm_name` as
+        # a field. AWS passes True because its DynamoDB key *is* that attribute.
+        # Passing True here would reject every correctly-registered runbook and
+        # make this tier unreachable — the same shape as the inverted check that
+        # once disabled tier 2.
+        # The id default is applied *before* validating, so the check runs on the
+        # runbook as it would actually be used. Non-dicts pass through untouched —
+        # `validate_runbook` reports those itself and never raises, which is what
+        # keeps a junk document a logged fallback rather than a 500.
+        candidate = (
+            {**firestore_runbook, "runbook_id": firestore_runbook.get("runbook_id", alarm_name)}
+            if isinstance(firestore_runbook, dict)
+            else firestore_runbook
+        )
+        problems = validate_runbook(candidate)
+        if problems:
+            logger.warning(
+                "gcp_decision.override.invalid",
+                alarm_name=alarm_name,
+                problems=problems,
+            )
+        else:
+            actions = _resolve_actions_from_runbook(candidate, normalized, analyzer.severity)
+            return candidate["runbook_id"], actions, candidate.get("rto_sec")
 
     # 2. Capability-based catalog scan
     if normalized and normalized.recommended_capabilities:
@@ -144,14 +195,43 @@ def _lookup_firestore_runbook(alarm_name: str) -> dict[str, Any] | None:
 def _resolve_actions_from_runbook(
     runbook: dict[str, Any],
     normalized: NormalizedIncident | None,
+    severity: Severity | None = None,
 ) -> list[str]:
-    """Resolve concrete GCP actions from a runbook's steps."""
+    """Resolve concrete GCP actions from a runbook's steps.
+
+    Step ``condition`` is part of the runbook contract — `evaluate_condition`
+    documents three forms (`previous_step_failed`, `severity_in`, `provider`) and
+    the AWS executor has gated on it all along. This walk **ignored the field**,
+    so an operator following the documented contract got every conditional step
+    unconditionally: `{"previous_step_failed": true}` marks an *escalation* step,
+    and running it always is the stronger remediation applied when nothing failed.
+
+    ⚠️ Evaluated with the **initial** context, because this provider flattens
+    steps into a flat action list at decision time and has no step-walking
+    executor to update it. So `previous_step_failed` is False here and always
+    will be: escalation steps are excluded rather than deferred. That is the
+    honest half of the contract this side can keep — including them
+    unconditionally was the other, worse, half.
+    """
     if not normalized:
         return []
+
+    context = {
+        "severity": severity.value if severity is not None else None,
+        "provider": normalized.provider,
+        "previous_step_failed": False,
+    }
 
     adapter = get_execution_adapter("gcp")
     actions = []
     for step in runbook.get("steps", []):
+        if not evaluate_condition(step.get("condition"), context):
+            logger.info(
+                "gcp_decision.step.condition_false",
+                step=step.get("name") or step.get("action"),
+                condition=step.get("condition"),
+            )
+            continue
         capability = step.get("capability")
         if not capability:
             continue
@@ -186,18 +266,14 @@ def _resolve_actions_from_capabilities(
 # Mode determination
 # ------------------------------------------------------------------
 
-_DANGEROUS_PATTERNS = {"Delete", "Drop", "Terminate", "Destroy"}
-
-
 def _determine_mode(severity: Severity, actions: list[str]) -> RemediationMode:
     """
     P1 → AUTO, P2 → APPROVE, P3 → MANUAL.
     Safety: dangerous actions force APPROVE regardless of severity.
     """
     # Safety override
-    for action in actions:
-        if any(pattern in action for pattern in _DANGEROUS_PATTERNS):
-            return RemediationMode.APPROVE
+    if any(is_destructive_action(a) for a in actions):
+        return RemediationMode.APPROVE
 
     if severity == Severity.P1:
         return RemediationMode.AUTO

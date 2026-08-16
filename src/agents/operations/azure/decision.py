@@ -26,8 +26,10 @@ from src.agents.models import (
     RemediationMode,
     Severity,
 )
+from src.agents.ai.reconciliation import apply_gate, reconcile
+from src.agents.runbooks.capability_schema import evaluate_condition
 from src.agents.runbooks.catalog import BUILTIN_RUNBOOKS
-from src.agents.runbooks.schema import fits_resource, validate_runbook
+from src.agents.runbooks.schema import fits_resource, is_destructive_action, validate_runbook
 
 logger = structlog.get_logger(__name__)
 
@@ -50,6 +52,28 @@ def azure_function_handler(event: dict[str, Any]) -> dict[str, Any]:
 
     runbook_id, actions, rto = _select_runbook(analyzer)
     mode = _determine_mode(analyzer.severity, actions)
+
+    # Reconciliation gate — the same one AWS has applied since it was written.
+    # Measured 2026-08-16 by counting readers of each shared symbol: `apply_gate`
+    # and `reconcile` were read by AWS alone, so an **ungrounded** analysis
+    # (alarm not firing / no evidence at all / P1 asserted at low confidence /
+    # a root_cause whose vocabulary never appears in the evidence) still
+    # auto-executed here while the identical case was escalated to a human on
+    # AWS. Same family as the destructive-action gate (M23): a safety rule that
+    # existed in the contract and was read by one provider.
+    #
+    # Safe to share: `reconcile` is pure — `re`, dataclasses, and the two
+    # provider-neutral contract types — no network, no model call, no SDK. And
+    # `apply_gate` only ever downgrades AUTO → APPROVE; it never upgrades a
+    # human-gated decision, so this can add approvals but never remove one.
+    recon = reconcile(analyzer.detector, analyzer)
+    gated_mode = apply_gate(mode, recon)
+    if gated_mode != mode:
+        log.warning(
+            "azure_decision.reconciliation.downgrade",
+            from_mode=mode.value, to_mode=gated_mode.value, issues=recon.issues,
+        )
+    mode = gated_mode
     log.info("azure_decision.runbook", runbook_id=runbook_id, mode=mode, actions=actions, rto=rto)
 
     output = DecisionOutput(
@@ -80,10 +104,33 @@ def _select_runbook(analyzer: AnalyzerOutput) -> tuple[str, list[str], int | Non
     # 1. Try Cosmos DB exact match
     cosmos_runbook = _lookup_cosmos_runbook(alarm_name)
     if cosmos_runbook:
-        runbook_id = cosmos_runbook.get("runbook_id", alarm_name)
-        actions = _resolve_actions_from_runbook(cosmos_runbook, normalized)
-        rto = cosmos_runbook.get("rto_sec")
-        return runbook_id, actions, rto
+        # Same contract as GCP tier 1, and the same reason AWS validates its
+        # DynamoDB reads: an override is hand-registered out-of-band, so a
+        # malformed one must fall back to the catalog rather than drive a
+        # decision. Tier 2 below validated `BUILTIN_RUNBOOKS` — the one source
+        # that cannot be malformed — while this tier validated nothing.
+        #
+        # `require_alarm_name` stays False: the Cosmos item id is the alarm name,
+        # so the document need not carry it as a field (AWS's DynamoDB key is the
+        # attribute, which is why it passes True).
+        # Id default applied before validating, so the check runs on the runbook
+        # as it would be used; non-dicts pass through for `validate_runbook` to
+        # report rather than raising here.
+        candidate = (
+            {**cosmos_runbook, "runbook_id": cosmos_runbook.get("runbook_id", alarm_name)}
+            if isinstance(cosmos_runbook, dict)
+            else cosmos_runbook
+        )
+        problems = validate_runbook(candidate)
+        if problems:
+            logger.warning(
+                "azure_decision.override.invalid",
+                alarm_name=alarm_name,
+                problems=problems,
+            )
+        else:
+            actions = _resolve_actions_from_runbook(candidate, normalized, analyzer.severity)
+            return candidate["runbook_id"], actions, candidate.get("rto_sec")
 
     # 2. Capability-based catalog scan
     if normalized and normalized.recommended_capabilities:
@@ -160,13 +207,35 @@ def _get_cosmos_credential():
 def _resolve_actions_from_runbook(
     runbook: dict[str, Any],
     normalized: NormalizedIncident | None,
+    severity: Severity | None = None,
 ) -> list[str]:
+    """Resolve concrete Azure actions from a runbook's steps.
+
+    Same contract, and same gap, as the GCP walk — see the docstring there.
+    Step ``condition`` was not read at all, so `{"previous_step_failed": true}`
+    (an escalation step) was emitted unconditionally. Evaluated here with the
+    initial context: this side flattens steps at decision time, so escalation
+    steps are excluded rather than deferred.
+    """
     if not normalized:
         return []
+
+    context = {
+        "severity": severity.value if severity is not None else None,
+        "provider": normalized.provider,
+        "previous_step_failed": False,
+    }
 
     adapter = get_execution_adapter("azure")
     actions = []
     for step in runbook.get("steps", []):
+        if not evaluate_condition(step.get("condition"), context):
+            logger.info(
+                "azure_decision.step.condition_false",
+                step=step.get("name") or step.get("action"),
+                condition=step.get("condition"),
+            )
+            continue
         capability = step.get("capability")
         if not capability:
             continue
@@ -200,13 +269,9 @@ def _resolve_actions_from_capabilities(
 # Mode determination
 # ------------------------------------------------------------------
 
-_DANGEROUS_PATTERNS = {"Delete", "Drop", "Terminate", "Destroy"}
-
-
 def _determine_mode(severity: Severity, actions: list[str]) -> RemediationMode:
-    for action in actions:
-        if any(pattern in action for pattern in _DANGEROUS_PATTERNS):
-            return RemediationMode.APPROVE
+    if any(is_destructive_action(a) for a in actions):
+        return RemediationMode.APPROVE
 
     if severity == Severity.P1:
         return RemediationMode.AUTO

@@ -22,6 +22,7 @@ from typing import Any
 import structlog
 
 from src.agents.operations import _executor_common as common
+from src.agents.runbooks.capability_schema import resolution_verdict
 from src.agents.operations._executor_common import RemediationMode
 from src.agents.models import (
     AlarmContext, AnalyzerOutput, ExecutorOutput, NormalizedIncident,
@@ -63,7 +64,15 @@ def cloud_function_handler(event: dict[str, Any]) -> dict[str, Any]:
         skipped = decision.actions
         log.info("gcp_executor.manual_mode", skipped=skipped)
 
-    resolved = bool(executed) and not skipped
+    # Through the shared verdict, not a local copy of its rule. With no
+    # verifications this is *exactly* `bool(executed) and not skipped` — which is
+    # what this line used to hardcode — so behaviour is unchanged today. It is
+    # routed here because that rule is a **contract**
+    # (`capability_schema.resolution_verdict`, which AWS already reads) and this
+    # provider had an equivalent copy of it: the shape where the next change
+    # lands in one place and rots in the other. GCP/Azure have no verify path
+    # yet; when they get one, resolution follows without a second edit.
+    resolved = resolution_verdict(executed, skipped).resolved
 
     slack_ts = common.post_incident_slack(
         webhook_url=_SLACK_WEBHOOK,

@@ -6,94 +6,84 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
-## 2026-08-15 — 직전 고침이 남긴 기준을 다음 계약에 댔더니, 형제 집합이 다섯 번째로 걸렸다 (gate 1894→1912)
+## 2026-08-16 — 08-11부터 묶여 있던 항목: 기록된 차단 이유가 틀렸다 (gate 2102)
 
-- Status: M19의 결론(**판단 기준은 읽는 쪽의 provider 간 비대칭**)을 `NormalizedIncident`에
-  그대로 적용했다. `severity_hint`는 **네 시그널 어댑터가 전부 채우는데**(Azure
-  `essentials.severity` · GCP `incident.severity` · onprem 라벨 · AWS 알람 상태) **읽는 곳은
-  `aws/analyzer.py:200` 하나**였다.
-- Verified(⚠️**레포가 스스로 적어 뒀는데 가드가 안 지켰다**): `test_analyzer_prompt_evidence.py`
-  도크스트링이 **네 어댑터를 정확히 열거**하고 *"severity가 AUTO냐 APPROVE냐를 정한다 —
-  07-29 라이브 관측: `warning` 규칙이 P1으로 등급 매겨져 즉시 조치됐다"*라고 쓴다. 그런데
-  그 파일의 임포트는 **`aws.analyzer` 한 줄**이다 → **산문이 참이어도 임포트 줄이 범위다.**
-- Verified(재현): 실제 `_build_prompt` — aws는 severity·alert detail 둘 다 YES,
-  **gcp/azure는 둘 다 NO**. 두 정규화 블록은 **AWS의 고치기 전 다섯 줄과 글자 그대로 같다**.
-  onprem은 `onprem_incident_pipeline.py:34`가 AWS analyzer를 임포트해 **이미 덮인다**.
-- Changed: 프롬프트 두 줄 + **시스템 프롬프트 안전장치**("강한 증거지만 **구속력은 없다**")를
-  같이 이식. ⚠️**안전장치 없이 라벨만 넣으면 구멍보다 나쁘다** — 라벨이 지시로 읽혀
-  AUTO/APPROVE를 혼자 정한다. 어휘 → P1/P2/P3 **매핑은 안 한다**(정책, AWS도 안 했다).
-- Changed(가드 +18): 기존 파일을 세 analyzer로 parametrize — 이식 전 **16 red**, **AWS 11은
-  내내 초록**. 역방향 둘(힌트 없으면 줄 안 붙임 · 시스템 프롬프트가 "not binding"을 말함).
-  onprem을 목록에서 뺀 이유를 **코드에 적었다**(빠진 것과 덮인 것은 구별돼야 한다).
-- Verified: 변이 **6건 전부 red·생존 0**(무조건 붙이기 · 안전장치 제거 · 어휘 정규화 포함),
-  복구 후 0 modified. `make check` **1912**(+18) · CI도 **1912** — 일치. 2026-08-15,
-  로컬 macOS·py3.13. 증거 `operator-severity-never-reached-two-models.log`. PR #37.
+- Status: `slack_live_approval.py`는 *"고치면 조용히 no-op"*이라 08-11부터 안 고치고 있었고,
+  기록은 *"올바른 이름은 **Slack 데모를 태워야 확정**된다"*였다. **이 레포는 오늘 이미 그런
+  기록 하나가 틀린 걸 봤으니**(M19 ⓑ) 믿지 말고 시험했다.
+- Verified(**①은 참, ②는 근사했다**): 임포트 경로
+  `src.agents.operations.approval_bridge`는 **추적 트리에 없다** — 패키지가 `aws/` 아래로
+  이사했고 옛 경로는 **untracked `cdk.out/`에만** 남아 있다(그래서 `cdk synth`를 돌린 머신에서만
+  임포트가 됐다). ⚠️기록은 *"여섯 중 넷 부재"*였는데 실제로는 **5/6이 부재**(`_SFN`만 존재)이고
+  **호출하는 셋은 전부 존재**한다.
+- Verified(**"데모 선행"은 틀렸다**): 사라진 다섯은 서브모듈 분해로 옮겨졌고 **각각 정확히
+  한 곳**에 있다(`slack_interactive` 셋 · `request_store` 둘) — 추측 여지가 없다. 그리고
+  `_post_slack_request`가 **호출 시점에 모듈 전역을 읽으므로** setattr이 실제로 먹는다.
+- Changed: 임포트를 `aws/` 경로로 고치고 다섯 대입을 **값이 실제로 사는 서브모듈**로 돌렸다.
+  `handler._SFN`은 **그대로** — 거기서 읽는다(`handler.py:207,220`). 왜 서브모듈이어야 하는지를
+  임포트 옆 주석에 적었다.
+- Verified(**오프라인 실증**): 스크립트 자신의 `simulate`가 문서상 완전 오프라인이라 그걸로
+  끝까지 돌렸다 — SQS 요청→PENDING 저장→**실제 HMAC 서명** 버튼 콜백→HTTP 200→SFN
+  resume→**APPROVED**. **Slack 없이 확정됐다.**
+- Changed(가드 +8, `test_harness_patch_targets_exist.py` 신규): 스크립트가 대입하는 이름을
+  **AST로 뽑아** 대상 모듈에 실재하는지 묻는다(웹훅·자격증명 없이 성립). 호출 진입점 셋 ·
+  옛 임포트 경로 부재도 함께. 변이: 대입 하나를 `handler`로 되돌리면 red.
+  `make check` **2102**, 로컬 macOS·py3.13.
 - Blockers: 없음.
-- Next: **"무과금 소진"이 일곱 번째로 틀렸고, 이번엔 목록 밖이 아니라 목록이 만든 기준에서
-  나왔다.** 다음 수도 같은 자리에 있다 — **가드 파일의 임포트를 그 파일이 주장하는 범위와
-  맞대 볼 것**(`observations`·`triggered_at`도 AWS만 읽는다).
+- Next: ⚠️**"기록된 이유"가 오늘만 세 번 틀렸다**(M19 ⓑ · `Resource:"*"` 전면 금지 · 이번 것).
+  전부 **시험하면 값이 났다**. 남은 것: DUAL 모드 조건부 리다이렉트는 **여전히 안 만든다**
+  (둘 다 경고에 못 닿아 하중을 못 받는 가드가 된다 — 이건 시험해서 확인한 게 아니라 기록 유지).
 
-## 2026-08-15 — 틀린 기록을 시험하러 갔더니, 옆에서 AWS가 이미 닫은 결함이 두 provider에 살아 있었다 (gate 1862→1894)
+## 2026-08-16 — `Resource:"*"` 7건의 근거를 찾아 닫았다 — 도구를 두 번 잘못 골랐다 (gate 2094)
 
-- Status: 먼저 **직전 세션의 문서 체크포인트가 커밋 안 된 채** 트리에 있었다(코드는
-  `main`, 진입점 문서는 로컬만) → PR #33으로 닫았다. 그다음 `NEXT_PLAN`의 열린 항목
-  **ⓑ**("`renew_certificate`가 GCP/Azure 어댑터에 매핑 없음")를 시험했다.
-- Verified(**ⓑ는 틀렸다 — stale이 아니라 쓰일 때부터**): 읽지 말고 돌려서 쟀더니
-  **네 provider 전부** 풀린다(`actions=[]` 없음). `git log -L`로 매핑은 **2026-07-09**부터
-  있었다 — 그 기록이 쓰인 08-14 커밋보다 **한 달 앞선다**.
-- Verified(**그 자리에 있던 진짜 결함**): 티어 2가 런북의 `resource_types`를 **안 읽는다**.
-  AWS는 `_fits_resource`로 **이미 닫아 뒀고**, 어긋난 쌍 **67/81**이 GCP/Azure에선 그대로
-  선택된다. ⚠️**AWS보다 조용하다** — AWS는 하드코딩 액션으로 폴백(시끄러움), GCP/Azure는
-  풀리지 않는 capability를 **버리고 짧아진 목록**을 준다 → `certificate-expiry`가
-  kubernetes-workload에 선택되고 **RTO 600을 달고 notify만 한다**.
-- Changed: 규칙을 `runbooks/schema.py::fits_resource` **한 곳**에 두고 세 provider가 읽는다
-  (AWS는 위임). 복사본을 안 늘린 건 `NEXT_PLAN` 유지 규약이 **이 티어를 예로** 적어 둔 그대로다.
-  "양쪽 unknown이면 배제 안 함"은 AWS의 결정을 **옮긴 것**(발명 아님).
-- Changed(가드 +32): ground truth를 **함수가 아니라 카탈로그가 선언한 데이터**에 댔다.
-  전수 스윕(9타입 × 전 런북 × 2 provider) + 역방향 셋(선언한 타입은 뽑힌다 · unknown은
-  아무것도 배제 안 한다 · **폴백은 게이팅 안 된다** — AWS엔 있고 여기엔 없던 짝).
-  ⚠️**기존 테스트 2건이 red가 됐고 옳았다**: 픽스처가 모든 런북을 **k8s인 척** 물었다.
-- Verified: 변이 **6건 전부 red·생존 0**, 복구 후 63 초록·0 modified. `make check`
-  **1894**(+32) · CI도 **1894** — 로컬↔CI 일치. 2026-08-15, 로컬 macOS·py3.13.
-  증거 `resource-types-declared-and-unread.log`. PR #33·#34.
+- Status: 08-15에 *"AWS 권한 레퍼런스가 JS 렌더라 못 읽는다"*로 열어 둔 항목. **출처 없이
+  코드 주석으로 단정하지 않겠다**고 했으니 출처를 찾는 게 남은 일이었다.
+- Verified(⚠️**도구를 두 번 잘못 골랐다**): ①**IAM 정책 시뮬레이터** — 리소스 한정 정책이
+  `implicitDeny`+`MatchedStatements: []`라 답이 나온 줄 알았는데, **대조군(`Resource:"*"`)도
+  `implicitDeny`**였다. CloudWatch 메트릭은 애초에 ARN으로 주소 지정되는 자원이 아니라
+  시뮬레이터가 답할 수 있는 질문이 아니다. ②첫 시도의 `--resource-arns`는 IAM root ARN이라
+  **어느 액션과도 안 맞았다** — 대조군이 실패한 걸 뒤늦게 봤다.
+- Verified(**되는 도구**): AWS 문서엔 **GitHub 마크다운 미러**가 있고(`awsdocs/*`), 권한
+  레퍼런스는 **JSON 미러**가 있다(`iann0036/iam-dataset`, 455개 서비스). 7건 전수 대조 —
+  6건은 `resource_types` **없음**, ⚠️**`cloudwatch:ListMetrics`만 `dataset`이 있다**
+  (Metrics Insights용이라 메트릭 나열엔 안 맞는다). **"전부 없음"으로 뭉뚱그렸으면 틀렸다.**
+- Changed: 7건 전부에 **인접 주석**으로 근거를 적었다(`ListMetrics`의 예외까지). ⚠️`if` 블록
+  위에 있던 `ListStateMachines`의 이유는 **문장 옆으로 내렸다** — 참인데 읽는 사람 눈에 없었다.
+- Changed(가드 +9, `test_iam_wildcard_justified.py` 신규): 추적되는 `src/stacks/*.ts`의
+  모든 `resources: ['*']`가 **인접 주석**을 갖는가(`git ls-files`로 `cdk.out` 배제). 규칙이
+  **prose 품질이 아니라 인접성**인 이유도 테스트로 고정했다. 변이: 주석 하나 제거 → 2 failed.
+  ⚠️**그 인접성 테스트를 처음엔 손으로 다시 스캔해 짰다가 줄 인덱스를 틀렸다** — 같은 스윕을
+  재사용하도록 고쳤다. **검사기와 어긋나는 검사기**가 오늘 여러 번 나온 그 모양이다.
+  `make check` **2094**, 로컬 macOS·py3.13.
 - Blockers: 없음.
-- Next: ⚠️**"선언됐는데 안 읽힌다"는 자동으로 결함이 아니다.** 계약 필드 일곱을 훑어 보니
-  **`provider`도 아무도 안 읽는데** 빌트인 9개가 **전부 `"aws"`**라, 읽기 시작하면 GCP/Azure는
-  **전부 `generic-recovery`로 떨어진다**(=#30 이전 상태). 판단 기준은 **읽는 쪽의 비대칭**이지
-  선언의 고아 상태가 아니다. 남은 무과금은 ⓐ·ⓒ(정책) · `slack_live_approval`(Slack 데모 선행).
+- Next: 가드레일 문구도 참으로 갱신했다(`AGENT_BRIEF`). ⚠️**같은 라운드에 내가 또 밟았다** —
+  진입점 문서의 게이트 숫자를 `str.replace`로 **assert 없이** 갱신해 앵커가 안 맞자 **조용히
+  no-op**이 됐고, 줄 수는 그대로라 예산 가드도 못 잡았다. **2081·2085 두 번을 2073인 채로
+  커밋했다.** ⇒ **문서 치환은 앵커를 assert할 것**(오늘 코드 쪽에선 계속 그렇게 했으면서
+  문서 쪽에선 안 했다). 남은 항목은 전부 외부 입력 대기 — Phase 4 승인 셋 · `.[azure]`
+  업스트림 · **CI 검증(push 필요, D43)**.
 
-## 2026-08-13 — 형제 집합 중 하나만 도는 가드를 사냥하다, 그 도구 안에서 같은 함정을 밟았다 (gate 1859→1862)
+## 2026-08-16 — CI가 미선언 의존성을 인라인으로 떠받치고 있었다 (gate 2085)
 
-- Status: 오늘 두 건이 **같은 모양**이었다 — 가드가 **쓰는 쪽만**(티어 2) · 감사가
-  **`for name in REPORT:`**(로깅 문). 목록을 다시 읽는 대신 **그 패턴 자체**를 물었다:
-  형제가 N개인 집합을 **진부분집합만 도는 가드**가 또 있는가.
-- Verified(**내 자신부터**): 새 가드의 `PROVIDERS = ["gcp","azure"]`가 좁은 게 아닌지 봤다 —
-  `decision.py`는 셋뿐이고 onprem은 `runners/`를 타며 **AWS는 같은 블록이 아니라 다른
-  구현**(점수제)이다. **둘이 맞다.**
-- Verified(**전수 행렬, 아무도 잰 적 없다**): capability 17종 × provider 4종. 실행 어댑터가
-  못 푸는 건 `increase_function_concurrency`/**onprem 하나뿐**이고 그건 **이미 알려진 정당한
-  skip**이다(게이트의 `2 skipped`) → 감사가 **알려진 참을 재현** = 비공허.
-  ⚠️`assert_*` 넷이 "아무도 못 푼다"로 나온 건 **내 탐지기가 틀린 것** — `verify`는 실행
-  어댑터가 아니라 **별도 레지스트리 `_CHECKS`**가 푼다. **틀린 해소기에 물었다.**
-- Verified(**그러다 진짜 질문**): `executor.py:221`이 `if provider == "onprem":`다 —
-  **검증은 onprem에서만 돈다.** 나머지 셋은 `verify`를 계획에 싣고 실행하지 않는다.
-  **그런데 결함이 아니다**: 코드가 경계를 **명시**하고(`executor.py:75`) `verified`를 True가
-  아니라 **None(unknown)**으로 정직하게 보고하며, **그 정직성도 이미 가드돼 있다**.
-- Changed(**문서 한 줄 — `src/` 무변경**): `COMPLETED_SUMMARY`가 *"per-step verify를 executor가
-  실제 소비"*를 **무조건**으로 적고 있었다. 코드는 말하는데 요약은 안 해서, 그 줄만 읽는
-  독자는 넷 다 검증한다고 믿는다 → **onprem 한정**임을 명시. **"과대 해석 금지"는 `STATUS`
-  에만 걸리는 규칙이 아니다.**
-- Verified(⚠️**스윕이 나에게 걸렸다 — 오늘 세 번째, 그것을 찾는 도구 안에서**): 카탈로그의
-  `verify.capability`와 `_CHECKS`를 맞대 "구현됐는데 아무도 선언 안 함:
-  `assert_node_unschedulable`"이 나왔는데 **틀렸다** — `verify_onprem_action:237`이
-  `capability or VERIFY_FOR_ACTION.get(action)`라 **선언처가 둘**이고 나는 그 표를 안 봤다.
-  **형제 집합은 세는 순간 전부 세지 않으면 하나가 조용히 빠진다.**
-- Changed(정정 후 가드 4건, `TestEveryDeclaredCheckIsImplemented`): 진짜 불일치는
-  **`assert_concurrency_applied` 하나**(구현 없음, 단 온프렘이 lambda 스텝을 못 resolve해
-  **도달 불가**). 감사는 **선언처 둘을 다 읽고**, **양쪽을 읽는지 자체를 ground truth로**
-  묻고, 예외는 `KNOWN_UNIMPLEMENTED`에 **이유와 함께** 두되 **이유보다 오래 못 살게** 한다.
-- Verified: 변이 5건 red·생존 0, 복구 후 diff clean. `make check` **1862**(+3), 2026-08-13,
-  로컬 macOS·py3.13. 증거 `verify-capabilities-declared-vs-implemented.log`.
+- Status: 내가 `azure` extra에 패키지를 더했는데 **그 extra는 해석이 안 된다**. CI가 그걸
+  설치하면 내가 CI를 깬 것이라 확인했다 — **안 깼다**(CI는 `.[dev,state,observability]`만).
+  ⚠️**대신 M25가 확증됐다**: 그 줄이 `fastapi "uvicorn[standard]"`를 **명령줄에 직접** 적고
+  있었다. **선언이 없어서** 누군가 CI에 손으로 적은 것 — 게이트는 초록인데
+  `pip install .`은 그걸 안 준다.
+- Changed: CI가 `serving` extra를 **이름으로 요구**하도록 정리(`.[dev,state,observability,serving]`).
+  ⚠️**설치 집합은 바꾸지 않았다** — `serving`을 `uvicorn[standard]`로 맞췄다.
+- Verified(⚠️**내 근거가 도구에 안 맞았다**): 처음엔 *"코드가 `uvloop`를 임포트 안 하니
+  `[standard]`는 불필요"*로 평범한 `uvicorn`을 선언했다. **틀린 추론이다** — 그건 **uvicorn이
+  내부에서 쓰는 것**이지 우리 코드가 임포트하는 게 아니라, `src/` grep으로는 답할 수 없다.
+  게다가 **CI를 여기서 돌려 볼 수단이 없다**. ⇒ **한 번에 하나만 바꾼다**: 우회는 제거하되
+  러너에 떨어지는 패키지는 그대로.
+- Verified(가드 +4, `test_optional_dependencies_declared.py` 확장): CI가 `serving`을 요구하는가 ·
+  **선언된 패키지를 인라인으로 적지 않는가**(`.[...]` 안의 이름은 오탐 제외) ·
+  **문서화된 예외**(`pydantic-ai-slim`은 `onprem`이 Apple 전용 mlx-lm을 끌어 고의 인라인)의
+  **이유가 파일에 남아 있는가**. 변이: CI를 옛 방식으로 되돌리면 **3 failed**, 복구하면 23 passed.
+  `.[serving]`·CI 조합 둘 다 dry-run 해석 OK. `make check` **2085**, 로컬 macOS·py3.13.
 - Blockers: 없음.
-- Next: **패턴 사냥이 준 것은 결함이 아니라 범위였다**(오늘 두 번째). `src/`는 안 바꿨고
-  **고칠 게 없다는 것도 측정**이다. 남은 무과금 항목은 전부 정책 판단이거나 외부 자원 대기.
+- Next: ⚠️**CI 변경을 검증하지 못했다** — 여기서 워크플로를 돌릴 수 없고 `main`은 D43으로
+  push가 막혀 있다. 근거는 "설치 집합 무변경"뿐이고, 틀렸다면 되돌리기는 한 줄이다.
+  **이건 측정이 아니라 논증이다.**
+

@@ -130,6 +130,37 @@ class TestConditions:
         assert executed == []
         assert skipped == ["Doc-A"]
 
+    def test_the_severity_in_the_context_is_the_incident_s_own(self):
+        """The direction the test above cannot see.
+
+        `test_severity_condition_is_honoured` gates on `["P1"]` with an incident
+        at P3 and asserts the step is skipped — but a context whose severity were
+        **hardcoded** to any non-P1 value would skip it too. The only case it
+        exercises is one where the correct and the broken implementation agree,
+        which is Risk 12⑤ (기본값과 같은 값을 고른 픽스처는 가드가 아니다).
+
+        `NEXT_PLAN` carried the matching worry from 08-12 — *"`severity`는 `"P2"`
+        고정이라 `severity_in` 스텝이 생기면 재발한다"*. Measured 2026-08-16: false.
+        `git log -L 175,175:…/aws/executor.py` dates
+        `"severity": decision.analyzer.severity.value` to gate **1191**, long
+        before that note. The premise was wrong when written — but the *guard*
+        gap it pointed at was real, and this is it.
+
+        So: same condition, an incident that matches it, and the step must run.
+        Verified by mutation — pinning the context to `"P2"` leaves the test above
+        green and turns this one red.
+        """
+        decision = _decision(
+            [_step("a", "Doc-A", condition={"severity_in": ["P1"]})],
+            severity=Severity.P1,
+        )
+        executed, skipped, _v, _ssm, _na = _run(decision)
+        assert executed == ["Doc-A"], (
+            "a P1 incident did not satisfy `severity_in: [P1]` — the condition "
+            "context is not reading the incident's own severity"
+        )
+        assert skipped == []
+
 
 class TestOnFailure:
     def test_abort_stops_the_remaining_steps(self):

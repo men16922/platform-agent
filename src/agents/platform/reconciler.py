@@ -43,12 +43,23 @@ RECONCILER_MARKERS: tuple[tuple[str, str, str], ...] = (
 #: Actions that put the live state back to a previous revision. These are the
 #: only ones that conflict: a restart or a scale converges to the same desired
 #: spec the reconciler already holds, so self-heal has nothing to undo.
+#:
+#: ⚠️ The two AWS entries were missing until 2026-08-16, and the test that exists
+#: to catch exactly that could not: it iterated
+#: ``("ONPREM-", "GCP-", "AZURE-")`` — **AWS was absent from the list of clouds**,
+#: so the one unregistered cloud was the one never asked about. It also asked
+#: `any(...)`, which one action per prefix satisfies while a second goes missing.
+#: The completeness check is now derived from the execution adapters
+#: (`test_reconciler_conflict.py`), because a hand-written sibling list is what
+#: failed here — for the sixth time in this repository.
 ROLLBACK_ACTIONS: frozenset[str] = frozenset({
     "ONPREM-ArgoRolloutRollback",
     "GCP-RollbackGKEWorkload",
     "GCP-RollbackCloudRunRevision",
     "AZURE-RollbackAKSWorkload",
     "AZURE-RollbackFunctionApp",
+    "AWS-RollbackEKSDeployment",
+    "AWS-RollbackLambdaAlias",
 })
 
 

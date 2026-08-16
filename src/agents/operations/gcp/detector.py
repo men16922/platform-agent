@@ -20,6 +20,7 @@ from typing import Any
 
 import structlog
 
+from src.agents.adapters.base import incident_reason
 from src.agents.adapters.registry import get_signal_adapter
 from src.agents.models import AlarmContext, DetectorOutput, NormalizedIncident
 
@@ -136,7 +137,12 @@ def _build_alarm_context(
         alarm_name=incident_data.get("policy_name", normalized.service),
         alarm_arn=incident_data.get("incident_id", ""),
         state="ALARM" if incident_data.get("state") == "open" else "OK",
-        reason=incident_data.get("summary", ""),
+        # Not `incident_data["summary"]`: that drops `policy_name`/`condition_name`,
+        # i.e. the words the operator named the rule with. `_fallback_analysis`
+        # grades severity by looking for "outage"/"crash" in this string, so a
+        # rule called "checkout service outage" was graded P3 instead of P1.
+        # AWS had already fixed this; the rule is provider-neutral and shared.
+        reason=incident_reason(normalized),
         metric_name=metric.get("type", ""),
         namespace=f"GCP/{resource.get('type', 'unknown')}",
         dimensions=resource.get("labels", {}),

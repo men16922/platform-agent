@@ -19,6 +19,7 @@ from typing import Any
 
 import structlog
 
+from src.agents.adapters.base import incident_reason
 from src.agents.adapters.registry import get_signal_adapter
 from src.agents.models import AlarmContext, DetectorOutput, NormalizedIncident
 
@@ -121,7 +122,12 @@ def _build_alarm_context(
         alarm_name=essentials.get("alertRule", normalized.service),
         alarm_arn=essentials.get("alertId", ""),
         state="ALARM" if essentials.get("monitorCondition") == "Fired" else "OK",
-        reason=essentials.get("description", ""),
+        # Not `essentials["description"]`: that drops `alert_rule`, i.e. the words
+        # the operator named the rule with. `_fallback_analysis` grades severity
+        # by looking for "outage"/"crash" in this string, so a rule called
+        # "checkout service outage" was graded P3 instead of P1. AWS had already
+        # fixed this; the rule is provider-neutral and shared.
+        reason=incident_reason(normalized),
         metric_name=first_condition.get("metricName", ""),
         namespace=f"Azure/{essentials.get('targetResourceType', 'unknown')}",
         dimensions=dimensions,

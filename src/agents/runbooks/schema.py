@@ -61,6 +61,35 @@ def fits_resource(runbook: Any, resource_type: str | None) -> bool:
     return resource_type in declared
 
 
+# Actions whose *name* says they remove something. A plan carrying one of these
+# never runs unattended, whatever the severity — the guardrail this repo states
+# as "Delete/Drop/Terminate 액션은 강제 APPROVE".
+#
+# Kept here, once, because three provider decision modules each enforced it and
+# they had already drifted: `gcp` and `azure` shared a four-verb set while
+# `aws/decision.py` matched three verbs inline and was missing ``Destroy``. So an
+# action named ``AWS-DestroyStack`` was APPROVE on two clouds and **AUTO — i.e.
+# unattended — on the third**. Two copies is how a fix lands in one and rots in
+# the other; here it was three, and the odd one out was the destructive path.
+#
+# Matched against the action name as the execution adapters emit it, which is
+# ``PROVIDER-PascalCase`` for all four (``AWS-CleanupEBSVolume``,
+# ``ONPREM-RolloutRestartWorkload``). Deliberately **not** case-folded: no
+# adapter emits a lowercase action name, and a guard for a form nothing produces
+# carries no load. If one ever does, this is the single place to widen.
+DESTRUCTIVE_ACTION_PATTERNS = ("Delete", "Drop", "Terminate", "Destroy")
+
+
+def is_destructive_action(action: Any) -> bool:
+    """True when an action's name says it removes something.
+
+    Operators register runbooks out-of-band (see the module docstring), so the
+    action names this sees are not limited to the built-in catalog — which is
+    exactly why the rule must not differ per provider.
+    """
+    return any(pattern in str(action) for pattern in DESTRUCTIVE_ACTION_PATTERNS)
+
+
 def validate_runbook(item: Any, *, require_alarm_name: bool = False) -> list[str]:
     """
     Validate a runbook item against the shared contract.

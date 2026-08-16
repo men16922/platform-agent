@@ -33,7 +33,7 @@ from src.agents.models import (
     Severity,
 )
 from src.agents.runbooks.catalog import BUILTIN_RUNBOOKS, CAPABILITY_RUNBOOKS
-from src.agents.runbooks.schema import fits_resource, normalise_runbook, validate_runbook
+from src.agents.runbooks.schema import fits_resource, is_destructive_action, normalise_runbook, validate_runbook
 
 logger = structlog.get_logger(__name__)
 
@@ -377,9 +377,12 @@ def _determine_mode(severity: Severity, actions: list[str]) -> RemediationMode:
     P2 → APPROVE (significant but not immediately catastrophic)
     P3 → MANUAL  (early warning, human review)
 
-    Override: if any action name contains "Delete" or "Drop", require APPROVE regardless.
+    Override: a destructive action forces APPROVE regardless of severity.
+    The verb set is `runbooks.schema.DESTRUCTIVE_ACTION_PATTERNS` — this used to
+    be three verbs inline here while GCP and Azure shared four, so
+    `AWS-DestroyStack` was APPROVE there and **AUTO here**.
     """
-    if any("Delete" in a or "Drop" in a or "Terminate" in a for a in actions):
+    if any(is_destructive_action(a) for a in actions):
         return RemediationMode.APPROVE
 
     return {

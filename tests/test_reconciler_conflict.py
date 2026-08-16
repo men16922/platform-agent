@@ -11,7 +11,9 @@ that already ran cannot be un-recorded.
 
 from __future__ import annotations
 
+import ast
 import json
+import pathlib
 
 import pytest
 
@@ -23,6 +25,36 @@ from src.agents.platform.reconciler import (
     is_rollback,
 )
 from src.agents.platform.scope import IncidentScope
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+
+
+def _adapter_rollback_actions() -> set[str]:
+    """Every action the execution adapters map from capability `rollback_release`.
+
+    Read from source because `_action_for`'s mapping is a local variable inside
+    the function — there is nothing to import. Asking the adapters is the point:
+    the previous version of this check kept its own list of clouds and left one
+    out, so the set it validated against drifted from the set that exists.
+    """
+    found: set[str] = set()
+    for path in sorted((ROOT / "src/agents/adapters/execution").glob("*.py")):
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if not isinstance(node, ast.Dict):
+                continue
+            for key, value in zip(node.keys, node.values):
+                if not isinstance(key, ast.Tuple) or not key.elts:
+                    continue
+                capability = key.elts[0]
+                if (
+                    isinstance(capability, ast.Constant)
+                    and capability.value == "rollback_release"
+                    and isinstance(value, ast.Constant)
+                    and isinstance(value.value, str)
+                ):
+                    found.add(value.value)
+    return found
+
 
 SCOPE = IncidentScope(
     tenant="acme", env="dev", kubeconfig_path="/dev/null", approval_id="APR-T"
@@ -114,14 +146,36 @@ class TestRefusal:
         sig = inspect.signature(guard_rollback)
         assert sig.parameters["desired_aligned"].default is False
 
-    def test_every_cloud_has_its_rollback_action_registered(self):
+    def test_every_rollback_action_the_adapters_emit_is_registered(self):
         """
         A rollback action missing from this set is a silently-unguarded path.
-        Enumerated per cloud so adding a provider without registering its
-        rollback fails here rather than in production.
+
+        ⚠️ This replaces a hand-written enumeration that had the very bug it was
+        written to catch. It iterated ``("ONPREM-", "GCP-", "AZURE-")`` — **AWS
+        was not in the list of clouds** — so `AWS-RollbackEKSDeployment` and
+        `AWS-RollbackLambdaAlias` sat unregistered while this test stayed green
+        (measured 2026-08-16). It also asked `any(...)`, which one action per
+        prefix satisfies even when a sibling of the same cloud is missing.
+
+        So the expected set is now **derived from the execution adapters** rather
+        than typed out here. `_action_for`'s mapping is a local inside the
+        function, hence the AST read: importing it is not possible, and a second
+        hand-written list is exactly what failed.
         """
-        for prefix in ("ONPREM-", "GCP-", "AZURE-"):
-            assert any(a.startswith(prefix) for a in ROLLBACK_ACTIONS), prefix
+        emitted = _adapter_rollback_actions()
+        assert len(emitted) >= 7, f"the adapter sweep found only {sorted(emitted)}"
+        missing = sorted(emitted - ROLLBACK_ACTIONS)
+        assert not missing, (
+            f"{missing} map from capability `rollback_release` in the execution "
+            "adapters but are not in ROLLBACK_ACTIONS, so `is_rollback` calls them "
+            "False and the reconciler-conflict guard lets them through."
+        )
+
+    def test_the_set_names_no_action_nobody_emits(self):
+        """Reverse direction — a stale entry means the set describes a path that
+        no longer exists, which is how a list stops being checkable."""
+        stale = sorted(ROLLBACK_ACTIONS - _adapter_rollback_actions())
+        assert not stale, f"ROLLBACK_ACTIONS lists actions no adapter emits: {stale}"
 
 
 class TestRunnerRefusesBeforeMutating:

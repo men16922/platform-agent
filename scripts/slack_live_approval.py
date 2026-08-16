@@ -51,7 +51,17 @@ from urllib.parse import urlencode
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.agents.operations.approval_bridge import handler  # noqa: E402
+# The package moved under `aws/` and was split into submodules; the pre-move path
+# now exists only inside untracked `cdk.out/` build artefacts, so this import
+# resolved on a machine that had run `cdk synth` and nowhere else.
+#
+# The submodules are imported by name because the knobs below are *their* module
+# globals, read at call time. Setting them on `handler` — which is what this file
+# used to do — assigns attributes nobody reads: the harness ran and silently did
+# nothing. `_SFN` is the exception; it lives on `handler` and is read there.
+from src.agents.operations.aws.approval_bridge import handler  # noqa: E402
+from src.agents.operations.aws.approval_bridge import request_store  # noqa: E402
+from src.agents.operations.aws.approval_bridge import slack_interactive  # noqa: E402
 
 
 # --- In-memory DynamoDB stand-in (mirrors the handler's expectations) -----
@@ -179,7 +189,7 @@ def _do_send(args: argparse.Namespace, approval_id: str) -> None:
     webhook = os.getenv("SLACK_WEBHOOK_URL", "").strip()
     if not webhook:
         sys.exit("SLACK_WEBHOOK_URL is required for `send` / `full`.")
-    handler._SLACK_WEBHOOK = webhook
+    slack_interactive._SLACK_WEBHOOK = webhook
     payload = _build_payload(args)
     print(f"→ Posting interactive approval message to Slack (approval_id={approval_id}) ...")
     handler._post_slack_request(payload, approval_id=approval_id)
@@ -195,13 +205,13 @@ def _do_simulate(args: argparse.Namespace, approval_id: str, offline: bool) -> N
 
     table = _FakeTable()
     fake_sfn = _FakeSfn()
-    handler._SLACK_SIGNING_SECRET = secret
-    handler._APPROVAL_REQUEST_TABLE = "local-demo-approval-table"
+    slack_interactive._SLACK_SIGNING_SECRET = secret
+    request_store._APPROVAL_REQUEST_TABLE = "local-demo-approval-table"
     handler._SFN = fake_sfn
-    handler._approval_request_table = lambda: table  # type: ignore[assignment]
+    request_store._approval_request_table = lambda: table  # type: ignore[assignment]
     if offline:
-        handler._SLACK_WEBHOOK = "https://hooks.slack.com/local-noop"
-        handler.requests.post = lambda *a, **k: _FakeResponse()  # type: ignore[assignment]
+        slack_interactive._SLACK_WEBHOOK = "https://hooks.slack.com/local-noop"
+        slack_interactive.requests.post = lambda *a, **k: _FakeResponse()  # type: ignore[assignment]
 
     payload = _build_payload(args)
     print(f"→ [1/2] SQS approval request → handler (approval_id={approval_id}) ...")
