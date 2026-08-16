@@ -1,0 +1,2 @@
+{"config": {"model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit", "thinking": false, "effort": "low"}, "successes": 19, "total": 20, "cost_usd": 0.0, "seconds": 5.7185, "trials": 1, "pass_rate": 0.95, "cost_per_success": 0.0, "seconds_per_success": 0.30097324774128775}
+{"config": {"model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit", "thinking": false, "effort": "high"}, "successes": 18, "total": 20, "cost_usd": 0.0, "seconds": 4.0765, "trials": 1, "pass_rate": 0.9, "cost_per_success": 0.0, "seconds_per_success": 0.22647464806019948}
