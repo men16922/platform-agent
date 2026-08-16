@@ -29,6 +29,11 @@
   `medium`이 깨끗**(직관과 반대) · 스윕의 `effort`는 reasoning이 아니라 **샘플링 온도**.
   최종적으로 **`enable_thinking=false`** 하나로 정리. `make check` **2076**, 로컬 macOS·py3.13.
   증거 `qwen38-27b-ab-measured-not-argued.log`.
+- Changed(가드 +5, `test_sweep_contamination_guard.py` 신규): 고친 가드가 **`scripts/`에 있어
+  게이트가 안 덮고 있었다** — 지워도 아무도 red가 안 났다. `spec_from_file_location`(레포 선례)로
+  `main()`을 실제로 돌린다: 추론-only 응답 → 거부 + **파일 미생성** · 정상 응답 → 저장 ·
+  **옛 mismatch 가드도 여전히 동작** · 에러가 원인(`max_tokens`/`reasoning`)을 말하는가.
+  변이 5건 red(새 가드 제거 3 · 기대치 무력화 3 · mismatch 제거 1 · 상시 발화 1 · 문구 1).
 - Blockers: 없음.
 - Next: ⚠️**exit 0 ≠ 작업 완료** — `run_in_background` 안에 `&`를 또 써서 래퍼가 즉시 끝났고
   그 완료 알림을 측정 완료로 읽을 뻔했다. **알림이 무엇의 종료인지 확인할 것.**
