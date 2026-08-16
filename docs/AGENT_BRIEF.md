@@ -45,7 +45,8 @@
 
 - 에이전트=Python(**게이트는 3.13에서만 검증됨** — `requires-python = ">=3.11"`은 미검증 주장,
   Risk 12②) / IaC=CDK TS / 모델은 `src/agents/models.py` 한 곳.
-- IAM 최소 권한(`Resource:"*"` 금지), `Delete/Drop/Terminate` 액션은 강제 APPROVE.
+- IAM 최소 권한. ⚠️**`Resource:"*"` 전면 금지는 무조건 거짓이다**(08-15 실측: `incident_agent_stack.ts`에 **7건**, 전부 리소스 수준 권한을 지원하지 않는 액션으로 보인다) — 규칙은 **"이유를 주석으로 적지 않은 `*` 금지"**다. **7건 중 2건만 적혀 있다**(→`NEXT_PLAN`). **만족 불가능한 규칙은 우회를 습관으로 만든다.**
+- `Delete/Drop/Terminate` 액션은 강제 APPROVE(**D48**로 계약화·집행).
 - 요청 이상 기능 추가 금지. 테스트 통과 전 완료 선언 금지.
 - Gate 명령: `make check`. **`main`은 보호됨** — 직접 push 불가, PR + CI 통과로만 병합(D43).
 
