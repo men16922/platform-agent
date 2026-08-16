@@ -38,6 +38,79 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
+## M32 — 근거 없는 분석이 두 클라우드에선 사람 없이 실행됐다 + 스윕을 게이트로 (완료, 2026-08-16)
+
+**결함**: `apply_gate`/`reconcile`을 읽는 provider가 **AWS 하나**였다. `reconcile`이
+근거 없음으로 보는 것 — 알람 미발화 · 증거 없음 · **P1인데 confidence 낮음** ·
+root_cause 어휘가 증거에 없음(환각 신호) — 을 AWS는 사람에게 올리고 **GCP/Azure는
+그대로 자동 실행**했다. M23과 같은 안전 게이트 계열. **공유해도 안전**하다: `reconcile`은
+순수 함수(`re`·dataclasses·계약 타입뿐, 네트워크·모델·SDK 없음)이고 `apply_gate`는
+**내리기만** 한다.
+
+⚠️**기존 테스트 둘이 red가 났고 그게 요점이었다** — `test_decision_p1_auto_mode`가
+`severity`만 P1로 올리고 confidence는 **0.30**을 뒀다. 게이트에 물으니
+`['P1 severity with low confidence 0.30']`. **모델이 뒷받침 안 한 P1**을 만들어 놓고
+자동 실행을 단언하던 픽스처였다. AWS 대응 테스트는 `_determine_mode`를 **직접 불러
+게이트를 우회**한다 — 양쪽이 서로 다른 방식으로 이 질문을 피해 왔다.
+
+**스윕을 영구 게이트로**(`test_contract_symbol_parity.py`): provider별 임포트 **전이
+폐포**로 공용 심볼 독자를 세고, **26건 전부에 사유**를 적었다. 새 비대칭은 red →
+분류 강제. *비대칭 금지*가 아니라 **설명 없는 비대칭 금지**.
+⚠️**첫 스윕은 직접 임포트만 세어 틀렸다** — `post_webhook`이 AWS 전용으로 보였는데
+셋 다 `_executor_common`으로 닿는다. **직접 계수는 없는 비대칭을 만들고 있는 것을 감춘다**
+(`['aws','gcp']` 8건이 통째로 안 보였다). ⚠️새 가드가 **내 사유 둘이 부실하다고 red**를 냈다.
+
+**검증**: gate 2147→**2203**(+56). 변이: GCP에서 게이트 제거 → 스윕이
+`apply_gate:aws+azure`로 정확히 지목.
+
+## M31 — 롤백 가드 목록에서 AWS 둘이 빠졌고, 그걸 잡을 테스트가 AWS를 안 셌다 (완료, 2026-08-16)
+
+어댑터가 내보내는 롤백 액션은 **일곱**인데 `ROLLBACK_ACTIONS`는 **다섯**이었다 —
+`AWS-RollbackEKSDeployment`·`AWS-RollbackLambdaAlias`가 없어 `is_rollback()`이 AWS
+롤백에 **False**를 답했다. M23의 정확한 재판(그때도 AWS 사본에만 `Destroy`가 없었다).
+
+⚠️**그리고 이걸 잡으려던 테스트가 같은 병을 앓았다**: 도크스트링은 *"adding a provider
+without registering its rollback fails here"* 인데 순회 목록이
+`("ONPREM-","GCP-","AZURE-")` — **클라우드 목록에서 AWS가 빠져 있다.** 게다가 `any(...)`라
+클라우드당 하나만 있으면 통과한다. **손으로 쓴 형제 목록이 여섯 번째로 틀렸다** → 기대
+집합을 **실행 어댑터에서 AST로 유도**하고 양방향으로 묻게 바꿨다.
+
+**지금 live는 아니다**: `is_rollback` 소비자는 `onprem_runner` 하나뿐이라 선언이 틀린
+것이지 조치가 새지는 않는다 — 다만 AWS 롤백을 그 가드에 태우는 순간 AWS만 다른 답을 받는다.
+**검증**: gate 2146→2147. 변이: AWS 둘 제거(=고치기 전) → 새 가드 단독 red, **옛 가드는
+그 상태에서 초록**이었다는 것이 요지다.
+
+## M30 — 런북 스텝의 condition을 GCP/Azure는 아예 안 읽었다 (완료, 2026-08-16)
+
+`evaluate_condition`은 계약이고(세 형태를 도크스트링이 명시) AWS executor는 스텝마다
+그걸로 거른다. **읽는 provider가 AWS 하나**였다. GCP/Azure는 스토어 런북의 `steps`를
+평탄화하며 `capability`만 읽어, 계약대로 쓴 운영자는 **모든 조건부 스텝을 무조건** 받았다
+— 카탈로그가 여섯 번 쓰는 `{"previous_step_failed": true}`(=**에스컬레이션**)를 무조건
+내보낸다는 건 **아무것도 실패 안 했는데 더 센 조치를 친다**는 뜻이다. M19와 같은 모양.
+
+⚠️**평가 시점이 다르고 그건 덮을 버그가 아니다**: AWS는 **실행 중**에 걸어 갱신하므로
+에스컬레이션이 실제로 발화한다. GCP/Azure는 **결정 시점**이라 초기 컨텍스트로 평가 →
+에스컬레이션은 **연기가 아니라 제외**다. 나머지 절반은 step-walking executor(=M29)가 필요하다.
+⚠️내 픽스처가 `resource_type`을 언더스코어로 써서 **대조 테스트가 잡았다**(어댑터 키는 하이픈).
+**검증**: gate 2135→2146(+11). 변이 → 4 failed.
+
+## M29 — Azure는 하지 않은 조치를 "해결됨"으로 보고한다 (측정 완료·미수정, 2026-08-16)
+
+`azure/executor.py::_execute_single_action`은 **아무것도 실행하지 않는다** — 로그를 찍고
+`success: True`를 돌려 `executed`에 쌓이고 `resolved=True`가 되어 **Slack에 올라가고
+기록된다.** `runners/azure_runner.py`는 **311줄 실구현**(ARM→AKS 자격증명→`_k8s_rest`)이고
+`gcp_runner.py` 308줄과 대등한데, **Azure executor만 자기 러너를 안 부른다**(GCP는 Phase 3에
+배선). `docs/`·`src/` 어디에도 스텁이라는 줄이 없다(정규식 전수 0건).
+
+**왜 못 잡았나**: `test_scope_all_runners.py`는 **러너 셋**에 스코프를 묻는다 — 러너는
+대칭이라 초록이다. **비대칭인 건 executor인데 아무도 안 물었다**(Risk 12④ⓐ).
+
+⛔**안 고쳤다 — 승인 사안.** 배선하면 실제 ARM/AKS 변경이 시작된다(하드-투-리버스는 승인 후).
+`success: False`로 낮추는 것도 출력을 바꾸므로 **선택**이다. 가드
+(`test_executor_dispatches_to_runner.py`)로 **설명 없는 비대칭 금지**만 걸어 뒀다 —
+배선하는 순간 red가 나서 기록을 같이 고치게 된다. 근거
+`docs/evidence/azure-executor-reports-resolved-without-executing.log`.
+
 ## M28 — 신뢰할 수 없는 쪽만 검증을 안 했다 (완료, 2026-08-16)
 
 **목적**: 렌즈를 문서 추적이 아니라 **기계적으로** 돌렸다 — 공용 계약 모듈의 공개 심볼마다
