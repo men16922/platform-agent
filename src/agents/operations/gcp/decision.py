@@ -79,10 +79,37 @@ def _select_runbook(analyzer: AnalyzerOutput) -> tuple[str, list[str], int | Non
     # 1. Try Firestore exact match
     firestore_runbook = _lookup_firestore_runbook(alarm_name)
     if firestore_runbook:
-        runbook_id = firestore_runbook.get("runbook_id", alarm_name)
-        actions = _resolve_actions_from_runbook(firestore_runbook, normalized)
-        rto = firestore_runbook.get("rto_sec")
-        return runbook_id, actions, rto
+        # Operator overrides are registered out-of-band, so a malformed one falls
+        # back to the catalog instead of producing a broken decision downstream —
+        # the reason AWS has validated its DynamoDB reads all along. Tier 2 below
+        # was validating `BUILTIN_RUNBOOKS`, i.e. the *one* source that cannot be
+        # hand-edited, while this tier used whatever the store returned.
+        #
+        # `require_alarm_name` stays at its default False: the lookup key here is
+        # the **document id**, so a valid document need not repeat `alarm_name` as
+        # a field. AWS passes True because its DynamoDB key *is* that attribute.
+        # Passing True here would reject every correctly-registered runbook and
+        # make this tier unreachable — the same shape as the inverted check that
+        # once disabled tier 2.
+        # The id default is applied *before* validating, so the check runs on the
+        # runbook as it would actually be used. Non-dicts pass through untouched —
+        # `validate_runbook` reports those itself and never raises, which is what
+        # keeps a junk document a logged fallback rather than a 500.
+        candidate = (
+            {**firestore_runbook, "runbook_id": firestore_runbook.get("runbook_id", alarm_name)}
+            if isinstance(firestore_runbook, dict)
+            else firestore_runbook
+        )
+        problems = validate_runbook(candidate)
+        if problems:
+            logger.warning(
+                "gcp_decision.override.invalid",
+                alarm_name=alarm_name,
+                problems=problems,
+            )
+        else:
+            actions = _resolve_actions_from_runbook(candidate, normalized)
+            return candidate["runbook_id"], actions, candidate.get("rto_sec")
 
     # 2. Capability-based catalog scan
     if normalized and normalized.recommended_capabilities:

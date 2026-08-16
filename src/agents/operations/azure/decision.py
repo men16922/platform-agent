@@ -80,10 +80,33 @@ def _select_runbook(analyzer: AnalyzerOutput) -> tuple[str, list[str], int | Non
     # 1. Try Cosmos DB exact match
     cosmos_runbook = _lookup_cosmos_runbook(alarm_name)
     if cosmos_runbook:
-        runbook_id = cosmos_runbook.get("runbook_id", alarm_name)
-        actions = _resolve_actions_from_runbook(cosmos_runbook, normalized)
-        rto = cosmos_runbook.get("rto_sec")
-        return runbook_id, actions, rto
+        # Same contract as GCP tier 1, and the same reason AWS validates its
+        # DynamoDB reads: an override is hand-registered out-of-band, so a
+        # malformed one must fall back to the catalog rather than drive a
+        # decision. Tier 2 below validated `BUILTIN_RUNBOOKS` — the one source
+        # that cannot be malformed — while this tier validated nothing.
+        #
+        # `require_alarm_name` stays False: the Cosmos item id is the alarm name,
+        # so the document need not carry it as a field (AWS's DynamoDB key is the
+        # attribute, which is why it passes True).
+        # Id default applied before validating, so the check runs on the runbook
+        # as it would be used; non-dicts pass through for `validate_runbook` to
+        # report rather than raising here.
+        candidate = (
+            {**cosmos_runbook, "runbook_id": cosmos_runbook.get("runbook_id", alarm_name)}
+            if isinstance(cosmos_runbook, dict)
+            else cosmos_runbook
+        )
+        problems = validate_runbook(candidate)
+        if problems:
+            logger.warning(
+                "azure_decision.override.invalid",
+                alarm_name=alarm_name,
+                problems=problems,
+            )
+        else:
+            actions = _resolve_actions_from_runbook(candidate, normalized)
+            return candidate["runbook_id"], actions, candidate.get("rto_sec")
 
     # 2. Capability-based catalog scan
     if normalized and normalized.recommended_capabilities:
