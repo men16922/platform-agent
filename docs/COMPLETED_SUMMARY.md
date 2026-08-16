@@ -1,6 +1,6 @@
 # COMPLETED_SUMMARY — platform-agent
 
-최종 갱신: 2026-08-15
+최종 갱신: 2026-08-16
 
 > 완료된 milestone 압축. current docs 에는 링크만, 상세 체크리스트는 여기로 압축.
 > 도메인 원문 상세는 `bin/docs/archive/`.
@@ -37,6 +37,105 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 ## M6 — CDK deprecation 정리 (완료)
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
+
+## M28 — 신뢰할 수 없는 쪽만 검증을 안 했다 (완료, 2026-08-16)
+
+**목적**: 렌즈를 문서 추적이 아니라 **기계적으로** 돌렸다 — 공용 계약 모듈의 공개 심볼마다
+**세 provider 중 몇이 읽는지** 세었다.
+
+**찾은 것**: `fits_resource`·`validate_runbook`·`is_destructive_action`은 셋 다 읽는데
+`normalise_runbook`만 **AWS 하나**. 그 홀수를 따라가 보니 **그 비대칭 자체는 정당했다**
+(`Decimal`은 boto3 산물, Firestore/Cosmos는 네이티브 int — M19 ⓑ 모양). 정당한 비대칭
+끝에 정당하지 않은 것이 있었다: `_select_runbook` **티어 1**(운영자가 out-of-band로
+손등록하는 스토어)은 GCP/Azure에서 **검증을 전혀 안 했고**, 티어 2(레포 내 상수
+`BUILTIN_RUNBOOKS`)만 매 반복 검증했다 — **변조될 수 없는 쪽을 검증하고 변조될 수 있는
+쪽을 믿었다.** AWS는 반대로 하고 이유까지 주석에 적어 뒀다.
+
+**고친 것**: 두 provider 티어 1에 `validate_runbook` + 폴백. ⚠️`require_alarm_name`은
+**기본값 False**로 두었다 — AWS는 `get_item(Key={"alarm_name": …})`이라 속성이 반드시
+있지만 GCP/Azure는 **문서 ID로** 키를 건다. True를 넘기면 정상 오버라이드를 전부 거절해
+**티어 1이 도달 불가**가 된다(티어 2가 예전에 깨진 그 모양). 테스트로 고정했다.
+
+**검증**: gate 2107→**2123**(+16). 변이 `problems = []` → **8 failed**(malformed 4종 × 2).
+⚠️첫 판은 내 수정이 **비-dict에서 터졌고 테스트가 잡았다** — `validate_runbook`은 "never
+raises"로 그 경우를 보고하도록 설계돼 있어 판별을 검증 앞으로 옮겼다. 잠재 결함(스토어에
+아직 아무것도 안 심음), 아래 티어의 `rto_sec`과 같은 지위.
+
+## M27 — 진입점을 둘만 셌고, 게이트 숫자를 아무도 안 봤다 (완료, 2026-08-16)
+
+**목적**: PR #39로 **190개 테스트가 처음 CI 검증**된 뒤(1912→2102, ubuntu·py3.13) 진입점의
+"CI 일치는 1912까지" 경고를 걷어냈다.
+
+**찾은 것 — 형제 집합, 또**: 진입점은 셋인데 **둘만 고쳤다.** `NEXT_PLAN` 8행은 죽은 경고를
+그대로 달고 있었고 게이트 숫자도 **2027**로 **75 뒤처져** 있었다 — 한 줄에 오류 둘.
+드리프트는 처음이 아니다(08-15: 문서 2073 / 실제 2081·2085). **줄 수 예산 가드는 틀린
+숫자를 못 본다 — 긴 파일만 본다.**
+
+**고친 것**: `test_gate_number_claims.py` — ⓐ세 진입점이 서로 다르면 red ⓑ`passed+skipped`를
+**pytest 수집 수**와 대조. ⚠️**합계를 고정한 이유**: 여섯 모듈이 `pytestmark = skipif`를
+다는데 **런타임 스킵이라 수집은 된다** → helm 없는 기계는 passed↔skipped 사이만 옮겨가고
+합계는 보존된다. `passed`를 고정했으면 문서와 무관한 이유로 남의 노트북에서 red가 났다.
+⚠️**첫 판은 가드가 틀렸다** — 세 문서 모두 "숫자 하나"를 요구했는데 STATUS의 검증 Baseline은
+**newest-first 이력**이라 1862/1825/1789를 정당하게 든다. **틀린 건 문서가 아니라 계기였다.**
+덤: STATUS의 `1862→+211`도 **2073 시절 잔재**(1862+211=2073) → `+245`.
+그리고 내가 심은 "직전 검증 `aa1c913`=2102"는 **구조적으로 항상 한 커밋 뒤처져** 값을 지우고
+**"CI 숫자는 PR 체크가 권위"** 포인터만 남겼다(권위 문서 복제 금지의 재발).
+
+**검증**: gate 2102→**2107**(+5). 변이 `NEXT_PLAN`만 2102 → `test_entry_docs_agree` 단독 red.
+
+## M26 — 렌즈가 여섯째 층에서 말랐다 (완료, 2026-08-15)
+
+`ExecutorOutput`에 같은 기준(읽는 쪽의 provider 간 비대칭)을 댔다. **결함은 없었다** —
+GCP/Azure `executor.py`의 `bool(executed) and not skipped`를 공용
+`resolution_verdict(...).resolved`로 모았을 뿐 **동작 변경 0**. 다섯 층에서 다섯 결함이
+나온 뒤 여섯째는 **범위**였다. **말랐다는 것도 측정이다** — 다음 세션이 같은 층을 다시
+훑지 않게 여기 남긴다.
+
+## M25 — optional 임포트 여섯이 미선언이었다 (완료, 2026-08-15)
+
+`pyproject.toml`은 이 교훈을 **패키지 하나**에 대해 이미 적어 뒀는데(08-08 CI가 tracing
+17건으로 잡음) **형제를 안 셌다.** `try: import X / except ImportError:`를 전수로 훑으니
+여섯이 더 나왔고 **전부 폴백이 경고**라 설치는 성공하고 **팔 하나 없는 에이전트가 나간다**:
+`.[gcp]`는 로그·메트릭·스토어가 없고, `.[azure]`는 **LLM조차 없었다**(`openai`).
+`make dev-up`의 ASGI 스택은 **아무도 선언하지 않아** CI가 인라인으로 떠받치고 있었다.
+**고친 것**: gcp/azure extras 보강 + 새 `serving` extra, CI는 인라인 대신 extra를 부른다.
+**검증**: +19(+4 CI 절). ⚠️`.[azure]`는 여전히 설치 불가 — **업스트림 차단**
+(`agent-framework`가 `core[all]` 강제, `msft_deployer.py:19`의 심볼이 core 1.14.0에 없음).
+**안 고쳤다 — 현재 API를 모르고 추측은 발명이다.**
+
+## M24 — 게이트가 테스트마다 Gemini를 과금 호출하고 있었다 (완료, 2026-08-15)
+
+`make check`가 **라이브 Vertex AI**로 나가고 있었다. **깨진 테스트는 0건**이라 아무도
+빨간불을 못 봤고, 비용과 비결정성만 조용히 쌓였다. `tests/conftest.py`에 세션 autouse로
+`socket.socket.connect`/`connect_ex`를 감싸 **루프백만 허용**하고 나머지는 목적지를 이름
+붙여 거절한다 → **D49**(게이트는 외부 네트워크로 나가지 못한다, D45의 일반화).
+**검증**: 288.56s → **36s**. ⚠️**이 단축은 최적화가 아니라 과금 호출을 멈춘 결과다.**
+차단으로 깨진 테스트 **0건** — 즉 아무도 그 네트워크를 필요로 하지 않았다.
+
+## M23 — 파괴 액션이 AWS에서만 자동 실행됐다 (완료, 2026-08-15)
+
+`_determine_mode`의 위험 패턴 목록이 세 provider에 **복사**돼 있었고 **AWS 사본에만
+`Destroy`가 빠져** 있었다. 결과: `Destroy`가 든 액션은 GCP/Azure에선 APPROVE,
+**AWS에선 AUTO**. ⚠️**다수가 옳고 하나가 뒤처지는 모양** — 형제 비교의 새 얼굴이다.
+**고친 것**: `runbooks/schema.py::is_destructive_action` 한 벌 + 세 provider가 읽음
+(M19의 `fits_resource` 선례). **D48**로 계약화. **검증**: +79.
+
+## M22 — 승인자에게 보여 준 "과거 유사 인시던트"가 랜덤이었다 (완료, 2026-08-15)
+
+`ScanIndexForward=False, Limit=5`가 **정렬 키를 `incident_id`(랜덤)** 로 잡고 있었다 →
+"최근 5건"이 **사전순 5건**이고, 테이블이 커져도 **같은 5건에 얼어붙는다.**
+**이번엔 AWS만 틀렸다**(GCP/Azure엔 이 기능이 없다) — 비대칭은 provider 간에만 생기지
+않는다. **고친 것**: 페이지네이션 읽기 + 클라이언트측 `created_at` 정렬(상한 500).
+**검증**: +13.
+
+## M21 — 등급이 P3↔P1로 뒤집혔다 (완료, 2026-08-15)
+
+`reason`이 규칙 이름을 잃어 분석 모델이 근거 없이 등급을 매겼다. ⚠️**형제가 provider가
+아니라 같은 provider의 진입점 둘**이었다 — 형제 집합을 "세 클라우드"로만 상상하면 못 센다.
+**고친 것**: `adapters/base.py::incident_reason` 한 벌(규칙 이름 4키 + 설명 2키를 이어
+붙이고 폴백은 `signal_type`), AWS는 위임 · GCP/Azure는 원시 키 하나 대신 이것을 읽는다.
+**검증**: +17. ⛔`triggered_at`·`metric_name`은 **닫혔다**(전수 스윕: 8필드 중 닿는 건
+`reason` 하나 — **결함이 아니라 범위**). **다시 열지 말 것.**
 
 ## M20 — 운영자가 알람 규칙에 써 둔 severity가 두 모델에는 끝내 안 닿았다 (완료, 2026-08-15)
 
