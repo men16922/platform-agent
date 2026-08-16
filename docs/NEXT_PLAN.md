@@ -58,10 +58,10 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
 
 > 완료분은 `COMPLETED_SUMMARY.md` **M12**·**M13** · `PROGRESS_LOG.md` · `docs/evidence/`.
 
-- [ ] **`slack_live_approval.py` 이중 노후화 — 고치면 조용히 no-op이라 안 고쳤다(08-11)**
-  ①임포트가 **untracked `cdk.out`에만** ②덮어쓰는 여섯 이름 중 **넷이 부재** → 돌아가면서
-  아무것도 안 한다. 올바른 이름은 **Slack 데모를 태워야 확정**. ⚠️안 만든 것: DUAL 모드
-  조건부 리다이렉트(**하중을 못 받는 가드**가 된다).
+- [x] ~~`slack_live_approval.py` 이중 노후화~~ → **닫힘(08-16)**. *"Slack 데모를 태워야 확정"*은
+  **틀린 기록**이었다 — 다섯 이름이 각각 **정확히 한 서브모듈**에 있고, 스크립트 자신의
+  `simulate`가 **오프라인**이라 끝까지 검증됐다(PENDING→HMAC 콜백→SFN resume→APPROVED).
+  ⚠️남은 것: DUAL 모드 조건부 리다이렉트(**하중을 못 받는 가드**라 안 만듦).
 - [ ] **런북 walk가 남긴 ②(08-12)** — 조건 축은 `previous_step_failed`만 넓혔고 **`severity`는
   `"P2"` 고정**이라 `severity_in` 스텝이 생기면 재발한다 — 카탈로그에 없어 **가드를 안 만들었다**.
 - [ ] **capability 스캔 잔여 ⓐ·ⓒ — 정책 사안이라 안 고쳤다(ⓑ는 08-15에 닫힘, M19가 권위)**

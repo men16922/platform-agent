@@ -11,7 +11,7 @@
 > ⚠️**$0 선행**: BQ 결제 내보내기만 남았다(콘솔 수동 → `docs/GCP_BILLING_EXPORT_SETUP.md`,
 > 확인은 `make spend-check`).
 > **무과금으로 이어서 할 것**: capability 스캔 잔여 **ⓐ·ⓒ**(정책) · "런북 walk ②"(`severity` 축) ·
-> `slack_live_approval`(**Slack 데모 선행**). ⛔**`triggered_at`·`metric_name`은 닫혔다**(08-15 전수 스윕, M21 증거 §8 — 결함이 아니라 **범위**, 8필드 중 닿는 건 `reason` 하나). **다시 열지 말 것.**
+> ⛔`slack_live_approval`도 **닫혔다**(08-16 — 데모 선행은 틀린 기록이었다). ⛔**`triggered_at`·`metric_name`은 닫혔다**(08-15 전수 스윕, M21 증거 §8 — 결함이 아니라 **범위**, 8필드 중 닿는 건 `reason` 하나). **다시 열지 말 것.**
 >
 > ⚠️ `main` 보호 — 직접 push 불가(소유자 포함), **PR + CI 통과로만 병합**(D43).
 > ⚠️ 초록에는 조건이 붙는다(Risk 12, 이제 **일곱**): **새 가드는 지워 보고 red를 확인**(③) · **skip은 실패가 아니다** — 게이트 숫자엔 **잰 기계**까지 붙일 것(②) · **가드는 독자가 읽는 그 물건에 대고 물을 것**(④ — **결함을 그 그림자로 세지 말 것**, **경고는 주장만 묻지 말고 지시까지**, **문은 넷**) · ⑤**가드 자신도 틀린다**(08-13: 픽스처로 고른 값이 **틀린 기본값과 같아** 결함을 통과시켰다 · 변이 하네스가 `git checkout --`로 **커밋 안 된 고침을 날리고** 있었다 — **초록으로 안 돌아오는 복구는 복구가 아니다**) · ⑦**변이 결과는 어디에 물었는지까지 말할 것**(08-15: **틀린 테스트 파일**에 물어 "가드 없음"으로 읽었는데 전체 스위트로는 red였다 · **변이·실행·복구는 한 스크립트 안에** 둘 것).
@@ -38,7 +38,7 @@
 - **동작하는 것:** Operations 4단계 + 3-cloud AI Agent + **On-Prem Ops**(12도구, trace) + Terraform kind/실 Multipass VM Ansible k3s Provision + kagent↔Local Qwen A2A + Agents UI. **On-Prem 오프라인 완결**: Local **Qwen3-Coder-30B-A3B**(MoE·활성 3B, `Makefile:58`)로 NL provision→deploy→validate ~39s, 로컬 JSONL 기록 + 대시보드 **hybrid**(AWS+On-Prem 병합) + 실 **롤백**(app/cluster). **추적 IA**: activity에 `type`(provision/deploy)·`cluster` 연결키, 대시보드 **Provisioning/Deployments/History** 분리 + **중첩 상세**(provisioning⊃deploys), 롤백 **단일-row 승계**·**teardown→deploy cascade**, 자연어 rollback/teardown도 동일 라우팅.
 - **하네스:** overnight-harness 플러그인 기반 (5 engine). `make overnight-kiro-once` 로 smoke. `make dev-up`으로 로컬 스택(MLX+proxy+router+dashboard) 한 방 기동.
 - **Kiro 특화:** aws-ops / cdk-dev / overnight-harness 3개 에이전트 + safety hook + AWS MCP Server.
-- **검증:** `make check` → **2094 passed, 2 skipped** (**2026-08-15, 로컬 macOS·py3.13** — ⚠️**1929 이후는 로컬만**(미push), CI 일치는 1912까지; 게이트 숫자는 날짜와 **잰 기계** 없이는 주장이 아니다, Risk 12①②). CI(`gate.yml`)가 **main 병합 조건**이고 **terraform 검증까지 실제로 돈다**. 이력·근거는 `STATUS` 검증 Baseline과 `COMPLETED_SUMMARY` **M10~M26**에 있다 — 여기에 다시 적지 말 것.
+- **검증:** `make check` → **2102 passed, 2 skipped** (**2026-08-15, 로컬 macOS·py3.13** — ⚠️**1929 이후는 로컬만**(미push), CI 일치는 1912까지; 게이트 숫자는 날짜와 **잰 기계** 없이는 주장이 아니다, Risk 12①②). CI(`gate.yml`)가 **main 병합 조건**이고 **terraform 검증까지 실제로 돈다**. 이력·근거는 `STATUS` 검증 Baseline과 `COMPLETED_SUMMARY` **M10~M26**에 있다 — 여기에 다시 적지 말 것.
 - **현재 초점:** **Phase 4(billable, 별 승인)만 남았다.** 공급망은 생산자→소비자→CI 키리스까지 섰고 **어드미션만 업스트림 대기**(cosign v3 ↔ policy-controller 저장 위치 불일치, 양방향 실증). Phase 5는 **경계까지**(UI·PR 생성 없음). ⚠️**과대 해석 금지**: 스코프·배포 신원·이미지 서명 게이트는 전부 **옵트인** · 자격증명이 테넌트-바운드인 건 **온프렘뿐** · CODEOWNERS는 **라우팅** · `main` 보호는 **게이트 집행**이지 리뷰 집행이 아니다. **반복 확인된 것**: 새 항목은 **기록된 이유를 한 번 돌려 보고** 시작할 것 — 다만 **틀려 있을 때만 값이 나오는 게 아니다**(08-09 GCP 3건은 전부 성립했는데, 확인하는 과정에서 **프로브의 provider 누락**이 나왔다). 그리고 **읽는 쪽으로 갈 것**: "이 dict를 덮는 테스트가 있나"의 답은 "다섯 개 있다"였는데 **전부 dict의 모양만 물었고**, 읽는 쪽엔 두 provider에 복사된 **죽은 티어**가 있었다(08-13).
 
 ## Guardrails
