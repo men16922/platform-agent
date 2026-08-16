@@ -123,6 +123,30 @@ def main() -> None:
             "backstop-contaminated; nothing persisted"
         )
 
+    # The mismatch check above only catches "a different model answered". It does
+    # not catch "the call never got that far" — `stats["calls"]` is incremented
+    # *after* the model-echo check, so an exception in urlopen/JSON/`["content"]`
+    # leaves both counters at zero, `live_router_factory` swallows it into the
+    # deterministic backstop, and a scoreboard nobody answered gets persisted.
+    #
+    # Measured 2026-08-16: Qwen3.8-27B is a reasoning model, so with this file's
+    # `max_tokens: 16` it spent every token on `message.reasoning` and emitted no
+    # `message.content` -> KeyError on every case -> `calls=0, mismatch=0` -> a
+    # persisted "pass=1.00 (20/20)" that was entirely the backstop's score.
+    #
+    # So assert the whole run was answered: one call per (config × case × trial).
+    from src.agents.ai.eval_harness import ROUTING_EVAL_SET
+
+    fresh = [c for c in configs if c.key() not in {p.config.key() for p in done}]
+    expected = len(fresh) * len(ROUTING_EVAL_SET) * args.trials
+    if stats["calls"] != expected:
+        raise SystemExit(
+            f"only {stats['calls']} of {expected} routing calls reached the model — the rest "
+            "fell through to the deterministic backstop, so these scores are not this "
+            "model's; nothing persisted. Check the endpoint and the reply shape "
+            "(a reasoning model with a small max_tokens returns `reasoning` and no `content`)."
+        )
+
     points_path.parent.mkdir(parents=True, exist_ok=True)
     points_path.write_text("".join(json.dumps(p.to_dict()) + "\n" for p in points))
 
