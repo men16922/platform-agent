@@ -45,14 +45,26 @@ jobs:
           python-version: "3.13"
           cache: pip
 
-      # Mirrors infra/onprem/Dockerfile rather than installing the `onprem`
-      # extra: that extra pulls mlx-lm, which is Apple-Silicon only and cannot
-      # resolve on a linux runner. The pieces the suite actually imports are
-      # pydantic-ai-slim and the ASGI stack.
+      # `pydantic-ai-slim` is still named inline rather than installing the
+      # `onprem` extra: that extra also pulls mlx-lm, which is Apple-Silicon only
+      # and cannot resolve on a linux runner.
+      #
+      # The ASGI stack used to be named inline too (`fastapi "uvicorn[standard]"`)
+      # because **nothing declared it** — this file was carrying an undeclared
+      # dependency so the gate would pass, while `pip install .` shipped an agent
+      # that could not start the documented `make dev-up` stack (2026-08-15 sweep;
+      # six such packages). It is declared now, so ask for it by name.
+      #
+      # The `serving` extra declares `uvicorn[standard]` — the same set this line
+      # installed before — so this change removes the workaround **without**
+      # changing what lands in the runner. `[standard]`'s packages are used by
+      # uvicorn itself, not imported by our code, so grepping src/ cannot tell
+      # you whether they matter; and CI cannot be run from here to find out.
+      # One change at a time.
       - name: install
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev,state,observability]" fastapi "uvicorn[standard]" pydantic-ai-slim[openai]
+          pip install -e ".[dev,state,observability,serving]" pydantic-ai-slim[openai]
 
       # Without this the gate silently stops validating Terraform.
       #

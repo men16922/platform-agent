@@ -162,3 +162,45 @@ class TestTheServingStackIsInstallable:
     def test_makefile_still_uses_uvicorn(self):
         """Pins the premise — if dev-up stops using uvicorn, revisit the extra."""
         assert "uvicorn" in (ROOT / "Makefile").read_text(encoding="utf-8")
+
+
+def _ci_install_line() -> str:
+    workflow = (ROOT / ".github/workflows/gate.yml").read_text(encoding="utf-8")
+    lines = [ln.strip() for ln in workflow.splitlines() if "pip install -e" in ln]
+    assert len(lines) == 1, f"expected one editable install in gate.yml, found {len(lines)}"
+    return lines[0]
+
+
+class TestCIAsksForTheExtraInsteadOfWorkingAroundIt:
+    """CI was carrying the undeclared ASGI stack so the gate would pass.
+
+    `gate.yml` named `fastapi "uvicorn[standard]"` on the command line while no
+    extra declared them — so the gate was green on packages that
+    `pip install .` did not ship. That is the same failure the 2026-08-08
+    opentelemetry note describes, one layer up: the workaround lived in CI, so
+    nothing local could notice.
+    """
+
+    def test_ci_requests_the_serving_extra(self):
+        assert "serving" in _ci_install_line(), (
+            "gate.yml no longer installs the `serving` extra — if the ASGI stack "
+            "moved, move the declaration too rather than naming packages inline"
+        )
+
+    @pytest.mark.parametrize("package", ["fastapi", "uvicorn"])
+    def test_ci_does_not_inline_a_declared_package(self, package):
+        line = _ci_install_line()
+        # Strip the bracketed extras list so `.[...,serving]` is not a false hit.
+        outside_extras = re.sub(r"\.\[[^\]]*\]", "", line)
+        assert package not in outside_extras, (
+            f"gate.yml names {package!r} on the command line, but it is declared in "
+            "an extra — an inline install here means the gate can be green on "
+            "something `pip install .` does not provide"
+        )
+
+    def test_the_documented_exception_is_still_documented(self):
+        """`pydantic-ai-slim` IS inlined, on purpose: `onprem` also pulls
+        Apple-only mlx-lm. Pin that the reason stays written next to it."""
+        workflow = (ROOT / ".github/workflows/gate.yml").read_text(encoding="utf-8")
+        assert "pydantic-ai-slim" in _ci_install_line()
+        assert "mlx-lm" in workflow, "the reason for bypassing the onprem extra is gone"

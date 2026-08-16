@@ -44,7 +44,7 @@ onprem = ["pydantic-ai-slim[openai]>=2.9", "mlx-lm>=0.19"]
 # `make dev-up` runs `uvicorn src.agents.ai.local_deploy_api:app` and the on-prem
 # webhook the same way, and nothing declared either — a fresh clone cannot start
 # the documented local stack.
-serving = ["fastapi>=0.110", "uvicorn>=0.29"]
+serving = ["fastapi>=0.110", "uvicorn[standard]>=0.29"]
 state = ["psycopg2-binary>=2.9"]
 # Declared 2026-08-08, after the first CI run failed 17 tracing tests that pass on
 # every developer machine. `strands-agents` already pulls opentelemetry api+sdk, so
