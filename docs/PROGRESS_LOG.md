@@ -6,6 +6,30 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-15 — 렌즈의 마지막 층: "resolved"는 셋이 같은 뜻이었다. 우연히 그랬다 (gate 2059)
+
+- Status: 렌즈를 한 층씩 내려 왔다(`AlarmContext`→`AnalyzerOutput`→`DecisionOutput`→게이트
+  자신→의존성 선언). 마지막 층 `ExecutorOutput`을 물었다 — **필드는 셋이 글자 그대로 동일**하다.
+  그래서 **값 축**으로 물었다: `resolved`는 계산되고 `resolved_at`·MTTR로 이어진다.
+- Verified(**계산은 달랐다, 그런데 결함은 아니다**): aws는 `resolution_verdict(...).resolved`,
+  gcp/azure는 `bool(executed) and not skipped` **하드코딩**. AWS 주석이 *"so both axes have one
+  definition"*이라 쓰는데 **둘이 그 정의를 안 썼다**. ⚠️단 **오늘 동작은 같다** — 검증이 없으면
+  계약이 정확히 그 규칙이고, **gcp/azure엔 verify 경로가 0건**이다(`git grep "verif"`).
+  ⇒ M23의 `steps`와 같은 판정: **도달 불가 분기가 아니라 일관된 부재**.
+- Changed(**동작 변경 0**): 그래도 계약으로 모았다 — `NEXT_PLAN` 유지 규약이 금지하는 모양
+  (*"복사본 둘은 다음 고침이 한쪽에만 닿는 방식"*)이고, **계약 모듈은 이미 있었고 AWS는 이미
+  읽고 있었다**. 값은 **미래 드리프트 제거**이고 그 대가는 M19가 이미 지불했다(67/81).
+- Verified(가드 +13, `test_resolution_parity.py` 신규): **오늘의 답이 안 움직였는가**(5케이스) ·
+  `verified`가 None(unknown)인가 · 셋 다 계약을 임포트하는가 · **하드코딩 사본이 다시 생기지
+  않았는가** · 셋이 같은 답인가. 변이 **5건 red·생존 0**(기준선 108).
+  `make check` **2059 · 32.35s**, 2026-08-15, 로컬 macOS·py3.13.
+  증거 `resolved-meant-the-same-thing-by-accident.log`.
+- Blockers: 없음.
+- Next: ⚠️**변이 M4 첫 시도가 또 무효였다 — 오늘 세 번째**(함수 이름을 바꿔 `2 errors` 수집 실패).
+  절차에 넣은 **기준선 먼저 찍기**가 잡았다. ⇒ **이름을 바꾸는 변이는 의미 변이가 아니라 문법
+  변이다.** 그리고 **렌즈 결산**: 다섯 층에서 다섯 결함, **여섯째에서 멈췄다** — 마르는 지점을
+  적어 두는 건 다음 세션이 같은 자리에 다시 대지 않게 하려는 것이다(증거 §5).
+
 ## 2026-08-15 — 08-08에 배운 교훈을 한 패키지에만 적용했다. 형제 여섯을 안 셌다 (gate 2046)
 
 - Status: D49의 원인이 *"`except ImportError` 폴백이 원리상 도달 불가"*였다 — **그 패턴을
@@ -63,39 +87,4 @@
   범위에 **없는 파일 이름**을 적어 pytest가 수집에서 죽었고 하네스가 종료코드만 보고 red로 셌다.
   M22가 남긴 *"red의 이유를 안 보면 변이는 자기기만이 된다"* 덕에 잡았다. ⇒ **변이 하네스는
   기준선을 먼저 찍고 "몇 건이 죽었는지"까지 볼 것** — 종료코드는 수집 실패와 가드 발화를 못 가린다.
-
-## 2026-08-15 — 파괴 액션 하나가 두 클라우드에선 APPROVE였고 세 번째에선 AUTO였다 (gate 1942→2021)
-
-- Status: 렌즈를 또 한 층 아래(`DecisionOutput`)로. **먼저 나온 건 범위였다** — `steps`·
-  `reconciliation`은 AWS만 채우고 AWS만 읽는데, 공유 executor에도 gcp/azure executor에도
-  **steps 처리 코드가 아예 없다** → 도달 불가 분기가 아니라 **일관된 부재**(AWS 전용 기능).
-- Verified(**가장 위험한 필드를 열었더니 나왔다**): `remediation_mode`의 severity 매핑은 셋 다
-  동일한데 **안전 오버라이드가 다르다** — gcp·azure는 `{Delete,Drop,Terminate,Destroy}` **4개**,
-  **aws만 인라인 3개**로 **`Destroy`가 빠졌다**. 실행 확인: `DestroyCluster` P1 →
-  **aws=AUTO · gcp/azure=APPROVE**. `Severity` 정의대로 **AUTO = 사람 없이 실행**이다.
-  `AGENT_BRIEF` 가드레일 문구("Delete/Drop/Terminate 강제 APPROVE")는 **AWS 그대로였고 나머지
-  둘은 이미 그것을 넘어 자라 있었다** — **뒤처진 쪽이 하필 파괴 경로**다.
-- Verified(도달 가능성, 정직하게): 빌트인 카탈로그는 전부 `AWS-PascalCase` 12종이고
-  `Destroy` 계열이 **없다** → 오늘은 도달 불가. **그러나 런북은 운영자가 등록한다**
-  (`schema.py` 도크스트링 · 스캔 티어가 그 테이블을 읽는다) → `AWS-DestroyStack`은
-  **운영자가 만드는 이름**이고 그게 이 갭이 열리는 자리다. **가설이 아니라 이미 어긋난 세 구현.**
-  ⚠️**소문자는 안 고쳤다**(`destroy-stack`은 셋 다 AUTO) — 네 실행 어댑터 전부
-  `PROVIDER-PascalCase`만 낸다(4×~29 매핑 전수). **아무도 만들지 않는 형태의 가드는 하중을
-  못 받는다.** 대신 **그 전제를 가드로 고정**했다.
-- Changed: `runbooks/schema.py`에 `DESTRUCTIVE_ACTION_PATTERNS` + `is_destructive_action()`
-  한 벌, 세 decision이 읽는다(M19의 `fits_resource`와 같은 자리·같은 이유). **발명 아님** —
-  4번째 동사는 GCP·Azure가 이미 쓰던 것이다. ⚠️네 번째 사본도 있다:
-  `deploy-policy.yaml:42`(소문자, **다른 서브시스템**) — 정본 의도가 4개임을 보여 준다.
-- Verified(가드 +79, `test_destructive_action_gate.py` 신규): 4동사×3provider×3severity 전수 ·
-  역방향(**상시 발화 게이트는 게이트가 아니다**) · 셋이 같은 답인가 · 사본 0인가 ·
-  **대소문자 결정의 전제**(어댑터가 PascalCase를 내는가). 변이 **8건 red·생존 0**.
-  `make check` **2021**(+79), 2026-08-15, 로컬 macOS·py3.13.
-  증거 `destroy-was-approve-on-two-clouds-and-auto-on-the-third.log`.
-- Blockers: 없음.
-- Next: ⚠️**내 가드가 `cdk.out` 함정을 밟았다** — `rglob`로 "누가 정의하나"를 세니 untracked
-  빌드 사본 22건이 잡혀 red. 레포가 적어 둔 **`git grep`을 쓸 것** 그대로다. **더 나쁜 건
-  M21의 같은 가드도 같은 결함이었고 상수가 새것이라 우연히 초록이었다** — 다음 `cdk synth`에
-  red였을 것이다. 둘 다 `git ls-files` 기반으로 고쳤다. ⇒ **"누가 정의하나"를 파일시스템에
-  묻지 말 것.** 그리고 ⚠️**열린 항목 하나**: `test_gcp_day2_operations.py`가 **200초**로
-  게이트 288초의 대부분이다(Azure 대응 파일은 **0.43초**, 같은 28건) — **형제 중 하나만 느리다.**
 
