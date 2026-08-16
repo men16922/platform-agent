@@ -26,6 +26,7 @@ from src.agents.models import (
     RemediationMode,
     Severity,
 )
+from src.agents.ai.reconciliation import apply_gate, reconcile
 from src.agents.runbooks.capability_schema import evaluate_condition
 from src.agents.runbooks.catalog import BUILTIN_RUNBOOKS
 from src.agents.runbooks.schema import fits_resource, is_destructive_action, validate_runbook
@@ -50,6 +51,28 @@ def cloud_function_handler(event: dict[str, Any]) -> dict[str, Any]:
 
     runbook_id, actions, rto = _select_runbook(analyzer)
     mode = _determine_mode(analyzer.severity, actions)
+
+    # Reconciliation gate — the same one AWS has applied since it was written.
+    # Measured 2026-08-16 by counting readers of each shared symbol: `apply_gate`
+    # and `reconcile` were read by AWS alone, so an **ungrounded** analysis
+    # (alarm not firing / no evidence at all / P1 asserted at low confidence /
+    # a root_cause whose vocabulary never appears in the evidence) still
+    # auto-executed here while the identical case was escalated to a human on
+    # AWS. Same family as the destructive-action gate (M23): a safety rule that
+    # existed in the contract and was read by one provider.
+    #
+    # Safe to share: `reconcile` is pure — `re`, dataclasses, and the two
+    # provider-neutral contract types — no network, no model call, no SDK. And
+    # `apply_gate` only ever downgrades AUTO → APPROVE; it never upgrades a
+    # human-gated decision, so this can add approvals but never remove one.
+    recon = reconcile(analyzer.detector, analyzer)
+    gated_mode = apply_gate(mode, recon)
+    if gated_mode != mode:
+        log.warning(
+            "gcp_decision.reconciliation.downgrade",
+            from_mode=mode.value, to_mode=gated_mode.value, issues=recon.issues,
+        )
+    mode = gated_mode
     log.info("gcp_decision.runbook", runbook_id=runbook_id, mode=mode, actions=actions, rto=rto)
 
     output = DecisionOutput(
