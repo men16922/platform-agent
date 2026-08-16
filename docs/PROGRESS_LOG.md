@@ -6,6 +6,27 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-15 — 세 번 어긴 규칙을 약속 대신 가드로 바꿨다 (gate 2073)
+
+- Status: 오늘 문서 예산을 **세 번 어겼고 매번 커밋 후에 알았다**(그리고 `--amend`로 고쳤다).
+  "다음부터 커밋 전에 확인하겠다"는 **약속이지 집행이 아니다** — D45가 정확히 그렇게
+  참이기를 그만뒀다(→D49). 그래서 가드로 바꿨다.
+- Verified(**선언은 셋, 집행은 0**): `.claude/harness-config.json`의 `budgets` ·
+  `DOCS_POLICY.md`의 표 · **각 문서 헤더가 스스로 주장하는 값**(`이 파일은 **≤60줄**로 유지한다`).
+  오늘은 셋이 일치하지만 **아무도 확인하지 않는다** — M19가 값을 치른 "복사본" 모양이다.
+- Changed(가드 +14, `test_doc_budgets.py` 신규): 두 방향 — ①각 문서가 예산 안인가
+  ②**세 선언이 서로 일치하는가**(한 곳만 고치면 red). 예산은 `harness-config.json`을
+  단일 출처로 읽는다(스킬들이 이미 그걸 읽는다). **코드 변경 없음.**
+- Verified: 변이 M1~M4 전부 red(STATUS 1줄 초과 · config 상향 · 표 변경 · 헤더 주장 변경).
+  ⚠️**M5(비공허 검사 무력화)는 생존** — 앞과 같이 숨기지 않는다. 진짜 실패 모드를 따로 물었다:
+  **예산을 통째로 비우면 2 failed**(`test_the_policy_table_has_no_extra_rows`가 잡는다) ⇒
+  비공허 assert는 보호가 아니라 문서다. `make check` **2073 · 36.73s**, 로컬 macOS·py3.13.
+- Blockers: 없음.
+- Next: ⚠️**내 가드가 자기 창을 물었다** — `_header_claim`이 앞 12줄만 봐서 `AGENT_BRIEF`의
+  선언(23번째 줄, `▶ NEXT SESSION` 블록 뒤)을 "없음"으로 읽고 red를 냈다. **문서가 아니라 내
+  윈도우에 대한 답이었다**(Risk 12④). 전체를 훑도록 고쳤다. 그리고 ⚠️**변이 무효가 오늘
+  네 번째**(JSON을 깨뜨림) — 기준선 먼저 찍기가 매번 잡아 준다.
+
 ## 2026-08-15 — 렌즈의 마지막 층: "resolved"는 셋이 같은 뜻이었다. 우연히 그랬다 (gate 2059)
 
 - Status: 렌즈를 한 층씩 내려 왔다(`AlarmContext`→`AnalyzerOutput`→`DecisionOutput`→게이트
