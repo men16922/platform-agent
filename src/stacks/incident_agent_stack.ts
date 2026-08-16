@@ -277,10 +277,17 @@ export class IncidentAgentStack extends cdk.Stack {
       ],
       resources: [`arn:aws:logs:${this.region}:${this.account}:log-group:*`],
     }));
+    // X-Ray trace lookup has no resource types at all — `Resource: "*"` is the only
+    // form that can match. (AWS Service Authorization Reference, checked 2026-08-16.)
     detectorRole.addToPolicy(new iam.PolicyStatement({
       actions: ['xray:GetTraceSummaries', 'xray:BatchGetTraces'],
       resources: ['*'],
     }));
+    // CloudWatch metric reads cannot be resource-scoped: the user guide says to
+    // "specify a wildcard character (*) as the resource value", and `GetMetricStatistics`
+    // has no resource types. ⚠️`ListMetrics` does have one (`dataset`, for Metrics
+    // Insights) — it does not cover listing metrics, which is what this is for, so `*`
+    // is still the only form that matches.
     detectorRole.addToPolicy(new iam.PolicyStatement({
       actions: ['cloudwatch:GetMetricStatistics', 'cloudwatch:ListMetrics'],
       resources: ['*'],
@@ -361,6 +368,9 @@ export class IncidentAgentStack extends cdk.Stack {
         iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'),
       ],
     });
+    // Same reason spelled out at the vercelDashboardRole grant above: the task token
+    // is resolved by the states service, so these two actions carry no resource types
+    // and cannot be restricted by ARN.
     approvalBridgeRole.addToPolicy(new iam.PolicyStatement({
       actions: ['states:SendTaskSuccess', 'states:SendTaskFailure'],
       resources: ['*'],
@@ -630,6 +640,11 @@ export class IncidentAgentStack extends cdk.Stack {
         iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'),
       ],
     });
+    // CloudWatch metric reads cannot be resource-scoped: the user guide says to
+    // "specify a wildcard character (*) as the resource value", and `GetMetricStatistics`
+    // has no resource types. ⚠️`ListMetrics` does have one (`dataset`, for Metrics
+    // Insights) — it does not cover listing metrics, which is what this is for, so `*`
+    // is still the only form that matches.
     deploymentRole.addToPolicy(new iam.PolicyStatement({
       actions: ['cloudwatch:GetMetricStatistics', 'cloudwatch:ListMetrics'],
       resources: ['*'],
@@ -771,6 +786,7 @@ export class IncidentAgentStack extends cdk.Stack {
     if (vercelDashboardRole) {
       provisioningStateMachine.grantStartExecution(vercelDashboardRole);
       deploymentStateMachine.grantStartExecution(vercelDashboardRole);
+      // Account-scoped listing: no resource types, so `*` is the only matching form.
       vercelDashboardRole.addToPrincipalPolicy(new iam.PolicyStatement({
         actions: ['states:ListStateMachines'],
         resources: ['*'],
@@ -866,6 +882,11 @@ export class IncidentAgentStack extends cdk.Stack {
       ],
     });
     incidentTable.grantReadData(reportingRole);
+    // CloudWatch metric reads cannot be resource-scoped: the user guide says to
+    // "specify a wildcard character (*) as the resource value", and `GetMetricStatistics`
+    // has no resource types. ⚠️`ListMetrics` does have one (`dataset`, for Metrics
+    // Insights) — it does not cover listing metrics, which is what this is for, so `*`
+    // is still the only form that matches.
     reportingRole.addToPolicy(new iam.PolicyStatement({
       actions: ['cloudwatch:GetMetricStatistics', 'cloudwatch:ListMetrics'],
       resources: ['*'],
