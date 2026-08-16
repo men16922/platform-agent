@@ -26,6 +26,7 @@ from src.agents.models import (
     RemediationMode,
     Severity,
 )
+from src.agents.runbooks.capability_schema import evaluate_condition
 from src.agents.runbooks.catalog import BUILTIN_RUNBOOKS
 from src.agents.runbooks.schema import fits_resource, is_destructive_action, validate_runbook
 
@@ -108,7 +109,7 @@ def _select_runbook(analyzer: AnalyzerOutput) -> tuple[str, list[str], int | Non
                 problems=problems,
             )
         else:
-            actions = _resolve_actions_from_runbook(candidate, normalized)
+            actions = _resolve_actions_from_runbook(candidate, normalized, analyzer.severity)
             return candidate["runbook_id"], actions, candidate.get("rto_sec")
 
     # 2. Capability-based catalog scan
@@ -171,14 +172,43 @@ def _lookup_firestore_runbook(alarm_name: str) -> dict[str, Any] | None:
 def _resolve_actions_from_runbook(
     runbook: dict[str, Any],
     normalized: NormalizedIncident | None,
+    severity: Severity | None = None,
 ) -> list[str]:
-    """Resolve concrete GCP actions from a runbook's steps."""
+    """Resolve concrete GCP actions from a runbook's steps.
+
+    Step ``condition`` is part of the runbook contract — `evaluate_condition`
+    documents three forms (`previous_step_failed`, `severity_in`, `provider`) and
+    the AWS executor has gated on it all along. This walk **ignored the field**,
+    so an operator following the documented contract got every conditional step
+    unconditionally: `{"previous_step_failed": true}` marks an *escalation* step,
+    and running it always is the stronger remediation applied when nothing failed.
+
+    ⚠️ Evaluated with the **initial** context, because this provider flattens
+    steps into a flat action list at decision time and has no step-walking
+    executor to update it. So `previous_step_failed` is False here and always
+    will be: escalation steps are excluded rather than deferred. That is the
+    honest half of the contract this side can keep — including them
+    unconditionally was the other, worse, half.
+    """
     if not normalized:
         return []
+
+    context = {
+        "severity": severity.value if severity is not None else None,
+        "provider": normalized.provider,
+        "previous_step_failed": False,
+    }
 
     adapter = get_execution_adapter("gcp")
     actions = []
     for step in runbook.get("steps", []):
+        if not evaluate_condition(step.get("condition"), context):
+            logger.info(
+                "gcp_decision.step.condition_false",
+                step=step.get("name") or step.get("action"),
+                condition=step.get("condition"),
+            )
+            continue
         capability = step.get("capability")
         if not capability:
             continue

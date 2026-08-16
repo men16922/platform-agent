@@ -26,6 +26,7 @@ from src.agents.models import (
     RemediationMode,
     Severity,
 )
+from src.agents.runbooks.capability_schema import evaluate_condition
 from src.agents.runbooks.catalog import BUILTIN_RUNBOOKS
 from src.agents.runbooks.schema import fits_resource, is_destructive_action, validate_runbook
 
@@ -105,7 +106,7 @@ def _select_runbook(analyzer: AnalyzerOutput) -> tuple[str, list[str], int | Non
                 problems=problems,
             )
         else:
-            actions = _resolve_actions_from_runbook(candidate, normalized)
+            actions = _resolve_actions_from_runbook(candidate, normalized, analyzer.severity)
             return candidate["runbook_id"], actions, candidate.get("rto_sec")
 
     # 2. Capability-based catalog scan
@@ -183,13 +184,35 @@ def _get_cosmos_credential():
 def _resolve_actions_from_runbook(
     runbook: dict[str, Any],
     normalized: NormalizedIncident | None,
+    severity: Severity | None = None,
 ) -> list[str]:
+    """Resolve concrete Azure actions from a runbook's steps.
+
+    Same contract, and same gap, as the GCP walk — see the docstring there.
+    Step ``condition`` was not read at all, so `{"previous_step_failed": true}`
+    (an escalation step) was emitted unconditionally. Evaluated here with the
+    initial context: this side flattens steps at decision time, so escalation
+    steps are excluded rather than deferred.
+    """
     if not normalized:
         return []
+
+    context = {
+        "severity": severity.value if severity is not None else None,
+        "provider": normalized.provider,
+        "previous_step_failed": False,
+    }
 
     adapter = get_execution_adapter("azure")
     actions = []
     for step in runbook.get("steps", []):
+        if not evaluate_condition(step.get("condition"), context):
+            logger.info(
+                "azure_decision.step.condition_false",
+                step=step.get("name") or step.get("action"),
+                condition=step.get("condition"),
+            )
+            continue
         capability = step.get("capability")
         if not capability:
             continue
