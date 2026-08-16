@@ -48,9 +48,9 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
   ⚠️4a는 자격증명 파티션 **미증명**(Risk 10=4b) · **30분 TTL 가드**가 상시와 안 맞는다 ·
   Phase 5가 열리면 3②를 GitOps-native로(D32) · **런북 스토어도 여기서 처음** — RTO 필드는 **`rto_sec`**(**D47**).
 - [ ] ⚠️**Azure executor는 하지 않은 조치를 "해결됨"으로 보고한다(08-16 실측, 승인 사안)** —
-  `_execute_single_action`이 로그만 찍고 `success: True`를 돌려 → `executed`에 쌓이고 →
-  `resolved=True`로 **Slack에 올라가고 기록된다**. `runners/azure_runner.py`는 **311줄 실구현**
-  (GCP 러너 308줄과 대등)인데 **Azure executor만 자기 러너를 안 부른다**(GCP는 Phase 3에 배선됨).
+  `_execute_single_action`이 로그만 찍고 `success: True`를 돌려 → `resolved=True`로 **Slack에
+  올라가고 기록된다**. `azure_runner.py`는 **311줄 실구현**(GCP 308줄과 대등)인데 **Azure만 자기
+  러너를 안 부른다**. ⚠️**지금은 순수 잠재**: 구독에 Function App·AKS·Cosmos **전부 없다**(08-16 실측).
   **안 고쳤다 — 배선하면 라이브 ARM/AKS 변경이 시작된다**(하드-투-리버스는 승인 후). `success: False`로
   낮추는 것도 출력을 바꾸므로 **선택**이다. 근거 `docs/evidence/azure-executor-reports-resolved-without-executing.log`
   · 가드 `test_executor_dispatches_to_runner.py`(**설명 없는 비대칭 금지**).

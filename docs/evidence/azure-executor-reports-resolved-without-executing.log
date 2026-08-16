@@ -22,8 +22,15 @@ M28에서 쓴 방법을 **넓혔다**. 처음엔 공용 모듈 셋(`runbooks/sch
 
     공용 심볼 408개 · provider가 읽는 것 35개 · 비대칭 20개
 
-20건 중 18건은 AWS 전용이 정당하다(DynamoDB·Slack webhook·aws_session — AWS에만
-있는 저장소/전송 계층). 남은 둘이 2/3 모양이었다:
+⚠️**여기서 나는 "20건 중 18건은 AWS 전용이라 정당하다"고 적었다. 그건 훑은 것이지
+잰 게 아니었고, 뒤에 개별로 재 보니 그 안에 결함이 셋 더 있었다**(`evaluate_condition`
+→ M30 · `guard_rollback`을 따라간 끝의 `ROLLBACK_ACTIONS` 누락 → M31 ·
+`apply_gate`/`reconcile` → M32). **이름만 보고 "provider 고유겠지"로 넘긴 것이 원인**이다.
+전수 분류는 이제 `tests/test_contract_symbol_parity.py`의 표가 들고 있다.
+그리고 이 스윕 자체도 **직접 임포트만 세어 틀렸다** — 전이 폐포로 다시 재니 20건이
+아니라 **26건**이었다(`post_webhook`은 셋 다 `_executor_common`으로 닿는데 AWS 전용으로
+보였고, `['aws','gcp']` 8건은 통째로 안 보였다). 아래 둘은 그 틀린 계기로 본 것이지만,
+결론은 폐포로 다시 재도 그대로였다:
 
     resolve_incident_scope    platform.scope                 ['aws', 'gcp']
     run_gcp_action            runners.gcp_runner             ['aws', 'gcp']
@@ -86,3 +93,28 @@ Risk 12④ⓐ 그대로 — *결함을 그 그림자로 세지 말 것* / *가�
 자기 러너를 부르는지를 **명시적 레지스트리와 대조**한다. Azure 항목은 "안 부른다 +
 이유"를 들고 있어야 통과한다 — `test_iam_wildcard_justified.py`와 같은 규칙
 (**설명 없는 비대칭 금지**). 배선하는 순간 red가 나서 기록을 같이 고치게 된다.
+
+----------------------------------------------------------------------------
+6. 심각도 경계 — 지금 도는 경로가 아니다 (2026-08-16 실측)
+----------------------------------------------------------------------------
+
+이 결함이 **오늘 사람을 속이고 있는지**를 재려면 그 코드를 무엇이 호출하는지 봐야
+한다. 구독(`23842f7d-…`, Enabled)을 훑었다:
+
+    리소스 그룹        NetworkWatcherRG(자동) · rg-roadpilot + 관리형(**다른 프로젝트**)
+                      **platform-agent-foundry-rg**(eastus)  ← 우리 것
+    그 안의 전부       pa-foundry-908601 (AIServices S0) + pa-foundry-908601/pa-project
+    AKS 클러스터       **0개**
+
+**Function App 없음 · AKS 없음 · Cosmos DB 없음.** `azure_function_handler`는 어디에도
+배포돼 있지 않고, `_lookup_cosmos_runbook`이 읽을 Cosmos도, AKS 액션이 칠 클러스터도
+없다. ⇒ **순수 잠재 결함**이다 — 바로 옆에서 나온 M28(티어 1 무검증)·M30(스텝 condition)과
+같은 지위이고, **지금 급히 켤 이유가 없다**는 뜻이기도 하다.
+
+⚠️ 이걸 "괜찮다"로 읽지 말 것. 배포되는 순간 첫 인시던트부터 **하지 않은 조치를
+"해결됨"으로 보고**한다. 잠재는 **시한이 없다는 뜻이지 무해하다는 뜻이 아니다** —
+결정을 미룰 수 있게 해 줄 뿐, 결정을 없애 주지 않는다. 가드
+(`test_executor_dispatches_to_runner.py`)가 배포 전에 red를 내도록 걸어 뒀다.
+
+부수 측정: AIServices S0은 사용량 과금이라 유휴 ≈$0 — `STATUS` Risk 4의 "Azure Foundry
+유휴 ≈$0는 참, 단 ACR은 다른 프로젝트 것"과 일치한다.
