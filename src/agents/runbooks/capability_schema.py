@@ -331,16 +331,35 @@ def resolution_verdict(
     )
 
 
+#: The condition forms this evaluator branches on — the closed set, kept next to
+#: the reader so the writer's validator cannot drift from it. `validate_runbook`
+#: imports this rather than repeating the literals; a copy is how the next fix
+#: lands on one side only. `test_condition_contract_is_validated.py` re-derives it
+#: from this function's own AST and fails if the two disagree.
+CONDITION_KEYS = ("previous_step_failed", "severity_in", "provider")
+
+
 def evaluate_condition(condition: dict[str, Any] | None, context: dict[str, Any]) -> bool:
     """
     Evaluate a step condition against execution context.
 
-    Supported conditions:
+    Supported conditions (the closed set is ``CONDITION_KEYS``):
         - {"previous_step_failed": true/false}
         - {"severity_in": ["P1", "P2"]}
         - {"provider": "aws"}
 
     Returns True if the step should execute. None condition = always execute.
+
+    ⚠️ **Unknown keys fall through to True**, which is why the shape has to be
+    rejected by `validate_runbook` at registration rather than interpreted here.
+    A misspelled key (``previous_step_fail``) matches no branch, so a step gated
+    as an *escalation* — the stronger remediation, ``rollback_release`` or
+    ``open_change_request`` — would run on every incident instead. That is the
+    same failure GCP and Azure produced by not reading `condition` at all
+    (2026-08-16), reached through a different door: reading a condition that
+    means nothing. Fail-open is right for the evaluator (a step whose gate cannot
+    be understood is not silently dropped mid-run) and wrong for the ingest path,
+    so the decision lives where the operator's document arrives.
     """
     if condition is None:
         return True
