@@ -30,27 +30,6 @@ class ClusterSingletonCapability(ValueError):
     """
 
 
-class ManagedBackendNotRenderable(ValueError):
-    """Raised when a managed backend is handed to a GitOps delivery engine.
-
-    The three paths disagreed about managed backends and only this one was wrong:
-    the collector already recognises them (`from_managed`, `applicable=False`), and
-    `registry_write` cannot produce one (it resolves `backend_for(...)` without
-    `managed=True`). Delivery, though, passes the backend straight through as a
-    Helm chart name — so a hand-written `observability: amazon-managed-prometheus`
-    would have GitOps chase a chart that does not exist in the self-hosted repo.
-
-    An error rather than a silent skip, for the same reason as the singleton guard
-    above: dropping it quietly makes a declared add-on vanish from the render with
-    no signal, which is indistinguishable from delivery lag.
-
-    **What a managed backend *should* render is deliberately not invented here.**
-    It is a Phase 4 design decision (AMP configures `remote_write` on an existing
-    Prometheus; Config Sync is a different shape entirely), and guessing would put
-    a second answer next to the one Phase 4 eventually picks.
-    """
-
-
 @dataclass(frozen=True)
 class DesiredAddon:
     """One (tenant, env, capability) the delivery engine must reconcile."""
@@ -66,6 +45,18 @@ class DesiredAddon:
     wave: int
     # Prefixed target namespace, so two tenants on one cluster cannot collide.
     namespace: str
+    #: From the catalog: is this backend operated by the cloud rather than by us?
+    #:
+    #: Carried on the addon for the same reason as `scope` below — both engines must
+    #: answer it identically and neither may forget to ask. A managed backend has
+    #: nothing to install, so the adapters render **no manifest** for it. That is not
+    #: a silent drop: the collector reports the same add-on through `from_managed`
+    #: with `applicable=False` and `sync_state=NOT_APPLICABLE`, so the absence from
+    #: the render is explained by the read model instead of looking like delivery lag.
+    #: The two halves are a pair, and `test_managed_backend_renders_nothing.py` fails
+    #: if either one disappears alone.
+    managed: bool = False
+
     #: From the catalog: can this backend exist once per tenant?
     #:
     #: Carried on the addon rather than looked up inside each adapter, so both
@@ -85,7 +76,17 @@ class DesiredAddon:
 
     @property
     def is_cluster_singleton(self) -> bool:
-        return self.scope == "cluster"
+        """Cluster-scoped **and** something we install.
+
+        A managed backend is excluded because the failure this property guards is
+        "two controllers reconciling the same objects", and nothing is installed for
+        a managed one — there is no second controller to create. Excluding it is also
+        what stops the singleton message from being wrong: it tells the reader to
+        "give the tenant an instance (a Prometheus CR)", which for AMP sends them to
+        build something that cannot exist (the worry recorded in the Phase 4 plan's
+        correction box, and in `TestManagedBackendRendersNothing`).
+        """
+        return self.scope == "cluster" and not self.managed
 
 
 class DeliveryAdapter(ABC):
@@ -180,7 +181,8 @@ def desired_addons(
     ``Registry.is_managed_backend`` — the same callable the collector already
     takes, so the read and render paths answer "is this managed?" the same way
     instead of growing two answers. Omitted, no add-on is treated as managed,
-    which matches today's registry (no tenant declares one).
+    which is only right where the registry declares none — `globex/dev` declares one
+    since 2026-08-17.
     Sorting here means every adapter receives the same order regardless of the
     mapping order in YAML.
     """
@@ -189,15 +191,14 @@ def desired_addons(
         parts = declared.split()
         backend = parts[0] if parts else capability
         version = parts[-1] if len(parts) > 1 else None
-        if is_managed and is_managed(capability, backend):
-            raise ManagedBackendNotRenderable(
-                f"{tenant.name}/{env.name} declares {capability}={backend!r}, which the "
-                "catalog lists as a managed backend. A GitOps engine has nothing to "
-                "install for it — passing it through would make the engine chase a Helm "
-                f"chart named {backend!r} that the self-hosted repo does not publish. "
-                "The collector already reports managed backends as applicable=False; "
-                "what delivery should emit for one is a Phase 4 decision."
-            )
+        # Marked, not dropped and not an error. Until 2026-08-17 this raised
+        # `ManagedBackendNotRenderable`, because passing a managed backend through as
+        # a chart name would make the engine chase a chart the self-hosted repo does
+        # not publish — true, but it also left a tenant unable to declare one at all,
+        # which is Phase 4a's DoD ①②. The decision that was deferred: a managed
+        # backend expands into a record the adapters recognise and render *nothing*
+        # for, and the read model explains the absence (`from_managed`,
+        # `applicable=False`). No new manifest kind was invented for it.
         expanded.append(
             DesiredAddon(
                 tenant=tenant.name,
@@ -207,6 +208,7 @@ def desired_addons(
                 version=version,
                 wave=wave_of(capability),
                 namespace=tenant.namespace_for(env.name, capability),
+                managed=bool(is_managed and is_managed(capability, backend)),
                 scope=scope_of(capability) if scope_of else "namespace",
                 values=values_of(capability) if values_of else {},
             )

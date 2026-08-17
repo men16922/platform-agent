@@ -208,6 +208,47 @@ def _step_problems(steps: Any) -> list[str]:
     return problems
 
 
+def score_runbook(runbook: Any, *, namespace: str, text: str) -> int:
+    """
+    How well a runbook matches an incident: namespace hit +2, each keyword +1.
+
+    Lives here rather than in a provider because it is arithmetic over *this
+    contract's* fields — the same reason `fits_resource` moved. AWS has scored
+    since the registry existed; GCP and Azure took **the first entry whose
+    capabilities overlapped** and so reported one runbook for every Kubernetes
+    workload incident (`eks-pod-oom`, RTO 180) no matter what the incident was,
+    while AWS separated the same three (measured 2026-08-17). The keyword
+    vocabularies were already cloud-neutral on purpose — `catalog.py` says the
+    stems are chosen to appear "in kube-prometheus-stack names (KubePodNotReady)
+    and in probe failure text" — so the only thing missing was a reader.
+
+    ``namespace`` is matched by prefix because a synthetic alarm from a non-AWS
+    event is named ``PROVIDER/resource-type`` (`aws/detector.py::_synthetic_alarm`)
+    and will not match an ``AWS/*`` namespace at all. That is not a bug to paper
+    over here: those incidents score on keywords, which is what the vocabularies
+    are for.
+    """
+    if not isinstance(runbook, dict):
+        return 0
+    score = 0
+    if any(namespace.startswith(ns) for ns in runbook.get("namespaces", ())):
+        score += 2
+    lowered = text.lower()
+    score += sum(1 for kw in runbook.get("keywords", ()) if kw.lower() in lowered)
+    return score
+
+
+def match_text(namespace: str, metric_name: str, reason: str, root_cause: str) -> tuple[str, str]:
+    """The (namespace, text) pair `score_runbook` scores against.
+
+    One definition so the three providers cannot drift on *what* is scored while
+    agreeing on *how*. The fields are the alarm's own plus the analyzer's root
+    cause, which is where a probe failure or a latency spike is described in
+    words for every provider.
+    """
+    return namespace, f"{metric_name} {reason} {root_cause}"
+
+
 def is_valid_runbook(item: Any, *, require_alarm_name: bool = False) -> bool:
     """True when ``item`` satisfies the runbook contract."""
     return not validate_runbook(item, require_alarm_name=require_alarm_name)

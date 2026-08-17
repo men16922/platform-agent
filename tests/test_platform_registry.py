@@ -34,7 +34,6 @@ from src.agents.platform.adapters.flux import FluxDeliveryAdapter
 from src.agents.platform.delivery import (
     ClusterSingletonCapability,
     DeliveryAdapter,
-    ManagedBackendNotRenderable,
     desired_addons,
     reject_cluster_singletons,
 )
@@ -690,7 +689,7 @@ class TestTwoAxisStatus:
         assert payload["desired_version"] == "7.1.0"
 
 
-class TestManagedBackendsAreNotRenderable:
+class TestManagedBackendRendersNothing:
     """The three paths disagreed about managed backends; only delivery was wrong.
 
     The collector recognises them (`from_managed`, applicable=False) and
@@ -765,55 +764,74 @@ class TestManagedBackendsAreNotRenderable:
         with pytest.raises(ClusterSingletonCapability):
             ArgoCDDeliveryAdapter(repo_url="https://example.invalid").render(tenant, env, addons)
 
-    def test_a_managed_backend_is_refused_before_it_reaches_an_engine(self, registry):
-        tenant, env, _ = self._managed_env(registry)
-        with pytest.raises(ManagedBackendNotRenderable, match="managed backend"):
-            desired_addons(
-                tenant, env, registry.wave_for, registry.scope_of,
-                is_managed=registry.is_managed_backend,
-            )
+    def test_a_managed_backend_expands_into_a_record_marked_managed(self, registry):
+        """The Phase 4a decision, replacing the refusal that stood in for it.
 
-    def test_the_error_names_the_chart_that_does_not_exist(self, registry):
-        """An error that only says "no" gets worked around."""
+        This used to raise `ManagedBackendNotRenderable`. The reason was sound —
+        passing the backend through as a chart name makes the engine chase a chart
+        the self-hosted repo does not publish — but it also left a tenant unable to
+        declare a managed backend at all, which is DoD ①②. What was deferred is now
+        decided: expansion marks it, the adapters render nothing, and the read model
+        explains the absence (`from_managed`, `applicable=False`).
+        """
         tenant, env, managed = self._managed_env(registry)
-        with pytest.raises(ManagedBackendNotRenderable) as exc:
-            desired_addons(
-                tenant, env, registry.wave_for, registry.scope_of,
-                is_managed=registry.is_managed_backend,
-            )
-        assert managed in str(exc.value)
-        assert "applicable=False" in str(exc.value), "point at the path that IS right"
+        addons = desired_addons(
+            tenant, env, registry.wave_for, registry.scope_of,
+            is_managed=registry.is_managed_backend,
+        )
+        by_capability = {a.capability: a for a in addons}
+        assert by_capability[self.CAPABILITY].managed is True, (
+            f"{managed} expanded without `managed=True`, so the adapters cannot tell "
+            "it apart from a chart they must install"
+        )
+        assert by_capability[self.CAPABILITY].backend == managed
 
-    def test_a_cluster_scoped_managed_backend_says_the_right_no(self, registry):
-        """The case where **both** guards could fire — and which one must.
+    def test_the_declaration_is_not_dropped_from_the_expansion(self, registry):
+        """Dropping it in expansion would be the failure the old error prevented.
 
-        `observability` is cluster-scoped *and* has a managed backend, so a
-        declaration of it can trip either rule. The Phase 4 plan's correction box
-        recorded that the singleton guard won and gave advice that is wrong for a
-        managed backend: *"give the tenant an instance (a Prometheus CR…)"* —
-        there is nothing to install for AMP, so that sends the reader to build
-        something that cannot exist.
+        A silent drop makes a declared add-on vanish with no signal, which is
+        indistinguishable from delivery lag. It has to be *present* and *marked*.
+        """
+        tenant, env, _ = self._managed_env(registry)
+        addons = desired_addons(
+            tenant, env, registry.wave_for, registry.scope_of,
+            is_managed=registry.is_managed_backend,
+        )
+        assert self.CAPABILITY in {a.capability for a in addons}, (
+            "the managed capability disappeared during expansion"
+        )
 
-        Measured 2026-08-17: `ManagedBackendNotRenderable` now wins, because it is
-        raised while `desired_addons` expands and the singleton guard only sees
-        the expansion's output. So the recorded worry is **resolved** — but every
-        managed test above uses `logging`, which is *namespace*-scoped, so the
-        overlapping case was the one nobody asked about. Reordering the two checks
-        would restore the misleading message with all of them still green.
+    def test_a_cluster_scoped_managed_backend_is_not_a_singleton_problem(self, registry):
+        """The case where both rules could fire — and now neither should.
+
+        `observability` is cluster-scoped *and* managed, so a declaration of it used
+        to trip a guard either way. The singleton rule exists to stop two controllers
+        reconciling the same objects; nothing is installed for a managed backend, so
+        there is no second controller. That also retires the advice the Phase 4 plan's
+        correction box flagged as wrong: *"give the tenant an instance (a Prometheus
+        CR…)"* — for AMP that sends the reader to build something that cannot exist.
         """
         assert registry.scope_of("observability") == "cluster", "premise of this test"
         tenant, env, managed = self._managed_env(registry, capability="observability")
-
-        with pytest.raises(ManagedBackendNotRenderable) as exc:
-            desired_addons(
-                tenant, env, registry.wave_for, registry.scope_of,
-                is_managed=registry.is_managed_backend,
-            )
-        message = str(exc.value)
-        assert managed in message
-        assert "Prometheus CR" not in message, (
-            "a managed backend has nothing to install — advising an instance is "
-            "the wrong door, which is exactly what the singleton guard would say"
+        addons = desired_addons(
+            tenant, env, registry.wave_for, registry.scope_of,
+            is_managed=registry.is_managed_backend,
+        )
+        observability = next(a for a in addons if a.capability == "observability")
+        assert observability.managed is True
+        assert observability.is_cluster_singleton is False, (
+            f"{managed} is cluster-scoped and managed; treating it as a singleton "
+            "raises an error whose advice cannot be followed"
+        )
+        manifests = ArgoCDDeliveryAdapter(repo_url="https://example.invalid").render(
+            tenant, env, addons
+        )
+        # This env declares the managed capability and nothing else, so an empty
+        # render is the honest answer — not a swallowed error. The next test proves
+        # the same env still shows up in the read model, which is what keeps the
+        # emptiness distinguishable from delivery lag.
+        assert manifests == [], (
+            f"a managed backend must render no manifest — got {manifests}"
         )
 
     def test_self_hosted_backends_still_render(self, registry):

@@ -4,6 +4,35 @@
 
 ---
 
+## 2026-08-17 — 검증을 세운 그 커밋이 같은 결함을 한 문 옆에 남겼다 (gate 2251)
+
+- Status: 앞 증분(조건 검증)에 **ultrareview**를 돌렸다. 결함 하나(normal)와 죽은
+  참조 하나(nit)가 나왔고 **둘 다 성립했다**. 재현해서 확인하고 고쳤다.
+- Verified(**리뷰가 맞았다**): `steps: null`은 `_step_problems`가 **0 problems로 통과**
+  시키는데, GCP/Azure walk가 `runbook.get("steps", [])`로 읽는다 — **기본값은 키가
+  없을 때만** 쓰이므로 저장된 `None`이 그대로 나오고 `for step in None`이 **TypeError**.
+  ⚠️**내가 "막겠다"고 주석에 적어 둔 바로 그 500을, 그 주석을 쓴 커밋이 만들었다.**
+- Verified(**리뷰보다 넓었다 — 형제를 다시 셌다**): `steps`를 읽는 자리는 넷이고
+  **AWS만 `or []`로 None-safe**였다 = **읽는 쪽의 provider 간 비대칭**(이 레포가 정한
+  "진짜 결함" 기준). 리뷰가 지적한 둘 외에 **`CapabilityRunbook.from_dict`도 같이
+  터진다**(실측). 넷째(`executor.py`)는 생산자가 `default_factory=list`라 도달 불가지만
+  **홀수를 남기지 않으려고** 같이 고쳤다.
+- Changed: 넷 다 `get("steps") or []` · `schema.py` 계약 도크스트링에 **null 허용**을
+  명시(에러 메시지는 "list or null"인데 도크스트링은 `list[dict]`이라 **두 출처가
+  달랐다**) · nit: `CONDITION_KEYS` 주석이 **없는 파일**을 가리키고 있었다(드리프트
+  가드는 `test_store_runbook_validation.py` 안에 있다) → 실제 이름으로 고쳤다.
+- Changed(가드 +4, `test_steps_reads_are_none_safe.py` 신규): 행동 셋(GCP·Azure 라이브
+  경로 + `from_dict`) + **구조 하나** — `src` 추적 파일을 AST로 훑어 `get("steps", …)`
+  형태를 금지한다. ⚠️**`glob`로 짰다가 터졌다**: `src/stacks/node_modules/`의 CDK 템플릿
+  6개가 `%name.PascalCased%` 때문에 파싱 불가다 — 조용히 건너뛰면 진짜 reader를 놓치니
+  **`git ls-files`로 스캔 면을 좁혔다**(레포가 이미 쓰는 방식).
+- Verified(**변이 5종, 전부 red**): 네 고침을 하나씩 되돌리면 red(R1~R3는 2건씩,
+  R4는 구조 가드만 — 그 경로에 행동 테스트가 없는 게 정직하다) · ⚠️**공허 통과 방지로
+  위반을 일부러 심었더니**(R5) red = 스캔이 정말 파일을 열어 본다.
+  `make check` **2251 passed, 2 skipped**(로컬 macOS·py3.13).
+- Blockers: PR #42는 **병합 권한이 막혀** 열려 있다.
+- Next: 08-19 이후 AMP 실제 청구액 대조.
+
 ## 2026-08-17 — 계약을 읽는 쪽만 고쳤더니, 쓰는 쪽이 아무것도 안 물었다 (gate 2247)
 
 - Status: 직전 증분이 남긴 기준(**"조건은 계약이다"**)으로 **쓰는 쪽**을 물었다.

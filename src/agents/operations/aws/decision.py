@@ -33,7 +33,14 @@ from src.agents.models import (
     Severity,
 )
 from src.agents.runbooks.catalog import BUILTIN_RUNBOOKS, CAPABILITY_RUNBOOKS
-from src.agents.runbooks.schema import fits_resource, is_destructive_action, normalise_runbook, validate_runbook
+from src.agents.runbooks.schema import (
+    fits_resource,
+    is_destructive_action,
+    match_text,
+    normalise_runbook,
+    score_runbook,
+    validate_runbook,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -256,7 +263,12 @@ def _match_runbook_registry(
     was dead the moment the table was seeded. Measured, not theorised: a live
     scan of `incident-runbooks` returns exactly the five originally-seeded ids.
     """
-    text = f"{alarm.metric_name} {alarm.reason} {root_cause}".lower()
+    # Scoring itself moved to `runbooks/schema.py` so GCP and Azure could read the
+    # same arithmetic instead of taking the first capability overlap. Identical
+    # behaviour here: same fields, same weights, same "first entry keeps a tie".
+    namespace, text = match_text(
+        alarm.namespace, alarm.metric_name, alarm.reason, root_cause
+    )
 
     best_score = 0
     best_rb: dict[str, Any] | None = None
@@ -268,10 +280,7 @@ def _match_runbook_registry(
             continue
         if not _fits_resource(rb, resource_type):
             continue
-        score = 0
-        if any(alarm.namespace.startswith(ns) for ns in rb.get("namespaces", [])):
-            score += 2
-        score += sum(1 for kw in rb.get("keywords", []) if kw.lower() in text)
+        score = score_runbook(rb, namespace=namespace, text=text)
         if score > best_score:
             best_score = score
             best_rb = rb

@@ -28,8 +28,14 @@ from src.agents.models import (
 )
 from src.agents.ai.reconciliation import apply_gate, reconcile
 from src.agents.runbooks.capability_schema import evaluate_condition
-from src.agents.runbooks.catalog import BUILTIN_RUNBOOKS
-from src.agents.runbooks.schema import fits_resource, is_destructive_action, validate_runbook
+from src.agents.runbooks.catalog import BUILTIN_RUNBOOKS, CAPABILITY_RUNBOOKS
+from src.agents.runbooks.schema import (
+    fits_resource,
+    is_destructive_action,
+    match_text,
+    score_runbook,
+    validate_runbook,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -138,6 +144,7 @@ def _select_runbook(analyzer: AnalyzerOutput) -> tuple[str, list[str], int | Non
     # 2. Capability-based catalog scan
     if normalized and normalized.recommended_capabilities:
         recommended = set(normalized.recommended_capabilities)
+        candidates: list[tuple[str, dict[str, Any]]] = []
         for rb_id, rb in BUILTIN_RUNBOOKS.items():
             # `validate_runbook` returns the list of problems — empty means valid.
             # Skip on problems; the inverted form skipped every valid runbook and
@@ -157,13 +164,53 @@ def _select_runbook(analyzer: AnalyzerOutput) -> tuple[str, list[str], int | Non
             if not fits_resource(rb, normalized.resource_type):
                 continue
             if set(rb.get("capabilities", ())) & recommended:
-                actions = _resolve_actions_from_capabilities(
-                    normalized.recommended_capabilities, normalized
-                )
-                # First entry wins on overlap, as in the AWS catalog: `catalog.py`
-                # documents that later entries are appended so they cannot steal a
-                # selection an earlier one already made.
-                return rb_id, actions, rb.get("rto_sec")
+                candidates.append((rb_id, rb))
+
+        if candidates:
+            # Best score wins; the first entry keeps a tie, which is what makes
+            # `catalog.py`'s "append, never insert" convention hold here too.
+            #
+            # Until 2026-08-17 this returned the *first* overlap and stopped. The
+            # recommendation set for a Kubernetes workload overlaps three entries
+            # at once, so every such incident was reported as `eks-pod-oom` with
+            # its 180s RTO — a readiness-probe failure included, whose runbook
+            # declares 240. AWS scored the same three correctly all along; the
+            # keyword vocabularies in `catalog.py` are deliberately cloud-neutral
+            # ("stems that appear in kube-prometheus-stack names ... and in probe
+            # failure text"), so what was missing was a reader, not data.
+            #
+            namespace, text = match_text(
+                analyzer.detector.alarm.namespace,
+                analyzer.detector.alarm.metric_name,
+                analyzer.detector.alarm.reason,
+                analyzer.root_cause,
+            )
+            best_id, best_rb = max(
+                candidates,
+                key=lambda pair: score_runbook(pair[1], namespace=namespace, text=text),
+            )
+            # The winner's steps are the plan, exactly as tier 1 above does it — the
+            # built-in entry carries no `steps`, so they come from the capability
+            # catalog by id, which is how AWS resolves the same tier.
+            #
+            # ⚠️ This tier used to resolve `recommended_capabilities` directly, with
+            # **no condition evaluation at all**, while tier 1 of this same module
+            # evaluated them and excluded escalation steps. Same provider, two entry
+            # points, opposite semantics (M21's shape). The consequence was concrete:
+            # `scale_database_read` and `rebalance_consumer` appear in the catalog
+            # *only* behind `previous_step_failed: true`, and both are recommended for
+            # their resource types — so the escalation remedy ran as the first
+            # response here, and only here. AWS and on-prem never resolve actions
+            # from recommendations, which is why the same lists are harmless there.
+            #
+            # Falls back to the flat capability path when the winner declares no
+            # steps, so a runbook that predates the step schema behaves as before.
+            actions = _resolve_actions_from_runbook(
+                CAPABILITY_RUNBOOKS.get(best_id, {}), normalized, analyzer.severity
+            ) or _resolve_actions_from_capabilities(
+                normalized.recommended_capabilities, normalized
+            )
+            return best_id, actions, best_rb.get("rto_sec")
 
     # 3. Generic fallback
     actions = _resolve_actions_from_capabilities(
