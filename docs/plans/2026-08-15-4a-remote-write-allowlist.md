@@ -163,3 +163,51 @@ AMP 전용은 없고, 현재 신원 `q-user`는 **EC2 종료·워크스페이스
 3. **보류** — 워크스페이스는 무과금이라 그대로 둬도 되고, 필요 없으면 지우면 된다.
 
 ⇒ **4a는 여기서 멈춰 있다.** DoD(*"로컬에서 remote_write 성공"*)는 이 결정 없이는 못 넘는다.
+
+## 9. 착수 완료 (2026-08-17) — DoD 달성
+
+§8의 막힌 곳을 **선택지 1(전용 IAM 신원)**으로 풀었다.
+
+**자격증명** — IAM 사용자 `amp-remote-write-4a`. 인라인 정책이 **전부**다:
+
+    Action:   aps:RemoteWrite        (하나)
+    Resource: …workspace/ws-929b8da9-…  (하나)
+
+키는 k8s Secret `monitoring/amp-remote-write`로만 존재한다 — **git에 없고 로컬 파일에도
+안 썼다**. 차트는 값이 아니라 **Secret 이름을 참조**한다(`sigv4.accessKey.name`).
+⚠️**장기 액세스 키가 하나 늘었다**는 대가는 그대로다. 4a를 접으면 **사용자·키·워크스페이스
+셋 다 지울 것**.
+
+**적용** — `helm upgrade monitoring … -f values` (릴리스 revision 5). 적용 전에
+`helm template`으로 **두 키가 실제로 읽히는지 확인**했다(Risk 8: values는 에러가 아니라
+*안 읽히는 방식*으로 실패한다):
+
+    Prometheus CR      remoteWrite[0].url + sigv4.secretKey + writeRelabelConfigs  ✅
+    ServiceMonitor     monitoring-kube-state-metrics  interval=60s                 ✅
+
+그리고 `helm get values`로 **릴리스가 이 파일 밖의 값으로 설치되지 않았음**을 먼저 확인했다
+(밖의 값이 있었다면 `-f`만으로 업그레이드하면 조용히 떨어진다).
+
+**측정 — 파이프**
+
+    samples_total    319       실제 전송
+    samples_failed     0       ← sigv4 인증 성공
+    samples_retried    0
+    samples_dropped 69,076     ← 허용목록이 걸러낸 것 (99.5%)
+
+**측정 — AMP 쪽 조회(진짜 DoD)**. SigV4로 서명해 워크스페이스에 직접 물었다:
+
+    up                                           22   (§2의 22)
+    kube_pod_container_status_restarts_total     50   (§2의 50)
+    kube_pod_status_phase                       220   (§2의 220)
+    kube_deployment_status_replicas_unavailable  16   (§2의 16)
+                                          합계  308
+
+**§2의 표와 네 칸 모두 일치한다.** 파이프가 살아 있고, 허용목록이 정확히 의도한 것만
+통과시킨다. ⚠️`{__name__=~".+"}` 형태의 전체 매칭 질의는 AMP가 **403**으로 거부한다 —
+같은 자격증명으로 위 넷은 통과하므로 인증이 아니라 질의 형태의 문제다.
+
+**⛔ 아직 안 잰 것 — 실제 청구액.** 위 금액은 전부 산수다. CE는 **이틀 이상 지연**되므로
+(Risk 4) **2026-08-19 이후** `make spend-check`와 `aws ce get-cost-and-usage`(⚠️크레딧
+제외 필터 필수)로 **AMP 라인 아이템이 예상($1.42/월 = 일 ~$0.047)과 맞는지** 대조해야
+4a가 닫힌다. 그 전까지 이 문서의 비용은 **가정이지 측정이 아니다**.
