@@ -6,6 +6,37 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-17 — ⓒ: 앞쪽은 맞았고 "테스트가 고정했다"가 틀렸다 (gate 2269)
+
+- Status: 마지막 미측정 항목 **ⓒ**(*"티어 2는 첫 매치가 이긴다(AWS는 점수제) — 테스트가
+  고정했으니 우연이 아니라 결정이다"*). **앞쪽은 정확하고 뒤쪽이 틀렸다.**
+- Verified(**기존 가드가 생산 경로를 한 번도 안 물었다**): `test_capability_catalog_scan`의
+  케이스는 **후보를 유일하게 가리는 capability 집합을 손으로 골랐다**(`["rollback_release"]` →
+  health-check-failure, `["drain_node"]` → network-latency-high). ⚠️**어떤 signal 어댑터도
+  그런 집합을 안 낸다** — `kubernetes-workload`엔 전부 `restart_workload`+`scale_out`을 내고
+  그건 **후보 셋과 동시에 겹친다.** 즉 **첫-매치 구현과 점수제 구현이 답이 같은 경우만
+  태웠다**(Risk 12⑤). 게다가 `["rollback_release"]`는 **그 세 provider가 추천하지 않는 값**이다
+  (오늘 M35에서 측정) — 생산에서 도달 불가한 입력으로 통과하고 있었다.
+- Verified(**실제 집합으로 물은 결과**): GCP/Azure는 OOM·health-check·latency **셋 다**
+  `eks-pod-oom`/**rto 180**을 보고한다. AWS는 namespace(+2)·keyword(+1) 점수로 **셋을
+  구분한다** — health-check는 `health-check-failure`/**rto 240**. 액션은 추천에서 오므로
+  같지만 **운영자에게 보고되는 runbook_id·rto_sec이 다르다**(M22 계열: 사람에게 틀린 걸 보여준다).
+- Verified(**catalog 규약의 안전 속성이 provider마다 다르다**): *"appending은 선택을 못
+  바꾼다"*는 주석은 **AWS 점수 동점 규칙**에 대한 것이다. GCP/Azure는 점수가 없어 **순서가 곧
+  알고리즘**이라, 앞에 끼운 런북이 **모든 선택을 훔친다**(실측: `thief`/rto 9999). 주석에
+  provider 범위를 적고 가드로 집행했다.
+- Changed: `catalog.py` 주석에 **AWS-scoped임과 "append, never insert"**를 명시. `src` 동작
+  변경은 **0** — 판별 수단을 줄지는 **설계 결정**이라 손대지 않았다(`NEXT_PLAN` ⓒ).
+- Changed(가드 +12, `test_tier2_selection_is_ordered_not_scored.py` 신규): 입력을 **어댑터에서
+  직접 읽어** 픽스처가 생산과 어긋날 수 없게 했다 · 전제(후보>1)를 먼저 묻는다 · GCP/Azure ×
+  세 인시던트 · AWS가 셋을 구분함 · **앞에 끼우면 훔치고 뒤에 붙이면 안 훔친다.**
+- Verified(**변이 4종 전부 red**): 첫→마지막 매치(9건) · overlap 게이트 제거(6건) · 추천 집합
+  축소로 모호성 제거(4건) · **AWS namespace 점수 죽이기(1건)**. ⚠️**마지막이 1건인 게 요지다** —
+  AWS 점수제가 셋을 구분한다는 사실을 잡는 건 **오늘 만든 가드 하나뿐**이었다.
+  `make check` **2269 passed, 2 skipped**(로컬 macOS·py3.13).
+- Blockers: 없음. ⛔설계 결정 하나가 열렸다(GCP/Azure 판별 수단) + M35의 `rollback_release` 정책.
+- Next: 08-19 이후 AMP 청구액 대조.
+
 ## 2026-08-17 — ⓐ를 시험하니 답은 "현행 유지"였고, 스윕이 결함 넷을 냈다 (gate 2257)
 
 - Status: 무과금 목록에 남은 **capability 스캔 ⓐ·ⓒ**. 규율대로 **기록된 이유부터 시험**했다.
@@ -62,34 +93,4 @@
   위반을 일부러 심었더니**(R5) red = 스캔이 정말 파일을 열어 본다.
   `make check` **2251 passed, 2 skipped**(로컬 macOS·py3.13).
 - Blockers: PR #42는 **병합 권한이 막혀** 열려 있다.
-- Next: 08-19 이후 AMP 실제 청구액 대조.
-
-## 2026-08-17 — 계약을 읽는 쪽만 고쳤더니, 쓰는 쪽이 아무것도 안 물었다 (gate 2247)
-
-- Status: 직전 증분이 남긴 기준(**"조건은 계약이다"**)으로 **쓰는 쪽**을 물었다.
-  `validate_runbook`은 최상위 필드를 전부 검증하는데 **`steps` 안은 아예 안 본다** —
-  즉 M28이 "변조될 수 있는 쪽"(운영자 스토어=티어 1)을 검증하게 만든 건 껍데기였고,
-  조건이 사는 곳은 무검증으로 walk에 넘어갔다.
-- Verified(**측정**): 오타 조건 키 `previous_step_fail`은 **검증 0 problems + 평가 True**
-  = 에스컬레이션 스텝(`rollback_release`)이 **모든 인시던트에서 실행**된다. 08-16에 고친
-  그 결함을 **반대쪽 문**으로 다시 만든다(그때는 조건을 안 읽어서, 이번엔 **아무 뜻도 없는
-  조건을 읽어서**). 비-dict 조건은 walk의 try **밖에서** TypeError → 티어 1 주석이
-  *"막겠다"*고 적어 둔 바로 그 500. `severity_in: "P12"`는 **부분문자열 매칭**이 되어
-  P1 인시던트가 통과한다.
-- Verified(⚠️**엄격한 스텝 검증기는 이미 있었다 — 테스트만 부른다**):
-  `capability_schema.validate_capability_runbook`은 `src/`에서 **호출처 0**. 검증기가 둘이고
-  **실제 경로가 쓰는 건 느슨한 쪽**이었다.
-- Changed: 조건 절을 **공유 계약 모듈**(`schema.py::_step_problems`)에 한 벌 넣었다 —
-  세 provider가 다 읽는 곳이다. 키 집합 `CONDITION_KEYS`는 **읽는 쪽 옆**에 두고
-  validator가 임포트한다(복제 금지). 거절은 M28의 기존 선택대로 **런북 단위**(휴리스틱 폴백).
-- Changed(가드 +23): `MALFORMED`를 넓히니 **세 provider 전부**가 이미 있는 형제 기계로
-  자동 커버된다 · **잘 형성된 조건 4형식은 여전히 따라가야 한다**(과잉 엄격이 티어 1을
-  닫는 방향 — `require_alarm_name` 함정의 한 층 아래) · `CONDITION_KEYS`와 평가기를
-  **AST로 대조**해 드리프트를 막는다.
-- Verified(**변이 7종, 전부 red**): 절마다 하나씩 · 과잉 엄격(조건 전면 금지) **12건 죽음** ·
-  드리프트(평가기에 넷째 형식) **5건 죽음**. ⚠️**`steps` 타입 절은 처음엔 생존했다** —
-  픽스처를 `"restart"`로 잡았는데 **문자열은 순회가 되어** 절이 없어도 거절됐다(Risk 12⑤).
-  **정수 5**로 바꾸니 절 없이는 **검증기가 TypeError로 터진다**("never raises" 위반) → red.
-  `make check` **2247 passed, 2 skipped**(로컬 macOS·py3.13), 건드린 3파일 ruff 깨끗.
-- Blockers: 없음. ⚠️PR #42는 **병합 권한이 막혀** 열려 있다.
 - Next: 08-19 이후 AMP 실제 청구액 대조.

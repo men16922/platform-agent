@@ -5,7 +5,7 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(**M15=공급망 0→집행 + Phase 5 경계 +
 > `main` 보호**, M14=결정 6건, M13=미소비 14건) / `PROGRESS_LOG.md`(+`docs/archive/`). **≤120줄**.
 
-## 현재 상태 (2026-08-17, gate 2257 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
+## 현재 상태 (2026-08-17, gate 2269 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
 
 **Phase 0·1a·1b·2·3 완결**(M10~M12) + **잔여 소진**(M13) + **결정 7건 닫힘**(D36·D38~D43).
 **공급망은 닫을 수 있는 만큼 닫혔다**(어드미션만 업스트림 대기) · **`main`은 보호된다**
@@ -68,7 +68,7 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
 - [ ] **capability 스캔 ⓐ는 측정으로 닫혔다(08-17, M35). 남은 건 ⓒ와 새 정책 하나.**
   ⓐ**현행 유지**: 티어 2(GCP/Azure)는 액션을 steps가 아니라 **`recommended_capabilities`에서** 만들고 `capabilities`는 **매치 게이트일 뿐** — `scale_out_workers`가 이미 겹쳐 **더해도 관측 변화 0**, **빼면 네 provider가 다 resolve하는 스텝을 잃는다**(대칭이 아니다).
   ⛔**새 정책 = `kubernetes-workload`의 `rollback_release`**: **onprem만 추천**, 나머지 셋은 **구현했는데 추천 안 한다**(1대3, **소수가 갖고 있다**) — 롤백은 재시작보다 파괴적이라 사람이 정한다. `test_signal_capability_parity.py::JUSTIFIED_GAPS`가 들고 **어긋나면 red**.
-  ⓒ**티어 2는 첫 매치가 이긴다**(AWS는 점수제) — 테스트가 고정했으니 **결정이다**. **미측정.**
+  ⓒ**측정했다(08-17, M36) — 앞쪽은 맞고 "테스트가 고정했다"가 틀렸다**: 기존 가드는 **후보를 유일하게 가리는 capability 집합을 손으로 골라** 물었고(`["rollback_release"]` 등) **어떤 signal 어댑터도 그런 집합을 안 낸다**(Risk 12⑤). 실제 집합으로 물으면 `kubernetes-workload` 후보가 **셋**인데 GCP/Azure는 인시던트 종류와 무관하게 늘 **`eks-pod-oom`/rto 180**을 보고한다 — AWS는 namespace+keyword 점수로 **셋을 구분한다**(health-check는 rto **240**). ⛔**남은 설계 결정: GCP/Azure에 판별 수단을 줄지**(`gcp._capabilities`는 이미 `signal_type`을 받는다). 액션은 추천에서 오므로 **바뀌는 건 운영자에게 보고되는 runbook_id·rto_sec**이다. 현행은 `test_tier2_selection_is_ordered_not_scored.py`가 **고정**하고, catalog 순서를 바꾸면 red.
 - [ ] **`cost_metrics` — 의도적으로 남김**: `deployment_id`가 없어 렌더하는 뷰에 안 닿는다(08-08).
 - [ ] **⚠️`pip install .[azure]`가 안 된다(08-15 실측)** — `agent-framework>=1.0` 단독 **150초
   타임아웃**(`core[all]`만 요구 → pip 무한 역추적). **더 나가**: `msft_deployer.py:19`의
