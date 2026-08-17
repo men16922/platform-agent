@@ -30,6 +30,12 @@ step-walking executor only AWS has (see
 `docs/evidence/azure-executor-reports-resolved-without-executing.log`). These
 tests pin the initial-context semantics deliberately, so a future step-walking
 executor has to change them on purpose.
+
+⚠️ **All three forms are asked here, because this docstring names all three.**
+Until 2026-08-17 it named three and pinned two: `provider` was covered only as a
+pure function over a hand-built context, and deleting the key from the real
+context dict left the suite green in all three walks. Prose being true is not
+the same as the guard's reach (M20).
 """
 
 from __future__ import annotations
@@ -153,6 +159,46 @@ def test_severity_in_is_honoured(provider, severity, should_run):
     assert bool(actions) is should_run, (
         f"{provider} with severity {severity.value} and a step gated on "
         f"['P1'] produced {actions}"
+    )
+
+
+@pytest.mark.parametrize("provider", sorted(STORE_LOOKUPS))
+@pytest.mark.parametrize(
+    "gate_on_own,should_run",
+    [(True, True), (False, False)],
+    ids=["own-provider-runs", "other-provider-skipped"],
+)
+def test_the_provider_form_is_honoured(provider, gate_on_own, should_run):
+    """The third documented form — the one this file named and did not ask.
+
+    Measured 2026-08-17 by mutation: deleting ``"provider": normalized.provider``
+    from the context dict in **all three** walks left the suite fully green
+    (2218 passed), while deleting ``"severity"`` from the same two dicts turned
+    it red. So the contract had three forms, the walks were asked about two, and
+    the third was pinned only as a pure function over a hand-built context
+    (`test_capability_runbook.py::test_provider_match`) — Risk 12④ⓒ, a guard
+    that asks half of what it covers, under a docstring that enumerates all of it.
+
+    ``own-provider-runs`` is the direction that carries the load. Dropping the
+    key makes ``context.get("provider")`` None, which matches no declared
+    provider, so every provider-gated step is skipped **forever and silently**;
+    the ``other-provider-skipped`` case agrees with that broken implementation
+    and would stay green on its own (Risk 12⑤).
+    """
+    gated_on = provider if gate_on_own else "aws"
+    step = {
+        "name": "provider-gated",
+        "capability": "restart_workload",
+        "condition": {"provider": gated_on},
+    }
+    module = _decision(provider)
+    with mock.patch(STORE_LOOKUPS[provider], return_value=_runbook(step)):
+        _id, actions, _rto = module._select_runbook(_analyzer(provider))
+
+    assert bool(actions) is should_run, (
+        f"a {provider} incident met a step gated on `provider: {gated_on}` "
+        f"and produced {actions} — the condition context is not reading the "
+        "incident's own provider"
     )
 
 

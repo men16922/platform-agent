@@ -22,13 +22,19 @@ from src.agents.models import (
     AnalyzerOutput,
     DecisionOutput,
     DetectorOutput,
+    NormalizedIncident,
     RemediationMode,
     Severity,
 )
 from src.agents.operations.aws import executor as handler
 
 
-def _decision(steps: list[dict], *, severity: Severity = Severity.P1) -> DecisionOutput:
+def _decision(
+    steps: list[dict],
+    *,
+    severity: Severity = Severity.P1,
+    provider: str | None = None,
+) -> DecisionOutput:
     alarm = AlarmContext(
         alarm_name="checkout-5xx",
         alarm_arn="arn:aws:cloudwatch:us-east-1:111122223333:alarm:checkout-5xx",
@@ -37,8 +43,21 @@ def _decision(steps: list[dict], *, severity: Severity = Severity.P1) -> Decisio
         metric_name="HTTPCode_Target_5XX_Count",
         namespace="AWS/ApplicationELB",
     )
+    # Without a normalized incident the walk falls back to `provider = "aws"`, which
+    # is why the provider axis needs an incident that says something else.
+    normalized = None
+    if provider is not None:
+        normalized = NormalizedIncident(
+            provider=provider,
+            service="checkout-api",
+            resource_type="kubernetes-workload",
+            resource_id="deploy/api",
+            signal_type="reliability",
+            recommended_capabilities=["restart_workload"],
+            source_metadata={"alarm_name": alarm.alarm_name},
+        )
     analyzer = AnalyzerOutput(
-        detector=DetectorOutput(alarm=alarm),
+        detector=DetectorOutput(alarm=alarm, normalized_incident=normalized),
         root_cause="elevated 5xx",
         severity=severity,
         confidence=0.9,
@@ -160,6 +179,53 @@ class TestConditions:
             "context is not reading the incident's own severity"
         )
         assert skipped == []
+
+    def test_the_provider_in_the_context_is_the_incident_s_own(self):
+        """The third documented condition form, asked the same way as severity above.
+
+        `evaluate_condition` documents three forms; this walk was pinned on two.
+        Measured 2026-08-17 by mutation: deleting `"provider": provider` from the
+        context dict here left the whole suite green (2218 passed), as it did in
+        the GCP and Azure walks — the form was covered only as a pure function
+        over a hand-built context.
+
+        A gcp incident meeting a step gated on `provider: gcp` must run. Dropping
+        the key makes `context.get("provider")` None, which matches no declared
+        provider, so a provider-gated step is skipped silently and forever;
+        hardcoding it to `"aws"` does the same to every non-AWS incident — and
+        this executor does dispatch those (`_run_external_action`).
+        """
+        decision = _decision(
+            [_step("a", "Doc-A", condition={"provider": "gcp"})],
+            provider="gcp",
+        )
+        external = mock.MagicMock()
+        with mock.patch.object(handler, "_SSM", mock.MagicMock()), \
+             mock.patch.object(handler, "_run_external_action", external), \
+             mock.patch.object(handler, "_resolve_incident_scope", mock.MagicMock(return_value=None)):
+            executed, skipped, _v, _na = handler._run_ssm_actions(decision, mock.MagicMock())
+
+        assert executed == ["Doc-A"], (
+            "a gcp incident did not satisfy `provider: gcp` — the condition "
+            "context is not reading the incident's own provider"
+        )
+        assert skipped == []
+        assert external.call_count == 1, "a non-AWS provider must dispatch externally"
+
+    def test_a_step_gated_on_another_provider_is_skipped(self):
+        """The negative direction. On its own it agrees with the broken
+        implementation above (a missing key also skips), so it is the pair —
+        not this case — that carries the load (Risk 12⑤)."""
+        decision = _decision(
+            [_step("a", "Doc-A", condition={"provider": "azure"})],
+            provider="gcp",
+        )
+        with mock.patch.object(handler, "_SSM", mock.MagicMock()), \
+             mock.patch.object(handler, "_run_external_action", mock.MagicMock()), \
+             mock.patch.object(handler, "_resolve_incident_scope", mock.MagicMock(return_value=None)):
+            executed, skipped, _v, _na = handler._run_ssm_actions(decision, mock.MagicMock())
+        assert executed == []
+        assert skipped == ["Doc-A"]
 
 
 class TestOnFailure:

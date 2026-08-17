@@ -4,6 +4,30 @@
 
 ---
 
+## 2026-08-16 — CI가 미선언 의존성을 인라인으로 떠받치고 있었다 (gate 2085)
+
+- Status: 내가 `azure` extra에 패키지를 더했는데 **그 extra는 해석이 안 된다**. CI가 그걸
+  설치하면 내가 CI를 깬 것이라 확인했다 — **안 깼다**(CI는 `.[dev,state,observability]`만).
+  ⚠️**대신 M25가 확증됐다**: 그 줄이 `fastapi "uvicorn[standard]"`를 **명령줄에 직접** 적고
+  있었다. **선언이 없어서** 누군가 CI에 손으로 적은 것 — 게이트는 초록인데
+  `pip install .`은 그걸 안 준다.
+- Changed: CI가 `serving` extra를 **이름으로 요구**하도록 정리(`.[dev,state,observability,serving]`).
+  ⚠️**설치 집합은 바꾸지 않았다** — `serving`을 `uvicorn[standard]`로 맞췄다.
+- Verified(⚠️**내 근거가 도구에 안 맞았다**): 처음엔 *"코드가 `uvloop`를 임포트 안 하니
+  `[standard]`는 불필요"*로 평범한 `uvicorn`을 선언했다. **틀린 추론이다** — 그건 **uvicorn이
+  내부에서 쓰는 것**이지 우리 코드가 임포트하는 게 아니라, `src/` grep으로는 답할 수 없다.
+  게다가 **CI를 여기서 돌려 볼 수단이 없다**. ⇒ **한 번에 하나만 바꾼다**: 우회는 제거하되
+  러너에 떨어지는 패키지는 그대로.
+- Verified(가드 +4, `test_optional_dependencies_declared.py` 확장): CI가 `serving`을 요구하는가 ·
+  **선언된 패키지를 인라인으로 적지 않는가**(`.[...]` 안의 이름은 오탐 제외) ·
+  **문서화된 예외**(`pydantic-ai-slim`은 `onprem`이 Apple 전용 mlx-lm을 끌어 고의 인라인)의
+  **이유가 파일에 남아 있는가**. 변이: CI를 옛 방식으로 되돌리면 **3 failed**, 복구하면 23 passed.
+  `.[serving]`·CI 조합 둘 다 dry-run 해석 OK. `make check` **2085**, 로컬 macOS·py3.13.
+- Blockers: 없음.
+- Next: ⚠️**CI 변경을 검증하지 못했다** — 여기서 워크플로를 돌릴 수 없고 `main`은 D43으로
+  push가 막혀 있다. 근거는 "설치 집합 무변경"뿐이고, 틀렸다면 되돌리기는 한 줄이다.
+  **이건 측정이 아니라 논증이다.**
+
 ## 2026-08-16 — Qwen3.8-27B로 바꿀 만한가: 쟀다. 아니다 (첫 측정은 무효였다)
 
 - Status: 사용자가 전한 요약에 *"27B가 Opus 4.6급"*이 있었는데 원문 대조에서 **비교 대상은

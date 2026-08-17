@@ -6,6 +6,35 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-17 — 계약이 세 형식인데 walk는 둘만 물었다 (gate 2224)
+
+- Status: 열린 항목 **"런북 walk ②(`severity` 축)"**를 시험했다. **닫혔다 — 두 겹으로.**
+  ①`severity` 축 자체는 **M33이 08-16에 닫았다**(가드가 GCP·Azure·AWS 셋 다 있고 양방향).
+  ②e2e walk가 `severity="P2"`로 고정인 건 **결함이 아니라 범위**다: 카탈로그 9런북 16스텝을
+  세어 보니 **조건 키는 `previous_step_failed` 하나뿐**(6스텝) — 08-12의 *"없는 문제에 대한
+  가드는 하중을 못 받는다"*는 **아직 참**이다.
+- Verified(**닫으러 갔다가 옆에서 나왔다**): `evaluate_condition`이 문서화한 형식은 **셋**
+  (`previous_step_failed`·`severity_in`·`provider`)인데 walk 자리에서 물어진 건 **둘**이었다.
+  `provider`는 **순수함수 단위 테스트**(직접 만든 컨텍스트)에만 있었다 — Risk 12④ⓒ.
+  ⚠️**`test_step_condition_is_read.py`의 도크스트링이 세 형식을 정확히 열거하면서 둘만 물었다**
+  — M20과 같은 모양(**산문이 참이어도 물은 것이 범위다**).
+- Verified(**변이 8종, 전부 red · 기준선 먼저**): 대조군으로 세 컨텍스트 dict에서
+  `"severity"`를 지우면 red(하네스가 맞는 dict를 겨냥했다는 증거) · **`"provider"`를 지우면
+  세 walk 전부 GREEN 생존**(=가드 없음, 2218 그대로) → 가드 추가 후 **지우기 셋·`"aws"`로
+  굳히기 셋 = 여섯 전부 red**. `-x` 없이 다시 재니 **정확히 1건**이 죽고 이름은
+  `test_the_provider_form_is_honoured[own-provider-runs-gcp]` — **예측대로 하중은 양성 방향
+  하나가 진다**(음성 방향은 깨진 구현과 답이 같아 혼자서는 살아남는다, Risk 12⑤).
+  ⚠️변이·실행·복구를 한 스크립트에 두고 **복구는 git이 아니라 디스크 백업**으로 했다.
+- Changed(가드 +6, `src/` **무변경**): `test_step_condition_is_read.py`에 provider 형식을
+  GCP·Azure × 양방향으로(+4) · `test_executor_capability_steps.py`에 **gcp 인시던트가
+  `provider: gcp` 스텝을 만족하는지**(+2 — AWS walk는 `normalized_incident`가 없으면
+  `"aws"`로 폴백하므로 **인시던트 자신의 provider를 읽는지**를 물어야 하중을 받는다).
+- Verified: `make check` **2224 passed, 2 skipped**(로컬 macOS·py3.13) · 두 파일 ruff 깨끗.
+  ⚠️**게이트 숫자 가드가 먼저 red를 냈다** — `test_gate_number_claims`가 진입점 셋의 숫자
+  일치까지 묻는다. 셋을 같은 커밋에서 고쳤다(**이 가드가 제 일을 했다**).
+- Blockers: 없음.
+- Next: 08-19 이후 AMP 실제 청구액 대조(4a를 닫는 유일한 남은 측정).
+
 ## 2026-08-17 — 4a가 라이브가 됐다: AMP가 계획서의 네 숫자를 그대로 돌려준다 (gate 2218)
 
 - Status: 승인 셋(메트릭 4종·60초·리전)을 받아 4a에 착수. **DoD 네 단계 중 ③(remote_write
@@ -79,28 +108,3 @@
   커밋했다.** ⇒ **문서 치환은 앵커를 assert할 것**(오늘 코드 쪽에선 계속 그렇게 했으면서
   문서 쪽에선 안 했다). 남은 항목은 전부 외부 입력 대기 — Phase 4 승인 셋 · `.[azure]`
   업스트림 · **CI 검증(push 필요, D43)**.
-
-## 2026-08-16 — CI가 미선언 의존성을 인라인으로 떠받치고 있었다 (gate 2085)
-
-- Status: 내가 `azure` extra에 패키지를 더했는데 **그 extra는 해석이 안 된다**. CI가 그걸
-  설치하면 내가 CI를 깬 것이라 확인했다 — **안 깼다**(CI는 `.[dev,state,observability]`만).
-  ⚠️**대신 M25가 확증됐다**: 그 줄이 `fastapi "uvicorn[standard]"`를 **명령줄에 직접** 적고
-  있었다. **선언이 없어서** 누군가 CI에 손으로 적은 것 — 게이트는 초록인데
-  `pip install .`은 그걸 안 준다.
-- Changed: CI가 `serving` extra를 **이름으로 요구**하도록 정리(`.[dev,state,observability,serving]`).
-  ⚠️**설치 집합은 바꾸지 않았다** — `serving`을 `uvicorn[standard]`로 맞췄다.
-- Verified(⚠️**내 근거가 도구에 안 맞았다**): 처음엔 *"코드가 `uvloop`를 임포트 안 하니
-  `[standard]`는 불필요"*로 평범한 `uvicorn`을 선언했다. **틀린 추론이다** — 그건 **uvicorn이
-  내부에서 쓰는 것**이지 우리 코드가 임포트하는 게 아니라, `src/` grep으로는 답할 수 없다.
-  게다가 **CI를 여기서 돌려 볼 수단이 없다**. ⇒ **한 번에 하나만 바꾼다**: 우회는 제거하되
-  러너에 떨어지는 패키지는 그대로.
-- Verified(가드 +4, `test_optional_dependencies_declared.py` 확장): CI가 `serving`을 요구하는가 ·
-  **선언된 패키지를 인라인으로 적지 않는가**(`.[...]` 안의 이름은 오탐 제외) ·
-  **문서화된 예외**(`pydantic-ai-slim`은 `onprem`이 Apple 전용 mlx-lm을 끌어 고의 인라인)의
-  **이유가 파일에 남아 있는가**. 변이: CI를 옛 방식으로 되돌리면 **3 failed**, 복구하면 23 passed.
-  `.[serving]`·CI 조합 둘 다 dry-run 해석 OK. `make check` **2085**, 로컬 macOS·py3.13.
-- Blockers: 없음.
-- Next: ⚠️**CI 변경을 검증하지 못했다** — 여기서 워크플로를 돌릴 수 없고 `main`은 D43으로
-  push가 막혀 있다. 근거는 "설치 집합 무변경"뿐이고, 틀렸다면 되돌리기는 한 줄이다.
-  **이건 측정이 아니라 논증이다.**
-
