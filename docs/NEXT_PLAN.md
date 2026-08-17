@@ -5,7 +5,7 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(**M15=공급망 0→집행 + Phase 5 경계 +
 > `main` 보호**, M14=결정 6건, M13=미소비 14건) / `PROGRESS_LOG.md`(+`docs/archive/`). **≤120줄**.
 
-## 현재 상태 (2026-08-17, gate 2251 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
+## 현재 상태 (2026-08-17, gate 2257 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
 
 **Phase 0·1a·1b·2·3 완결**(M10~M12) + **잔여 소진**(M13) + **결정 7건 닫힘**(D36·D38~D43).
 **공급망은 닫을 수 있는 만큼 닫혔다**(어드미션만 업스트림 대기) · **`main`은 보호된다**
@@ -64,19 +64,17 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
 
 > 완료분은 `COMPLETED_SUMMARY.md` **M12**·**M13** · `PROGRESS_LOG.md` · `docs/evidence/`.
 
-- [ ] **DUAL 모드 조건부 리다이렉트** — `slack_live_approval`은 닫혔고(08-16) 이것만 남았다.
-  **하중을 못 받는 가드**가 되므로 안 만들었다.
-- [ ] **capability 스캔 잔여 ⓐ·ⓒ — 정책 사안이라 안 고쳤다(ⓑ는 08-15에 닫힘, M19가 권위)**
-  ⓐ**`kafka-lag-spike`만 두 dict가 어긋난다**(스텝엔 `rebalance_consumer`, `capabilities`엔 없음
-  — **어긋난 쪽이 또 에스컬레이션 스텝**): 더하면 매치 면이 넓어지고 빼면 스텝이 준다,
-  **둘 다 동작 변경** · ⓒ**티어 2는 첫 매치가 이긴다**(AWS는 점수제) — 테스트가 고정했으니
-  **우연이 아니라 결정**이다.
+- [ ] **DUAL 모드 조건부 리다이렉트** — `slack_live_approval`은 닫혔고(08-16) 이것만 남았다. **하중을 못 받는 가드**가 되므로 안 만들었다.
+- [ ] **capability 스캔 ⓐ는 측정으로 닫혔다(08-17, M35). 남은 건 ⓒ와 새 정책 하나.**
+  ⓐ**현행 유지**: 티어 2(GCP/Azure)는 액션을 steps가 아니라 **`recommended_capabilities`에서** 만들고 `capabilities`는 **매치 게이트일 뿐** — `scale_out_workers`가 이미 겹쳐 **더해도 관측 변화 0**, **빼면 네 provider가 다 resolve하는 스텝을 잃는다**(대칭이 아니다).
+  ⛔**새 정책 = `kubernetes-workload`의 `rollback_release`**: **onprem만 추천**, 나머지 셋은 **구현했는데 추천 안 한다**(1대3, **소수가 갖고 있다**) — 롤백은 재시작보다 파괴적이라 사람이 정한다. `test_signal_capability_parity.py::JUSTIFIED_GAPS`가 들고 **어긋나면 red**.
+  ⓒ**티어 2는 첫 매치가 이긴다**(AWS는 점수제) — 테스트가 고정했으니 **결정이다**. **미측정.**
 - [ ] **`cost_metrics` — 의도적으로 남김**: `deployment_id`가 없어 렌더하는 뷰에 안 닿는다(08-08).
 - [ ] **⚠️`pip install .[azure]`가 안 된다(08-15 실측)** — `agent-framework>=1.0` 단독 **150초
   타임아웃**(`core[all]`만 요구 → pip 무한 역추적). **더 나가**: `msft_deployer.py:19`의
   `AzureOpenAIResponsesClient`이 core 1.14.0에 **없다**(테스트가 `sys.modules`를 스텁해 통과 —
   **진짜 라이브러리에 대고 실행된 적이 없다**). **안 고쳤다 — 현재 API를 모르고 추측은 발명.**
-  재개 = 업스트림이 `[all]` 강제를 풀거나 설치 성공. 증거 `the-azure-extra-cannot-be-installed.log`.
+  재개 = 업스트림이 `[all]`을 풀거나 설치 성공. 증거 `the-azure-extra-cannot-be-installed.log`.
 - [ ] **GCP/Azure 90일 보관** — **`STATUS` Risk 2가 권위**(스토어가 없어 지울 데이터 0 → Phase 4).
   ⚠️"`resolved_at`은 읽는 쪽이 없다"는 **틀렸다**(08-16 재측정): `oncall_reporter._minutes_between`이
   `started_at`과 짝지어 읽고 `aws/reporting.py:239`가 넘긴다 · **analyzer 폴백 severity는 정책**.
