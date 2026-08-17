@@ -162,7 +162,10 @@ class CapabilityRunbook:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "CapabilityRunbook":
-        steps = [RunbookStep.from_dict(s) for s in data.get("steps", [])]
+        # `or []`: a stored `steps: null` makes `get("steps", [])` return None, and
+        # this comprehension then raises TypeError. Same trap as the two decision
+        # walks — the default is only reached when the key is absent.
+        steps = [RunbookStep.from_dict(s) for s in data.get("steps") or []]
         return cls(
             runbook_id=data["runbook_id"],
             steps=steps,
@@ -334,8 +337,10 @@ def resolution_verdict(
 #: The condition forms this evaluator branches on — the closed set, kept next to
 #: the reader so the writer's validator cannot drift from it. `validate_runbook`
 #: imports this rather than repeating the literals; a copy is how the next fix
-#: lands on one side only. `test_condition_contract_is_validated.py` re-derives it
-#: from this function's own AST and fails if the two disagree.
+#: lands on one side only. The drift guard is
+#: `test_the_validator_and_the_evaluator_agree_on_the_key_set` in
+#: `tests/test_store_runbook_validation.py`: it re-derives this tuple from the
+#: function's own AST and fails if the two disagree.
 CONDITION_KEYS = ("previous_step_failed", "severity_in", "provider")
 
 

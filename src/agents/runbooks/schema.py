@@ -18,8 +18,11 @@ A runbook item is a plain dict (DynamoDB-friendly) with:
   resource_types  list[str]        — normalized resource types
   provider        str              — owning provider (default "aws")
   rto_sec         int | None       — estimated recovery time objective
-  steps           list[dict]       — ordered capability steps; only ``condition``
-                                     is validated here (see ``_step_problems``)
+  steps           list[dict] | None — ordered capability steps; only ``condition``
+                                     is validated here (see ``_step_problems``).
+                                     Null and absent both mean "no steps", so
+                                     every reader takes ``get("steps") or []`` —
+                                     ``get("steps", [])`` returns the stored None.
 
 A runbook must declare at least one of ``actions`` or ``capabilities``,
 otherwise the decision stage would resolve no remediation.
