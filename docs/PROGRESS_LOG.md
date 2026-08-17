@@ -1,11 +1,28 @@
 # PROGRESS_LOG — platform-agent
 
-최종 갱신: 2026-08-15
+최종 갱신: 2026-08-17
 
 > 최신 3–5개 증분. **최신이 위.** **≤120줄.** 넘치면 `/tidy-docs` 로 압축.
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-17 — 4a가 라이브가 됐다: AMP가 계획서의 네 숫자를 그대로 돌려준다 (gate 2218)
+
+- Status: 승인 셋(메트릭 4종·60초·리전)을 받아 4a에 착수. **DoD 네 단계 중 ③(remote_write
+  성공)을 넘었다.** ①②는 계획서가 *"무엇을 렌더할지는 일부러 발명하지 않았다 — Phase 4
+  결정"*이라 미룬 설계 사안이라 손대지 않았고, ④는 `from_managed`로 이미 서 있다.
+- Changed: 워크스페이스 `ws-929b8da9…`(ap-northeast-2) · IAM 사용자 `amp-remote-write-4a`
+  (정책 전부 = `aps:RemoteWrite` **하나**를 그 워크스페이스 **하나**에) · 키는 k8s Secret으로만
+  존재(**git·로컬 파일 어디에도 안 씀**) · values에 remoteWrite+허용목록 · **간격은 전역이
+  아니라 `kube-state-metrics` ServiceMonitor만 60초**(308 중 287이 거기서 온다) · 가드 2종.
+- Verified: `make check` **2218 passed, 2 skipped**(로컬 macOS·py3.13, CI 일치) · 적용 전
+  `helm template`로 두 키가 **실제로 읽히는지** 확인(Risk 8) + `helm get values`로 파일 밖
+  값 없음 확인 · 파이프 `samples_total 319 / failed 0 / dropped 69,076`(99.5% 필터) ·
+  **AMP 직접 조회가 §2의 22·50·220·16 = 308을 그대로 반환** · 변이 4종 모두 red.
+- Blockers: ⛔**실제 청구액 미측정** — CE 2일 지연이라 **08-19 이후** 크레딧 제외 필터로
+  대조해야 4a가 닫힌다. 그전까지 $1.42는 **산수지 측정이 아니다**. ⛔4a ①②는 설계 결정 대기.
+- Next: PR #41 병합 → 08-19 청구액 대조 → 관리형 observability를 무엇으로 렌더할지 결정.
+
 ## 2026-08-16 — 08-11부터 묶여 있던 항목: 기록된 차단 이유가 틀렸다 (gate 2102)
 
 - Status: `slack_live_approval.py`는 *"고치면 조용히 no-op"*이라 08-11부터 안 고치고 있었고,

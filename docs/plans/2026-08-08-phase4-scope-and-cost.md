@@ -105,7 +105,13 @@
 > Helm 차트 이름으로 그대로 넘겨서, `logging: cloudwatch-logs`를 선언하면 GitOps가
 > **Grafana 차트 저장소에서 `cloudwatch-logs` 차트를 찾는다**(라이브 실증). `observability`는
 > 클러스터 스코프라 기존 싱글턴 가드가 먼저 잡지만 **안내가 틀린다**("Prometheus CR을 주라" —
-> 관리형엔 설치할 것이 없다). 막히지 않는 건 **네임스페이스 스코프 + managed** 조합
+> 관리형엔 설치할 것이 없다).
+> **↑ 이 문장은 이 박스가 발표한 수정으로 해소됐다(2026-08-17 실측).** `ManagedBackendNotRenderable`은
+> `desired_addons`가 **확장하는 중에** 나고 싱글턴 가드는 그 **출력**을 받으므로, 관리형이 먼저
+> 잡히고 메시지도 옳다. 다만 그때 **가드는 안 남겼다** — 관리형 테스트가 전부 `logging`
+> (네임스페이스 스코프)을 쓰고 있어서 **두 규칙이 겹치는 유일한 경우가 안 물어진 채**였다.
+> 이제 `test_a_cluster_scoped_managed_backend_says_the_right_no`가 묻는다(변이 검증: 클러스터
+> 스코프만 관리형 검사에서 빠뜨리면 **그 테스트만** red). 막히지 않는 건 **네임스페이스 스코프 + managed** 조합
 > (`logging`·`tracing`)이다. → `ManagedBackendNotRenderable`로 거부(gate 1685).
 > **무엇을 렌더해야 하는지는 일부러 발명하지 않았다** — 그건 Phase 4 결정이다.
 

@@ -118,3 +118,96 @@
 
 승인되면 다음 순서: 워크스페이스 생성(무과금) → §5 적용 → remote_write 확인 →
 `make spend-check`로 **이틀 뒤 실제 청구액 대조**(⚠️CE 지연 이틀 이상, Risk 4).
+
+---
+
+## 8. 착수 실측 (2026-08-16) — 승인 후 진행분
+
+**승인**: 메트릭 4종 · 간격 60초 · 리전 비용중립 (§7 셋 다).
+
+**한 것**
+- 워크스페이스 생성 — `ws-929b8da9-b0db-49f8-aadb-2ed1a70f699f` (**ap-northeast-2**,
+  `Project=platform-agent` 태그). 보유 자체는 무과금이고 **아직 아무것도 흘리지 않는다.**
+  리전은 레포 기본값(`AWS_REGION` 폴백)과 맞췄다.
+- 시계열 실측 — 계획서의 **308과 정확히 일치**. 전체 샘플률 1,982/s → 월 5.14B(§3의 5.13B 확인).
+
+**⚠️ §5의 "60초"를 그대로 쓰면 안 된다 — 더 좁은 손잡이가 있다.**
+308 중 **287(93%)이 `kube-state-metrics` ServiceMonitor 하나**에서 온다(나머지 21은 각 job의
+`up`). 그리고 현재 간격은 **전역 30초 · kubelet만 10초**다(실측). 따라서:
+
+| 방식 | 월 샘플 | 비용 | 로컬 영향 |
+|---|---|---|---|
+| 전역 `scrapeInterval: 60s` | 13.3M | $1.20 | ⚠️**랩 전체 해상도 저하** |
+| **`kube-state-metrics`만 60초** | **15.8M** | **$1.42** | 그 ServiceMonitor만 |
+| 변경 없음(현행) | 28.2M | $2.54 | 없음 |
+
+**중간 행을 택한다**: 승인 목표($1.20)에 $0.22 차이로 닿으면서 부작용이 훨씬 작다.
+객체 상태 메트릭은 느리게 변하고, 데모 알람 룰은 `[5m]` 창이라 60초에서도 5샘플이다.
+⇒ §5의 `scrapeInterval` 문구는 **전역이 아니라 `kube-state-metrics.prometheus.monitor.interval`**
+로 읽어야 한다.
+
+**⛔ 막힌 곳 — 계획서가 다루지 않은 것: sigv4 자격증명**
+
+§5의 `sigv4:` 블록은 Prometheus 파드에 AWS 자격증명이 있다고 전제한다. **kind에는 IRSA가
+없고**, `monitoring` 네임스페이스에 자격증명 시크릿도 없다(실측). 계정의 IAM 사용자 다섯 중
+AMP 전용은 없고, 현재 신원 `q-user`는 **EC2 종료·워크스페이스 생성까지 되는 광범위한 키**다.
+
+**그걸 클러스터에 넣지 않았다.** 이 레포의 원칙이 *자격증명이 경계*(D38·D39, Risk 3·10)인데,
+월 $1.42짜리 메트릭 파이프를 위해 계정 전체 권한을 랩 클러스터에 두는 건 그 원칙을 정면으로
+뒤집는다. 선택지는 셋이고 **전부 보안 결정이라 승인 사안**이다:
+
+1. **전용 IAM 신원 + 해당 워크스페이스에 `aps:RemoteWrite`만** — blast radius 최소.
+   대신 **장기 액세스 키가 하나 늘어난다**.
+2. **호스트 측 sigv4 프록시** — 자격증명이 클러스터에 안 들어간다. 대신 프록시가 떠 있어야만
+   동작해 **랩 데모 전용**이고, 실제 배포로 이어지지 않는다.
+3. **보류** — 워크스페이스는 무과금이라 그대로 둬도 되고, 필요 없으면 지우면 된다.
+
+⇒ **4a는 여기서 멈춰 있다.** DoD(*"로컬에서 remote_write 성공"*)는 이 결정 없이는 못 넘는다.
+
+## 9. 착수 완료 (2026-08-17) — DoD 달성
+
+§8의 막힌 곳을 **선택지 1(전용 IAM 신원)**으로 풀었다.
+
+**자격증명** — IAM 사용자 `amp-remote-write-4a`. 인라인 정책이 **전부**다:
+
+    Action:   aps:RemoteWrite        (하나)
+    Resource: …workspace/ws-929b8da9-…  (하나)
+
+키는 k8s Secret `monitoring/amp-remote-write`로만 존재한다 — **git에 없고 로컬 파일에도
+안 썼다**. 차트는 값이 아니라 **Secret 이름을 참조**한다(`sigv4.accessKey.name`).
+⚠️**장기 액세스 키가 하나 늘었다**는 대가는 그대로다. 4a를 접으면 **사용자·키·워크스페이스
+셋 다 지울 것**.
+
+**적용** — `helm upgrade monitoring … -f values` (릴리스 revision 5). 적용 전에
+`helm template`으로 **두 키가 실제로 읽히는지 확인**했다(Risk 8: values는 에러가 아니라
+*안 읽히는 방식*으로 실패한다):
+
+    Prometheus CR      remoteWrite[0].url + sigv4.secretKey + writeRelabelConfigs  ✅
+    ServiceMonitor     monitoring-kube-state-metrics  interval=60s                 ✅
+
+그리고 `helm get values`로 **릴리스가 이 파일 밖의 값으로 설치되지 않았음**을 먼저 확인했다
+(밖의 값이 있었다면 `-f`만으로 업그레이드하면 조용히 떨어진다).
+
+**측정 — 파이프**
+
+    samples_total    319       실제 전송
+    samples_failed     0       ← sigv4 인증 성공
+    samples_retried    0
+    samples_dropped 69,076     ← 허용목록이 걸러낸 것 (99.5%)
+
+**측정 — AMP 쪽 조회(진짜 DoD)**. SigV4로 서명해 워크스페이스에 직접 물었다:
+
+    up                                           22   (§2의 22)
+    kube_pod_container_status_restarts_total     50   (§2의 50)
+    kube_pod_status_phase                       220   (§2의 220)
+    kube_deployment_status_replicas_unavailable  16   (§2의 16)
+                                          합계  308
+
+**§2의 표와 네 칸 모두 일치한다.** 파이프가 살아 있고, 허용목록이 정확히 의도한 것만
+통과시킨다. ⚠️`{__name__=~".+"}` 형태의 전체 매칭 질의는 AMP가 **403**으로 거부한다 —
+같은 자격증명으로 위 넷은 통과하므로 인증이 아니라 질의 형태의 문제다.
+
+**⛔ 아직 안 잰 것 — 실제 청구액.** 위 금액은 전부 산수다. CE는 **이틀 이상 지연**되므로
+(Risk 4) **2026-08-19 이후** `make spend-check`와 `aws ce get-cost-and-usage`(⚠️크레딧
+제외 필터 필수)로 **AMP 라인 아이템이 예상($1.42/월 = 일 ~$0.047)과 맞는지** 대조해야
+4a가 닫힌다. 그 전까지 이 문서의 비용은 **가정이지 측정이 아니다**.

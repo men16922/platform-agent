@@ -1,6 +1,6 @@
 # DECISIONS — platform-agent
 
-최종 갱신: 2026-08-15
+최종 갱신: 2026-08-17
 
 > 되돌리기 어려운 결정만. 형식: **Decision / Reason / Impact**. 최신이 위.
 
@@ -17,6 +17,26 @@
 > - **GitAIOps 실습서(Notiflex)** (외부 학습 레포) — Rollouts **AnalysisTemplate 메트릭 자동판정**(우리 무기한 pause 게이트의 미완점) · **OTel→Tempo로 4-step 파이프라인 자체 트레이싱** · 런북 **사전확인/사후검증 3단**(우리 `RunbookStep`엔 없음) · **allow/ask/deny 권한통제** · **Sync Wave**. 안티패턴=Kafka·멀티 노드풀·GKE 종속 시크릿·`--dangerously-skip-permissions`. 상세 → `docs/reference/gitaiops-notiflex-book.md`. (검토 2026-07-25)
 
 ---
+
+## D50 — **4a는 라이브다. 파이프에는 그 워크스페이스에 쓰기만 되는 신원을 준다**
+
+- **Decision:** AMP 워크스페이스 `ws-929b8da9…`(**ap-northeast-2**, `Project=platform-agent`)를
+  만들고 로컬 Prometheus를 붙였다. 자격증명은 **IAM 사용자 `amp-remote-write-4a`** —
+  인라인 정책 전부가 `aps:RemoteWrite` **하나**를 그 워크스페이스 **하나**에. 키는 k8s Secret
+  `monitoring/amp-remote-write`로만 존재하고 **git에도 로컬 파일에도 쓰지 않았다**(차트는 값이
+  아니라 Secret 이름을 참조). 간격은 **전역이 아니라 `kube-state-metrics` ServiceMonitor만 60초**.
+- **Reason:** kind에는 IRSA가 없어 sigv4에 자격증명이 필요한데, 운영 신원 `q-user`는
+  **EC2 종료·워크스페이스 생성까지 되는 키**다. 월 $1.42짜리 메트릭 파이프를 위해 계정 전체
+  권한을 랩 클러스터에 두는 건 *자격증명이 경계*(D38·D39, Risk 3·10)를 정면으로 뒤집는다.
+  간격을 **전역으로** 올리는 대안은 같은 $1.20에 닿지만 **안 보내는 52,130 시계열의 해상도까지**
+  깎는다 — 308 중 **287이 한 ServiceMonitor에서 온다**는 실측이 좁은 손잡이를 골라 줬다
+  (전역 $1.20 / 좁은 손잡이 $1.42 / 변경 없음 $2.54).
+- **Impact:** DoD ③ 달성 — AMP가 허용목록 4종 **308 시계열**(22·50·220·16)을 그대로 반환하고
+  `samples_failed 0`, `dropped 69,076`(99.5% 필터). 두 손잡이는 이제 **주석이 아니라 게이트**가
+  지킨다(`test_amp_cost_handles.py`, 변이 4종 red). ⚠️**장기 액세스 키가 하나 늘었다** —
+  4a를 접으면 **워크스페이스·IAM 사용자·키 셋 다** 지울 것. ⛔**실제 청구액은 미측정**이다:
+  CE 2일 지연이라 **08-19 이후** 크레딧 제외 필터로 대조해야 하고, 그전까지 $1.42는 **산수다**.
+  ⛔DoD ①②(관리형을 무엇으로 렌더)는 여전히 설계 결정이고, 지금은 거부가 정답일 수도 있다.
 
 ## D49 — **게이트는 외부 네트워크로 나가지 못한다** (D45를 선언에서 집행으로)
 

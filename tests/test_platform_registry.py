@@ -784,6 +784,38 @@ class TestManagedBackendsAreNotRenderable:
         assert managed in str(exc.value)
         assert "applicable=False" in str(exc.value), "point at the path that IS right"
 
+    def test_a_cluster_scoped_managed_backend_says_the_right_no(self, registry):
+        """The case where **both** guards could fire — and which one must.
+
+        `observability` is cluster-scoped *and* has a managed backend, so a
+        declaration of it can trip either rule. The Phase 4 plan's correction box
+        recorded that the singleton guard won and gave advice that is wrong for a
+        managed backend: *"give the tenant an instance (a Prometheus CR…)"* —
+        there is nothing to install for AMP, so that sends the reader to build
+        something that cannot exist.
+
+        Measured 2026-08-17: `ManagedBackendNotRenderable` now wins, because it is
+        raised while `desired_addons` expands and the singleton guard only sees
+        the expansion's output. So the recorded worry is **resolved** — but every
+        managed test above uses `logging`, which is *namespace*-scoped, so the
+        overlapping case was the one nobody asked about. Reordering the two checks
+        would restore the misleading message with all of them still green.
+        """
+        assert registry.scope_of("observability") == "cluster", "premise of this test"
+        tenant, env, managed = self._managed_env(registry, capability="observability")
+
+        with pytest.raises(ManagedBackendNotRenderable) as exc:
+            desired_addons(
+                tenant, env, registry.wave_for, registry.scope_of,
+                is_managed=registry.is_managed_backend,
+            )
+        message = str(exc.value)
+        assert managed in message
+        assert "Prometheus CR" not in message, (
+            "a managed backend has nothing to install — advising an instance is "
+            "the wrong door, which is exactly what the singleton guard would say"
+        )
+
     def test_self_hosted_backends_still_render(self, registry):
         """The refusal must be about managed, not about this capability."""
         tenant = registry.tenant("acme")
