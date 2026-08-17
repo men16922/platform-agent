@@ -26,6 +26,25 @@ firestore_runbook:` is true for any non-empty dict, and its `runbook_id` and
 `rto_sec` are reported as the followed runbook. On AWS the identical mistake is
 logged and dropped.
 
+⚠️ **Measured 2026-08-17: this contract stopped at the top level.**
+`validate_runbook` checked `runbook_id`, the list-of-str fields, `rto_sec` and
+`provider` — and **nothing inside `steps`**, which is where `condition` lives. So
+the tier this file exists to guard handed unvalidated steps to the walk that reads
+them. Two consequences, both silent:
+
+  - a misspelled condition key (`previous_step_fail`) matches no branch in
+    `evaluate_condition`, which returns True — so a step gated as an *escalation*,
+    the stronger remediation, runs on **every** incident. That is the same failure
+    GCP and Azure produced on 2026-08-16 by not reading `condition` at all,
+    reached through the opposite door: reading one that means nothing.
+  - a non-dict `condition` raises TypeError from inside the walk, outside its try
+    block — the 500 the comment below says validation exists to prevent.
+
+A strict per-step validator already existed (`capability_schema.
+validate_capability_runbook`) and **only tests ever called it**. The fix put the
+condition clause in the shared contract module instead, because that is the one
+all three providers read.
+
 ⚠️ **`require_alarm_name` is deliberately left at its default `False` here, and
 that asymmetry with AWS is correct.** AWS reads
 `table.get_item(Key={"alarm_name": alarm_name})`, so the attribute is on the item
@@ -39,7 +58,9 @@ below pins that.
 
 from __future__ import annotations
 
+import ast
 import importlib
+import pathlib
 from unittest import mock
 
 import pytest
@@ -51,7 +72,9 @@ from src.agents.models import (
     NormalizedIncident,
     Severity,
 )
+from src.agents.runbooks.capability_schema import CONDITION_KEYS
 
+ROOT = pathlib.Path(__file__).resolve().parents[1]
 ALARM = "store-override-alarm"
 
 # provider -> the tier-1 lookup to patch. AWS is checked separately: it validates
@@ -75,6 +98,64 @@ MALFORMED = {
         "capabilities": "restart_workload",
     },
     "not a dict at all": ["runbook_id", "bad-override"],
+    # Added 2026-08-17. `validate_runbook` checked every top-level field and
+    # nothing inside `steps`, so these four reached the walk that reads them.
+    # Each carries valid top-level fields, so only the new clause can reject it.
+    "step condition key is misspelled": {
+        "runbook_id": "bad-override",
+        "capabilities": ["restart_workload"],
+        "steps": [{
+            "name": "escalate",
+            "capability": "rollback_release",
+            # One letter short of the real key. No branch matches, so
+            # `evaluate_condition` returns True and the escalation step —
+            # the *stronger* remediation — runs on every incident.
+            "condition": {"previous_step_fail": True},
+        }],
+    },
+    "step condition is not a dict": {
+        "runbook_id": "bad-override",
+        "capabilities": ["restart_workload"],
+        # `"previous_step_failed" in condition` on a str is a substring test, so
+        # this does not merely mis-evaluate: `severity_in`'s branch raises
+        # TypeError from inside the walk, outside its try block.
+        "steps": [{"name": "restart", "capability": "restart_workload",
+                   "condition": "previous_step_failed"}],
+    },
+    "step condition severity_in is a bare string": {
+        "runbook_id": "bad-override",
+        "capabilities": ["restart_workload"],
+        # `context["severity"] not in "P12"` is a substring test — a P1 incident
+        # satisfies a gate the operator wrote for P12.
+        "steps": [{"name": "restart", "capability": "restart_workload",
+                   "condition": {"severity_in": "P12"}}],
+    },
+    # ⚠️ Not a string. `steps: "restart"` was the first fixture and it is rejected
+    # *without* the list check too — a str is iterable, so each character fails the
+    # per-step dict check. Correct and broken implementations agreed, so the clause
+    # took no load (measured: the mutation survived; Risk 12⑤). A number is not
+    # iterable, and without the check `enumerate` raises TypeError out of a
+    # validator documented to never raise — the tier-1 call site has no try.
+    "steps is a number": {
+        "runbook_id": "bad-override",
+        "capabilities": ["restart_workload"],
+        "steps": 5,
+    },
+}
+
+#: Every form the evaluator understands, each of which must still be accepted —
+#: the direction that keeps the new check from closing the tier it guards (M28's
+#: `require_alarm_name` trap, one layer down).
+VALID_CONDITIONS = {
+    "previous_step_failed": {"previous_step_failed": True},
+    "severity_in": {"severity_in": ["P1", "P2"]},
+    "provider": {"provider": "gcp"},
+    "all three at once": {
+        "previous_step_failed": False,
+        "severity_in": ["P2"],
+        "provider": "gcp",
+    },
+    "absent": None,
 }
 
 
@@ -165,6 +246,69 @@ def test_a_document_without_runbook_id_is_still_followed(provider):
 
     assert runbook_id == ALARM, "the alarm name is the fallback id, as before"
     assert rto == 42
+
+
+@pytest.mark.parametrize("provider", sorted(STORE_LOOKUPS))
+@pytest.mark.parametrize("form", sorted(VALID_CONDITIONS), ids=sorted(VALID_CONDITIONS))
+def test_a_step_condition_the_evaluator_understands_is_still_followed(provider, form):
+    """The other direction for the condition clause, and the one that carries it.
+
+    Rejecting malformed conditions is only safe if every *well-formed* one still
+    passes. Without this, tightening the check to "conditions are not supported"
+    would satisfy every rejection test above while silently disabling tier 1 —
+    the same shape as `require_alarm_name=True`, one layer down.
+    """
+    registered = {
+        "runbook_id": "operator-override",
+        "capabilities": ["restart_workload"],
+        "steps": [{
+            "name": "restart",
+            "capability": "restart_workload",
+            "condition": VALID_CONDITIONS[form],
+        }],
+    }
+    module = _decision(provider)
+    with mock.patch(STORE_LOOKUPS[provider], return_value=registered):
+        runbook_id, _actions, _rto = module._select_runbook(_analyzer(provider))
+
+    assert runbook_id == "operator-override", (
+        f"{provider} rejected a runbook whose step condition uses the documented "
+        f"`{form}` form — validation must not close the tier it guards"
+    )
+
+
+def test_the_validator_and_the_evaluator_agree_on_the_key_set():
+    """`CONDITION_KEYS` is the writer's copy of what the reader branches on.
+
+    Re-derived from `evaluate_condition`'s own AST rather than trusted, because a
+    fourth form added to the evaluator and not to this tuple would be rejected at
+    registration as "unknown" — the validator would forbid what the reader
+    supports. Two copies of a contract is how the last fix landed on one side
+    only (M18 유지 규약).
+    """
+    src = (ROOT / "src/agents/runbooks/capability_schema.py").read_text(encoding="utf-8")
+    fn = next(
+        n for n in ast.walk(ast.parse(src))
+        if isinstance(n, ast.FunctionDef) and n.name == "evaluate_condition"
+    )
+    branched_on = tuple(
+        node.left.value
+        for node in ast.walk(fn)
+        if isinstance(node, ast.Compare)
+        and len(node.ops) == 1
+        and isinstance(node.ops[0], ast.In)
+        and isinstance(node.left, ast.Constant)
+        and isinstance(node.left.value, str)
+        and isinstance(node.comparators[0], ast.Name)
+        and node.comparators[0].id == "condition"
+    )
+    assert branched_on, "no `\"key\" in condition` branch found — the shape changed"
+    assert set(branched_on) == set(CONDITION_KEYS), (
+        f"`evaluate_condition` branches on {sorted(branched_on)} but "
+        f"CONDITION_KEYS declares {sorted(CONDITION_KEYS)}. The validator rejects "
+        "anything outside CONDITION_KEYS, so a form the reader supports and this "
+        "tuple omits is unregistrable."
+    )
 
 
 @pytest.mark.parametrize("reason", sorted(MALFORMED), ids=sorted(MALFORMED))

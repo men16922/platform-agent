@@ -224,7 +224,13 @@ def _resolve_actions_from_runbook(
 
     adapter = get_execution_adapter("gcp")
     actions = []
-    for step in runbook.get("steps", []):
+    # `or []`, not `get("steps", [])`: the default only applies when the key is
+    # *absent*, so an operator document with an explicit `steps: null` — which
+    # Firestore stores verbatim and `validate_runbook` accepts — returned None and
+    # raised TypeError right here, outside any try. AWS has read it this way all
+    # along (`aws/decision.py`), so this was a provider asymmetry on the reading
+    # side, which is the repo's standard for a real defect rather than an orphan.
+    for step in runbook.get("steps") or []:
         if not evaluate_condition(step.get("condition"), context):
             logger.info(
                 "gcp_decision.step.condition_false",

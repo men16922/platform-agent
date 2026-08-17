@@ -625,7 +625,10 @@ def _deserialise_decision(event: dict[str, Any]) -> DecisionOutput:
         # verify the runbook declared is lost — with nothing in the logs to say
         # so. In-memory unit tests cannot catch it because they never cross this
         # boundary; running the real pipeline is what surfaced it.
-        steps=event.get("steps", []),
+        # `or []` for the None trap the other three step reads share, even though
+        # this one's producer (`DecisionOutput.steps`, default_factory=list) cannot
+        # emit null today: the point is that no reader of `steps` is the odd one out.
+        steps=event.get("steps") or [],
         estimated_rto_sec=event.get("estimated_rto_sec"),
     )
 

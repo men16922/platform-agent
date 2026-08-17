@@ -18,6 +18,11 @@ A runbook item is a plain dict (DynamoDB-friendly) with:
   resource_types  list[str]        — normalized resource types
   provider        str              — owning provider (default "aws")
   rto_sec         int | None       — estimated recovery time objective
+  steps           list[dict] | None — ordered capability steps; only ``condition``
+                                     is validated here (see ``_step_problems``).
+                                     Null and absent both mean "no steps", so
+                                     every reader takes ``get("steps") or []`` —
+                                     ``get("steps", [])`` returns the stored None.
 
 A runbook must declare at least one of ``actions`` or ``capabilities``,
 otherwise the decision stage would resolve no remediation.
@@ -125,6 +130,80 @@ def validate_runbook(item: Any, *, require_alarm_name: bool = False) -> list[str
 
     if "provider" in item and not isinstance(item["provider"], str):
         problems.append("provider must be a string")
+
+    problems.extend(_step_problems(item.get("steps")))
+
+    return problems
+
+
+def _step_problems(steps: Any) -> list[str]:
+    """
+    Problems in a runbook's ``steps``, which this contract did not look at.
+
+    Measured 2026-08-17: `validate_runbook` checked every top-level field and
+    **nothing inside `steps`**, so tier 1 — the operator-registered store that
+    M28 established is the side that *can* be malformed — handed unvalidated
+    steps straight to the walk that reads them.
+
+    Only ``condition`` is checked here, because that is the field whose malformed
+    forms are silent rather than loud. A bad ``capability`` is dropped by
+    `resolve_action` with a raised ValueError the caller already handles; a bad
+    ``condition`` changes *whether a step runs at all*:
+
+      - an unknown key (``previous_step_fail``) matches no branch in
+        `evaluate_condition`, which returns True — so a step gated as an
+        escalation runs on every incident;
+      - a non-dict ``condition`` makes ``"previous_step_failed" in condition``
+        raise TypeError from inside the walk, outside its try block, which is the
+        500 the tier-1 validation comment says this check exists to prevent.
+
+    Rejecting the runbook (rather than the step) is M28's established choice: a
+    malformed hand-registered entry falls back to heuristic matching instead of
+    producing a broken decision downstream. Never raises — same contract as the
+    caller (`validate_runbook`), so a junk document stays a logged fallback.
+    """
+    from src.agents.runbooks.capability_schema import CONDITION_KEYS
+
+    if steps is None:
+        return []
+    if not isinstance(steps, list):
+        return [f"steps must be a list or null, got {type(steps).__name__}"]
+
+    problems: list[str] = []
+    for i, step in enumerate(steps):
+        prefix = f"steps[{i}]"
+        if not isinstance(step, dict):
+            problems.append(f"{prefix} must be a dict, got {type(step).__name__}")
+            continue
+
+        condition = step.get("condition")
+        if condition is None:
+            continue
+        if not isinstance(condition, dict):
+            problems.append(
+                f"{prefix}.condition must be a dict or null, "
+                f"got {type(condition).__name__}"
+            )
+            continue
+
+        unknown = sorted(set(condition) - set(CONDITION_KEYS))
+        if unknown:
+            problems.append(
+                f"{prefix}.condition has unknown key(s) {unknown}; "
+                f"supported: {sorted(CONDITION_KEYS)} — an unrecognised key is "
+                "ignored by the evaluator, which makes the step unconditional"
+            )
+        if "previous_step_failed" in condition and not isinstance(
+            condition["previous_step_failed"], bool
+        ):
+            problems.append(f"{prefix}.condition.previous_step_failed must be a boolean")
+        if "severity_in" in condition and not _is_list_of_str(condition["severity_in"]):
+            problems.append(
+                f"{prefix}.condition.severity_in must be a list of strings "
+                "(a bare string is matched as a substring, not as membership)"
+            )
+        if "provider" in condition and not isinstance(condition["provider"], str):
+            problems.append(f"{prefix}.condition.provider must be a string")
 
     return problems
 

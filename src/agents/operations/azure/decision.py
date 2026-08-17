@@ -228,7 +228,11 @@ def _resolve_actions_from_runbook(
 
     adapter = get_execution_adapter("azure")
     actions = []
-    for step in runbook.get("steps", []):
+    # `or []` for the reason spelled out in the GCP walk: `get("steps", [])`
+    # returns the stored None when the key is present, and an explicit
+    # `steps: null` then raised TypeError out of this walk. AWS was already
+    # None-safe; these two were not.
+    for step in runbook.get("steps") or []:
         if not evaluate_condition(step.get("condition"), context):
             logger.info(
                 "azure_decision.step.condition_false",
