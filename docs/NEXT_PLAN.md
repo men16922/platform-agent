@@ -5,7 +5,7 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(**M15=공급망 0→집행 + Phase 5 경계 +
 > `main` 보호**, M14=결정 6건, M13=미소비 14건) / `PROGRESS_LOG.md`(+`docs/archive/`). **≤120줄**.
 
-## 현재 상태 (2026-08-17, gate 2279 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
+## 현재 상태 (2026-08-18, gate 2285 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
 
 **Phase 0·1a·1b·2·3 완결**(M10~M12) + **잔여 소진**(M13) + **결정 7건 닫힘**(D36·D38~D43).
 **공급망은 닫을 수 있는 만큼 닫혔다**(어드미션만 업스트림 대기) · **`main`은 보호된다**
@@ -68,10 +68,8 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
 > 완료분은 `COMPLETED_SUMMARY.md` **M12**·**M13** · `PROGRESS_LOG.md` · `docs/evidence/`.
 
 - [ ] **DUAL 모드 조건부 리다이렉트** — `slack_live_approval`은 닫혔고(08-16) 이것만 남았다. **하중을 못 받는 가드**가 되므로 안 만들었다.
-- [ ] **capability 스캔 ⓐ는 측정으로 닫혔다(08-17, M35). 남은 건 ⓒ와 새 정책 하나.**
-  ⓐ**현행 유지**: 티어 2(GCP/Azure)는 액션을 steps가 아니라 **`recommended_capabilities`에서** 만들고 `capabilities`는 **매치 게이트일 뿐** — `scale_out_workers`가 이미 겹쳐 **더해도 관측 변화 0**, **빼면 네 provider가 다 resolve하는 스텝을 잃는다**(대칭이 아니다).
-  ⛔**새 정책 = `kubernetes-workload`의 `rollback_release`**: **onprem만 추천**, 나머지 셋은 **구현했는데 추천 안 한다**(1대3, **소수가 갖고 있다**) — 롤백은 재시작보다 파괴적이라 사람이 정한다. `test_signal_capability_parity.py::JUSTIFIED_GAPS`가 들고 **어긋나면 red**.
-  ⓒ**측정하고 고쳤다(08-17, M36) — 앞쪽은 맞고 "테스트가 고정했다"가 틀렸다**: 기존 가드는 **후보를 유일하게 가리는 capability 집합을 손으로 골라** 물었고(`["rollback_release"]` 등) **어떤 signal 어댑터도 그런 집합을 안 낸다**(Risk 12⑤). 실제 집합으로 물으면 `kubernetes-workload` 후보가 **셋**인데 GCP/Azure는 인시던트 종류와 무관하게 늘 **`eks-pod-oom`/rto 180**을 보고한다 — AWS는 namespace+keyword 점수로 **셋을 구분한다**(health-check는 rto **240**). ✅**고쳤다**: 점수 함수를 계약 모듈(`schema.score_runbook`)에 한 벌 두고 셋이 읽는다 — 이제 세 provider가 같은 인시던트에 같은 답을 낸다(health-check=rto 240). ⚠️**재는 중에 더 나왔다**: 티어 2가 액션을 **조건 평가 없이** 추천에서 만들어, **에스컬레이션 전용** capability(`scale_database_read`·`rebalance_consumer`)가 **first-response로 실행**되고 있었다 — 같은 모듈의 **티어 1은 조건을 평가한다**(M21 모양). 이제 **승자의 steps에서** 만든다. ⚠️**티어 2 액션을 단언하는 테스트가 하나도 없어서** 그 변경에 red가 안 났다 → 가드 신설.
+- ⛔**capability 스캔은 셋 다 닫혔다(08-17)** — ⓐ**현행 유지**(M35: 티어 2는 액션을 `recommended_capabilities`에서 만들고 `capabilities`는 매치 게이트일 뿐 — 더해도 관측 변화 0, **빼면 네 provider가 다 resolve하는 스텝을 잃는다**) · ⓒ**측정하고 고쳤다**(M36+M37: 기존 가드가 **생산에서 도달 불가한 capability 집합**으로 물어 첫-매치와 점수제의 답이 같은 경우만 태웠다 → 점수 함수를 계약 모듈에 한 벌 두고 셋이 읽는다) · `rollback_release`**는 추천 목록 현행 유지**(진짜 문제는 목록이 아니라 **티어 2가 조건 평가 없이 추천에서 액션을 만든 것**이었고 그걸 고쳤다; `JUSTIFIED_GAPS`가 들고 어긋나면 red). **다시 열지 말 것.**
+- [ ] ⚠️**Phase 3② 배선이 1/4다(08-18 실측, 승인 사안)** — `reconciler.guard_rollback`(롤백을 reconciler가 되돌릴 상황이면 **거부**)을 부르는 러너는 **`onprem_runner` 하나**다. `ROLLBACK_ACTIONS`는 **네 provider 7종을 다 안다**(M31이 AWS 둘을 채웠다)는데 **묻는 쪽이 하나**다 — M31이 고친 건 **목록**이고 **호출 지점을 세는 가드는 없다**. ⚠️**gcp/azure 러너는 롤백 직전 매니페스트를 이미 GET한다**(컨테이너 이미지를 읽으려고) — `detect_reconciler`가 볼 `metadata.annotations`/`labels`가 **손에 있는데 버려진다**(추가 API 호출 0). 레지스트리가 kind/k3s만 선언한 건 건너뛸 근거가 못 된다: 그 모듈이 소유권은 레지스트리가 아니라 **라이브 마커**에서 읽는다고 명시한다. ⛔**안 고쳤다 — 배선하면 지금 성공하는 롤백이 `ReconcilerConflict`로 거부된다**(fail-closed 방향이지만 remediation 동작 변경). 증거 `docs/evidence/phase-dod-verification-2026-08-18.log`.
 - ⛔**`cost_metrics`는 측정으로 닫혔다(08-18)** — 기록된 이유가 **맞다**: cost를 렌더하는 뷰는 **한 곳뿐**이고(`deployments/[id]`) 그걸 먹이는 `mergeActivity`가 `deployment_id === id`로 거른다. route/provider-activity 행은 그 키가 없어 **원리상 못 닿는다**(더하면 안 읽히는 필드가 하나 더 는다). ⚠️**면제는 목록이 아니라 경계다** — 가드가 의무를 **읽는 쪽 선택 규칙에서 유도**하고 `src/agents` **전 모듈**을 rglob으로 훑는다(ACTIVITY writer 넷 중 **하나는 `activity_writer.py`**). 변이 3종 red(롤백 필드 제거 · route에 `deployment_id` 부여 · 스윕 무력화). 증거 `docs/evidence/cost-metrics-exemption-is-derived-and-load-bearing.log`. **다시 열지 말 것.**
 - [ ] **⚠️`pip install .[azure]`가 안 된다(08-15 실측)** — `agent-framework>=1.0` 단독 **150초
   타임아웃**(`core[all]`만 요구 → pip 무한 역추적). **더 나가**: `msft_deployer.py:19`의

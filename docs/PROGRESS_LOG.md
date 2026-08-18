@@ -6,6 +6,43 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-18 — Phase DoD 전수 검증: Phase 0의 ts 절반과 Phase 3②의 배선이 비어 있었다 (gate 2285)
+
+- Status: 지시 "최대한 많은 phase 검증". 권위는 설계 계획서 §Phases의 **DoD 문장 그 자체**로
+  두고, 각 절을 그것을 단언하는 테스트에 맞댔다. 전체 판정표는 증거 로그가 권위.
+  `docs/evidence/phase-dod-verification-2026-08-18.log`.
+- Verified(**0·1a·2·5 성립**): 1a는 DoD 세 절이 이름 붙은 테스트로 있고 ⚠️**형제를 세는 가드까지
+  있다**(`test_every_provider_branch_is_covered_by_the_test_above`) · 2는 `applicable=false`를
+  **돈 쓰기 전에** faked 디스크립터로 실증 · 5는 "diff가 단 한 줄 추가"·"관계없는 dirt는 dirty인
+  채로"까지 단언한다.
+- Changed(**Phase 0 — ts 절반은 아무도 안 물었다**, 가드 +6): DoD가 "로더·타입 검증 **(py/ts)**"인데
+  TS를 읽는 테스트가 **0개**였다(같은 기법을 쓰는 파일이 이미 **15개**인데 이 쌍만 빠졌다).
+  먼저 "TS가 두 번째 로더인가"를 물었고 **아니었다** — 그 파일이 스스로 *"Deliberately NOT a YAML
+  reader"*라 적는다. 그래도 **계약은 네트워크를 건넌다**(`to_dict()` → `interface`). 실측: 필드 9·
+  Sync 4값·Health 5값이 **정확히 일치**한다. ⇒ 결함이 아니라 **집행 부재**이고, TS가 두 축을
+  **union literal**로 적기 때문에 실패가 날카롭다: py에 값을 하나 더하면(M37이 `n/a`로 실제로 한
+  변경) 대시보드 타입이 "존재할 수 없다"는 값이 도착하는데 **`tsc`는 계속 초록**이다(Risk 7).
+- Verified(**변이 5종 전부 red**): py enum 값 추가 · ts union에서 `n/a` 제거 · py `to_dict`에 새 키 ·
+  ts interface에서 `applicable` 제거 · **interface 이름을 바꿔 파서 무력화**(공허 통과 방지가 산다).
+  복구 후 초록, 워킹트리 깨끗.
+- Verified(**Phase 3② — 구현은 있고 묻는 쪽이 하나뿐이다**, 미수정·승인 사안): `guard_rollback`을
+  부르는 러너는 **`onprem_runner` 하나**인데 `ROLLBACK_ACTIONS`는 **네 provider 7종을 다 안다**.
+  ⚠️**M31이 고친 건 목록이고, 호출 지점을 세는 가드는 없다** — M18 계열이 한 층 위에서 재발했다
+  (세는 대상이 액션이 아니라 **러너**였다). 건너뛸 근거 둘을 다 물었고 **둘 다 성립하지 않는다**:
+  gcp/azure 러너는 롤백 직전 **매니페스트를 이미 GET한다**(배선 비용 = 추가 호출 0) · 레지스트리가
+  kind/k3s만 선언한 건 그 모듈이 **"소유권은 라이브 마커에서 읽는다"**고 명시하므로 근거가 아니다.
+  ⛔안 고쳤다 — 배선하면 **지금 성공하는 롤백이 거부**된다(fail-closed지만 동작 변경).
+- Verified(**Phase 1b는 정적만**): flux는 134줄 실구현, 두 어댑터가 `wave`를 각자 시맨틱으로 렌더.
+  라이브는 **오늘 재현 불가** — Docker 데몬 down(kind), k3s `k8s-lab`은 살아 있으나 **네임스페이스가
+  기본 4개뿐**(flux·워크로드 없음). `STATUS` Risk 5의 "여는 조건: k3s-lab에 워크로드"를 **측정이
+  확인**했다. ⚠️"한때 통과했다"와 "지금 재현된다"는 다르며 이 기록은 후자만 주장하지 않는다.
+- Verified: `make check` **2285 passed, 2 skipped**(2026-08-18 로컬 macOS·py3.13, 37.0s).
+  ⚠️게이트가 스스로를 잡았다 — `test_gate_number_claims`가 **진입점 셋이 다 같은 숫자를 말할 때까지**
+  red였다(brief·STATUS만 고치고 NEXT_PLAN을 빠뜨리자 그 자리에서 실패).
+- Blockers: 없음. ⛔**승인 대기 하나**: Phase 3② 배선(remediation 동작 변경).
+- Next: 08-19 이후 AMP 청구액 대조 · Phase 3② 배선 여부 결정.
+
+
 ## 2026-08-18 — `cost_metrics` 잔여: 기록된 이유가 맞았고, 면제는 목록이 아니라 경계였다 (gate 2279)
 
 - Status: 08-19 전까지 AMP 청구액은 원리상 못 잰다. 그래서 잔여 목록의 **`cost_metrics`**
@@ -66,34 +103,3 @@
 - Blockers: 없음. ⚠️도중에 **ruff 비교용 `git stash`/`pop`이 `git rm`을 언스테이지**해
   `git ls-files`엔 있고 디스크엔 없는 파일이 생겼다 — **그걸 스캔하는 가드가 잡았다.**
 - Next: 08-19 이후 AMP 청구액 대조(4a의 마지막 미측정).
-
-## 2026-08-17 — ⓒ: 앞쪽은 맞았고 "테스트가 고정했다"가 틀렸다 (gate 2269)
-
-- Status: 마지막 미측정 항목 **ⓒ**(*"티어 2는 첫 매치가 이긴다(AWS는 점수제) — 테스트가
-  고정했으니 우연이 아니라 결정이다"*). **앞쪽은 정확하고 뒤쪽이 틀렸다.**
-- Verified(**기존 가드가 생산 경로를 한 번도 안 물었다**): `test_capability_catalog_scan`의
-  케이스는 **후보를 유일하게 가리는 capability 집합을 손으로 골랐다**(`["rollback_release"]` →
-  health-check-failure, `["drain_node"]` → network-latency-high). ⚠️**어떤 signal 어댑터도
-  그런 집합을 안 낸다** — `kubernetes-workload`엔 전부 `restart_workload`+`scale_out`을 내고
-  그건 **후보 셋과 동시에 겹친다.** 즉 **첫-매치 구현과 점수제 구현이 답이 같은 경우만
-  태웠다**(Risk 12⑤). 게다가 `["rollback_release"]`는 **그 세 provider가 추천하지 않는 값**이다
-  (오늘 M35에서 측정) — 생산에서 도달 불가한 입력으로 통과하고 있었다.
-- Verified(**실제 집합으로 물은 결과**): GCP/Azure는 OOM·health-check·latency **셋 다**
-  `eks-pod-oom`/**rto 180**을 보고한다. AWS는 namespace(+2)·keyword(+1) 점수로 **셋을
-  구분한다** — health-check는 `health-check-failure`/**rto 240**. 액션은 추천에서 오므로
-  같지만 **운영자에게 보고되는 runbook_id·rto_sec이 다르다**(M22 계열: 사람에게 틀린 걸 보여준다).
-- Verified(**catalog 규약의 안전 속성이 provider마다 다르다**): *"appending은 선택을 못
-  바꾼다"*는 주석은 **AWS 점수 동점 규칙**에 대한 것이다. GCP/Azure는 점수가 없어 **순서가 곧
-  알고리즘**이라, 앞에 끼운 런북이 **모든 선택을 훔친다**(실측: `thief`/rto 9999). 주석에
-  provider 범위를 적고 가드로 집행했다.
-- Changed: `catalog.py` 주석에 **AWS-scoped임과 "append, never insert"**를 명시. `src` 동작
-  변경은 **0** — 판별 수단을 줄지는 **설계 결정**이라 손대지 않았다(`NEXT_PLAN` ⓒ).
-- Changed(가드 +12, `test_tier2_selection_is_ordered_not_scored.py` 신규): 입력을 **어댑터에서
-  직접 읽어** 픽스처가 생산과 어긋날 수 없게 했다 · 전제(후보>1)를 먼저 묻는다 · GCP/Azure ×
-  세 인시던트 · AWS가 셋을 구분함 · **앞에 끼우면 훔치고 뒤에 붙이면 안 훔친다.**
-- Verified(**변이 4종 전부 red**): 첫→마지막 매치(9건) · overlap 게이트 제거(6건) · 추천 집합
-  축소로 모호성 제거(4건) · **AWS namespace 점수 죽이기(1건)**. ⚠️**마지막이 1건인 게 요지다** —
-  AWS 점수제가 셋을 구분한다는 사실을 잡는 건 **오늘 만든 가드 하나뿐**이었다.
-  `make check` **2269 passed, 2 skipped**(로컬 macOS·py3.13).
-- Blockers: 없음. ⛔설계 결정 하나가 열렸다(GCP/Azure 판별 수단) + M35의 `rollback_release` 정책.
-- Next: 08-19 이후 AMP 청구액 대조.
