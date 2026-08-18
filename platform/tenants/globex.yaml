@@ -18,4 +18,10 @@ environments:
     substrate: kind
     delivery: argocd
     addons:
-      observability: kube-prometheus-stack 87.17.0
+      # Managed, on purpose: two tenants share this cluster and only one of them
+      # runs a self-hosted Prometheus. This is the declaration Phase 4a's DoD asks
+      # for — until it existed, `expand_desired`'s managed branch had no caller and
+      # the `applicable=false` axis had only ever been proven with a faked
+      # descriptor. Nothing is installed for it; the read model reports it as
+      # sync=n/a rather than the render pretending it is in sync.
+      observability: amazon-managed-prometheus

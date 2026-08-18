@@ -111,7 +111,14 @@ def _capabilities(resource_type: str) -> list[str]:
     if resource_type == "database-instance":
         return ["scale_database_read", "open_change_request"]
     if resource_type == "streaming-consumer":
-        return ["scale_out_workers", "open_change_request"]
+        # `rebalance_consumer` was missing here while AWS, GCP and on-prem all
+        # recommended it and Azure's *execution* adapter has resolved it since the
+        # "9 runbooks × 4 providers" commit (`AZURE-RebalanceEventHubConsumer`).
+        # All four signal adapters were written in one commit and this one was born
+        # without it — wrong from the start rather than gone stale. Tier 2 resolves
+        # its actions from these recommendations, not from the runbook's steps, so
+        # the omission made a remediation Azure implements unreachable on Azure.
+        return ["scale_out_workers", "rebalance_consumer", "open_change_request"]
     return ["open_change_request"]
 
 

@@ -5,7 +5,7 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(**M15=공급망 0→집행 + Phase 5 경계 +
 > `main` 보호**, M14=결정 6건, M13=미소비 14건) / `PROGRESS_LOG.md`(+`docs/archive/`). **≤120줄**.
 
-## 현재 상태 (2026-08-17, gate 2251 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
+## 현재 상태 (2026-08-17, gate 2279 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
 
 **Phase 0·1a·1b·2·3 완결**(M10~M12) + **잔여 소진**(M13) + **결정 7건 닫힘**(D36·D38~D43).
 **공급망은 닫을 수 있는 만큼 닫혔다**(어드미션만 업스트림 대기) · **`main`은 보호된다**
@@ -42,8 +42,11 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
 - [ ] **Phase 4 — 4a는 라이브다(08-17, D50). 남은 건 측정 하나와 설계 하나.**
   `docs/plans/2026-08-15-4a-remote-write-allowlist.md` **§9가 권위**(복제 금지 — ⚠️이 규약이 겨냥한
   실패가 실제로 났다: 진입점 3곳이 "≈$5/월"을 복제해 승인까지 갔는데 **100배 틀렸다**).
-  DoD 넷 중 **③ 완료**(AMP가 4종 **308 시계열** 반환) · **④는 이미 서 있고**(`from_managed`) ·
-  **①② 미착수 — 관리형을 무엇으로 렌더할지는 설계 결정**(현재 `ManagedBackendNotRenderable`로 거부).
+  DoD **넷 다 닫혔다**(08-17): ③AMP가 4종 **308 시계열** 반환 · ④`from_managed` · **①② 결정·구현**
+  (M37) — **관리형은 매니페스트를 내지 않고, 그 부재를 read model이 설명한다**(`applicable=False`·
+  sync **n/a**). **새 매니페스트 종류는 발명하지 않았다** · `globex/dev`가 실제로 선언한다(①이
+  ②의 하중이다) · **관리형은 싱글턴 문제가 아니다**(설치가 없으니 두 번째 컨트롤러가 없다) ·
+  ⛔`ManagedBackendNotRenderable`는 **삭제**(결정이 났으므로 죽은 코드).
   ⛔**측정 하나: 08-19 이후 실제 청구액**(CE 2일 지연 · ⚠️크레딧 제외 필터 없으면 $0으로 보인다).
   ⚠️**$0 선행: BQ 결제 내보내기**만(`GCP_BILLING_EXPORT_SETUP.md`, 콘솔 수동 · `make spend-check`).
   ⚠️4a는 자격증명 파티션 **미증명**(Risk 10=4b) · 4b는 **30분 TTL 가드**가 상시와 안 맞는다 ·
@@ -64,19 +67,17 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
 
 > 완료분은 `COMPLETED_SUMMARY.md` **M12**·**M13** · `PROGRESS_LOG.md` · `docs/evidence/`.
 
-- [ ] **DUAL 모드 조건부 리다이렉트** — `slack_live_approval`은 닫혔고(08-16) 이것만 남았다.
-  **하중을 못 받는 가드**가 되므로 안 만들었다.
-- [ ] **capability 스캔 잔여 ⓐ·ⓒ — 정책 사안이라 안 고쳤다(ⓑ는 08-15에 닫힘, M19가 권위)**
-  ⓐ**`kafka-lag-spike`만 두 dict가 어긋난다**(스텝엔 `rebalance_consumer`, `capabilities`엔 없음
-  — **어긋난 쪽이 또 에스컬레이션 스텝**): 더하면 매치 면이 넓어지고 빼면 스텝이 준다,
-  **둘 다 동작 변경** · ⓒ**티어 2는 첫 매치가 이긴다**(AWS는 점수제) — 테스트가 고정했으니
-  **우연이 아니라 결정**이다.
+- [ ] **DUAL 모드 조건부 리다이렉트** — `slack_live_approval`은 닫혔고(08-16) 이것만 남았다. **하중을 못 받는 가드**가 되므로 안 만들었다.
+- [ ] **capability 스캔 ⓐ는 측정으로 닫혔다(08-17, M35). 남은 건 ⓒ와 새 정책 하나.**
+  ⓐ**현행 유지**: 티어 2(GCP/Azure)는 액션을 steps가 아니라 **`recommended_capabilities`에서** 만들고 `capabilities`는 **매치 게이트일 뿐** — `scale_out_workers`가 이미 겹쳐 **더해도 관측 변화 0**, **빼면 네 provider가 다 resolve하는 스텝을 잃는다**(대칭이 아니다).
+  ⛔**새 정책 = `kubernetes-workload`의 `rollback_release`**: **onprem만 추천**, 나머지 셋은 **구현했는데 추천 안 한다**(1대3, **소수가 갖고 있다**) — 롤백은 재시작보다 파괴적이라 사람이 정한다. `test_signal_capability_parity.py::JUSTIFIED_GAPS`가 들고 **어긋나면 red**.
+  ⓒ**측정하고 고쳤다(08-17, M36) — 앞쪽은 맞고 "테스트가 고정했다"가 틀렸다**: 기존 가드는 **후보를 유일하게 가리는 capability 집합을 손으로 골라** 물었고(`["rollback_release"]` 등) **어떤 signal 어댑터도 그런 집합을 안 낸다**(Risk 12⑤). 실제 집합으로 물으면 `kubernetes-workload` 후보가 **셋**인데 GCP/Azure는 인시던트 종류와 무관하게 늘 **`eks-pod-oom`/rto 180**을 보고한다 — AWS는 namespace+keyword 점수로 **셋을 구분한다**(health-check는 rto **240**). ✅**고쳤다**: 점수 함수를 계약 모듈(`schema.score_runbook`)에 한 벌 두고 셋이 읽는다 — 이제 세 provider가 같은 인시던트에 같은 답을 낸다(health-check=rto 240). ⚠️**재는 중에 더 나왔다**: 티어 2가 액션을 **조건 평가 없이** 추천에서 만들어, **에스컬레이션 전용** capability(`scale_database_read`·`rebalance_consumer`)가 **first-response로 실행**되고 있었다 — 같은 모듈의 **티어 1은 조건을 평가한다**(M21 모양). 이제 **승자의 steps에서** 만든다. ⚠️**티어 2 액션을 단언하는 테스트가 하나도 없어서** 그 변경에 red가 안 났다 → 가드 신설.
 - [ ] **`cost_metrics` — 의도적으로 남김**: `deployment_id`가 없어 렌더하는 뷰에 안 닿는다(08-08).
 - [ ] **⚠️`pip install .[azure]`가 안 된다(08-15 실측)** — `agent-framework>=1.0` 단독 **150초
   타임아웃**(`core[all]`만 요구 → pip 무한 역추적). **더 나가**: `msft_deployer.py:19`의
   `AzureOpenAIResponsesClient`이 core 1.14.0에 **없다**(테스트가 `sys.modules`를 스텁해 통과 —
   **진짜 라이브러리에 대고 실행된 적이 없다**). **안 고쳤다 — 현재 API를 모르고 추측은 발명.**
-  재개 = 업스트림이 `[all]` 강제를 풀거나 설치 성공. 증거 `the-azure-extra-cannot-be-installed.log`.
+  재개 = 업스트림이 `[all]`을 풀거나 설치 성공. 증거 `the-azure-extra-cannot-be-installed.log`.
 - [ ] **GCP/Azure 90일 보관** — **`STATUS` Risk 2가 권위**(스토어가 없어 지울 데이터 0 → Phase 4).
   ⚠️"`resolved_at`은 읽는 쪽이 없다"는 **틀렸다**(08-16 재측정): `oncall_reporter._minutes_between`이
   `started_at`과 짝지어 읽고 `aws/reporting.py:239`가 넘긴다 · **analyzer 폴백 severity는 정책**.

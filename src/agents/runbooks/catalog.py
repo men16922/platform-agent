@@ -57,6 +57,13 @@ BUILTIN_RUNBOOKS: dict[str, dict[str, Any]] = {
     # Placed after the originals on purpose: `_match_runbook_registry` keeps the
     # first entry on a score tie, so appending cannot change which runbook an
     # alarm already selected.
+    #
+    # ⚠️ All three providers score now (`schema.score_runbook`), so a tie keeps the
+    # first entry everywhere and this convention holds everywhere. It is still
+    # load-bearing, for the case where *nothing* scores: every candidate is 0, the
+    # first wins, and an entry inserted before these would take those selections
+    # with its own RTO. Append, never insert.
+    # Enforced by `tests/test_tier2_selection_is_scored_across_providers.py`.
     "disk-full": {
         "runbook_id": "disk-full",
         # CWAgent is where filesystem metrics land; RDS reports its own headroom.

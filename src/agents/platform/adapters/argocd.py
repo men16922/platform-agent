@@ -53,6 +53,13 @@ class ArgoCDDeliveryAdapter(DeliveryAdapter):
         reject_cluster_singletons(addons)
         manifests: list[dict[str, Any]] = []
         for addon in addons:
+            if addon.managed:
+                # Nothing to install: the cloud operates this backend. Skipped here
+                # rather than filtered by the caller so both engines behave the same
+                # way, and it is not a silent drop — the collector reports the same
+                # add-on via `from_managed` (`applicable=False`, sync n/a), which is
+                # what distinguishes "served elsewhere" from "delivery is lagging".
+                continue
             name = f"{tenant.naming_prefix}-{env.name}-{addon.capability}"
             manifests.append(
                 {
