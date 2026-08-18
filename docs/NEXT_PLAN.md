@@ -5,7 +5,7 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(**M15=공급망 0→집행 + Phase 5 경계 +
 > `main` 보호**, M14=결정 6건, M13=미소비 14건) / `PROGRESS_LOG.md`(+`docs/archive/`). **≤120줄**.
 
-## 현재 상태 (2026-08-18, gate 2285 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
+## 현재 상태 (2026-08-18, gate 2291 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
 
 **Phase 0·1a·1b·2·3 완결**(M10~M12) + **잔여 소진**(M13) + **결정 7건 닫힘**(D36·D38~D43).
 **공급망은 닫을 수 있는 만큼 닫혔다**(어드미션만 업스트림 대기) · **`main`은 보호된다**
@@ -69,7 +69,7 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
 
 - [ ] **DUAL 모드 조건부 리다이렉트** — `slack_live_approval`은 닫혔고(08-16) 이것만 남았다. **하중을 못 받는 가드**가 되므로 안 만들었다.
 - ⛔**capability 스캔은 셋 다 닫혔다(08-17)** — ⓐ**현행 유지**(M35: 티어 2는 액션을 `recommended_capabilities`에서 만들고 `capabilities`는 매치 게이트일 뿐 — 더해도 관측 변화 0, **빼면 네 provider가 다 resolve하는 스텝을 잃는다**) · ⓒ**측정하고 고쳤다**(M36+M37: 기존 가드가 **생산에서 도달 불가한 capability 집합**으로 물어 첫-매치와 점수제의 답이 같은 경우만 태웠다 → 점수 함수를 계약 모듈에 한 벌 두고 셋이 읽는다) · `rollback_release`**는 추천 목록 현행 유지**(진짜 문제는 목록이 아니라 **티어 2가 조건 평가 없이 추천에서 액션을 만든 것**이었고 그걸 고쳤다; `JUSTIFIED_GAPS`가 들고 어긋나면 red). **다시 열지 말 것.**
-- [ ] ⚠️**Phase 3② 배선이 1/4다(08-18 실측, 승인 사안)** — `reconciler.guard_rollback`(롤백을 reconciler가 되돌릴 상황이면 **거부**)을 부르는 러너는 **`onprem_runner` 하나**다. `ROLLBACK_ACTIONS`는 **네 provider 7종을 다 안다**(M31이 AWS 둘을 채웠다)는데 **묻는 쪽이 하나**다 — M31이 고친 건 **목록**이고 **호출 지점을 세는 가드는 없다**. ⚠️**gcp/azure 러너는 롤백 직전 매니페스트를 이미 GET한다**(컨테이너 이미지를 읽으려고) — `detect_reconciler`가 볼 `metadata.annotations`/`labels`가 **손에 있는데 버려진다**(추가 API 호출 0). 레지스트리가 kind/k3s만 선언한 건 건너뛸 근거가 못 된다: 그 모듈이 소유권은 레지스트리가 아니라 **라이브 마커**에서 읽는다고 명시한다. ⛔**안 고쳤다 — 배선하면 지금 성공하는 롤백이 `ReconcilerConflict`로 거부된다**(fail-closed 방향이지만 remediation 동작 변경). 증거 `docs/evidence/phase-dod-verification-2026-08-18.log`.
+- [ ] ⚠️**Phase 3② — GCP는 배선했다(08-18, 승인 후). 남은 건 Azure·AWS.** `guard_rollback`을 부르는 러너가 **onprem 하나**였는데 `ROLLBACK_ACTIONS`는 **네 provider 7종을 다 알았다** — M31이 고친 건 **목록**이고 **호출 지점을 세는 가드가 없었다**(M18이 한 층 위에서 재발: 세는 대상이 액션이 아니라 **러너**). ✅**GCP 배선**: 롤백 walk가 이미 GET하던 매니페스트를 그대로 `guard_rollback`에 넘긴다 — **추가 API 호출 0**, patch 앞에서 거부. ⛔**Azure는 `JUSTIFIED_GAPS`**(executor가 러너를 아예 안 부른다 → 하중 없는 가드가 된다; 그 항목을 고치면 **이 면제는 지워야 하고 가드가 그걸 red로 잡는다**) · **AWS는 러너가 없다**(SSM Automation 경로, 가드가 그 사실을 박아 뒀다). ⚠️**가드 자신이 한 번 틀렸다**: 문자열 검사라 **호출을 지워도 import 줄이 남아 통과**했다 → **AST로 실제 호출**을 센다. 증거 `docs/evidence/phase-dod-verification-2026-08-18.log`.
 - ⛔**`cost_metrics`는 측정으로 닫혔다(08-18)** — 기록된 이유가 **맞다**: cost를 렌더하는 뷰는 **한 곳뿐**이고(`deployments/[id]`) 그걸 먹이는 `mergeActivity`가 `deployment_id === id`로 거른다. route/provider-activity 행은 그 키가 없어 **원리상 못 닿는다**(더하면 안 읽히는 필드가 하나 더 는다). ⚠️**면제는 목록이 아니라 경계다** — 가드가 의무를 **읽는 쪽 선택 규칙에서 유도**하고 `src/agents` **전 모듈**을 rglob으로 훑는다(ACTIVITY writer 넷 중 **하나는 `activity_writer.py`**). 변이 3종 red(롤백 필드 제거 · route에 `deployment_id` 부여 · 스윕 무력화). 증거 `docs/evidence/cost-metrics-exemption-is-derived-and-load-bearing.log`. **다시 열지 말 것.**
 - [ ] **⚠️`pip install .[azure]`가 안 된다(08-15 실측)** — `agent-framework>=1.0` 단독 **150초
   타임아웃**(`core[all]`만 요구 → pip 무한 역추적). **더 나가**: `msft_deployer.py:19`의

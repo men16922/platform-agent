@@ -123,3 +123,30 @@ fail-closed(모듈의 선언된 기본값)지만 **remediation 동작 변경**�
 tenant 파티션은 **미증명**(Risk 10 = 4b). 5는 경계까지 — `test_registry_write.py`가
 *"계획이 정확히 한 경로를 이름하고 그것은 그 tenant 자신의 것"* · *"diff가 단 한 줄 추가"* ·
 *"관계없는 dirt는 dirty인 채로 둔다"*까지 단언한다. UI·실제 PR 생성은 여전히 없다.
+
+---
+
+## 추가 (같은 날, 승인 후): Phase 3② GCP 배선
+
+결정 = **GCP만 배선**(Azure는 executor가 러너를 안 부르는 별개 열린 항목이라 같이 건드리면
+두 결정이 섞인다 · AWS는 SSM 경로라 모양이 다르다).
+
+- `gcp_runner.py`: 롤백 walk가 **이미 GET하던** deployment를 `manifest`로 붙잡아
+  `guard_rollback`에 넘긴다. **추가 API 호출 0.** 거부는 `requests.patch` **앞에서** 일어난다.
+- 가드 신설(+6, `test_reconciler_conflict.py`): ①러너 스윕(롤백 액션을 실행하는 러너는 전부
+  guard를 불러야 한다, 면제는 이유 필수) ②**면제가 닫히면 지우라**는 stale 검사 ③공허 통과
+  방지 ④**AWS에 러너가 없다는 사실 자체를 박음**(빠뜨린 게 아니라 모양이 다르다는 기록)
+  ⑤GKE 라이브 경로에서 **patch가 안 불린다** ⑥소유자 없는 워크로드는 **여전히 롤백된다**.
+
+⚠️**가드가 한 번 틀렸다 — 변이가 잡았다.** 첫 판은 `"guard_rollback" in src` 문자열 검사였다.
+호출만 지우는 변이(=반쯤 되돌린 고침의 실제 모양)에서 **import 줄이 남아 통과**했다.
+AST로 **실제 `ast.Call`**을 세게 고치니 같은 변이가 1건 → **2건 red**로 바뀌었다.
+
+    기준선                                          19 passed
+    M1' 호출만 제거(import는 남김)                   2 failed   ← 강화 전엔 1 failed
+    M2  guard_rollback을 no-op으로                   4 failed
+    M3' azure가 실제로 guard를 부름(면제 stale)       1 failed
+    M4  매니페스트를 빈 dict로(마커를 못 보게)        2 failed
+    복구 후                                          19 passed
+
+`make check` **2291 passed, 2 skipped** (2026-08-18 로컬 macOS·py3.13).

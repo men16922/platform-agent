@@ -1,6 +1,6 @@
 # PROGRESS_LOG — platform-agent
 
-최종 갱신: 2026-08-17
+최종 갱신: 2026-08-18
 
 > 최신 3–5개 증분. **최신이 위.** **≤120줄.** 넘치면 `/tidy-docs` 로 압축.
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
@@ -31,16 +31,20 @@
   (세는 대상이 액션이 아니라 **러너**였다). 건너뛸 근거 둘을 다 물었고 **둘 다 성립하지 않는다**:
   gcp/azure 러너는 롤백 직전 **매니페스트를 이미 GET한다**(배선 비용 = 추가 호출 0) · 레지스트리가
   kind/k3s만 선언한 건 그 모듈이 **"소유권은 라이브 마커에서 읽는다"**고 명시하므로 근거가 아니다.
-  ⛔안 고쳤다 — 배선하면 **지금 성공하는 롤백이 거부**된다(fail-closed지만 동작 변경).
+  ⛔안 고쳤다 → **승인받아 GCP만 배선했다**: 롤백 walk가 이미 GET하던 매니페스트를 그대로
+  넘긴다(**추가 호출 0**), 거부는 `patch` 앞이다. Azure는 `JUSTIFIED_GAPS`(러너를 안 부르니
+  하중이 없다 — 그 항목이 닫히면 **면제를 지우라고 가드가 red를 낸다**), AWS는 **러너가 없다**
+  (SSM 경로 — 그 사실을 가드에 박았다). ⚠️**가드가 한 번 틀렸다**: 문자열 검사라 **호출을 지워도
+  import 줄이 남아 통과**했다 → **AST로 실제 호출**을 센다(같은 변이가 1건→**2건 red**).
 - Verified(**Phase 1b는 정적만**): flux는 134줄 실구현, 두 어댑터가 `wave`를 각자 시맨틱으로 렌더.
   라이브는 **오늘 재현 불가** — Docker 데몬 down(kind), k3s `k8s-lab`은 살아 있으나 **네임스페이스가
   기본 4개뿐**(flux·워크로드 없음). `STATUS` Risk 5의 "여는 조건: k3s-lab에 워크로드"를 **측정이
   확인**했다. ⚠️"한때 통과했다"와 "지금 재현된다"는 다르며 이 기록은 후자만 주장하지 않는다.
-- Verified: `make check` **2285 passed, 2 skipped**(2026-08-18 로컬 macOS·py3.13, 37.0s).
+- Verified: `make check` **2291 passed, 2 skipped**(2026-08-18 로컬 macOS·py3.13, 37.4s) — 가드 **+12**.
   ⚠️게이트가 스스로를 잡았다 — `test_gate_number_claims`가 **진입점 셋이 다 같은 숫자를 말할 때까지**
   red였다(brief·STATUS만 고치고 NEXT_PLAN을 빠뜨리자 그 자리에서 실패).
-- Blockers: 없음. ⛔**승인 대기 하나**: Phase 3② 배선(remediation 동작 변경).
-- Next: 08-19 이후 AMP 청구액 대조 · Phase 3② 배선 여부 결정.
+- Blockers: 없음. Phase 1b 라이브는 **정적 검증으로 남기기로 결정**(Docker down · k3s-lab 비어 있음).
+- Next: 08-19 이후 AMP 청구액 대조 · Azure executor 디스패치를 고치면 **Phase 3② 면제도 함께 지울 것**.
 
 
 ## 2026-08-18 — `cost_metrics` 잔여: 기록된 이유가 맞았고, 면제는 목록이 아니라 경계였다 (gate 2279)
