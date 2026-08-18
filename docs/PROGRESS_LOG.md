@@ -1,11 +1,83 @@
 # PROGRESS_LOG — platform-agent
 
-최종 갱신: 2026-08-17
+최종 갱신: 2026-08-18
 
 > 최신 3–5개 증분. **최신이 위.** **≤120줄.** 넘치면 `/tidy-docs` 로 압축.
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-18 — Phase DoD 전수 검증: Phase 0의 ts 절반과 Phase 3②의 배선이 비어 있었다 (gate 2285)
+
+- Status: 지시 "최대한 많은 phase 검증". 권위는 설계 계획서 §Phases의 **DoD 문장 그 자체**로
+  두고, 각 절을 그것을 단언하는 테스트에 맞댔다. 전체 판정표는 증거 로그가 권위.
+  `docs/evidence/phase-dod-verification-2026-08-18.log`.
+- Verified(**0·1a·2·5 성립**): 1a는 DoD 세 절이 이름 붙은 테스트로 있고 ⚠️**형제를 세는 가드까지
+  있다**(`test_every_provider_branch_is_covered_by_the_test_above`) · 2는 `applicable=false`를
+  **돈 쓰기 전에** faked 디스크립터로 실증 · 5는 "diff가 단 한 줄 추가"·"관계없는 dirt는 dirty인
+  채로"까지 단언한다.
+- Changed(**Phase 0 — ts 절반은 아무도 안 물었다**, 가드 +6): DoD가 "로더·타입 검증 **(py/ts)**"인데
+  TS를 읽는 테스트가 **0개**였다(같은 기법을 쓰는 파일이 이미 **15개**인데 이 쌍만 빠졌다).
+  먼저 "TS가 두 번째 로더인가"를 물었고 **아니었다** — 그 파일이 스스로 *"Deliberately NOT a YAML
+  reader"*라 적는다. 그래도 **계약은 네트워크를 건넌다**(`to_dict()` → `interface`). 실측: 필드 9·
+  Sync 4값·Health 5값이 **정확히 일치**한다. ⇒ 결함이 아니라 **집행 부재**이고, TS가 두 축을
+  **union literal**로 적기 때문에 실패가 날카롭다: py에 값을 하나 더하면(M37이 `n/a`로 실제로 한
+  변경) 대시보드 타입이 "존재할 수 없다"는 값이 도착하는데 **`tsc`는 계속 초록**이다(Risk 7).
+- Verified(**변이 5종 전부 red**): py enum 값 추가 · ts union에서 `n/a` 제거 · py `to_dict`에 새 키 ·
+  ts interface에서 `applicable` 제거 · **interface 이름을 바꿔 파서 무력화**(공허 통과 방지가 산다).
+  복구 후 초록, 워킹트리 깨끗.
+- Verified(**Phase 3② — 구현은 있고 묻는 쪽이 하나뿐이다**, 미수정·승인 사안): `guard_rollback`을
+  부르는 러너는 **`onprem_runner` 하나**인데 `ROLLBACK_ACTIONS`는 **네 provider 7종을 다 안다**.
+  ⚠️**M31이 고친 건 목록이고, 호출 지점을 세는 가드는 없다** — M18 계열이 한 층 위에서 재발했다
+  (세는 대상이 액션이 아니라 **러너**였다). 건너뛸 근거 둘을 다 물었고 **둘 다 성립하지 않는다**:
+  gcp/azure 러너는 롤백 직전 **매니페스트를 이미 GET한다**(배선 비용 = 추가 호출 0) · 레지스트리가
+  kind/k3s만 선언한 건 그 모듈이 **"소유권은 라이브 마커에서 읽는다"**고 명시하므로 근거가 아니다.
+  ⛔안 고쳤다 → **승인받아 GCP만 배선했다**: 롤백 walk가 이미 GET하던 매니페스트를 그대로
+  넘긴다(**추가 호출 0**), 거부는 `patch` 앞이다. Azure는 `JUSTIFIED_GAPS`(러너를 안 부르니
+  하중이 없다 — 그 항목이 닫히면 **면제를 지우라고 가드가 red를 낸다**), AWS는 **러너가 없다**
+  (SSM 경로 — 그 사실을 가드에 박았다). ⚠️**가드가 한 번 틀렸다**: 문자열 검사라 **호출을 지워도
+  import 줄이 남아 통과**했다 → **AST로 실제 호출**을 센다(같은 변이가 1건→**2건 red**).
+- Verified(**Phase 1b는 정적만**): flux는 134줄 실구현, 두 어댑터가 `wave`를 각자 시맨틱으로 렌더.
+  라이브는 **오늘 재현 불가** — Docker 데몬 down(kind), k3s `k8s-lab`은 살아 있으나 **네임스페이스가
+  기본 4개뿐**(flux·워크로드 없음). `STATUS` Risk 5의 "여는 조건: k3s-lab에 워크로드"를 **측정이
+  확인**했다. ⚠️"한때 통과했다"와 "지금 재현된다"는 다르며 이 기록은 후자만 주장하지 않는다.
+- Verified: `make check` **2291 passed, 2 skipped**(2026-08-18 로컬 macOS·py3.13, 37.4s) — 가드 **+12**.
+  ⚠️게이트가 스스로를 잡았다 — `test_gate_number_claims`가 **진입점 셋이 다 같은 숫자를 말할 때까지**
+  red였다(brief·STATUS만 고치고 NEXT_PLAN을 빠뜨리자 그 자리에서 실패).
+- Blockers: 없음. Phase 1b 라이브는 **정적 검증으로 남기기로 결정**(Docker down · k3s-lab 비어 있음).
+- Next: 08-19 이후 AMP 청구액 대조 · Azure executor 디스패치를 고치면 **Phase 3② 면제도 함께 지울 것**.
+
+
+## 2026-08-18 — `cost_metrics` 잔여: 기록된 이유가 맞았고, 면제는 목록이 아니라 경계였다 (gate 2279)
+
+- Status: 08-19 전까지 AMP 청구액은 원리상 못 잰다. 그래서 잔여 목록의 **`cost_metrics`**
+  (*"`deployment_id`가 없어 렌더하는 뷰에 안 닿는다", 08-08*)를 규율대로 시험했다.
+  **PR #43**(3커밋, capability 스캔 셋)은 CI 초록 확인 후 squash 병합했다(`a9331bb`).
+- Verified(**쓰는 쪽 형제는 넷이고 하나는 다른 모듈에 있다**): ACTIVITY 행 writer는
+  `record_route_activity`·`_write_row`·`record_rollback`(deploy_recorder) + **`record_agent_activity`
+  (`operations/activity_writer.py`)**. 그중 둘만 `cost_metrics`를 쓴다. ⚠️`record_route_activity`는
+  **350KB짜리 trace를 쓰면서** 그것만 안 쓴다 — `_cost_metrics`가 바로 그 trace에서 유도하므로
+  "쓸 수 있는데 안 쓴다"로 읽히는 모양이다.
+- Verified(**읽는 쪽으로 가니 결함이 아니라 범위였다**): cost를 렌더하는 곳은 **한 곳뿐**
+  (`deployments/[id]/page.tsx`)이고 그걸 먹이는 `mergeActivity`의 선택 규칙은 `deployment_id === id`
+  한 줄이다. route·provider-activity 행은 그 키가 없어 **원리상 그 뷰에 못 닿는다.** 더하면 이
+  저장소가 반복해 값을 치른 **"선언됐는데 아무도 안 읽는 필드"**가 하나 는다. ⇒ **현행 유지.**
+- Verified(**면제가 손으로 고른 목록인지**): 아니다. 가드가 의무를 **읽는 쪽 선택 규칙에서
+  유도**하고(모듈이 아니라 `deployment_id` 보유가 기준) 범위는 `SRC_AGENTS.rglob("*.py")`라
+  **전 모듈**을 덮는다 — 넷째 writer가 다른 모듈에 있어도 잡힌다. 공허 통과 방지도 있다(`>= 4`).
+- Verified(**변이 3종 전부 red**, 변이·실행·복구 한 스크립트): 롤백 행에서 `cost_metrics` 제거
+  (4건, db41874가 고친 그 결함) · **route에 `deployment_id` 부여**(1건 — 경계를 넘는 순간 의무가
+  생긴다는 게 요지) · `"PK": "ACTIVITY"` 리터럴을 깨 스윕 무력화(1건, 공허 통과 방지가 산다).
+  복구 후 8 passed, `git diff --stat` 비어 있음. 증거
+  `docs/evidence/cost-metrics-exemption-is-derived-and-load-bearing.log`.
+- Changed: **src 변경 0.** `NEXT_PLAN`에서 열린 잔여 → ⛔닫힘으로 이동. 진입점 stale도 고쳤다 —
+  brief가 이미 닫힌 ⓒ·`rollback_release`를 무과금 다음 수로 가리키고 있었고, 4a DoD ①②는
+  brief·STATUS 양쪽에서 "남은 설계 결정"인 채였다(M37이 결정·구현했다).
+- Verified: `make check` **2279 passed, 2 skipped**(2026-08-18 로컬 macOS·py3.13, 35.8s) —
+  08-17 숫자를 오늘 같은 기계에서 재측정해 baseline에 날짜와 기계를 적었다(Risk 12②).
+- Blockers: 없음. AMP 청구액은 **08-19 이후**(CE 2일 지연 · ⚠️크레딧 제외 필터).
+- Next: 08-19 이후 AMP 실제 청구액 대조.
+
+
 ## 2026-08-17 — 추천안 셋 수행: 점수제·조건 준수·관리형 렌더 (gate 2279)
 
 - Status: 열려 있던 판단 셋을 **추천안대로 실행**했다. ⓒ 판별 수단 · `rollback_release`
@@ -35,63 +107,3 @@
 - Blockers: 없음. ⚠️도중에 **ruff 비교용 `git stash`/`pop`이 `git rm`을 언스테이지**해
   `git ls-files`엔 있고 디스크엔 없는 파일이 생겼다 — **그걸 스캔하는 가드가 잡았다.**
 - Next: 08-19 이후 AMP 청구액 대조(4a의 마지막 미측정).
-
-## 2026-08-17 — ⓒ: 앞쪽은 맞았고 "테스트가 고정했다"가 틀렸다 (gate 2269)
-
-- Status: 마지막 미측정 항목 **ⓒ**(*"티어 2는 첫 매치가 이긴다(AWS는 점수제) — 테스트가
-  고정했으니 우연이 아니라 결정이다"*). **앞쪽은 정확하고 뒤쪽이 틀렸다.**
-- Verified(**기존 가드가 생산 경로를 한 번도 안 물었다**): `test_capability_catalog_scan`의
-  케이스는 **후보를 유일하게 가리는 capability 집합을 손으로 골랐다**(`["rollback_release"]` →
-  health-check-failure, `["drain_node"]` → network-latency-high). ⚠️**어떤 signal 어댑터도
-  그런 집합을 안 낸다** — `kubernetes-workload`엔 전부 `restart_workload`+`scale_out`을 내고
-  그건 **후보 셋과 동시에 겹친다.** 즉 **첫-매치 구현과 점수제 구현이 답이 같은 경우만
-  태웠다**(Risk 12⑤). 게다가 `["rollback_release"]`는 **그 세 provider가 추천하지 않는 값**이다
-  (오늘 M35에서 측정) — 생산에서 도달 불가한 입력으로 통과하고 있었다.
-- Verified(**실제 집합으로 물은 결과**): GCP/Azure는 OOM·health-check·latency **셋 다**
-  `eks-pod-oom`/**rto 180**을 보고한다. AWS는 namespace(+2)·keyword(+1) 점수로 **셋을
-  구분한다** — health-check는 `health-check-failure`/**rto 240**. 액션은 추천에서 오므로
-  같지만 **운영자에게 보고되는 runbook_id·rto_sec이 다르다**(M22 계열: 사람에게 틀린 걸 보여준다).
-- Verified(**catalog 규약의 안전 속성이 provider마다 다르다**): *"appending은 선택을 못
-  바꾼다"*는 주석은 **AWS 점수 동점 규칙**에 대한 것이다. GCP/Azure는 점수가 없어 **순서가 곧
-  알고리즘**이라, 앞에 끼운 런북이 **모든 선택을 훔친다**(실측: `thief`/rto 9999). 주석에
-  provider 범위를 적고 가드로 집행했다.
-- Changed: `catalog.py` 주석에 **AWS-scoped임과 "append, never insert"**를 명시. `src` 동작
-  변경은 **0** — 판별 수단을 줄지는 **설계 결정**이라 손대지 않았다(`NEXT_PLAN` ⓒ).
-- Changed(가드 +12, `test_tier2_selection_is_ordered_not_scored.py` 신규): 입력을 **어댑터에서
-  직접 읽어** 픽스처가 생산과 어긋날 수 없게 했다 · 전제(후보>1)를 먼저 묻는다 · GCP/Azure ×
-  세 인시던트 · AWS가 셋을 구분함 · **앞에 끼우면 훔치고 뒤에 붙이면 안 훔친다.**
-- Verified(**변이 4종 전부 red**): 첫→마지막 매치(9건) · overlap 게이트 제거(6건) · 추천 집합
-  축소로 모호성 제거(4건) · **AWS namespace 점수 죽이기(1건)**. ⚠️**마지막이 1건인 게 요지다** —
-  AWS 점수제가 셋을 구분한다는 사실을 잡는 건 **오늘 만든 가드 하나뿐**이었다.
-  `make check` **2269 passed, 2 skipped**(로컬 macOS·py3.13).
-- Blockers: 없음. ⛔설계 결정 하나가 열렸다(GCP/Azure 판별 수단) + M35의 `rollback_release` 정책.
-- Next: 08-19 이후 AMP 청구액 대조.
-
-## 2026-08-17 — ⓐ를 시험하니 답은 "현행 유지"였고, 스윕이 결함 넷을 냈다 (gate 2257)
-
-- Status: 무과금 목록에 남은 **capability 스캔 ⓐ·ⓒ**. 규율대로 **기록된 이유부터 시험**했다.
-- Verified(**ⓐ의 주장은 성립**): `kafka-lag-spike`가 유일하고 어긋남은 **한 방향뿐**(반대 0건 —
-  ⚠️처음엔 한 방향만 물었다). ⚠️**내 픽스처가 한 번 틀렸다**: resolve는 **(capability,
-  resource_type) 쌍**으로 키를 거는데 `kafka-topic`으로 물어 *"네 provider 전부 미구현"*으로
-  읽었다. 올바른 `streaming-consumer`로는 **전부 resolve된다.** 주장 전에 잡았다.
-- Verified(**두 선택지는 대칭이 아니다** — 08-12엔 "둘 다 동작 변경"이었다): 티어 2(GCP/Azure)는
-  액션을 **steps가 아니라 `recommended_capabilities`에서** 만들고 `capabilities`는 **매치
-  게이트일 뿐**이다. `scale_out_workers`가 이미 겹쳐 **더해도 관측 변화 0**, **빼면 네 provider가
-  다 resolve하는 에스컬레이션 스텝을 잃는다.** ⇒ **현행 유지로 닫는다.**
-- Verified(**스윕이 결함 넷 — 찾던 건 하나였다**): 네 signal 어댑터 × 전 resource_type을 AST로
-  훑고 **빠진 capability가 그 provider에서 resolve되는지**까지 물었다. ①`streaming-consumer`/
-  `rebalance_consumer`가 **Azure만 없다**(3대1)는데 Azure는 **구현하고 있다**. 네 어댑터는 **같은
-  커밋 `a22a283`에서 태어났고 Azure는 처음부터 빠져 있었다**(stale이 아니라 **쓰일 때부터 틀림**).
-  ②③④`kubernetes-workload`/`rollback_release`는 **onprem만 추천**하고 셋은 구현했는데 안 한다 —
-  ⚠️**1대3, 소수가 갖고 있다**. 롤백은 파괴적이라 **내가 정할 게 아니라** 알로리스트에 이유를
-  달아 **사람 결정으로 남겼다.**
-- Changed: Azure 추천에 `rebalance_consumer` 하나(+이유). ⚠️**Azure executor가 실행 없이
-  resolved를 보고하는 열린 항목과 맞닿는다** — 클레임이 하나 늘지만 **라이브 변경은 없다**(no-op).
-  그 항목을 고칠 이유이지, 구현을 못 쓰게 둘 이유는 아니다.
-- Changed(가드 +6, `test_signal_capability_parity.py` 신규): 규칙은 **"추천 안 해도 되는 건 실행
-  못 하는 것뿐"**. 알로리스트는 이유 없으면 못 넣고 ⚠️**현실과 어긋나면 red**. 공허 통과 방지도
-  뒀다 — **AST가 아무것도 못 읽으면 나머지가 저절로 통과**한다(내가 그 함정에 빠졌다).
-- Verified(**변이 4종 전부 red**): 고침 되돌리기 · 다른 provider에 새 구멍 심기 · 알로리스트 한
-  줄 비우기(=실재하는 구멍을 덮고 있다) · 알로리스트 stale화. `make check` **2257 passed, 2 skipped**.
-- Blockers: 없음. ⛔남은 정책 결정(`rollback_release`)은 `NEXT_PLAN`에 있다.
-- Next: 08-19 이후 AMP 청구액 대조 · ⓒ(첫-매치 vs 점수제)는 **미측정**.

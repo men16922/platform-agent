@@ -17,6 +17,7 @@ import structlog
 
 from src.agents.operations.runners import _k8s_rest
 from src.agents.operations.runners.gcp_auth import get_gcp_access_token
+from src.agents.platform.reconciler import guard_rollback
 
 if TYPE_CHECKING:
     from src.agents.platform.scope import IncidentScope
@@ -175,11 +176,27 @@ def _execute_gke_call(
             k8s_resp = requests.get(k8s_base_url, headers=k8s_headers, verify=ca_cert_path, timeout=15)
             if k8s_resp.status_code != 200:
                 raise RuntimeError(f"Failed to fetch deployment for rollback: {k8s_resp.text}")
-            
-            containers = k8s_resp.json().get("spec", {}).get("template", {}).get("spec", {}).get("containers", [])
+
+            manifest = k8s_resp.json()
+
+            # Phase 3② — refuse a rollback a reconciler would undo. This walk already
+            # had the manifest in hand (it reads `spec` for the container name) and
+            # threw away `metadata`, which is exactly where ArgoCD/Flux stamp
+            # ownership. So the check costs no extra API call; it was only ever
+            # missing because nobody asked. `onprem_runner` has asked since Phase 3
+            # and this path did not, which made the refusal a property of one runner
+            # rather than of the action — while `ROLLBACK_ACTIONS` named all four
+            # providers. Ownership is read off the live object, never off the
+            # registry: the registry says what *should* be managed and the question
+            # here is what *is*, and those differ exactly when a rollback is warranted.
+            guard_rollback(
+                action=action, manifest=manifest, log=log, log_prefix="gcp_runner",
+            )
+
+            containers = manifest.get("spec", {}).get("template", {}).get("spec", {}).get("containers", [])
             if not containers:
                 raise RuntimeError("No containers found in GKE deployment spec")
-            
+
             # Update image of the first container
             containers_patch = [{"name": containers[0]["name"], "image": rollback_version}]
             patch_body = {
