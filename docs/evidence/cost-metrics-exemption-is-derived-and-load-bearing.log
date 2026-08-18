@@ -1,0 +1,61 @@
+# cost_metrics 면제는 유도된 것이고 가드는 하중을 받는다 (2026-08-18)
+
+열린 잔여 항목: "**`cost_metrics` — 의도적으로 남김**: `deployment_id`가 없어 렌더하는
+뷰에 안 닿는다(08-08)". 규율대로 **기록된 이유부터 시험**했다.
+
+## 1. 쓰는 쪽 — ACTIVITY 행 writer는 넷이고, 둘만 cost_metrics를 쓴다
+
+    $ git grep -n '"PK": "ACTIVITY"' -- src/
+    src/agents/ai/deploy_recorder.py:188      record_route_activity     type=route
+    src/agents/ai/deploy_recorder.py:334      _write_row (deploy)       deployment_id + cost_metrics
+    src/agents/ai/deploy_recorder.py:497      record_rollback           deployment_id + cost_metrics
+    src/agents/operations/activity_writer.py:126  record_agent_activity  ttl + GSI1, trace 없음
+
+⚠️ 넷째는 **다른 모듈**에 있다. 형제를 셀 때 `deploy_recorder.py`만 보면 놓친다.
+
+`record_route_activity`는 최대 350KB의 `trace`를 쓰면서 `cost_metrics`만 안 쓴다.
+`_cost_metrics`는 바로 그 trace에서 유도하므로 **데이터는 있는데 안 쓴다** — 그래서
+"쓸 수 있는데 안 쓴다 = 결함"으로 읽힐 수 있는 모양이다.
+
+## 2. 읽는 쪽 — 결함이 아니라 범위다
+
+    $ git grep -n cost_metrics -- src/ dashboard/
+    렌더 지점: dashboard/src/app/deployments/[id]/page.tsx  (**한 곳뿐**)
+
+그 뷰를 먹이는 것은 `mergeActivity`이고, 선택 규칙은 한 줄이다:
+
+    matches = rows.map(mapActivityItem).filter(a => a?.deployment_id === id)
+
+route 행과 provider-activity 행은 `deployment_id`가 없다 → **원리상 그 뷰에 못 닿는다.**
+cost를 렌더하는 유일한 뷰가 *deployment* 상세이고 route에는 deployment가 없다.
+⇒ 기록된 이유는 **정확하고 지금도 성립한다.** 여기에 필드를 더하면 이 저장소가
+반복해서 값을 치른 **"선언됐는데 아무도 안 읽는 필드"**가 하나 더 생긴다.
+
+## 3. 그 면제가 손으로 고른 목록이 아니라 유도된 것인지
+
+`tests/test_rollback_cost_metrics.py::TestEveryDeploymentScopedActivityRowCarriesCost`
+
+- 의무를 **읽는 쪽의 선택 규칙에서 유도**한다: `deployment_id`를 가진 행만 의무를 진다.
+  "어느 모듈에 썼는가"가 아니라 **그 키가 뷰로 라우팅한다**는 사실이 기준이다.
+- 스윕 범위는 `SRC_AGENTS.rglob("*.py")` — `src/agents` **전체**(cdk.out 제외)라
+  다른 모듈의 넷째 writer도 덮는다. ⚠️도크스트링이 아니라 **rglob이 범위다**(M20의 교훈).
+- 공허 통과 방지: `test_the_sweep_still_finds_the_activity_writers` (`len(rows) >= 4`).
+
+## 4. 하중 — 변이 3종, 전부 red (변이·실행·복구를 한 스크립트에)
+
+    기준선                                          8 passed
+    M1 롤백 ACTIVITY에서 cost_metrics 제거          4 failed  ← db41874가 고친 그 결함
+    M2 record_route_activity에 deployment_id 추가   1 failed  ← 면제 경계를 넘는 새 writer
+    M3 "PK": "ACTIVITY" 리터럴 깨기(스윕 무력화)     1 failed  ← 공허 통과 방지가 산다
+    복구 후                                         8 passed   (git diff --stat 비어 있음)
+
+M2가 요지다: **면제는 목록이 아니라 경계**라서, 새 writer가 `deployment_id`를 갖는
+순간 자동으로 의무가 생긴다. M3는 가드 자신이 조용히 죽는 경우를 막는다.
+
+## 결론
+
+**결함 없음. 범위다.** 잔여 목록의 "의도적으로 남김"은 *지키는 것이 없는 선택*처럼
+읽히지만, 실제로는 **읽는 쪽에서 유도되고 전 모듈 스윕으로 집행되며 변이에 red를 내는**
+닫힌 항목이다. `NEXT_PLAN`에서 열린 항목이 아니라 ⛔닫힘으로 옮긴다 — 다시 열지 말 것.
+
+`make check` 2279 passed, 2 skipped (2026-08-18 로컬 macOS·py3.13). src 변경 0.
