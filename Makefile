@@ -51,6 +51,7 @@ sign-image:  ## build + push by digest + cosign sign + verify through the repo's
 	bash scripts/build_and_sign_image.sh
 
 .PHONY: local-cluster local-cluster-down local-cluster-status sign-image
+.PHONY: mlx-setup
 
 # ===== Local LLM natural-language deploy stack (AI Model Router) =====
 # MLX-LM (Qwen) -> tool-call proxy -> AI Model Router API. The dashboard Agents
@@ -102,7 +103,39 @@ CONSOLE_URLS = NEXT_PUBLIC_ARGOCD_URL=https://localhost:$(ARGOCD_PORT) \
                NEXT_PUBLIC_ALERTMANAGER_URL=http://localhost:$(ALERTMANAGER_PORT) \
                NEXT_PUBLIC_ROLLOUTS_URL=http://localhost:$(ROLLOUTS_PORT)/rollouts
 
+# The local stack runs MLX from its OWN venv, deliberately separate from the test
+# env (see the note at the top of this file: an activated .venv-mlx shadows pytest).
+#
+# Measured 2026-08-30: **nothing in this repo created it.** `.venv-mlx` was a
+# hand-made venv holding mlx-lm and mlx and nothing else — not the project, not
+# `.[onprem]`. So on a fresh clone `make dev-up` launched a binary that does not
+# exist, under `nohup ... &` with stdout to a log, and failed **silently**: the
+# stack printed "model load takes ~30-60s" and the proxy then talked to nothing.
+# That is this repo's recurring shape — it fails in a way that does not error.
+#
+# `mlx-lm` is also listed in the `onprem` extra, but nothing installs it that way
+# (and that entry is why CI names `pydantic-ai-slim` inline instead of using the
+# extra). The extra is not the mechanism; this target is.
+MLX_BIN := .venv-mlx/bin/mlx_lm.server
+MLX_MISSING = echo "ERROR: $(MLX_BIN) is missing. The local stack runs MLX from its own venv — create it with: make mlx-setup"; exit 1
+
+# ⚠️ One shell block on purpose. The first version of this target guarded with
+# `@test ! -x $(MLX_BIN) || { echo ...; exit 0; }` on its own line — and Make runs
+# each recipe line in a *separate* shell, so that `exit 0` ended only that line and
+# pip ran anyway against an existing venv. A check that does not gate what follows
+# is not a check; it is the same shape this repo keeps finding one layer up.
+mlx-setup:  ## create .venv-mlx, the MLX-only venv the local stack runs from
+	@if [ -x $(MLX_BIN) ]; then \
+	  echo "→ $(MLX_BIN) already present — nothing to do"; \
+	else \
+	  python3 -m venv .venv-mlx && \
+	  .venv-mlx/bin/pip install --upgrade pip && \
+	  .venv-mlx/bin/pip install "mlx-lm>=0.19" && \
+	  echo "ok — $(MLX_BIN) ready (mlx resolves only on macOS/Apple Silicon)"; \
+	fi
+
 mlx-serve:  ## start local MLX-LM server (run in its own terminal)
+	@test -x $(MLX_BIN) || { $(MLX_MISSING); }
 	HF_HUB_DISABLE_XET=1 .venv-mlx/bin/mlx_lm.server --model $(MLX_MODEL) --host 127.0.0.1 --port $(MLX_PORT) --max-tokens 1024 --prompt-cache-bytes 2147483648
 
 mlx-proxy:  ## start the MLX Qwen tool-call proxy
@@ -116,6 +149,7 @@ onprem-webhook:  ## start the On-Prem PATH B webhook (Alertmanager -> Day-2 inci
 
 local-llm-up:  ## start MLX + proxy + router API in the background (logs in /tmp/platform-agent)
 	@mkdir -p $(LLM_LOG_DIR)
+	@test -x $(MLX_BIN) || { $(MLX_MISSING); }
 	@echo "→ MLX-LM server (:$(MLX_PORT)) — model load takes ~30-60s"
 	@HF_HUB_DISABLE_XET=1 nohup .venv-mlx/bin/mlx_lm.server --model $(MLX_MODEL) --host 127.0.0.1 --port $(MLX_PORT) --max-tokens 1024 --prompt-cache-bytes 2147483648 > $(LLM_LOG_DIR)/mlx.log 2>&1 &
 	@echo "→ tool-call proxy (:$(PROXY_PORT))"
@@ -143,6 +177,7 @@ dev-up:  ## start the whole local stack in one command (reuses a warm MLX/proxy)
 	@if curl -s -m 3 localhost:$(MLX_PORT)/v1/models >/dev/null 2>&1; then \
 		echo "→ MLX-LM   (:$(MLX_PORT)) already up — reusing"; \
 	else \
+		test -x $(MLX_BIN) || { $(MLX_MISSING); }; \
 		echo "→ MLX-LM   (:$(MLX_PORT)) — model load takes ~30-60s"; \
 		HF_HUB_DISABLE_XET=1 nohup .venv-mlx/bin/mlx_lm.server --model $(MLX_MODEL) --host 127.0.0.1 --port $(MLX_PORT) --max-tokens 1024 --prompt-cache-bytes 2147483648 > $(LLM_LOG_DIR)/mlx.log 2>&1 & \
 	fi
