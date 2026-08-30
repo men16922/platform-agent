@@ -1,0 +1,109 @@
+# `requires-python = ">=3.11"`은 미검증 주장이었고, 재 보니 거짓이었다 (2026-08-30)
+
+`AGENT_BRIEF` Guardrails와 `STATUS` Risk 12②가 **두 번** 같은 말을 적어 뒀다:
+
+> 에이전트=Python(**게이트는 3.13에서만 검증됨** — `requires-python = ">=3.11"`은
+> **미검증 주장**, Risk 12②)
+> …`requires-python = ">=3.11"`도 **아무도 확인한 적 없는 주장**이다.
+
+오늘 이 기계에 python3.11이 있다는 걸 확인하고 **처음으로 쟀다.**
+
+---
+
+## 1. 첫 시도는 내 잘못이었다 (기록해 둔다)
+
+`pip install '.[dev]'` 후 게이트를 돌리니 **수집 단계에서 7개 에러**가 났다:
+
+    ModuleNotFoundError: No module named 'fastapi'      (5개 테스트)
+    ModuleNotFoundError: No module named 'pydantic_ai'  (2개 테스트)
+
+M25 계열(미선언 optional 임포트)로 보였다. **아니었다** — `fastapi`는 `serving`
+extra에 **선언돼 있고**, `pydantic-ai-slim[openai]`는 `onprem`에 있다. CI는
+
+    pip install -e ".[dev,state,observability,serving]" pydantic-ai-slim[openai]
+
+를 쓴다. ⚠️**설치 명령이 다르면 게이트도 다르다** — "게이트가 red다"라고 말하기 전에
+**CI와 같은 줄로 깔았는지**부터 물어야 한다.
+
+## 2. CI와 같은 줄로 다시 — 3.11은 red다
+
+    $ py311/bin/pytest tests/ -q
+      2 failed, 2300 passed, 2 skipped in 42.10s
+
+    FAILED test_local_deploy_api.py::test_stream_emits_ready_sentinel_and_sequenced_event_ids
+      AssertionError: assert 'error' == 'done'
+      ← RuntimeError: Attempted to exit cancel scope in a different task
+        than it was entered in            (anyio/_backends/_asyncio.py:464)
+
+    FAILED test_platform_collector.py::TestPusherCLI::test_interval_form_parses_and_loops
+      E   StopIteration
+      ← monkeypatch가 time.sleep에 심은 StopIteration이 루프를 빠져나온다
+
+## 3. ⚠️ 결론 내리기 전에 교란 요인을 지웠다
+
+3.11 venv는 **오늘 새로 해석**돼서, 이 기계의 오래된 3.13 환경보다 **최신 패키지**를 받았다:
+
+                    py3.11(새 해석)   py3.13(이 기계, 오래됨)
+      starlette     1.6.0             1.3.1
+      fastapi       0.141.1           0.137.2
+      pytest        9.1.1             8.3.4
+      anyio         4.14.2            4.14.0
+
+⇒ 실패가 **파이썬 3.11 탓인지 의존성 최신화 탓인지 아직 모른다.** 그래서 **fresh 3.13
+venv**를 같은 CI 줄로 만들었다:
+
+    fresh py3.13:  anyio=4.14.2 starlette=1.6.0 fastapi=0.141.1 pytest=9.1.1
+                   ← 3.11과 **같은 버전으로 해석된다**
+    $ py313fresh/bin/pytest tests/ -q
+      **2302 passed, 2 skipped in 41.30s**   ← 초록
+
+**같은 의존성, 다른 인터프리터. 3.13은 초록, 3.11은 red.**
+⇒ **인터프리터 탓이다.** 주장은 **거짓**이다.
+
+⚠️ 곁가지로 하나 더 드러났다: **이 기계의 상시 3.13 환경은 stale하다**(starlette 1.3.1).
+게이트가 거기서 초록인 것과 **오늘 새로 깐 환경에서 초록인 것은 다른 주장**인데,
+다행히 둘 다 초록이었다 — 그건 확인해서 알게 된 것이지 가정한 게 아니다.
+
+## 4. 고침 — 선언을 측정에 맞췄다
+
+    requires-python  ">=3.11" → ">=3.13"
+    ruff  target-version  "py311" → "py313"
+    mypy  python_version  "3.11"  → "3.13"
+
+**세 개는 한 결정의 세 가지 철자**였고 셋 다 틀린 수를 들고 있었다(M19: *세 copies of
+a number is how they drift*). `tests/test_pyproject_claims.py`가 이제 셋을 묶는다.
+
+⚠️ **좁혀도 안전한지 먼저 물었다**: 워크플로가 둘이고 **파이썬 버전이 다르다** —
+`gate.yml`은 3.13, **`sign-image.yml`은 3.11**이다. 형제를 세지 않았으면 여기서 깨졌을
+것이다. 실측: `sign-image.yml`엔 **`pip install`이 0개**이고 돌리는
+`scripts/verify_image_signature.py`는 **표준 라이브러리만**(argparse·shutil·subprocess)
+쓴다 ⇒ 영향 없다.
+
+## 5. 곁가지 발견 — `[tool.mypy] strict = true`는 아무도 안 돈다
+
+    $ git grep -n mypy -- . ':!pyproject.toml'
+      .gitignore:7:.mypy_cache/
+      src/stacks/incident_agent_stack.ts:242-243:  '.mypy_cache' (CDK 번들 제외)
+
+Makefile·CI·scripts·pre-commit 어디에도 mypy 호출이 **없다**. 그런데 선언은
+`strict = true`다 — 신참은 이걸 **이 레포가 지키는 표준**으로 읽는다. 실측:
+
+    $ mypy src/agents
+      Found 253 errors in 88 files (checked 165 source files)
+      [type-arg] 71 · [no-any-return] 36 · [import-untyped] 36 · [no-untyped-def] 32 …
+
+**지우지 않았다.** 설정 자체는 목표로서 유효하고, 게이트에 넣는 건 `gate.yml`이 lint에
+대해 적어 둔 것과 같은 결정이다 — *"a CI job is a bad place to introduce a standard
+nobody agreed to."* 대신 **주석으로 사실을 적고**, 가드가 그 주석이 사라지면 red를 낸다.
+
+## 6. 가드 (+4)
+
+`tests/test_pyproject_claims.py`
+
+  * 세 버전 선언이 **같은 수**인가 (drift)
+  * 바닥이 **게이트를 돌리는 인터프리터보다 높지 않은가**
+  * `[tool.X]`가 **어디선가 불리는가**, 아니면 **왜 안 불리는지 적혀 있는가**
+  * 공허 방지: 스윕이 pytest조차 못 찾으면 red
+
+⚠️ **게이트가 선언된 바닥에서 통과하는지는 일부러 단언하지 않는다** — 스위트 안에서
+다른 인터프리터로 전체 스위트를 돌리는 일이 되고, 그건 이 파일이 할 일이 아니다.

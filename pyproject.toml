@@ -6,7 +6,18 @@ build-backend = "setuptools.build_meta"
 name = "platform-agent"
 version = "0.1.0"
 description = "AWS-native platform agent for provisioning, deployment validation, and autonomous operations"
-requires-python = ">=3.11"
+# Measured 2026-08-30, not asserted. `>=3.11` had been an unverified claim since
+# the file was written — AGENT_BRIEF and STATUS Risk 12② both flagged it twice as
+# "아무도 확인한 적 없는 주장". It is false: on a fresh 3.11 venv with CI's exact
+# install line the gate is **2 failed, 2300 passed**
+#   · test_local_deploy_api  — SSE stream ends `error`, not `done`
+#     (anyio: "Attempted to exit cancel scope in a different task")
+#   · test_platform_collector::TestPusherCLI — StopIteration escapes the loop
+# The confounder was eliminated: a fresh **3.13** venv resolving the *same*
+# package versions (starlette 1.6.0, fastapi 0.141.1, pytest 9.1.1, anyio 4.14.2)
+# is green at 2302 — so this is the interpreter, not dependency drift.
+# Evidence: docs/evidence/requires-python-was-an-unverified-claim-and-it-was-false.log
+requires-python = ">=3.13"
 dependencies = [
     "boto3>=1.34",
     "python-dotenv>=1.0",
@@ -68,7 +79,7 @@ dev = [
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py313"   # same number as `requires-python`; test_pyproject_claims pins them together
 # Vendored trees, declared rather than inferred. Both are gitignored and ruff
 # respects .gitignore by default — but measured 2026-08-30, that inference is not
 # deterministic here: the same `ruff check src/ tests/` on an unchanged tree
@@ -80,7 +91,17 @@ target-version = "py311"
 extend-exclude = ["src/stacks/cdk.out", "src/stacks/node_modules"]
 
 [tool.mypy]
-python_version = "3.11"
+# ⚠️ Declared and never run. Measured 2026-08-30: nothing in the Makefile, CI,
+# scripts/, or a pre-commit hook invokes mypy — only `.mypy_cache/` in .gitignore
+# and a CDK bundling exclusion mention it, and those are leftovers. `strict = true`
+# reads to a newcomer as "this repo is mypy-strict"; it is 253 errors across 88 of
+# 165 files away from that. Kept rather than deleted because the settings are the
+# target, but the claim must not read as enforcement — whether mypy joins the gate
+# is a decision for the repo, the same one `gate.yml` records for lint:
+# "a CI job is a bad place to introduce a standard nobody agreed to."
+# `tests/test_pyproject_claims.py` fails if this comment is removed while mypy is
+# still uninvoked, so the gap stays visible instead of looking like a standard.
+python_version = "3.13"
 strict = true
 
 [tool.pytest.ini_options]

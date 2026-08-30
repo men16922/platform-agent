@@ -6,6 +6,40 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-30 — 두 번 "미검증"이라 적어 둔 주장을 재다: 거짓이었다 (gate 2306)
+
+- Status: `AGENT_BRIEF`와 `STATUS` Risk 12②가 **두 번** *"`requires-python = ">=3.11"`은 아무도
+  확인한 적 없는 주장"*이라 적어 뒀다. 이 기계에 python3.11이 있는 걸 보고 **처음으로 쟀다**.
+  증거 `docs/evidence/requires-python-was-an-unverified-claim-and-it-was-false.log`.
+- Verified(**첫 시도는 내 잘못 — 기록해 둔다**): `.[dev]`만 깔고 돌리니 **수집 에러 7개**(`fastapi` 5 ·
+  `pydantic_ai` 2)가 나 M25 계열로 보였다. **아니었다** — `fastapi`는 `serving`, `pydantic-ai-slim`은
+  `onprem`에 **선언돼 있고** CI는 `.[dev,state,observability,serving]`+`pydantic-ai-slim[openai]`를 깐다.
+  ⚠️**"게이트가 red다"라고 말하기 전에 CI와 같은 줄로 깔았는지부터 물을 것.**
+- Verified(**3.11은 red**): CI와 같은 줄로 다시 깔고 → **2 failed, 2300 passed**. ①SSE 스트림이
+  `done` 대신 `error`로 끝난다(anyio *"exit cancel scope in a different task"*) ②monkeypatch가
+  `time.sleep`에 심은 `StopIteration`이 루프를 빠져나온다.
+- Verified(**⚠️결론 전에 교란 요인을 지웠다**): 3.11 venv는 오늘 새로 해석돼 이 기계의 오래된 3.13보다
+  **최신 패키지**를 받았다(starlette **1.6.0 vs 1.3.1** · pytest **9.1.1 vs 8.3.4**). 그래서 실패가
+  **인터프리터 탓인지 의존성 최신화 탓인지 아직 몰랐다.** ⇒ **fresh 3.13**을 같은 줄로 만들었더니
+  **3.11과 같은 버전으로 해석**되고 **2302 passed 초록**이었다. **같은 의존성·다른 인터프리터** ⇒
+  **인터프리터 탓이고 주장은 거짓**이다. ⚠️곁가지: 이 기계의 상시 3.13 환경이 **stale**하다는 것도
+  드러났다(둘 다 초록이라 다행이지만, **그건 확인해서 안 것이지 가정한 게 아니다**).
+- Changed(**선언을 측정에 맞췄다**): `requires-python` `>=3.11`→**`>=3.13`** · ruff `target-version`
+  `py311`→`py313` · mypy `python_version` `3.11`→`3.13`. **셋은 한 결정의 세 철자**였고 셋 다 틀린 수를
+  들고 있었다(M19). ⚠️**좁혀도 안전한지 먼저 물었다** — 워크플로가 둘이고 **파이썬이 다르다**
+  (`gate.yml` 3.13 · **`sign-image.yml` 3.11**). 형제를 안 셌으면 여기서 깨졌다: 실측 결과 그 워크플로엔
+  **`pip install`이 0개**고 돌리는 스크립트가 **표준 라이브러리만** 쓴다 ⇒ 영향 없다.
+- Verified(**곁가지 — `[tool.mypy] strict = true`는 아무도 안 돈다**): Makefile·CI·scripts·pre-commit
+  어디에도 mypy 호출이 없다(`.mypy_cache` 흔적만). 실측 **253 errors / 88 of 165 files**. **안 지웠다** —
+  게이트에 넣는 건 `gate.yml`이 lint에 대해 적어 둔 것과 같은 결정이다(*"a CI job is a bad place to
+  introduce a standard nobody agreed to"*). 대신 **주석으로 사실을 적고** 가드가 그 주석을 지키게 했다.
+- Changed(**가드 +4**): `test_pyproject_claims.py` — 세 버전 선언 일치 · 바닥이 돌리는 인터프리터보다
+  높지 않음 · **`[tool.X]`는 불리거나 왜 안 불리는지 적혀 있어야** · 공허 방지. ⚠️게이트가 선언된
+  바닥에서 통과하는지는 **일부러 단언하지 않는다**(스위트 안에서 다른 인터프리터로 스위트를 도는 일).
+- Verified: `make check` **2306 passed, 2 skipped**(로컬 macOS·py3.13) · ruff 20으로 결정론 유지.
+- Blockers: 없음. Next: **Azure executor 배선**(승인) · **BQ 결제 내보내기**(콘솔 수동) ·
+  **mypy/lint를 게이트에 넣을지**(결정 — 각각 253·20건이 선행).
+
 ## 2026-08-30 — Tier B 수행: 대시보드 취약점 8 → 0, 그리고 "새 소견 0"을 재서 말했다 (gate 2302)
 
 - Status: 승인 후 Tier B(`next 16.2.10 → 16.3.3`)를 적용했다. **소스 변경 0** — `package.json` 2줄과
