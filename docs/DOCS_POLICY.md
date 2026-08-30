@@ -30,6 +30,14 @@ docs/AGENT_BRIEF.md
 | `COMPLETED_SUMMARY.md` | 압축 | 완료 milestone 압축 |
 | `DECISIONS.md` | 누적 | 되돌리기 어려운 결정만 (Decision/Reason/Impact) |
 
+**⚠️ 줄만으로는 부족하다 — 글자 예산도 있다(2026-08-30 추가).** 위 표를 하루 종일 통과하면서
+`AGENT_BRIEF.md`가 **9,783자**까지 자랐고 **한 줄이 3,621자**(파일의 37%)였다. 스스로를
+*"1분 압축 문맥"*이라 부르는 문서가 그럴 수는 없는데, **가드는 개행만 세어서 볼 수 없었다.**
+상한은 `.claude/harness-config.json`의 **`char_budgets`에만** 선언한다(brief 8,000 ·
+status/plan 11,000 · log 12,000) — 이 표와 각 문서 머리말이 이미 줄 수를 두 번 적고 있고,
+**같은 수의 네 번째 철자는 드리프트가 시작되는 자리**다(M19). 집행은
+`tests/test_doc_budgets.py::TestEveryDocIsWithinItsCharacterBudget`.
+
 ## 3. 권위 순서
 
 - 다음 작업: `NEXT_PLAN.md` (유일한 source of truth).

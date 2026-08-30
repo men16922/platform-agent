@@ -47,6 +47,27 @@ def _budgeted_docs() -> list[tuple[str, pathlib.Path, int]]:
     ]
 
 
+def _char_budgeted_docs() -> list[tuple[str, pathlib.Path, int]]:
+    """(key, path, char budget) — the metric the line budget could not see.
+
+    Added 2026-08-30. `AGENT_BRIEF.md` sat at exactly 60/60 lines all day, green,
+    while it grew to **9,783 characters** — and one line reached **3,621**, 37% of
+    the file. The doc calls itself *1분 압축 문맥*; 3,621 characters on one line is
+    not that, and nothing could tell, because the budget guard counts newlines.
+
+    Same shape as this repo keeps finding: a guard that answers about its own
+    window instead of the document (Risk 12④). Lines are what the guard saw;
+    characters are what the agent pays for.
+    """
+    cfg = _config()
+    limits = cfg.get("char_budgets", {})
+    return [
+        (key, ROOT / cfg["docs"][key], budget)
+        for key, budget in limits.items()
+        if key in cfg["docs"]
+    ]
+
+
 def _policy_table() -> dict[str, int]:
     """Filename -> budget, as `DOCS_POLICY.md`'s table states it."""
     return {
@@ -83,6 +104,27 @@ class TestEveryDocIsWithinBudget:
     def test_the_sweep_covers_the_entry_points(self):
         """Vacuity check: a config typo must not silently empty this file."""
         assert {k for k, _, _ in _budgeted_docs()} == {"brief", "status", "plan", "log"}
+
+
+class TestEveryDocIsWithinItsCharacterBudget:
+    """The line budget passed while the file doubled. This is the other half."""
+
+    @pytest.mark.parametrize(
+        "key,path,budget", _char_budgeted_docs(), ids=[k for k, _, _ in _char_budgeted_docs()]
+    )
+    def test_within_char_budget(self, key, path, budget):
+        actual = len(path.read_text(encoding="utf-8"))
+        assert actual <= budget, (
+            f"{path.relative_to(ROOT)} is {actual} characters, budget {budget}. "
+            "The line count can be inside its budget while the file is not — that is "
+            "why this exists. Compress or move detail to docs/archive/ (/tidy-docs); "
+            "do not raise the number."
+        )
+
+    def test_the_sweep_covers_the_entry_points(self):
+        """Vacuity check: a missing or renamed `char_budgets` key must not silently
+        empty this class the way a config typo would."""
+        assert {k for k, _, _ in _char_budgeted_docs()} == {"brief", "status", "plan", "log"}
 
 
 class TestTheThreeDeclarationsAgree:
