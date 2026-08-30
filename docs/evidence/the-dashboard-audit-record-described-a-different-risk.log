@@ -84,3 +84,36 @@ provider를 삭제해 DEMO FALLBACK으로 떨어졌고 07-18에야 복구). ⇒ 
     Tier B (결정)    next 16.2.10 → 16.3.3  ← 남은 high 3건이 여기 달려 있다
 
 ⚠️ **이 항목을 "upstream 대기"로 다시 닫지 말 것.** 업스트림은 이미 고쳤다.
+
+
+================================================================================
+Tier B 수행 (2026-08-30, 승인 후) — 8건 → 0건
+================================================================================
+
+사용자 승인 후 Tier B를 적용했다.
+
+    npm install next@16.3.3 eslint-config-next@16.3.3 --save-exact
+    → npm audit: {'critical': 0, 'high': 0, 'moderate': 0, 'total': 0}
+
+peer 확인: 16.3.3은 `react ^18.2.0 || ^19.0.0`을 요구하고 이 대시보드는 **19.2.4**다.
+
+**검증 — "조용히 실패하는" 쪽을 겨눴다**(Risk 7·8: 타입은 초록인데 런타임이 죽고,
+차트는 Synced인데 파드가 0개였다):
+
+    npx tsc --noEmit         통과
+    npm run build            exit 0
+    라우트 매니페스트         **17개, before/after 완전히 동일**  ← diff 결과 무차이
+    npm run lint             41 problems (33 errors, 8 warnings)
+
+⚠️ **eslint 41건은 이 업그레이드가 만든 게 아니다 — 재서 확인했다.** `git worktree`로
+`main`을 따로 체크아웃해 `npm ci` 후 같은 명령을 돌리니 **41 problems (33 errors,
+8 warnings)**로 **완전히 동일**했고 룰 분포도 같았다(no-explicit-any 31 ·
+no-unused-vars 7 · prefer-const 1 · react-hooks/set-state-in-effect 1).
+⇒ **새로 생긴 소견 0.** ⚠️`react-hooks/set-state-in-effect`가 새 룰일까 의심해서 잰
+것인데, main에도 있었다 — **의심을 사실로 바꾸는 데 worktree 하나면 충분했다.**
+
+⚠️ 대시보드 eslint는 **게이트도 CI도 아니다**. `gate.yml`이 그 이유를 적어 뒀다:
+*"a CI job is a bad place to introduce a standard nobody agreed to."*
+
+변경 범위: `dashboard/package.json` 2줄(next · eslint-config-next) + lockfile.
+**소스는 한 줄도 안 건드렸다.**

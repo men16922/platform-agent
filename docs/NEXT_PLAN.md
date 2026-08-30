@@ -46,9 +46,9 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
   **접으면 워크스페이스·IAM 사용자·키 셋 다 지울 것**(D50 — ⚠️$0이라고 이 이유는 안 줄어든다). **다시 열지 말 것.**
 - [ ] **Phase 4 남은 것 = 4b**(자격증명 파티션 미증명=Risk 10 · 30분 TTL 가드가 상시와 안 맞는다, billable·별 승인) ·
   ⚠️**$0 선행: BQ 결제 내보내기**(`GCP_BILLING_EXPORT_SETUP.md`, 콘솔 수동 · `make spend-check`).
-- [ ] **(신규 08-30, 보안) 대시보드 `next@16.3.3`으로 올릴지 — 남은 high 3건이 여기 달렸다.** ✅Tier A는
-  적용했다(`npm audit fix` → **critical 2→0**, lockfile 32줄만, `tsc`·build 통과). ⛔Tier B는 **프레임워크
-  마이너 업**이고 이 대시보드는 **조용히 강등된 이력**이 있다(Risk 1) → 결정 사안. **`STATUS` Risk 11이 권위.**
+- ⛔**대시보드 취약점은 닫혔다(08-30) — `npm audit` 0건**(Tier A `audit fix` + Tier B `next 16.3.3`).
+  검증: `tsc`·build 통과 · **라우트 17개 before/after 동일** · **eslint가 main과 완전히 같다**(새 소견 0).
+  **`STATUS` Risk 11이 권위** — ⚠️거기 적힌 "기록이 세 군데 다 틀렸다"를 지우지 말 것. **다시 열지 말 것.**
 - [ ] **(신규 08-30) `make lint` 20건을 고칠지** — ruff↔pytest 제외 비대칭을 닫아 **이제 읽을 수 있다**
   (F841 8·E731 5·E701 5·F402 1·E712 1, **전수 분류 결과 결함 0**). 스타일이고 열 파일을 건드려 안 고쳤다.
   ⚠️`make lint`를 **게이트에 넣으려면 이게 선행**이다. 증거 `docs/evidence/ruff-and-pytest-did-not-exclude-the-same-vendored-trees.log`.
