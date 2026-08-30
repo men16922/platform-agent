@@ -4,6 +4,37 @@
 
 ---
 
+## 2026-08-17 — 추천안 셋 수행: 점수제·조건 준수·관리형 렌더 (gate 2279)
+
+- Status: 열려 있던 판단 셋을 **추천안대로 실행**했다. ⓒ 판별 수단 · `rollback_release`
+  정책 · 4a DoD ①②. ⚠️**둘째의 전제가 측정에서 무너져 답이 바뀌었다.**
+- Changed(**#1 판별 수단**): 점수 로직을 **계약 모듈**에 한 벌 두고(`schema.score_runbook`
+  ·`match_text`) 세 provider가 읽는다. GCP/Azure 티어 2가 **첫 매치 대신 점수**로 고른다 →
+  세 provider가 같은 인시던트에 **같은 답**(health-check = `health-check-failure`/rto **240**).
+  키워드 어휘는 이미 클라우드-중립이라 **없던 건 데이터가 아니라 읽는 쪽**이었다.
+- Verified(**#2의 답이 바뀌었다 — 추천 목록이 아니라 티어 2가 문제였다**): 티어 2는 액션을
+  **조건 평가 없이** 추천에서 만든다. 카탈로그에서 **에스컬레이션에만 존재**하는 capability는
+  넷(`expand_storage`·`rebalance_consumer`·`rollback_release`·`scale_database_read`)이고,
+  그중 **둘이 GCP/Azure에서 first-response로 실행**되고 있었다 — **같은 모듈의 티어 1은 조건을
+  평가한다**(M21 모양: 형제가 provider가 아니라 진입점). AWS·onprem은 추천이 액션이 안 되므로
+  같은 목록이 무해하다. ⇒ **티어 2가 승자의 steps에서 액션을 만들게 고쳤다**(에스컬레이션은
+  `condition_false` 로그와 함께 제외). `rollback_release`는 **추천에 넣지 않는다**(현행 유지).
+  ⚠️**티어 2 액션을 단언하는 테스트가 0개였다** — 그래서 조건 무시도, 이 고침도 red를 안 냈다.
+- Changed(**#3 4a DoD ①②**): 결정 = **관리형은 매니페스트를 내지 않고 read model이 부재를
+  설명한다**(`applicable=False`·sync **n/a**). **새 매니페스트 종류는 발명하지 않았다.**
+  ①`globex/dev`가 `amazon-managed-prometheus`를 **실제로 선언**한다(①이 ②의 하중이다) ·
+  ②`DesiredAddon.managed`를 두 어댑터가 읽고 건너뛴다 · **관리형은 싱글턴 문제가 아니다**
+  (설치가 없으니 두 번째 컨트롤러가 없다 — 계획서 정정 박스가 *"Prometheus CR을 주라"*는
+  따를 수 없는 안내를 남긴 지점) · `ManagedBackendNotRenderable`는 **삭제**(결정이 났다).
+- Verified(**변이 16종 전부 red**): 점수제 되돌리기(3·3) · 조건 무시로 되돌리기(2·2) · 공유
+  점수 함수 가중 죽이기(1·15) · 관리형 표시 제거(5) · 두 어댑터가 차트를 내게(2·1) · 싱글턴이
+  관리형을 삼키게(3) · **선언 되돌리기(4)** · **read model이 sync를 꾸며내게(4)**.
+  `make check` **2279 passed, 2 skipped**(로컬 macOS·py3.13), ruff 신규 0.
+- Blockers: 없음. ⚠️도중에 **ruff 비교용 `git stash`/`pop`이 `git rm`을 언스테이지**해
+  `git ls-files`엔 있고 디스크엔 없는 파일이 생겼다 — **그걸 스캔하는 가드가 잡았다.**
+- Next: 08-19 이후 AMP 청구액 대조(4a의 마지막 미측정).
+
+
 ## 2026-08-17 — ⓒ: 앞쪽은 맞았고 "테스트가 고정했다"가 틀렸다 (gate 2269)
 
 - Status: 마지막 미측정 항목 **ⓒ**(*"티어 2는 첫 매치가 이긴다(AWS는 점수제) — 테스트가
