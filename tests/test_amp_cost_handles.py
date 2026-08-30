@@ -3,14 +3,25 @@ The two values that decide what Phase 4a costs must not drift on a comment alone
 
 `docs/plans/2026-08-15-4a-remote-write-allowlist.md` names them: **the allowlist
 and the scrape interval**. Everything else about 4a is opinion; these two are
-arithmetic, and the arithmetic has a 150× range:
+arithmetic, and the arithmetic has a 325× range:
 
-    four metrics @ 60s (this file's contract)   15.8 M samples/mo   ≈ $1.42
-    all of kube-state-metrics                    ~4,188 series      ≈ $16.28
-    no filter at all                            5,131 M samples/mo  ≥ $180
+    four metrics @ 60s (this file's contract)   15.8 M samples/mo    39.5% of free tier
+    all of kube-state-metrics                    ~4,188 series → 181 M/mo    452%
+    no filter at all                            5,131 M samples/mo      12,828%
 
-The last row is what 4b costs. Widening the regex past this list does not make
-4a more expensive — it **erases the reason 4a was chosen over 4b**.
+⚠️ **Measured 2026-08-30: the bill is $0.00, and that does not weaken this file.**
+AMP's free tier is `Always Free` — 40 M ingested samples per month — which the
+plan's §3 had reasoned its way *out of* on a premise that turned out false
+(it assumed a 12-month window). So the cliff moved: it is no longer the $0.90/10M
+rate, it is the **40 M limit**, and the percentages above are the real reading of
+the table. The contract's 15.8 M sits at 39.5%; no filter overruns it by **128×**
+and pays list price from there (≈$180/mo). Authority: the plan's **§10** and
+`docs/evidence/amp-actual-bill-is-zero-and-the-free-tier-reason-was-inverted.log`.
+
+"AMP is free anyway" is therefore the one wrong summary of that measurement.
+Widening the regex past this list does not make 4a more expensive — it **erases
+the reason 4a was chosen over 4b**, and now it is also the only thing standing
+between $0 and a real bill.
 
 This repository has already been wrong here, by 100×: three entry-point documents
 copied "≈$5/월" from a plan whose series count was never measured, and the number
@@ -82,7 +93,8 @@ def _keep_rule() -> dict:
     keeps = [r for r in rules if r.get("action") == "keep"]
     assert len(keeps) == 1, (
         f"expected exactly one `keep` rule, found {len(keeps)}. With no `keep` at "
-        "all Prometheus ships **everything** — 5.13B samples/mo, ≥$180."
+        "all Prometheus ships **everything** — 5.13B samples/mo, 128× the 40 M "
+        "free tier, ≥$180."
     )
     return keeps[0]
 
@@ -102,8 +114,10 @@ def test_the_allowlist_is_exactly_the_approved_four():
         "missing": sorted(APPROVED_METRICS - declared),
         "why": (
             "each addition looks small and the bill is not linear in obviousness: "
-            "all of kube-state-metrics is 4,188 series → $16.28/mo, three times the "
-            "approved budget. Update the plan's §2 and §4 in the same commit."
+            "all of kube-state-metrics is 4,188 series → 181 M samples/mo, which is "
+            "4.5\u00d7 the 40 M free tier and the point where this pipe starts "
+            "charging at all (~$12.7/mo of overage; $16.3 gross). Update the plan's "
+            "\u00a72 and \u00a74 in the same commit."
         ),
     }
 
@@ -124,18 +138,19 @@ def test_the_scrape_interval_is_pinned_where_the_series_are():
     assert monitor.get("interval") == KSM_INTERVAL, (
         f"kube-state-metrics ServiceMonitor interval is {monitor.get('interval')!r}, "
         f"not {KSM_INTERVAL!r}. 287 of the 308 shipped series are scraped here, so "
-        "this value is the other half of the bill: at 30s the same allowlist costs "
-        "$2.54/mo instead of $1.42."
+        "this value is the other half of the volume: at 30s the same allowlist "
+        "ships 28.2 M samples/mo instead of 15.8 M — still under the 40 M free "
+        "tier, but it spends 70% of the headroom the next metric will want."
     )
 
 
 def test_the_global_scrape_interval_is_not_used_as_the_cost_handle():
     """The rejected alternative, pinned so it stays rejected on purpose.
 
-    Setting `prometheusSpec.scrapeInterval: 60s` would also reach $1.20/mo — and
+    Setting `prometheusSpec.scrapeInterval: 60s` would also reach 13.3 M/mo — and
     would halve the resolution of every metric in the cluster, including the
     52,130 series that cost nothing because they are never shipped. Interval is a
-    cost handle here, not an observability decision.
+    volume handle here, not an observability decision.
     """
     spec = _values().get("prometheus", {}).get("prometheusSpec", {})
     assert "scrapeInterval" not in spec, (
