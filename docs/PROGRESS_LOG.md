@@ -6,6 +6,31 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-30 — 인용된 마일스톤 넷이 기록된 적이 없었다 (gate 2337)
+
+- Status: `/tidy-docs` 3단계(완료분을 `COMPLETED_SUMMARY`로 압축)를 하려다, **진입점이 M34~M37을
+  인용하는데 `COMPLETED_SUMMARY`는 M33에서 끝나 있는 것**을 봤다.
+- Verified(**가드가 있었는데 이 모양을 못 봤다**): `test_milestone_pointer_claims`는 바로 그 실패
+  (*"/checkpoint의 compress-into-completed 단계가 여섯 번 건너뛰어졌다"*)를 위해 쓰인 파일인데,
+  **`COMPLETED_SUMMARY **Ma~Mb**` 범위 인용만** 검사한다. 문서가 그사이 **개별 이름(`M35`)으로
+  가리키게** 바뀌었고, 그래서 **넷이 빠진 채로 초록**이었다. 오늘 `test_amp_bill_claims`가 §10은
+  검사하면서 경로를 자기가 들고 있어 문서의 경로 상실을 못 본 것과 **같은 모양**이다 —
+  **한 형식을 검사하는 가드는 다른 형식을 안 본다.**
+- Changed(**M34~M37 기록**): archive의 원본 증분에서 뽑아 형식대로 썼다. M34=계약 세 형식 중 walk가
+  둘만 물었다(도크스트링은 셋을 정확히 열거했다) · M35=ⓐ는 현행 유지, 스윕이 결함 넷(⚠️**내 픽스처가
+  한 번 틀렸다** — 쌍 키를 잘못 걸어 "전부 미구현"으로 읽었고 주장 전에 잡았다) · M36=가드가
+  **생산에서 도달 불가한 입력**으로만 통과했다 · M37=티어 2가 **조건 평가 없이** 추천에서 액션.
+- Changed(**M38 = 오늘의 4a 종료**): 청구 $0.00 · 사유는 `Always Free` 40M · 교차 확인 2.4% ·
+  유출 0 · ⚠️믿으면 안 되는 요약 둘("어차피 공짜"·"$1.42"). 이걸로 `NEXT_PLAN`의 닫힌 4a 블록을
+  **4줄 → 2줄 포인터**로 줄였다(120 → 118줄).
+- Changed(**가드 +4**): 같은 파일에 **맨 `Mnn` 인용도 실재해야 한다**를 더했다(BRIEF·STATUS·NEXT_PLAN).
+  ⚠️`\bM(\d+)\b`는 `40M`·`15.8M`을 안 잡는다(숫자가 M 뒤에 와야 한다) — 라이브 문서에 대고 확인하고 박았다.
+- Verified(**변이 3종 red**): **M34~M37 다시 지우기**(오늘 이전 상태 재현) · M35 제목만 깨뜨리기 ·
+  인용 정규식 무력화. 복구 확인 전에 `__pycache__` 삭제.
+- Verified: `make check` **2337 passed, 2 skipped**(2026-08-30 로컬 macOS·py3.13).
+- Blockers: 없음. **예산**: brief 60/60·6,698자 · status 120/120·9,074자 · plan **118**/120·9,417자 · log 99/120.
+- Next: **Azure executor 배선**(승인) · **BQ 결제 내보내기**(콘솔 수동) · **정적검사 게이트 편입**(결정).
+
 ## 2026-08-30 — /tidy-docs: 줄 예산은 통과하는데 글자가 불고 있었다 (gate 2333)
 
 - Status: 예산 **초과는 없었다**(brief 60/60 · status 120/120 · plan 120/120 · log 71/120).
@@ -58,42 +83,3 @@
 - Blockers: 없음. 이 세션의 나머지 증분은 이미 각자 기록·병합됐다(PR #44~#53).
 - Next: **Azure executor 배선**(승인) · **BQ 결제 내보내기**(콘솔 수동) · **정적검사 게이트 편입**(결정) ·
   **analyzer/decision 계약 추출**(승인).
-
-## 2026-08-30 — "SDK가 90%+ 상이"를 재다: detector엔 맞고, 나머지 둘엔 다른 걸 말한다 (gate 2319)
-
-- Status: 유지 규약이 구조적 결정(**DRY 안 함**)을 **수**로 떠받치는데 잰 기록이 없었다. 쟀다.
-  증거 `docs/evidence/the-dry-exemption-was-right-about-detector-and-quiet-about-two.log`.
-- Verified(**SDK는 3~5%다**): provider SDK 심볼에 닿는 줄은 aws **2.9%** · gcp **4.7%** · azure **3.9%**.
-  "SDK가 90%+ 상이"는 **SDK 부분에 대해선 참일 수 있지만 그 부분이 파일의 4%**다.
-- Verified(**그래서 나머지는 절반 넘게 같다**): 8줄 이상 **글자 그대로 같은** 블록(gcp↔azure) —
-  `detector` **0줄**(D15 말 그대로) · `analyzer` **95줄=51%** · `decision` **135줄=56%**.
-  ⇒ **detector엔 규약이 옳고**, 나머지 둘에 대해선 **다른 것**을 말하고 있다(다른 건 SDK가 맞지만
-  같은 부분은 **계약**이다).
-- Verified(**⚠️유사도를 의미로 읽지 말 것**): 가장 달라 보인 `_determine_mode`(27.4%)를 제일 먼저
-  열었는데 — 그게 **D48(파괴적 액션 강제 APPROVE)을 집행하는 함수**다. 셋이 **의미상 동일**했고
-  차이는 docstring과 dict-조회 vs if/elif뿐이었다. **낮은 유사도가 결함 신호가 아니고 높은 유사도가
-  안전 신호도 아니다.** 반대로 94%/89.8%로 닮은 `_build_prompt`·`_select_runbook`의 차이는 **전부
-  정당한 SDK 어휘**였다(Cloud Logging↔Log Analytics 필드명, Firestore↔Cosmos 조회).
-- Verified(**진짜 비대칭 하나 — 그리고 이미 닫혀 있다**): `_fallback_analysis`가 **gcp·azure에만** 있다.
-  LLM이 죽으면 gcp/azure는 reason 키워드로 **P1**(conf 0.3)을 내고 `_determine_mode`는 **P1→AUTO**다
-  (AWS는 P2 하드코딩 → APPROVE). 끝까지 따라가니 **닫혀 있다**: `reconciliation.py:98`이
-  `P1 and confidence < 0.5`를 잡고 `apply_gate`가 **AUTO→APPROVE로 내리기만 한다**. 그 게이트는
-  08-16에 gcp/azure로 확장된 것이고 주석이 *"P1 asserted at low confidence"*를 이미 명시한다.
-  **도착지는 AWS와 같고 경로만 다르다 — 결함 없음.**
-- Verified(**⚠️내 도구가 거짓 음성을 냈다 — 세는 함정 셋째**): 위를 조사하며
-  `git grep -nE "confidence\s*[<>]..."`로 물었더니 **0건**이라 "임계값이 없다"로 읽을 뻔했다.
-  **`git grep -E`는 POSIX ERE라 `\s`가 없다** — `[[:space:]]`나 `-P`로 물으니 바로 나온다.
-  `NEXT_PLAN`의 세는 함정 목록에 **셋째로** 적었다(`cdk.out` · docstring 예시 다음).
-- Changed(**추출이 아니라 가드, +8**): 230줄 구조 변경은 작업 규칙상 승인 후라 **안 했다.** 대신
-  M18/M19 이후 레포가 스스로 적은 정제를 적용했다 — **바이트 동일 7쌍**을
-  `test_cross_provider_contract_parity.py`가 **표로** 박는다. ⚠️**스윕이 아니라 표**다(우연히 같은
-  함수를 훑으면 조용히 자라고 의도적 분기가 미스터리 실패가 된다). 규약 문구도 고쳤다 —
-  **결정은 유지하고 근거만 정확히**.
-- Verified(**변이 3종 red**): ⓐ**gcp `_fallback_analysis`에만 키워드 추가**(정확히 "한쪽만 닿는 고침") ·
-  ⓑazure `_deserialise_analyzer` 이름 변경 · ⓒ표 비우기(공허 통과 방지). 복구 후 8 passed.
-- Verified: `make check` **2319 passed, 2 skipped**(2026-08-30 로컬 macOS·py3.13).
-- Blockers: 없음. ⚠️`_build_prompt`의 **레이블이 세 갈래**(`reason`: Reason/**Summary**/Reason)인 건
-  물었지만 **결함으로 세지 않았다** — provider마다 **다른 LLM**을 쓰고 영향을 보이려면 모델 셋을
-  돌려야 한다(D49가 네트워크를 막는다).
-- Next: **Azure executor 배선**(승인) · **BQ 결제 내보내기**(콘솔 수동) · **정적검사 게이트 편입**(결정) ·
-  **analyzer/decision 계약 추출**(승인 — 표가 그때까지 드리프트를 막는다).
