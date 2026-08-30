@@ -58,7 +58,7 @@
 1. **CDK 배포 시 Vercel context 필수** — ⚠️context 미지정 배포가 **실제로 07-11 OIDC provider를 삭제**해 대시보드가 조용히 DEMO FALLBACK으로 강등됐다(07-18 복구). diff/deploy는 반드시 `-c vercelTeamSlug=men16922s-projects -c vercelProjectName=platform-agent`. 로컬 pip 번들링(arm64↔amd64) 주의.
 2. **GCP/Azure 인시던트 스토어는 보관 정책이 없다 — 단 "실 데이터 삭제"는 틀렸다** — 코드 갭은
    유효(둘 다 TTL 미설정)지만 **스토어가 아예 없어 지울 데이터 0**(런북 스토어도 마찬가지,
-   08-13) → **Phase 4** 선행. 증거 `gcp-azure-retention-nothing-to-delete.log`.
+   08-13 · **08-30 재확인 여전히 0** — GCP엔 `coffee-menu`, Azure엔 `roadpilot`뿐이고 **둘 다 남의 프로젝트**) → **Phase 4** 선행. 증거 `gcp-azure-retention-nothing-to-delete.log`.
 3. **⚠️ 스코프·배포 신원은 집행 가능하지만 옵트인이다(D38·D39)** — **기본값은 미설정**이라
    자격증명 env 없이는 인시던트는 전부 거부, 배포는 ambient(=cluster-admin) —
    **"설정하면 집행되고, 안 하면 조용히 안 된다."** 묻기 `probe_scope_reachability.py`·`make
@@ -80,7 +80,7 @@
    `make sign-image` + `image_trust`(배포 직전 거부, **exit 2도 거부**) + CI 키리스까지 라이브.
    **과대 해석 금지**: 배포 게이트는 **옵트인**(`PLATFORM_REQUIRE_SIGNED_IMAGES`)이고 **온프렘
    진입점 하나**만 덮는다 · 로컬 `make sign-image`는 **dev 키** · Rekor는 **영구 공개** ·
-   **어드미션 미도입**(cosign v3 ↔ policy-controller 저장 위치 불일치, v2는 통과 — 양방향 실증).
+   **어드미션 미도입**(cosign v3 ↔ policy-controller 저장 위치 불일치, v2는 통과 — 양방향 실증). ⛔**재개 조건 미충족, 08-30 확인**: `sigstore/policy-controller#1406`(번들 스펙)이 **여전히 open**이고 cosign **v3.1.2의 `sign`·`attest` 어디에도 `--new-bundle-format`이 없다**(우리 경로는 `sign --key`).
    ⚠️**우리 게이트는 같은 이미지에 VERIFIED를 준다** = **"검증됨"이 도구마다 다르고 우리는
    못 본다**. 증거 `docs/evidence/cosign-admission-kind-attempt.log` · M15.
 7. **TS 타입은 네트워크 데이터를 보증하지 않는다** — 라이브 페이지가 `posture.namespaces.length`로 죽는 동안 `tsc`는 내내 초록이었다(구버전 페이로드). 롤링 중엔 허브가 두 버전을 동시에 서빙 → **푸시 신규 필드는 항상 optional + 폴백**.

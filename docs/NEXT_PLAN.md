@@ -91,8 +91,8 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
   **docstring 예시**가 호출로 보인다.
 - [ ] **A2A 인증 실집행 결정** — 남은 건 **기본값 on 여부**(라이브 kagent 왕복이 익명이라
   opt-in — 그 "익명"은 **나가는 쪽**이다, D39).
-- [ ] **Cosign 어드미션 = 업스트림 대기** — **`STATUS` Risk 6이 권위**. **재개 조건**: cosign v3
-  ↔ policy-controller 저장 위치가 업스트림에서 맞춰지는 것.
+- [ ] **Cosign 어드미션 = 업스트림 대기** — **`STATUS` Risk 6이 권위**. **재개 조건**: cosign v3 ↔ policy-controller 저장 위치 일치.
+  ⛔**08-30 확인: 아직**(`policy-controller#1406` open · v3.1.2 `sign`/`attest`에 `--new-bundle-format` 없음) — **이 날짜부터 볼 것.**
 
 ## 유지 규약 (완료된 리팩토링에서 나온 "하지 말 것")
 
