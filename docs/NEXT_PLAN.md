@@ -53,12 +53,12 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
 - [ ] **(신규 08-30) `make lint` 20건을 고칠지** — ruff↔pytest 제외 비대칭을 닫아 **이제 읽을 수 있다**
   (F841 8·E731 5·E701 5·F402 1·E712 1, **전수 분류 결과 결함 0**). 스타일이고 열 파일을 건드려 안 고쳤다.
   ⚠️`make lint`를 **게이트에 넣으려면 이게 선행**이다. 증거 `docs/evidence/ruff-and-pytest-did-not-exclude-the-same-vendored-trees.log`.
-- [ ] ⚠️**Azure executor는 하지 않은 조치를 "해결됨"으로 보고한다(08-16 실측, 승인 사안)** —
-  `_execute_single_action`이 로그만 찍고 `success: True`를 돌려 → `resolved=True`로 **Slack에
-  올라가고 기록된다**. `azure_runner.py`는 **311줄 실구현**(GCP 308줄과 대등)인데 **Azure만 자기
-  러너를 안 부른다**. ⚠️**지금은 순수 잠재**: 구독에 Function App·AKS·Cosmos **전부 없다**(08-16 실측).
-  **안 고쳤다 — 배선하면 라이브 ARM/AKS 변경이 시작된다**(하드-투-리버스는 승인 후). `success: False`로
-  낮추는 것도 출력을 바꾸므로 **선택**이다. 근거 `docs/evidence/azure-executor-reports-resolved-without-executing.log`
+- [ ] ⚠️**Azure executor는 하지 않은 조치를 "해결됨"으로 보고한다(08-16 실측, 승인 사안)** — `_execute_single_action`이 로그만
+  찍고 `success: True`를 돌려 `resolved=True`로 **Slack에 올라가고 기록된다**. **311줄 러너를 Azure만 안 부른다**(08-30 재확인).
+  ⚠️**"순수 잠재"의 근거를 다시 세웠다(08-30)**: 08-16의 "FunctionApp·AKS·Cosmos 전부 없다"는 **틀렸다** — Cosmos는 있고
+  (`cosmos-roadpilot`, **2026-07-14** 생성 = 그 측정보다 **한 달 먼저** → **stale이 아니라 오기**, `rg-roadpilot`=**남의 프로젝트**)
+  **러너엔 Cosmos 액션이 없다** ⇒ 근거가 **손으로 적은 셋**→**러너 액션에서 유도한 둘**로 섰고 **둘 다 0**(⚠️불변식 아님). ✅미구현 11종은 안전 — GCP가 러너의 `ValueError`를 **`success: False`**로 돌린다(네 provider 다 선언 16 vs 러너 4~5, 같은 모양).
+  **안 고쳤다**(배선=라이브 ARM/AKS, 승인 후) · 근거 `docs/evidence/azure-executor-reports-resolved-without-executing.log`(§정정 08-30)
   · 가드 `test_executor_dispatches_to_runner.py`(**설명 없는 비대칭 금지**).
 - [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 선행**(kind엔 CSI 스냅샷터 부재).
 - **2차 잔여 = 하나**: **스포크의 읽기 신원** — 공유 `argocd` ns를 맨 kubectl로 읽어 테넌트 구분이
