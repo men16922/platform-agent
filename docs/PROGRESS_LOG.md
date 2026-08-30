@@ -6,6 +6,40 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-30 — 같은 함정을 pytest에만 막아 뒀다: ruff는 실행마다 답이 달랐다 (gate 2302)
+
+- Status: 위 증분이 **"미수정, 범위 밖"으로 기록만** 한 항목을 재서 닫았다. 증거
+  `docs/evidence/ruff-and-pytest-did-not-exclude-the-same-vendored-trees.log`.
+- Verified(**재현 — 같은 명령, 같은 트리, 다른 답**): `ruff check src/ tests/` 10회가
+  **20 · 6527 · 20 · 6527 · 6527 · 6527 · 20 · 6527 · 6527 · 20**. 초과분 6,507건이 **전부
+  `src/stacks/cdk.out`**(벤더 CDK 자산 4,703 py파일). 캐시를 지우면 첫 실행만 20이고 다시 흔들린다.
+- Verified(**원인 = 선언이 아니라 추론**): 두 경로 다 gitignore인데 **pytest만 소리 내어 말했다**
+  (`norecursedirs`). `[tool.ruff]`엔 대응 항목이 **없었다**. ⇒ **Risk 12②가 두 번째 도구에서
+  재발**(선언되지 않은 것 위에서 통과)이자 **12⑥ 형제 집합의 설정 판** — 같은 함정을 한쪽에만
+  막아 뒀다. ⚠️NEXT_PLAN은 **이미 `cdk.out`을 "세는 함정"으로 적어 뒀다**(MCP 항목): 같은
+  디렉터리·같은 함정·다른 도구인데 기록이 도구 하나에만 적용돼 있었다.
+- Changed: `[tool.ruff] extend-exclude`에 두 경로를 **선언**했다 → 10회 **전부 20**. ⚠️**게이트는
+  아니다**(`check: test`) — 나쁜 건 CI가 아니라 `make lint`를 돌린 사람이 실행마다 다른 답을 받고,
+  흔들리는 쪽이 **진짜 소견 20건을 벤더 6,507건 밑에 묻었다**는 것이다. **읽을 수 없는 신호는 읽지 않게 된다.**
+- Verified(**묻혀 있던 20건 전수 분류 — 결함 0**): F841 8 · E731 5 · E701 5 · F402 1 · E712 1.
+  "단언이 빠진 모양"인 **아홉 건을 개별로** 물었다. `azure_runner:275 url`=죽은 변수(분기마다 자기
+  URL) · F402=그 함수가 dataclass `field`를 안 씀 · `test_pipeline original_guard`=지역 인스턴스라
+  오염 없음 · `test_activity_writer result`=mock의 `put_item`을 단언한다. ⚠️**가장 그럴듯했던 건
+  `pipeline.py:218 dep_id`** — `record_deployment()`가 돌려준 id를 버리고 **바로 다음 줄**에서
+  ACTIVITY 행을 쓴다(08-18에 "쓸 수 있는데 안 쓴다"로 읽혔던 그 모양). 물어 보니
+  **`record_agent_activity`에 `deployment_id` 매개변수가 아예 없다** ⇒ 08-18이 **읽는 쪽**에서
+  내린 경계가 **쓰는 쪽에서 독립으로 재확인**됐다. **결함이 아니라 경계다** — 시험은 범위를 줄 때도 값이 있다.
+- Changed(**가드 +3**): `test_vendored_paths_are_excluded_from_both_tools.py` — 형제 일치 · 공허
+  방지 · **도구에 직접 묻기**(`ruff check --show-settings`). ⚠️**TOML 키는 오타가 나도 파싱된다**:
+  `extend_exclude`(밑줄)로 쓰면 ruff가 파일을 받고 키를 **조용히 무시**한다 — 선언을 읽으면 누가
+  타이핑했다가, resolved settings를 읽어야 **도구가 동의했다**가 증명된다.
+- Verified(**변이 4종 red**): 제외 통째 삭제 · ruff만 한 경로 누락 · **키 오타**(세 번째 방향이
+  사는 지점) · **양쪽 다 빈 목록**(형제 일치는 **통과**하고 공허 방지만 red — 그 칸을 메우는 게 요지).
+- Verified: `make check` **2302 passed, 2 skipped**(2026-08-30 로컬 macOS·py3.13, 38.0s).
+- Blockers: 없음. 20건은 **안 고쳤다**(스타일 · 열 파일 · 범위 밖) — 이제 **읽을 수 있으니**
+  고칠지는 결정 사안이고, `make lint`를 게이트에 넣으려면 그게 선행이다.
+- Next: **Azure executor 디스패치**(승인 사안) — 그 전에 기록된 근거 *"순수 잠재: 구독에 리소스 없음"*(08-16)을 재는 게 값싸다.
+
 ## 2026-08-30 — 4a 마지막 칸: 청구액은 $0.00이었고, 프리티어를 배제한 근거의 전건이 거짓이었다 (gate 2299)
 
 - Status: 13일간 세 진입점이 가리켜 온 마지막 미측정 항목("08-19 이후 AMP 실제 청구액")을 실행했다.
@@ -40,10 +74,7 @@
   인용 정규식 무력화(공허 통과 방지) · 없는 증거 로그 인용. 복구 후 8 passed, 워킹트리 깨끗.
 - Verified: `make check` **2299 passed, 2 skipped**(2026-08-30 로컬 macOS·py3.13, 36.4s).
   ⚠️**새 가드가 그 자리에서 일했다** — BRIEF를 아직 안 고친 채 처음 돌리자 정확히 그 주장을 red로 잡았다.
-- Observed(**미수정, 범위 밖**): `make lint`가 실행에 따라 **20 ↔ 6,527**을 오간다 — 초과분이 전부
-  **gitignore된 `src/stacks/cdk.out`**다. `pyproject.toml`은 pytest엔 `norecursedirs`로 그 경로를
-  막아 뒀는데 **`[tool.ruff]`엔 대응 exclude가 없다**(같은 함정을 한쪽 형제에만 막아 둔 모양 —
-  NEXT_PLAN이 이미 `cdk.out`을 **세는 함정**으로 적어 뒀다). ⚠️게이트 아님(`check: test`) · 내 파일 **0건**.
+- Observed: `make lint`가 실행마다 **20 ↔ 6,527**을 오간다(⛔같은 날 아래 증분이 재서 닫았다).
 - Blockers: 없음. ⚠️측정 비용 = CE 2회 $0.02 · 창 전체에서 **CE $0.17이 이 계정 최대 항목**(2위
   EC2-Other $0.0462) — **"무엇이 도는가"를 묻는 게 도는 것보다 비싸다.**
 - Next: **Azure executor 디스패치**(승인 사안) — 고치면 **Phase 3② 면제도 같이 지울 것**.
@@ -87,34 +118,3 @@
   red였다(brief·STATUS만 고치고 NEXT_PLAN을 빠뜨리자 그 자리에서 실패).
 - Blockers: 없음. Phase 1b 라이브는 **정적 검증으로 남기기로 결정**(Docker down · k3s-lab 비어 있음).
 - Next: 08-19 이후 AMP 청구액 대조 · Azure executor 디스패치를 고치면 **Phase 3② 면제도 함께 지울 것**.
-
-
-## 2026-08-18 — `cost_metrics` 잔여: 기록된 이유가 맞았고, 면제는 목록이 아니라 경계였다 (gate 2279)
-
-- Status: 08-19 전까지 AMP 청구액은 원리상 못 잰다. 그래서 잔여 목록의 **`cost_metrics`**
-  (*"`deployment_id`가 없어 렌더하는 뷰에 안 닿는다", 08-08*)를 규율대로 시험했다.
-  **PR #43**(3커밋, capability 스캔 셋)은 CI 초록 확인 후 squash 병합했다(`a9331bb`).
-- Verified(**쓰는 쪽 형제는 넷이고 하나는 다른 모듈에 있다**): ACTIVITY 행 writer는
-  `record_route_activity`·`_write_row`·`record_rollback`(deploy_recorder) + **`record_agent_activity`
-  (`operations/activity_writer.py`)**. 그중 둘만 `cost_metrics`를 쓴다. ⚠️`record_route_activity`는
-  **350KB짜리 trace를 쓰면서** 그것만 안 쓴다 — `_cost_metrics`가 바로 그 trace에서 유도하므로
-  "쓸 수 있는데 안 쓴다"로 읽히는 모양이다.
-- Verified(**읽는 쪽으로 가니 결함이 아니라 범위였다**): cost를 렌더하는 곳은 **한 곳뿐**
-  (`deployments/[id]/page.tsx`)이고 그걸 먹이는 `mergeActivity`의 선택 규칙은 `deployment_id === id`
-  한 줄이다. route·provider-activity 행은 그 키가 없어 **원리상 그 뷰에 못 닿는다.** 더하면 이
-  저장소가 반복해 값을 치른 **"선언됐는데 아무도 안 읽는 필드"**가 하나 는다. ⇒ **현행 유지.**
-- Verified(**면제가 손으로 고른 목록인지**): 아니다. 가드가 의무를 **읽는 쪽 선택 규칙에서
-  유도**하고(모듈이 아니라 `deployment_id` 보유가 기준) 범위는 `SRC_AGENTS.rglob("*.py")`라
-  **전 모듈**을 덮는다 — 넷째 writer가 다른 모듈에 있어도 잡힌다. 공허 통과 방지도 있다(`>= 4`).
-- Verified(**변이 3종 전부 red**, 변이·실행·복구 한 스크립트): 롤백 행에서 `cost_metrics` 제거
-  (4건, db41874가 고친 그 결함) · **route에 `deployment_id` 부여**(1건 — 경계를 넘는 순간 의무가
-  생긴다는 게 요지) · `"PK": "ACTIVITY"` 리터럴을 깨 스윕 무력화(1건, 공허 통과 방지가 산다).
-  복구 후 8 passed, `git diff --stat` 비어 있음. 증거
-  `docs/evidence/cost-metrics-exemption-is-derived-and-load-bearing.log`.
-- Changed: **src 변경 0.** `NEXT_PLAN`에서 열린 잔여 → ⛔닫힘으로 이동. 진입점 stale도 고쳤다 —
-  brief가 이미 닫힌 ⓒ·`rollback_release`를 무과금 다음 수로 가리키고 있었고, 4a DoD ①②는
-  brief·STATUS 양쪽에서 "남은 설계 결정"인 채였다(M37이 결정·구현했다).
-- Verified: `make check` **2279 passed, 2 skipped**(2026-08-18 로컬 macOS·py3.13, 35.8s) —
-  08-17 숫자를 오늘 같은 기계에서 재측정해 baseline에 날짜와 기계를 적었다(Risk 12②).
-- Blockers: 없음. AMP 청구액은 **08-19 이후**(CE 2일 지연 · ⚠️크레딧 제외 필터).
-- Next: 08-19 이후 AMP 실제 청구액 대조.

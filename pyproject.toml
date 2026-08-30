@@ -69,6 +69,15 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# Vendored trees, declared rather than inferred. Both are gitignored and ruff
+# respects .gitignore by default — but measured 2026-08-30, that inference is not
+# deterministic here: the same `ruff check src/ tests/` on an unchanged tree
+# alternated between 20 and 6,527 errors across repeated runs (the 6,507 extra all
+# under src/stacks/cdk.out). `[tool.pytest.ini_options]` already names these two
+# paths in `norecursedirs`; ruff named neither, so the same trap was blocked for
+# one sibling and open for the other. Keep the two lists in step —
+# `tests/test_vendored_paths_are_excluded_from_both_tools.py` fails if they drift.
+extend-exclude = ["src/stacks/cdk.out", "src/stacks/node_modules"]
 
 [tool.mypy]
 python_version = "3.11"
