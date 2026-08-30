@@ -6,6 +6,37 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-30 — "업스트림 대기" 둘의 재개 조건을 재다: 하나는 열렸고, 하나는 다른 리스크였다 (gate 2302)
+
+- Status: 남은 항목이 승인·콘솔 수동에 몰려 있어, **닫혀 있던 "업스트림 대기" 항목들의 재개 조건**을
+  쟀다. 둘 다 기록이 낡아 있었고 **한쪽은 리스크의 성격 자체가 달랐다**. 증거 둘:
+  `the-azure-extra-cannot-be-installed.log`(기존, 조건 갱신) ·
+  `docs/evidence/the-dashboard-audit-record-described-a-different-risk.log`(신규).
+- Verified(**`.[azure]` — 재개 조건 ①은 충족됐다**): 격리 venv(py3.13)에서 `pip install .[azure]`가
+  **31.5초에 성공**한다. 08-15엔 `agent-framework>=1.0` 단독으로 **150초 타임아웃**이었다
+  (`core[all]` 강제 → 무한 역추적). 지금은 **1.16.0**이고 `Provides-Extra: []` — 업스트림이 풀었다.
+- Verified(**②는 미충족이고, 버전 지연이 아니다**): 진짜 라이브러리에 대고 태우니 `msft_deployer.py:19`가
+  `ImportError: cannot import name 'AzureOpenAIResponsesClient'`로 죽는다. 설치 트리를 훑으니
+  **`AzureOpenAI*Client` 클래스가 0개**고, 그 이름은 **업스트림 자신의 docstring 한 줄**에만 있다
+  (`agent_framework_azure_contentunderstanding/_file_search.py:78`). ⇒ **여전히 안 고친다 — 대체 심볼이
+  없으므로 추측은 발명.** 형제 스윕: adk/local은 **자기 extra 미설치**일 뿐이고(둘 다 선언돼 있다)
+  strands는 임포트된다 — **자기 extra가 깔린 채 죽는 건 msft 하나**다.
+- Verified(**⚠️Risk 11 — 기록이 세 군데 다 틀렸다**): *"PostCSS moderate 2건 · 패치 없음 · 빌드타임이라
+  런타임 위험 낮음"*인데 실측은 **critical 2 · high 6**이고 **런타임**이다. `next-auth`가 *"auth checks
+  **fail open**"*(critical)인데 **런타임 8파일**에 있고 그중 하나가 **승인 UI**(`pending-approvals`) ·
+  next는 **미들웨어 우회·SSRF·내부 Server Function 노출** · PostCSS조차 이제 **high**(임의 `.map` 읽기).
+  ⚠️**기록의 반증 실험이 `--force` 하나였다** — non-force는 **메이저 강등이 없다**. 하나의 경로에서 얻은
+  답을 항목 전체의 성질로 쓴 것이고, 08-18의 *"거부가 러너 하나의 성질이었다"*와 같은 모양이다.
+- Changed(**Tier A만 적용**): `npm audit fix` → **critical 2 → 0**(총 8→3). 변경은 **lockfile 32줄**이고
+  **package.json은 그대로**다. `npx tsc --noEmit` 통과 · `npm run build` **exit 0**(라우트 전부 생성).
+  ⛔**Tier B는 안 했다**: 남은 high 3(next·postcss·sharp)이 **`next@16.3.3`**에 달렸는데 major는 아니어도
+  **프레임워크 마이너 업**이고 이 대시보드는 **조용히 강등된 이력**이 있다(Risk 1) → **결정 사안**.
+- Changed(**측정이 남긴 것도 치웠다**): `pip install .`이 리포 루트에 **`build/`를 남기는데 gitignore에
+  없었다** — 지우고 `.gitignore`에 넣었다(커밋될 수 있던 함정).
+- Verified: `make check` **2302 passed, 2 skipped**(2026-08-30 로컬 macOS·py3.13).
+- Blockers: 없음. ⚠️**Risk 11을 "upstream 대기"로 다시 닫지 말 것** — 업스트림은 이미 고쳤다.
+- Next: **Tier B 결정**(`next@16.3.3`) · Azure executor 배선(승인) · BQ 결제 내보내기(콘솔 수동).
+
 ## 2026-08-30 — 승인 대기 항목의 근거를 재다: 결론은 살아남고, 적힌 목록이 틀렸다 (gate 2302)
 
 - Status: 남은 항목이 대부분 승인·업스트림·콘솔 수동이라, **가장 값싼 다음 수 = 승인을 떠받치는
@@ -70,42 +101,3 @@
 - Blockers: 없음. 20건은 **안 고쳤다**(스타일 · 열 파일 · 범위 밖) — 이제 **읽을 수 있으니**
   고칠지는 결정 사안이고, `make lint`를 게이트에 넣으려면 그게 선행이다.
 - Next: **Azure executor 디스패치**(승인 사안) — 그 전에 기록된 근거 *"순수 잠재: 구독에 리소스 없음"*(08-16)을 재는 게 값싸다.
-
-## 2026-08-30 — 4a 마지막 칸: 청구액은 $0.00이었고, 프리티어를 배제한 근거의 전건이 거짓이었다 (gate 2299)
-
-- Status: 13일간 세 진입점이 가리켜 온 마지막 미측정 항목("08-19 이후 AMP 실제 청구액")을 실행했다.
-  **PR #44**(Phase DoD 전수 검증)는 CI 초록 확인 후 squash 병합(`4fb4185`). 권위는 계획서 **§10**과
-  `docs/evidence/amp-actual-bill-is-zero-and-the-free-tier-reason-was-inverted.log`.
-- Verified(**$0.00이고, "목록에 없어서 0"이 아니다**): CE를 **크레딧 제외 필터**로 물으니 AMP는
-  08-17부터 **13일 전부 그룹이 존재**하고 금액만 0. `RECORD_TYPE`으로 가르니 **`Credit` 행이 없다**
-  — 상쇄가 아니라 **Usage 행 자체가 $0**이다. 계량 **798,331 샘플**·0.0005 GB-Mo·쿼리 920.
-  ⚠️계량되고 0인 것과 계량조차 안 된 것은 다른 사실이다.
-- Changed(**사유 — 기록의 전건이 거짓이었다**): `aws freetier get-free-tier-usage`가 AMP 행 셋을
-  전부 **`freeTierType: "Always Free"`**(40M/월 · 10GB · 200B)로 답한다. §3과 D50은 *"12개월
-  한정**이면** 안 붙는다"*는 **조건문**을 세우고 전건을 참이라 가정했다. ⚠️**틀린 기록이 아니다** —
-  추론임을 명시했고 **무엇이 확정할지 지목했다**(*"AMP를 켠 뒤 첫 청구서"*). 다만 답은 **이미 그
-  계정 데이터 안에 있었다**: 당시 12건이 **전부 "Always Free"**였고 "12 Month Free 0건"은 "창을
-  지났다"로도 **"이 계정 프리티어 행은 원래 그 종류뿐"**으로도 읽힌다 — 같은 데이터가 두 결론을
-  지탱했고 **비싼 쪽을 골랐다**(보수적이라 안전했다). §3에 정정 박스, §10 신설.
-- Verified(**교차 확인 2.4%**): AMP에 직접 물어 잰 실가동 **41.3 수집-시간** × 설계 부하 19,800/h
-  = **817,740** vs AWS 계량 **798,331** — 파이프 모델과 청구 계량이 서로를 확인한다.
-- Verified(**허용목록 유출 0**): 전체 창에서 workspace가 아는 메트릭 이름이 **정확히 4개**, 시계열은
-  **08-17T08:00Z·08-27T12:00Z 두 시점 모두 308**(22/50/220/16 — §2의 네 칸 그대로).
-- Verified(**⚠️두 번째 발견 — 파이프는 연속이 아니고 지금 죽어 있다**): 13일 중 **4일만**(11.1h ·
-  10.0h · 3.6h · 16.7h), 마지막 샘플 **08-27T19:55Z** — 로컬 **kind**가 Docker와 함께 뜬다(오늘
-  `docker info` 실패). duty cycle **13%** ⇒ **$1.42는 720h 연속 가동 가정**이라 이 환경에선 원리상
-  안 난다(프리티어가 없었어도 **$0.07**). **가정이 지배하는 추정은 그 가정이다** — 08-15엔 시계열 수, 오늘은 **가동 시간**에서 재성립.
-- Changed(**가드 +8**): `test_amp_bill_claims.py`(+6) — 진입점이 **$1.42를 정정 없이 다시 적으면**
-  red(±3줄 근접). ⚠️**첫 판은 하중이 없었다**: 문서 단위로 마커를 찾아 한번 고쳐진 문서엔 다시
-  red가 안 났다(Risk 12③ 그 모양) → **근접 창으로 바꿨다.** `test_evidence_pointers_resolve.py`(+2)
-  — 인용된 `docs/evidence/*.log` 실재 스윕(**측정 후 작성**: 68건·dangling 0). `test_amp_cost_handles.py`는
-  계약 그대로 두고 **금액을 한도 대비로** 고쳤다 — 절벽이 40M 한도로 옮겼을 뿐 필터 없음은 **128배 초과**.
-- Verified(**변이 7종 전부 red**, 변이·실행·복구 한 스크립트 + 디스크 백업): BRIEF에 정정 없는
-  $1.42 삽입 · 세 진입점에서 측정 결과 제거 · 증거 로그 삭제 · §10 제목 변경 · 한도 40M 제거 ·
-  인용 정규식 무력화(공허 통과 방지) · 없는 증거 로그 인용. 복구 후 8 passed, 워킹트리 깨끗.
-- Verified: `make check` **2299 passed, 2 skipped**(2026-08-30 로컬 macOS·py3.13, 36.4s).
-  ⚠️**새 가드가 그 자리에서 일했다** — BRIEF를 아직 안 고친 채 처음 돌리자 정확히 그 주장을 red로 잡았다.
-- Observed: `make lint`가 실행마다 **20 ↔ 6,527**을 오간다(⛔같은 날 아래 증분이 재서 닫았다).
-- Blockers: 없음. ⚠️측정 비용 = CE 2회 $0.02 · 창 전체에서 **CE $0.17이 이 계정 최대 항목**(2위
-  EC2-Other $0.0462) — **"무엇이 도는가"를 묻는 게 도는 것보다 비싸다.**
-- Next: **Azure executor 디스패치**(승인 사안) — 고치면 **Phase 3② 면제도 같이 지울 것**.

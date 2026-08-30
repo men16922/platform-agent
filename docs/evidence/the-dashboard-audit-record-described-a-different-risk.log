@@ -1,0 +1,86 @@
+# "upstream 대기 확정"이 더 이상 참이 아니다 — 그리고 적힌 리스크가 다른 리스크였다 (2026-08-30)
+
+`STATUS` Risk 11은 **업스트림 대기**로 닫혀 있던 항목이다. 남은 작업이 대부분 승인·콘솔
+수동이라 **"업스트림 대기" 항목들의 재개 조건을 재는 것**이 값싼 다음 수였다. 이 항목은
+재개 조건이 이미 충족돼 있었고, **그보다 리스크의 성격 자체가 달라져 있었다.**
+
+기록된 내용(07-13 재검증):
+
+> **Dashboard dependency audit** — Next.js 16.2.10 번들 PostCSS(<8.5.10) **moderate 2건**.
+> 16.2.x 패치 없음 · `audit fix --force`는 next@9 다운그레이드 → **upstream 대기 확정**,
+> **빌드타임 경로라 런타임 위험 낮음**.
+
+## 1. 실측 — 세 군데가 다르다
+
+    $ npm audit
+      {'critical': 2, 'high': 6, 'moderate': 0, 'total': 8}
+
+| | 기록 | 실측(08-30) |
+|---|---|---|
+| 건수·심각도 | moderate **2** | **critical 2 · high 6** (총 8) |
+| 성격 | PostCSS, **빌드타임** | **런타임 auth · 미들웨어 우회 · SSRF** 포함 |
+| 해결 | **패치 없음, 업스트림 대기 확정** | `fixAvailable`, **major 아님** |
+
+⚠️ PostCSS조차 이제 **moderate가 아니라 high**다(sourceMappingURL로 **임의 .map 파일
+읽기**). "빌드타임이라 위험 낮음"이 지목한 그 항목이 그사이 파일 읽기로 올라갔다.
+
+## 2. 가장 무거운 것 — auth가 **fail open** 한다
+
+    next-auth  critical  (direct)
+      · Auth.js: Configuration errors can cause existence-based auth checks to
+        fail open (auth object populated with an error)          [critical]
+      · Auth.js: Email normalizer ... homoglyph @ bypass          [critical]
+      · Auth.js: getToken() uncaught exception on malformed Bearer [high]
+      · Auth.js: OAuth state/nonce/PKCE cookies not bound to provider [moderate]
+
+**빌드타임이 아니다.** `next-auth`는 런타임 경로에 있다 — 실측 **8파일**:
+
+    src/auth.ts · auth-provider.tsx · dashboard-header.tsx · sidebar.tsx
+    pending-approvals.tsx · deployments-control.tsx · provisioning-control.tsx
+    agent-deploy-chat.tsx
+
+`pending-approvals`는 **승인 UI**다. "존재 기반 auth 검사가 fail open" 한다는 건 이
+대시보드가 정확히 무엇을 위해 auth를 두었는지와 맞닿는다.
+
+Next.js 쪽도 빌드타임이 아니다: **Middleware/Proxy bypass** · **SSRF in Server
+Actions / rewrites** · **Unauthenticated disclosure of internal Server Function
+endpoints** · Cache confusion · DoS.
+
+## 3. 기록된 반증 실험을 다시 돌렸다 — 결과가 뒤집혔다
+
+기록은 *"`audit fix --force`는 next@9 다운그레이드"*였다. **non-force** 경로를 물었다:
+
+    $ npm audit fix --dry-run
+      change @auth/core     0.41.2  => 0.41.3
+      change next-auth      beta.31 => beta.32
+      change postcss        8.5.16  => 8.5.26
+      change nanoid         3.3.15  => 3.3.18
+      change jose           6.2.3   => 6.2.10
+      change oauth4webapi   3.8.6   => 3.8.7
+      change brace-expansion 5.0.7  => 5.0.9
+
+**메이저 강등이 없다.** 기록은 `--force`만 시험하고 그 결과를 항목 전체의 결론으로
+썼다 — ⚠️**하나의 경로에서 얻은 답을 항목의 성질로 일반화한 것**이고, 이 레포가
+반복해서 값을 치른 모양이다(가장 최근: 08-18 "거부가 러너 하나의 성질이었다").
+
+## 4. 적용 — Tier A만
+
+    $ npm audit fix
+      critical 2 → 0 · 총 8 → 3
+      변경: package-lock.json 32줄. **package.json은 그대로다.**
+
+    $ npx tsc --noEmit     통과
+    $ npm run build        exit 0 (라우트 전부 생성됨)
+
+남은 3건(**next · postcss(next 경유) · sharp(next 경유)**)은 전부 `next@16.3.3`을
+요구한다. **16.2.10 → 16.3.3은 `isSemVerMajor: false`**지만 **프레임워크 마이너 업**이고,
+이 레포는 대시보드가 **조용히 강등된 이력**이 있다(Risk 1: context 미지정 배포가 OIDC
+provider를 삭제해 DEMO FALLBACK으로 떨어졌고 07-18에야 복구). ⇒ **Tier B는 안 했다.
+승인 사안으로 올린다.**
+
+## 5. 남는 것
+
+    Tier A (적용됨)  lockfile만  critical 2 → 0
+    Tier B (결정)    next 16.2.10 → 16.3.3  ← 남은 high 3건이 여기 달려 있다
+
+⚠️ **이 항목을 "upstream 대기"로 다시 닫지 말 것.** 업스트림은 이미 고쳤다.
