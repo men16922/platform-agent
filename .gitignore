@@ -59,3 +59,6 @@ _workspace/
 cosign.key
 cosign.pub
 .state/
+
+# setuptools 산물 — `pip install .` 이 리포 루트에 남긴다(2026-08-30에 실제로 남았다)
+build/

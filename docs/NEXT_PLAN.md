@@ -39,17 +39,16 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
   것(FastAPI 층은 **아예 없다**) → "실제 PR 생성"은 별개 잔여가 **아니라 이 항목의 구속
   조건**. 우회 없음(OAuth `repo`는 blast radius=1과 충돌 · TS 이식은 **두 번째 진실 공급원**).
   ⇒ 여는 조건 = **파이썬 플래너를 어디서 돌릴지**.
-- ⛔**Phase 4 / 4a는 닫혔다(08-30) — DoD 넷 + 청구액 대조 전부.** 권위 = 계획서 **§9·§10**(복제 금지 —
-  ⚠️이 규약이 겨냥한 실패가 실제로 났다: 진입점 3곳이 "≈$5/월"을 복제해 승인까지 갔고 **100배 틀렸다**) ·
-  `docs/evidence/amp-actual-bill-is-zero-and-the-free-tier-reason-was-inverted.log`. **실제 청구 $0.00**
-  (계량 798,331 샘플 · 프리티어 **`Always Free` 40M/월** — §3의 배제 근거는 **전건이 거짓**).
-  ⚠️**절벽이 요율→한도로 옮겨 앉았을 뿐**: 필터 없음 **128배 초과**, 허용목록 하중 그대로 · ⚠️파이프는
-  **연속이 아니다**(4일·41.3h, 08-27T19:55Z 이후 죽음) → $1.42는 720h 가정, 실측분 **$0.07**.
-  DoD ①②(M37)는 **관리형이 매니페스트를 안 내고 read model이 부재를 설명한다**(`applicable=False`·sync **n/a**) ·
-  ⛔`ManagedBackendNotRenderable` **삭제**. **접으면 워크스페이스·IAM 사용자·키 셋 다 지울 것**(D50) —
-  ⚠️**$0이라고 이 이유는 안 줄어든다**. **다시 열지 말 것.**
+- ⛔**Phase 4 / 4a는 닫혔다(08-30) — DoD 넷 + 청구액 대조 전부.** 실제 청구 **$0.00**(계량 798,331 샘플 ·
+  프리티어 **`Always Free` 40M/월**이라 §3의 배제 근거는 **전건이 거짓**). ⚠️**절벽이 요율→한도로 옮겨 앉았을
+  뿐** 필터 없음은 **128배 초과**(허용목록 하중 그대로) · ⚠️파이프는 연속이 아니다(4일·41.3h) → $1.42는 720h 가정.
+  권위 = 계획서 **§9·§10** · `docs/evidence/amp-actual-bill-is-zero-and-the-free-tier-reason-was-inverted.log`.
+  **접으면 워크스페이스·IAM 사용자·키 셋 다 지울 것**(D50 — ⚠️$0이라고 이 이유는 안 줄어든다). **다시 열지 말 것.**
 - [ ] **Phase 4 남은 것 = 4b**(자격증명 파티션 미증명=Risk 10 · 30분 TTL 가드가 상시와 안 맞는다, billable·별 승인) ·
   ⚠️**$0 선행: BQ 결제 내보내기**(`GCP_BILLING_EXPORT_SETUP.md`, 콘솔 수동 · `make spend-check`).
+- [ ] **(신규 08-30, 보안) 대시보드 `next@16.3.3`으로 올릴지 — 남은 high 3건이 여기 달렸다.** ✅Tier A는
+  적용했다(`npm audit fix` → **critical 2→0**, lockfile 32줄만, `tsc`·build 통과). ⛔Tier B는 **프레임워크
+  마이너 업**이고 이 대시보드는 **조용히 강등된 이력**이 있다(Risk 1) → 결정 사안. **`STATUS` Risk 11이 권위.**
 - [ ] **(신규 08-30) `make lint` 20건을 고칠지** — ruff↔pytest 제외 비대칭을 닫아 **이제 읽을 수 있다**
   (F841 8·E731 5·E701 5·F402 1·E712 1, **전수 분류 결과 결함 0**). 스타일이고 열 파일을 건드려 안 고쳤다.
   ⚠️`make lint`를 **게이트에 넣으려면 이게 선행**이다. 증거 `docs/evidence/ruff-and-pytest-did-not-exclude-the-same-vendored-trees.log`.
@@ -73,11 +72,12 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
 - ⛔**capability 스캔은 셋 다 닫혔다(08-17)** — ⓐ**현행 유지**(M35: 티어 2는 액션을 `recommended_capabilities`에서 만들고 `capabilities`는 매치 게이트일 뿐 — 더해도 관측 변화 0, **빼면 네 provider가 다 resolve하는 스텝을 잃는다**) · ⓒ**측정하고 고쳤다**(M36+M37: 기존 가드가 **생산에서 도달 불가한 capability 집합**으로 물어 첫-매치와 점수제의 답이 같은 경우만 태웠다 → 점수 함수를 계약 모듈에 한 벌 두고 셋이 읽는다) · `rollback_release`**는 추천 목록 현행 유지**(진짜 문제는 목록이 아니라 **티어 2가 조건 평가 없이 추천에서 액션을 만든 것**이었고 그걸 고쳤다; `JUSTIFIED_GAPS`가 들고 어긋나면 red). **다시 열지 말 것.**
 - [ ] ⚠️**Phase 3② — GCP는 배선했다(08-18, 승인 후). 남은 건 Azure·AWS.** `guard_rollback`을 부르는 러너가 **onprem 하나**였는데 `ROLLBACK_ACTIONS`는 **네 provider 7종을 다 알았다** — M31이 고친 건 **목록**이고 **호출 지점을 세는 가드가 없었다**(M18이 한 층 위에서 재발: 세는 대상이 액션이 아니라 **러너**). ✅**GCP 배선**: 롤백 walk가 이미 GET하던 매니페스트를 그대로 `guard_rollback`에 넘긴다 — **추가 API 호출 0**, patch 앞에서 거부. ⛔**Azure는 `JUSTIFIED_GAPS`**(executor가 러너를 아예 안 부른다 → 하중 없는 가드가 된다; 그 항목을 고치면 **이 면제는 지워야 하고 가드가 그걸 red로 잡는다**) · **AWS는 러너가 없다**(SSM Automation 경로, 가드가 그 사실을 박아 뒀다). ⚠️**가드 자신이 한 번 틀렸다**: 문자열 검사라 **호출을 지워도 import 줄이 남아 통과**했다 → **AST로 실제 호출**을 센다. 증거 `docs/evidence/phase-dod-verification-2026-08-18.log`.
 - ⛔**`cost_metrics`는 측정으로 닫혔다(08-18)** — 기록된 이유가 **맞다**: cost를 렌더하는 뷰는 **한 곳뿐**이고(`deployments/[id]`) 그걸 먹이는 `mergeActivity`가 `deployment_id === id`로 거른다. route/provider-activity 행은 그 키가 없어 **원리상 못 닿는다**(더하면 안 읽히는 필드가 하나 더 는다). ⚠️**면제는 목록이 아니라 경계다** — 가드가 의무를 **읽는 쪽 선택 규칙에서 유도**하고 `src/agents` **전 모듈**을 rglob으로 훑는다(ACTIVITY writer 넷 중 **하나는 `activity_writer.py`**). 변이 3종 red(롤백 필드 제거 · route에 `deployment_id` 부여 · 스윕 무력화). 증거 `docs/evidence/cost-metrics-exemption-is-derived-and-load-bearing.log`. **다시 열지 말 것.**
-- [ ] **⚠️`pip install .[azure]`가 안 된다(08-15 실측)** — `agent-framework>=1.0` 단독 **150초
-  타임아웃**(`core[all]`만 요구 → pip 무한 역추적). **더 나가**: `msft_deployer.py:19`의
-  `AzureOpenAIResponsesClient`이 core 1.14.0에 **없다**(테스트가 `sys.modules`를 스텁해 통과 —
-  **진짜 라이브러리에 대고 실행된 적이 없다**). **안 고쳤다 — 현재 API를 모르고 추측은 발명.**
-  재개 = 업스트림이 `[all]`을 풀거나 설치 성공. 증거 `the-azure-extra-cannot-be-installed.log`.
+- [ ] **⚠️`msft_deployer`가 진짜 라이브러리에서 깨진다(08-30 재측정)** — ✅**설치 조건은 열렸다**: `pip install
+  .[azure]`가 **31.5초에 성공**한다(08-15엔 150초 타임아웃 · agent-framework **1.16.0**, `Provides-Extra: []`).
+  ⛔그런데 `msft_deployer.py:19`의 `AzureOpenAIResponsesClient`은 **버전 지연이 아니다**: `agent_framework*`에
+  `AzureOpenAI*Client` 클래스가 **0개**고, 그 이름은 설치 트리에서 **업스트림 자신의 docstring 한 줄**에만 있다.
+  **여전히 안 고친다 — 대체 심볼이 없어 추측은 발명.** ⚠️테스트가 `sys.modules`를 스텁해 초록이다(형제 스윕:
+  adk/local은 자기 extra 미설치일 뿐 정상, strands는 임포트된다). 증거 `the-azure-extra-cannot-be-installed.log`.
 - [ ] **GCP/Azure 90일 보관** — **`STATUS` Risk 2가 권위**(스토어가 없어 지울 데이터 0 → Phase 4).
   ⚠️"`resolved_at`은 읽는 쪽이 없다"는 **틀렸다**(08-16 재측정): `oncall_reporter._minutes_between`이
   `started_at`과 짝지어 읽고 `aws/reporting.py:239`가 넘긴다 · **analyzer 폴백 severity는 정책**.
