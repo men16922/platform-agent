@@ -5,7 +5,7 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(**M15=공급망 0→집행 + Phase 5 경계 +
 > `main` 보호**, M14=결정 6건, M13=미소비 14건) / `PROGRESS_LOG.md`(+`docs/archive/`). **≤120줄**.
 
-## 현재 상태 (2026-08-30, gate 2333 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
+## 현재 상태 (2026-08-30, gate 2337 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
 
 **Phase 0·1a·1b·2·3 완결**(M10~M12) + **잔여 소진**(M13) + **결정 7건 닫힘**(D36·D38~D43).
 **공급망은 닫을 수 있는 만큼 닫혔다**(어드미션만 업스트림 대기) · **`main`은 보호된다**
@@ -38,10 +38,8 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
   **UI는 Vercel이라 파일시스템·git·python이 없다**(FastAPI 층은 **아예 없다**) → "실제 PR 생성"은 별개 잔여가
   아니라 **이 항목의 구속 조건**. 우회 없음(OAuth `repo`는 blast radius=1과 충돌 · TS 이식은 **두 번째 진실
   공급원**). ⇒ 여는 조건 = **파이썬 플래너를 어디서 돌릴지**.
-- ⛔**Phase 4 / 4a는 닫혔다(08-30) — DoD 넷 + 청구액 대조 전부. 실제 청구 $0.00**(프리티어 `Always Free` 40M).
-  ⚠️**절벽이 요율→한도로 옮겨 앉았을 뿐** — 필터 없음은 **128배 초과**라 허용목록 하중은 그대로다.
-  권위 = `docs/plans/2026-08-15-4a-remote-write-allowlist.md` **§9·§10** · `docs/evidence/amp-actual-bill-is-zero-and-the-free-tier-reason-was-inverted.log`.
-  **접으면 워크스페이스·IAM 사용자·키 셋 다 지울 것**(D50 — ⚠️$0이라고 이 이유는 안 줄어든다). **다시 열지 말 것.**
+- ⛔**Phase 4 / 4a는 닫혔다(08-30) — `COMPLETED_SUMMARY` M38이 권위.** 실제 청구 **$0.00**(프리티어 `Always Free` 40M).
+  ⚠️**절벽이 요율→한도로 옮겨 앉았을 뿐** — 필터 없음은 **128배 초과**라 허용목록 하중은 그대로다. **접으면 워크스페이스·IAM·키 셋 다 지울 것**(D50). **다시 열지 말 것.**
 - [ ] **Phase 4 남은 것 = 4b**(자격증명 파티션 미증명=Risk 10 · 30분 TTL 가드가 상시와 안 맞는다, billable·별 승인) ·
   ⚠️**$0 선행: BQ 결제 내보내기**(`GCP_BILLING_EXPORT_SETUP.md`, 콘솔 수동 · `make spend-check`).
 - ⛔**대시보드 취약점은 닫혔다(08-30) — `npm audit` 0건**(Tier A + `next 16.3.3`; 라우트 17개 동일·eslint 새 소견 0).

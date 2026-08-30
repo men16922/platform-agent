@@ -66,6 +66,46 @@ def test_some_milestones_are_recorded():
     assert len(_recorded_milestones()) >= 20
 
 
+# A bare `M35` is a pointer too, and it was the one nobody checked. Measured
+# 2026-08-30: `COMPLETED_SUMMARY` held M0–M33 while the entry points cited
+# **M34, M35, M36, M37** — the same "/checkpoint's compress-into-completed step
+# was skipped" failure this file was written for, recurring four times while this
+# file stayed green. It only validated the `**Ma~Mb**` *range* shape; the docs had
+# moved to naming milestones individually.
+#
+# `\bM(\d+)\b` deliberately: it does not match `40M`, `15.8M`, or `M/월`, because
+# the digits have to follow the M. Verified against the live docs before pinning.
+CITATION = re.compile(r"\bM(\d+)\b")
+
+CITING_DOCS = [BRIEF, STATUS, ROOT / "docs/NEXT_PLAN.md"]
+
+
+def _cited_milestones(path: pathlib.Path) -> set[int]:
+    return {int(n) for n in CITATION.findall(path.read_text(encoding="utf-8"))}
+
+
+def test_the_citation_sweep_finds_something():
+    """Vacuity guard — a regex that stops matching makes the check below empty."""
+    total = sum(len(_cited_milestones(p)) for p in CITING_DOCS)
+    assert total >= 5, (
+        f"only {total} milestone citations found across the entry points. These docs "
+        "delegate to COMPLETED_SUMMARY constantly; near-zero means the pattern broke."
+    )
+
+
+@pytest.mark.parametrize("path", CITING_DOCS, ids=lambda p: p.name)
+def test_every_milestone_named_in_a_doc_exists(path):
+    recorded = _recorded_milestones()
+    missing = sorted(_cited_milestones(path) - recorded)
+    assert not missing, (
+        f"{path.relative_to(ROOT)} names {['M%d' % n for n in missing]}, which "
+        f"COMPLETED_SUMMARY does not record (it holds M{min(recorded)}–M{max(recorded)}).\n"
+        "A milestone cited but never compressed is /checkpoint's last step skipped — "
+        "and a reader who follows the pointer writes nothing down, trusting the target. "
+        "Either add the entry or stop naming it."
+    )
+
+
 @pytest.mark.parametrize("path", [BRIEF, STATUS], ids=lambda p: p.name)
 def test_the_doc_still_points_at_the_summary(path):
     """A pointer that gets rephrased out of existence stops being checked."""

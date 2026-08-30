@@ -38,6 +38,97 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
+## M38 — Phase 4 / 4a 종료: 청구액은 $0.00이었고, 프리티어를 배제한 근거의 전건이 거짓이었다 (완료, 2026-08-30)
+
+**목적**: 13일간 세 진입점이 가리켜 온 마지막 미측정 항목 — *"08-19 이후 AMP 실제 청구액"*.
+권위 = `docs/plans/2026-08-15-4a-remote-write-allowlist.md` **§9·§10** ·
+`docs/evidence/amp-actual-bill-is-zero-and-the-free-tier-reason-was-inverted.log`.
+
+**산출**: DoD 넷(③308 시계열 · ④`from_managed` · ①②관리형 렌더=M37) + **청구액 대조**로 4a가
+닫혔다. 실제 청구 **$0.00**(계량 798,331 샘플 · 0.0005 GB-Mo · 쿼리 920). ⚠️`Credit` 행이 없다 —
+**크레딧 상쇄가 아니라 Usage 행 자체가 $0**이고, AMP 그룹은 13일 전부 CE에 **존재한다**
+(계량되고 0인 것과 계량조차 안 된 것은 다른 사실이다).
+
+**사유 — §3이 세운 조건문의 전건이 거짓**: AMP 프리티어는 12개월 한정이 아니라
+**`freeTierType: "Always Free"` 40M/월**이다. ⚠️**틀린 기록이 아니다** — §3은 추론임을 명시했고
+*"확정은 AMP를 켠 뒤 첫 청구서가 답한다"*고 **무엇이 확정할지 지목했다.** 다만 답은 이미 그 계정
+데이터 안에 있었다(당시 12건이 **전부 "Always Free"**). 같은 데이터가 두 결론을 지탱했고 **비싼
+쪽을 골랐다** — 보수적이라 안전했다.
+
+**검증**: 교차 확인 **2.4%**(실가동 41.3 수집-시간 × 19,800/h = 817,740 vs 계량 798,331) ·
+허용목록 **유출 0**(전체 창에서 메트릭 이름 정확히 4개, 시계열 308이 11일 간격 두 시점 동일).
+가드 +6(`test_amp_bill_claims`, 변이 7종 red). gate **2299**.
+
+⚠️**믿으면 안 되는 요약 둘**: ⓐ**"AMP는 어차피 공짜"** — 절벽이 요율에서 **40M 한도**로 옮겨
+앉았을 뿐이고 필터 없음은 **128배 초과**다(허용목록 하중 그대로) · ⓑ**"$1.42"** — 720시간
+**연속 가동 가정**인데 실측 duty cycle은 **13%**(13일 중 4일·41.3h, 로컬 kind라 08-27T19:55Z
+이후 죽어 있다) → 프리티어가 없었어도 **$0.07**이다.
+
+**접을 때**: IAM 사용자 `amp-remote-write-4a` · 액세스 키 · 워크스페이스 셋 다 삭제(D50) —
+⚠️**$0이라고 이 이유가 줄지 않는다**(대가는 돈이 아니라 **장기 액세스 키 하나**였다).
+
+## M37 — 티어 2가 조건을 안 보고 추천에서 액션을 만들었다 + 4a DoD ①② (완료, 2026-08-17)
+
+열려 있던 판단 셋을 추천안대로 실행했다. ⚠️**둘째의 전제가 측정에서 무너져 답이 바뀌었다.**
+
+**#1 판별 수단** — 점수 로직을 **계약 모듈에 한 벌**(`schema.score_runbook`·`match_text`) 두고
+세 provider가 읽는다. GCP/Azure 티어 2가 첫 매치 대신 점수로 고른다 → **세 provider가 같은
+인시던트에 같은 답**(health-check = `health-check-failure`/rto 240). 키워드 어휘는 이미
+클라우드-중립이라 **없던 건 데이터가 아니라 읽는 쪽이었다.**
+
+**#2 — 추천 목록이 아니라 티어 2가 문제였다.** 티어 2는 액션을 **조건 평가 없이** 추천에서
+만든다. 카탈로그에서 **에스컬레이션에만 존재**하는 capability는 넷이고 그중 **둘이 GCP/Azure에서
+first-response로 실행**되고 있었다 — 같은 모듈의 **티어 1은 조건을 평가한다**(M21 모양: 형제가
+provider가 아니라 **진입점**). ⇒ 티어 2가 **승자의 steps에서** 액션을 만들게 고쳤다.
+⚠️**티어 2 액션을 단언하는 테스트가 0개**였다 — 조건 무시도, 이 고침도 red를 안 냈다.
+
+**#3 4a DoD ①②** — 결정: **관리형은 매니페스트를 내지 않고 read model이 그 부재를 설명한다**
+(`applicable=False`·sync `n/a`). **새 매니페스트 종류는 발명하지 않았다.** `ManagedBackendNotRenderable`는
+삭제(결정이 났으므로 죽은 코드). 변이 16종 전부 red. gate **2279**.
+
+## M36 — 가드가 생산에서 도달 불가한 입력으로만 통과하고 있었다 (완료, 2026-08-17)
+
+마지막 미측정 항목 ⓒ(*"티어 2는 첫 매치가 이긴다 — 테스트가 고정했으니 결정이다"*).
+**앞쪽은 정확하고 뒤쪽이 틀렸다.**
+
+`test_capability_catalog_scan`의 케이스는 **후보를 유일하게 가리는 capability 집합을 손으로
+골랐다**(`["rollback_release"]`·`["drain_node"]`). ⚠️**어떤 signal 어댑터도 그런 집합을 안 낸다** —
+`kubernetes-workload`는 `restart_workload`+`scale_out`을 내고 그건 후보 셋과 동시에 겹친다.
+⇒ **첫-매치 구현과 점수제 구현의 답이 같은 경우만 태웠다**(Risk 12⑤). 게다가
+`["rollback_release"]`는 그 세 provider가 **추천하지 않는 값**이다(M35에서 측정) — **생산에서
+도달 불가한 입력으로 통과**하고 있었다.
+
+실제 집합으로 물으니 GCP/Azure는 OOM·health-check·latency **셋 다** rto **180**을 보고했다
+(인시던트와 무관하게 늘 같은 답). 가드 +12. gate **2269**.
+
+## M35 — ⓐ의 답은 "현행 유지"였고, 그걸 시험하다 만든 스윕이 결함 넷을 냈다 (완료, 2026-08-17)
+
+**ⓐ의 주장은 성립한다**: 어긋남은 한 방향뿐. ⚠️**내 픽스처가 한 번 틀렸다** — resolve는
+**(capability, resource_type) 쌍**으로 키를 거는데 `kafka-topic`으로 물어 *"네 provider 전부
+미구현"*으로 읽었다. 올바른 `streaming-consumer`로는 전부 resolve된다. **주장 전에 잡았다.**
+
+**두 선택지는 대칭이 아니다**(08-12엔 "둘 다 동작 변경"이었다): 티어 2는 액션을 steps가 아니라
+`recommended_capabilities`에서 만들고 `capabilities`는 **매치 게이트일 뿐**이다 — 더해도 관측
+변화 0, **빼면 네 provider가 다 resolve하는 에스컬레이션 스텝을 잃는다.** ⇒ **현행 유지로 닫는다.**
+
+**찾던 건 하나였는데 스윕이 결함 넷을 냈다**: `rebalance_consumer`가 **Azure만** 없는데
+**같은 커밋에서 태어나 처음부터 빠져 있었다**(stale이 아니라 오기). 가드 +6. gate **2257**.
+
+## M34 — 계약이 세 형식인데 walk는 둘만 물었다 (완료, 2026-08-17)
+
+열린 항목 **"런북 walk ②(`severity` 축)"**를 시험했다. **닫혔다 — 두 겹으로.** ①`severity` 축
+자체는 **M33이 08-16에 닫았다**(가드가 셋 다 있고 양방향) · ②e2e walk의 `severity="P2"` 고정은
+**결함이 아니라 범위**다: 카탈로그 9런북 16스텝의 조건 키는 **`previous_step_failed` 하나뿐**(6스텝).
+
+**닫으러 갔다가 옆에서 나왔다.** `evaluate_condition`이 문서화한 형식은 **셋**
+(`previous_step_failed`·`severity_in`·`provider`)인데 walk 자리에서 물어진 건 **둘**이었다 —
+`provider`는 **순수함수 단위 테스트**(직접 만든 컨텍스트)에만 있었다(Risk 12④ⓒ).
+⚠️**`test_step_condition_is_read.py`의 도크스트링이 세 형식을 정확히 열거하면서 둘만 물었다** —
+M20과 같은 모양(**산문이 참이어도 물은 것이 범위다**).
+
+변이 8종 전부 red(**기준선 먼저**): 대조군으로 `"severity"`를 지우면 red · **`"provider"`를
+지우면 세 walk 전부 GREEN 생존**(=가드 없음) → 추가 후 여섯 전부 red. 가드 +6. gate **2224**.
+
 ## M33 — 08-12 기록의 전제는 틀렸는데 그것이 가리킨 가드 공백은 진짜였다 (완료, 2026-08-16)
 
 **기록**: *"런북 walk ② — 조건 축은 `previous_step_failed`만 넓혔고 **`severity`는 `"P2"`
