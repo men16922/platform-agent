@@ -1,0 +1,125 @@
+# "SDK가 90%+ 상이"를 재다 — detector엔 맞고, 나머지 둘에 대해선 다른 걸 말한다 (2026-08-30)
+
+`NEXT_PLAN` 유지 규약: *"detector/analyzer/decision은 SDK가 **90%+ 상이**해 의도적으로
+DRY 안 함"*. **D15**가 그 이유를 적어 뒀다 — Pub/Sub vs EventGrid · Cloud Logging vs
+KQL · Firestore vs Cosmos · Vertex Gemini vs Azure OpenAI.
+
+구조적 결정을 떠받치는 **수**인데 잰 기록이 없어서 쟀다.
+
+---
+
+## 1. SDK는 이 파일들의 3~5%다
+
+provider SDK 심볼에 닿는 줄을 셌다(정규화 후):
+
+    aws     904줄 중  26줄 =  2.9%     ⇒ SDK 아닌 부분 97.1%
+    gcp     655줄 중  31줄 =  4.7%     ⇒ SDK 아닌 부분 95.3%
+    azure   659줄 중  26줄 =  3.9%     ⇒ SDK 아닌 부분 96.1%
+
+"SDK가 90%+ 상이"는 **SDK 부분에 대해선 참일 수 있다.** 다만 그 부분이 **파일의 4%**다.
+
+## 2. 그래서 나머지는 얼마나 닮았나
+
+정규화 후 difflib 유사도:
+
+                    detector   analyzer   decision
+      gcp ↔ azure     24.7%      69.7%     **78.5%**
+      aws ↔ gcp       11.8%      52.9%      26.5%
+      aws ↔ azure     11.4%      49.6%      25.7%
+
+8줄 이상 **글자 그대로 같은** 블록(gcp↔azure):
+
+      detector    0 블록 /   0줄     ← **D15가 말한 그대로**
+      analyzer    6 블록 /  95줄     (gcp 186줄의 **51%**)
+      decision    6 블록 / 135줄     (gcp 239줄의 **56%**)
+
+⇒ **detector에 대해선 규약이 옳다.** analyzer·decision에 대해선 규약이 **다른 것을
+말하고 있다** — 다른 건 SDK가 맞지만, 같은 부분이 절반이 넘고 그건 **계약**이다.
+
+## 3. 무엇이 다르고 무엇이 같은가 — 함수 단위
+
+같은 이름 함수를 AST로 뽑아 정규화 비교:
+
+    바이트 동일 (gcp↔azure)   detector._serialise · analyzer._deserialise_detector
+                              analyzer._parse_llm_response · analyzer._fallback_analysis
+                              decision._deserialise_analyzer
+    바이트 동일 (셋 다)        analyzer._serialise · decision._serialise
+
+    다른 것들 — 무엇이 다른지 실제로 열어 봤다:
+      _build_prompt      94.0%  ← Cloud Logging `@timestamp/@message`
+                                  vs Log Analytics `TimeGenerated/Message`
+      _select_runbook    89.8%  ← Firestore 조회 vs Cosmos 조회 + 로그 이벤트 이름
+      _determine_mode    27.4%  ← ⚠️**텍스트만 다르다**(아래)
+
+⚠️ **유사도 숫자를 의미로 읽지 말 것.** `_determine_mode`는 27.4%로 가장 달라 보여
+제일 먼저 열었는데 — 그게 **D48(파괴적 액션 강제 APPROVE)을 집행하는 함수**다.
+열어 보니 셋이 **의미상 동일**했다: 셋 다 `is_destructive_action(a)` → APPROVE이고
+P1→AUTO·P2→APPROVE·P3→MANUAL이다. 차이는 **docstring과 dict-조회 vs if/elif**뿐이다.
+**낮은 유사도가 결함의 신호가 아니고, 높은 유사도가 안전의 신호도 아니다.**
+
+## 4. 그래도 진짜 비대칭이 하나 나왔다 — 그리고 이미 닫혀 있다
+
+`analyzer._fallback_analysis`는 **gcp·azure에만 있다.** LLM이 죽었을 때:
+
+    gcp/azure   reason에 "down|outage|unavailable|crash" → **Severity.P1**, confidence 0.3
+    aws         하드코딩 `(f"LLM analysis failed: {exc}", Severity.P2, 0.0)`
+
+그리고 `_determine_mode`는 **P1 → AUTO**다. ⇒ "LLM이 죽은 동안 키워드 하나로 자동
+실행"이 성립하는가? **끝까지 따라갔다:**
+
+    gcp/decision.py:74   recon = reconcile(analyzer.detector, analyzer)
+    gcp/decision.py:75   gated_mode = apply_gate(mode, recon)
+    ai/reconciliation.py:98
+        if analyzer.severity == Severity.P1 and analyzer.confidence < 0.5:
+            issues.append("P1 severity with low confidence ...")
+    ai/reconciliation.py:134  apply_gate: AUTO → mode_override (**내리기만 한다**)
+
+폴백의 confidence는 **0.3 < 0.5** ⇒ **AUTO가 APPROVE로 내려간다.** **결함 없음.**
+그 게이트는 08-16에 gcp/azure로 확장된 것이고(그전엔 AWS만 읽었다 — M23 계열),
+주석이 *"P1 asserted at low confidence"*를 **이미 명시**하고 있다. 도착지는 AWS와
+같고 경로만 다르다.
+
+## 5. ⚠️ 내 도구가 한 번 거짓 음성을 냈다 (셋째 "세는 함정")
+
+4절을 조사하다 이렇게 물었다:
+
+    $ git grep -nE "confidence\s*[<>]=?\s*0?\.[0-9]" -- src/
+      (매치 없음)   ← "임계값이 없다"고 읽었다
+
+**틀렸다. `git grep -E`는 POSIX ERE라 `\s`가 없다** — 조용히 0건을 답한다:
+
+    $ git grep -nE "confidence[[:space:]]*[<>]=?[[:space:]]*0?\.[0-9]" -- src/
+      src/agents/ai/reconciliation.py:98
+    $ git grep -nP "confidence\s*<\s*0\.5" -- src/
+      src/agents/ai/reconciliation.py:98
+
+하마터면 **"신뢰도 임계값이 없다"는 거짓 소견**을 낼 뻔했다. `NEXT_PLAN`이 이미 세는
+함정 둘(`cdk.out` · docstring 예시)을 적어 뒀는데 **이게 셋째**다:
+**`git grep -E`에 `\s`를 쓰면 조용히 아무것도 안 잡는다** → `[[:space:]]` 또는 `-P`.
+
+## 6. 그래서 무엇을 했나 — 추출이 아니라 가드
+
+**추출은 안 했다.** 네 모듈에 걸친 230줄 구조 변경은 작업 규칙상 **승인 후**다.
+대신 M18/M19 이후 이 레포가 스스로 적은 정제를 적용했다:
+
+> 공유되는 게 **SDK가 아니라 계약**인 블록은 계약 모듈에 한 벌만 두고
+> **provider 간 일치를 묻는 가드**로 묶는다 — **복사본 둘은 다음 고침이 한쪽에만
+> 닿는 방식이다.**
+
+`tests/test_cross_provider_contract_parity.py`(+8): 바이트 동일했던 **7쌍을 표로**
+박고, 갈라지면 red. ⚠️**스윕이 아니라 표**다 — "오늘 우연히 같은 함수"를 훑으면
+조용히 자라고 의도적 분기가 전부 미스터리 실패가 된다. 분기는 허용되되 **같은
+커밋에서 표를 고치는 결정**이어야 한다.
+
+변이 3종 red: ⓐ**gcp `_fallback_analysis`에만 키워드 추가**(정확히 "한쪽만 닿는 고침"
+모양) · ⓑazure `_deserialise_analyzer` 이름 변경 · ⓒ표 비우기(공허 통과 방지).
+
+## 7. 남긴 것
+
+- **규약 문구**를 고쳤다: detector엔 유효, analyzer·decision엔 **절반이 계약**이라는
+  측정을 함께 적었다. **결정(DRY 안 함) 자체는 안 건드렸다.**
+- `_build_prompt`의 **레이블이 세 갈래**다(`alarm_name`: Name/Policy/Rule ·
+  `reason`: Reason/**Summary**/Reason · `dimensions`: Dimensions/**Labels**/Dimensions).
+  SDK가 아니라 **LLM에 먹이는 말**이라 물었는데 — 각 provider가 **다른 모델**을 쓰고
+  ("alerting policy"/"alert rule"은 실제 도메인 어휘다) 영향을 보이려면 LLM 세 개를
+  돌려야 한다(게이트는 네트워크를 막는다, D49). ⇒ **결함으로 세지 않는다.**
