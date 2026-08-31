@@ -38,6 +38,37 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
+## M41 — `onprem` extra의 `mlx-lm`: 선언은 있고 그걸 쓰는 곳이 없었다 (완료, 2026-09-01)
+
+**기록된 근거는 적을 당시 참이었다.** `gate.yml`이 *"mlx-lm은 Apple Silicon 전용이라 리눅스
+러너에서 resolve가 안 된다"*고 적어 인라인 우회를 했는데, PyPI 재측정 결과 **하한
+`0.19.0`은 `mlx>=0.17.0`에 플랫폼 마커가 없어 진짜 실패**한다. ⚠️**그런데 stale해진 게 아니라
+더 나빠졌다**: `>=0.19`는 리졸버에게 **0.31.3**을 고르게 하고 거기엔 `platform_system ==
+"Darwin"` 마커 + `py3-none-any` 휠이 있어 **설치는 되고 엔진만 조용히 빠진다**.
+**우회를 "이제 필요 없다"고 풀었으면 CI가 엔진 없는 mlx-lm을 초록으로 깔았을 것이다.**
+
+**그래서 우회가 아니라 선언을 물었다**: `src/`가 mlx를 임포트하는 곳 **0건**(에이전트는 MLX
+**서버**와 HTTP로 말한다 ⇒ 엔진은 임포트가 아니라 **프로세스**) · `.venv-mlx`엔 mlx-lm은
+있고 `pydantic-ai-slim`은 없다 ⇒ **`.[onprem]`의 산물이 아니다** · 진짜 메커니즘은
+`make mlx-setup`. ⚠️**"안 쓰이니 지운다"가 아니다**: Makefile이 *"활성화된 `.venv-mlx`가
+pytest를 가린다"*고 적고 인터프리터를 탐침으로 고른다 — 분리는 **설계**이고, extra가 mlx를
+프로젝트 env로 들이면 그걸 뒤집는다. **미사용이 아니라 틀린 메커니즘이었다.**
+
+**고침**: `onprem`에서 `mlx-lm` 제거 · `gate.yml`이 `.[onprem]`을 깐다 ⇒ **인라인 패키지 0개**
+(`serving` extra가 없앤 것과 **같은 모양의 우회**가 하나 남아 있었다). 가드 +3. **게이트 2339 → 2342.**
+
+**⚠️ 내가 만든 가드 하나가 주석으로 통과했다**: *"`mlx-setup`이 여전히 메커니즘인가"*를
+`"mlx-lm" in Makefile`로 물었는데 **`MLX_BIN` 위 주석**에 그 문자열이 있어 레시피를 깨도
+초록이었다 — **주석이 주어인 규칙은 규칙이 아니다.** ⚠️**그걸 "레시피 가드가 없다"로 읽은
+것도 틀렸다(Risk 12⑦ 재발)**: 변이를 **이 파일에만** 물어서였고, 전체 스위트엔 red다 —
+`test_local_stack_prerequisites.py`가 **레시피를 직접 읽는 옳은 자리의 옳은 질문**이었다.
+⇒ 약한 사본은 **지우고** 어디가 그 자리인지 주석으로 남겼다.
+
+변이 M1~M4 red(M4는 **전체 스위트에서**), M5는 **초록이고 설명된다**(현재 위반 0건이라 꺼도
+관측 불변 — 그 규칙의 하중을 재는 변이는 M1이고 red). ⚠️**리눅스 resolve는 로컬에서 증명
+못 한다** — PR의 CI 체크가 그 답이다.
+증거 `docs/evidence/the-onprem-extra-declared-a-mechanism-nobody-used.log`.
+
 ## M40 — 4a를 접었다: 지운 이유는 $0.00이 아니라 장기 키였고, 가드는 지우면 안 됐다 (완료, 2026-09-01)
 
 **삭제(D50 집행, 사용자 결정)**: AMP 워크스페이스 `ws-929b8da9…`(ap-northeast-2) · IAM 사용자

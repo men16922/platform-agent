@@ -187,7 +187,7 @@ class TestCIAsksForTheExtraInsteadOfWorkingAroundIt:
             "moved, move the declaration too rather than naming packages inline"
         )
 
-    @pytest.mark.parametrize("package", ["fastapi", "uvicorn"])
+    @pytest.mark.parametrize("package", ["fastapi", "uvicorn", "pydantic-ai-slim"])
     def test_ci_does_not_inline_a_declared_package(self, package):
         line = _ci_install_line()
         # Strip the bracketed extras list so `.[...,serving]` is not a false hit.
@@ -198,9 +198,80 @@ class TestCIAsksForTheExtraInsteadOfWorkingAroundIt:
             "something `pip install .` does not provide"
         )
 
-    def test_the_documented_exception_is_still_documented(self):
-        """`pydantic-ai-slim` IS inlined, on purpose: `onprem` also pulls
-        Apple-only mlx-lm. Pin that the reason stays written next to it."""
-        workflow = (ROOT / ".github/workflows/gate.yml").read_text(encoding="utf-8")
-        assert "pydantic-ai-slim" in _ci_install_line()
-        assert "mlx-lm" in workflow, "the reason for bypassing the onprem extra is gone"
+    def test_ci_requests_the_onprem_extra(self):
+        """The last inline package, removed 2026-09-01.
+
+        `pydantic-ai-slim` was named on the command line because the `onprem`
+        extra also pulled `mlx-lm`, which could not resolve on a linux runner.
+        The fix was not to relax that — it was to measure the entry and find that
+        **nothing consumed it**: `src/` never imports `mlx_lm`, and the machine's
+        `.venv-mlx` had no `pydantic-ai-slim` in it, so it was never
+        `pip install .[onprem]`. With `mlx-lm` out of the extra, CI can ask for
+        the extra by name like every other one.
+        """
+        assert "onprem" in _ci_install_line(), (
+            "gate.yml stopped installing the `onprem` extra. If `pydantic-ai-slim` "
+            "moved, move the declaration with it — do not go back to naming it "
+            "inline, which is what let the gate be green on something "
+            "`pip install .` did not ship."
+        )
+
+
+class TestMlxIsNotAProjectDependency:
+    """`mlx-lm` is installed by `make mlx-setup`, into a venv kept separate.
+
+    ⚠️ This is not "it was unused, so we deleted it". Putting `mlx` into the
+    project environment is contrary to a separation the Makefile maintains on
+    purpose: an activated `.venv-mlx` **shadows pytest**, which is why the
+    Makefile picks its interpreter by probing for one that can import it. So the
+    declaration was not merely inert — it described the wrong mechanism.
+
+    ⚠️ And it had gotten worse rather than stale. At the old floor the failure was
+    loud: `mlx-lm==0.19.0` requires `mlx>=0.17.0` with **no platform marker**, so a
+    linux resolve genuinely fails. Today's 0.31.3 requires `mlx>=0.31.2;
+    platform_system == "Darwin"` and ships a `py3-none-any` wheel — it installs on
+    linux and **the engine silently is not there** (re-measured 2026-09-01). A
+    guard that only asked "does CI install it" would have been happy either way.
+    """
+
+    def test_no_extra_declares_mlx(self):
+        declared = _declared_distributions()
+        offenders = sorted(d for d in declared if d.startswith("mlx"))
+        assert not offenders, (
+            f"{offenders} is declared as a project dependency. The local stack runs "
+            "MLX from its own venv (`make mlx-setup`) precisely so it does not land "
+            "in the environment pytest runs from. If this is deliberate, say so in "
+            "the Makefile's note above MLX_BIN and delete this test."
+        )
+
+    def test_the_source_tree_still_does_not_import_mlx(self):
+        """The premise, asked of the code rather than assumed.
+
+        The agent reaches MLX over an OpenAI-compatible HTTP endpoint, so the
+        engine is a *process*, not an import. If that ever changes, `mlx-lm`
+        becomes a real dependency and this whole class is wrong.
+        """
+        importers = [
+            path.relative_to(ROOT).as_posix()
+            for path in (ROOT / "src").rglob("*.py")
+            if re.search(r"^\s*(import|from)\s+mlx", path.read_text(encoding="utf-8"), re.M)
+        ]
+        assert not importers, (
+            f"{importers} import mlx directly. The separation this class pins "
+            "assumes src/ only ever talks to the MLX server over HTTP."
+        )
+
+    # ⚠️ There is deliberately no test here that `make mlx-setup` still installs
+    # mlx-lm, even though that is the premise making this removal safe.
+    #
+    # The first draft had one, and it asserted `"mlx-lm" in Makefile` — which the
+    # *comments* above `MLX_BIN` satisfy on their own. Breaking the recipe
+    # (`pip install "mlx-lm>=0.19"` → something else) left it green: a rule whose
+    # subject is a comment is not a rule.
+    #
+    # ⚠️ Reading that as "nothing guards the recipe" was also wrong, and wrong in
+    # the way this repo has already paid for (Risk 12⑦): the mutation was asked of
+    # **this file only**. Against the whole suite it is red —
+    # `test_local_stack_prerequisites.py::test_something_creates_the_venv_the_stack_runs_from`
+    # asks the recipe itself, which is the right place and the right question.
+    # Adding a second, weaker copy here would just be its shadow.

@@ -1,0 +1,121 @@
+==============================================================================
+`onprem` extra의 `mlx-lm` — 선언은 있었고, 그 선언을 쓰는 곳이 없었다
+2026-09-01
+==============================================================================
+
+`NEXT_PLAN`의 열린 항목: *"`onprem` extra의 `mlx-lm`을 어떻게 할지 — 그 항목 때문에
+CI가 `.[onprem]` 대신 인라인으로 적는다."* 기록된 근거부터 다시 돌렸다.
+
+
+## 1. gate.yml이 적어 둔 근거
+
+    # `pydantic-ai-slim` is still named inline rather than installing the
+    # `onprem` extra: that extra also pulls mlx-lm, which is Apple-Silicon only
+    # and cannot resolve on a linux runner.
+
+**적을 당시엔 참이었다.** PyPI 메타데이터를 다시 물었다(2026-09-01, 설치 없이):
+
+    mlx-lm 0.19.0 (선언 하한)   requires  mlx>=0.17.0            ← 플랫폼 마커 없음
+    mlx-lm 0.31.3 (현재 최신)   requires  mlx>=0.31.2; platform_system == "Darwin"
+                                 wheel     py3-none-any
+
+⇒ **하한에서는 리눅스 resolve가 진짜 실패한다**(마커가 없으니 `mlx`를 찾으러 가고,
+`mlx`는 Darwin 휠뿐). 그런데 `>=0.19`는 리졸버에게 **0.31.3을 고르게** 하고, 거기엔
+마커가 붙어 있고 휠은 `py3-none-any`다 ⇒ **리눅스에서 설치는 성공하고 엔진만 조용히
+빠진다.**
+
+⚠️ **근거가 stale해진 게 아니라 더 나빠졌다.** 실패 모양이 **시끄러운 것에서 조용한
+것으로** 바뀌었다. 우회를 "이제 필요 없다"고 풀었으면, CI는 *엔진 없는 mlx-lm*을
+초록으로 설치하고 있었을 것이다. 이 레포가 반복해서 값을 치른 그 모양이다.
+(⚠️ 부수 발견: 0.31.3엔 `cpu`/`cuda12`/`cuda13` extra가 생겼다 — 리눅스에서 엔진을
+가질 길 자체는 있다. 우리가 그걸 원하는지는 별개 결정이고, 여기서 하지 않는다.)
+
+
+## 2. 그래서 우회를 푸는 게 아니라 선언을 물었다 — 아무도 안 쓴다
+
+    ① src/가 mlx를 임포트하나
+       $ git grep -nE "^\s*(import|from)\s+mlx" -- src/
+       0건.  에이전트는 MLX **서버**와 OpenAI 호환 HTTP로 말한다 ⇒ 엔진은
+       임포트가 아니라 **프로세스**다.
+
+    ② 누가 `.[onprem]`으로 mlx-lm을 깔았나
+       08-30 실측: 이 기계의 `.venv-mlx`는 36개 패키지에 mlx-lm 0.31.3 · mlx 0.32.0을
+       갖고 있는데 **`pydantic-ai-slim`이 없다** ⇒ `.[onprem]`의 산물이 아니다.
+       (`make-dev-up-launched-a-venv-nothing-created.log` §2)
+
+    ③ 그럼 무엇이 깔았나
+       `make mlx-setup` — `.venv-mlx/bin/pip install "mlx-lm>=0.19"`.
+
+⇒ **선언은 잘못된 메커니즘을 가리키고 있었다.** 안 쓰이는 게 아니라 **틀렸다.**
+
+
+## 3. ⚠️ "안 쓰이니 지운다"가 아니다 — 그 반대였으면 지우면 안 됐다
+
+Makefile 최상단:
+
+    # Test interpreter: pick the first python that can import pytest. Guards
+    # against a shell that has .venv-mlx (MLX-only, no pytest) activated
+    # shadowing the test env.
+
+즉 `.venv-mlx`가 프로젝트 env와 **떨어져 있는 것은 사고가 아니라 설계**다. `.[onprem]`이
+mlx를 프로젝트 env로 들여오면 그 분리를 정면으로 뒤집는다. **그래서 지운 것이고**,
+단지 미사용이었다면 근거가 훨씬 약했을 것이다.
+
+
+## 4. 고침
+
+    pyproject.toml   onprem = ["pydantic-ai-slim[openai]>=2.9", "mlx-lm>=0.19"]
+                  →  onprem = ["pydantic-ai-slim[openai]>=2.9"]      (근거는 주석에)
+
+    gate.yml         pip install -e ".[dev,state,observability,serving]" \
+                       pydantic-ai-slim[openai]
+                  →  pip install -e ".[dev,state,observability,serving,onprem]"
+
+`serving` extra가 만들어질 때 없앤 것과 **같은 모양의 우회**가 하나 남아 있었던 것이고,
+이제 인라인 패키지는 **0개**다.
+
+
+## 5. 가드 — 그리고 그중 하나를 내가 잘못 만들었다
+
+새 가드(`TestMlxIsNotAProjectDependency`):
+
+    test_no_extra_declares_mlx              어떤 extra도 mlx*를 선언하지 않는다
+    test_the_source_tree_still_does_not_import_mlx
+                                            src/ 전체를 rglob으로 훑어 전제를 코드에 묻는다
+    (기존) test_ci_does_not_inline_a_declared_package  ← `pydantic-ai-slim` 추가
+    (신규) test_ci_requests_the_onprem_extra
+
+### ⚠️ 내가 만든 셋째 가드는 주석으로 통과했다
+
+첫 판엔 *"`make mlx-setup`이 여전히 메커니즘인가"*를 `"mlx-lm" in Makefile`로 물었다.
+그런데 `MLX_BIN` 위의 **주석**에 그 문자열이 이미 있어서, 레시피를
+`pip install "nothing"`으로 깨도 **초록이었다.** 주석이 주어인 규칙은 규칙이 아니다.
+
+### ⚠️ 그리고 그걸 "레시피를 지키는 가드가 없다"로 읽은 것도 틀렸다
+
+그 변이를 **이 파일에만** 물었기 때문이다. **전체 스위트에 물으면 red**다:
+
+    tests/test_local_stack_prerequisites.py::test_something_creates_the_venv_the_stack_runs_from
+    → 1 failed, 2341 passed
+
+레시피를 직접 읽는 **옳은 자리의 옳은 질문**이 이미 있었다. 그래서 내 약한 사본은
+지우고 주석으로 어디가 그 자리인지 적었다 — 두 번째 사본은 첫 번째의 그림자일 뿐이다.
+**이건 Risk 12⑦이 이미 이름 붙인 실패다**(*"변이 결과는 어디에 물었는지까지 말할 것"*).
+
+### 변이
+
+    M1  mlx-lm을 extra에 되돌림          red  ← test_no_extra_declares_mlx
+    M2  CI가 extra 대신 인라인 복귀      red  (2건: inline 금지 + extra 요구)
+    M3  src/가 mlx를 임포트              red  ← test_the_source_tree_...
+    M4  mlx-setup 레시피를 깸            red  ← 전체 스위트에서. 한 파일에만
+                                              물었을 땐 **초록이었다** (위 참조)
+    M5  test_no_extra_declares_mlx 무력화  초록 — **설명됨**: 현재 위반이 0건이라
+                                              그 규칙을 꺼도 관측이 안 바뀐다.
+                                              이 규칙의 하중을 재는 변이는 M1이고,
+                                              M1은 red다.
+
+
+## 6. 남은 것
+
+`gate.yml`이 이제 `.[onprem]`을 깐다 ⇒ **CI가 리눅스에서 이 extra를 실제로 resolve해
+본다**. 로컬에서는 증명할 수 없는 부분이고, 이 PR의 CI 체크가 그 답이다.
