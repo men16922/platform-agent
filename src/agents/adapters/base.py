@@ -25,6 +25,23 @@ class ExecutionAdapter:
     def resolve_action(self, capability: str, incident: NormalizedIncident) -> dict[str, Any]:
         raise NotImplementedError
 
+    # Declared 2026-09-01. All four execution adapters already implemented this
+    # and `aws/executor.py::_build_action_params` already called it **through this
+    # base type** — the contract simply did not say so. mypy strict is what
+    # pointed at it (`"ExecutionAdapter" has no attribute "parameters_for_action"`);
+    # no test asked about the method at all.
+    #
+    # ⚠️ Why an undeclared method mattered here more than usual: the call site
+    # wraps it in `except Exception: pass` and falls through to an
+    # **AWS-shaped alarm-dimension fallback**. A fifth provider whose adapter
+    # satisfied this class (only `resolve_action` was required) would have raised
+    # `AttributeError`, had it swallowed, and been handed AWS's parameter shape —
+    # failing in the way that does not error, which is this repo's recurring cost.
+    def parameters_for_action(
+        self, action: str, incident: NormalizedIncident
+    ) -> dict[str, list[str]]:
+        raise NotImplementedError
+
 
 # ------------------------------------------------------------------
 # Incident reason — the words downstream keyword matching reads

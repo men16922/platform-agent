@@ -38,6 +38,41 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
+## M44 — 계약이 모두가 부르는 메서드를 빠뜨리고 있었다: 찾은 건 mypy였다 (완료, 2026-09-01)
+
+*"정적검사를 게이트에 넣을지"*의 **선행 실측을 다시 돌리다가** 나왔다. **결정은 내리지 않았다.**
+
+**기록의 "전수 분류 결함 0"이 재현된다**(ruff 20건): 가장 위험해 보이는 여섯을 실제로 열었고
+전부 미관/죽은 변수였다 — `dep_id`(넘길 파라미터가 **아예 없다**) · `azure_runner.url`(각 분기가
+자기 URL을 만든다) · F402(문자열 루프 변수와 **이름만** 겹침) · `original_guard`(새 인스턴스라
+복원할 게 없다) · `result`(단언은 부작용에 건다) · E701 ×5(열 맞춤).
+
+**없던 반쪽 — mypy 253의 성격**: `type-arg` 71·`import-untyped` 40·`no-any-return` 36·
+`no-untyped-def` 32·`no-untyped-call` 21 = **200/253(79%)이 주석 부채**, 나머지 **53이 실제
+타입 주장**. **"253"은 절망적으로 읽히고 "200은 부채, 53이 주장"은 결정 가능하게 읽힌다.**
+
+**⚠️ 그 53 중 하나가 진짜였다**: `ExecutionAdapter`가 `parameters_for_action`을 선언하지
+않는데 **네 어댑터가 다 구현**하고 `aws/executor.py`가 **베이스 타입을 통해 부르며**
+**테스트는 그 이름을 한 번도 언급하지 않는다(0건)**. 오늘 런타임 결함은 없다. 나쁜 건 호출부가
+`except Exception: pass`라는 것 — 베이스 만족에 `resolve_action` **하나면 충분**했으므로
+다섯째 provider가 그 조건만 채우면 `AttributeError`가 **삼켜지고 AWS 모양 파라미터**를 받는다.
+**에러 나지 않는 방식으로 실패한다**(Risk 8).
+
+**⚠️ `from_alarm_context`는 고치지 않았다**: 정의도 호출도 AWS 하나이고 호출이 **리터럴 고정**이라
+베이스에 올리면 나머지 셋에 **거짓**이 된다 — 기준은 *읽는 쪽의 provider 간 비대칭*이다(M19 ⓑ).
+
+**고침**: 베이스에 선언 + 신규 가드가 **AST로 유도**한다(provider가 **변수면 베이스 필수,
+리터럴이면 면제** — 정규식으론 못 가른다) + 형제 넷의 구현 검사(**선언은 절반**이다).
+
+**⚠️ 내가 두 번 더 틀렸다**: ⓐ면제 테스트를 **`assert … or True`**로 끝냈다(assertion이 아니다 —
+세션 내내 *실패할 수 없는 규칙*을 찾아 온 손이 썼다) ⇒ **면제가 실제로 면제하는지** 묻게 고쳤다 ·
+ⓑM3(호출부 리터럴화)을 또 한 파일에서 읽을 뻔했는데 **전체 스위트에 물으니 이번엔 진짜였다**
+(2356 passed — 아무것도 안 잡는다): **provider를 인자로 받은 함수가 그걸 무시하고 AWS를
+하드코딩해도 초록**이다(M23과 같은 모양). **내 면제가 만든 탈출구라 내가 닫았다.**
+
+변이 5종 전부 red. **게이트 2350 → 2358.** 증거
+`docs/evidence/the-contract-omitted-the-method-everyone-calls.log`.
+
 ## M43 — 게이트가 안 돈 PR을 "CI 초록"으로 읽었다: 없는 것과 통과한 것이 같은 색이다 (완료, 2026-09-01)
 
 ⛔**먼저 오해를 막을 것: `main`은 무방비였던 적이 없다.** 브랜치 보호가 `check` 컨텍스트를
