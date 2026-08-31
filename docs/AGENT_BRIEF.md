@@ -2,8 +2,7 @@
 
 최종 갱신: 2026-08-30
 
-> ▶ NEXT SESSION: **첫 행동 = Azure executor 디스패치**(승인 사안 — 고치면 **Phase 3② 면제도**
-> **같이 지워야 하고, 가드가 그걸 red로 잡는다**). ⛔**4a는 닫혔다(08-30)** — `docs/plans/2026-08-15-4a-remote-write-allowlist.md` **§10이 권위**:
+> ▶ NEXT SESSION: **첫 행동 = 사용자에게 `4a를 접을지` 묻기**(`NEXT_PLAN` 신규 08-30 — D50이 *"접으면 셋 다 지울 것"*인데 **08-30 실측 셋 다 그대로**: 워크스페이스 `platform-agent-4a`(**ap-northeast-2**) ACTIVE · 키 오늘 사용 · Prometheus가 **지금도 remote_write**. ⚠️**청구는 $0.00 — 비용이 아니라 장기 키가 대가다**. 지우면 로컬 remote_write가 실패한다). 그다음 = **`onprem` extra의 `mlx-lm`**(승인 게이트 없는 유일한 코드 항목, 실측 있음). ⛔**Azure executor는 배선됐다(08-30, 승인 후 — M39)**: 게이트가 **2337→2332로 내려갔고 그게 옳다**(비대칭 7건이 닫히며 −14). ⚠️**"이제 Azure는 안전"으로 요약 금지** — 열린 건 **경로**고 blast radius 0은 **오늘의 사실**이다. ⛔**4a는 닫혔다(08-30)** — `docs/plans/2026-08-15-4a-remote-write-allowlist.md` **§10이 권위**:
 > 실제 청구 **$0.00**(계량 798,331 샘플)이고 사유는 **AMP 프리티어가 `Always Free` 40M/월**이라
 > §3의 배제 근거가 **전건이 거짓**이었다는 것. ⚠️**"어차피 공짜"로 요약 금지** — 절벽이 요율→**한도**로
 > 옮겨 앉았을 뿐이고 필터 없음은 **128배 초과**다. ✅대시보드 취약점은 **0건**이다(08-30, Risk 11 — ⚠️"기록이 세 군데 틀렸다"를 지우지 말 것).
@@ -18,7 +17,7 @@
 > ⚠️ **"소진"은 이제 여섯 번 틀렸다** — 가장 값싼 다음 수는 대개 **직전 세션이 이미 적어 뒀다**. ⚠️**목록에 적힌 항목 자체가 틀릴 수도 있다**(08-15: ⓑ는 "매핑 없음"이었는데 네 provider 전부 있었고 **기록보다 한 달 먼저** 있었다) — **틀린 항목도 값이 난다**(시험하다 옆의 진짜 결함이 나왔다). 단 **`git log -L`로 "언제부터"까지** 물어야 stale과 오기를 가른다.
 > ⚠️ **"안 봤다"를 시험하면 결함이 아니라 범위가 나올 때도 있다**(08-13에 두 번). ⚠️**형제 집합은 세는 순간 전부 셀 것** — 08-13에 세 번(**세 번째는 그걸 찾으려고 만든 스윕 안에서**), **08-15에 둘 더**(한쪽만 import가 되돌아가 죽어 있었다 · **네 어댑터를 열거한 도크스트링 아래 `aws.analyzer`만 임포트**한 가드 — ⚠️**산문이 참이어도 임포트 줄이 범위다**). ⚠️**"선언됐는데 안 읽힌다"는 자동으로 결함이 아니다** — 기준은 **읽는 쪽의 provider 간 비대칭**이다(`provider` 필드를 읽기 시작하면 GCP/Azure는 전부 폴백으로 떨어진다). ⚠️**읽는 쪽을 고쳤으면 쓰는 쪽도 물을 것**(08-17): 조건을 읽게 만든 다음 물으니 **검증기가 `steps` 안을 아예 안 봤다** — 오타 난 조건 키는 평가에서 `True`가 되어 **에스컬레이션이 무조건 실행**된다(같은 결함, 반대쪽 문). ⚠️**검증기가 둘이면 느슨한 쪽이 실제 경로다** — 엄격한 `validate_capability_runbook`은 **테스트만 부르고 있었다**.
 > ⚠️ **추정표는 어느 칸이 측정이고 어느 칸이 가정인지 표시할 것**(08-15, 4a): 정가는 맞았는데 **안 잰 시계열 수**가 총액을 100배 지배했다 — **가정이 지배하는 추정은 추정이 아니라 그 가정이다.** 그리고 **권위 문서가 틀리면 복제본이 그것을 사실로 굳힌다**(진입점 3곳이 "$5"를 복제해 승인까지 갔다 — **복제 금지 규약이 겨냥한 실패**).
-> 직전 세션 → **08-30**: 아홉 묶음(**PR #44~#54**) — 4a 종료($0.00, 프리티어 **Always Free**) · ruff↔pytest 제외 비대칭 · Azure 근거 재측정 · 업스트림 조건 둘 · 대시보드 취약점 **8→0** · `requires-python` **거짓** · `dev-up` 선행조건 · "SDK 90%+ 상이" 측정 · 체크포인트 날짜. ⛔**상세를 여기 다시 적지 말 것** — `PROGRESS_LOG` 상단과 `docs/archive/progress-2026-08.md`가 권위다. ⚠️**오늘 배운 것 셋**: **유사도는 의미가 아니다**(가장 달라 보인 `_determine_mode`가 셋 다 의미상 동일) · **`git grep -E`의 `\s`는 조용히 0건**(세는 함정 셋째) · **복구 확인 앞에 `__pycache__`를 지울 것**(Risk 12⑦ 여섯째).
+> 직전 세션 → **08-30**: 열 묶음(**PR #44~#56 + Azure 배선**) — 4a 종료($0.00, 프리티어 **Always Free**) · ruff↔pytest 제외 비대칭 · Azure 근거 재측정 · 업스트림 조건 둘 · 대시보드 취약점 **8→0** · `requires-python` **거짓** · `dev-up` 선행조건 · "SDK 90%+ 상이" 측정 · 체크포인트 날짜. ⛔**상세를 여기 다시 적지 말 것** — `PROGRESS_LOG` 상단과 `docs/archive/progress-2026-08.md`가 권위다. ⚠️**오늘 배운 것 셋**: **유사도는 의미가 아니다**(가장 달라 보인 `_determine_mode`가 셋 다 의미상 동일) · **`git grep -E`의 `\s`는 조용히 0건**(세는 함정 셋째) · **복구 확인 앞에 `__pycache__`를 지울 것**(Risk 12⑦ 여섯째).
 >
 > 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
 
@@ -38,7 +37,7 @@
 - **동작하는 것:** Operations 4단계 + 3-cloud AI Agent + **On-Prem Ops**(12도구, trace) + Terraform kind/실 Multipass VM Ansible k3s Provision + kagent↔Local Qwen A2A + Agents UI. **On-Prem 오프라인 완결**: Local **Qwen3-Coder-30B-A3B**(MoE·활성 3B, `Makefile:58`)로 NL provision→deploy→validate ~39s, 로컬 JSONL 기록 + 대시보드 **hybrid**(AWS+On-Prem 병합) + 실 **롤백**(app/cluster). **추적 IA**: activity에 `type`(provision/deploy)·`cluster` 연결키, 대시보드 **Provisioning/Deployments/History** 분리 + **중첩 상세**(provisioning⊃deploys), 롤백 **단일-row 승계**·**teardown→deploy cascade**, 자연어 rollback/teardown도 동일 라우팅.
 - **하네스:** overnight-harness 플러그인 기반 (5 engine). `make overnight-kiro-once` 로 smoke. `make dev-up`으로 로컬 스택(MLX+proxy+router+dashboard) 한 방 기동.
 - **Kiro 특화:** aws-ops / cdk-dev / overnight-harness 3개 에이전트 + safety hook + AWS MCP Server.
-- **검증:** `make check` → **2337 passed, 2 skipped** (**2026-08-30 로컬 macOS·py3.13** — 08-18의 **2291**에서 **+37**(4a 청구 **+6** · 증거 포인터 **+2** · ruff↔pytest **+3** · pyproject **+4** · 로컬 스택 **+5** · provider 계약 **+8** · 문서 신선도 **+9** · 글자 예산 **+5** · 마일스톤 인용 **+4**) · CI도 **같은 게이트**를 돈다(ubuntu·py3.13) — **CI 숫자는 PR 체크가 권위**, 여기 복제 금지; 게이트 숫자는 날짜와 **잰 기계** 없이는 주장이 아니다, Risk 12①②). CI(`gate.yml`)가 **main 병합 조건**이고 **terraform 검증까지 실제로 돈다**. 이력·근거는 `STATUS` 검증 Baseline과 `COMPLETED_SUMMARY` **M10~M38**에 있다 — 여기에 다시 적지 말 것.
+- **검증:** `make check` → **2332 passed, 2 skipped** (**2026-08-30 로컬 macOS·py3.13** · CI도 **같은 게이트**, ubuntu·py3.13 — **CI 숫자는 PR 체크가 권위**, 여기 복제 금지; 게이트 숫자는 날짜와 **잰 기계** 없이는 주장이 아니다, Risk 12①②). ⚠️**같은 날 2337에서 내려갔다**(M39) — Azure 배선이 **정당화 7건을 무너뜨려 −14**, 새 가드 +9. **결함이 닫히면 그 결함을 설명하던 줄도 사라진다 ⇒ 단조증가 지표가 아니다.** 내역은 `STATUS` Baseline. CI(`gate.yml`)가 **main 병합 조건**이고 **terraform 검증까지 실제로 돈다**. 이력·근거는 `STATUS` 검증 Baseline과 `COMPLETED_SUMMARY` **M10~M39**에 있다 — 여기에 다시 적지 말 것.
 - **현재 초점:** **Phase 4(billable, 별 승인)만 남았다.** 공급망은 생산자→소비자→CI 키리스까지 섰고 **어드미션만 업스트림 대기**(cosign v3 ↔ policy-controller 저장 위치 불일치, 양방향 실증). Phase 5는 **경계까지**(UI·PR 생성 없음). ⚠️**과대 해석 금지**: 스코프·배포 신원·이미지 서명 게이트는 전부 **옵트인** · 자격증명이 테넌트-바운드인 건 **온프렘뿐** · CODEOWNERS는 **라우팅** · `main` 보호는 **게이트 집행**이지 리뷰 집행이 아니다. **반복 확인된 것**: 새 항목은 **기록된 이유를 한 번 돌려 보고** 시작할 것 — 다만 **틀려 있을 때만 값이 나오는 게 아니다**(08-09 GCP 3건은 전부 성립했는데, 확인하는 과정에서 **프로브의 provider 누락**이 나왔다). 그리고 **읽는 쪽으로 갈 것**: "이 dict를 덮는 테스트가 있나"의 답은 "다섯 개 있다"였는데 **전부 dict의 모양만 물었고**, 읽는 쪽엔 두 provider에 복사된 **죽은 티어**가 있었다(08-13).
 
 ## Guardrails

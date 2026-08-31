@@ -5,7 +5,7 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(**M15=공급망 0→집행 + Phase 5 경계 +
 > `main` 보호**, M14=결정 6건, M13=미소비 14건) / `PROGRESS_LOG.md`(+`docs/archive/`). **≤120줄**.
 
-## 현재 상태 (2026-08-30, gate 2337 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
+## 현재 상태 (2026-08-30, gate 2332 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
 
 **Phase 0·1a·1b·2·3 완결**(M10~M12) + **잔여 소진**(M13) + **결정 7건 닫힘**(D36·D38~D43).
 **공급망은 닫을 수 있는 만큼 닫혔다**(어드미션만 업스트림 대기) · **`main`은 보호된다**
@@ -23,7 +23,7 @@
 - 라우터에 인증이 서면 **결정 5 C**와 **결정 1의 파티션**이 열린다 · k3s-lab에 워크로드가 서면
   **결정 4**(경로=옵션 A) · 두 번째 리뷰어가 생기면 **CODEOWNERS 리뷰 필수**를 켠다(D43).
 - [ ] **(별도 계획) GitAIOps 후속편 아티클** — 논지=오프라인 Qwen로 루프를 무인으로 닫는다. 소재=**자동화하면 새로 깨지는 것**(①롤백↔selfHeal ②자격증명=blast radius ③**"실행됨≠나아졌음"** ④과금 누출) · 미소비 선언 14건(M13) · **수호 테스트 자신이 같은 안티패턴**(M17~M20·M27이 사례집).
-  ⚠️③의 **산 사례가 생겼다**: Azure는 실행조차 안 하고 해결됨을 보고한다(아래). **집필·발행은 착수하지 않는다**(지시 2026-07-25).
+  ⚠️③의 **산 사례가 완결됐다**: Azure는 실행조차 안 하고 해결됨을 보고**했고**(08-16 발견) 08-30에 배선했다 — **발견·승인·고침·그로 인해 게이트 숫자가 내려간 것까지** 한 벌(M39). **집필·발행은 착수하지 않는다**(지시 2026-07-25).
 - [ ] (선택) **Azure Foundry 정리** — 유휴 ≈$0는 **참**. 단 ACR Basic이 월 ~₩6,600 고정이고 **다른 프로젝트 것**(08-12).
 
 ## 진행 중 — 멀티테넌트/멀티-클라우드 플랫폼 + per-env Add-on
@@ -39,24 +39,25 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
   아니라 **이 항목의 구속 조건**. 우회 없음(OAuth `repo`는 blast radius=1과 충돌 · TS 이식은 **두 번째 진실
   공급원**). ⇒ 여는 조건 = **파이썬 플래너를 어디서 돌릴지**.
 - ⛔**Phase 4 / 4a는 닫혔다(08-30) — `COMPLETED_SUMMARY` M38이 권위.** 실제 청구 **$0.00**(프리티어 `Always Free` 40M).
-  ⚠️**절벽이 요율→한도로 옮겨 앉았을 뿐** — 필터 없음은 **128배 초과**라 허용목록 하중은 그대로다. **접으면 워크스페이스·IAM·키 셋 다 지울 것**(D50). **다시 열지 말 것.**
+  ⚠️**절벽이 요율→한도로 옮겨 앉았을 뿐** — 필터 없음은 **128배 초과**라 허용목록 하중은 그대로다. **다시 열지 말 것.**
+- [ ] **⚠️(신규 08-30) 4a를 접을지 — 사용자 결정.** D50은 *"접으면 워크스페이스·IAM·키 셋 다 지울 것"*인데
+  **08-30 실측: 셋 다 그대로다.** 워크스페이스 `platform-agent-4a`(**ap-northeast-2**, ACTIVE) · 키
+  `AKIA…62VN` Active(**오늘 13:50Z 사용**) · 로컬 kind Prometheus가 **지금도 remote_write**(허용목록
+  메트릭 4개 ⇒ **청구 $0.00**). **비용 문제가 아니다 — 대가는 장기 액세스 키 하나다**(M38이 그렇게 적었다).
+  ⚠️지우면 로컬 remote_write가 **실패하기 시작한다**(그게 이 결정의 내용이다). 증거 `what-is-actually-billing-2026-08-30.log`.
 - [ ] **Phase 4 남은 것 = 4b**(자격증명 파티션 미증명=Risk 10 · 30분 TTL 가드가 상시와 안 맞는다, billable·별 승인) ·
   ⚠️**$0 선행: BQ 결제 내보내기**(`GCP_BILLING_EXPORT_SETUP.md`, 콘솔 수동 · `make spend-check`).
 - ⛔**대시보드 취약점은 닫혔다(08-30) — `npm audit` 0건**(Tier A + `next 16.3.3`; 라우트 17개 동일·eslint 새 소견 0).
   **`STATUS` Risk 11이 권위** — ⚠️거기 적힌 "기록이 세 군데 다 틀렸다"를 지우지 말 것. **다시 열지 말 것.**
-- [ ] **(신규 08-30) `onprem` extra의 `mlx-lm`을 어떻게 할지** — 그 항목 때문에 CI가 `.[onprem]` 대신 인라인으로
-  적는다(fastapi에서 이미 고친 우회). 실측: **아무도 그 extra로 안 깔고** `src/`는 **임포트조차 안 한다** · ⚠️`gate.yml`의
-  근거 *"linux resolve 불가"*는 **지금 거짓**(설치되고 엔진만 빠진다). 증거 `make-dev-up-launched-a-venv-nothing-created.log`.
+- [ ] **(신규 08-30) `onprem` extra의 `mlx-lm`을 어떻게 할지** — 그 항목 때문에 CI가 `.[onprem]` 대신 인라인으로 적는다(fastapi에서 이미 고친 우회).
+  실측: **아무도 그 extra로 안 깔고** `src/`는 **임포트조차 안 한다** · ⚠️`gate.yml`의 근거 *"linux resolve 불가"*는 **지금 거짓**(설치되고 엔진만 빠진다). 증거 `make-dev-up-launched-a-venv-nothing-created.log`.
 - [ ] **(신규 08-30) 정적검사를 게이트에 넣을지** — `make lint` **20건**(전수 분류 **결함 0**)과 **mypy 253건**
   (`strict=true`인데 아무도 안 돈다)이 각각 선행. `gate.yml`이 *"a CI job is a bad place to introduce a
   standard nobody agreed to"*라 적어 뒀다 — **레포의 결정.** 증거는 `STATUS` Risk 12②가 가리킨다.
-- [ ] ⚠️**Azure executor는 하지 않은 조치를 "해결됨"으로 보고한다(08-16 실측, 승인 사안)** — `_execute_single_action`이 로그만
-  찍고 `success: True`를 돌려 `resolved=True`로 **Slack에 올라가고 기록된다**. **311줄 러너를 Azure만 안 부른다**(08-30 재확인).
-  ⚠️**"순수 잠재"의 근거를 다시 세웠다(08-30)**: 08-16의 "FunctionApp·AKS·Cosmos 전부 없다"는 **틀렸다** — Cosmos는 있고
-  (`cosmos-roadpilot`, **2026-07-14** 생성 = 그 측정보다 **한 달 먼저** → **stale이 아니라 오기**, `rg-roadpilot`=**남의 프로젝트**)
-  **러너엔 Cosmos 액션이 없다** ⇒ 근거가 **손으로 적은 셋**→**러너 액션에서 유도한 둘**로 섰고 **둘 다 0**(⚠️불변식 아님). ✅미구현 11종은 안전 — GCP가 러너의 `ValueError`를 **`success: False`**로 돌린다(네 provider 다 선언 16 vs 러너 4~5, 같은 모양).
-  **안 고쳤다**(배선=라이브 ARM/AKS, 승인 후) · 근거 `docs/evidence/azure-executor-reports-resolved-without-executing.log`(§정정 08-30)
-  · 가드 `test_executor_dispatches_to_runner.py`(**설명 없는 비대칭 금지**).
+- ⛔**Azure executor는 배선됐다(08-30, 승인 후) — `COMPLETED_SUMMARY` M39가 권위. 다시 열지 말 것.**
+  ⚠️**"이제 Azure는 안전하다"로 요약 금지**: 열린 건 **경로**고, 오늘 blast radius가 0인 건 러너가
+  만지는 **AKS·FunctionApp이 구독에 0개**여서다(**오늘의 사실이지 불변식이 아니다**). 자격증명
+  테넌트 바인딩은 그대로 **Phase 4**(Risk 10). ⚠️게이트 숫자가 **2337→2332로 내려갔고 그게 옳다**(같은 항목).
 - [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 선행**(kind엔 CSI 스냅샷터 부재).
 - **2차 잔여 = 하나**: **스포크의 읽기 신원** — 공유 `argocd` ns를 맨 kubectl로 읽어 테넌트 구분이 **코드 필터**다(쓰기는 401, 읽기는 안 막는다).
   **시끄럽게만** 해 뒀고(`warn_if_ambient_read`, M17), seam은 **인클러스터 배포·민팅 선행**이라 인프라 결정.
@@ -67,7 +68,7 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
 
 - [ ] **DUAL 모드 조건부 리다이렉트** — `slack_live_approval`은 닫혔고(08-16) 이것만 남았다. **하중을 못 받는 가드**가 되므로 안 만들었다.
 - ⛔**capability 스캔은 셋 다 닫혔다(08-17)** — ⓐ**현행 유지**(M35: 티어 2는 액션을 `recommended_capabilities`에서 만들고 `capabilities`는 매치 게이트일 뿐 — 더해도 관측 변화 0, **빼면 네 provider가 다 resolve하는 스텝을 잃는다**) · ⓒ**측정하고 고쳤다**(M36+M37: 기존 가드가 **생산에서 도달 불가한 capability 집합**으로 물어 첫-매치와 점수제의 답이 같은 경우만 태웠다 → 점수 함수를 계약 모듈에 한 벌 두고 셋이 읽는다) · `rollback_release`**는 추천 목록 현행 유지**(진짜 문제는 목록이 아니라 **티어 2가 조건 평가 없이 추천에서 액션을 만든 것**이었고 그걸 고쳤다; `JUSTIFIED_GAPS`가 들고 어긋나면 red). **다시 열지 말 것.**
-- [ ] ⚠️**Phase 3② — GCP는 배선했다(08-18, 승인 후). 남은 건 Azure·AWS.** `guard_rollback`을 부르는 러너가 **onprem 하나**였는데 `ROLLBACK_ACTIONS`는 **네 provider 7종을 다 알았다** — M31이 고친 건 **목록**이고 **호출 지점을 세는 가드가 없었다**(M18이 한 층 위에서 재발: 세는 대상이 액션이 아니라 **러너**). ✅**GCP 배선**: 롤백 walk가 이미 GET하던 매니페스트를 그대로 `guard_rollback`에 넘긴다 — **추가 API 호출 0**, patch 앞에서 거부. ⛔**Azure는 `JUSTIFIED_GAPS`**(executor가 러너를 아예 안 부른다 → 하중 없는 가드가 된다; 그 항목을 고치면 **이 면제는 지워야 하고 가드가 그걸 red로 잡는다**) · **AWS는 러너가 없다**(SSM Automation 경로, 가드가 그 사실을 박아 뒀다). ⚠️**가드 자신이 한 번 틀렸다**: 문자열 검사라 **호출을 지워도 import 줄이 남아 통과**했다 → **AST로 실제 호출**을 센다. 증거 `docs/evidence/phase-dod-verification-2026-08-18.log`.
+- [ ] ⚠️**Phase 3② — GCP(08-18)·Azure(08-30) 배선. 남은 건 AWS뿐이고 그건 "러너가 없다"이다.** `guard_rollback`을 부르는 러너가 **onprem 하나**였는데 `ROLLBACK_ACTIONS`는 **네 provider 7종을 다 알았다** — M31이 고친 건 **목록**이고 **호출 지점을 세는 가드가 없었다**(M18이 한 층 위에서 재발: 세는 대상이 액션이 아니라 **러너**). ✅**GCP 배선**: 롤백 walk가 이미 GET하던 매니페스트를 그대로 `guard_rollback`에 넘긴다 — **추가 API 호출 0**, patch 앞에서 거부. ✅**Azure 배선(08-30)**: 면제가 *"고치면 이 항목은 지워야 한다"*고 자기 만료 조건을 적어 뒀고 **가드가 실제로 그걸 집행했다** — `JUSTIFIED_GAPS`는 **비었다**(⚠️그래서 두 면제 규칙이 **하중을 잃어** 합성 표에 대고 다시 물었다). AKS 롤백도 GCP처럼 **patch 직전 GET이 이미 있어 추가 호출 0** · **AWS는 러너가 없다**(SSM Automation 경로, 가드가 그 사실을 박아 뒀다). ⚠️**가드 자신이 한 번 틀렸다**: 문자열 검사라 **호출을 지워도 import 줄이 남아 통과**했다 → **AST로 실제 호출**을 센다. 증거 `docs/evidence/phase-dod-verification-2026-08-18.log`.
 - ⛔**`cost_metrics`는 측정으로 닫혔다(08-18)** — 기록된 이유가 **맞다**: cost를 렌더하는 뷰는 **한 곳뿐**이고(`deployments/[id]`) 그걸 먹이는 `mergeActivity`가 `deployment_id === id`로 거른다. route/provider-activity 행은 그 키가 없어 **원리상 못 닿는다**(더하면 안 읽히는 필드가 하나 더 는다). ⚠️**면제는 목록이 아니라 경계다** — 가드가 의무를 **읽는 쪽 선택 규칙에서 유도**하고 `src/agents` **전 모듈**을 rglob으로 훑는다(ACTIVITY writer 넷 중 **하나는 `activity_writer.py`**). 변이 3종 red(롤백 필드 제거 · route에 `deployment_id` 부여 · 스윕 무력화). 증거 `docs/evidence/cost-metrics-exemption-is-derived-and-load-bearing.log`. **다시 열지 말 것.**
 - [ ] **⚠️`msft_deployer`가 진짜 라이브러리에서 깨진다(08-30 재측정)** — ✅설치 조건은 열렸다(`.[azure]`가 **31.5초에
   성공**, 08-15엔 150초 타임아웃 · agent-framework **1.16.0**). ⛔그런데 `AzureOpenAIResponsesClient`은 **버전 지연이
@@ -85,6 +86,7 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
 - [ ] **MCP 게이트웨이는 포트에 안 붙어 있다** — 결론 유지, **근거는 틀렸다(재측정)**: `bridge.py:35`에
   폴백이 있고 그 `McpA2aBridge`를 만드는 건 **테스트뿐**. ⚠️**세는 함정 셋**: `cdk.out`(→**`git grep`**) · **docstring 예시**가 호출로 보인다 ·
   ⚠️**`git grep -E`의 `\s`는 조용히 0건**(POSIX ERE엔 없다 → `[[:space:]]`/`-P`) — 08-30에 그걸로 "신뢰도 임계값이 없다"는 **거짓 소견을 낼 뻔했다**.
+  ⚠️**넷째(08-30)**: **리전 한정 조회의 `[]`를 "없다"로 읽지 말 것** — `amp list-workspaces --region us-east-1`이 `[]`인데 워크스페이스는 `ap-northeast-2`에 **살아 있었다**.
 - [ ] **A2A 인증 실집행 결정** — 남은 건 **기본값 on 여부**(라이브 kagent 왕복이 익명이라
   opt-in — 그 "익명"은 **나가는 쪽**이다, D39).
 - [ ] **Cosign 어드미션 = 업스트림 대기** — **`STATUS` Risk 6이 권위**. ⛔**08-30 확인: 아직**(`policy-controller#1406` open · v3.1.2 `sign`/`attest`에 `--new-bundle-format` 없음) — **이 날짜부터 볼 것.**

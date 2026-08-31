@@ -261,14 +261,16 @@ class TestEveryRunnerThatCanRollBackAsks:
     """
 
     #: runner module -> why it does not call the guard. Empty = it must call it.
-    JUSTIFIED_GAPS = {
-        "azure_runner.py": (
-            "Azure's executor does not dispatch to its runner at all — it logs and "
-            "reports success without executing (open item, measured 2026-08-16). "
-            "Wiring the refusal into a path that never runs would be a guard with "
-            "no load on it; fix the dispatch first, then this entry must go."
-        ),
-    }
+    #:
+    #: Emptied 2026-08-30. The one entry here said Azure's runner was exempt
+    #: because `azure/executor.py` never dispatched to it, so the refusal would
+    #: have been a guard with no load on it — "fix the dispatch first, then this
+    #: entry must go". The dispatch was wired that day under approval, and
+    #: `test_a_justified_gap_that_closed_must_be_removed` would have failed on
+    #: this dict had it not gone with it. That is the intended coupling, not a
+    #: coincidence: the exemption named its own expiry condition and the guard
+    #: enforced it.
+    JUSTIFIED_GAPS: dict[str, str] = {}
 
     def _runner_sources(self) -> dict[str, str]:
         d = ROOT / "src" / "agents" / "operations" / "runners"
@@ -315,6 +317,22 @@ class TestEveryRunnerThatCanRollBackAsks:
             "verifier can see it, and then it is silently reverted — with the "
             "incident recorded as remediated"
         )
+
+    def test_the_stale_gap_check_can_fail(self):
+        """`JUSTIFIED_GAPS` is empty as of 2026-08-30, which makes the check below
+        pass without looking at anything (Risk 12③). Ask it against a table that
+        names a runner which *does* call the guard, so the rule stays alive for
+        the next exemption someone adds and forgets."""
+        wired = [n for n, src in self._runner_sources().items() if self._calls_the_guard(src)]
+        assert wired, "no runner calls the guard at all — the sweep is broken"
+        assert self._stale_gaps({wired[0]: "a reason that stopped being true"}) == [wired[0]]
+
+    def _stale_gaps(self, gaps: dict[str, str]) -> list[str]:
+        return [
+            name
+            for name, src in self._runner_sources().items()
+            if name in gaps and self._calls_the_guard(src)
+        ]
 
     def test_a_justified_gap_that_closed_must_be_removed(self):
         stale = [

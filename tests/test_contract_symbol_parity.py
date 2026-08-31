@@ -71,11 +71,6 @@ import pytest
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 PROVIDERS = ("aws", "gcp", "azure")
 
-_M29 = (
-    "Azure is missing because `azure/executor.py` never calls `run_azure_action` "
-    "— one cause, six symptoms. Open finding, awaiting a decision: "
-    "docs/evidence/azure-executor-reports-resolved-without-executing.log"
-)
 _REPORTING = (
     "`reporting.py` exists only under `aws/` — GCP and Azure have no reporting "
     "module at all, so there is no reader to be asymmetric with (Risk 2: their "
@@ -126,29 +121,25 @@ JUSTIFIED: dict[str, str] = {
     "build_weekly_oncall_report": _REPORTING,
     "run_onprem_action": _DISPATCHER,
     "verify_onprem_action": _DISPATCHER,
-    "guard_rollback": (
-        "Called only from `onprem_runner`; AWS reaches it as the dispatcher. "
-        "⚠️ Following this pair is what surfaced the real defect next door — two "
-        "AWS actions missing from `ROLLBACK_ACTIONS` (see test_reconciler_conflict)."
-    ),
     "is_rollback": (
-        "Same as `guard_rollback`: reached through the onprem runner, not a "
-        "per-provider decision."
+        "Reached through `onprem_runner`, which imports the pair; AWS reaches it "
+        "as the dispatcher. ⚠️ Following it is what surfaced the real defect next "
+        "door — two AWS actions missing from `ROLLBACK_ACTIONS` (test_reconciler_"
+        "conflict). `guard_rollback` used to sit beside this entry and no longer "
+        "does: as of 2026-08-30 `azure_runner` calls it directly, so all three "
+        "providers reach it and it is not an asymmetry any more."
     ),
+    # --- Each is its own provider's runner; AWS reaches all of them as dispatcher.
     "run_azure_action": (
-        "⚠️ **NOT a justified asymmetry — a recorded open one.** Azure's own "
-        "executor does not call it, so Azure reports actions as executed and the "
-        "incident as resolved without performing them. Wiring it starts live "
-        "ARM/AKS mutations, which needs approval. " + _M29
+        "The Azure runner, and symmetric with `run_gcp_action` since 2026-08-30. "
+        "It was the one entry in this table marked NOT justified — Azure's executor "
+        "did not call it, so Azure reported actions as executed and incidents as "
+        "resolved without performing them. Wired under approval that day, which "
+        "also closed the six symptoms downstream of it (`IncidentScope`, "
+        "`resolve_incident_scope`, `guard_scoped_action`, `IsolationTier`, "
+        "`Registry`, `load_registry`) — one cause, seven rows. "
+        "docs/evidence/azure-executor-reports-resolved-without-executing.log"
     ),
-    # --- AWS + GCP, Azure missing: all downstream of the same cause ------------
-    "IncidentScope": _M29,
-    "resolve_incident_scope": _M29,
-    "guard_scoped_action": _M29,
-    "IsolationTier": _M29,
-    "Registry": _M29,
-    "load_registry": _M29,
-    # --- AWS + GCP, and Azure should not be there ------------------------------
     "run_gcp_action": "The GCP runner. AWS reaches it as dispatcher; Azure has its own.",
     "get_gcp_access_token": "GCP runner internals, reached the same way as `run_gcp_action`.",
 }
@@ -229,11 +220,31 @@ ASYMMETRIES = _asymmetries()
 
 def test_the_sweep_still_finds_asymmetries():
     """Vacuity check — a broken closure walk reports perfect symmetry, and every
-    assertion below would then pass by finding nothing."""
-    assert len(ASYMMETRIES) >= 20, (
-        f"the sweep found only {len(ASYMMETRIES)} asymmetries; it found 26 on "
-        "2026-08-16 and the count does not drop that far without a change to the "
-        "walk itself"
+    assertion below would then pass by finding nothing.
+
+    This was a floor on the count (``>= 20``, from 26 measured on 2026-08-16).
+    On 2026-08-30 wiring the Azure executor closed seven rows at once and the
+    count fell to 19, so the floor failed and the only way to green was to edit
+    the number down. **A number that gets lowered whenever it fails is not a
+    check** — it is the allowlist-nobody-prunes shape this file names elsewhere,
+    and it cannot tell a real fix from a broken instrument.
+
+    So the control is structural instead: two symbols whose reader sets are fixed
+    by architecture rather than by any open finding. A walk that breaks reports
+    them as absent; a walk that computes reader sets wrongly reports them with
+    the wrong set. Both are caught, and neither goes stale when a defect closes.
+    """
+    by_symbol = {symbol: set(readers) for readers, symbol, _ in ASYMMETRIES}
+
+    assert by_symbol.get("paginated_scan") == {"aws"}, (
+        "`paginated_scan` is DynamoDB pagination — AWS-only by construction, and "
+        f"the sweep reports {by_symbol.get('paginated_scan')}. The instrument is "
+        "broken, not the code."
+    )
+    assert by_symbol.get("run_gcp_action") == {"aws", "gcp"}, (
+        "`run_gcp_action` is GCP's own runner, reached by GCP and by AWS as the "
+        f"multi-cloud dispatcher; the sweep reports {by_symbol.get('run_gcp_action')}. "
+        "A closure walk that cannot see this pair cannot see any of the rest."
     )
 
 
