@@ -38,6 +38,36 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
+## M40 — 4a를 접었다: 지운 이유는 $0.00이 아니라 장기 키였고, 가드는 지우면 안 됐다 (완료, 2026-09-01)
+
+**삭제(D50 집행, 사용자 결정)**: AMP 워크스페이스 `ws-929b8da9…`(ap-northeast-2) · IAM 사용자
+`amp-remote-write-4a` · 키 `AKIA…62VN`. 삭제 전 정책은 **기록과 정확히 일치**했다(관리형 0,
+인라인 1건 = `aps:RemoteWrite` 하나 × 워크스페이스 하나). ⚠️**좁은 키도 장기 키이고, 실제 청구
+$0.00은 지울 이유를 줄이지 않았다** — D50이 미리 그렇게 적어 뒀다.
+
+**확인은 "어떻게 봤는지"까지**: 8리전 스윕 0 · `describe-workspace`를 **id로 직접** 물어
+`ResourceNotFoundException` · `get-user` `NoSuchEntity`. ⚠️**`get-access-key-last-used`는
+`AccessDenied`고 그건 부재의 증거가 아니다**(권한이 없어 나온 답 — 키가 살아 있어도 같다);
+증거는 **소유 사용자의 부재**다.
+
+**⚠️ 가드를 지울 뻔했다.** `test_amp_cost_handles.py`의 9건은 목적지가 사라지면 **전부 공허하게
+참**이 된다. 지우는 쪽도 답이 아니었다 — **D48(허용목록 없이 remote_write 금지)은 4a를 접어도
+안 죽고**(필터 없음 = 프리티어 **128배**, ≈$180/월 = 4b 값 ⇒ 4a를 고른 이유가 지워진다) 그걸
+적어 둔 유일한 물건이다. 계약을 **함수(`remote_write_violations`)로 빼** 두 호출자에 물렸다:
+**살아 있는 파일**(목적지가 없어야 한다) + **합성 표 9종**.
+
+**⚠️ 첫 판이 틀렸다 — 규칙이 다른 규칙의 그림자로 세어졌다**: 합성 표를 `violations != []`로만
+묻자 **와일드카드 검사를 통째로 지워도 초록**이었다(`kube_.*`가 `allowlist-drift`에도 걸려서).
+**M17의 "결함을 그 그림자로 세지 말 것"의 재발.** 위반 코드 7종 + 케이스가 **어느 규칙이 물어야
+하는지** 지정 + 함수 본문에서 코드를 긁어 표와 대조(새 규칙이 케이스 없이 늘면 red).
+재변이 **7종 전부 red**. **게이트 2332 → 2339**(+7).
+
+**⚠️ 남긴 것의 이유가 바뀌었다**: KSM interval **60s**는 비용 손잡이가 아니라 이제 데모 알람 룰의
+`[5m]`=5샘플(120초면 2샘플 → `> 2`가 원리상 도달 불가). **워크스페이스 id는 더는 안 박는다** —
+없는 것을 박으면 **영원히 틀릴 수만 있는 규칙**이다.
+
+증거 `docs/evidence/folding-4a-the-price-was-a-long-lived-key.log` · 계획서 **§11** · **D50 Folded**.
+
 ## M39 — Azure는 하지 않은 조치를 "해결됨"으로 보고했다: 배선하니 비대칭 7건이 닫히고 게이트가 내려갔다 (완료, 2026-08-30)
 
 **목적**: 08-16에 발견돼 13일간 세 진입점이 `▶ NEXT SESSION` **첫 행동**으로 가리켜 온 승인 사안.

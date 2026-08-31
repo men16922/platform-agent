@@ -1,0 +1,136 @@
+==============================================================================
+4a를 접었다 — 청구액은 $0.00이었고, 그래서 지운 게 아니다
+2026-09-01 · 계정 908601828278 · 실행자 q-user
+==============================================================================
+
+D50이 이렇게 적어 뒀다:
+
+    ⚠️ 장기 액세스 키가 하나 늘었다 — 4a를 접으면 워크스페이스·IAM 사용자·키
+    셋 다 지울 것 — ⚠️ 청구액이 $0이라고 이 이유가 줄지 않는다
+    (대가는 돈이 아니라 그 키였다).
+
+08-30에 재 보니 **셋 다 그대로**였다. 사용자 결정을 받아 접었다.
+
+
+## 1. 삭제 전 실측
+
+AMP 워크스페이스 — **8개 리전을 돌았다.** 08-30에 `--region us-east-1` 하나만 보고
+"지워졌다"고 쓸 뻔한 적이 있어서(세는 함정 넷째), 리전 서비스에 "없다"를 말할 땐 리전을 돈다.
+
+    us-east-1: 0   us-west-2: 0   eu-west-1: 0        ap-northeast-1: 0
+    ap-southeast-1: 0              eu-central-1: 0    us-east-2: 0
+    ap-northeast-2: 1  ← platform-agent-4a
+                          ws-929b8da9-b0db-49f8-aadb-2ed1a70f699f
+                          ACTIVE · 2026-08-16T23:13:05+09:00 생성
+                          tags: Project=platform-agent, Phase=4a, CreatedBy=session-2026-08-16
+
+IAM 사용자 `amp-remote-write-4a` (2026-08-16T21:55:32Z 생성)
+
+    관리형 정책   0건                       ← D50이 약속한 대로
+    인라인 정책   remote-write-ws-929b8da9  ← 전부가 이것 하나:
+                    Sid      RemoteWriteToOneWorkspaceOnly
+                    Effect   Allow
+                    Action   aps:RemoteWrite          (단수. 액션 하나)
+                    Resource arn:…:workspace/ws-929b8da9-…   (그 워크스페이스 하나)
+    액세스 키     AKIA5HDHDUO3D5SX62VN  Active
+                    마지막 사용  2026-08-30T14:25:00Z  aps  ap-northeast-2
+
+⇒ **정책은 기록과 정확히 일치했다.** 이 키로 할 수 있는 일은 그 워크스페이스에 쓰는 것뿐이다.
+   그래도 지웠다 — 좁은 키도 **장기 키**이고, 그게 D50이 적은 대가다.
+
+
+## 2. 삭제
+
+    aws iam delete-access-key  --user-name amp-remote-write-4a \
+                               --access-key-id AKIA5HDHDUO3D5SX62VN
+    aws iam delete-user-policy --user-name amp-remote-write-4a \
+                               --policy-name remote-write-ws-929b8da9
+    aws iam delete-user        --user-name amp-remote-write-4a
+    aws amp delete-workspace   --region ap-northeast-2 \
+                               --workspace-id ws-929b8da9-b0db-49f8-aadb-2ed1a70f699f
+
+넷 다 무응답 성공(exit 0). 키를 먼저 지운 건 파이프를 먼저 끊기 위해서다.
+
+
+## 3. 삭제 확인 — "없다"를 어떻게 봤는지까지
+
+    ① 8리전 스윕                    전부 0  (ap-northeast-2도 0으로 내려감)
+    ② describe-workspace  <id>      ResourceNotFoundException: Workspace not found
+                                      ← list가 아니라 id로 직접 물었다
+    ③ get-user amp-remote-write-4a  NoSuchEntity
+    ④ get-access-key-last-used      AccessDenied ⚠️
+    ⑤ list-users | amp 포함          []
+
+⚠️ **④는 증거가 아니다.** `AccessDenied`는 `NotFound`가 아니고, q-user에게
+`iam:GetAccessKeyLastUsed` 권한이 없어서 나온 답이다 — 키가 살아 있어도 같은 답이 나온다.
+**키가 사라졌다는 증거는 ③과 ⑤다**: 소유 사용자가 없고, 키는 사용자보다 오래 살 수 없다.
+(권한 거부를 부재의 증거로 읽는 것은 이 레포가 이미 적어 둔 실패 모양이다 —
+`what-is-actually-billing-2026-08-30.log`의 429가 *"이것은 '0'이 아니다"*였던 것과 같다.)
+
+
+## 4. 레포 쪽 — 지우면 조용히 실패하는 것
+
+파이프 설정은 클러스터 안에만 있는 게 아니었다. `infra/onprem/addons/values/
+kube-prometheus-stack.yaml:48-61`의 `remoteWrite:` 블록이 **삭제된 워크스페이스 URL을
+가리킨 채** git에 남는다. 지웠다(주석으로 접은 이유와 D48 존속을 남기고).
+
+⚠️ 찾는 과정에서 내가 한 번 틀렸다. 첫 `git grep`에 `| head -30`을 붙였는데 `docs/`가
+`infra/`보다 먼저 정렬돼 **정작 찾던 설정 파일이 잘려 나갔고**, "설정은 레포에 없다"고
+쓸 뻔했다. 도구 함정이 아니라 **내 절단**이다 — 이 레포가 세는 함정으로 적어 온 것들과
+같은 모양이라 남긴다.
+
+로컬 kind는 도커 데몬이 꺼져 있어 지금 죽어 있다(키 마지막 사용 08-30T14:25Z가 그것과
+맞는다). 클러스터가 다시 서면 Prometheus는 이제 remote_write 대상이 없다 — 실패가 아니라
+**설정 자체가 없다**. `monitoring/amp-remote-write` Secret은 클러스터가 살아날 때
+고아로 남으므로, kind를 다음에 띄우면 지울 것.
+
+
+## 5. 가드 — 지울 뻔했고, 지웠으면 $180짜리 구멍이 남았다
+
+`tests/test_amp_cost_handles.py`는 살아 있는 `remoteWrite:` 항목의 성질 **9가지**를 물었다.
+그 항목이 사라지면 아홉 개가 전부 **공허하게 참**이 된다 — *"허용목록은 정확히 이 넷"* 은
+허용목록이 없을 때 아주 잘 통과한다. 파일을 지우는 쪽도 답이 아니었다: D48
+(*"허용목록 없이 remote_write를 붙이지 않는다"*)은 4a를 접어도 안 죽고, 그 규칙을
+적어 둔 유일한 물건이 이 파일이다. 필터 없는 이 클러스터는 5.13B 샘플/월 =
+**프리티어 40M의 128배**, ≈$180/월이다.
+
+그래서 계약을 **함수**로 뺐다(`remote_write_violations`). 두 호출자가 붙든다:
+
+    살아 있는 파일  목적지가 **없어야** 한다 + 생기면 계약을 만족해야 한다
+    합성 표         한 군데씩만 망가뜨린 9종 — 함수가 전부 거부해야 한다
+
+### ⚠️ 첫 판이 틀렸다 — 규칙 하나가 다른 규칙의 그림자로 세어지고 있었다
+
+합성 표를 `assert violations != []`로만 물었더니, **와일드카드 검사를 통째로 지워도
+스위트가 초록이었다**(M2 생존). `kube_.*` 변이는 `allowlist-drift`에도 걸리기 때문에
+"뭔가 거부됐다"는 참이고, **정작 와일드카드 규칙은 하중이 0**이었다.
+
+이건 M17이 이름 붙인 *결함을 그 그림자로 세지 말 것* 그대로다. 위반마다 코드를 붙이고
+(`regex-wildcard:` 등 7종) 케이스가 **어느 규칙이 물어야 하는지**를 지정하게 고쳤다.
+`test_every_rule_is_reachable_by_exactly_one_case_that_needs_it`이 함수 본문에서 코드를
+정규식으로 긁어 표와 대조한다 — 새 규칙이 케이스 없이 늘면 red.
+
+### 변이 (7종, 전부 red · 복구 확인은 `__pycache__` 삭제 후)
+
+    M1  값 파일에 remoteWrite 복귀(허용목록 없이)   2 failed
+    M2  와일드카드 검사 무력화                       1 failed  ← 고치기 전엔 생존
+    M3  목적지 개수 검사 무력화                      1 failed
+    M4  자격증명 임베딩 검사 무력화                  1 failed
+    M5  sourceLabels 검사 무력화                     1 failed
+    M6  허용목록 드리프트 검사 무력화                2 failed
+    M7  KSM interval 60s → 30s                       1 failed
+    복구                                             16 passed · diff 0
+
+⚠️ **워크스페이스 id는 이제 일부러 안 박는다.** 없는 워크스페이스를 박으면 *영원히 틀릴
+수만 있는 규칙*이다. 다음 목적지의 id는 계획서 §4·§8·§10에서 승인과 함께 정해진다.
+
+⚠️ **KSM interval 60s는 살아남았지만 이유가 바뀌었다.** 4a가 접혔으니 더는 *비용* 손잡이가
+아니다. 지금 이유는 데모 알람 룰이 `[5m]`로 적분한다는 것 — 60초면 5샘플이고, 120초면
+2샘플이라 `> 2` 임계값이 **원리상 도달 불가**가 된다. 규칙을 지우지 않고 이유를 고쳐 적었다.
+
+
+## 6. 남은 것
+
+- 로컬 kind를 다음에 띄우면 `monitoring/amp-remote-write` Secret 삭제(고아).
+- 4a가 답한 질문은 그대로 유효하다(DoD 넷, 파이프 실증, 실제 청구 $0.00) —
+  접은 것은 **파이프이지 결론이 아니다**.
