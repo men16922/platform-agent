@@ -86,6 +86,13 @@
 
 `tests/test_vendored_paths_are_excluded_from_both_tools.py` — 세 방향:
 
+⚠️ **2026-09-01 후속**: 이 파일은 `…_from_every_tool.py`로 이름이 바뀌었다. **셋째 형제가
+있었다** — `[tool.mypy]`가 두 경로를 아무것도 안 적어서 `mypy src/`가 `cdk.out`의 중복
+모듈에서 **수집 단계에 죽고 있었다**(*errors prevented further checking*). 즉 이 로그가
+*"한 형제엔 막히고 다른 형제엔 열려 있었다"*고 적은 그 실패를, **이 고침 자신이 세 번째
+형제에 대해 반복했다.** 권위는 `the-third-sibling-was-mypy.log`.
+
+
   * 형제 일치: pytest `norecursedirs` == ruff `extend-exclude`
   * 공허 방지: 둘 다 비면 짝은 맞으므로, 목록이 `VENDORED`를 **포함**해야 한다
   * **도구에 직접 묻기**: `ruff check --show-settings`의 `file_resolver.extend_exclude`.

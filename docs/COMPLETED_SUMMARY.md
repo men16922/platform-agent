@@ -38,6 +38,38 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
+## M42 — 셋째 형제는 mypy였다: 형제를 세는 가드 자신이 둘만 세고 있었다 (완료, 2026-09-01)
+
+**선행 실측 둘은 기록대로였다**: `make lint` **20건**(F841 8·E731 5·E701 5·F402 1·E712 1 ·
+src 7·tests 13) · mypy **253 errors in 88 files (166 checked)**. ⚠️**그런데 그 253은 그냥은 안
+나온다** — `mypy src/`는 `cdk.out`의 중복 모듈에서 **수집 단계에 죽는다**(*"Found 1 error in 1
+file (errors prevented further checking)"*). **선언된 설정이 그대로는 실행조차 안 됐다**:
+`pyproject`가 그 블록을 *"the settings are the target"*이라 적어 뒀는데 **못 돌리는 target은
+돌려서 실패하는 target보다 약하다.**
+
+**⚠️ Risk 12⑥이, 그 규칙을 집행하려고 만든 가드 안에서 재발했다.** 08-30에 pytest↔ruff
+비대칭을 고치며 만든 가드의 파일명이 **`..._from_both_tools.py`(both=둘)**인데, 같은
+`pyproject.toml`의 **`[tool.mypy]`가 셋째 형제**로 두 경로 중 아무것도 안 적고 있었다.
+⚠️**빠진 쪽이 하필 가장 나쁜 형제였다** — ruff의 실패는 시끄럽고 오락가락(20↔6,527)인데
+mypy의 실패는 **총체적**(우리 코드를 한 줄도 안 본다)이고 문장이 *"1 error"*라 **작아 보인다**.
+
+**고침**: `[tool.mypy] exclude` 추가 ⇒ `mypy src/`가 그냥 돈다. 가드는 `..._from_every_tool.py`로
+개명하고 **셋 다 순회**. ⚠️**게이트 편입은 바뀐 게 없다** — 결정은 그대로 레포의 것이다.
+
+**⚠️ 가드의 가드 — 변이가 시켜서 만들었다**: 첫 판의 `TOOLS`는 **손으로 적은 dict**라
+**M5(TOOLS에서 mypy 제거)가 초록으로 살아남았다**. **이 파일의 주제가 이 파일에 그대로
+일어났다 — 세는 일 자체를 아무도 안 세고 있었다**(내 docstring은 *"derived, not listed"*라고
+**코드가 안 하는 걸 주장**했다). ⇒ `[tool.*]`에서 제외 키를 **유도**해 양방향 대조.
+
+**⚠️ 재는 동안 두 번 더 틀렸다**: ⓐ`mypy`가 **252**를 답한 건 **증분 캐시**였다(청소 후 253) —
+*"기록이 틀렸다"*고 쓸 뻔했다. **캐시된 답은 측정이 아니다**(Risk 12⑦ `.pyc` 계열) ·
+ⓑ**변이를 적용하지 않고 변이를 쟀다**(정규식 과도 이스케이프 → 한 건도 안 지워졌는데 시간을
+쟀다) ⇒ **변이 적용부터 확인하고 결과를 읽을 것.**
+
+**게이트 비용**: `mypy src/` **49.2s**(게이트 36초의 배)를 `mypy src/stacks/` **0.13s**로 바꿨다 —
+결함이 사는 자리이고 답이 둘뿐이라 공허하지 않다. 변이 8종 중 7 red, M6은 **설명된 초록**.
+**게이트 2342 → 2346.** 증거 `docs/evidence/the-third-sibling-was-mypy.log`.
+
 ## M41 — `onprem` extra의 `mlx-lm`: 선언은 있고 그걸 쓰는 곳이 없었다 (완료, 2026-09-01)
 
 **기록된 근거는 적을 당시 참이었다.** `gate.yml`이 *"mlx-lm은 Apple Silicon 전용이라 리눅스

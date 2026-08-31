@@ -7,6 +7,21 @@
 
 ---
 
+## 2026-09-01 — 셋째 형제는 mypy였다: 정적검사 선행을 재다가 나왔다 (gate 2346)
+
+- Status: `NEXT_PLAN`의 *"정적검사를 게이트에 넣을지"*는 **레포의 결정**이라 묻지 않고 **선행 실측 둘만** 다시 쟀다. 재는 도중에 나왔다. 권위 `docs/evidence/the-third-sibling-was-mypy.log`.
+- Verified(**기록은 둘 다 맞았다**): `make lint` **20건**(F841 8·E731 5·E701 5·F402 1·E712 1 · src 7·tests 13, ruff 0.15.10) · mypy **253 errors in 88 files (166 checked)** — 기록 *"253 across 88 of 165"*와 일치(파일이 하나 늘었다).
+- Verified(**⚠️그런데 그 253은 그냥은 안 나온다**): `mypy src/`는 `cdk.out`의 **중복 모듈에서 수집 단계에 죽는다** — *"Found 1 error in 1 file (errors prevented further checking)"*. 253을 보려면 `--exclude`를 손으로 붙여야 했다 ⇒ **선언된 설정이 그대로는 실행조차 안 됐다.** `pyproject.toml`은 그 블록을 *"the settings are the target"*이라 적어 뒀는데 **못 돌리는 target은 돌려서 실패하는 target보다 약하다.**
+- Verified(**⚠️Risk 12⑥ 재발 — 그것도 그 규칙을 집행하려고 만든 가드 안에서**): 08-30에 pytest↔ruff 비대칭을 고치며 만든 가드의 파일명이 **`..._from_both_tools.py`(both=둘)**였는데 같은 `pyproject.toml`에 **`[tool.mypy]`가 셋째 형제로 있었고 두 경로 중 아무것도 안 적고 있었다**. ⚠️**빠진 쪽이 하필 가장 나쁜 형제였다** — ruff의 실패는 시끄럽고 오락가락(20↔6,527)인데 mypy의 실패는 **총체적**이고(우리 코드를 한 줄도 안 본다) 문장이 *"1 error"*라 **작아 보인다**.
+- Changed: `[tool.mypy] exclude` 추가 ⇒ `mypy src/`가 이제 그냥 돈다. 가드는 `..._from_every_tool.py`로 개명하고 **셋 다 순회**. ⚠️**게이트 편입은 바뀐 게 없다** — 선언을 실행 가능하게 만든 것뿐이고 결정은 그대로 레포의 것이다.
+- Changed(**가드의 가드 — 변이가 시켜서 만들었다, +3**): 첫 판의 `TOOLS`는 **손으로 적은 dict**라 **M5(=TOOLS에서 mypy 제거)가 초록으로 살아남았다** — **이 파일의 주제가 이 파일에 그대로 일어났다: 세는 일 자체를 아무도 안 세고 있었다**(내 docstring은 *"derived, not listed"*라고 **코드가 안 하는 걸 주장**했다). ⇒ `pyproject`의 `[tool.*]`에서 제외 키를 **유도**해 `TOOLS`와 양방향 대조.
+- Verified(**⚠️재는 동안 두 번 더 틀렸다**): ⓐ`mypy src/`가 **252**를 답한 적이 있는데 그건 **증분 캐시**였다(`--no-incremental`·캐시 삭제 둘 다 253) — 하마터면 *"기록이 틀렸다"*고 쓸 뻔했다. **캐시된 답은 측정이 아니다**(Risk 12⑦ `.pyc` 계열). ⓑ**변이를 적용하지 않고 변이를 쟀다** — 정규식이 과도 이스케이프돼 한 건도 안 지웠는데 두 후보의 시간을 쟀고, `diff`로 대조해서야 알았다. **변이 적용부터 확인하고 결과를 읽을 것.**
+- Verified(**게이트 비용**): `mypy src/` **49.2s**(게이트 36초의 배)를 `mypy src/stacks/` **0.13s**로 바꿨다 — 결함이 사는 바로 그 자리이고 답이 둘뿐이라 공허하지 않다. 진짜 253은 손으로 재서 `pyproject`에 적었다. **집행 안 하기로 한 숫자를 재느라 게이트를 두 배로 만드는 건 나쁜 거래**(D49가 288s→39s를 얻은 이유).
+- Verified(**변이 8종**): M1 mypy exclude 삭제 red(2) · M2 부분 드리프트 red · M3 ruff 삭제 red(3) · M4 pytest 삭제 red · **M5 red(고치기 전엔 초록)** · M6 초록—**설명됨**(위반 0건이라 꺼도 관측 불변; 하중은 M1이 재고 M1이 그 테스트를 죽인다, 귀속 확인) · M7 새 도구가 exclude 선언 red · M8 유도 무력화 red.
+- Blockers: 없음.
+- Next: **정적검사 게이트 편입은 사용자/레포 결정**(선행 둘 다 이제 재기 좋다) · BQ 결제 내보내기(콘솔 수동) · kind 재기동 시 `monitoring/amp-remote-write` Secret 삭제.
+
+
 ## 2026-09-01 — `onprem` extra의 `mlx-lm`: 선언은 있고 그걸 쓰는 곳이 없었다 (gate 2342)
 
 - Status: `NEXT_PLAN` 08-30 항목. 기록된 근거를 먼저 다시 돌렸고 **적을 당시엔 참**이었다. 권위 `docs/evidence/the-onprem-extra-declared-a-mechanism-nobody-used.log`.
@@ -20,7 +35,6 @@
 - Verified(**변이**): M1 extra 복귀 red · M2 인라인 복귀 red(2건) · M3 `src/`가 mlx 임포트 red · M4 레시피 깸 red(**전체 스위트에서**) · M5 규칙 무력화 **초록 — 설명됨**(현재 위반 0건이라 꺼도 관측 불변; 그 규칙의 하중을 재는 변이는 **M1**이고 red다).
 - Blockers: 없음. ⚠️**리눅스 resolve는 로컬에서 증명 못 한다** — 이 PR의 CI 체크가 그 답이다.
 - Next: **정적검사를 게이트에 넣을지**(lint 20건·mypy 253건 — **레포의 결정**) · BQ 결제 내보내기(콘솔 수동) · kind 재기동 시 `monitoring/amp-remote-write` Secret 삭제.
-
 
 ## 2026-09-01 — 4a를 접었다: 청구액이 $0.00이라 지운 게 아니다 — 대가는 장기 키였다 (gate 2339)
 
@@ -56,31 +70,3 @@
   `monitoring/amp-remote-write` Secret 삭제할 것.
 - Next: **`onprem` extra의 `mlx-lm`**(승인 게이트 없는 유일한 코드 항목) · 정적검사 게이트 편입
   여부(레포의 결정) · BQ 결제 내보내기(콘솔 수동).
-
-## 2026-08-30 — "지금 비용 나가는 거 없지?"를 재다: 예 — 단 4a가 안 접혔고 한 리전만 보고 답할 뻔했다
-
-- Status: 사용자 질문에 문서 인용이 아니라 **재서** 답했다. 상시 지출은 **AWS 하루 $0.0034**
-  (≈$0.10/월)뿐. 권위 `docs/evidence/what-is-actually-billing-2026-08-30.log`.
-- Verified(**MTD로 답했으면 15배 틀렸다**): `make spend-check`는 **MTD $10.25**를 먼저 답한다.
-  일별로 가르면 바닥은 **$0.0034/일**이고 MTD의 $9.00(EC2+VPC)은 **08-09에 멈춘 지출**이다.
-  ⚠️바닥 위로 올라온 유일한 항목은 **Cost Explorer 자기 자신**(이번 달 **$0.64** = 우리가 만든
-  최대 항목) · **08-30 줄의 $0.0000은 CE 지연 이틀+ 때문이지 "0"이 아니다** · 도는 EC2 전 리전 0대.
-- Verified(**⚠️새 함정 — 세는 함정 넷째**): `aws amp list-workspaces --region us-east-1`이 `[]`를
-  답해 **"4a 워크스페이스는 지워졌다"고 쓸 뻔했다.** 막은 건 옆의 측정이었다 — 키의 마지막 사용
-  리전이 `ap-northeast-2`였고, 거기 **`platform-agent-4a`가 ACTIVE**였다. **리전 서비스에 대고
-  "없다"를 말하려면 리전을 돌 것**(한 리전으로 전역을 답한 것 = M18~M20 형제-집합 실패와 같은 모양).
-- Verified(**4a 접기(D50) 미완**): 워크스페이스 ACTIVE · IAM `amp-remote-write-4a`의 키
-  `AKIA…62VN` **Active**, 마지막 사용 **오늘 13:50Z `aps`** · 로컬 kind가 1시간 전 재기동돼
-  Prometheus가 **지금도 remote_write 중**(허용목록 메트릭 **4개** 그대로 ⇒ 청구 **$0.00**).
-  **비용 문제가 아니다** — M38이 미리 적은 대로 **대가는 장기 액세스 키 하나**다.
-  ⚠️그래서 **M38·STATUS의 duty cycle 기록이 stale해졌다**(*"08-27T19:55Z 이후 죽음"*은 더는 참이
-  아니다) — 그 13%는 **그 창의 측정**이지 현재 상태가 아니다.
-- Verified(**Azure ₩7,063 전액이 남의 프로젝트**): ⚠️첫 조회는 **429**로 실패했고 프로브가
-  *"이것은 '0'이 아니다"*라 답한 그대로 **재시도가 답이었다**. ActualCost = ACR
-  `acrroadpilot23842f7d`(`rg-roadpilot`) **₩7,063** · Cosmos ₩0 · Log Analytics ₩0 ·
-  우리 `platform-agent-foundry-rg` **₩0**. Risk 4의 "ACR ₩6,600(타 프로젝트)"이 **재서 성립**.
-- Verified(**GCP는 여전히 못 잰다**): 프로젝트 5개에 내보내기 테이블 0 — **'₩0'이 아니다**.
-  상시 추정 ~$0.72/월은 **추정이지 측정이 아니다**. 여는 길은 콘솔 수동 하나.
-- Blockers: 없음. 오늘의 코드 변경(M39)은 **배포한 게 없어 비용과 무관**하다.
-- Next: **4a 접기 여부가 사용자 결정**(워크스페이스+IAM+키 · 지우면 로컬 remote_write가 실패
-  하기 시작한다) · `onprem` extra의 `mlx-lm` · BQ 결제 내보내기(콘솔 수동).

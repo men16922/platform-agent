@@ -1,0 +1,132 @@
+==============================================================================
+셋째 형제는 mypy였다 — 그리고 그 형제에선 결함이 총체적이었다
+2026-09-01
+==============================================================================
+
+`NEXT_PLAN`의 열린 항목 *"정적검사를 게이트에 넣을지"*는 **레포의 결정**이라 묻지 않고,
+그 결정의 **선행 실측 둘**(`make lint` 20건 · mypy 253건)만 다시 쟀다. 재는 도중에 나왔다.
+
+
+## 1. 선행 실측 — 기록은 둘 다 맞았다
+
+    make lint     Found 20 errors.        ← 기록 "20건"과 일치 (ruff 0.15.10)
+                  분포: F841 8 · E731 5 · E701 5 · F402 1 · E712 1
+                  경로: src/ 7 · tests/ 13
+
+    mypy          Found 253 errors in 88 files (checked 166 source files)
+                  ← 기록 "253 errors across 88 of 165 files"와 일치
+                    (파일이 165→166으로 하나 늘었다)
+
+
+## 2. 그런데 그 253은 그냥은 안 나온다
+
+    $ mypy src/
+    src/stacks/cdk.out/asset.0f86cea…/src/__init__.py: error: Duplicate module
+    Found 1 error in 1 file (errors prevented further checking)
+
+**하나.** 그리고 멈춘다. 253을 보려면 `--exclude 'src/stacks/cdk\.out'`을 손으로 붙여야
+했다 — 즉 **선언된 설정은 그대로는 실행조차 안 됐다.**
+
+`pyproject.toml`은 그 블록을 *"Kept rather than deleted because the settings are the
+target"*이라고 적어 뒀다. **못 돌리는 target은 돌려서 실패하는 target보다 약하다.**
+
+
+## 3. ⚠️ 이건 이 레포가 이미 고쳤다고 적은 실패다 — 셋째 형제에서
+
+08-30에 같은 자리에서 이런 걸 고쳤다(`ruff-and-pytest-did-not-exclude-the-same-vendored-trees.log`):
+
+    [tool.pytest.ini_options]  norecursedirs = [cdk.out, node_modules]   ✅
+    [tool.ruff]                (아무것도 없음)                            ❌ → 고침
+
+그때 만든 가드의 파일명이 **`..._from_both_tools.py`** 였다. **both = 둘.**
+같은 `pyproject.toml` 안에 `[tool.mypy]`가 있었고, **두 경로 중 아무것도 안 적고 있었다.**
+
+    [tool.pytest.ini_options]  norecursedirs   ✅
+    [tool.ruff]                extend-exclude  ✅ (08-30에 추가)
+    [tool.mypy]                (아무것도 없음)  ❌ ← 셋째
+
+⚠️ **그리고 빠진 쪽이 하필 가장 나쁜 형제였다.** ruff의 실패는 **시끄럽고 오락가락**했다
+(같은 트리에 20 ↔ 6,527). mypy의 실패는 **총체적**이다 — 수집 단계에서 죽어 **우리 코드를
+한 줄도 안 본다**. 그리고 그 실패는 종료 코드와 문장이 *"1 error"*라서 **작아 보인다.**
+
+**Risk 12⑥(형제 집합은 세는 순간 전부 셀 것)이 설정 층위에서, 그것도 그 규칙을 집행하려고
+만든 가드 안에서 재발했다.**
+
+
+## 4. 고침
+
+    [tool.mypy]
+    exclude = ["src/stacks/cdk\\.out", "src/stacks/node_modules"]
+
+⇒ `mypy src/`가 이제 그냥 돈다: **253 errors in 88 files (checked 166 source files)**.
+게이트 편입 여부는 **바뀐 게 없다** — 여전히 레포의 결정이고, 이건 선언을 실행 가능하게
+만든 것뿐이다.
+
+가드는 `..._from_every_tool.py`로 개명하고 셋 다 순회한다.
+
+
+## 5. ⚠️ 재는 동안 두 번 더 틀렸다
+
+### ⓐ 캐시가 다른 숫자를 답했다
+
+    mypy src/                     → 252 errors   (증분 캐시)
+    mypy src/ --no-incremental    → 253 errors
+    rm -rf .mypy_cache && mypy    → 253 errors
+
+**252는 측정이 아니라 캐시였다.** 하마터면 *"기록된 253은 틀렸다"*고 적을 뻔했다.
+변이 하네스의 복구 확인이 `.pyc`에 속았던 것과 같은 계열이다(Risk 12⑦):
+**캐시된 답은 측정이 아니다.** 기록은 맞았다.
+
+### ⓑ 변이를 적용하지 않고 변이를 쟀다
+
+`exclude`를 지우는 python 정규식이 **과도하게 이스케이프돼 한 건도 안 지웠는데**,
+그걸 모르고 두 후보 명령의 시간을 쟀다. `diff`로 대조해서야 *"same (변이 미적용)"*이
+나왔다. **변이를 적용했는지부터 확인하고 결과를 읽을 것** — 안 그러면 "빠르고 잡는다"는
+결론이 **아무것도 안 잰 결론**이 된다.
+
+
+## 6. 게이트 비용 — 45초짜리 질문을 0.13초짜리로 바꿨다
+
+    mypy src/          49.2s   ← 전체 트리. 게이트가 36초인데 배가 된다.
+    mypy src/stacks/    0.13s  ← 결함이 사는 바로 그 자리
+
+`exclude` 없이 `mypy src/stacks/`도 *errors prevented further checking*로 죽고,
+`exclude`가 있으면 *"There are no .py[i] files in directory 'src/stacks'"*라고 답한다
+(그 아래 추적되는 `.py`는 0개 — CDK는 TypeScript다). **답이 둘뿐이고 하나만 옳다** ⇒
+공허하지 않다. 253이라는 진짜 숫자는 손으로 재서 `pyproject.toml`에 적었다 —
+**레포가 집행 안 하기로 한 숫자를 재느라 게이트를 두 배로 만드는 건 나쁜 거래**이고,
+D49가 288s→39s를 얻어낸 이유가 그것이다.
+
+
+## 7. ⚠️ 가드의 가드 — 변이가 시켜서 만들었다
+
+첫 판의 `TOOLS`는 **손으로 적은 dict 셋**이었다. 변이 M5(=`TOOLS`에서 mypy 제거)가
+**초록으로 살아남았다**: 파라미터가 하나 줄 뿐 남은 질문은 다 통과한다.
+**이 파일의 주제가 이 파일에 그대로 일어났다 — 세는 일 자체를 아무도 안 세고 있었다.**
+(그리고 내 docstring은 *"Counting is now derived, not listed"*라고 **코드가 안 하는 걸
+주장하고 있었다.**)
+
+⇒ `_sections_with_an_exclusion_key()`가 `pyproject.toml`의 `[tool.*]`를 훑어
+제외 키(`exclude`/`extend-exclude`/`norecursedirs`/`omit`/…)를 **유도**하고,
+`test_the_tool_list_is_complete`가 `TOOLS`와 양방향으로 대조한다.
+
+### 변이 (전부 red · 복구는 `__pycache__` 삭제 후 확인)
+
+    M1  mypy exclude 삭제                    red (2건: 드리프트 + 수집 가드)
+    M2  node_modules만 뺌 (부분 드리프트)     red
+    M3  ruff extend-exclude 삭제             red (3건)
+    M4  pytest norecursedirs 삭제            red
+    M5  TOOLS에서 mypy 제거                  red  ← 고치기 전엔 **초록이었다**
+    M6  수집 가드의 문장 검사 무력화          초록 — **설명됨**: 현재 위반이 0건이라
+                                                꺼도 관측이 안 바뀐다. 그 assertion의
+                                                하중을 재는 변이는 M1이고, M1은 이
+                                                테스트를 죽인다(귀속 확인함).
+    M7  새 도구가 exclude를 선언 (coverage)   red  ← 유도가 잡는다
+    M8  유도 함수가 빈 집합 반환              red
+
+
+## 8. 남은 것 — 결정은 여전히 사용자/레포의 것
+
+`make lint` 20건도 mypy 253건도 **게이트에 안 넣었다.** `gate.yml`이 적어 둔 그대로다:
+*"a CI job is a bad place to introduce a standard nobody agreed to."*
+이 로그는 그 결정을 **묻기 좋게** 만들어 둔 것이지 대신 내린 것이 아니다.

@@ -111,7 +111,7 @@ target-version = "py313"   # same number as `requires-python`; test_pyproject_cl
 # under src/stacks/cdk.out). `[tool.pytest.ini_options]` already names these two
 # paths in `norecursedirs`; ruff named neither, so the same trap was blocked for
 # one sibling and open for the other. Keep the two lists in step —
-# `tests/test_vendored_paths_are_excluded_from_both_tools.py` fails if they drift.
+# `tests/test_vendored_paths_are_excluded_from_every_tool.py` fails if they drift.
 extend-exclude = ["src/stacks/cdk.out", "src/stacks/node_modules"]
 
 [tool.mypy]
@@ -127,6 +127,26 @@ extend-exclude = ["src/stacks/cdk.out", "src/stacks/node_modules"]
 # still uninvoked, so the gap stays visible instead of looking like a standard.
 python_version = "3.13"
 strict = true
+# ⚠️ Added 2026-09-01, and it is not cosmetic: without it `mypy src/` does not
+# produce 253 errors — it produces **one**, and stops.
+#
+#     src/stacks/cdk.out/asset.0f86cea…/src/__init__.py: error: Duplicate module
+#     Found 1 error in 1 file (errors prevented further checking)
+#
+# `[tool.ruff] extend-exclude` and `[tool.pytest.ini_options] norecursedirs`
+# already name these two paths, and `test_vendored_paths_are_excluded_from_every_tool`
+# keeps *those two* in step. mypy is the third sibling and was not counted —
+# the guard's own name says "both tools" (Risk 12⑥: 형제 집합은 세는 순간 전부 셀 것).
+#
+# ⚠️ mypy is the sibling where the omission was worst. ruff's failure was noisy
+# and flapping (20 vs 6,527); mypy's is total — the declared configuration could
+# not be executed at all. A target you cannot run is a weaker target than one you
+# can run and fail, which is the whole reason this block is "kept rather than
+# deleted".
+#
+# This changes nothing about whether mypy joins the gate — that is still the
+# repo's decision, recorded above. It only makes the declared settings runnable.
+exclude = ["src/stacks/cdk\\.out", "src/stacks/node_modules"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
