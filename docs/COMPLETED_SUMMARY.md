@@ -38,6 +38,34 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
+## M43 — 게이트가 안 돈 PR을 "CI 초록"으로 읽었다: 없는 것과 통과한 것이 같은 색이다 (완료, 2026-09-01)
+
+⛔**먼저 오해를 막을 것: `main`은 무방비였던 적이 없다.** 브랜치 보호가 `check` 컨텍스트를
+**요구**하고(`required_status_checks.contexts == ["check"]`) 게이트는 **main 대상 PR에선 언제나
+돌았다**. **D43은 계속 성립했다.**
+
+**문제는 스택 PR이었다.** `gate.yml`이 `pull_request: branches: [main]`이라 **base가 다른
+브랜치인 PR엔 이 job이 아예 안 돈다**. PR **#58**(base = M39 브랜치)에서 `gh pr checks`가
+*Amazon Q: pass / Vercel: pass / Vercel Preview Comments: pass*를 답했고 **`check` 행이 아예
+없었다** — 그걸 "CI 초록"으로 읽었다. ⚠️**없는 것과 통과한 것은 그 목록에서 같아 보이고,
+차이는 읽는 사람이 채운다.**
+
+**이건 Risk 12②의 한 층 위다**: 거기 적힌 *"skip은 실패가 아니라서 검사 안 하는 게이트와
+통과한 게이트가 같은 색"*은 **건너뛴 테스트**였고, 여기선 **안 돈 워크플로**다.
+
+**고침**: `branches` 필터 제거 ⇒ **모든 PR이 게이트를 받는다**(CI 몇 분 더, **초록이 어디서나
+같은 뜻**). 가드 +4: 트리거 존재(공허성) · **base 필터 부재**(진짜 고침) · 이유 주석이
+`#58`·`Risk 12`를 계속 가리키는지. ⚠️**YAML 1.1은 맨 `on:`을 불리언 `True`로 읽는다** —
+`wf["on"]`만 본 테스트는 KeyError로 *"트리거가 없다"*를 답했을 것이라 **둘 다** 조회한다
+(자기가 막는 실패와 같은 모양). 변이 4종 전부 red. **게이트 2346 → 2350.**
+
+⚠️**경계**: **게이트가 병합 조건이라는 것은 가드가 주장하지 않는다** — 그건 GitHub 브랜치
+보호에 있지 레포에 없고, `test_signature_gate_claims`가 **배선을 앞질러 간 주장**의 표준
+사례다. 레포 안에 있는 절반만 묻는다.
+
+**재개 방지**: `2026-08-08-phase4-scope-and-cost.md`의 4a 절이 아직 **착수 대상**으로 읽혀
+*"끝났고 접혔다"* 박스를 얹었다(§10·§11 · M38·M40 · D50 Folded).
+
 ## M42 — 셋째 형제는 mypy였다: 형제를 세는 가드 자신이 둘만 세고 있었다 (완료, 2026-09-01)
 
 **선행 실측 둘은 기록대로였다**: `make lint` **20건**(F841 8·E731 5·E701 5·F402 1·E712 1 ·

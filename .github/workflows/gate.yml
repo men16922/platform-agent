@@ -13,8 +13,25 @@ name: gate
 on:
   push:
     branches: [main]
+  # ⚠️ No `branches:` filter here, deliberately — added 2026-09-01.
+  #
+  # It used to read `branches: [main]`, which is the natural way to write "gate
+  # what reaches main" and is not wrong about that: `main` protection requires the
+  # `check` context, so a PR targeting main has always been gated. **main was never
+  # unguarded and D43 always held.**
+  #
+  # What the filter did was make a *stacked* PR — one whose base is another
+  # feature branch — display a full row of green checks with this job never having
+  # run. Measured the hard way on 2026-09-01: PR #58 was opened against a branch
+  # rather than main, `gh pr checks` answered "Amazon Q: pass / Vercel: pass /
+  # Vercel Preview Comments: pass", and it was read as gated. It was not. The gate
+  # was simply absent, and absent and passing look identical in that list.
+  #
+  # That is this repo's recurring shape (Risk 12②: **skip은 실패가 아니라서 검사
+  # 안 하는 게이트와 통과한 게이트가 같은 색이다**) moved up one level: from a
+  # skipped test to an unrun workflow. Running on every PR costs a few CI minutes
+  # and makes green mean the same thing everywhere.
   pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
