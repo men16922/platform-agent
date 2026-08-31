@@ -4,6 +4,43 @@
 
 ---
 
+## 2026-08-30 — Azure는 하지 않은 조치를 "해결됨"으로 보고했다 — 배선했고, 게이트 숫자가 내려갔다 (gate 2332)
+
+- Status: 승인 사안이었다(08-16 발견, 배선하면 라이브 ARM/AKS를 친다). 사용자 승인 후 배선.
+  진입점 셋이 13일간 `▶ NEXT SESSION` 첫 행동으로 가리켜 온 항목이다.
+- Verified(**기록된 근거를 먼저 다시 돌렸다**): 디스패치 비대칭 유효(gcp 325줄 러너를 부르고
+  azure 311줄은 안 부른다) · `_execute_aks_call`의 롤백 분기가 **patch 직전 이미 GET을 한다**
+  ⇒ Phase 3② 배선도 **추가 API 호출 0**, GCP에서 성립한 근거가 그대로 성립.
+- Changed(**배선**): `azure/executor.py`가 `run_azure_action`을 `resolve_incident_scope`와 함께
+  부른다(GCP와 같은 모양, 발명 없음). 미구현 11종은 러너의 `ValueError`가 `except`를 타고
+  **`success: False`**가 된다 — 조용한 성공이 안 된다. `azure_runner` AKS 롤백에 `guard_rollback`.
+- Changed(**기록 둘이 같은 커밋에서 움직였다 — 설계된 결합**): `EXPECTED`의 azure 면제 →
+  `{run_azure_action}` · `JUSTIFIED_GAPS` **비었다**(그 항목이 자기 만료 조건을 적어 뒀고
+  `test_a_justified_gap_that_closed_must_be_removed`가 집행했다).
+- Changed(**가드 +9**): 신규 `test_executor_reports_only_what_the_runner_did.py`(**+7**) —
+  AST는 *"호출이 소스에 있나"*는 물어도 ***"성공이라 보고한 것이 실제로 일어났나"는 못 묻는다***.
+  gcp·azure 둘 다에 대고 러너 호출·실패 전파·`resolved` 판정을 묻는다(형제 하나만 순회 금지,
+  `WIRED`가 디스패치 표와 어긋나면 red). 면제 표가 비어 **하중 없는 규칙이 된 둘**은 합성 표에
+  대고 한 번 더 물었다(**+2**) — **실패할 수 없는 규칙은 규칙이 아니다**(Risk 12③).
+- Verified(**⚠️예상 못 한 것 — 비대칭 7건이 한 번에 닫혔다**): `test_contract_symbol_parity`가
+  red. 배선이 Azure를 스코프/reconciler 계약 표면에 닿게 만들어 `guard_rollback`·`IncidentScope`·
+  `resolve_incident_scope`·`guard_scoped_action`·`IsolationTier`·`Registry`·`load_registry`의
+  정당화가 stale이 됐다. M29의 *"one cause, six symptoms"*가 **반대 방향으로 확인된 것**이다.
+  ⚠️그 파일의 공허성 검사(`>= 20`)가 26→19로 red가 됐고 **초록으로 가는 길이 숫자를 내려 적는
+  것뿐**이었다 — 그건 이 파일이 스스로 이름 붙인 *allowlist nobody prunes*다. **구조적 양성
+  대조로 교체**(`paginated_scan=={aws}` · `run_gcp_action=={aws,gcp}`) — 결함이 닫혀도 안 낡는다.
+- Verified(**변이 6종 red, 생존 0**): 호출 삭제(**4 failed** — AST 표 + 행동 셋이 다른 각도로
+  잡는다) · except가 success:True · `guard_rollback` 삭제 · `WIRED`에서 azure 제거 · 면제 규칙 둘
+  무력화. 기준선 먼저 찍고 `__pycache__` 삭제 후 복구 확인(35 passed, 기준선과 동일).
+- Verified: `make check` **2332 passed, 2 skipped**(2026-08-30 로컬 macOS·py3.13).
+  ⚠️**숫자가 내려갔다**(2337에서 −5) — 분해: 정당화 7건 해소 **−14**(parity가 양쪽에
+  파라미터라이즈) · 새 행동 가드 **+7** · 공허성 둘 **+2**. **결함이 닫히면 그 결함을 설명하던
+  줄도 사라진다** ⇒ 게이트 숫자는 단조증가 지표가 아니다. **줄어든 숫자는 분해해 적을 것.**
+- Blockers: 없음. **blast radius는 오늘 0**(러너가 만지는 AKS·FunctionApp 둘 다 구독에 0개) —
+  ⚠️**오늘의 사실이지 불변식이 아니다**. 자격증명 테넌트 바인딩은 여전히 Phase 4(Risk 10).
+- Next: **BQ 결제 내보내기**(콘솔 수동) · **정적검사 게이트 편입**(결정) · **Phase 3② AWS 잔여**
+  (SSM Automation 경로라 러너가 없다 — 가드가 그 사실을 박아 뒀다).
+
 ## 2026-08-30 — 인용된 마일스톤 넷이 기록된 적이 없었다 (gate 2337)
 
 - Status: `/tidy-docs` 3단계(완료분을 `COMPLETED_SUMMARY`로 압축)를 하려다, **진입점이 M34~M37을

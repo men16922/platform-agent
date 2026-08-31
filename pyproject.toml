@@ -51,7 +51,31 @@ azure = [
     "azure-monitor-query>=1.3",        # detector — Logs/Metrics query
     "openai>=1.30",                    # analyzer — AzureOpenAI, i.e. the LLM itself
 ]
-onprem = ["pydantic-ai-slim[openai]>=2.9", "mlx-lm>=0.19"]
+# `mlx-lm` was listed here until 2026-09-01 and removed after measuring that
+# nothing consumed the declaration:
+#
+#   * `src/` never imports `mlx_lm` — the agent talks to the MLX server over an
+#     OpenAI-compatible HTTP endpoint, so the engine is a *process*, not an import.
+#   * Nothing installed it this way. The machine's `.venv-mlx` held `mlx-lm` and
+#     `mlx` but **not** `pydantic-ai-slim`, so it was never `pip install .[onprem]`
+#     (measured 2026-08-30, `make-dev-up-launched-a-venv-nothing-created.log`).
+#     `make mlx-setup` is the mechanism, and it installs into a venv that is
+#     **deliberately separate** from this project's — an activated `.venv-mlx`
+#     shadows pytest, which is why the Makefile picks its interpreter by probing.
+#     So shipping mlx into the project env was not merely unused; it was contrary
+#     to the separation the Makefile maintains on purpose.
+#   * It was the whole reason `gate.yml` named `pydantic-ai-slim` inline rather
+#     than asking for this extra — the same workaround shape the `serving` extra
+#     was created to remove.
+#
+# ⚠️ Keeping it had gotten *worse*, not stale. At the declared floor the failure
+# was loud: `mlx-lm==0.19.0` requires `mlx>=0.17.0` with **no platform marker**, so
+# a linux resolve genuinely fails. Today's 0.31.3 requires
+# `mlx>=0.31.2; platform_system == "Darwin"` and ships a `py3-none-any` wheel — it
+# **installs on linux and the engine silently is not there** (re-measured
+# 2026-09-01 off PyPI metadata). A CI runner would have gotten a green install of
+# a package that cannot do the one thing it is for.
+onprem = ["pydantic-ai-slim[openai]>=2.9"]
 # `make dev-up` runs `uvicorn src.agents.ai.local_deploy_api:app` and the on-prem
 # webhook the same way, and nothing declared either — a fresh clone cannot start
 # the documented local stack.

@@ -45,9 +45,22 @@ jobs:
           python-version: "3.13"
           cache: pip
 
-      # `pydantic-ai-slim` is still named inline rather than installing the
-      # `onprem` extra: that extra also pulls mlx-lm, which is Apple-Silicon only
-      # and cannot resolve on a linux runner.
+      # `pydantic-ai-slim` used to be named inline here, because the `onprem`
+      # extra also pulled `mlx-lm`, which is Apple-Silicon only and could not
+      # resolve on a linux runner. **That was true when it was written** and it is
+      # not why the workaround is gone: `mlx-lm` was removed from the extra on
+      # 2026-09-01 after measuring that nothing consumed the declaration at all
+      # (`src/` never imports it; the machine's `.venv-mlx` had no
+      # `pydantic-ai-slim` in it, so it was never `pip install .[onprem]`;
+      # `make mlx-setup` is the mechanism, into a venv kept separate on purpose).
+      # See the note above the extra in `pyproject.toml`.
+      #
+      # ⚠️ The old reason had also stopped being the *loud* failure it describes.
+      # `mlx-lm==0.19.0` requires `mlx>=0.17.0` with no platform marker — a real
+      # resolve failure. Today's 0.31.3 requires `mlx>=...; platform_system ==
+      # "Darwin"` and ships a `py3-none-any` wheel, so this runner would have
+      # installed it happily and simply had no engine. Removing the entry, rather
+      # than relaxing the workaround, is what keeps that from being CI's problem.
       #
       # The ASGI stack used to be named inline too (`fastapi "uvicorn[standard]"`)
       # because **nothing declared it** — this file was carrying an undeclared
@@ -64,7 +77,7 @@ jobs:
       - name: install
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev,state,observability,serving]" pydantic-ai-slim[openai]
+          pip install -e ".[dev,state,observability,serving,onprem]"
 
       # Without this the gate silently stops validating Terraform.
       #

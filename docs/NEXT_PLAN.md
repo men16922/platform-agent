@@ -5,7 +5,7 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(**M15=공급망 0→집행 + Phase 5 경계 +
 > `main` 보호**, M14=결정 6건, M13=미소비 14건) / `PROGRESS_LOG.md`(+`docs/archive/`). **≤120줄**.
 
-## 현재 상태 (2026-09-01, gate 2339 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
+## 현재 상태 (2026-09-01, gate 2342 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
 
 **Phase 0·1a·1b·2·3 완결**(M10~M12) + **잔여 소진**(M13) + **결정 7건 닫힘**(D36·D38~D43).
 **공급망은 닫을 수 있는 만큼 닫혔다**(어드미션만 업스트림 대기) · **`main`은 보호된다**
@@ -43,8 +43,7 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
   ⚠️**$0 선행: BQ 결제 내보내기**(`GCP_BILLING_EXPORT_SETUP.md`, 콘솔 수동 · `make spend-check`).
 - ⛔**대시보드 취약점은 닫혔다(08-30) — `npm audit` 0건**(Tier A + `next 16.3.3`; 라우트 17개 동일·eslint 새 소견 0).
   **`STATUS` Risk 11이 권위** — ⚠️거기 적힌 "기록이 세 군데 다 틀렸다"를 지우지 말 것. **다시 열지 말 것.**
-- [ ] **(신규 08-30) `onprem` extra의 `mlx-lm`을 어떻게 할지** — 그 항목 때문에 CI가 `.[onprem]` 대신 인라인으로 적는다(fastapi에서 이미 고친 우회).
-  실측: **아무도 그 extra로 안 깔고** `src/`는 **임포트조차 안 한다** · ⚠️`gate.yml`의 근거 *"linux resolve 불가"*는 **지금 거짓**(설치되고 엔진만 빠진다). 증거 `make-dev-up-launched-a-venv-nothing-created.log`.
+⛔**`onprem` extra의 `mlx-lm`은 닫혔다(2026-09-01) — `COMPLETED_SUMMARY` M41이 권위.** 뺐고, `gate.yml`이 이제 `.[onprem]`을 깐다 ⇒ **인라인 패키지 0개**. ⚠️**기록된 근거는 적을 당시 참**이었다(하한 `0.19.0`은 마커가 없어 리눅스 resolve가 진짜 실패) — **stale이 아니라 더 나빠졌다**: 리졸버가 고르는 0.31.3은 마커가 붙어 **설치되고 엔진만 조용히 빠진다**. ⚠️**"안 쓰이니 지운다"가 아니다** — `.venv-mlx` 분리는 **설계**(활성화되면 pytest를 가린다)라 extra가 mlx를 프로젝트 env로 들이는 건 그 분리를 뒤집는다. **다시 열지 말 것.**
 - [ ] **(신규 08-30) 정적검사를 게이트에 넣을지** — `make lint` **20건**(전수 분류 **결함 0**)과 **mypy 253건**
   (`strict=true`인데 아무도 안 돈다)이 각각 선행. `gate.yml`이 *"a CI job is a bad place to introduce a
   standard nobody agreed to"*라 적어 뒀다 — **레포의 결정.** 증거는 `STATUS` Risk 12②가 가리킨다.
