@@ -27,38 +27,25 @@ prometheus:
       requests:
         cpu: 10m
         memory: 384Mi
-    # Phase 4a — ship a *measured* slice to Amazon Managed Prometheus.
+    # Phase 4a — folded 2026-09-01 (D50). The remote_write destination that
+    # lived here is gone, and so are the three AWS resources behind it: AMP
+    # workspace `ws-929b8da9-…` (ap-northeast-2), IAM user `amp-remote-write-4a`,
+    # and its access key. 4a had already answered its question — the pipe was
+    # live, the read model reported `sync: n/a` honestly, and the measured bill
+    # was **$0.00** (AMP's free tier is `Always Free`, 40 M samples/mo).
     #
-    # ⚠️ The allowlist is the cost control, not a nicety. This cluster carries
-    # **52,438 series / 5.14B samples per month**; shipping it unfiltered costs
-    # **≥$180/mo**, which is what 4b costs — i.e. it erases the reason 4a was
-    # chosen. The four metrics below are **308 series, 0.59% of the cluster**.
-    # Rationale and the exclusion list live in
-    # `docs/plans/2026-08-15-4a-remote-write-allowlist.md` — do not widen this
-    # regex without re-reading §4: passing *all* of kube-state-metrics is 4,188
-    # series → $16.28/mo, three times the approved budget.
+    # ⚠️ It was not folded because it cost money. It was folded because the
+    # price was **a long-lived IAM access key** sitting in the account to keep a
+    # demo pipe warm — that is the cost, and $0.00 never reduced it.
     #
-    # ⚠️ The regex is anchored by Prometheus (`^(?:…)$`), not a prefix match.
-    #
-    # Credentials: a k8s Secret holding an IAM user whose entire policy is
-    # `aps:RemoteWrite` on **this one workspace** — created 2026-08-17 because
-    # kind has no IRSA and the operator identity (`q-user`) can terminate EC2.
-    # 자격증명이 경계 (D38·D39): the pipe gets a key that can do nothing else.
-    # The Secret is never in git; see the plan's §8.
-    remoteWrite:
-      - url: https://aps-workspaces.ap-northeast-2.amazonaws.com/workspaces/ws-929b8da9-b0db-49f8-aadb-2ed1a70f699f/api/v1/remote_write
-        sigv4:
-          region: ap-northeast-2
-          accessKey:
-            name: amp-remote-write
-            key: access_key_id
-          secretKey:
-            name: amp-remote-write
-            key: secret_access_key
-        writeRelabelConfigs:
-          - sourceLabels: [__name__]
-            regex: 'kube_pod_container_status_restarts_total|kube_pod_status_phase|kube_deployment_status_replicas_unavailable|up'
-            action: keep
+    # ⚠️ D48 is NOT repealed by this: *remote_write is never attached without an
+    # allowlist*. Unfiltered, this cluster ships 5.13 B samples/mo — **128× the
+    # 40 M free tier**, ≈$180/mo, which is what 4b costs and therefore erases the
+    # reason 4a was chosen at all. `tests/test_amp_cost_handles.py` still holds
+    # that contract; it now asks it of a synthetic table, so it keeps its load
+    # with no destination in this file. Re-adding one must go through the plan
+    # (`docs/plans/2026-08-15-4a-remote-write-allowlist.md` §4, §8, §10).
+
 
 alertmanager:
   alertmanagerSpec:

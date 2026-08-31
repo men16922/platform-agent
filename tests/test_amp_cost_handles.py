@@ -1,47 +1,52 @@
 """
-The two values that decide what Phase 4a costs must not drift on a comment alone.
+Phase 4a is folded (2026-09-01, D50) — and the rule that made it safe is not.
 
-`docs/plans/2026-08-15-4a-remote-write-allowlist.md` names them: **the allowlist
-and the scrape interval**. Everything else about 4a is opinion; these two are
-arithmetic, and the arithmetic has a 325× range:
+The AMP workspace, the IAM user `amp-remote-write-4a` and its access key are
+deleted, so `kube-prometheus-stack.yaml` no longer carries a `remoteWrite`
+destination. **D48 survives the fold**: *remote_write is never attached without
+an allowlist.* Unfiltered, this cluster ships 5.13 B samples/mo — **128× the
+40 M `Always Free` tier**, ≈$180/mo — which is what 4b costs and therefore
+erases the reason 4a was picked over 4b in the first place.
 
-    four metrics @ 60s (this file's contract)   15.8 M samples/mo    39.5% of free tier
-    all of kube-state-metrics                    ~4,188 series → 181 M/mo    452%
-    no filter at all                            5,131 M samples/mo      12,828%
+⚠️ Why this file was not deleted along with the block it used to pin.
 
-⚠️ **Measured 2026-08-30: the bill is $0.00, and that does not weaken this file.**
-AMP's free tier is `Always Free` — 40 M ingested samples per month — which the
-plan's §3 had reasoned its way *out of* on a premise that turned out false
-(it assumed a 12-month window). So the cliff moved: it is no longer the $0.90/10M
-rate, it is the **40 M limit**, and the percentages above are the real reading of
-the table. The contract's 15.8 M sits at 39.5%; no filter overruns it by **128×**
-and pays list price from there (≈$180/mo). Authority: the plan's **§10** and
-`docs/evidence/amp-actual-bill-is-zero-and-the-free-tier-reason-was-inverted.log`.
+The old version asserted nine properties of a live `remoteWrite:` entry. With
+that entry gone every one of them would have been vacuously true — *"the
+allowlist is exactly these four"* passes beautifully when there is no allowlist.
+That is the failure this repository has named twice (Risk 12③, and M39's two
+rules that lost their load when `JUSTIFIED_GAPS` emptied): **a rule that cannot
+fail is not a rule.** Deleting the file instead would have thrown away the only
+written-down thing standing between a future one-line `remoteWrite:` and a
+$180/mo bill.
 
-"AMP is free anyway" is therefore the one wrong summary of that measurement.
-Widening the regex past this list does not make 4a more expensive — it **erases
-the reason 4a was chosen over 4b**, and now it is also the only thing standing
-between $0 and a real bill.
+So the contract moved out of the assertions and into `remote_write_violations()`,
+a function. Two different callers keep it honest:
 
-This repository has already been wrong here, by 100×: three entry-point documents
-copied "≈$5/월" from a plan whose series count was never measured, and the number
-survived all the way to an approval before anyone counted the cluster (52,438
-series, `docs/evidence/4a-cost-assumed-a-hundredth-of-the-cluster.log`). The
-values file now carries the correct numbers **in comments**. Comments do not fail
-a gate.
+  * the **live file** — which must currently have *no* destination, and must
+    satisfy the contract if one ever comes back; and
+  * a **synthetic table** — nine deliberately broken shapes, each of which the
+    function must reject. That is what proves the function still bites with
+    nothing to bite in the real file.
 
-⚠️ Deliberately not a cost calculation. A test that recomputed the bill would be
-asserting its own arithmetic, and the arithmetic is not what drifts — the *list*
-drifts, one metric at a time, each addition individually reasonable. So this pins
-identity: exactly these four names, `action: keep`, exactly one destination, and
-the interval that the plan's §8 chose after measuring where the series come from.
-Adding a fifth metric is allowed — it just has to be a decision someone makes on
-purpose, with this file and the plan updated together.
+⚠️ The synthetic table is not the contract being asserted against itself. The
+function is the thing under test; the table only demonstrates it can say no. The
+live file is where it says yes or no for real. (A previous guard in this repo
+picked a fixture value that happened to equal the wrong default and passed a
+defect through — M18. Every synthetic case below therefore differs from the
+approved shape in exactly one named way.)
+
+⚠️ The approved workspace id is deliberately **not** pinned any more. It named a
+workspace that no longer exists, so pinning it would be a rule that can only
+ever be wrong. Re-adding a destination goes through the plan
+(`docs/plans/2026-08-15-4a-remote-write-allowlist.md` §4, §8, §10), which is
+where the next workspace id gets named and approved.
 """
 
 from __future__ import annotations
 
+import copy
 import pathlib
+import re
 
 import pytest
 import yaml
@@ -58,114 +63,279 @@ APPROVED_METRICS = frozenset({
     "up",                                         # proof the pipe is alive
 })
 
-# 287 of the 308 come from this one ServiceMonitor, which is why the interval
-# lives here rather than on `prometheusSpec.scrapeInterval`: raising it globally
-# would also halve the resolution of metrics the allowlist never ships.
+# 287 of the 308 shipped series came from this one ServiceMonitor. With 4a
+# folded the interval is no longer a *cost* handle — it is pinned now because
+# the demo alarm rule integrates over `[5m]`, i.e. five samples at this value.
 KSM_INTERVAL = "60s"
 
+# Prometheus anchors a `writeRelabelConfigs` regex, so `kube_.*` is not a typo
+# that fails loudly — it is a working expression that quietly matches thousands
+# of series. These are the ways a list silently becomes a pattern.
+FORBIDDEN_METACHARS = (".*", ".+", "[", "?", "(?")
+
+
+# --------------------------------------------------------------------------
+# The contract, as a function. This is the thing under test.
+# --------------------------------------------------------------------------
+
+def remote_write_violations(values: dict) -> list[str]:
+    """Return every way `values` breaks the 4a remote_write contract.
+
+    An empty list means "no destination, or a destination that is safe". The
+    caller decides which of those two is acceptable — this function does not,
+    because "should there be a pipe at all" is a D50/plan decision and "is the
+    pipe affordable" is arithmetic.
+    """
+    spec = (values.get("prometheus") or {}).get("prometheusSpec") or {}
+    targets = spec.get("remoteWrite") or []
+    problems: list[str] = []
+
+    if not targets:
+        return problems
+
+    if len(targets) != 1:
+        problems.append(
+            "multiple-destinations: "
+            f"expected exactly one destination, found {len(targets)}: "
+            f"{[t.get('url') for t in targets]}. Two writers double the volume, "
+            "and the second is easy to add without noticing."
+        )
+
+    for target in targets:
+        url = target.get("url") or ""
+        if "aps-workspaces" not in url or "/api/v1/remote_write" not in url:
+            problems.append(
+                f"not-amp-endpoint: destination is not an AMP remote_write endpoint: {url!r}"
+            )
+
+        rules = target.get("writeRelabelConfigs") or []
+        keeps = [r for r in rules if r.get("action") == "keep"]
+        if len(keeps) != 1:
+            problems.append(
+                "keep-rule-count: "
+                f"expected exactly one `keep` rule, found {len(keeps)}. With no "
+                "`keep` at all Prometheus ships **everything** — 5.13 B samples/mo, "
+                "128× the 40 M free tier, ≥$180/mo."
+            )
+        else:
+            rule = keeps[0]
+            if rule.get("sourceLabels") != ["__name__"]:
+                problems.append(
+                    "wrong-source-label: "
+                    f"the keep rule filters on {rule.get('sourceLabels')!r}, not "
+                    "['__name__']. `action: drop` with this regex is the exact "
+                    "inversion: it ships the 52,130 series the list excludes."
+                )
+            regex = rule.get("regex") or ""
+            declared = set(regex.split("|"))
+            if declared != set(APPROVED_METRICS):
+                problems.append(
+                    "allowlist-drift: extra="
+                    f"{sorted(declared - APPROVED_METRICS)} "
+                    f"missing={sorted(APPROVED_METRICS - declared)}. Each addition "
+                    "looks small and the bill is not linear in obviousness: all of "
+                    "kube-state-metrics is 4,188 series → 181 M samples/mo, 4.5× "
+                    "the free tier. Update the plan's §2 and §4 in the same commit."
+                )
+            for metachar in FORBIDDEN_METACHARS:
+                if metachar in regex:
+                    problems.append(
+                        "regex-wildcard: "
+                        f"the allowlist regex contains {metachar!r}: {regex!r}. A "
+                        "pattern instead of a list means nobody can read the bill "
+                        "off this file."
+                    )
+
+        sigv4 = target.get("sigv4") or {}
+        for field in ("accessKey", "secretKey"):
+            ref = sigv4.get(field)
+            if not (isinstance(ref, dict) and "name" in ref and "key" in ref):
+                problems.append(
+                    f"credential-embedded: sigv4.{field} must reference a Secret "
+                    f"by name, got {ref!r}. "
+                    "A key pasted into a values file is a key in git forever."
+                )
+
+    return problems
+
+
+# --------------------------------------------------------------------------
+# Caller 1 — the live file.
+# --------------------------------------------------------------------------
 
 def _values() -> dict:
     return yaml.safe_load(VALUES.read_text(encoding="utf-8"))
 
 
-def _remote_writes() -> list[dict]:
-    spec = _values().get("prometheus", {}).get("prometheusSpec", {})
-    return spec.get("remoteWrite") or []
+def test_4a_is_folded_the_live_file_has_no_destination():
+    """D50 said folding means all three go: workspace, IAM user, access key.
 
-
-def test_there_is_exactly_one_destination():
-    """Two writers double the bill, and the second is easy to add without noticing."""
-    targets = _remote_writes()
-    assert len(targets) == 1, [t.get("url") for t in targets]
-
-
-def test_the_destination_is_the_approved_workspace():
-    url = _remote_writes()[0]["url"]
-    assert "aps-workspaces" in url and "/api/v1/remote_write" in url, url
-    assert "ws-929b8da9-b0db-49f8-aadb-2ed1a70f699f" in url, (
-        "remote_write points at a different AMP workspace than the one 4a "
-        f"provisioned and priced: {url}"
+    All three were deleted 2026-09-01. If a `remoteWrite:` reappears here while
+    no workspace is approved, this goes red — which is the point: the next one
+    has to be a decision someone makes on purpose, in the plan, with an IAM user
+    whose whole policy is `aps:RemoteWrite` on that one workspace.
+    """
+    spec = (_values().get("prometheus") or {}).get("prometheusSpec") or {}
+    assert "remoteWrite" not in spec, (
+        "a remote_write destination is back in the values file. 4a was folded "
+        "because the price of a warm demo pipe was a long-lived IAM access key — "
+        "not because it cost money ($0.00 measured). Re-attaching means going "
+        "through docs/plans/2026-08-15-4a-remote-write-allowlist.md."
     )
 
 
-def _keep_rule() -> dict:
-    rules = _remote_writes()[0].get("writeRelabelConfigs") or []
-    keeps = [r for r in rules if r.get("action") == "keep"]
-    assert len(keeps) == 1, (
-        f"expected exactly one `keep` rule, found {len(keeps)}. With no `keep` at "
-        "all Prometheus ships **everything** — 5.13B samples/mo, 128× the 40 M "
-        "free tier, ≥$180."
-    )
-    return keeps[0]
+def test_the_live_file_would_satisfy_the_contract_if_it_ever_has_one():
+    """Vacuous today by construction, and kept on purpose: the day someone adds a
+    destination, this is the assertion that reads the contract off the real file
+    rather than off the synthetic table below."""
+    assert remote_write_violations(_values()) == []
 
 
-def test_the_filter_keeps_rather_than_drops():
-    """`action: drop` with this regex is the exact inversion: it would ship the
-    52,130 series this list exists to exclude and drop the four it wants."""
-    rule = _keep_rule()
-    assert rule["sourceLabels"] == ["__name__"], rule
+def test_the_scrape_interval_stays_pinned_where_the_series_are():
+    """No longer a cost handle — the alarm rule is why it survives the fold.
 
-
-def test_the_allowlist_is_exactly_the_approved_four():
-    regex = _keep_rule()["regex"]
-    declared = set(regex.split("|"))
-    assert declared == set(APPROVED_METRICS), {
-        "extra": sorted(declared - APPROVED_METRICS),
-        "missing": sorted(APPROVED_METRICS - declared),
-        "why": (
-            "each addition looks small and the bill is not linear in obviousness: "
-            "all of kube-state-metrics is 4,188 series → 181 M samples/mo, which is "
-            "4.5\u00d7 the 40 M free tier and the point where this pipe starts "
-            "charging at all (~$12.7/mo of overage; $16.3 gross). Update the plan's "
-            "\u00a72 and \u00a74 in the same commit."
-        ),
-    }
-
-
-def test_the_regex_has_no_wildcard():
-    """Prometheus anchors the regex, so `kube_.*` is not a typo that fails loudly —
-    it is a working expression that quietly matches thousands of series."""
-    regex = _keep_rule()["regex"]
-    for metachar in (".*", ".+", "[", "?", "(?"):
-        assert metachar not in regex, (
-            f"the allowlist regex contains {metachar!r}: {regex}. A pattern instead "
-            "of a list means nobody can read the bill off this file."
-        )
-
-
-def test_the_scrape_interval_is_pinned_where_the_series_are():
-    monitor = _values().get("kube-state-metrics", {}).get("prometheus", {}).get("monitor", {})
+    `increase(kube_pod_container_status_restarts_total{...}[5m]) > 2` integrates
+    over five minutes, i.e. **five samples at 60s**. At 30s the same rule sees
+    ten, at 120s it sees two and the `> 2` threshold becomes unreachable.
+    """
+    monitor = ((_values().get("kube-state-metrics") or {})
+               .get("prometheus") or {}).get("monitor") or {}
     assert monitor.get("interval") == KSM_INTERVAL, (
         f"kube-state-metrics ServiceMonitor interval is {monitor.get('interval')!r}, "
-        f"not {KSM_INTERVAL!r}. 287 of the 308 shipped series are scraped here, so "
-        "this value is the other half of the volume: at 30s the same allowlist "
-        "ships 28.2 M samples/mo instead of 15.8 M — still under the 40 M free "
-        "tier, but it spends 70% of the headroom the next metric will want."
+        f"not {KSM_INTERVAL!r}. The demo alarm rule's `[5m]` window is counted in "
+        "samples, not seconds."
     )
 
 
-def test_the_global_scrape_interval_is_not_used_as_the_cost_handle():
-    """The rejected alternative, pinned so it stays rejected on purpose.
+def test_no_global_scrape_interval():
+    """The rejected alternative, still rejected — for a reason that outlived 4a.
 
-    Setting `prometheusSpec.scrapeInterval: 60s` would also reach 13.3 M/mo — and
-    would halve the resolution of every metric in the cluster, including the
-    52,130 series that cost nothing because they are never shipped. Interval is a
-    volume handle here, not an observability decision.
+    `prometheusSpec.scrapeInterval: 60s` would halve the resolution of every
+    metric in the cluster, including the 52,130 series that were never shipped
+    anywhere. That was true when the motive was the AMP bill and it is still true
+    now that there is no bill.
     """
-    spec = _values().get("prometheus", {}).get("prometheusSpec", {})
+    spec = (_values().get("prometheus") or {}).get("prometheusSpec") or {}
     assert "scrapeInterval" not in spec, (
         "a global scrapeInterval appeared. If that is intentional, say so in the "
-        "plan's §8 table and delete this test — but do not reach for it as the "
-        "cheap way to cut the AMP bill."
+        "plan's §8 table and delete this test — but do not reach for it as a "
+        "cheap way to cut scrape volume."
     )
 
 
-@pytest.mark.parametrize("credential_field", ["accessKey", "secretKey"])
-def test_credentials_are_referenced_not_embedded(credential_field):
-    """The IAM user behind this pipe can only `aps:RemoteWrite` to one workspace,
-    but a key pasted into a values file is a key in git forever."""
-    sigv4 = _remote_writes()[0].get("sigv4") or {}
-    ref = sigv4.get(credential_field)
-    assert isinstance(ref, dict) and "name" in ref and "key" in ref, (
-        f"sigv4.{credential_field} must reference a Secret by name, got {ref!r}"
+# --------------------------------------------------------------------------
+# Caller 2 — the synthetic table. This is what keeps the function load-bearing
+# now that the live file has nothing for it to reject.
+# --------------------------------------------------------------------------
+
+APPROVED_SHAPE: dict = {
+    "prometheus": {
+        "prometheusSpec": {
+            "remoteWrite": [
+                {
+                    "url": (
+                        "https://aps-workspaces.ap-northeast-2.amazonaws.com"
+                        "/workspaces/ws-0000000/api/v1/remote_write"
+                    ),
+                    "sigv4": {
+                        "region": "ap-northeast-2",
+                        "accessKey": {"name": "amp-remote-write", "key": "access_key_id"},
+                        "secretKey": {"name": "amp-remote-write", "key": "secret_access_key"},
+                    },
+                    "writeRelabelConfigs": [
+                        {
+                            "sourceLabels": ["__name__"],
+                            "regex": "|".join(sorted(APPROVED_METRICS)),
+                            "action": "keep",
+                        }
+                    ],
+                }
+            ]
+        }
+    }
+}
+
+
+def _broken(mutate) -> dict:
+    values = copy.deepcopy(APPROVED_SHAPE)
+    mutate(values["prometheus"]["prometheusSpec"]["remoteWrite"])
+    return values
+
+
+def _keep(targets: list[dict]) -> dict:
+    return targets[0]["writeRelabelConfigs"][0]
+
+
+def test_the_approved_shape_is_accepted():
+    """The other half of every rejection test: a guard that says no to everything
+    is as useless as one that says yes to everything."""
+    assert remote_write_violations(APPROVED_SHAPE) == []
+
+
+def test_an_empty_file_is_not_a_violation():
+    """"No pipe" is the folded state, not a contract breach. The *live* test above
+    is what insists on it; this function must not conflate the two."""
+    assert remote_write_violations({}) == []
+    assert remote_write_violations({"prometheus": {"prometheusSpec": {}}}) == []
+
+
+# Each case names **which rule must fire**, not merely that *something* did.
+#
+# ⚠️ This attribution is not decoration — it is the finding that built this
+# table. The first version asserted only `violations != []`, and deleting the
+# wildcard check outright left the suite green: `kube_.*` also trips
+# `allowlist-drift`, so the wildcard rule was being counted by another rule's
+# shadow. That is the failure this repo named in M17 — **do not count a defect
+# by its shadow.** Asserting the code is what gives each rule its own load.
+BREAKAGES = {
+    "second_destination": (
+        lambda t: t.append(copy.deepcopy(t[0])), "multiple-destinations"),
+    "not_an_amp_endpoint": (
+        lambda t: t[0].__setitem__("url", "http://localhost:9090/write"), "not-amp-endpoint"),
+    "no_keep_rule": (
+        lambda t: t[0].__setitem__("writeRelabelConfigs", []), "keep-rule-count"),
+    "drop_instead_of_keep": (
+        lambda t: _keep(t).__setitem__("action", "drop"), "keep-rule-count"),
+    "filters_on_the_wrong_label": (
+        lambda t: _keep(t).__setitem__("sourceLabels", ["job"]), "wrong-source-label"),
+    "a_fifth_metric": (
+        lambda t: _keep(t).__setitem__("regex", _keep(t)["regex"] + "|kube_pod_info"),
+        "allowlist-drift"),
+    "a_missing_metric": (
+        lambda t: _keep(t).__setitem__("regex", "up"), "allowlist-drift"),
+    "a_wildcard_instead_of_a_list": (
+        lambda t: _keep(t).__setitem__("regex", "kube_.*"), "regex-wildcard"),
+    "an_embedded_credential": (
+        lambda t: t[0]["sigv4"].__setitem__("accessKey", "AKIAEXAMPLE"), "credential-embedded"),
+}
+
+
+@pytest.mark.parametrize("name", sorted(BREAKAGES))
+def test_the_contract_rejects_each_way_of_breaking_it(name):
+    """One named difference from the approved shape per case (M18: a fixture that
+    happens to equal the wrong default proves nothing)."""
+    mutate, expected_code = BREAKAGES[name]
+    violations = remote_write_violations(_broken(mutate))
+    assert violations, f"{name} was accepted by the contract"
+    assert any(v.startswith(expected_code) for v in violations), (
+        f"{name} was rejected, but not by {expected_code!r} — by {violations!r}. "
+        "A rule that only ever fires alongside another rule has no load of its "
+        "own: delete the check that fired, and this case still passes."
+    )
+
+
+def test_every_rule_is_reachable_by_exactly_one_case_that_needs_it():
+    """The table above must not leave a rule with no case that isolates it.
+
+    Counted here rather than trusted: if a `remote_write_violations` branch grows
+    a new code and nobody adds a breakage for it, that code is unexercised and the
+    next person will read the function as guarded when it is not.
+    """
+    declared = {code for _, code in BREAKAGES.values()}
+    source = pathlib.Path(__file__).read_text(encoding="utf-8")
+    body = source.split("def remote_write_violations")[1].split("\n# ---")[0]
+    emitted = set(re.findall(r'"([a-z]+(?:-[a-z]+)+): ', body))
+    assert emitted <= declared, (
+        f"these violation codes have no breakage case that isolates them: "
+        f"{sorted(emitted - declared)}"
     )

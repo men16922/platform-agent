@@ -1,11 +1,11 @@
 # NEXT_PLAN — platform-agent
 
-최종 갱신: 2026-08-30
+최종 갱신: 2026-09-01
 
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(**M15=공급망 0→집행 + Phase 5 경계 +
 > `main` 보호**, M14=결정 6건, M13=미소비 14건) / `PROGRESS_LOG.md`(+`docs/archive/`). **≤120줄**.
 
-## 현재 상태 (2026-08-30, gate 2332 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
+## 현재 상태 (2026-09-01, gate 2339 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
 
 **Phase 0·1a·1b·2·3 완결**(M10~M12) + **잔여 소진**(M13) + **결정 7건 닫힘**(D36·D38~D43).
 **공급망은 닫을 수 있는 만큼 닫혔다**(어드미션만 업스트림 대기) · **`main`은 보호된다**
@@ -38,13 +38,7 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
   **UI는 Vercel이라 파일시스템·git·python이 없다**(FastAPI 층은 **아예 없다**) → "실제 PR 생성"은 별개 잔여가
   아니라 **이 항목의 구속 조건**. 우회 없음(OAuth `repo`는 blast radius=1과 충돌 · TS 이식은 **두 번째 진실
   공급원**). ⇒ 여는 조건 = **파이썬 플래너를 어디서 돌릴지**.
-- ⛔**Phase 4 / 4a는 닫혔다(08-30) — `COMPLETED_SUMMARY` M38이 권위.** 실제 청구 **$0.00**(프리티어 `Always Free` 40M).
-  ⚠️**절벽이 요율→한도로 옮겨 앉았을 뿐** — 필터 없음은 **128배 초과**라 허용목록 하중은 그대로다. **다시 열지 말 것.**
-- [ ] **⚠️(신규 08-30) 4a를 접을지 — 사용자 결정.** D50은 *"접으면 워크스페이스·IAM·키 셋 다 지울 것"*인데
-  **08-30 실측: 셋 다 그대로다.** 워크스페이스 `platform-agent-4a`(**ap-northeast-2**, ACTIVE) · 키
-  `AKIA…62VN` Active(**오늘 13:50Z 사용**) · 로컬 kind Prometheus가 **지금도 remote_write**(허용목록
-  메트릭 4개 ⇒ **청구 $0.00**). **비용 문제가 아니다 — 대가는 장기 액세스 키 하나다**(M38이 그렇게 적었다).
-  ⚠️지우면 로컬 remote_write가 **실패하기 시작한다**(그게 이 결정의 내용이다). 증거 `what-is-actually-billing-2026-08-30.log`.
+- ⛔**Phase 4 / 4a는 닫혔고(08-30, M38) 접혔다(2026-09-01, 사용자 결정 — M40 · 계획서 §11 · D50 Folded).** 실제 청구 **$0.00**(프리티어 `Always Free` 40M). 워크스페이스 `ws-929b8da9…`·IAM 사용자·키 **셋 다 삭제**, 8리전 스윕 0으로 확인. ⚠️**$0.00이 접은 이유가 아니다** — 대가는 **장기 키**였고 D50이 미리 그렇게 적어 뒀다. ⚠️**D48은 안 죽었다**(허용목록 없이 remote_write 금지): 필터 없음 **128배 초과**는 그대로라 `test_amp_cost_handles`를 **지우지 않고** 계약을 함수로 빼 **합성 표**에 물렸다(+7, 변이 7 red). ⚠️**`AccessDenied`를 부재의 증거로 읽지 말 것** — 증거는 **소유 사용자의 부재**다. **다시 열지 말 것.** ⚠️**남은 손질**: kind를 다음에 띄우면 고아가 될 `monitoring/amp-remote-write` Secret 삭제.
 - [ ] **Phase 4 남은 것 = 4b**(자격증명 파티션 미증명=Risk 10 · 30분 TTL 가드가 상시와 안 맞는다, billable·별 승인) ·
   ⚠️**$0 선행: BQ 결제 내보내기**(`GCP_BILLING_EXPORT_SETUP.md`, 콘솔 수동 · `make spend-check`).
 - ⛔**대시보드 취약점은 닫혔다(08-30) — `npm audit` 0건**(Tier A + `next 16.3.3`; 라우트 17개 동일·eslint 새 소견 0).
@@ -70,11 +64,7 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
 - ⛔**capability 스캔은 셋 다 닫혔다(08-17)** — ⓐ**현행 유지**(M35: 티어 2는 액션을 `recommended_capabilities`에서 만들고 `capabilities`는 매치 게이트일 뿐 — 더해도 관측 변화 0, **빼면 네 provider가 다 resolve하는 스텝을 잃는다**) · ⓒ**측정하고 고쳤다**(M36+M37: 기존 가드가 **생산에서 도달 불가한 capability 집합**으로 물어 첫-매치와 점수제의 답이 같은 경우만 태웠다 → 점수 함수를 계약 모듈에 한 벌 두고 셋이 읽는다) · `rollback_release`**는 추천 목록 현행 유지**(진짜 문제는 목록이 아니라 **티어 2가 조건 평가 없이 추천에서 액션을 만든 것**이었고 그걸 고쳤다; `JUSTIFIED_GAPS`가 들고 어긋나면 red). **다시 열지 말 것.**
 - [ ] ⚠️**Phase 3② — GCP(08-18)·Azure(08-30) 배선. 남은 건 AWS뿐이고 그건 "러너가 없다"이다.** `guard_rollback`을 부르는 러너가 **onprem 하나**였는데 `ROLLBACK_ACTIONS`는 **네 provider 7종을 다 알았다** — M31이 고친 건 **목록**이고 **호출 지점을 세는 가드가 없었다**(M18이 한 층 위에서 재발: 세는 대상이 액션이 아니라 **러너**). ✅**GCP 배선**: 롤백 walk가 이미 GET하던 매니페스트를 그대로 `guard_rollback`에 넘긴다 — **추가 API 호출 0**, patch 앞에서 거부. ✅**Azure 배선(08-30)**: 면제가 *"고치면 이 항목은 지워야 한다"*고 자기 만료 조건을 적어 뒀고 **가드가 실제로 그걸 집행했다** — `JUSTIFIED_GAPS`는 **비었다**(⚠️그래서 두 면제 규칙이 **하중을 잃어** 합성 표에 대고 다시 물었다). AKS 롤백도 GCP처럼 **patch 직전 GET이 이미 있어 추가 호출 0** · **AWS는 러너가 없다**(SSM Automation 경로, 가드가 그 사실을 박아 뒀다). ⚠️**가드 자신이 한 번 틀렸다**: 문자열 검사라 **호출을 지워도 import 줄이 남아 통과**했다 → **AST로 실제 호출**을 센다. 증거 `docs/evidence/phase-dod-verification-2026-08-18.log`.
 - ⛔**`cost_metrics`는 측정으로 닫혔다(08-18)** — 기록된 이유가 **맞다**: cost를 렌더하는 뷰는 **한 곳뿐**이고(`deployments/[id]`) 그걸 먹이는 `mergeActivity`가 `deployment_id === id`로 거른다. route/provider-activity 행은 그 키가 없어 **원리상 못 닿는다**(더하면 안 읽히는 필드가 하나 더 는다). ⚠️**면제는 목록이 아니라 경계다** — 가드가 의무를 **읽는 쪽 선택 규칙에서 유도**하고 `src/agents` **전 모듈**을 rglob으로 훑는다(ACTIVITY writer 넷 중 **하나는 `activity_writer.py`**). 변이 3종 red(롤백 필드 제거 · route에 `deployment_id` 부여 · 스윕 무력화). 증거 `docs/evidence/cost-metrics-exemption-is-derived-and-load-bearing.log`. **다시 열지 말 것.**
-- [ ] **⚠️`msft_deployer`가 진짜 라이브러리에서 깨진다(08-30 재측정)** — ✅설치 조건은 열렸다(`.[azure]`가 **31.5초에
-  성공**, 08-15엔 150초 타임아웃 · agent-framework **1.16.0**). ⛔그런데 `AzureOpenAIResponsesClient`은 **버전 지연이
-  아니다**: `agent_framework*`에 `AzureOpenAI*Client`가 **0개**고 그 이름은 **업스트림 docstring 한 줄**에만 있다.
-  **여전히 안 고친다 — 대체 심볼이 없어 추측은 발명.** ⚠️테스트가 `sys.modules`를 스텁해 초록이다.
-  증거 `the-azure-extra-cannot-be-installed.log`.
+- [ ] **⚠️`msft_deployer`가 진짜 라이브러리에서 깨진다(08-30 재측정)** — ✅설치 조건은 열렸다(`.[azure]`가 **31.5초에 성공**, 08-15엔 150초 타임아웃 · agent-framework **1.16.0**). ⛔그런데 `AzureOpenAIResponsesClient`은 **버전 지연이 아니다**: `agent_framework*`에 `AzureOpenAI*Client`가 **0개**고 그 이름은 **업스트림 docstring 한 줄**에만 있다. **여전히 안 고친다 — 대체 심볼이 없어 추측은 발명.** ⚠️테스트가 `sys.modules`를 스텁해 초록이다. 증거 `the-azure-extra-cannot-be-installed.log`.
 - [ ] **GCP/Azure 90일 보관** — **`STATUS` Risk 2가 권위**(스토어가 없어 지울 데이터 0 → Phase 4).
   ⚠️"`resolved_at`은 읽는 쪽이 없다"는 **틀렸다**(08-16 재측정): `oncall_reporter._minutes_between`이
   `started_at`과 짝지어 읽고 `aws/reporting.py:239`가 넘긴다 · **analyzer 폴백 severity는 정책**.
@@ -83,10 +73,7 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
 - [ ] **스코프·배포 신원은 옵트인(D38 이후)** — 상태는 `probe_scope_reachability.py`·`make
   deploy-identity-check`가 답한다. **남은 결정**: 기본 on 여부 · 서명키 custody·rotation ·
   배포 신원의 테넌트 구분(결정 5 C/D).
-- [ ] **MCP 게이트웨이는 포트에 안 붙어 있다** — 결론 유지, **근거는 틀렸다(재측정)**: `bridge.py:35`에
-  폴백이 있고 그 `McpA2aBridge`를 만드는 건 **테스트뿐**. ⚠️**세는 함정 셋**: `cdk.out`(→**`git grep`**) · **docstring 예시**가 호출로 보인다 ·
-  ⚠️**`git grep -E`의 `\s`는 조용히 0건**(POSIX ERE엔 없다 → `[[:space:]]`/`-P`) — 08-30에 그걸로 "신뢰도 임계값이 없다"는 **거짓 소견을 낼 뻔했다**.
-  ⚠️**넷째(08-30)**: **리전 한정 조회의 `[]`를 "없다"로 읽지 말 것** — `amp list-workspaces --region us-east-1`이 `[]`인데 워크스페이스는 `ap-northeast-2`에 **살아 있었다**.
+- [ ] **MCP 게이트웨이는 포트에 안 붙어 있다** — 결론 유지, **근거는 틀렸다(재측정)**: `bridge.py:35`에 폴백이 있고 그 `McpA2aBridge`를 만드는 건 **테스트뿐**. ⚠️**세는 함정 셋**: `cdk.out`(→**`git grep`**) · **docstring 예시**가 호출로 보인다 · ⚠️**`git grep -E`의 `\s`는 조용히 0건**(POSIX ERE엔 없다 → `[[:space:]]`/`-P`) — 08-30에 그걸로 "신뢰도 임계값이 없다"는 **거짓 소견을 낼 뻔했다**. ⚠️**넷째·다섯째**: **리전 한정 조회의 `[]`를 "없다"로 읽지 말 것**(08-30: `us-east-1`이 `[]`인데 워크스페이스는 `ap-northeast-2`에 살아 있었다) · **`AccessDenied`도 부재의 증거가 아니다**(09-01).
 - [ ] **A2A 인증 실집행 결정** — 남은 건 **기본값 on 여부**(라이브 kagent 왕복이 익명이라
   opt-in — 그 "익명"은 **나가는 쪽**이다, D39).
 - [ ] **Cosign 어드미션 = 업스트림 대기** — **`STATUS` Risk 6이 권위**. ⛔**08-30 확인: 아직**(`policy-controller#1406` open · v3.1.2 `sign`/`attest`에 `--new-bundle-format` 없음) — **이 날짜부터 볼 것.**
