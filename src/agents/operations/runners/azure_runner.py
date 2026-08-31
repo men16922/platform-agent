@@ -15,6 +15,7 @@ import requests
 import structlog
 
 from src.agents.operations.runners import _k8s_rest
+from src.agents.platform.reconciler import guard_rollback
 
 if TYPE_CHECKING:
     from src.agents.platform.scope import IncidentScope
@@ -219,8 +220,23 @@ def _execute_aks_call(
             k8s_resp = requests.get(k8s_base_url, headers=k8s_headers, verify=ca_cert_path, timeout=15)
             if k8s_resp.status_code != 200:
                 raise RuntimeError(f"Failed to fetch deployment: {k8s_resp.text}")
-            
-            containers = k8s_resp.json().get("spec", {}).get("template", {}).get("spec", {}).get("containers", [])
+
+            manifest = k8s_resp.json()
+
+            # Phase 3② — refuse a rollback a reconciler would undo. Same shape as
+            # `gcp_runner`: this walk already GETs the deployment (to read the
+            # container name) and threw `metadata` away, which is exactly where
+            # ArgoCD/Flux stamp ownership — so the check costs no extra API call.
+            # It was missing here only because `azure/executor.py` never dispatched
+            # to this runner, which made the refusal look like it had no load to
+            # carry. That dispatch exists as of 2026-08-30, so the exemption in
+            # `test_reconciler_conflict.py::JUSTIFIED_GAPS` is gone with it.
+            # Ownership is read off the live object, never off the registry.
+            guard_rollback(
+                action=action, manifest=manifest, log=log, log_prefix="azure_runner",
+            )
+
+            containers = manifest.get("spec", {}).get("template", {}).get("spec", {}).get("containers", [])
             if not containers:
                 raise RuntimeError("No containers found in deployment spec")
                 

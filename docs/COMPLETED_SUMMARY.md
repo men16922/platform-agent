@@ -38,6 +38,51 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
+## M39 — Azure는 하지 않은 조치를 "해결됨"으로 보고했다: 배선하니 비대칭 7건이 닫히고 게이트가 내려갔다 (완료, 2026-08-30)
+
+**목적**: 08-16에 발견돼 13일간 세 진입점이 `▶ NEXT SESSION` **첫 행동**으로 가리켜 온 승인 사안.
+권위 = `docs/evidence/azure-executor-reports-resolved-without-executing.log` **§종결**.
+
+**결함**: `azure/executor.py::_execute_single_action`이 capability를 풀고 로그만 찍은 뒤
+`{"success": True}`를 돌려줬다. 그 성공이 `executed`에 쌓여 `resolution_verdict`가 `resolved=True`를
+내고 **Slack에 "해결됨"이 올라가고 그렇게 기록됐다.** 311줄 러너가 **import 한 줄 거리**에 있었고
+GCP는 Phase 3에 배선됐는데 Azure만 안 됐다 — 그리고 **그 사실이 어디에도 적혀 있지 않았다.**
+
+**산출**: ⓐ**배선** — GCP와 같은 모양으로 `run_azure_action`을 `resolve_incident_scope`와 함께 부른다
+(발명 없음). 미구현 11종은 러너의 `ValueError`가 `except`를 타고 **`success: False`**가 된다.
+ⓑ**Phase 3② Azure** — AKS 롤백에 `guard_rollback`. GCP에서 성립한 근거가 그대로 성립한다:
+**patch 직전 GET이 이미 있어 추가 API 호출 0**. ⓒ**기록 둘이 같은 커밋에서 움직였다** — 디스패치
+표의 azure 면제와 `JUSTIFIED_GAPS`. 후자는 *"fix the dispatch first, then this entry must go"*라고
+**자기 만료 조건을 적어 뒀고 가드가 그걸 집행했다.**
+
+**⚠️여기서 배운 것 셋** — ①**AST 가드는 "성공이라 보고한 것이 실제로 일어났는가"를 못 묻는다.**
+08-16의 가드는 *호출이 소스에 있나*만 봤다. 신규 `test_executor_reports_only_what_the_runner_did.py`가
+**gcp·azure 둘 다에** 러너 호출·실패 전파·`resolved` 판정을 묻는다(형제 하나만 순회 금지 —
+`WIRED`가 디스패치 표와 어긋나면 red). 변이 M1(호출 삭제)이 **넷을 죽였다** = 같은 결함을 다른
+각도로 잡는다는 증거. ②**면제가 비면 "면제엔 이유가 있어야 한다"는 규칙이 하중을 잃는다**(Risk 12③)
+→ 두 규칙을 **합성 표**에 대고 다시 물었다. **실패할 수 없는 규칙은 규칙이 아니다.**
+③**공허성 검사를 숫자로 두면, 진짜 고침이 그 숫자를 깬다.** `test_contract_symbol_parity`의
+`len(ASYMMETRIES) >= 20`이 26→19로 red가 났고 **초록으로 가는 길은 숫자를 내려 적는 것뿐**이었다 —
+그건 그 파일이 스스로 이름 붙인 *allowlist nobody prunes*다. **구조적 양성 대조로 교체**
+(`paginated_scan=={aws}` · `run_gcp_action=={aws,gcp}`) — 결함이 닫혀도 안 낡고, reader 집합을
+틀리게 계산하는 walk까지 잡는다.
+
+**⚠️비대칭 7건이 한 번에 닫혔다**: `guard_rollback`·`IncidentScope`·`resolve_incident_scope`·
+`guard_scoped_action`·`IsolationTier`·`Registry`·`load_registry`. M29가 *"one cause, six symptoms"*
+라고 적어 둔 인과가 **반대 방향으로 확인됐다** — 원인을 고치니 증상이 동시에 사라졌다.
+
+**검증**: 변이 **6종 red, 생존 0**(기준선 먼저, `__pycache__` 삭제 후 복구 확인 = 기준선과 동일).
+gate **2332 passed, 2 skipped**(2026-08-30 로컬 macOS·py3.13). ⚠️**2337에서 −5로 내려갔다**:
+정당화 7건 해소 **−14**(parity가 JUSTIFIED·ASYMMETRIES 양쪽에 파라미터라이즈) · 새 행동 가드 **+7** ·
+공허성 둘 **+2**. **결함이 닫히면 그 결함을 설명하던 줄도 사라진다 ⇒ 게이트 숫자는 단조증가
+지표가 아니고, 줄어든 숫자는 분해해 적어야 한다.**
+
+**⚠️과대 해석 금지**: 열린 것은 **경로**지 안전이 아니다. 오늘 blast radius가 0인 이유는 러너가
+만지는 **AKS·FunctionApp이 구독에 0개**여서고 이는 **오늘의 사실이지 불변식이 아니다**. 하나라도
+생기면 같은 코드가 실 변경을 친다 — 그때의 방어는 `guard_scoped_action`(스코프 없으면 거부)과
+`guard_rollback`(reconciler 충돌 거부)이고, **자격증명을 테넌트에 묶는 것은 여전히 Phase 4**
+(Risk 10 — AKS admin kubeconfig).
+
 ## M38 — Phase 4 / 4a 종료: 청구액은 $0.00이었고, 프리티어를 배제한 근거의 전건이 거짓이었다 (완료, 2026-08-30)
 
 **목적**: 13일간 세 진입점이 가리켜 온 마지막 미측정 항목 — *"08-19 이후 AMP 실제 청구액"*.

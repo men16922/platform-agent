@@ -192,3 +192,107 @@ platform-agent 아닌 자원이 섞여 있다는 건 이미 기록된 사실이�
 
 승인 사안은 그대로다. **바뀐 건 근거의 질**이다 — "리소스가 없다"는 손으로 적은 세
 타입이 아니라 **러너의 액션 집합에서 유도한 두 타입**으로 다시 섰고, 그 둘은 0이다.
+
+
+================================================================================
+종결 (2026-08-30) — 승인 후 배선. 게이트 숫자가 **내려갔고** 그게 옳다
+================================================================================
+
+사용자 승인을 받아 배선했다. 바뀐 것은 넷이고, 그중 둘은 **가드가 스스로 요구한 것**이다.
+
+## 1. 배선 — `azure/executor.py::_execute_single_action`
+
+GCP와 같은 모양으로 세 줄이 들어갔다. 발명하지 않았다:
+
+    from src.agents.operations.runners.azure_runner import run_azure_action
+    from src.agents.platform.scope import resolve_incident_scope
+    incident_scope = resolve_incident_scope(incident, logger)
+    run_azure_action(action, parameters, logger, incident_scope)
+
+§(d)가 미리 잰 안전성 논거가 여기서 값을 냈다: 선언 16 중 러너가 구현한 5를 뺀 **11종은
+`ValueError("Unsupported Azure action: ...")`를 던지고, 그것이 아래의 `except`를 타고
+`success: False`가 된다.** 미구현 액션이 조용히 "실행됨"이 되지 않는다.
+
+## 2. Phase 3② — `azure_runner`의 AKS 롤백에 `guard_rollback`
+
+`NEXT_PLAN`이 이 항목을 **묶어 뒀다**: *"그 항목을 고치면 이 면제는 지워야 하고 가드가
+그걸 red로 잡는다."* 실제로 그랬다. 그리고 GCP에서 성립한 근거가 Azure에도 그대로
+성립한다 — `_execute_aks_call`의 롤백 분기는 **patch 직전에 이미 GET을 한다**(컨테이너
+이름을 읽으려고) 그리고 `metadata`를 버린다. 소유권 마커가 있는 바로 그 자리다.
+⇒ **추가 API 호출 0.** 없던 이유는 "비싸서"가 아니라 아무도 안 물어서였다.
+
+`AZURE-RollbackFunctionApp`(슬롯 스왑)에는 안 걸었다 — k8s 매니페스트가 없어 reconciler
+소유권이라는 개념 자체가 없다. GCP도 `GCP-RollbackCloudRunRevision`에 안 건다. **대칭이다.**
+
+## 3. 기록 둘이 같은 커밋에서 움직였다 (설계된 결합)
+
+  * `test_executor_dispatches_to_runner.py::EXPECTED` — azure 행이 면제에서
+    `frozenset({"run_azure_action"})`로.
+  * `test_reconciler_conflict.py::JUSTIFIED_GAPS` — 비었다. 그 항목은 자기 만료 조건을
+    적어 뒀고(*"fix the dispatch first, then this entry must go"*),
+    `test_a_justified_gap_that_closed_must_be_removed`가 그걸 집행했다.
+
+⚠️ 둘 다 이제 **하중이 없는 규칙이 됐다**(Risk 12③): 면제 표가 비면 "면제엔 이유가 있어야
+한다"는 검사가 아무것도 평가하지 않고 통과한다. 그래서 각 규칙을 **합성 표에 대고** 한 번
+더 물었다(`test_the_exemption_rule_still_bites` · `test_the_stale_gap_check_can_fail`).
+**실패할 수 없는 규칙은 규칙이 아니다.**
+
+## 4. ⚠️ 예상 못 한 것 — 비대칭 7건이 한 번에 닫혔고, **게이트 숫자가 내려갔다**
+
+`test_contract_symbol_parity.py`가 red를 냈다. 배선이 Azure를 스코프/reconciler 계약
+표면 전체에 닿게 만들어, **정당화가 stale이 됐다**:
+
+    guard_rollback · IncidentScope · resolve_incident_scope
+    guard_scoped_action · IsolationTier · Registry · load_registry     → 7건
+
+이건 M29가 *"one cause, six symptoms"*라고 적어 둔 그 인과가 반대 방향으로 확인된 것이다:
+원인을 고치니 증상 여섯이 **동시에** 사라졌다. `run_azure_action`은 남았지만 이제
+`['aws','azure']`로 **`run_gcp_action`과 대칭**이고, 표에서 유일하게 *"NOT justified"*라고
+적혀 있던 행이 정당한 행이 됐다.
+
+⚠️ **그 파일의 공허성 검사가 이 고침 때문에 red가 됐다** — `len(ASYMMETRIES) >= 20`인데
+26 → 19로 떨어졌다. **초록으로 가는 유일한 길이 숫자를 내려 적는 것**이었고, 그건 이
+파일이 다른 데서 스스로 이름 붙인 *allowlist nobody prunes* 모양이다. **실패할 때마다
+낮추는 숫자는 검사가 아니고**, 진짜 고침과 망가진 계기를 구분하지 못한다. 그래서 구조적
+양성 대조로 바꿨다 — `paginated_scan == {aws}`(DynamoDB 페이지네이션, 구조상 AWS 전용) ·
+`run_gcp_action == {aws, gcp}`(소유자 + 디스패처). 폐포 walk가 깨지면 둘 다 사라지고,
+reader 집합을 틀리게 계산하면 둘 다 틀린 값으로 나온다. **결함이 닫혀도 안 낡는다.**
+
+## 5. 게이트: **2339 → 2334 수집** (2332 passed, 2 skipped · 2026-08-30 로컬 macOS·py3.13)
+
+숫자가 **내려갔다**. 테스트를 지운 것처럼 보이는 모양이라 분해해 적는다:
+
+    정당화 7건 해소 (parity 파일이 JUSTIFIED와 ASYMMETRIES 양쪽에 파라미터라이즈)  −14
+    새 행동 가드 `test_executor_reports_only_what_the_runner_did.py`               +7
+    면제 규칙 공허성 (dispatch)                                                    +1
+    면제 규칙 공허성 (reconciler stale-gap)                                        +1
+                                                                                 ────
+                                                                                  −5
+
+**결함이 닫히면 그 결함을 설명하던 줄도 같이 사라진다.** 게이트 숫자는 그래서 단조증가
+지표가 아니다 — Risk 12②가 *"게이트 숫자엔 날짜와 잰 기계를 붙일 것"*이라 한 이유와 같은
+계열이고, 여기에 하나 더 붙는다: **줄어든 숫자는 분해해서 적을 것.**
+
+## 6. 변이 6종 red, 생존 0
+
+`__pycache__`를 지우고 기준선을 먼저 찍었다(Risk 12⑦, 08-30에 배운 것).
+
+    M1 `run_azure_action` 호출 삭제                          → 4 failed  ✅
+    M2 except 분기가 success:True를 돌려주게                  → 2 failed  ✅
+    M3 `guard_rollback` 호출 삭제 (Phase 3②)                 → 1 failed  ✅
+    M4 `WIRED`에서 azure 제거 (형제 하나만 순회)              → 1 failed  ✅
+    M5 면제 규칙 `_unexplained` 무력화                        → 1 failed  ✅
+    M6 stale-gap 규칙 무력화                                  → 1 failed  ✅
+    복구 → 35 passed (기준선과 동일)
+
+M1이 **넷을** 죽인 것이 핵심이다: AST 표(1)와 행동 가드 셋(러너 호출 · 실패 전파 ·
+resolved 판정)이 같은 결함을 **다른 각도에서** 잡는다. 08-16의 가드는 AST 하나뿐이었고,
+그건 "호출이 소스에 있는가"는 물어도 **"성공이라 보고한 것이 실제로 일어났는가"는 못 묻는다.**
+
+## 7. 남는 것 — blast radius는 오늘도 0이고, 그건 오늘의 사실이다
+
+§(c)가 유도한 대로 러너가 만질 수 있는 타입은 **AKS·FunctionApp 둘**이고 구독에 **둘 다
+0개**다. 배선은 라이브 경로를 **열었지 사용하지 않았다**. ⚠️AKS나 Function App이 하나라도
+생기면 같은 코드가 실 변경을 친다 — 그때의 안전은 `guard_scoped_action`(스코프 없는 실행
+거부)과 `guard_rollback`(reconciler 충돌 거부)이 든다. **자격증명 자체를 테넌트에 묶는 것은
+여전히 Phase 4다**(Risk 10 — AKS admin kubeconfig, `azure_runner` 도크스트링이 명시).

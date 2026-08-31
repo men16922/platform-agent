@@ -6,6 +6,71 @@
 > 이전 이력: `docs/archive/progress-2026-08.md` · `docs/archive/progress-2026-07.md`
 
 ---
+## 2026-08-30 — "지금 비용 나가는 거 없지?"를 재다: 예 — 단 4a가 안 접혔고 한 리전만 보고 답할 뻔했다
+
+- Status: 사용자 질문에 문서 인용이 아니라 **재서** 답했다. 상시 지출은 **AWS 하루 $0.0034**
+  (≈$0.10/월)뿐. 권위 `docs/evidence/what-is-actually-billing-2026-08-30.log`.
+- Verified(**MTD로 답했으면 15배 틀렸다**): `make spend-check`는 **MTD $10.25**를 먼저 답한다.
+  일별로 가르면 바닥은 **$0.0034/일**이고 MTD의 $9.00(EC2+VPC)은 **08-09에 멈춘 지출**이다.
+  ⚠️바닥 위로 올라온 유일한 항목은 **Cost Explorer 자기 자신**(이번 달 **$0.64** = 우리가 만든
+  최대 항목) · **08-30 줄의 $0.0000은 CE 지연 이틀+ 때문이지 "0"이 아니다** · 도는 EC2 전 리전 0대.
+- Verified(**⚠️새 함정 — 세는 함정 넷째**): `aws amp list-workspaces --region us-east-1`이 `[]`를
+  답해 **"4a 워크스페이스는 지워졌다"고 쓸 뻔했다.** 막은 건 옆의 측정이었다 — 키의 마지막 사용
+  리전이 `ap-northeast-2`였고, 거기 **`platform-agent-4a`가 ACTIVE**였다. **리전 서비스에 대고
+  "없다"를 말하려면 리전을 돌 것**(한 리전으로 전역을 답한 것 = M18~M20 형제-집합 실패와 같은 모양).
+- Verified(**4a 접기(D50) 미완**): 워크스페이스 ACTIVE · IAM `amp-remote-write-4a`의 키
+  `AKIA…62VN` **Active**, 마지막 사용 **오늘 13:50Z `aps`** · 로컬 kind가 1시간 전 재기동돼
+  Prometheus가 **지금도 remote_write 중**(허용목록 메트릭 **4개** 그대로 ⇒ 청구 **$0.00**).
+  **비용 문제가 아니다** — M38이 미리 적은 대로 **대가는 장기 액세스 키 하나**다.
+  ⚠️그래서 **M38·STATUS의 duty cycle 기록이 stale해졌다**(*"08-27T19:55Z 이후 죽음"*은 더는 참이
+  아니다) — 그 13%는 **그 창의 측정**이지 현재 상태가 아니다.
+- Verified(**Azure ₩7,063 전액이 남의 프로젝트**): ⚠️첫 조회는 **429**로 실패했고 프로브가
+  *"이것은 '0'이 아니다"*라 답한 그대로 **재시도가 답이었다**. ActualCost = ACR
+  `acrroadpilot23842f7d`(`rg-roadpilot`) **₩7,063** · Cosmos ₩0 · Log Analytics ₩0 ·
+  우리 `platform-agent-foundry-rg` **₩0**. Risk 4의 "ACR ₩6,600(타 프로젝트)"이 **재서 성립**.
+- Verified(**GCP는 여전히 못 잰다**): 프로젝트 5개에 내보내기 테이블 0 — **'₩0'이 아니다**.
+  상시 추정 ~$0.72/월은 **추정이지 측정이 아니다**. 여는 길은 콘솔 수동 하나.
+- Blockers: 없음. 오늘의 코드 변경(M39)은 **배포한 게 없어 비용과 무관**하다.
+- Next: **4a 접기 여부가 사용자 결정**(워크스페이스+IAM+키 · 지우면 로컬 remote_write가 실패
+  하기 시작한다) · `onprem` extra의 `mlx-lm` · BQ 결제 내보내기(콘솔 수동).
+
+## 2026-08-30 — Azure는 하지 않은 조치를 "해결됨"으로 보고했다 — 배선했고, 게이트 숫자가 내려갔다 (gate 2332)
+
+- Status: 승인 사안이었다(08-16 발견, 배선하면 라이브 ARM/AKS를 친다). 사용자 승인 후 배선.
+  진입점 셋이 13일간 `▶ NEXT SESSION` 첫 행동으로 가리켜 온 항목이다.
+- Verified(**기록된 근거를 먼저 다시 돌렸다**): 디스패치 비대칭 유효(gcp 325줄 러너를 부르고
+  azure 311줄은 안 부른다) · `_execute_aks_call`의 롤백 분기가 **patch 직전 이미 GET을 한다**
+  ⇒ Phase 3② 배선도 **추가 API 호출 0**, GCP에서 성립한 근거가 그대로 성립.
+- Changed(**배선**): `azure/executor.py`가 `run_azure_action`을 `resolve_incident_scope`와 함께
+  부른다(GCP와 같은 모양, 발명 없음). 미구현 11종은 러너의 `ValueError`가 `except`를 타고
+  **`success: False`**가 된다 — 조용한 성공이 안 된다. `azure_runner` AKS 롤백에 `guard_rollback`.
+- Changed(**기록 둘이 같은 커밋에서 움직였다 — 설계된 결합**): `EXPECTED`의 azure 면제 →
+  `{run_azure_action}` · `JUSTIFIED_GAPS` **비었다**(그 항목이 자기 만료 조건을 적어 뒀고
+  `test_a_justified_gap_that_closed_must_be_removed`가 집행했다).
+- Changed(**가드 +9**): 신규 `test_executor_reports_only_what_the_runner_did.py`(**+7**) —
+  AST는 *"호출이 소스에 있나"*는 물어도 ***"성공이라 보고한 것이 실제로 일어났나"는 못 묻는다***.
+  gcp·azure 둘 다에 대고 러너 호출·실패 전파·`resolved` 판정을 묻는다(형제 하나만 순회 금지,
+  `WIRED`가 디스패치 표와 어긋나면 red). 면제 표가 비어 **하중 없는 규칙이 된 둘**은 합성 표에
+  대고 한 번 더 물었다(**+2**) — **실패할 수 없는 규칙은 규칙이 아니다**(Risk 12③).
+- Verified(**⚠️예상 못 한 것 — 비대칭 7건이 한 번에 닫혔다**): `test_contract_symbol_parity`가
+  red. 배선이 Azure를 스코프/reconciler 계약 표면에 닿게 만들어 `guard_rollback`·`IncidentScope`·
+  `resolve_incident_scope`·`guard_scoped_action`·`IsolationTier`·`Registry`·`load_registry`의
+  정당화가 stale이 됐다. M29의 *"one cause, six symptoms"*가 **반대 방향으로 확인된 것**이다.
+  ⚠️그 파일의 공허성 검사(`>= 20`)가 26→19로 red가 됐고 **초록으로 가는 길이 숫자를 내려 적는
+  것뿐**이었다 — 그건 이 파일이 스스로 이름 붙인 *allowlist nobody prunes*다. **구조적 양성
+  대조로 교체**(`paginated_scan=={aws}` · `run_gcp_action=={aws,gcp}`) — 결함이 닫혀도 안 낡는다.
+- Verified(**변이 6종 red, 생존 0**): 호출 삭제(**4 failed** — AST 표 + 행동 셋이 다른 각도로
+  잡는다) · except가 success:True · `guard_rollback` 삭제 · `WIRED`에서 azure 제거 · 면제 규칙 둘
+  무력화. 기준선 먼저 찍고 `__pycache__` 삭제 후 복구 확인(35 passed, 기준선과 동일).
+- Verified: `make check` **2332 passed, 2 skipped**(2026-08-30 로컬 macOS·py3.13).
+  ⚠️**숫자가 내려갔다**(2337에서 −5) — 분해: 정당화 7건 해소 **−14**(parity가 양쪽에
+  파라미터라이즈) · 새 행동 가드 **+7** · 공허성 둘 **+2**. **결함이 닫히면 그 결함을 설명하던
+  줄도 사라진다** ⇒ 게이트 숫자는 단조증가 지표가 아니다. **줄어든 숫자는 분해해 적을 것.**
+- Blockers: 없음. **blast radius는 오늘 0**(러너가 만지는 AKS·FunctionApp 둘 다 구독에 0개) —
+  ⚠️**오늘의 사실이지 불변식이 아니다**. 자격증명 테넌트 바인딩은 여전히 Phase 4(Risk 10).
+- Next: **BQ 결제 내보내기**(콘솔 수동) · **정적검사 게이트 편입**(결정) · **Phase 3② AWS 잔여**
+  (SSM Automation 경로라 러너가 없다 — 가드가 그 사실을 박아 뒀다).
+
 ## 2026-08-30 — 인용된 마일스톤 넷이 기록된 적이 없었다 (gate 2337)
 
 - Status: `/tidy-docs` 3단계(완료분을 `COMPLETED_SUMMARY`로 압축)를 하려다, **진입점이 M34~M37을
@@ -30,56 +95,3 @@
 - Verified: `make check` **2337 passed, 2 skipped**(2026-08-30 로컬 macOS·py3.13).
 - Blockers: 없음. **예산**: brief 60/60·6,698자 · status 120/120·9,074자 · plan **118**/120·9,417자 · log 99/120.
 - Next: **Azure executor 배선**(승인) · **BQ 결제 내보내기**(콘솔 수동) · **정적검사 게이트 편입**(결정).
-
-## 2026-08-30 — /tidy-docs: 줄 예산은 통과하는데 글자가 불고 있었다 (gate 2333)
-
-- Status: 예산 **초과는 없었다**(brief 60/60 · status 120/120 · plan 120/120 · log 71/120).
-  그런데 **줄 수는 예산 지표일 뿐 실제 컨텍스트 비용이 아니다**. 글자로 재니 다른 그림이 나왔다.
-- Verified(**가드가 볼 수 없는 곳에서 자랐다**): `AGENT_BRIEF`가 **9,783자**였고 **한 줄이 3,621자**
-  (파일의 **37%**) — 오늘 내가 여덟 번 늘린 `직전 세션` 줄이다. 스스로를 *"1분 압축 문맥"*이라
-  부르는 문서가 그럴 수 없는데, **가드는 개행만 세어서 볼 수 없었다.** Risk 12④ 계열
-  (*가드가 문서가 아니라 자기 창에 대해 답한다*)이 예산 가드 자신에게서 났다.
-- Changed(**압축**): 그 줄을 **3,621자 → 472자**로 줄이고 상세는 `PROGRESS_LOG`·archive를 가리키게
-  했다. ⚠️**먼저 아홉 묶음이 전부 log 또는 archive에 있는지 확인하고** 줄였다(전부 있었다).
-  진입점 4개 합계 **32,569자 → 29,549자**.
-- Verified(**⚠️압축이 만든 dangling 포인터를 잡았다**): 세 문서가 전부 *"계획서 §9/§10이 권위"*라고
-  하는데 **어느 계획서인지 아무도 안 적고 있었다** — 오늘 줄을 줄이며 파일명을 떨어뜨렸다.
-  `docs/plans/2026-08-15-4a-remote-write-allowlist.md`를 셋 다 복원했다. ⚠️`test_amp_bill_claims`가
-  그 §10을 검사하지만 **경로를 자기가 들고 있어** 문서가 경로를 잃어도 초록이었다.
-- Verified(**plans는 안 옮겼다 — 이득이 없다**): 12개 중 참조 0인 건 **3개뿐**이고 나머지는
-  **테스트·DECISIONS가 참조**한다(`test_iam_wildcard_justified` → `2026-08-08-phase4-scope-and-cost`).
-  게다가 plans는 **시작 컨텍스트에 안 실린다** ⇒ 옮겨도 컨텍스트가 안 줄고 참조만 깨질 수 있다.
-- Changed(**가드 +5, 사용자 승인**): `char_budgets`를 config에 **한 곳만** 선언하고
-  (brief 8,000 · status/plan 11,000 · log 12,000) `TestEveryDocIsWithinItsCharacterBudget`가 집행한다.
-  ⚠️**네 번째 철자를 만들지 않았다** — 줄 수는 이미 config·`DOCS_POLICY`·각 문서 머리말에 세 번 있다(M19).
-- Verified(**변이 3종 red**): **줄 수를 그대로 두고 BRIEF만 3,100자 늘리기**(오늘 아침 상태 재현) ·
-  `char_budgets` 키 삭제 · 형제 셋 누락(공허 방지). ⚠️복구 확인 전에 `__pycache__`를 지웠다 —
-  오늘 배운 것을 바로 썼다.
-- Verified: `make check` **2333 passed, 2 skipped**(2026-08-30 로컬 macOS·py3.13).
-- Blockers: 없음. **여유**: brief 1,317자 · status 1,941자 · plan 1,412자 · log 7,781자.
-- Next: **Azure executor 배선**(승인) · **BQ 결제 내보내기**(콘솔 수동) · **정적검사 게이트 편입**(결정).
-
-## 2026-08-30 — 체크포인트가 잡은 것: 문서 셋이 자기 자신과 모순이었다 (gate 2328)
-
-- Status: `/checkpoint` 절차대로 상태를 수집하다 **진입점 셋의 `최종 갱신`이 그대로**인 걸 봤다.
-  오늘 아홉 번 내용을 고쳤는데(게이트 숫자·리스크 정정·항목 닫기) 머리말은 08-18/08-17이었다.
-- Verified(**문서가 자기 자신과 어긋난다**): `STATUS` 3줄은 *"최종 갱신: 2026-08-18"*인데 11줄은
-  **2026-08-30**에 돌린 게이트를 기록한다. `AGENT_BRIEF`·`NEXT_PLAN`도 같다. ⚠️`AGENT_BRIEF` 자신이
-  **"게이트 숫자는 날짜와 잰 기계 없이는 주장이 아니다"**(Risk 12①②)라고 적어 뒀고, 그 **날짜 쪽을
-  검사하는 가드가 없었다** — `test_gate_number_claims`는 **숫자만** 본다(그건 의도적이다: *"a test
-  cannot re-run yesterday"*).
-- Changed: 세 머리말을 **2026-08-30**으로 고쳤다. 그리고 `test_doc_freshness_claims.py`(+9) —
-  **`최종 갱신`이 그 문서가 스스로 말하는 가장 늦은 날짜보다 이르면 red**. ⚠️"그 날짜에 정말
-  쟀는가"는 여전히 **안 묻는다**(기계가 어제를 다시 돌 수 없다) — **내부 모순만** 묻는다. 그건
-  전부 기계적이고, 오늘 실제로 일어난 드리프트를 정확히 잡는다. 짧은 형식(`08-15에`)은 **일부러
-  무시**한다: 연도 없는 날짜를 머리말과 견주려면 연도를 **추측**해야 하고, 추측하는 가드는 1월에 틀린다.
-- Verified(**변이 4종 red**): 오늘 실제로 있던 상태(STATUS 날짜만 되돌리기) · 머리말 문구 변경
-  (찾을 수 없는 주장) · 날짜 정규식 무력화(공허 방지) · 공허 검사 자체.
-- Verified(**⚠️내 복구 확인이 `.pyc`에 속았다 — 08-09에 기록된 그 함정**): 변이 하네스가 복구 후
-  **"1 failed"**를 답해 *"초록으로 안 돌아오는 복구는 복구가 아니다"*(Risk 12⑤)로 읽었는데,
-  디스크의 파일은 **정상 복구돼 있었다.** `__pycache__`를 지우니 **9 passed**. ⇒ 변이 하네스의
-  **복구 확인 앞에 캐시를 지울 것** — Risk 12⑦(변이 하네스 자신이 틀린다)에 하나 더.
-- Verified: `make check` **2328 passed, 2 skipped**(2026-08-30 로컬 macOS·py3.13).
-- Blockers: 없음. 이 세션의 나머지 증분은 이미 각자 기록·병합됐다(PR #44~#53).
-- Next: **Azure executor 배선**(승인) · **BQ 결제 내보내기**(콘솔 수동) · **정적검사 게이트 편입**(결정) ·
-  **analyzer/decision 계약 추출**(승인).

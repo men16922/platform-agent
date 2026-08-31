@@ -120,9 +120,8 @@ def _execute_single_action(
     Execute a single Azure action.
 
     In production:
-    - AKS: az aks command invoke --command "kubectl ..."
-    - Functions: az functionapp scale --min-instances ...
-    - SQL: az sql db update --capacity ...
+    - AKS: ARM listClusterUserCredentials -> kubectl REST (rollout restart / scale / rollback)
+    - Functions: ARM restart / slot swap
     """
     try:
         capability = _action_to_capability(action)
@@ -135,6 +134,25 @@ def _execute_single_action(
             capability=capability,
             parameters=parameters,
         )
+
+        # Call the real ARM/AKS action runner.
+        #
+        # Until 2026-08-30 this function stopped at the log line above and returned
+        # ``success: True``. That success landed in ``executed``, ``resolution_verdict``
+        # turned it into ``resolved=True``, and the incident was posted to Slack and
+        # recorded as remediated — for an action nobody performed. GCP's executor grew
+        # this call in Phase 3; Azure did not, and nothing said so
+        # (`docs/evidence/azure-executor-reports-resolved-without-executing.log`).
+        #
+        # The 11 of 16 declared actions the runner does not implement do not become
+        # silent successes: `run_azure_action` raises `ValueError("Unsupported Azure
+        # action: ...")` for them, which the `except` below turns into
+        # ``success: False`` — the same honest shape GCP already has.
+        from src.agents.operations.runners.azure_runner import run_azure_action
+        from src.agents.platform.scope import resolve_incident_scope
+
+        incident_scope = resolve_incident_scope(incident, logger)
+        run_azure_action(action, parameters, logger, incident_scope)
 
         return {"success": True, "action": action, "parameters": parameters}
 
