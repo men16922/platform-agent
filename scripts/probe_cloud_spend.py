@@ -61,6 +61,7 @@ import datetime as _dt
 import json
 import os
 import subprocess
+import time
 
 #: Budgets exclude these record types; Cost Explorer includes them unless told not
 #: to. Keeping the literal here (rather than inline) so the guard can assert on it.
@@ -100,7 +101,8 @@ AZURE_COST_URL = (
 )
 
 #: The 429 body says "Please retry" and nothing else; the *headers* say how long, and
-#: `az rest` does not show headers. Measured 2026-09-01: the exhausted bucket was
+#: `az rest` does not show headers — which is why the transport here is `curl -D -`
+#: with an `az`-minted token, and not the obvious one. Measured 2026-09-01: the exhausted bucket was
 #: `clienttype-requests: DefaultQuota:0` while entity (2), tenant (18) and QPU (58/h)
 #: all had room, and `clienttype-retry-after` asked for 5s, then 40s on the next try.
 #: Waiting the 40 returned 200. So the previous record — "retrying was not the answer
@@ -109,10 +111,24 @@ AZURE_COST_URL = (
 #: read. A fixed interval below what is asked for looks exactly like a permanent
 #: failure, and a 13-hour-later retry (also 429, on the first try) looks like one too.
 AZURE_429_HINT = (
-    "429는 스로틀이고 서버가 대기 시간을 헤더로 말한다(az rest는 헤더를 안 보여준다). "
-    "고정 간격 재시도 금지 — 헤더를 보고 그만큼 기다릴 것: "
-    "curl -D- ... | grep clienttype-retry-after  (09-01 실측 5s→40s, 40 기다리니 200)"
+    "429는 스로틀이고 서버가 대기 시간을 헤더로 말한다. 프로브는 이제 "
+    "clienttype-retry-after 를 읽어 그만큼 기다렸다 다시 묻는다(최대 3회). "
+    "여기까지 왔다면 그보다 오래 걸린다는 뜻이니 직접 볼 것: "
+    "curl -D- ... | grep clienttype-retry-after  (09-01 실측 5s→40s, 40 기다리니 200). "
+    "고정 간격 재시도 금지 — 영구 실패와 구분되지 않는다."
 )
+
+#: Read in this order. `clienttype-retry-after` is the one that was actually
+#: exhausted on 2026-09-01 (`clienttype-requests: DefaultQuota:0` while entity,
+#: tenant and QPU all had room) and the one that named 5s then 40s; `retry-after` is
+#: the standard spelling and a reasonable fallback if this API ever sends it.
+AZURE_RETRY_AFTER_HEADERS = ("clienttype-retry-after", "retry-after")
+
+#: Bounded twice: at most this many retries, and each wait clamped below. A probe
+#: being throttled must still end — the worst case here is ~3 minutes of waiting for
+#: one subscription, and that only when the server keeps asking for the maximum.
+AZURE_MAX_RETRIES = 3
+AZURE_MAX_WAIT_SECONDS = 60.0
 
 
 def _aws(*args: str) -> tuple[int, str]:
@@ -168,6 +184,131 @@ def _run(*args: str) -> tuple[int, str]:
     except FileNotFoundError:
         return 127, f"{args[0]} 없음"
     return proc.returncode, (proc.stdout if proc.returncode == 0 else proc.stderr)
+
+
+def _curl(*args: str, config: str = "") -> tuple[int, str]:
+    """A read of an HTTPS endpoint whose *response headers* survive.
+
+    Separate from :func:`_run` for one reason: `--config -` reads options from stdin,
+    and that is the only place a bearer token can go without appearing in `ps` for
+    every other process on this machine. The URL stays in argv on purpose — it is not
+    a secret and it is the thing the guard pins.
+    """
+    try:
+        proc = subprocess.run(["curl", *args, "--config", "-"], input=config,
+                              capture_output=True, text=True)
+    except OSError as exc:
+        return 127, f"curl 실행 실패: {exc}"
+    return proc.returncode, (proc.stdout if proc.returncode == 0 else proc.stderr)
+
+
+def _sleep(seconds: float) -> None:
+    """Indirection so a guard can watch what was waited without waiting it."""
+    time.sleep(seconds)
+
+
+def _split_http(raw: str) -> tuple[int, str, dict[str, str]]:
+    """`curl -D -` output → (status, body, lower-cased headers).
+
+    Loops because an interim block (`100 Continue`) is a header block too, and the
+    last one is the answer. A non-HTTP payload — curl's own error text — reads back
+    as status 0 with the text intact, so the caller never mistakes it for a response.
+    """
+    text = raw.replace("\r\n", "\n")
+    status, headers = 0, {}
+    while text.startswith("HTTP/"):
+        head, separator, rest = text.partition("\n\n")
+        if not separator:
+            head, rest = text, ""
+        lines = head.splitlines()
+        fields = lines[0].split()
+        status = int(fields[1]) if len(fields) > 1 and fields[1].isdigit() else 0
+        headers = {}
+        for line in lines[1:]:
+            name, colon, value = line.partition(":")
+            if colon:
+                headers[name.strip().lower()] = value.strip()
+        text = rest
+    if status == 0:
+        return 0, raw, {}
+    return status, text, headers
+
+
+def _retry_after(headers: dict[str, str]) -> float | None:
+    """How long the server asked for, or None when it did not say.
+
+    None is a real answer and must stay distinguishable from 0: a 429 carrying no
+    interval gets no retry, because inventing one is exactly the mistake that made a
+    throttle look permanent (three tries 20s apart against a server asking for 40).
+    """
+    for name in AZURE_RETRY_AFTER_HEADERS:
+        raw = headers.get(name)
+        if raw is None:
+            continue
+        try:
+            wait = float(raw.strip())
+        except ValueError:
+            continue
+        if wait < 0:
+            continue
+        return min(wait, AZURE_MAX_WAIT_SECONDS)
+    return None
+
+
+def _azure_token() -> str | None:
+    """A bearer token for management.azure.com, or None when the login has none.
+
+    The transport moved off `az rest` to see response headers, so the auth `az rest`
+    was doing implicitly has to happen here. `az` is still the only source of the
+    token — this is not a second way to log in.
+    """
+    code, out = _run("az", "account", "get-access-token",
+                     "--resource", "https://management.azure.com",
+                     "--output", "json")
+    if code != 0:
+        return None
+    try:
+        return json.loads(out)["accessToken"]
+    except (json.JSONDecodeError, KeyError, TypeError):
+        return None
+
+
+def _post_cost_query(url: str, body: str, token: str) -> tuple[int, str, dict[str, str]]:
+    """One Cost Management query, with the response headers kept.
+
+    `az rest` is the obvious transport and it discards the headers, which is the
+    whole reason a 429 read as a permanent failure for a day: the server had already
+    named its own interval and nothing in the pipeline could see it.
+    """
+    code, out = _curl(
+        "-sS", "-D", "-", "-X", "POST", "--url", url,
+        "-H", "Content-Type: application/json", "--data", body,
+        config=f'header = "Authorization: Bearer {token}"\n',
+    )
+    if code != 0:
+        return 0, out, {}
+    return _split_http(out)
+
+
+def _cost_query_with_retry(url: str, body: str, token: str) -> tuple[int, str]:
+    """The query, retried on 429 at the interval the server named. Returns (status, body).
+
+    Not a fixed interval and not a guessed one: only what a header said, at most
+    AZURE_MAX_RETRIES times, each wait clamped to AZURE_MAX_WAIT_SECONDS. The waiting
+    is announced because a probe that goes silent for 40 seconds looks hung, and a
+    reader who kills it learns the wrong thing about the throttle.
+    """
+    status, payload, headers = _post_cost_query(url, body, token)
+    for _ in range(AZURE_MAX_RETRIES):
+        if status != 429:
+            return status, payload
+        wait = _retry_after(headers)
+        if wait is None:
+            return status, payload
+        print(f"      429 — 서버가 {wait:g}초를 요구했다. 기다렸다 다시 묻는다.")
+        _sleep(wait)
+        status, payload, headers = _post_cost_query(url, body, token)
+    return status, payload
 
 
 def _window(days: int | None) -> tuple[str, str]:
@@ -385,20 +526,23 @@ def azure_spend(start: str, end: str) -> list[tuple[str, str, list[tuple[str, fl
     except (json.JSONDecodeError, KeyError, TypeError):
         return None
 
+    token = _azure_token()
+    if token is None:
+        print("    액세스 토큰을 못 받았다 — 로그인 상태를 확인할 것 (az account show)")
+        return None
+
     body = dict(AZURE_COST_QUERY)
     body["timeframe"] = "Custom"
     body["timePeriod"] = {"from": f"{start}T00:00:00Z", "to": f"{end}T00:00:00Z"}
 
     found: list[tuple[str, str, list[tuple[str, float]]]] = []
     for sub_id, name in subscriptions:
-        code, out = _run(
-            "az", "rest", "--method", "post",
-            "--url", AZURE_COST_URL.format(sub=sub_id),
-            "--body", json.dumps(body), "--output", "json",
+        status, out = _cost_query_with_retry(
+            AZURE_COST_URL.format(sub=sub_id), json.dumps(body), token
         )
-        if code != 0:
+        if status != 200:
             print(f"    {name}: 비용 조회 실패 — {_why(out)}")
-            if "429" in out:
+            if status == 429 or "429" in out:
                 print(f"      {AZURE_429_HINT}")
             return None
         try:
