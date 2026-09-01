@@ -32,11 +32,28 @@ def _store_path() -> Path:
 
 def record_incident(
     *,
-    severity: str,
-    alarm_name: str,
-    root_cause: str,
-    runbook_id: str,
-    remediation_mode: str,
+    # ⚠️ `str | None`, not `str` — corrected 2026-09-01 to match what this function
+    # already does. Every one of these five is read below as `x or "<default>"`,
+    # so the body has always accepted `None`; the signature said otherwise and
+    # `onprem_webhook_api._record_incident` has always passed `.get()` results
+    # into it (ten `arg-type` errors, all from that one caller).
+    #
+    # The pipeline result always *has* these keys — but their values are
+    # themselves `.get()` results, and `incident = detector_out.get(
+    # "normalized_incident") or {}` is the pipeline's own statement that the
+    # normalised incident can be absent. When it is, `service` is `None` and
+    # arrives here as `alarm_name`.
+    #
+    # ⚠️ The defaults are policy, not tidying: a missing severity becomes **P3**
+    # and a missing mode becomes **MANUAL** — the safe end of both axes. That is
+    # deliberate (cf. "analyzer 폴백 severity는 정책") and is why the fix is to
+    # tell the truth in the signature rather than to reject `None` at the door,
+    # which would turn a degraded incident into no incident at all.
+    severity: str | None,
+    alarm_name: str | None,
+    root_cause: str | None,
+    runbook_id: str | None,
+    remediation_mode: str | None,
     resolved: bool,
     executed_actions: list[str] | None = None,
     incident_id: str | None = None,
