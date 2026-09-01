@@ -38,6 +38,39 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
+## M45 — 시그니처는 필수라 했고 본문은 선택이라 했다: 그 기본값이 정책이었다 (완료, 2026-09-01)
+
+mypy 253을 **분류하다가** 나왔다. **결정(게이트 편입)은 여전히 안 내렸다.**
+
+**`arg-type` 15 중 10이 한 함수**: `onprem_webhook_api`가 `summary.get(...)`를
+`record_incident(severity: str, …)`의 **필수 `str`** 자리로 넘긴다. 그런데 본문은 다섯 다
+**`x or "기본값"`** — **본문은 처음부터 `None`을 받도록 쓰여 있었다. 코드가 옳고 선언이
+거짓이었다.** `None`은 도달 가능하다: 파이프라인 결과는 키를 항상 갖지만 **값이 `.get()`
+결과**이고, 파이프라인이 스스로 `incident = detector_out.get("normalized_incident") or {}`라
+적어 뒀다 — **부재를 예상했다는 저자들 자신의 진술**이다. ⚠️`else: # MANUAL` 가지는
+**`mode`가 `None`일 때도 걸린다**. 고침: 다섯을 `str | None`로(**문을 닫는 쪽이 아니다** —
+거부하면 저하된 인시던트가 *"인시던트 없음"*이 된다). `arg-type` **15→5**, mypy **253→241**.
+
+**⚠️ 진짜 발견은 그다음이다.** 주석을 고치는 건 **도는 것을 하나도 안 바꾼다.** 도는 것은
+**기본값 부여**이고, `record_incident`를 쓰는 테스트 7개 중 **다섯 필드에 `None`을 넘기는
+파일이 0개**였다 ⇒ **저하된 인시던트가 어떻게 분류되는지가 무단언**이었다. 둘은 그냥 기본값이
+아니라 **축의 안전한 끝**이다 — **MANUAL**은 실행하지 **않는** 모드(AUTO로 기본값이 되면
+**아무도 고르지 않은 조치가 클러스터에 나간다**; M39가 *"안 했는데 했다고 보고"*라면 이건
+*"아무도 안 골랐는데 실행"*이다) · **P3**은 척도의 **바닥**(P1이면 불완전한 analyzer 출력마다
+사람을 호출하고, 그렇게 훈련된 사람은 호출을 무시한다). 가드 **+10**은 문자열이 아니라
+**어느 끝인지**를 묻고 **저장된 행까지** 읽는다(반환값만 보면 파일에 `null`이 적혀도 통과한다).
+
+**⚠️ 못 잰 축 하나**: 변이 M5(저장 건너뛰기)는 `_append(record)` 같은 **단일 호출 지점이 없어**
+붙지 않았다 — *"안 쟀다"*로 남긴다. 나머지 넷은 red.
+
+**곁가지 — mypy 오탐을 격리했다**: `return-value` 4건이 전부 `x or os.getenv(k, DEF)` 모양인데
+`os.getenv(k, DEF)` 단독·`x or "literal"`·`x or y`는 다 `str`이고 **그 조합만 `str | None`**이다
+(`or`의 오른쪽에서 오버로드가 첫 번째로 재해석 — mypy 1.14.1). **런타임엔 None이 될 수 없다.**
+
+**결정에 줄 누적 숫자**: 실제 주장 53 중 **21건을 열어** **고칠 값이 있던 건 2건**(M44+M45),
+나머지 19는 노이즈이거나 *"코드는 옳고 타입이 못 따라간다"*. **게이트 2358 → 2368.**
+증거 `docs/evidence/the-signature-said-required-the-body-said-optional.log`.
+
 ## M44 — 계약이 모두가 부르는 메서드를 빠뜨리고 있었다: 찾은 건 mypy였다 (완료, 2026-09-01)
 
 *"정적검사를 게이트에 넣을지"*의 **선행 실측을 다시 돌리다가** 나왔다. **결정은 내리지 않았다.**

@@ -1,0 +1,149 @@
+==============================================================================
+시그니처는 필수라 했고 본문은 선택이라 했다 — 그리고 그 기본값이 정책이었다
+2026-09-01
+==============================================================================
+
+계류 중인 *"정적검사를 게이트에 넣을지"*를 위해 **mypy 253건을 분류하다가** 나왔다.
+결정은 여전히 안 내렸다.
+
+
+## 1. 15건의 `arg-type` 중 10건이 한 파일, 한 함수에서 나왔다
+
+    onprem_webhook_api.py:143-147  ┐ severity·alarm_name·root_cause·runbook_id·
+    onprem_webhook_api.py:380-384  ┘ remediation_mode → record_incident(...)
+
+    error: Argument "severity" to "record_incident" has incompatible type
+           "Any | None"; expected "str"
+
+호출부:
+
+    incidents.record_incident(
+        severity=summary.get("severity"),
+        alarm_name=summary.get("service"),
+        ...
+    )
+
+선언부:
+
+    def record_incident(*, severity: str, alarm_name: str, root_cause: str,
+                        runbook_id: str, remediation_mode: str, resolved: bool, ...)
+
+**전부 필수 `str`.** 그런데 본문은:
+
+    "alarm_name":  alarm_name or "on-prem incident",
+    "severity":    severity or "P3",
+    "mode":        remediation_mode or "MANUAL",
+    "root_cause":  root_cause or "On-prem Day-2 incident.",
+    "runbook_id":  runbook_id or "generic-recovery",
+
+⇒ **본문은 처음부터 `None`을 받도록 쓰여 있었다.** 코드가 옳고 **선언이 거짓이었다.**
+
+
+## 2. `None`은 이론이 아니라 도달 가능하다
+
+`summary`는 파이프라인 결과의 사본이고, 그 결과는 **키를 항상 갖지만 값이 `.get()` 결과**다:
+
+    result = {
+        "service":          incident.get("service"),
+        "severity":         analyzer_out.get("severity"),
+        "remediation_mode": decision_out.get("remediation_mode"),
+        ...
+    }
+
+그리고 그 위에 파이프라인이 스스로 적어 뒀다:
+
+    incident = detector_out.get("normalized_incident") or {}
+                                                       ^^^^^
+**정규화된 인시던트가 없을 수 있다는 저자들 자신의 진술이다.** 없으면 `service`가 `None`이고
+`alarm_name`으로 여기 도착한다.
+
+⚠️ 그리고 `_gate_on_mode`의 `else: # MANUAL` 가지는 `mode`가 **`None`일 때도 걸린다**
+(`AUTO`도 `APPROVE`도 아니므로) — 그 경로가 `remediation_mode=None`을 기록한다.
+
+
+## 3. 고침 — 문을 닫는 게 아니라 사실을 적었다
+
+    severity: str  →  severity: str | None      (다섯 다)
+
+**`None`을 거부하는 쪽이 아니다.** 거부하면 **저하된 인시던트가 "인시던트 없음"이 된다** —
+기본값이 붙은 것보다 명백히 나쁘다. 기본값들은 **정리가 아니라 정책**이고, 그래서 고칠 것은
+시그니처지 동작이 아니다.
+
+측정: `arg-type` **15 → 5**, mypy 전체 **253 → 241**(−12).
+
+
+## 4. ⚠️ 진짜 발견은 그다음이었다 — 그 정책을 아무도 안 묻고 있었다
+
+주석을 고치는 건 **도는 것을 하나도 안 바꾼다.** 도는 것은 **기본값 부여**다.
+
+    $ git grep -l record_incident -- tests/
+      7개 파일
+
+    그중 다섯 필드 중 **하나라도 None을 넘기는 파일: 0개.**
+
+즉 **저하된 인시던트가 어떻게 분류되는지를 결정하는 값들이 무단언 상태**였다.
+
+두 개는 그냥 기본값이 아니라 **축의 안전한 끝**이다:
+
+    MANUAL   실행하지 **않는** 모드. 결정 단계가 아무것도 못 낸 인시던트가
+             AUTO로 기본값이 되면 **아무도 고르지 않은 조치가 클러스터에 나간다.**
+             M39가 *"안 했는데 했다고 보고"*였다면 이건 *"아무도 안 골랐는데 실행"*이다 —
+             같은 실패의 반대편.
+
+    P3       심각도 척도의 **바닥**. P1로 기본값이 되면 analyzer 출력이 불완전할 때마다
+             사람을 호출한다 — 그렇게 훈련된 사람은 호출을 무시하게 되고, 척도는 의미를 잃는다.
+
+⇒ 신규 `tests/test_incident_defaults_are_the_safe_end.py` — 문자열이 아니라 **어느 끝인지**를
+묻는다. 그리고 **저장된 행**까지 읽는다(반환값만 보는 테스트는 파일에 `null`이 적혀도 통과한다;
+대시보드 타임라인이 읽는 건 파일이다).
+
+### 변이
+
+    M1  mode 기본값 → "AUTO"                3 failed  ← 가장 위험한 방향
+    M2  severity 기본값 → "P1"              3 failed
+    M3  기본값 부여 제거 (None이 기록됨)    2 failed
+    M4  주어진 값을 무시하고 항상 기본값    1 failed
+    M5  저장을 건너뛰기                     **적용 못 함** — `_append(record)` 같은 단일
+                                            호출 지점이 없어 sed 변이가 안 붙었다.
+                                            ⚠️ 그래서 *"이 축은 안 쟀다"*로 남긴다.
+                                            대신 §4의 마지막 테스트가 파일을 직접 읽는다.
+    복구 (pycache 삭제 후)                  10 passed · diff 0
+
+
+## 5. 이 분류가 결정에 주는 그림 (누적)
+
+mypy 253 중 **실제 주장 53건** 가운데 **21건을 실제로 열었다**:
+
+    실제 결함           1   `ExecutionAdapter`가 `parameters_for_action`을 선언 안 함 (M44)
+    선언이 거짓          1   `record_incident`의 필수/선택 불일치 → **이 문서**
+    mypy 오탐            4   `x or os.getenv(k, DEF)`가 `str | None`로 읽힌다 (§6)
+    도달 불가            2   `model_router`의 `run.result` — 재서 닫았다
+    재-export 엄격성     3   런타임 무관
+    이종 dict → object   2   `TypedDict`면 사라진다. 코드는 옳다
+    이름 재선언          1   첫 가지가 return한다. 코드는 옳다
+    설치 안 된 라이브러리 2   `agent_framework` (기지의 Azure extra 상황)
+    ─────────────────────
+    합                  16   (+ arg-type 5건은 §1의 고침으로 사라졌다)
+
+⇒ **연 21건 중 실제로 고칠 값이 있던 건 2건.** 나머지 19는 노이즈이거나
+*"코드는 옳고 타입이 못 따라간다"*였다. **그게 이 도구의 이 레포에서의 신호 대 잡음비다.**
+
+
+## 6. 곁가지 — `x or os.getenv(k, DEFAULT)`가 `str | None`로 읽힌다 (mypy 1.14.1)
+
+`return-value` 4건(provisioning/gcp·azure, runtime/gcp·azure)이 전부 이 모양이라 격리했다:
+
+    reveal_type(os.getenv("K", DEF))          → builtins.str          ✅
+    reveal_type(x or "literal")               → builtins.str          ✅
+    reveal_type(x or y)          (y: str)     → builtins.str          ✅
+    reveal_type(x or os.getenv("K", DEF))     → Union[str, None]      ❌
+
+`or`의 오른쪽이 **오버로드된 호출**일 때 typeshed의 첫 오버로드
+(`getenv(key) -> str | None`)가 선택된다. 같은 식을 두 문장으로 쪼개면 올바르게 나온다.
+⇒ **런타임엔 `None`이 될 수 없다.** 코드 결함이 아니라 도구의 한계이고, 고치지 않았다.
+
+
+## 7. 결정은 여전히 안 내렸다
+
+`gate.yml`의 문장 그대로다 — *"a CI job is a bad place to introduce a standard nobody
+agreed to."* 이 문서는 **그 문장을 뒤집자는 주장이 아니라, 뒤집을지 정할 사람이 볼 숫자**다.
