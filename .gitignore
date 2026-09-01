@@ -31,6 +31,7 @@ infra/onprem/ansible/kubeconfig-*.yaml
 scripts/overnight/logs/
 scripts/overnight/STOP
 scripts/overnight/DONE
+scripts/overnight/CLAIM
 docs/test/history/*-overnight-review-checklist.md
 
 # Terraform local state (on-prem kind provisioning)
