@@ -7,6 +7,22 @@
 
 ---
 
+## 2026-09-02 — 인쇄된 경로도 주장이다: 39개를 전수로 물었고 0개가 dangling이었다 (gate 2397)
+
+- Status: overnight `[auto]` 1건 — M46이 남긴 교훈("인쇄된 지시도 주장이다")을 가드로 만들었다. **완결**, M48. 권위 `docs/evidence/the-printed-path-was-a-claim-nobody-checked.log`.
+- Changed(`tests/test_script_printed_paths_resolve.py`, 신규): `scripts/*.py`의 **문자열 리터럴 속 레포-상대 경로 전수**가 레포에 실존하는지 묻는다. 앵커(top-level 디렉터리)는 **git에서 유도**해 새 디렉터리가 생기면 그날 스윕된다.
+- Verified(**쓰기 전에 쟀다**): 23 스크립트 · **39개**(distinct) · 그중 **stdout에 닿는 것 4개** · **dangling 0**. 초록에서 시작하는 가드지 청소 과제가 아니다.
+- Verified(**존재는 git에게 물었다, 이 노트북이 아니라**): `pathlib.exists()`면 여기선 초록, CI에선 red다 — `src/stacks/node_modules`가 디스크엔 있고 `.gitignore:16`에 있다. 불변식은 *"레포가 담고 있다"*지 *"내 파일시스템에 있다"*가 아니다(Risk 12②). 변이 3이 이걸 직접 태운다.
+- Verified(**첫 판이 false red를 냈고, 면제 목록으로 덮지 않았다**): `probe_scope_reachability.py:116`의 `.endswith("platform/scope.py")`는 경로가 아니라 **grep 출력에 맞대는 조각**이다(`platform/`이 top-level이라 경로처럼 보였다). **쓰임으로** 갈랐다 — `startswith`/`endswith`의 인자와 `in`의 좌변은 독자에게 보여지지 않는다. ⚠️*"중의적인 top-level 이름은 뺀다"*는 규칙은 `src`(↔`dashboard/src`)까지 죽여서 안 썼다.
+- Verified(**접두 매칭 함정은 양쪽에 다 있었다**): 추출 쪽 — 확장자를 `json|jsonl` 순서로 나열하면 `.jsonl`이 잘린다(실제 짝: `model-sweep-live-points.jsonl` ↔ 없는 `.json`) ⇒ 꼬리는 **탐욕적 문자 클래스 하나**. 검사 쪽 — `startswith` 멤버십이면 그 없는 `.json`이 **있는 것으로 통과**한다 ⇒ 정확 일치.
+- Verified(**⚠️가드 자신이 한 번 틀렸다 — 변이 하나가 살아남았다**): 접두 함정 테스트가 `_repo_paths()`(집합)에 물었는데 dangling 검사는 **별도의 식**을 써서, 멤버십을 `startswith`로 느슨하게 해도 5개가 전부 초록이었다. **가드가 독자가 쓰는 그 물건이 아니라 제 창문에 물고 있었다**(Risk 12④). 판정을 `_in_repo()` 한 곳으로 뽑아 둘이 같은 것을 묻게 하니 red.
+- Verified: `make check` **2397 passed + 2 skipped**(2392 → **+5**), 실패 0. **변이 8종 전부 red**(없는 이름 · `.jsonl`→`.json` · gitignore된 경로 · 추출기를 확장자 나열로 · 스윕 비우기 · `print()` 미인식 · 멤버십 `startswith` · 조각 예외 제거). 변이·실행·복구는 한 스크립트이고 **복구는 바이트 사본에서**(Risk 12⑦, `git checkout --` 아님).
+- Verified(**기존 가드와 안 겹친다**): `test_evidence_pointers_resolve`는 `docs/evidence/*.log` **한 종류**를 `tests`·`docs`·`src`에서 훑고 **`scripts/`는 안 읽는다**. 이 파일이 나머지 절반이다.
+- Verified(**안 한 것도 측정이다**): `#` 주석은 안 훑는다 — 주석에만 사는 경로를 재니 `src/stacks/node_modules` 하나였고 **의도적으로 tracked가 아니다**(훑으면 가드가 vendored 의존성을 커밋하라 요구한다). 점 top-level(`.github/` 등)은 앵커 밖 — scripts의 참조 횟수를 **0으로 쟀다**. 라이브 호출 0건.
+- Changed(`docs/STATUS.md`): 문자 예산이 **10,998/11,000**이라 새 baseline 줄이 안 들어갔다 — 08-30(2332) 전문을 `docs/archive/status-baseline-2026-08.md`로 **옮겼다**(삭제 아님). ⚠️**STATUS 압축 `[auto]`(≤9,900)는 여전히 열려 있다** — 여기선 한 줄 들어갈 만큼만 비웠다.
+- Blockers: 없음.
+- Next: **GCP 내보내기 테이블 `numRows`** — 판정 시점(09-02 01:11Z)이 지났다. `bq show --format=json <table>`(무료). 0이면 그때가 문제다.
+
 ## 2026-09-02 — 서버는 대기 시간을 말하고 있었고 전송 계층이 그걸 버렸다 (gate 2392)
 
 - Status: overnight `[auto]` 1건 — M46ⓒ가 남긴 잔여(Azure 429 자동 재시도). **완결**, M47.

@@ -38,6 +38,51 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
+## M48 — 인쇄된 경로도 주장이다: 39개를 전수로 물었고 0개가 dangling이었다 (완료, 2026-09-02)
+
+M46이 남긴 교훈("**인쇄된 지시도 주장이다**")을 가드로 만든 것. 09-01엔 GCP 프로브가
+인쇄하던 `bq` 명령에 결함이 셋이었고 **한 번도 실행된 적이 없었다**. 지시 전체의 정합성은
+기계화할 수 없지만 그 안의 **경로**는 가장 값싸게 물어지는 주장이고, 가장 먼저 썩는다.
+
+**대상**: `tests/test_script_printed_paths_resolve.py` — `scripts/*.py`의 문자열 리터럴 속
+레포-상대 경로 **전수**. 앵커(top-level 디렉터리)는 **git에서 유도**해 새 디렉터리가 생기면
+그날 스윕된다. **쓰기 전에 쟀다**: 23 스크립트 · **39개**(distinct, stdout에 닿는 것 **4개**) ·
+**dangling 0** ⇒ 초록에서 시작하는 가드지 청소 과제가 아니다.
+
+**⚠️ 존재는 git에게 물었지 이 노트북에게 묻지 않았다.** `pathlib.exists()`였다면 여기선
+초록, CI에선 red다 — `src/stacks/node_modules`는 디스크에 있고 `.gitignore:16`에 있다.
+불변식은 *"레포가 담고 있다"*이지 *"내 파일시스템에 있다"*가 아니다(Risk 12②).
+
+**⚠️ 첫 판은 false red를 냈고, 면제 목록으로 덮지 않았다.** `probe_scope_reachability.py`의
+`.endswith("platform/scope.py")`는 경로가 아니라 **grep 출력에 맞대는 조각**이다(`platform/`이
+top-level이라 경로처럼 보였다). **쓰임으로** 갈랐다 — `startswith`/`endswith`의 인자와 `in`의
+좌변은 독자에게 보여지지 않는다. *"중의적인 top-level 이름은 앵커에서 뺀다"*는 규칙도
+재 봤는데 `src`(↔`dashboard/src`)까지 죽여서 안 썼다. **면제는 목록이 아니라 경계다.**
+
+**⚠️ 접두 매칭 함정은 양쪽에 다 있었다.** 추출 쪽: 확장자를 `json|jsonl` 순서로 나열하면
+`.jsonl`이 잘린다(실제 짝이 있다 — `model-sweep-live-points.jsonl` ↔ 존재하지 않는 `.json`)
+⇒ 꼬리는 **탐욕적 문자 클래스 하나**. 검사 쪽: `startswith` 멤버십이면 그 없는 `.json`이
+**있는 것으로 통과**한다 ⇒ 정확 일치. 양방향 다 테스트로 못 박았다.
+
+**⚠️ 가드 자신이 한 번 틀렸다 — 변이 하나가 살아남았다.** 접두 함정 테스트가
+`_repo_paths()`(집합)에 물었는데 dangling 검사는 **별도의 식**을 써서, 멤버십을 `startswith`로
+느슨하게 해도 전부 초록이었다. **가드가 독자가 쓰는 그 물건이 아니라 제 창문에 물고
+있었다**(Risk 12④). 판정을 `_in_repo()` 한 곳으로 뽑아 둘이 같은 것을 묻게 하니 red.
+
+**경계(기존 가드와 안 겹친다)**: `test_evidence_pointers_resolve`는 `docs/evidence/*.log`
+**한 종류**를 `tests`·`docs`·`src`에서 훑고 **`scripts/`는 안 읽는다**. 이 파일이 나머지 절반이다.
+
+**안 한 것**: `#` 주석은 안 훑는다 — 주석에만 사는 경로를 재니 `src/stacks/node_modules`
+하나였고 **의도적으로 tracked가 아니다**(훑으면 가드가 vendored 의존성을 커밋하라 요구한다).
+docstring은 범위 안이다(리터럴이고 독자가 읽는다). 점으로 시작하는 top-level은 앵커 밖이고
+**scripts의 참조 횟수를 0으로 쟀다**. 라이브 호출 0건.
+
+**검증**: `make check` **2397 passed + 2 skipped**(2392 → **+5**). **변이 8종 전부 red**
+(없는 이름 · `.jsonl`→`.json` · gitignore된 경로 · 추출기를 확장자 나열로 · 스윕 비우기 ·
+`print()` 미인식 · 멤버십 `startswith` · 조각 예외 제거). 변이·실행·복구는 한 스크립트이고
+**복구는 바이트 사본에서** 했다(Risk 12⑦ — `git checkout --`가 아니다).
+증거 `docs/evidence/the-printed-path-was-a-claim-nobody-checked.log`.
+
 ## M47 — 서버는 대기 시간을 말하고 있었고 전송 계층이 그걸 버렸다 (완료, 2026-09-02)
 
 M46ⓒ가 남긴 잔여. 09-01엔 **사람이 헤더를 읽고 40초를 손으로 기다렸다**; 이건 프로브가
