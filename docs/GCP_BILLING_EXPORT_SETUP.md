@@ -1,5 +1,16 @@
 # GCP 결제 내보내기 켜기 (콘솔 수동 5분)
 
+> ✅ **켰다 — 2026-09-01.** 표준 사용량 비용 → **사용 설정됨**
+> (프로젝트 `project-ec7809f7-0fb5-45d4-b6d` · 데이터 세트 `billing_export`, 새로 만들지 않음).
+> ⚠️ **켠 것과 읽히는 것은 다르다.** 같은 날 `make spend-check`는 여전히 *"아직 못 잰다 —
+> 내보내기 테이블이 없다"*이고, **그건 §3이 예고한 정상 상태다**(첫 테이블까지 수 시간).
+> **다음 확인은 §3 그대로** — 하루가 지나도 그대로면 그때부터가 문제다.
+> ⚠️ **편집 폼의 프로젝트 기본값이 `Claude Study`였다** — 문서의 대상이 아니다. 그대로
+> 저장했으면 엉뚱한 프로젝트에 켜졌다. §2의 4번을 건너뛰지 말 것.
+> 절차는 아래를 **그대로 남긴다**(다시 켜거나 다른 계정에서 할 때 쓴다).
+> 증거: `docs/evidence/the-pipe-kept-403ing-after-the-key-was-gone.log` §5.
+
+
 > **왜 손으로 하나:** GCP엔 이 토글을 켜는 API도 gcloud 명령도 **없다**. Cloud Billing v1
 > discovery 19개 메서드 중 `export`/`bigquery` 관련 **0건**이고 `gcloud billing`의 그룹은
 > accounts/budgets/projects뿐이다(2026-08-09 실측 → `docs/evidence/gcp-actual-spend-has-no-api.log`).
