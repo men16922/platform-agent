@@ -107,7 +107,7 @@ M20이 나왔다. ⚠️**가드의 임포트를 그 파일이 주장하는 범�
 
 - [x] [auto] Azure 429 자동 재시도 (2026-09-02, **M47이 권위**).
 - [x] [auto] 스크립트가 인쇄하는 레포-상대 경로의 실존 가드 (2026-09-02, **M48이 권위**). ⚠️**존재는 git에게 묻는다** — `exists()`면 gitignore된 경로가 CI에서만 red다.
-- [ ] [auto] `docs/STATUS.md`를 문자 예산 90% 이하로 압축. Done: `len ≤ 9900` · ⚠️/⛔ 문장은 `docs/archive/`로 **옮기되 삭제 금지** · `make check` 초록.
+- [x] [auto] `docs/STATUS.md` 압축 (2026-09-02, 10,994→**5,197자**). ⚠️**예산 단위는 문자다 — `wc -c`는 바이트라 초과로 착각한다.**
 - [ ] [auto] `docs/NEXT_PLAN.md`를 문자 예산 90% 이하로 압축. Done: `len ≤ 9900` · 같은 조건 · `make check` 초록.
 - [ ] [auto] `docs/AGENT_BRIEF.md`를 문자 예산 90% 이하로 압축. Done: `len ≤ 7200` · 같은 조건 · `make check` 초록.
 
