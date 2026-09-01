@@ -99,6 +99,21 @@ AZURE_COST_URL = (
     "/Microsoft.CostManagement/query?api-version=2023-03-01"
 )
 
+#: The 429 body says "Please retry" and nothing else; the *headers* say how long, and
+#: `az rest` does not show headers. Measured 2026-09-01: the exhausted bucket was
+#: `clienttype-requests: DefaultQuota:0` while entity (2), tenant (18) and QPU (58/h)
+#: all had room, and `clienttype-retry-after` asked for 5s, then 40s on the next try.
+#: Waiting the 40 returned 200. So the previous record — "retrying was not the answer
+#: this time", written after three tries 20s apart — had the conclusion backwards:
+#: retrying *was* the answer, at an interval the server had already named and nobody
+#: read. A fixed interval below what is asked for looks exactly like a permanent
+#: failure, and a 13-hour-later retry (also 429, on the first try) looks like one too.
+AZURE_429_HINT = (
+    "429는 스로틀이고 서버가 대기 시간을 헤더로 말한다(az rest는 헤더를 안 보여준다). "
+    "고정 간격 재시도 금지 — 헤더를 보고 그만큼 기다릴 것: "
+    "curl -D- ... | grep clienttype-retry-after  (09-01 실측 5s→40s, 40 기다리니 200)"
+)
+
 
 def _aws(*args: str) -> tuple[int, str]:
     """Like :func:`_run`, and for the same reason it must never raise.
@@ -241,21 +256,90 @@ def _export_table_in(location: str) -> str | None:
     return None
 
 
+def _export_row_count(table_id: str) -> int | None:
+    """Rows in `project:dataset.table`, or None when the count cannot be read.
+
+    A table is not an answer. The export toggle materialises the table within the
+    hour and then loads into it separately, so between those two moments the table
+    exists and holds nothing — measured live 2026-09-01: created 01:53Z, still
+    touched at 14:08Z, `numRows` 0. Keying "잴 수 있다" on existence alone means the
+    probe says it can measure and then a reader who asks gets no rows back, which is
+    the empty-section-reads-as-zero failure this file exists to prevent, one level up.
+
+    Metadata, not a query: `bq show` costs nothing and scans nothing, so asking does
+    not repeat the AWS mistake where the measurement became 84% of the bill.
+    """
+    code, out = _run("bq", "--format=json", "show", table_id)
+    if code != 0:
+        return None
+    try:
+        return int(json.loads(out).get("numRows", 0))
+    except (json.JSONDecodeError, TypeError, ValueError):
+        return None
+
+
+def _sql_ref(table_id: str) -> str:
+    """`project:dataset.table` → `project.dataset.table`.
+
+    Standard SQL rejects the colon form outright ("Project name needs to be
+    separated by dot from dataset name"), so the command this probe printed for as
+    long as the branch existed could never have run. It was never run: the branch
+    needs a live export, and there was none until 2026-09-01. A printed instruction
+    is a claim like any other, and this one was false for a month.
+    """
+    return table_id.replace(":", ".", 1)
+
+
+def _project_of(table_id: str) -> str:
+    """The project half of `project:dataset.table`.
+
+    Without `--project_id` the query bills and runs in whatever `bq` defaults to,
+    which on this machine was a *different* project of the same billing account
+    (`claude-study-501117`, measured 2026-09-01). It would have answered — from the
+    wrong place — for anyone whose default happened to hold a table of that name.
+    """
+    return table_id.split(":", 1)[0]
+
+
+def _classify_export(table_id: str) -> tuple[str, str] | None:
+    """MEASURABLE only when the table has rows; EXPORTED_EMPTY when it has none.
+
+    None means "keep sweeping" — an empty table in one dataset must not stop the
+    search, because a filled one elsewhere is the better answer and the sweep exists
+    precisely because the configured place is not where things turned out to be.
+    """
+    rows = _export_row_count(table_id)
+    if rows is None or rows > 0:
+        # Unreadable metadata is not evidence of emptiness: the same rule as
+        # `AccessDenied` is not evidence of absence. Report it as measurable and let
+        # the query be the thing that fails, loudly, in front of the reader.
+        return "MEASURABLE", table_id
+    return None
+
+
 def gcp_actual_spend() -> tuple[str, str]:
-    """Whether GCP spend is readable at all — MEASURABLE / NOT_EXPORTED / NO_TOOLING.
+    """Is GCP spend readable — MEASURABLE / EXPORTED_EMPTY / NOT_EXPORTED / NO_TOOLING.
 
     Never returns a number, because none is available: Cloud Billing v1 has no
     method that reads spend and the Budgets API returns the configured amount. The
-    only true answer is whether the BigQuery export exists, so that is what this
-    returns. The dataset is swept for rather than assumed, for the same reason the
-    AWS half sweeps every region: the configured place is not where it turned out
-    to be.
+    only true answer is whether the BigQuery export exists **and has loaded**, so
+    that is what this returns. The dataset is swept for rather than assumed, for the
+    same reason the AWS half sweeps every region: the configured place is not where
+    it turned out to be.
+
+    Four states, not three, and the fourth is the one the live account was in for
+    thirteen hours on 2026-09-01: exported, and still empty. Folding it into
+    MEASURABLE made the probe promise an answer it could not produce; folding it
+    into NOT_EXPORTED would have sent a reader back to a console toggle that was
+    already correctly set. They are different problems with different next actions.
     """
+    empty: str | None = None
+
     pinned = os.environ.get(GCP_EXPORT_ENV)
     if pinned:
         table = _export_table_in(pinned)
         if table:
-            return "MEASURABLE", table
+            return _classify_export(table) or ("EXPORTED_EMPTY", table)
         return "NOT_EXPORTED", f"{GCP_EXPORT_ENV}={pinned} 에 내보내기 테이블이 없다"
 
     code, out = _run("gcloud", "projects", "list", "--format=value(projectId)")
@@ -270,8 +354,14 @@ def gcp_actual_spend() -> tuple[str, str]:
             continue          # a project without BigQuery is not a finding
         for dataset in _datasets(listing):
             table = _export_table_in(f"{project}:{dataset}")
-            if table:
-                return "MEASURABLE", table
+            if not table:
+                continue
+            classified = _classify_export(table)
+            if classified:
+                return classified
+            empty = empty or table
+    if empty:
+        return "EXPORTED_EMPTY", empty
     return "NOT_EXPORTED", f"프로젝트 {len(projects)}개를 훑었지만 내보내기 테이블이 없다"
 
 
@@ -308,6 +398,8 @@ def azure_spend(start: str, end: str) -> list[tuple[str, str, list[tuple[str, fl
         )
         if code != 0:
             print(f"    {name}: 비용 조회 실패 — {_why(out)}")
+            if "429" in out:
+                print(f"      {AZURE_429_HINT}")
             return None
         try:
             rows = json.loads(out)["properties"]["rows"]
@@ -339,14 +431,40 @@ def report_azure(start: str, end: str) -> bool:
     return True
 
 
+def _export_query(table_id: str) -> str:
+    """The command a reader can paste. Run against the live export 2026-09-01.
+
+    Three things were wrong with the one printed before, and none could be caught by
+    reading it: the colon form is invalid standard SQL, the missing `--project_id`
+    ran it in whatever project `bq` defaulted to, and summing `cost` alone reports
+    pre-credit usage — the exact trap `GCP_BILLING_EXPORT_SETUP.md` §4 warns about,
+    printed by the tool that points at that document. `credits` is negative, so the
+    two columns are what you owe and what was taken off, side by side.
+    """
+    ref = _sql_ref(table_id)
+    return (
+        f"bq query --use_legacy_sql=false --project_id={_project_of(table_id)} "
+        f"'SELECT service.description AS service, ROUND(SUM(cost),2) AS cost,"
+        f" ROUND(SUM((SELECT IFNULL(SUM(c.amount),0) FROM UNNEST(credits) c)),2) AS credits"
+        f" FROM `{ref}` GROUP BY 1 ORDER BY 2 DESC'"
+    )
+
+
 def report_gcp() -> None:
     """GCP's answer is a state, not a number — printing nothing would read as ₩0."""
     print("GCP 실사용")
     status, detail = gcp_actual_spend()
     if status == "MEASURABLE":
         print(f"    잴 수 있다 — 결제 내보내기 테이블 {detail}")
-        print(f"    bq query --use_legacy_sql=false 'SELECT service.description,"
-              f" SUM(cost) FROM `{detail}` GROUP BY 1 ORDER BY 2 DESC'")
+        print(f"    {_export_query(detail)}")
+        return
+    if status == "EXPORTED_EMPTY":
+        print(f"    아직 답이 없다 — 내보내기 테이블 {detail} 는 있고 행이 0개다")
+        print("    이것은 '₩0'이 아니다. 켠 것과 실린 것은 다르다 — 테이블은 토글 직후")
+        print("    수십 분 안에 생기고 적재는 그 뒤에 따로 온다(09-01 실측: 01:53Z 생성,")
+        print("    14:08Z에도 0행). 하루가 지나도 0행이면 그때부터가 문제다.")
+        print(f"    {_export_query(detail)}")
+        print("      docs/GCP_BILLING_EXPORT_SETUP.md §3   (판정 시점과 좁히는 순서)")
         return
     print(f"    아직 못 잰다 — {detail}")
     print("    이것은 '₩0'이 아니다. GCP엔 지출을 읽는 API가 없다 — Cloud Billing v1엔")

@@ -1,0 +1,135 @@
+# 2026-09-01 (14:12~ UTC) — 세 답을 다시 물었더니, 물어보는 도구가 셋 다 틀리고 있었다
+
+전날 남긴 다음 행동은 "make spend-check의 GCP 줄"이었다. 그 줄을 물으러 갔다가
+**묻는 도구 자신의 결함 셋**이 나왔다. 셋 다 읽어서는 안 보이고 태워야 보이는 것들이다.
+
+---
+
+## 0. 먼저: 조회 비용을 안 낸 이유
+
+`make spend-check`를 통째로 돌리면 AWS Cost Explorer가 불린다($0.01/회). 전날 실측에서
+**CE 자신이 총지출의 84%**였다(`the-measurement-is-the-bill.log`). 물어야 할 건 GCP였으므로
+`report_gcp()`/`report_azure()`만 직접 태웠고, GCP 테이블 확인은 **무료인 `bq ls`/`bq show`**로 했다.
+AWS는 13시간 전 측정이 그대로 유효하다 — **다시 재지 않은 것이 이번엔 옳은 선택이다.**
+
+## 1. GCP — 켠 것과 실린 것과 읽히는 것은 셋 다 다르다
+
+    $ date -u                      → 2026-09-01 14:12:09 UTC   (토글 01:11Z 이후 13시간)
+    $ bq ls --project_id=project-ec7809f7-0fb5-45d4-b6d billing_export
+      gcp_billing_export_v1_010556_A2B7AE_292490   TABLE   DAY(파티션)
+
+**테이블이 생겼다.** 프로브도 그렇게 답했다:
+
+    GCP 실사용
+        잴 수 있다 — 결제 내보내기 테이블 project-...:billing_export.gcp_billing_export_v1_...
+
+그런데 물어보니 답이 없다:
+
+    $ bq show --format=json <table>
+      creationTime     2026-09-01 01:53:42 UTC   (토글 01:11Z → 42분 뒤 생성)
+      lastModifiedTime 2026-09-01 14:08:15 UTC   (조회 4분 전 — 작성기는 살아서 돈다)
+      numRows 0   numBytes 0
+
+⚠️ **"잴 수 있다"고 말해 놓고 물으면 0행이다.** 이 파일(`probe_cloud_spend.py`)이 존재하는 이유가
+*"빈 절은 0으로 읽힌다"*인데, **빈 테이블이 측정으로 읽히고 있었다** — 같은 실패가 한 층 위에서.
+`MEASURABLE`이 **테이블 존재**만 보고 **행 수**를 안 봤다.
+
+⚠️ **0행을 "GCP 지출 ₩0"으로 읽으면 안 된다.** 결제 계정에 프로젝트가 5개 붙어 있다
+(`project-ec7809f7…` · `gen-lang-client-0123174100` · `warranty-hack` · `claude-study-501117` ·
+`gen-lang-client-0983122780`). 적재가 아직 안 온 것과 실릴 게 없는 것을 **지금은 구분할 수 없다**.
+문서 §3의 판정 시점은 **하루**이고 13시간은 그 전이다.
+
+## 2. GCP — 프로브가 출력하던 명령은 돌지 않는다 (한 달 내내)
+
+MEASURABLE 분기는 **라이브 내보내기가 있어야 도달**한다. 09-01 이전엔 없었으므로 그 분기가
+출력하는 명령은 **한 번도 실행된 적이 없었다.** 오늘 처음 태웠다:
+
+    $ bq query --use_legacy_sql=false 'SELECT service.description, SUM(cost)
+        FROM `project-ec7809f7-0fb5-45d4-b6d:billing_export.gcp_billing_export_v1_...` ...'
+    BigQuery error: Project name needs to be separated by dot from dataset name,
+    not by colon in table name
+
+결함 셋이 한 줄에 겹쳐 있었다:
+
+| # | 무엇 | 왜 안 보였나 |
+|---|---|---|
+| ⓐ | `project:dataset.table` — 표준 SQL은 **점**만 받는다 | 식별자로는 콜론이 맞다. 문법은 태워야 안다 |
+| ⓑ | `--project_id` 없음 → **기본 프로젝트에서 실행** | 실제로 `claude-study-501117`에서 돌았다(같은 결제 계정의 **다른** 프로젝트) |
+| ⓒ | `SUM(cost)`만 → **크레딧 미반영 총사용액** | `GCP_BILLING_EXPORT_SETUP.md` **§4가 이 함정을 명시**한다 — 그 문서를 가리키는 도구가 그 함정을 인쇄하고 있었다 |
+
+ⓒ는 **AWS 크레딧 함정의 거울상**이다(Risk 4). 그리고 ⓐⓑⓒ 전부 **문서 §4엔 맞게** 적혀 있었다 —
+**같은 명령이 두 벌 있었고 한 벌만 맞았다.** 복사본 둘 중 하나가 뒤처지는 이 레포의 반복 형태.
+
+고친 명령은 **쓰기 전에 라이브에 태웠다**:
+
+    $ bq query --use_legacy_sql=false --project_id=project-ec7809f7-0fb5-45d4-b6d \
+        'SELECT service.description AS service, ROUND(SUM(cost),2) AS cost,
+         ROUND(SUM((SELECT IFNULL(SUM(c.amount),0) FROM UNNEST(credits) c)),2) AS credits
+         FROM `project-ec7809f7-0fb5-45d4-b6d.billing_export.gcp_billing_export_v1_...`
+         GROUP BY 1 ORDER BY 2 DESC'
+    exit 0   (결과 0행 — §1과 같은 사실)
+
+## 3. Azure — 기록된 결론이 뒤집혔다. 재시도가 답이었다
+
+09-01 앞선 기록: *"spend-check 1회 + 20초 간격 3회 = 4회 연속 429. 재시도가 이번엔 답이 아니었다."*
+13시간 뒤 다시: **또 429**(5회째). 13시간짜리 스로틀은 스로틀이 아니다 — 그래서 헤더를 봤다.
+`az rest`는 헤더를 안 보여주므로 토큰을 받아 직접 POST했다:
+
+    HTTP/2 429
+    x-ms-ratelimit-remaining-...-clienttype-requests:  DefaultQuota:0    ← 고갈된 건 이것 하나
+    x-ms-ratelimit-...-clienttype-retry-after:         5
+    x-ms-ratelimit-remaining-...-entity-requests:      DefaultQuota:2
+    x-ms-ratelimit-remaining-...-tenant-requests:      DefaultQuota:18
+    x-ms-ratelimit-...-qpu-remaining:  QueriesPerHour:58,QueriesPerMin:598,QueriesPer10Sec:11
+
+**서버가 대기 시간을 말하고 있었다.** 그대로 지켜 재시도:
+
+    attempt 1 -> HTTP 429 (retry-after=40)     ← 5가 아니라 40으로 커진다
+    attempt 2 -> HTTP 200
+    rows: [[0.0,"Azure Cosmos DB","KRW"], [76.66993335456,"Container Registry","KRW"]]
+
+⚠️ **결론이 뒤집혔다.** 재시도는 **두 번 다 답이었다**. 08-30이 맞았고 09-01의 *"이번엔 아니었다"*는
+**간격이 서버가 요구한 값 아래였다**는 것이다(20초 < 40초). **고정 간격 재시도는 영구 실패와
+구분되지 않는다** — 그리고 실제로 그렇게 오독됐다.
+
+⚠️ **`_why()`의 docstring이 주장하던 가치를 코드가 못 주고 있었다**: *"1분 뒤 재시도인지 깨진
+자격증명인지 아는 것의 차이"*라고 적어 놓고, **그 숫자를 담은 헤더를 버리는 전송 계층**(`az rest`)을
+쓰고 있었다. 이유의 **이름**은 전달했고 **행동에 필요한 값**은 못 전달했다.
+
+**측정값(2026-09-01 당일, ActualCost)**: Container Registry **₩76.67** · Cosmos DB ₩0.00.
+전액 **남의 프로젝트 ACR**이라는 08-30 기준선과 같은 성질이다.
+
+## 4. 고친 것과 가드
+
+`scripts/probe_cloud_spend.py`
+- `_export_row_count()` — `bq show` **메타데이터**로 행 수를 읽는다(스캔 0바이트 = **$0**).
+  `bq query`로 셌으면 프로브가 돌 때마다 과금됐을 것이다 — CE가 청구서의 84%가 된 그 방식.
+- 상태가 **셋 → 넷**: `EXPORTED_EMPTY` 신설. MEASURABLE에 접으면 **없는 답을 약속**하고,
+  NOT_EXPORTED에 접으면 **이미 올바로 켜진 콘솔 토글로 되돌려 보낸다**. 다른 문제, 다른 다음 행동.
+- ⚠️ **`bq show` 실패는 0행이 아니다** — `AccessDenied`·리전 한정 `[]`·429와 같은 부류(Risk 4).
+  못 읽으면 MEASURABLE로 두고 **질의가 독자 앞에서 시끄럽게 실패**하게 둔다.
+- ⚠️ **빈 테이블이 스윕을 멈추지 않는다** — 스윕은 "설정된 곳에 없더라"라서 생긴 것인데,
+  처음 만난 빈 테이블을 반환하면 그 단일 위치 가정이 되살아난다.
+- `_export_query()` — 명령을 **한 곳에서만** 만든다(MEASURABLE·EXPORTED_EMPTY 둘 다 이걸 부른다).
+  **명령이 두 벌이면 한 벌이 뒤처진다**가 이번 결함의 원인이었다.
+- `AZURE_429_HINT` — 429일 때만 붙는다. **모든 실패에 붙는 조언은 읽히지 않고**, 자격증명이
+  깨진 사람을 rate limit 쫓게 만든다.
+
+`tests/test_cloud_spend_probe.py` — +13.
+**변이 8종 전부 red**: ⓐ존재만으로 MEASURABLE(원래 버그, 2 red) · ⓑ콜론 복원 · ⓒ`--project_id` 제거 ·
+ⓓcredits 열 제거 · ⓔ429 힌트 제거 · ⓕ메타데이터 실패를 0행으로(3 red) · ⓖ빈 테이블이 스윕 중단 ·
+ⓗ모든 실패에 힌트 부착.
+
+## 5. 게이트
+
+    make check → 2381 passed + 2 skipped  (2368 → +13)
+    로컬 macOS·py3.13. 실패 0.
+
+## 6. 다음
+
+- **GCP**: 하루가 지난 뒤(2026-09-02 01:11Z 이후) `numRows`를 다시 볼 것. **여전히 0이면 그때가 문제**다.
+  이제 프로브가 그 구분을 스스로 한다 — "아직 답이 없다"와 "아직 못 잰다"는 다른 줄이다.
+- **Azure**: `az rest`가 헤더를 버리는 것은 그대로다. 힌트는 사람에게 **어떻게 물을지**만 알려 준다.
+  자동 재시도를 프로브에 넣는 것은 전송 계층 교체가 필요하고, `test_only_the_cost_query_endpoint_is_posted_to`
+  가드가 `_run` 인자를 검사하므로 **별도 승인 항목**으로 남긴다.
+- **AWS**: 재측정하지 않았다. 13시간 전 값이 유효하고 다시 묻는 것 자체가 청구서다.

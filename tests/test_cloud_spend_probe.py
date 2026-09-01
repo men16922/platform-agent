@@ -225,14 +225,26 @@ def probe():
     return mod
 
 
-def fake_run(datasets=(), tables=(), projects=("p1",), gcloud_ok=True):
-    """A stand-in for every CLI the GCP half calls; returns (runner, calls-it-made)."""
+def fake_run(datasets=(), tables=(), projects=("p1",), gcloud_ok=True, rows=None):
+    """A stand-in for every CLI the GCP half calls; returns (runner, calls-it-made).
+
+    `rows` is the row count `bq show` reports, per fully-qualified table id, or a
+    single int for every table. `None` means the metadata call fails — which is not
+    the same as reporting zero, and the probe must not read it as such.
+    """
     calls: list[tuple[str, ...]] = []
 
     def _run(*args: str) -> tuple[int, str]:
         calls.append(args)
         if args[0] == "gcloud":
             return (0, "\n".join(projects)) if gcloud_ok else (1, "API not enabled")
+        if "show" in args:                # table metadata for `project:dataset.table`
+            if rows is None:
+                return 1, "Not found"
+            count = rows if isinstance(rows, int) else rows.get(args[-1])
+            if count is None:
+                return 1, "Not found"
+            return 0, json.dumps({"numRows": str(count)})
         if args[-1] == "ls":              # dataset listing for a project
             return 0, json.dumps(
                 [{"datasetReference": {"datasetId": d}} for d in datasets]
@@ -332,14 +344,20 @@ class TestUnmeasurableIsSaidOutLoud:
 WINDOW = ("2026-08-01", "2026-08-10")
 
 
-def fake_az(subs=(("sub-1", "one"),), rows=(("Container Registry", 1989.33),), fail=None):
-    """Stands in for the az CLI; `fail` is "account" or "rest"."""
+def fake_az(subs=(("sub-1", "one"),), rows=(("Container Registry", 1989.33),), fail=None,
+            error="boom"):
+    """Stands in for the az CLI; `fail` is "account" or "rest", `error` its stderr.
+
+    `error` matters because the probe now reads the failure rather than only relaying
+    it: a throttle and a dead credential need different next actions, and telling
+    them apart is the whole content of the 2026-09-01 correction.
+    """
     calls: list[tuple[str, ...]] = []
 
     def _run(*args: str) -> tuple[int, str]:
         calls.append(args)
         if fail is not None and args[1] == fail:
-            return 1, "boom"
+            return 1, error
         if args[1] == "account":
             return 0, json.dumps([{"id": i, "name": n} for i, n in subs])
         return 0, json.dumps(
@@ -559,3 +577,188 @@ class TestTheReportIsOneStream:
         """Saying it on stdout does not make it a success."""
         code, _ = blind_run
         assert code == 2
+
+
+class TestTheTableIsNotTheAnswer:
+    """A materialised export table and a loaded one are different states.
+
+    Measured live on 2026-09-01: the console toggle was saved at 01:11Z, BigQuery
+    created the table at 01:53Z, and at 14:08Z — thirteen hours later, with the
+    table still being touched — it held zero rows. The probe said "잴 수 있다" the
+    whole time. That is this file's own thesis (an empty section reads as a zero)
+    reappearing one level up: an empty *table* was reading as a measurement.
+    """
+
+    def test_an_empty_export_is_not_measurable(self, probe, monkeypatch):
+        runner, _ = fake_run(
+            datasets=["billing_export"],
+            tables=["gcp_billing_export_v1_010556_A2B7AE_292490"],
+            rows=0,
+        )
+        monkeypatch.setattr(probe, "_run", runner)
+        monkeypatch.delenv(probe.GCP_EXPORT_ENV, raising=False)
+        status, detail = probe.gcp_actual_spend()
+        assert status == "EXPORTED_EMPTY", (
+            "a table with no rows cannot answer 'how much', so it is not MEASURABLE"
+        )
+        assert detail.endswith("gcp_billing_export_v1_010556_A2B7AE_292490"), (
+            "name the table anyway — the next check is against that exact one"
+        )
+
+    def test_a_loaded_export_is_measurable(self, probe, monkeypatch):
+        runner, _ = fake_run(
+            datasets=["billing_export"],
+            tables=["gcp_billing_export_v1_010556_A2B7AE_292490"],
+            rows=42,
+        )
+        monkeypatch.setattr(probe, "_run", runner)
+        monkeypatch.delenv(probe.GCP_EXPORT_ENV, raising=False)
+        assert probe.gcp_actual_spend()[0] == "MEASURABLE"
+
+    def test_empty_is_neither_of_the_two_states_it_would_have_been_folded_into(self, probe):
+        """The two wrong homes for this state send a reader to the wrong place:
+        MEASURABLE promises an answer that is not there, NOT_EXPORTED sends them
+        back to a console toggle that is already set correctly."""
+        assert "EXPORTED_EMPTY" not in ("MEASURABLE", "NOT_EXPORTED")
+        source = PROBE.read_text(encoding="utf-8")
+        branch = source.split('if status == "EXPORTED_EMPTY":')[-1].split("return")[0]
+        assert "'₩0'이 아니다" in branch, "an empty table must not read as zero spend"
+        assert "§3" in branch, "point at the section that says when 0 rows becomes a problem"
+
+    def test_unreadable_metadata_is_not_read_as_empty(self, probe, monkeypatch):
+        """`bq show` failing is the same shape as `AccessDenied` and a region-scoped
+        `[]`: it is a failure to look, not evidence of absence. Reading it as zero
+        rows would demote a working export on nothing more than a permissions error."""
+        runner, _ = fake_run(
+            datasets=["billing_export"],
+            tables=["gcp_billing_export_v1_010556_A2B7AE_292490"],
+            rows=None,
+        )
+        monkeypatch.setattr(probe, "_run", runner)
+        monkeypatch.delenv(probe.GCP_EXPORT_ENV, raising=False)
+        assert probe.gcp_actual_spend()[0] == "MEASURABLE"
+
+    def test_an_empty_table_does_not_stop_the_sweep(self, probe, monkeypatch):
+        """The sweep exists because the export is not where it was configured to be.
+        Returning the first *empty* table it trips over would reintroduce exactly the
+        single-place assumption the sweep was written to remove."""
+        table = "gcp_billing_export_v1_010556_A2B7AE_292490"
+        runner, _ = fake_run(
+            datasets=["empty_ds", "real_ds"],
+            tables=[table],
+            projects=["p1"],
+            rows={f"p1:empty_ds.{table}": 0, f"p1:real_ds.{table}": 7},
+        )
+        monkeypatch.setattr(probe, "_run", runner)
+        monkeypatch.delenv(probe.GCP_EXPORT_ENV, raising=False)
+        status, detail = probe.gcp_actual_spend()
+        assert (status, detail) == ("MEASURABLE", f"p1:real_ds.{table}"), (
+            "a loaded table further along the sweep is the better answer"
+        )
+
+    def test_counting_rows_costs_nothing(self, probe, monkeypatch):
+        """This account learned the hard way that observation becomes the bill —
+        Cost Explorer is 84% of AWS spend here. `bq show` reads metadata and scans no
+        bytes; `bq query` would scan the table on every single run of the probe."""
+        runner, calls = fake_run(
+            datasets=["billing_export"],
+            tables=["gcp_billing_export_v1_010556_A2B7AE_292490"],
+            rows=5,
+        )
+        monkeypatch.setattr(probe, "_run", runner)
+        monkeypatch.delenv(probe.GCP_EXPORT_ENV, raising=False)
+        probe.gcp_actual_spend()
+        assert not any("query" in call for call in calls), (
+            "the probe must never run a billable query to decide whether it can measure"
+        )
+        assert any("show" in call for call in calls), "row count must actually be asked for"
+
+
+class TestThePrintedCommandRuns:
+    """The MEASURABLE branch printed a command that could not have worked.
+
+    It went unnoticed because the branch needs a live export and there was none
+    until 2026-09-01 — a printed instruction is a claim, and this one was never
+    executed until the day it first could be. All three faults were invisible to
+    reading and obvious to running; the corrected form was run against the live
+    export before being written here (exit 0).
+    """
+
+    @pytest.fixture
+    def printed(self, probe):
+        return probe._export_query(
+            "project-ec7809f7-0fb5-45d4-b6d:billing_export."
+            "gcp_billing_export_v1_010556_A2B7AE_292490"
+        )
+
+    def test_the_table_is_dotted_not_coloned(self, printed):
+        """Standard SQL: "Project name needs to be separated by dot from dataset
+        name, not by colon" — the command failed before touching a row."""
+        table_ref = printed.split("FROM `")[1].split("`")[0]
+        assert ":" not in table_ref, "the colon form is rejected by standard SQL"
+        assert table_ref.count(".") >= 2, "project.dataset.table"
+
+    def test_the_query_names_the_project_it_must_run_in(self, printed):
+        """Without it the job runs and bills in whatever `bq` defaults to — on this
+        machine a *different* project of the same billing account."""
+        assert "--project_id=project-ec7809f7-0fb5-45d4-b6d" in printed
+
+    def test_credits_are_not_silently_dropped(self, printed):
+        """Summing `cost` alone is pre-credit usage, which is the trap
+        GCP_BILLING_EXPORT_SETUP.md §4 spells out — printed by the very tool that
+        points the reader at that document. It is the AWS credit trap mirrored."""
+        assert "credits" in printed, "the reader must see what was taken off, not just gross"
+        assert "UNNEST(credits)" in printed, "credits is a repeated field; it has to be flattened"
+
+    def test_both_states_that_name_a_table_print_the_same_runnable_command(self, probe):
+        """Two copies of a command is how one of them stays broken."""
+        source = PROBE.read_text(encoding="utf-8")
+        report = source.split("def report_gcp(")[1]
+        assert report.count("bq query") == 0, (
+            "the command must come from _export_query, not be spelled out again"
+        )
+        assert report.count("_export_query(") == 2, (
+            "MEASURABLE and EXPORTED_EMPTY both name a table, so both print how to ask it"
+        )
+
+
+class TestAzure429SaysHowLongToWait:
+    """The recorded conclusion was backwards, and measurement turned it over.
+
+    2026-08-30 recorded "retrying was the answer"; 2026-09-01 recorded "retrying was
+    not the answer this time" after three tries 20 seconds apart. Asking with the
+    headers visible showed why: the exhausted bucket was `clienttype-requests`
+    (DefaultQuota:0) while entity, tenant and QPU all had room, and the server named
+    its own interval — 5s, then 40s. Waiting the 40 returned 200. Retrying was the
+    answer both times; the interval was never read because `az rest` hides headers.
+    """
+
+    def test_a_429_tells_the_reader_the_wait_is_knowable(self, probe, monkeypatch, capsys):
+        runner, _ = fake_az(
+            fail="rest",
+            error='ERROR: Too Many Requests({"error":{"code":"429",'
+                  '"message":"Too many requests. Please retry."}})',
+        )
+        monkeypatch.setattr(probe, "_run", runner)
+        probe.report_azure("2026-09-01", "2026-09-02")
+        out = capsys.readouterr().out
+        assert "clienttype-retry-after" in out, (
+            "name the header that carries the number, since az rest will not show it"
+        )
+        assert "측정하지 못했다" in out, "a throttled read is still not a zero"
+
+    def test_a_non_throttle_failure_does_not_get_the_throttle_advice(self, probe, monkeypatch, capsys):
+        """Advice printed under every failure teaches readers to skip it, and would
+        send someone chasing a rate limit when the credential is what broke."""
+        runner, _ = fake_az(
+            fail="rest", error="ERROR: AADSTS700082: refresh token has expired",
+        )
+        monkeypatch.setattr(probe, "_run", runner)
+        probe.report_azure("2026-09-01", "2026-09-02")
+        out = capsys.readouterr().out
+        assert "clienttype-retry-after" not in out
+
+    def test_the_hint_forbids_the_interval_that_failed(self, probe):
+        """A fixed short interval is indistinguishable from a permanent failure, and
+        that is exactly how it was misread."""
+        assert "고정 간격" in probe.AZURE_429_HINT
