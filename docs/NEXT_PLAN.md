@@ -5,7 +5,7 @@
 > **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(**M15=공급망 0→집행 + Phase 5 경계 +
 > `main` 보호**, M14=결정 6건, M13=미소비 14건) / `PROGRESS_LOG.md`(+`docs/archive/`). **≤120줄**.
 
-## 현재 상태 (2026-09-01, gate 2350 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
+## 현재 상태 (2026-09-01, gate 2358 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
 
 **Phase 0·1a·1b·2·3 완결**(M10~M12) + **잔여 소진**(M13) + **결정 7건 닫힘**(D36·D38~D43).
 **공급망은 닫을 수 있는 만큼 닫혔다**(어드미션만 업스트림 대기) · **`main`은 보호된다**
@@ -44,7 +44,7 @@ blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 �
 - ⛔**대시보드 취약점은 닫혔다(08-30) — `npm audit` 0건**(Tier A + `next 16.3.3`; 라우트 17개 동일·eslint 새 소견 0).
   **`STATUS` Risk 11이 권위** — ⚠️거기 적힌 "기록이 세 군데 다 틀렸다"를 지우지 말 것. **다시 열지 말 것.**
 ⛔**`onprem` extra의 `mlx-lm`은 닫혔다(2026-09-01) — `COMPLETED_SUMMARY` M41이 권위.** 뺐고, `gate.yml`이 이제 `.[onprem]`을 깐다 ⇒ **인라인 패키지 0개**. ⚠️**기록된 근거는 적을 당시 참**이었다(하한 `0.19.0`은 마커가 없어 리눅스 resolve가 진짜 실패) — **stale이 아니라 더 나빠졌다**: 리졸버가 고르는 0.31.3은 마커가 붙어 **설치되고 엔진만 조용히 빠진다**. ⚠️**"안 쓰이니 지운다"가 아니다** — `.venv-mlx` 분리는 **설계**(활성화되면 pytest를 가린다)라 extra가 mlx를 프로젝트 env로 들이는 건 그 분리를 뒤집는다. **다시 열지 말 것.**
-- [ ] **정적검사를 게이트에 넣을지 — 사용자/레포 결정.** ✅**선행 둘 다 이제 재기 좋다(09-01, M42)**: `make lint` **20건**(F841 8·E731 5·E701 5·F402 1·E712 1 · src 7·tests 13, 전수 분류 **결함 0**) · mypy **253 errors in 88 files (166 checked)**. ⚠️**그 253은 09-01 전엔 그냥 안 나왔다** — `[tool.mypy]`에 vendored 제외가 없어 `mypy src/`가 **수집 단계에 죽었다**(셋째 형제, 고쳤다). `gate.yml`이 *"a CI job is a bad place to introduce a standard nobody agreed to"*라 적어 뒀다 — **묻기 좋게 만들어 뒀지 대신 정하지 않았다.** 증거 `the-third-sibling-was-mypy.log`.
+- [ ] **정적검사를 게이트에 넣을지 — 사용자/레포 결정.** ✅**선행 둘 다 이제 재기 좋다(09-01, M42)**: `make lint` **20건**(F841 8·E731 5·E701 5·F402 1·E712 1 · src 7·tests 13, 전수 분류 **결함 0**) · mypy **253 errors in 88 files (166 checked)**. ⚠️**그 253은 09-01 전엔 그냥 안 나왔다** — `[tool.mypy]`에 vendored 제외가 없어 `mypy src/`가 **수집 단계에 죽었다**(셋째 형제, 고쳤다). `gate.yml`이 *"a CI job is a bad place to introduce a standard nobody agreed to"*라 적어 뒀다 — **묻기 좋게 만들어 뒀지 대신 정하지 않았다.** 증거 `the-third-sibling-was-mypy.log`. ⚠️**결정에 줄 표본이 하나 생겼다(09-01, M44)**: mypy 253의 **200은 주석 부채**(`type-arg`·`import-untyped`·`no-any-return`·`no-untyped-def`·`no-untyped-call`)이고 **53이 실제 주장**인데, 그중 하나가 **테스트가 한 번도 언급 안 한 계약 갭**을 짚었다. ⛔**이건 "켜라"가 아니라 "이 도구가 여기서 무엇을 찾는가"의 표본이다.**
 - ⛔**Azure executor는 배선됐다(08-30, 승인 후) — `COMPLETED_SUMMARY` M39가 권위. 다시 열지 말 것.**
   ⚠️**"이제 Azure는 안전하다"로 요약 금지**: 열린 건 **경로**고, 오늘 blast radius가 0인 건 러너가
   만지는 **AKS·FunctionApp이 구독에 0개**여서다(**오늘의 사실이지 불변식이 아니다**). 자격증명
