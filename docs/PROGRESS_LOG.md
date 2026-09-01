@@ -7,6 +7,20 @@
 
 ---
 
+## 2026-09-01 — 지운 뒤에도 파이프는 계속 말을 걸고 있었다 · 결제 내보내기를 켰다 (gate 2368)
+
+- Status: "환경이 없어서" 막혀 있던 둘을 수행했다(사용자가 Docker 기동 + 브라우저 제공). 권위 `docs/evidence/the-pipe-kept-403ing-after-the-key-was-gone.log`.
+- Verified(**예고한 실패가 라이브였다**): kind를 띄우니 Prometheus가 **삭제된 워크스페이스로 계속 remote_write**했다 — `403 Forbidden: "The security token included in the request is invalid."`(지운 IAM 키). D50이 *"지우면 실패하기 시작한다"*고 적은 그것이고 **그게 결정의 내용이었다**.
+- Verified(**⚠️값 파일을 고친 것만으로는 안 끝났다**): git의 값 파일엔 블록이 없는데 **배포된 helm 릴리스(rev 5)는 그대로**였다. **선언을 고치는 것과 도는 것을 고치는 것은 다르다** — 이 레포의 반복 주제가 인프라 층에서 재발.
+- Changed(**helm rev 5→6**): 계획서와 같은 순서(`helm get values` 먼저). ⚠️**함정**: `--reuse-values`를 붙인 dry-run엔 **remoteWrite가 1건 남았다**(기존 릴리스 값을 병합하므로) — 그대로 적용했으면 *"고쳤다"*고 보고하며 아무것도 안 바뀌었을 것이다. 뺀 dry-run은 0건 + 알람 룰 유지 ⇒ 적용. 고아 Secret `monitoring/amp-remote-write` 삭제(`NotFound` 확인) · PrometheusRule 31개·`PlatformDemoCrashLoop` **그대로**.
+- Verified(**⚠️"설정이 사라졌다"와 "도는 것이 멈췄다"도 다르다**): CR·config가 비었는데도 오류는 01:09:54까지 계속됐다(파드가 옛 설정). 그래서 **로그가 아니라 런타임 API에 물었다**(`/api/v1/status/config` → `remote_write` **0건**), 리로드(01:10:47) **이후 깨끗한 창**으로 다시 셌다 → **40초간 0건**. ⚠️`--since=90s`로는 **7건**이 나왔다 — **창이 사건보다 넓으면 지나간 실패를 현재로 읽는다**(MTD로 "지금"을 답하지 말라던 것과 같은 모양).
+- Verified(**곁에서 나온 기존 고장 — 내 것이 아니다**): 오퍼레이터가 alertmanager를 `invalid URL: unsupported scheme ""`로 못 만든다. 값 파일 74행이 **렌더 안 된 `${webhook_url}`**이고 파드는 **42일간 34회 재시작**, 업그레이드 **전** 로그에도 이미 연결 거부가 있었다 ⇒ **기존 고장.** 고치려면 Terraform이 렌더해야 해서 **범위 밖이라 손대지 않았고, 기록만 남긴다.**
+- Changed(**GCP 결제 내보내기 켬**): 표준 사용량 비용 → **사용 설정됨**(프로젝트 `project-ec7809f7-0fb5-45d4-b6d` · 데이터 세트 `billing_export`, 새로 안 만듦). ⚠️**첫 시도는 틀린 Chrome 프로필**이었다(아바타 "B", 페이지 로드 실패) — 문서 §1이 적어 둔 함정 그대로. ⚠️**편집 폼의 프로젝트 기본값이 `Claude Study`**여서 그대로 저장했으면 **엉뚱한 프로젝트에 켜졌다.**
+- Verified(**⚠️아직 "잴 수 있다"가 아니다**): `make spend-check`는 여전히 *"아직 못 잰다 — 내보내기 테이블이 없다"*이고 **그건 문서 §3이 예고한 정상 상태**다(첫 테이블까지 수 시간). **켠 것은 확인됐고 읽히는 것은 미확인이다 — 둘을 같은 문장으로 쓰지 않는다.** ⚠️소급 안 됨(§0): 07월 GKE 비용은 복구되지 않는다.
+- Blockers: 없음. **게이트 숫자 변화 없음**(코드 변경 없음).
+- Next: **`make spend-check`의 GCP 줄을 수 시간 뒤 재확인**(하루가 지나도 그대로면 그때부터가 문제) · alertmanager `${webhook_url}` 미렌더(기존 고장, 인프라 결정).
+
+
 ## 2026-09-01 — 정적검사 결정을 닫았다: 측정 위에서, "나중에 보자"가 아니라 (gate 2368)
 
 - Status: 08-30부터 열려 있던 **사용자/레포 결정**을 **숫자를 갖고** 물어 닫았다 → **D51**.
@@ -17,17 +31,3 @@
 - Changed: `DECISIONS` **D51** 신설 · `NEXT_PLAN`의 항목을 닫음 · `AGENT_BRIEF`의 `▶ NEXT SESSION`을 **남은 것**으로 교체(BQ 내보내기 · 고아 Secret · 4b · Phase 5 attach UI).
 - Blockers: 없음. **게이트 숫자 변화 없음**(문서·결정만).
 - Next: ⚠️**무과금 목록이 또 비었다 — 그게 사실이 아니라는 게 이 레포의 기록이다**(여섯 번 틀렸다). 09-01의 증분 넷은 **전부 다른 일을 하다가** 나왔다.
-
-
-## 2026-09-01 — 시그니처는 필수라 했고 본문은 선택이라 했다: 그 기본값이 정책이었다 (gate 2368)
-
-- Status: mypy 253을 **분류하다가** 나왔다. **결정은 여전히 안 내렸다.** 권위 `docs/evidence/the-signature-said-required-the-body-said-optional.log`.
-- Verified(**`arg-type` 15 중 10이 한 함수**): `onprem_webhook_api`가 `summary.get(...)`를 `record_incident(severity: str, …)`의 **필수 `str`** 자리로 넘긴다. 그런데 본문은 다섯 다 **`x or "기본값"`** — **본문은 처음부터 `None`을 받도록 쓰여 있었다. 코드가 옳고 선언이 거짓이었다.**
-- Verified(**`None`은 도달 가능하다**): 파이프라인 결과는 **키를 항상 갖지만 값이 `.get()` 결과**이고, 그 위에 파이프라인이 스스로 `incident = detector_out.get("normalized_incident") or {}`라 적어 뒀다 — **부재를 예상했다는 저자들 자신의 진술**이다. 없으면 `service`가 `None`으로 `alarm_name`에 도착한다. ⚠️`else: # MANUAL` 가지는 **`mode`가 `None`일 때도 걸린다**.
-- Changed: 다섯을 `str | None`로. ⚠️**문을 닫는 쪽이 아니다** — 거부하면 **저하된 인시던트가 "인시던트 없음"이 된다**. `arg-type` **15→5**, mypy **253→241**.
-- Changed(**⚠️진짜 발견은 그다음 — 가드 +10**): 주석을 고치는 건 **도는 것을 하나도 안 바꾼다**. 도는 것은 **기본값 부여**이고, `record_incident`를 쓰는 테스트 7개 중 **다섯 필드에 `None`을 넘기는 파일이 0개**였다 ⇒ **저하된 인시던트의 분류가 무단언**이었다. 둘은 그냥 기본값이 아니라 **축의 안전한 끝**이다: **MANUAL**=실행하지 **않는** 모드(AUTO로 기본값이 되면 **아무도 고르지 않은 조치가 나간다** — M39의 반대편) · **P3**=척도의 **바닥**(P1이면 불완전한 analyzer 출력마다 사람을 호출한다). 신규 가드는 문자열이 아니라 **어느 끝인지**를 묻고 **저장된 행까지** 읽는다(반환값만 보면 파일에 `null`이 적혀도 통과한다).
-- Verified(**변이 4 red · 1은 못 쟀다**): mode→AUTO(3 failed) · severity→P1(3) · 기본값 제거(2) · 주어진 값 무시(1). ⚠️**M5(저장 건너뛰기)는 단일 호출 지점이 없어 변이가 안 붙었다** — *"안 쟀다"*로 남긴다.
-- Verified(**곁가지 — mypy 오탐 하나를 격리했다**): `return-value` 4건이 전부 `x or os.getenv(k, DEF)` 모양인데, `os.getenv(k, DEF)` 단독은 `str`, `x or "literal"`도 `str`, `x or y`도 `str`인데 **`x or os.getenv(k, DEF)`만 `str | None`**이다 — `or`의 오른쪽에서 **오버로드가 첫 번째로 재해석**된다(mypy 1.14.1). **런타임엔 None이 될 수 없다** ⇒ 고치지 않았다.
-- Verified(**누적 그림 — 결정에 줄 숫자**): 실제 주장 53 중 **21건을 열었다** → **실제로 고칠 값이 있던 건 2건**(M44의 계약 갭 + 이 선언 불일치), 나머지 19는 노이즈이거나 *"코드는 옳고 타입이 못 따라간다"*(오탐 4 · 도달 불가 2 · 재-export 3 · 이종 dict 2 · 이름 재선언 1 · 미설치 라이브러리 2 · 기타). **그게 이 도구의 이 레포에서의 신호 대 잡음비다.**
-- Blockers: 없음.
-- Next: **정적검사 게이트 편입 — 이제 숫자를 갖고 물을 수 있다**(사용자/레포 결정) · BQ 결제 내보내기(콘솔 수동) · kind 재기동 시 `monitoring/amp-remote-write` Secret 삭제.
