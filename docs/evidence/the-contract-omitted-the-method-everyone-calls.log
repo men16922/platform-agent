@@ -59,13 +59,41 @@
         → 재-export 엄격성(`no_implicit_reexport`). 런타임 무관.
 
     ×2  model_router.py:375-376  Item "None" … has no attribute "output"/"all_messages"
-        → `run.result`가 선언상 None을 허용하는데 검사 없이 역참조. pydantic-ai가
-          완료 후 채우므로 **실제로 도달하는지는 미증명**. 좁히기 갭이지 실증된 버그 아님.
+        → **재서 도달 불가로 닫았다**(아래 §3.1). 좁히기 갭이지 버그가 아니다.
 
     ×1  detector.py:387  "SignalAdapter" has no attribute "from_alarm_context"
     ×1  executor.py:348  "ExecutionAdapter" has no attribute "parameters_for_action"
 
 마지막 둘이 이 문서의 이유다.
+
+### 3.1 `model_router`의 None 역참조 — 재서 닫았다
+
+처음엔 *"미증명"*으로 남길 뻔했다. **"모른다"와 "도달 불가"는 다른 답**이라 쟀다.
+
+업스트림 계약(`pydantic_ai.agent.AgentRun.result`):
+
+    """The final result of the run if it has ended, otherwise `None`."""
+    graph_run_output = self._graph_run.output
+    if graph_run_output is None:
+        return None
+
+즉 **반복이 끝나기 전에는 정말로 None**이다. 그래서 관건은 *어디서 읽는가*다 —
+들여쓰기로 답이 나온다:
+
+    346|  4| async with agent.iter(...) as run:
+    347|  8|     async for node in run:
+      …            (본문에 `break` 없음)
+    373|  8|     result = run.result        ← 루프를 **완주한 뒤**, async with 안
+    375|  4| summary = str(result.output)   ← async with **밖**
+
+`async for`를 완주했다는 것은 End 노드가 나왔다는 것이고 ⇒ `result`는 채워져 있다.
+**`break`가 없다.** 예외는 375까지 못 가고 전파된다. 이 함수는 async generator라
+소비자가 중간에 버리면 `GeneratorExit`가 `yield` 지점에서 올라오는데, 그 역시
+373·375에 닿지 않는다.
+
+⇒ **mypy는 선언된 타입에 대해 옳고, 코드도 옳다.** 좁히기(narrowing)를 안 썼을 뿐이다.
+**여기 적어 두는 이유는 다음 세션이 같은 줄을 다시 파지 않게 하기 위해서다** —
+마른 스윕도 측정이다(M26).
 
 
 ## 4. ⚠️ 계약이 호출되는 메서드를 선언하지 않고 있었다
