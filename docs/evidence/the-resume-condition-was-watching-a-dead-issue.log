@@ -1,0 +1,69 @@
+# Cosign 어드미션: 결론은 유지되고, 재개 조건이 틀린 것을 물고 있었다 (2026-09-02)
+# 기록된 조건: "policy-controller#1406 open · cosign v3.1.2에 --new-bundle-format 없음" (08-30)
+# 전부 read-only (GitHub API + 로컬 cosign --help). 클라우드 호출 0건, 클러스터 변경 0건.
+
+=== §1. 우리가 물고 있던 신호 — #1406 ===
+state=open  created=2024-05-06  updated=2024-09-30  Support for Sigstore Bundle Specification
+  ⇒ 열려 있다. 그런데 마지막 갱신이 2024-09-30 이다 — 2년 가까이 멈춰 있다.
+
+=== §2. 그 이슈가 요구하던 구현은 이미 머지됐다 — #1725 ===
+merged=true  merged_at=2025-04-23  base=main  Add support for Sigstore Bundle Spec
+  ⇒ 2025-04-23 머지. #1406 은 그 뒤로 손대지 않은 트래킹 이슈다.
+  ⇒ '이슈가 열려 있다'는 '지원이 없다'의 증거가 아니었다.
+
+=== §3. 그렇다면 우리는 고쳐지기 전 버전을 시험한 것인가? — 아니다 ===
+  08-08 실측에 쓴 것: helm chart 0.10.6
+  chart 0.10.7  appVersion 0.13.1  created 2026-08-28
+  chart 0.10.6  appVersion 0.13.1  created 2025-11-19
+  ⇒ appVersion 0.13.1 은 #1725 머지(2025-04-23) 이후 릴리스(2025-09-17)다.
+  ⇒ 우리는 이미 '지원이 들어간' 버전을 시험했고, 그래도 안 됐다. 결론은 살아 있다.
+
+=== §4. 진짜 신호 — 우리 증상과 우리 버전을 그대로 적은 이슈가 따로 있다 ===
+  CLOSED  #2007  2026-08-24  Vendor cosign policy code and upgrade cosign to v3.1.3
+  CLOSED  #1979  2026-08-17  chore(deps): Bump the minor-patch group across 1 directory with 25 updates
+  OPEN  #1968  2026-08-11  fix: Support cosign v3 signature verification
+  CLOSED  #1922  2026-06-23  chore(deps): Bump github.com/sigstore/cosign/v2 from 2.5.0 to 2.6.2
+  OPEN  #1984  2026-07-30  chore(deps): Bump sigstore/cosign-installer from 3.9.2 to 4.1.2
+  CLOSED  #1956  2026-06-22  chore(deps): Bump sigstore/cosign-installer from 3.9.2 to 4.1.1
+  CLOSED  #1977  2026-06-18  chore(deps): Bump the minor-patch group across 1 directory with 25 updates
+  CLOSED  #1975  2026-06-18  chore(deps): Bump the minor-patch group across 1 directory with 9 updates
+
+  #1899  state=open  pr=false  updated=2026-01-12  Cannot verify keyless signatures created with cosign v3.0.2 and policy-controller 0.13.1
+  #1968  state=open  pr=true  updated=2026-08-11  fix: Support cosign v3 signature verification
+  #2007  state=closed  pr=true  updated=2026-08-24  Vendor cosign policy code and upgrade cosign to v3.1.3
+    #1968 merged=false
+    #2007 merged=true  merged_at=2026-08-24
+
+=== §5. #2007 은 머지됐지만 어떤 릴리스에도 없다 ===
+  v0.15.1  2026-03-26
+  v0.15.0  2026-03-26
+  v0.14.0  2026-01-12
+  최신 릴리스 v0.15.1 은 2026-03-26 이고, #2007 머지는 2026-08-24 다.
+  그 릴리스 이후 main 커밋 수: 51
+
+=== §6. cosign 쪽 기록은 정확했다 — 그리고 더 넓게 참이다 ===
+  GitVersion:    v3.1.2
+  GoVersion:     go1.26.5
+  cosign sign : (없음)
+  cosign sign-blob : (없음)
+  cosign attest : (없음)
+  cosign attest-blob : (없음)
+  cosign verify : (없음)
+  cosign verify-blob : (없음)
+  ⇒ sign/attest 뿐 아니라 여섯 하위 명령 어디에도 없다. v2의 옵트인 플래그였고
+     v3에서는 그 형식이 기본이라 플래그 자체가 사라졌다 — 즉 간극은 서명하는 쪽이
+     아니라 검증하는 쪽에 있다. #2007(policy-controller를 cosign v3.1.3으로 올림)이
+     그 방향을 가리킨다.
+
+=== §7. 판정 ===
+  결론(어드미션은 아직 못 켠다)은 유지된다 — 08-08 실측이 지원 버전에서 이미 실패했다.
+  근거는 틀렸다. #1406 이 닫히기를 기다리는 조건은 발화하지 않을 수 있는 신호였다.
+
+  새 재개 조건 (둘 중 먼저 오는 것):
+    ⓐ policy-controller #1968 "fix: Support cosign v3 signature verification" 머지
+    ⓑ #2007(2026-08-24 머지)을 담은 policy-controller 릴리스 출시
+       — 최신은 v0.15.1(2026-03-26)이고 그 뒤 51 커밋이 릴리스되지 않은 채 쌓여 있다.
+  증상 티켓 #1899 (cosign v3.0.2 서명 + policy-controller 0.13.1)는 우리 조합 그대로다.
+
+  ⚠️ 이 판정으로 클러스터에는 아무것도 하지 않았다. 재시도는 kind 클러스터 변경이라
+     승인 후에 한다.

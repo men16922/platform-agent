@@ -7,6 +7,18 @@
 
 ---
 
+## 2026-09-02 — 재개 조건이 2년 전에 멈춘 이슈를 보고 있었다 (gate 2407)
+
+- Status: 열린 항목 중 **날짜가 박힌 재확인 지시**를 단 유일한 것(Risk 6 / Cosign 어드미션, *"이 날짜부터 볼 것"*)을 판정했다. **완결**, M51. 권위 `docs/evidence/the-resume-condition-was-watching-a-dead-issue.log`.
+- Verified(**결론은 유지된다**): 어드미션은 **아직 못 켠다**. 08-08 kind 실측이 *"서명된 것도 no signatures found"*였고 그 판정은 그대로다.
+- Verified(**⚠️근거는 틀렸다 — 물고 있던 신호가 죽어 있었다**): 재개 조건이던 `policy-controller#1406`은 **2024-09-30 이후 갱신이 없다**. 그 이슈가 요구하던 구현은 **`#1725`로 2025-04-23에 머지**됐다. **"이슈가 열려 있다"는 "지원이 없다"의 증거가 아니었다** — Risk 4의 *"'없다'는 어떻게 봤는지까지"*가 업스트림 쪽에서 재발한 모양이다.
+- Verified(**⚠️그럼 고치기 전 버전을 시험한 것인가 — 아니다**): 08-08에 쓴 chart **0.10.6**의 appVersion은 **0.13.1**(2025-09-17)로 **`#1725` 머지 이후**다. 즉 **지원이 들어간 버전에서 이미 실패했다.** 이 확인을 안 했으면 *"낡은 버전을 시험했다"*는 틀린 이야기를 적을 뻔했다.
+- Verified(**진짜 신호는 따로 있었다**): `#1899`(*"cosign v3.0.2 서명을 policy-controller **0.13.1**이 검증 못 한다"*, **open**)가 **우리 조합 그대로**이고, 고침은 `#1968`(*"fix: Support cosign v3 signature verification"*, **미머지**)이다. ⇒ **새 조건 = `#1968` 머지 또는 `#2007`(2026-08-24 머지)을 담은 릴리스** — 최신 v0.15.1은 **2026-03-26**이고 그 뒤 **51 커밋이 미출시**다.
+- Verified(**cosign 쪽 기록은 정확했고, 더 넓게 참이다**): `--new-bundle-format`은 v3.1.2의 **여섯 하위 명령**(`sign`·`sign-blob`·`attest`·`attest-blob`·`verify`·`verify-blob`) **어디에도 없다** — v2의 옵트인 플래그였고 v3에선 그 형식이 기본이라 사라졌다. ⇒ **간극은 서명하는 쪽이 아니라 검증하는 쪽**이고, `#2007`(policy-controller를 cosign v3.1.3으로 올림)이 그 방향을 가리킨다.
+- Verified(**안 한 것도 측정이다**): **클러스터를 건드리지 않았다** — 재시도는 kind 변경이라 승인 후다. 클라우드 호출 **0건**(GitHub API와 로컬 `cosign --help`뿐). `make check` **2407 passed + 2 skipped**(변동 0 — 문서와 증거만 바뀌었다).
+- Blockers: 업스트림. **단 이제 기다리는 대상이 살아 있는 것으로 바뀌었다.**
+- Next: 며칠 뒤 **`make spend-check`**(창 3일→7일이면 GCP 런레이트가 가정 없이 나온다) · Risk 6은 **`#1968`/릴리스**를 볼 것.
+
 ## 2026-09-02 — `MEASURABLE`이 금액을 대신 묻는다: 첫 가드는 한 글자 때문에 변이를 놓쳤다 (gate 2407)
 
 - Status: 브리프가 지목한 다음 행동 — 설정문서 §4가 *"데이터가 생기면 그때 붙인다"*로 미뤄 둔 분기. **완결**, M50. 권위 `docs/evidence/the-guard-let-the-mutation-through-because-of-one-character.log`.
@@ -71,19 +83,3 @@
 - Verified(**⚠️예산의 단위는 바이트가 아니다**): `wc -c`는 8,354를 말하고 가드는 5,197을 말한다 — 한글이 UTF-8에서 3바이트다. `wc`로 재면 **예산 초과로 착각한다**. 가드가 쓰는 건 `len(read_text())`다.
 - Blockers: 없음.
 - Next(⚠️**이건 이득만은 아니다**): 옮긴 절반은 `/sync` 읽기 경로(brief→status→plan→log)에 **없다** — 다음 세션의 기본 문맥에서 빠진다. 그게 압축의 대가고, 그래서 STATUS 헤더가 archive를 권위로 **지목만** 하고 요약하지 않는다. 남은 `[auto]` 둘(NEXT_PLAN 10,797 · AGENT_BRIEF 7,606)도 **같은 함정**이다.
-
-## 2026-09-02 — 인쇄된 경로도 주장이다: 39개를 전수로 물었고 0개가 dangling이었다 (gate 2397)
-
-- Status: overnight `[auto]` 1건 — M46이 남긴 교훈("인쇄된 지시도 주장이다")을 가드로 만들었다. **완결**, M48. 권위 `docs/evidence/the-printed-path-was-a-claim-nobody-checked.log`.
-- Changed(`tests/test_script_printed_paths_resolve.py`, 신규): `scripts/*.py`의 **문자열 리터럴 속 레포-상대 경로 전수**가 레포에 실존하는지 묻는다. 앵커(top-level 디렉터리)는 **git에서 유도**해 새 디렉터리가 생기면 그날 스윕된다.
-- Verified(**쓰기 전에 쟀다**): 23 스크립트 · **39개**(distinct) · 그중 **stdout에 닿는 것 4개** · **dangling 0**. 초록에서 시작하는 가드지 청소 과제가 아니다.
-- Verified(**존재는 git에게 물었다, 이 노트북이 아니라**): `pathlib.exists()`면 여기선 초록, CI에선 red다 — `src/stacks/node_modules`가 디스크엔 있고 `.gitignore:16`에 있다. 불변식은 *"레포가 담고 있다"*지 *"내 파일시스템에 있다"*가 아니다(Risk 12②). 변이 3이 이걸 직접 태운다.
-- Verified(**첫 판이 false red를 냈고, 면제 목록으로 덮지 않았다**): `probe_scope_reachability.py:116`의 `.endswith("platform/scope.py")`는 경로가 아니라 **grep 출력에 맞대는 조각**이다(`platform/`이 top-level이라 경로처럼 보였다). **쓰임으로** 갈랐다 — `startswith`/`endswith`의 인자와 `in`의 좌변은 독자에게 보여지지 않는다. ⚠️*"중의적인 top-level 이름은 뺀다"*는 규칙은 `src`(↔`dashboard/src`)까지 죽여서 안 썼다.
-- Verified(**접두 매칭 함정은 양쪽에 다 있었다**): 추출 쪽 — 확장자를 `json|jsonl` 순서로 나열하면 `.jsonl`이 잘린다(실제 짝: `model-sweep-live-points.jsonl` ↔ 없는 `.json`) ⇒ 꼬리는 **탐욕적 문자 클래스 하나**. 검사 쪽 — `startswith` 멤버십이면 그 없는 `.json`이 **있는 것으로 통과**한다 ⇒ 정확 일치.
-- Verified(**⚠️가드 자신이 한 번 틀렸다 — 변이 하나가 살아남았다**): 접두 함정 테스트가 `_repo_paths()`(집합)에 물었는데 dangling 검사는 **별도의 식**을 써서, 멤버십을 `startswith`로 느슨하게 해도 5개가 전부 초록이었다. **가드가 독자가 쓰는 그 물건이 아니라 제 창문에 물고 있었다**(Risk 12④). 판정을 `_in_repo()` 한 곳으로 뽑아 둘이 같은 것을 묻게 하니 red.
-- Verified: `make check` **2397 passed + 2 skipped**(2392 → **+5**), 실패 0. **변이 8종 전부 red**(없는 이름 · `.jsonl`→`.json` · gitignore된 경로 · 추출기를 확장자 나열로 · 스윕 비우기 · `print()` 미인식 · 멤버십 `startswith` · 조각 예외 제거). 변이·실행·복구는 한 스크립트이고 **복구는 바이트 사본에서**(Risk 12⑦, `git checkout --` 아님).
-- Verified(**기존 가드와 안 겹친다**): `test_evidence_pointers_resolve`는 `docs/evidence/*.log` **한 종류**를 `tests`·`docs`·`src`에서 훑고 **`scripts/`는 안 읽는다**. 이 파일이 나머지 절반이다.
-- Verified(**안 한 것도 측정이다**): `#` 주석은 안 훑는다 — 주석에만 사는 경로를 재니 `src/stacks/node_modules` 하나였고 **의도적으로 tracked가 아니다**(훑으면 가드가 vendored 의존성을 커밋하라 요구한다). 점 top-level(`.github/` 등)은 앵커 밖 — scripts의 참조 횟수를 **0으로 쟀다**. 라이브 호출 0건.
-- Changed(`docs/STATUS.md`): 문자 예산이 **10,998/11,000**이라 새 baseline 줄이 안 들어갔다 — 08-30(2332) 전문을 `docs/archive/status-baseline-2026-08.md`로 **옮겼다**(삭제 아님). ⚠️**STATUS 압축 `[auto]`(≤9,900)는 여전히 열려 있다** — 여기선 한 줄 들어갈 만큼만 비웠다.
-- Blockers: 없음.
-- Next: **GCP 내보내기 테이블 `numRows`** — 판정 시점(09-02 01:11Z)이 지났다. `bq show --format=json <table>`(무료). 0이면 그때가 문제다.
