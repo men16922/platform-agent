@@ -1,6 +1,6 @@
 # COMPLETED_SUMMARY — platform-agent
 
-최종 갱신: 2026-08-16
+최종 갱신: 2026-09-02
 
 > 완료된 milestone 압축. current docs 에는 링크만, 상세 체크리스트는 여기로 압축.
 > 도메인 원문 상세는 `bin/docs/archive/`.
@@ -37,6 +37,45 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 ## M6 — CDK deprecation 정리 (완료)
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
+
+## M49 — 적재는 도착했고, ₩0의 정체는 요율이 아니라 프로모션 크레딧이었다 (완료, 2026-09-02)
+
+**목적**: M46이 만든 넷째 상태(`EXPORTED_EMPTY`)의 **판정**. 09-01엔 테이블만 있고 `numRows`
+0이었고, 판정 시점은 09-02 01:11Z 이후였다. **나온 것**: 적재는 왔고, 그 뒤에 함정이 셋 더 있었다.
+
+**적재는 도착했다.** `numRows` **730**(422,688바이트 · `lastModifiedTime` 09-02 06:29:40Z), 프로브의
+GCP 분기도 **`MEASURABLE`**. 2026-07 GKE 방치 사건 이래 열려 있던 *"GCP 실지출은 어떤 방법으로도
+못 읽는다"*가 **닫혔다** — 07월 자체는 여전히 복구 불가다(소급 적용 없음, 아래).
+
+**ⓐ ⚠️₩0은 요율이 아니다.** 총사용액 **₩67.87** → 청구 **≈₩0**. 그 차이의 **99.4%(₩67.4773)**가
+`FreeTrialUpgrade:CreditId-FreeTrial:…` **`type=PROMOTION`**이고, 티어성 `DISCOUNT`는 **₩0.39**
+(Cloud Run CPU/Memory Allocation Time)뿐이다. **AMP와 같은 계열의 반대 방향**이다 — 거기선 절벽이
+요율→**한도**로 옮겨 앉았고, 여기선 요율도 한도도 아니라 **크레딧 잔액**이다. ⛔*"GCP는 어차피
+공짜"*로 요약 금지. **소진 시점은 내보내기가 말해 주지 않는다** — 안 잰 칸이다.
+
+**ⓑ ⚠️월별 집계는 "8월이 백필됐다"로 읽혔고, 그건 틀렸다.** `invoice.month=202608`이 **310행**에
+`first_usage 2026-08-01 07:00`이라 한 달치로 보였다. **일별로 가르니** 08-01은 **1행**이고 그것은
+`project=null`인 **Invoice 행**이다. 실제 사용 데이터는 **08-30부터**(41 → 124 → 548 → 16행) — 토글
+(09-01 01:53Z) 이전 **이틀**뿐이다. ⇒ `GCP_BILLING_EXPORT_SETUP.md` **§0은 성립한다**. **집계 축을
+하나만 보면 없는 백필이 보인다**(*"MTD로 '지금'을 답하지 말 것 — 일별로 갈라야 멈춘 것과 도는 것이
+갈린다"*가 잡았다).
+
+**ⓒ ⚠️월 런레이트는 아직 못 잰다.** 창이 **3일**이고 마지막 날(09-02)은 **안 찼으며**, 총액의
+**81%**가 **하루치 4행**이다(`claude-study-501117`의 Cloud Storage **₩54.90**, 09-01에만). 여기서
+30을 곱하면 **가정이 총액을 지배**한다 — 4a 추정표가 100배 틀렸던 그 모양이다. **며칠 뒤 다시 묻는
+것이 무료인 다음 측정**이다.
+
+**ⓓ ⚠️총액의 90%는 다른 프로젝트 것이다.** 결제계정 `010556-A2B7AE-292490`에 프로젝트 **5개**,
+비용 행이 있는 건 **3개**: `claude-study-501117` **₩59.27** · `project-ec7809f7…`(platform-agent)
+**₩6.55** · `warranty-hack` **₩2.05**, `gen-lang-client-*` 둘은 **0행**. ⇒ 브리프가 경고한 *"0행은
+'₩0'이 아니다 — 프로젝트가 5개다"*가 답을 얻었다: **5개 중 3개가 돈다.** ACR을 *"다른 프로젝트
+것"*으로 갈랐던 Azure와 같은 모양이고, **결제계정 총액을 이 레포의 비용으로 읽으면 10배 틀린다.**
+
+**비용(안 한 것도 측정이다)**: `bq show`는 메타데이터라 **$0**(스캔 0바이트), 질의 5건 합계 스캔
+**~250KB** = 무료 티어 1TB/월의 **0.000025%**. **AWS Cost Explorer는 한 번도 호출하지 않았다** —
+`make spend-check` 전체는 CE **$0.01**을 물고 그게 이 계정 청구서의 84%가 된 방식이다.
+게이트 변동 **0**(측정과 문서만 바뀌었다).
+증거: `docs/evidence/the-gcp-zero-is-a-promotion-credit-not-a-rate.log`.
 
 ## M48 — 인쇄된 경로도 주장이다: 39개를 전수로 물었고 0개가 dangling이었다 (완료, 2026-09-02)
 

@@ -1,0 +1,60 @@
+# GCP 결제 내보내기 — 적재는 도착했고, ₩0은 요율이 아니라 프로모션 크레딧이다
+# 측정: 2026-09-02 (KST 오후), 계정 yeongsigchoe7@gmail.com, 결제계정 010556-A2B7AE-292490
+# 전부 read-only. bq show는 무료(메타데이터), 질의 5건 합계 스캔 ~250KB (무료 티어 1TB/월).
+# AWS Cost Explorer는 이 세션에서 한 번도 호출하지 않았다 (`make spend-check` 전체는 $0.01을 문다).
+
+=== §1. 판정: numRows — 09-01엔 0이었다 (판정 시점 09-02 01:11Z) ===
+$ bq --format=json show <table>
+id          : project-ec7809f7-0fb5-45d4-b6d:billing_export.gcp_billing_export_v1_010556_A2B7AE_292490
+numRows     : 730
+numBytes    : 422688
+location    : asia-northeast3
+creationTime: 2026-09-01T01:53:42.780000+00:00
+lastModified: 2026-09-02T06:29:40.546000+00:00
+
+=== §2. 프로브 자신의 판정 (GCP 분기만 직접 호출 — AWS/Azure는 안 물었다) ===
+status: MEASURABLE
+table : project-ec7809f7-0fb5-45d4-b6d:billing_export.gcp_billing_export_v1_010556_A2B7AE_292490
+
+=== §3. 인보이스 월별 — 이 표만 보면 '8월이 백필됐다'로 읽힌다 (틀렸다, §4) ===
+invoice_month,first_usage,last_usage,projects,rows_,gross,credits
+202608,2026-08-01 07:00:00,2026-09-01 07:00:00,3,310,12.7949,-12.7924
+202609,2026-08-31 01:00:00,2026-09-02 03:00:00,3,420,55.0771,-55.0771
+
+=== §4. 일별 — 백필은 없었다. 08-01의 1행은 project=null 인 Invoice 행이다 ===
+day,rows_,services,gross
+2026-08-01,1,1,0.0025
+2026-08-30,41,2,0.0
+2026-08-31,124,5,6.2283
+2026-09-01,548,8,61.6411
+2026-09-02,16,2,0.0
+
+=== §5. 크레딧의 종류 — 상쇄의 99.4%가 PROMOTION 이다 ===
+credit_name,credit_type,currency,amount,rows_
+FreeTrialUpgrade:CreditId-FreeTrial:Credit-010556-A2B7AE-292490,PROMOTION,KRW,-67.4773,134
+CPU Allocation Time,DISCOUNT,KRW,-0.3818,2
+Memory Allocation Time,DISCOUNT,KRW,-0.0104,1
+
+=== §6. 프로젝트별 — 결제계정엔 5개, 비용 행이 있는 건 3개 ===
+project,rows_,gross,credits
+claude-study-501117,240,59.2695,-59.2696
+project-ec7809f7-0fb5-45d4-b6d,385,6.5518,-6.5518
+warranty-hack,104,2.0481,-2.0482
+,1,0.0025,0.0
+$ gcloud billing projects list --billing-account=010556-A2B7AE-292490
+project-ec7809f7-0fb5-45d4-b6d	True
+gen-lang-client-0123174100	True
+warranty-hack	True
+claude-study-501117	True
+gen-lang-client-0983122780	True
+
+=== §7. 서비스별 — 총액의 81%가 다른 프로젝트의 Cloud Storage 하루치 4행이다 ===
+service,project,gross,rows_,first_day,last_day
+Cloud Storage,claude-study-501117,54.9047,4,2026-09-01,2026-09-01
+Artifact Registry,project-ec7809f7-0fb5-45d4-b6d,6.4884,94,2026-08-31,2026-09-01
+Artifact Registry,claude-study-501117,4.3649,144,2026-08-30,2026-09-01
+Artifact Registry,warranty-hack,1.6207,47,2026-08-30,2026-09-01
+Cloud Run,warranty-hack,0.3922,6,2026-09-01,2026-09-01
+Cloud Storage,project-ec7809f7-0fb5-45d4-b6d,0.0634,3,2026-09-01,2026-09-01
+Cloud Storage,warranty-hack,0.0353,1,2026-09-01,2026-09-01
+Invoice,,0.0025,1,2026-08-01,2026-08-01
