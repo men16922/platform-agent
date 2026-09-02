@@ -22,7 +22,11 @@ so exercising it for real would need credentials and would make the gate
 non-deterministic. What is falsifiable there is that the *right question* is baked
 in, which is exactly what was wrong when it was asked by hand. The GCP guards below
 are behavioural instead, with the CLI layer replaced: they still never touch the
-network, but they can execute a branch (`MEASURABLE`) that no live run reaches today.
+network, but they execute the `MEASURABLE` branch, which for a month no live run
+could reach. It reaches it now — the export loaded on 2026-09-02 — and the first
+real answer it produced was a bill of ≈₩0 sitting on top of ₩67.87 of usage, held
+down by a promotion credit. So the guards below are no longer only about reaching
+that branch; they are about it not printing the third false zero.
 """
 
 from __future__ import annotations
@@ -30,6 +34,7 @@ from __future__ import annotations
 import ast
 import importlib.util
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -225,12 +230,17 @@ def probe():
     return mod
 
 
-def fake_run(datasets=(), tables=(), projects=("p1",), gcloud_ok=True, rows=None):
+def fake_run(datasets=(), tables=(), projects=("p1",), gcloud_ok=True, rows=None,
+             spend=None, bytes_=None):
     """A stand-in for every CLI the GCP half calls; returns (runner, calls-it-made).
 
     `rows` is the row count `bq show` reports, per fully-qualified table id, or a
     single int for every table. `None` means the metadata call fails — which is not
     the same as reporting zero, and the probe must not read it as such.
+
+    `spend` is what the amount query returns (a list of `bq` JSON rows, every value
+    a string, as the real CLI emits them). `None` means that query fails, which the
+    probe must also not read as zero. `bytes_` is `numBytes` for the same table.
     """
     calls: list[tuple[str, ...]] = []
 
@@ -238,13 +248,20 @@ def fake_run(datasets=(), tables=(), projects=("p1",), gcloud_ok=True, rows=None
         calls.append(args)
         if args[0] == "gcloud":
             return (0, "\n".join(projects)) if gcloud_ok else (1, "API not enabled")
+        if "query" in args:               # the amount query — billable, so it is
+            if spend is None:             # the one call that must fail loudly
+                return 1, "Access Denied"
+            return 0, json.dumps(spend)
         if "show" in args:                # table metadata for `project:dataset.table`
             if rows is None:
                 return 1, "Not found"
             count = rows if isinstance(rows, int) else rows.get(args[-1])
             if count is None:
                 return 1, "Not found"
-            return 0, json.dumps({"numRows": str(count)})
+            meta = {"numRows": str(count)}
+            if bytes_ is not None:
+                meta["numBytes"] = str(bytes_)
+            return 0, json.dumps(meta)
         if args[-1] == "ls":              # dataset listing for a project
             return 0, json.dumps(
                 [{"datasetReference": {"datasetId": d}} for d in datasets]
@@ -327,6 +344,164 @@ class TestUnmeasurableIsSaidOutLoud:
         monkeypatch.delenv(probe.GCP_EXPORT_ENV, raising=False)
         assert probe.report_gcp() is None
         assert "unmeasured = True" not in source.split("report_gcp()")[-1]
+
+
+# ---------------------------------------------------------------------------
+# The amount, once the export finally loaded (2026-09-02).
+#
+# `GCP_BILLING_EXPORT_SETUP.md` §4 deferred this branch with a reason: there was no
+# data to burn it against, and an unverified branch is not worth having. The export
+# loaded on 2026-09-02 and the first answer was the shape this whole file is about —
+# gross ₩67.87, bill ≈₩0, and 99.4% of the gap made by one `PROMOTION` credit. A
+# promotion is a balance that runs out; a `DISCOUNT` is a property of the rate. One
+# "credits" column would have made the third false zero, in the tool written to stop
+# the first two.
+# ---------------------------------------------------------------------------
+
+PROMO_ROWS = [
+    {"project": "claude-study-501117", "currency": "KRW", "gross": "59.27",
+     "promo": "-59.27", "other_credits": "0.0", "first_day": "2026-08-30",
+     "last_day": "2026-09-02", "rows_": "240"},
+    {"project": "project-ec7809f7-0fb5-45d4-b6d", "currency": "KRW", "gross": "6.55",
+     "promo": "-6.55", "other_credits": "0.0", "first_day": "2026-08-31",
+     "last_day": "2026-09-01", "rows_": "385"},
+    # The one project whose offset is not purely promotional: ₩0.39 of it is a
+    # Cloud Run allocation DISCOUNT, which is a property of the rate rather than a
+    # balance. If the two ever collapse into one column, this row is what notices.
+    {"project": "warranty-hack", "currency": "KRW", "gross": "2.05",
+     "promo": "-1.66", "other_credits": "-0.39", "first_day": "2026-08-30",
+     "last_day": "2026-09-01", "rows_": "104"},
+    # The invoice adjustment: no project, and dated a month before any usage.
+    {"project": None, "currency": "KRW", "gross": "0.0", "promo": "0.0",
+     "other_credits": "0.0", "first_day": "2026-08-01", "last_day": "2026-08-01",
+     "rows_": "1"},
+]
+
+
+def _measurable(probe, monkeypatch, **kwargs):
+    """Drive `report_gcp` down the MEASURABLE branch. Returns the calls made."""
+    runner, calls = fake_run(datasets=["billing_export"], tables=[EXPORT_TABLE],
+                             rows=730, **kwargs)
+    monkeypatch.setattr(probe, "_run", runner)
+    monkeypatch.setenv(probe.GCP_EXPORT_ENV, "p1:billing_export")
+    return calls
+
+
+class TestTheAmountIsNotAnotherFalseZero:
+    def test_the_measurable_branch_now_asks_for_the_amount(self, probe, monkeypatch, capsys):
+        """For a month this branch printed a command and stopped. It answers now."""
+        calls = _measurable(probe, monkeypatch, spend=PROMO_ROWS, bytes_=422688)
+        probe.report_gcp()
+        out = capsys.readouterr().out
+        assert any("query" in c for c in calls), "the amount is still not being asked for"
+        assert "67.87" in out, f"the gross total never reached the reader:\n{out}"
+
+    def test_a_promotion_is_not_folded_in_with_the_rate(self, probe):
+        """The SQL must ask for PROMOTION apart from everything else.
+
+        Collapsing the two into one `credits` column is the mutation this exists
+        for: the printed bill is identical either way, and only the split says
+        whether ₩0 is the rate or a balance that is being spent down.
+
+        The equality is matched with a lookbehind rather than `in`, because the
+        first version of this guard let that very mutation through: `= 'PROMOTION'`
+        is a **substring of** `!= 'PROMOTION'`, so widening the promo column to
+        every credit still satisfied a naive membership test — the surviving-half
+        of the pair kept answering for the half that was gone. Same shape as the
+        prefix trap in `test_script_printed_paths_resolve` (Risk 12④).
+        """
+        sql = probe._export_sql("p:d.t")
+        equal = re.findall(r"(?<![!<>])=\s*'PROMOTION'", sql)
+        unequal = re.findall(r"!=\s*'PROMOTION'", sql)
+        assert len(equal) == 1 and len(unequal) == 1, (
+            "the query no longer selects promotion credits apart from the rest "
+            f"(= {len(equal)}, != {len(unequal)}):\n{sql}"
+        )
+
+    def test_a_low_bill_is_never_presented_as_a_rate(self, probe, monkeypatch, capsys):
+        _measurable(probe, monkeypatch, spend=PROMO_ROWS, bytes_=422688)
+        probe.report_gcp()
+        out = capsys.readouterr().out
+        assert "요율이 아니다" in out and "PROMOTION" in out, (
+            f"a bill held down by a promotion was reported as if it were cheap:\n{out}"
+        )
+        assert "99.4" in out, "the share of the offset that is promotional went missing"
+
+    def test_the_window_excludes_the_account_level_row(self, probe, monkeypatch, capsys):
+        """The single invoice row is dated a month before any usage.
+
+        Measured 2026-09-02: usage ran 08-30 ~ 09-02 and one `project`-less invoice
+        row sat at 2026-08-01. Spanning every row printed "2026-08-01 ~ 2026-09-02"
+        — a month — and the same row made the per-invoice-month rollup look like
+        August had been backfilled when nothing before 08-30 had been. The tool must
+        not reproduce the misreading it warns the reader about.
+        """
+        _measurable(probe, monkeypatch, spend=PROMO_ROWS, bytes_=422688)
+        probe.report_gcp()
+        window = [ln for ln in capsys.readouterr().out.splitlines() if ln.strip().startswith("창 ")]
+        assert window, "the probe stopped printing the window the numbers cover"
+        assert "2026-08-01" not in window[0], (
+            f"one account-level row stretched the window to a month: {window[0]}"
+        )
+        assert "2026-08-30" in window[0] and "2026-09-02" in window[0], window[0]
+
+    def test_the_reader_is_told_the_account_is_not_this_repo(self, probe, monkeypatch, capsys):
+        """Five projects are attached to this billing account and three carry cost;
+        platform-agent's own share was ₩6.55 of ₩67.87. A single total overstates
+        this repo's spend tenfold, so every project is named and the caveat printed."""
+        _measurable(probe, monkeypatch, spend=PROMO_ROWS, bytes_=422688)
+        probe.report_gcp()
+        out = capsys.readouterr().out
+        assert "claude-study-501117" in out and "project-ec7809f7-0fb5-45d4-b6d" in out
+        assert "다른 프로젝트" in out, f"the account/repo distinction went missing:\n{out}"
+
+    def test_a_failed_amount_query_is_not_a_zero(self, probe, monkeypatch, capsys):
+        """`AccessDenied` is not absence, and it is not ₩0 either. The reader gets
+        the command instead — the same rule the rest of this probe is built on."""
+        _measurable(probe, monkeypatch, spend=None)
+        probe.report_gcp()
+        out = capsys.readouterr().out
+        assert "'₩0'이 아니다" in out, f"a failed query was allowed to read as zero:\n{out}"
+        assert "bq query" in out, "the reader was left without a way to ask it themselves"
+        assert "(합계)" not in out, "a total was printed for a query that never returned"
+
+    def test_the_query_runs_in_the_project_that_owns_the_table(self, probe, monkeypatch):
+        """Without `--project_id` the query runs in — and bills — whatever `bq`
+        defaults to, which on this machine was a different project of the same
+        billing account (measured 2026-09-01)."""
+        calls = _measurable(probe, monkeypatch, spend=PROMO_ROWS, bytes_=422688)
+        probe.report_gcp()
+        query = next(c for c in calls if "query" in c)
+        assert "--project_id" in query, f"the query does not name its project: {query}"
+        assert query[query.index("--project_id") + 1] == "p1"
+
+    def test_the_query_is_valid_standard_sql(self, probe):
+        """`project:dataset.table` is rejected outright by standard SQL. The command
+        this probe printed for a month carried exactly that defect and had never run."""
+        sql = probe._export_sql("p:d.t")
+        assert "`p.d.t`" in sql, f"the colon form would be rejected by BigQuery:\n{sql}"
+
+    def test_the_probe_says_what_asking_costs(self, probe, monkeypatch, capsys):
+        """This one is billable, unlike every other call the probe makes. Cost
+        Explorer became 84% of this account's bill by being asked repeatedly, so a
+        query that scans has to state what it scans."""
+        _measurable(probe, monkeypatch, spend=PROMO_ROWS, bytes_=422688)
+        probe.report_gcp()
+        out = capsys.readouterr().out
+        assert "422,688" in out and "스캔" in out, (
+            f"the probe stopped saying what its own query costs:\n{out}"
+        )
+
+    def test_the_totals_row_adds_the_columns_up(self, probe, monkeypatch, capsys):
+        """A vacuity guard: several assertions above match on text that a broken
+        table would still print. This one checks the arithmetic reached the page."""
+        _measurable(probe, monkeypatch, spend=PROMO_ROWS, bytes_=422688)
+        probe.report_gcp()
+        total = [ln for ln in capsys.readouterr().out.splitlines() if "(합계)" in ln]
+        assert total, "the totals row is gone"
+        assert "67.87" in total[0] and "-67.48" in total[0], (
+            f"the columns no longer add up: {total[0]}"
+        )
 
 
 # ---------------------------------------------------------------------------

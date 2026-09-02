@@ -7,6 +7,19 @@
 
 ---
 
+## 2026-09-02 — `MEASURABLE`이 금액을 대신 묻는다: 첫 가드는 한 글자 때문에 변이를 놓쳤다 (gate 2407)
+
+- Status: 브리프가 지목한 다음 행동 — 설정문서 §4가 *"데이터가 생기면 그때 붙인다"*로 미뤄 둔 분기. **완결**, M50. 권위 `docs/evidence/the-guard-let-the-mutation-through-because-of-one-character.log`.
+- Changed(`scripts/probe_cloud_spend.py`): `MEASURABLE`이 **질의를 돌린다**(`_export_sql`/`_export_spend`/`_print_gcp_amounts` 신설, `bq show`는 `_table_meta` 한 곳으로). 인쇄는 프로젝트별 **총사용액·PROMOTION·기타크레딧·청구** 넷 + 창 + 스캔 바이트.
+- Changed(**크레딧을 한 컬럼으로 합치지 않았다**): 프로모션은 **마르는 잔액**이고 `DISCOUNT`는 **요율의 성질**인데, 합치면 화면이 똑같아지고 독자는 *"GCP는 싸다"*로 읽는다 — **잔액이 다할 때까지만 참인 문장**이다. 질의가 `= 'PROMOTION'`과 `!= 'PROMOTION'`을 따로 센다.
+- Verified(**⚠️첫 가드가 그 변이를 통과시켰다 — 한 글자다**): `"= 'PROMOTION'" in sql`은 **`!= 'PROMOTION'`에도 참**이라, promo 컬럼을 전 크레딧으로 넓혀도 **남은 반쪽이 사라진 반쪽 대신 답했다**. 부등호를 가르는 lookbehind로 고쳤다. **M48의 접두 매칭 함정과 같은 계열**(Risk 12④) — 이번에도 가드가 **제 창문**에 물고 있었다.
+- Verified(**⚠️프로브가 제가 경고하는 오독을 하고 있었다**): 첫 판이 인쇄한 창은 `2026-08-01 ~ 2026-09-02` — **한 달**이다. 그 08-01은 `project`가 없는 **Invoice 행 하나**이고 실사용은 08-30부터다(**M49 ⓑ가 적은 바로 그 행**). ⇒ 창은 **계정 수준 행을 뺀** 사용 행에서만 잰다: `08-30 ~ 09-02 (729행, 계정 수준 1행 제외)`. **경고를 문서에 적는 것과 도구가 그 함정을 피하는 것은 다른 일이다.**
+- Verified(**안 하는 쪽도 정했다**): 질의 실패는 **0이 아니라** *"직접 물어볼 것"* + 붙여넣을 명령 · `--project_id`를 넘긴다(없으면 **다른 프로젝트에 과금**, 09-01 실측) · **스캔 바이트를 인쇄한다** — 이 프로브에서 **유일하게 과금되는 호출**이고, CE가 청구서의 84%가 된 방식이 *"반복해서 물은 것"*이다.
+- Verified: `make check` **2407 passed + 2 skipped**(2397 → **+10**), 실패 0. **변이 12종 전부 red**. 변이·실행·복구는 한 스크립트, **복구는 바이트 사본에서**(Risk 12⑦). 라이브 확인은 **`report_gcp()` 직접 호출**(BQ 질의 1건 ~40KB) — **AWS CE 0건**.
+- Changed(`docs/AGENT_BRIEF.md`): 7,265→**6,935자**. 증분 내역의 산문(M40~M48 열거)을 접었다 — **`STATUS` Baseline이 이미 권위**이고 브리프가 복제하고 있었다. ⚠️중간에 **7,200 정확히**에 앉았는데, 직전 세션이 *"7,199는 통과였지 여유가 아니었다"*를 적어 둔 그 자리라 더 접었다.
+- Blockers: 없음.
+- Next: **며칠 뒤 `make spend-check`를 그냥 돌려 볼 것** — 창이 3일→7일이 되면 런레이트가 가정 없이 나온다. ⚠️단 `spend-check` 전체는 **AWS CE $0.01**을 문다(GCP만 보려면 `report_gcp()` 직접 호출).
+
 ## 2026-09-02 — 적재가 도착했다: 그런데 ₩0은 요율이 아니라 프로모션 크레딧이었다 (gate 2397)
 
 - Status: 사람의 다음 수(▶ NEXT SESSION 첫 행동) — GCP 내보내기 테이블 `numRows` 판정. **완결**, M49. 권위 `docs/evidence/the-gcp-zero-is-a-promotion-credit-not-a-rate.log`.
@@ -74,16 +87,3 @@
 - Changed(`docs/STATUS.md`): 문자 예산이 **10,998/11,000**이라 새 baseline 줄이 안 들어갔다 — 08-30(2332) 전문을 `docs/archive/status-baseline-2026-08.md`로 **옮겼다**(삭제 아님). ⚠️**STATUS 압축 `[auto]`(≤9,900)는 여전히 열려 있다** — 여기선 한 줄 들어갈 만큼만 비웠다.
 - Blockers: 없음.
 - Next: **GCP 내보내기 테이블 `numRows`** — 판정 시점(09-02 01:11Z)이 지났다. `bq show --format=json <table>`(무료). 0이면 그때가 문제다.
-
-## 2026-09-02 — 서버는 대기 시간을 말하고 있었고 전송 계층이 그걸 버렸다 (gate 2392)
-
-- Status: overnight `[auto]` 1건 — M46ⓒ가 남긴 잔여(Azure 429 자동 재시도). **완결**, M47.
-- Changed(`probe_cloud_spend.py`): 전송 계층 **`az rest` → `curl -D -` + `az` 토큰**(`az rest`가 헤더를 버려서 이 항목이 별도였다) · `_cost_query_with_retry`가 **`clienttype-retry-after`가 말한 만큼만** 기다렸다 다시 묻는다(최대 3회, 매 대기 60초 클램프, **기다린다고 인쇄**) · `_split_http`/`_retry_after`/`_azure_token`/`_curl` 신설.
-- Changed(**⚠️토큰은 argv에 두지 않았다**): `--config -`(stdin)로 넘긴다 — `ps`는 이 기계의 아무 프로세스나 읽는다. **URL은 argv에 남겼다**(비밀이 아니고 가드가 무는 게 그것이다).
-- Verified(**핵심은 안 하는 쪽이다**): **헤더가 없으면 재시도하지 않는다.** 없는 간격을 지어내는 것이 애초에 429를 영구 실패로 읽게 만든 방식이다(20초<40초). 파싱 안 되는 값(`Retry-After`는 날짜도 허용)도 **0초가 아니라 재시도 없음** — 0으로 읽으면 스로틀 중인 서버에 타이트 루프를 돈다.
-- Verified(**가드가 아무것도 안 보고 있었다**): `test_only_the_cost_query_endpoint_is_posted_to`가 사라진 `az rest --url`을 무는 형태라 **매치가 0이면 영원히 통과**였다. curl 계층에 대고 묻고 **POST 0건이면 red**로 바꿨다(Risk 12④의 그 모양).
-- Verified: `make check` **2392 passed + 2 skipped**(2381 → **+11**), 실패 0. **변이 7종 전부 red**(URL 이동 · `-D -` 제거 · 없는 간격을 20초로 추측 · 토큰을 argv로 · 재시도 상한 완화 · 클램프 제거 · 파싱 실패를 0초로). 변이·실행·복구는 한 스크립트(Risk 12⑦).
-- Verified(**안 한 것도 측정이다**): **라이브 재측정 안 함** — 429를 다시 부르는 건 그 자체로 스로틀을 쓰는 것이고, 이 변경의 내용은 **간격을 어디서 얻는가**라 오프라인에서 전부 물어진다. AWS/GCP도 안 물었다(무인 루프는 청구서를 만들지 않는다).
-- Blockers: 없음.
-- Next: **GCP 내보내기 테이블 `numRows`** — 판정 시점(09-02 01:11Z)이 지났다. `bq show --format=json <table>`(무료). 0이면 그때가 문제다.
-

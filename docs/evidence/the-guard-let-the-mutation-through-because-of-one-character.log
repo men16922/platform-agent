@@ -1,0 +1,82 @@
+# MEASURABLE이 금액을 대신 묻는다 — 그리고 첫 가드가 그 변이를 통과시켰다 (M50, 2026-09-02)
+# 이 파일의 모든 블록은 명령 출력을 그대로 받은 것이다. 손으로 옮긴 줄은 없다.
+
+=== §1. 라이브 출력 (report_gcp() 직접 호출 — AWS Cost Explorer 0건) ===
+GCP 실사용
+    잴 수 있다 — 결제 내보내기 테이블 project-ec7809f7-0fb5-45d4-b6d:billing_export.gcp_billing_export_v1_010556_A2B7AE_292490
+    창 2026-08-30 ~ 2026-09-02 (729행, 계정 수준 1행 제외) — 이 창 밖은 실리지 않았다. 곱해서 월액으로 읽지 말 것.
+    프로젝트별 (KRW)                     총사용액      PROMOTION     기타크레딧          청구
+      claude-study-501117                   59.27         -59.27           0.00          0.00
+      project-ec7809f7-0fb5-45d4-b6d         6.55          -6.55           0.00          0.00
+      warranty-hack                          2.05          -1.66          -0.39          0.00
+      (계정 수준)                            0.00           0.00           0.00          0.00
+      (합계)                                67.87         -67.48          -0.39          0.00
+    주의: 청구액이 낮은 것은 요율이 아니다 — 상쇄의 99.4%가 PROMOTION 크레딧이고, 잔액이 마르면 총사용액이 그대로 청구된다.
+    소진 시점은 이 내보내기가 말해 주지 않는다.
+    주의: 이 결제 계정에는 다른 프로젝트도 붙어 있다 — 합계를 이 레포의 비용으로 읽지 말 것.
+    이 질의는 테이블 전체 422,688바이트를 스캔한다 (BigQuery 최소 과금 10MB · 무료 티어 1TB/월).
+
+=== §2. 첫 판이 인쇄한 창 — 프로브가 제가 경고하는 오독을 하고 있었다 ===
+  창 2026-08-01 ~ 2026-09-02 (730행)     <- 한 달로 읽힌다
+  원인: project 가 NULL 인 Invoice 행 하나가 2026-08-01 에 있다(M49 ⓑ가 적은 그 행).
+        실사용은 08-30 부터다. min()/max() 를 전 행에 걸면 3일이 33일이 된다.
+  고침: 창은 project 가 있는 행에서만 잰다 ⇒ §1의 '08-30 ~ 09-02 (729행, 계정 수준 1행 제외)'.
+
+=== §3. 첫 가드가 놓친 변이 — 한 글자 차이 ===
+  첫 판:  assert "= 'PROMOTION'" in sql and "!= 'PROMOTION'" in sql
+  변이 :  promo 컬럼의 WHERE c.type = 'PROMOTION'  ->  WHERE TRUE
+  결과 :  GREEN — 살아남았다.
+  이유 :  "= 'PROMOTION'" 은 "!= 'PROMOTION'" 의 부분문자열이다. promo 쪽을 지워도
+          other_credits 쪽의 != 절이 두 검사를 모두 만족시킨다 — 남은 반쪽이
+          사라진 반쪽 대신 답했다. M48의 접두 매칭 함정과 같은 계열(Risk 12④).
+  고침 :  부등호를 가르는 lookbehind 로 각각 정확히 1회인지 센다.
+            equal   = re.findall(r"(?<![!<>])=\s*'PROMOTION'", sql)
+            unequal = re.findall(r"!=\s*'PROMOTION'", sql)
+            assert len(equal) == 1 and len(unequal) == 1
+
+=== §4. 변이 12종 전수 (변이·실행·복구가 한 스크립트, 복구는 바이트 사본에서 — Risk 12⑦) ===
+[기준] GREEN — 75 passed in 0.04s
+
+① PROMOTION 분리를 한 컬럼으로 뭉갠다 (promo 를 전 크레딧으로)
+    RED  ✓ — 1 failed, 25 passed in 0.04s
+
+①b 두 컬럼을 같은 조건으로 (부등호만 뒤집는다 — 첫 가드가 놓쳤던 변이)
+    RED  ✓ — 1 failed, 25 passed in 0.04s
+
+①c 기타크레딧 쪽을 = 로 뒤집는다
+    RED  ✓ — 1 failed, 25 passed in 0.04s
+
+② 창을 전 행으로 넓힌다 (계정 수준 행 포함)
+    RED  ✓ — 1 failed, 27 passed in 0.04s
+
+③ '요율이 아니다' 경고를 지운다
+    RED  ✓ — 1 failed, 26 passed in 0.04s
+
+④ 질의 실패를 0으로 읽는다
+    RED  ✓ — 1 failed, 29 passed in 0.04s
+
+⑤ --project_id 를 뺀다
+    RED  ✓ — 1 failed, 30 passed in 0.04s
+
+⑥ 콜론 형태(표준 SQL이 거부)로 되돌린다
+    RED  ✓ — 1 failed, 31 passed in 0.04s
+
+⑦ 스캔 비용 줄을 지운다
+    RED  ✓ — 1 failed, 32 passed in 0.04s
+
+⑧ MEASURABLE 을 다시 '명령만 인쇄'로 되돌린다
+    RED  ✓ — 1 failed, 24 passed in 0.04s
+
+⑨ '다른 프로젝트' 경고를 지운다
+    RED  ✓ — 1 failed, 28 passed in 0.04s
+
+⑩ 합계에서 크레딧을 빼먹는다
+    RED  ✓ — 1 failed, 26 passed in 0.04s
+
+[복구] GREEN — 75 passed in 0.04s
+
+살아남은 변이: 0 (없음)
+
+=== §5. 게이트 ===
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================ 2407 passed, 2 skipped, 21 warnings in 37.95s =================

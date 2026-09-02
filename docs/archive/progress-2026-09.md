@@ -4,6 +4,18 @@
 
 ---
 
+## 2026-09-02 — 서버는 대기 시간을 말하고 있었고 전송 계층이 그걸 버렸다 (gate 2392)
+
+- Status: overnight `[auto]` 1건 — M46ⓒ가 남긴 잔여(Azure 429 자동 재시도). **완결**, M47.
+- Changed(`probe_cloud_spend.py`): 전송 계층 **`az rest` → `curl -D -` + `az` 토큰**(`az rest`가 헤더를 버려서 이 항목이 별도였다) · `_cost_query_with_retry`가 **`clienttype-retry-after`가 말한 만큼만** 기다렸다 다시 묻는다(최대 3회, 매 대기 60초 클램프, **기다린다고 인쇄**) · `_split_http`/`_retry_after`/`_azure_token`/`_curl` 신설.
+- Changed(**⚠️토큰은 argv에 두지 않았다**): `--config -`(stdin)로 넘긴다 — `ps`는 이 기계의 아무 프로세스나 읽는다. **URL은 argv에 남겼다**(비밀이 아니고 가드가 무는 게 그것이다).
+- Verified(**핵심은 안 하는 쪽이다**): **헤더가 없으면 재시도하지 않는다.** 없는 간격을 지어내는 것이 애초에 429를 영구 실패로 읽게 만든 방식이다(20초<40초). 파싱 안 되는 값(`Retry-After`는 날짜도 허용)도 **0초가 아니라 재시도 없음** — 0으로 읽으면 스로틀 중인 서버에 타이트 루프를 돈다.
+- Verified(**가드가 아무것도 안 보고 있었다**): `test_only_the_cost_query_endpoint_is_posted_to`가 사라진 `az rest --url`을 무는 형태라 **매치가 0이면 영원히 통과**였다. curl 계층에 대고 묻고 **POST 0건이면 red**로 바꿨다(Risk 12④의 그 모양).
+- Verified: `make check` **2392 passed + 2 skipped**(2381 → **+11**), 실패 0. **변이 7종 전부 red**(URL 이동 · `-D -` 제거 · 없는 간격을 20초로 추측 · 토큰을 argv로 · 재시도 상한 완화 · 클램프 제거 · 파싱 실패를 0초로). 변이·실행·복구는 한 스크립트(Risk 12⑦).
+- Verified(**안 한 것도 측정이다**): **라이브 재측정 안 함** — 429를 다시 부르는 건 그 자체로 스로틀을 쓰는 것이고, 이 변경의 내용은 **간격을 어디서 얻는가**라 오프라인에서 전부 물어진다. AWS/GCP도 안 물었다(무인 루프는 청구서를 만들지 않는다).
+- Blockers: 없음.
+- Next: **GCP 내보내기 테이블 `numRows`** — 판정 시점(09-02 01:11Z)이 지났다. `bq show --format=json <table>`(무료). 0이면 그때가 문제다.
+
 ## 2026-09-01 — 테이블은 생겼는데 아무것도 안 들어 있었다 · 묻는 도구 셋이 틀렸다 (gate 2381)
 
 - Status: 전날의 Next("`spend-check`의 GCP 줄")를 물으러 갔다가 **묻는 도구 자신의 결함 셋**이 나왔다. 셋 다 **읽어선 안 보이고 태워야 보인다**. 권위 `docs/evidence/the-table-existed-and-held-nothing.log`.
