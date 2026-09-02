@@ -38,6 +38,36 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
 
+## M51 — 재개 조건이 2년 전에 멈춘 이슈를 보고 있었다 (완료, 2026-09-02)
+
+**목적**: 열린 항목 중 **날짜가 박힌 재확인 지시**를 단 유일한 것(Risk 6 / Cosign 어드미션,
+*"08-30 확인: 아직 — 이 날짜부터 볼 것"*)을 판정하는 것. **나온 것**: 결론은 살아 있고 **근거가
+죽어 있었다.**
+
+**결론 유지**: 어드미션은 아직 못 켠다. 08-08 kind 실측(*"서명된 것도 `no signatures found`"*)이
+그대로다.
+
+**⚠️근거 교체**: 재개 조건이던 `policy-controller#1406`은 **2024-09-30 이후 갱신이 없고**, 그
+이슈가 요구하던 구현은 **`#1725`로 2025-04-23에 머지**됐다. **"이슈가 열려 있다"는 "지원이
+없다"의 증거가 아니었다** — Risk 4의 *"'없다'는 어떻게 봤는지까지"*가 **업스트림 쪽에서 재발한
+모양**이고, 그 조건은 **영원히 발화하지 않을 수 있는 신호**였다.
+
+**⚠️그렇다고 '낡은 버전을 시험했다'도 아니다**: 08-08에 쓴 chart **0.10.6**의 appVersion은
+**0.13.1**(2025-09-17)로 `#1725` 머지 **이후**다. **지원이 들어간 버전에서 이미 실패했다.**
+이 한 단계를 안 물었으면 정반대의 틀린 이야기를 적었을 것이다.
+
+**진짜 신호**: `#1899`(*"cosign v3.0.2 서명을 policy-controller 0.13.1이 검증 못 한다"*, **open**)가
+**우리 조합 그대로**이고 고침은 `#1968`(**미머지**)이다. ⇒ **새 조건 = `#1968` 머지, 또는
+`#2007`(2026-08-24 머지)을 담은 릴리스** — 최신 v0.15.1은 2026-03-26이고 그 뒤 **51 커밋 미출시**.
+
+**cosign 쪽 기록은 정확했고 더 넓게 참이다**: `--new-bundle-format`은 v3.1.2의 **여섯 하위 명령
+어디에도 없다**(v2 옵트인이었고 v3에선 기본이라 사라졌다) ⇒ **간극은 서명하는 쪽이 아니라
+검증하는 쪽**이다.
+
+**안 한 것도 측정이다**: **클러스터 변경 0**(재시도는 kind 변경이라 승인 후) · 클라우드 호출 **0건**
+(GitHub API와 로컬 `cosign --help`뿐) · `make check` **2407 passed + 2 skipped**(변동 0).
+증거: `docs/evidence/the-resume-condition-was-watching-a-dead-issue.log`.
+
 ## M50 — `MEASURABLE`이 금액을 대신 묻는다: 그리고 첫 가드가 그 변이를 통과시켰다 (완료, 2026-09-02)
 
 **목적**: `GCP_BILLING_EXPORT_SETUP.md` §4가 *"데이터가 생기면 그때 붙인다"*로 미뤄 둔 분기를
