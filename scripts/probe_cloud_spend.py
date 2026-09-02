@@ -62,6 +62,7 @@ import json
 import os
 import subprocess
 import time
+import unicodedata
 
 #: Budgets exclude these record types; Cost Explorer includes them unless told not
 #: to. Keeping the literal here (rather than inline) so the guard can assert on it.
@@ -410,12 +411,40 @@ def _export_row_count(table_id: str) -> int | None:
     Metadata, not a query: `bq show` costs nothing and scans nothing, so asking does
     not repeat the AWS mistake where the measurement became 84% of the bill.
     """
+    meta = _table_meta(table_id)
+    if meta is None:
+        return None
+    try:
+        return int(meta.get("numRows", 0))
+    except (TypeError, ValueError):
+        return None
+
+
+def _table_meta(table_id: str) -> dict | None:
+    """`bq show` metadata for `project:dataset.table`, or None when unreadable.
+
+    One definition because two callers want different fields off the same free
+    call: the row count decides MEASURABLE, and `numBytes` is what the amount query
+    will scan — the only honest way to state that query's price before running it.
+    """
     code, out = _run("bq", "--format=json", "show", table_id)
     if code != 0:
         return None
     try:
-        return int(json.loads(out).get("numRows", 0))
-    except (json.JSONDecodeError, TypeError, ValueError):
+        parsed = json.loads(out)
+    except json.JSONDecodeError:
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
+def _export_bytes(table_id: str) -> int | None:
+    """Bytes a full scan of the export table reads, or None."""
+    meta = _table_meta(table_id)
+    if meta is None:
+        return None
+    try:
+        return int(meta.get("numBytes", 0))
+    except (TypeError, ValueError):
         return None
 
 
@@ -594,13 +623,168 @@ def _export_query(table_id: str) -> str:
     )
 
 
+def _export_sql(table_id: str) -> str:
+    """The amount query. Splits `PROMOTION` off from every other credit.
+
+    `GCP_BILLING_EXPORT_SETUP.md` §4 warned that summing `cost` alone reports
+    pre-credit usage, and that warning fired the first time anyone looked: measured
+    2026-09-02, gross **₩67.87** against a bill of **≈₩0**, and **99.4%** of the
+    offset was a single `FreeTrialUpgrade` credit of type `PROMOTION`.
+
+    So subtracting all credits and printing one number would have been the same
+    false zero this file exists to prevent, one layer along: a promotion is a
+    *balance that runs out*, while `DISCOUNT`/`FREE_TIER` are properties of the
+    rate. Collapsed into one column they read identically and the reader concludes
+    "GCP is free" — which is true only until the balance is gone. They are reported
+    in separate columns for that reason, and the row count and day range come back
+    with them because the window was **three days** when this was written: multiply
+    it by thirty and the assumption dominates the estimate rather than the measurement.
+
+    Grouped by project because the billing account is not this repo: five projects
+    are attached, three carry cost, and platform-agent's own share was **₩6.55 of
+    ₩67.87**. A single total would overstate this repo's spend tenfold.
+    """
+    return (
+        "SELECT project.id AS project, currency,"
+        " ROUND(SUM(cost), 2) AS gross,"
+        " ROUND(SUM((SELECT IFNULL(SUM(c.amount), 0) FROM UNNEST(credits) c"
+        " WHERE c.type = 'PROMOTION')), 2) AS promo,"
+        " ROUND(SUM((SELECT IFNULL(SUM(c.amount), 0) FROM UNNEST(credits) c"
+        " WHERE IFNULL(c.type, '') != 'PROMOTION')), 2) AS other_credits,"
+        " MIN(DATE(usage_start_time)) AS first_day,"
+        " MAX(DATE(usage_start_time)) AS last_day, COUNT(*) AS rows_"
+        f" FROM `{_sql_ref(table_id)}`"
+        " GROUP BY project, currency ORDER BY gross DESC"
+    )
+
+
+def _export_spend(table_id: str) -> list[dict] | None:
+    """Rows of the amount query, or None when it could not be run.
+
+    None rather than an empty list, and never a zero: a query that fails is the
+    `AccessDenied`-is-not-absence rule again, and the caller falls back to printing
+    the command so a person can run it themselves.
+
+    `--project_id` is passed because without it the query runs in — and bills —
+    whatever project `bq` happens to default to, which on this machine was a
+    *different* project of the same billing account (measured 2026-09-01).
+    """
+    code, out = _run("bq", "--project_id", _project_of(table_id), "--format=json",
+                     "query", "--use_legacy_sql=false", _export_sql(table_id))
+    if code != 0:
+        return None
+    try:
+        rows = json.loads(out)
+    except json.JSONDecodeError:
+        return None
+    return rows if isinstance(rows, list) else None
+
+
+def _num(row: dict, key: str) -> float:
+    """A numeric column of a `bq` JSON row. `bq` returns every value as a string."""
+    try:
+        return float(row.get(key) or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _width(text: str) -> int:
+    """Display columns of `text`. Hangul and CJK occupy two of them.
+
+    `str.ljust` counts code points, so a column padded with it goes crooked the
+    moment a project name or a label is not ASCII — which every label in this
+    report is. A misaligned money table is not cosmetic: it is where a number gets
+    read against the wrong heading.
+    """
+    return sum(2 if unicodedata.east_asian_width(ch) in "WF" else 1 for ch in text)
+
+
+def _pad(text: str, width: int) -> str:
+    """`text` padded to `width` display columns."""
+    return text + " " * max(0, width - _width(text))
+
+
+def _zero_is_zero(value: float) -> float:
+    """-0.00 is a rounding artefact, and it reads as a refund. Fold it to 0."""
+    return 0.0 if abs(value) < 0.005 else value
+
+
+def _usage_window(rows: list[dict]) -> tuple[str, str, int] | None:
+    """First day, last day and row count of the rows that carry actual usage.
+
+    Account-level rows (`project` is NULL — the invoice adjustment) are excluded,
+    and that exclusion is the whole point. Measured 2026-09-02: the export held
+    three days of usage (08-30 ~ 09-02) plus **one** invoice row dated 2026-08-01,
+    and spanning every row put "2026-08-01 ~ 2026-09-02" on the screen — a month.
+    The same single row made the per-`invoice.month` rollup look like August had
+    been backfilled when nothing before 08-30 had. Printing that window would have
+    reproduced, in the tool, the exact misreading this report warns the reader against.
+    """
+    usage = [r for r in rows if r.get("project")] or rows
+    days = sorted(d for r in usage for d in (r.get("first_day"), r.get("last_day")) if d)
+    if not days:
+        return None
+    return days[0], days[-1], sum(int(_num(r, "rows_")) for r in usage)
+
+
+COLUMNS = (("총사용액", 13), ("PROMOTION", 15), ("기타크레딧", 15), ("청구", 14))
+
+
+def _print_gcp_amounts(rows: list[dict], scanned: int | None) -> None:
+    """Print the amount table, and the three things a reader would otherwise misread."""
+    currency = next((r.get("currency") for r in rows if r.get("currency")), "")
+    window = _usage_window(rows)
+    if window:
+        first, last, counted = window
+        extra = len(rows) - len([r for r in rows if r.get("project")])
+        note = f", 계정 수준 {extra}행 제외" if extra else ""
+        print(f"    창 {first} ~ {last} ({counted}행{note}) — 이 창 밖은 실리지 않았다."
+              " 곱해서 월액으로 읽지 말 것.")
+
+    head = _pad(f"    프로젝트별 ({currency})".rstrip(), 36)
+    print(head + "".join(label.rjust(w - _width(label) + len(label)) for label, w in COLUMNS))
+    gross = promo = other = 0.0
+    for row in rows:
+        g, pr, ot = _num(row, "gross"), _num(row, "promo"), _num(row, "other_credits")
+        gross, promo, other = gross + g, promo + pr, other + ot
+        print(_pad("      " + (row.get("project") or "(계정 수준)"), 36)
+              + f"{g:>13,.2f}{pr:>15,.2f}{ot:>15,.2f}{_zero_is_zero(g + pr + ot):>14,.2f}")
+    print(_pad("      (합계)", 36)
+          + f"{gross:>13,.2f}{promo:>15,.2f}{other:>15,.2f}"
+            f"{_zero_is_zero(gross + promo + other):>14,.2f}")
+
+    offset = promo + other
+    if promo:
+        share = abs(promo) / abs(offset) * 100 if offset else 100.0
+        print(f"    주의: 청구액이 낮은 것은 요율이 아니다 — 상쇄의 {share:.1f}%가 PROMOTION"
+              " 크레딧이고, 잔액이 마르면 총사용액이 그대로 청구된다.")
+        print("    소진 시점은 이 내보내기가 말해 주지 않는다.")
+    if len([r for r in rows if r.get("project")]) > 1:
+        print("    주의: 이 결제 계정에는 다른 프로젝트도 붙어 있다 — 합계를 이 레포의"
+              " 비용으로 읽지 말 것.")
+    if scanned is not None:
+        print(f"    이 질의는 테이블 전체 {scanned:,}바이트를 스캔한다"
+              " (BigQuery 최소 과금 10MB · 무료 티어 1TB/월).")
+
+
 def report_gcp() -> None:
     """GCP's answer is a state, not a number — printing nothing would read as ₩0."""
     print("GCP 실사용")
     status, detail = gcp_actual_spend()
     if status == "MEASURABLE":
         print(f"    잴 수 있다 — 결제 내보내기 테이블 {detail}")
-        print(f"    {_export_query(detail)}")
+        rows = _export_spend(detail)
+        if rows is None:
+            # A failed query is not ₩0. Hand the reader the command and say why
+            # the number is missing, rather than printing one that is not there.
+            print("    금액 질의가 실패했다 — 이것은 '₩0'이 아니다. 직접 물어볼 것:")
+            print(f"    {_export_query(detail)}")
+            return
+        if not rows:
+            print("    테이블에 행은 있는데 질의가 아무것도 돌려주지 않았다 —"
+                  " 이것도 '₩0'이 아니다.")
+            return
+        _print_gcp_amounts(rows, _export_bytes(detail))
         return
     if status == "EXPORTED_EMPTY":
         print(f"    아직 답이 없다 — 내보내기 테이블 {detail} 는 있고 행이 0개다")
