@@ -1,0 +1,103 @@
+# 인쇄되는 레포-상대 경로의 실존을 전수로 묻는 가드 — 측정 (2026-09-02, overnight [auto])
+
+대상: tests/test_script_printed_paths_resolve.py (신규)
+기계: 로컬 macOS(darwin 25.6.0) · py3.13
+동기: M46 — GCP 프로브가 인쇄하던 `bq` 명령이 **한 번도 실행된 적이 없었고** 결함이 셋이었다.
+      인쇄된 지시는 주장이고, 그중 **경로**는 가장 값싸게 물어지는 주장이다.
+
+
+## 1. 쓰기 전에 쟀다 (이 가드는 청소 과제가 아니다)
+
+  scripts/*.py                     23개
+  문자열 리터럴 속 레포-상대 경로   39개(distinct)
+  그중 stdout에 닿는 것             4개
+  dangling                          0개
+
+  stdout에 닿는 4개:
+    docs/GCP_BILLING_EXPORT_SETUP.md    (probe_cloud_spend.py:611,617)
+    scripts/verify_netpol_enforcement.py (render_tenancy.py:106)
+    scripts/verify_tenant_isolation.py   (verify_netpol_enforcement.py:225)
+    src/agents/platform/tenancy.py       (verify_netpol_enforcement.py:225)
+
+  ⇒ 초록에서 시작하고, **지금 참인 불변식**을 잡는다.
+
+
+## 2. 첫 판이 틀렸다 — false red 하나 (경계는 측정해서 얻었다)
+
+  E   these paths are named by a script but are not in the repo:
+  E       platform/scope.py
+  E           named at: scripts/probe_scope_reachability.py:116
+
+  scripts/probe_scope_reachability.py:116
+      if not line.split(":")[0].endswith("platform/scope.py")
+
+  이건 경로가 아니라 **grep 출력에 맞대는 조각**이다(`src/agents/platform/scope.py`의 접미사).
+  `platform/`이 이 레포의 top-level 디렉터리라서 경로처럼 보였을 뿐이다.
+  ⚠️ 면제 목록으로 덮지 않았다 — **쓰임으로** 갈랐다: `startswith`/`endswith`의 인자와
+  `in` 비교의 좌변은 **독자에게 보여지지 않는다**. (`src`도 `dashboard/src` 때문에 중의적이라
+  "중의적인 top-level 이름은 뺀다"는 규칙은 가드를 반쯤 죽인다 — 그래서 안 썼다.)
+
+
+## 3. 존재는 **git**에게 물었지 이 노트북에게 묻지 않았다
+
+  $ git check-ignore -v src/stacks/node_modules
+  .gitignore:16:src/stacks/node_modules/    src/stacks/node_modules
+
+  `pathlib.exists()`였다면 여기선 초록, CI에선 red다. 불변식은 "레포가 그것을 담고 있다"이지
+  "내 파일시스템에 있다"가 아니다(Risk 12②). 변이 3이 이걸 직접 태운다.
+
+
+## 4. 접두 매칭 함정 — 양쪽 다 실재한다
+
+  docs/evidence/model-sweep-live-points.jsonl              (tracked)
+  docs/evidence/model-sweep-live-points-prompt-v1.jsonl    (tracked)
+  docs/evidence/model-sweep-live-points.json               (없다)
+
+  추출 쪽: 확장자를 `json|jsonl` 순서로 나열하면 `.jsonl`이 `.json`에서 잘린다
+           ⇒ 꼬리는 **탐욕적 문자 클래스 하나**로 두고, 합성 문자열로 못 박았다.
+  검사 쪽: `startswith`로 물으면 `.json`이 `.jsonl`의 접두라서 **있는 것으로 통과**한다
+           ⇒ 정확 일치. 아래 변이 7 참조.
+
+
+## 5. 변이 8종 — 전부 red. 변이·실행·복구는 한 스크립트 안에서 (Risk 12⑦)
+
+  baseline: rc=0  5 passed
+
+  red OK  1 인쇄 경로를 없는 이름으로 바꿈                       1 failed, 4 passed
+  red OK  2 인쇄 경로를 .jsonl → .json으로 자름(검사 쪽 접두)     1 failed, 4 passed
+  red OK  3 인쇄 경로를 gitignore된 것으로(디스크엔 있다)          1 failed, 4 passed
+  red OK  4 추출기를 json|jsonl 나열로 다시 씀(추출 쪽 접두)       2 failed, 3 passed
+  red OK  5 스윕을 비움(리터럴을 하나도 안 읽는다)                2 failed, 3 passed
+  red OK  6 인쇄 부분집합이 print()를 못 알아보게 함              1 failed, 4 passed
+  red OK  7 멤버십을 startswith로 느슨하게                        1 failed, 4 passed
+  red OK  8 조각 예외를 제거(§2의 false red가 돌아온다)           1 failed, 4 passed
+
+  restored: rc=0  5 passed
+  RESULT: all mutations red
+
+  ⚠️ **변이 7은 첫 판에서 살아남았다.** 접두 함정 테스트가 `_repo_paths()`(집합)에 대고 물었고
+  dangling 검사는 별도의 `path not in universe` 식을 썼다 — **가드가 독자가 쓰는 그 물건이
+  아니라 제 창문에 대고 묻고 있었다**(Risk 12④). 판정을 `_in_repo()` 한 곳으로 뽑고 둘이
+  같은 것을 묻게 하니 red가 됐다. **가드 자신이 한 번 틀렸다**(Risk 12⑤).
+
+  복구는 바이트 사본에서 했다 — `git checkout --`가 아니다(08-13에 커밋 안 된 고침을 날린 그것).
+
+
+## 6. 기존 가드와의 경계
+
+  tests/test_evidence_pointers_resolve.py — `docs/evidence/*.log` **한 종류**를
+  `tests/`·`docs/`·`src/`에서 훑는다. **`scripts/`는 안 읽는다.**
+  이 파일은 나머지 절반이다: `scripts/*.py`의 **모든** 레포-상대 경로.
+  겹치는 경로가 있어도 두 가드가 묻는 대상 집합이 서로의 부분집합이 아니다.
+
+
+## 7. 안 한 것도 측정이다
+
+  - `#` 주석은 안 훑는다. 주석에만 사는 경로를 재 보니 `src/stacks/node_modules`
+    (find_unwritten_keys.py:70) 하나였고, 그건 **의도적으로 tracked가 아니다**.
+    주석까지 훑으면 이 가드는 vendored 의존성을 커밋하라고 요구하게 된다.
+    docstring은 범위 안이다 — 리터럴이고 독자가 읽는다.
+  - 점으로 시작하는 top-level(`.github/` 등)은 앵커에서 뺐다. `foo.docs/bar`를 막는
+    lookbehind가 `.github/`의 시작도 막기 때문이고, **scripts가 그런 경로를 참조하는 횟수는
+    0으로 쟀다**(`grep -nE '\.(github|claude|kiro|codex)/' scripts/*.py` → 0건).
+  - 라이브 호출 0건. 이 항목은 전부 오프라인에서 물어진다(무인 루프는 청구서를 만들지 않는다).

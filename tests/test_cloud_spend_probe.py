@@ -344,37 +344,101 @@ class TestUnmeasurableIsSaidOutLoud:
 WINDOW = ("2026-08-01", "2026-08-10")
 
 
-def fake_az(subs=(("sub-1", "one"),), rows=(("Container Registry", 1989.33),), fail=None,
-            error="boom"):
-    """Stands in for the az CLI; `fail` is "account" or "rest", `error` its stderr.
+TOKEN = "tok-do-not-leak"
 
-    `error` matters because the probe now reads the failure rather than only relaying
-    it: a throttle and a dead credential need different next actions, and telling
-    them apart is the whole content of the 2026-09-01 correction.
+
+class FakeAzure:
+    """Both halves of the Azure transport: the `az` CLI and the `curl` that queries.
+
+    They are two functions in the probe because the token has to be minted by `az`
+    and the query has to keep its response headers, which `az rest` discards. Faking
+    them together keeps one object answering "what did the probe actually do".
+
+    `fail` is "account", "token" or "cost". `throttles` is how many 429s arrive before
+    the real answer, each carrying `retry_after` — and `retry_after=None` is the case
+    where the server throttled without saying how long, which the probe must not fill
+    in with a guess.
     """
-    calls: list[tuple[str, ...]] = []
 
-    def _run(*args: str) -> tuple[int, str]:
-        calls.append(args)
-        if fail is not None and args[1] == fail:
-            return 1, error
-        if args[1] == "account":
-            return 0, json.dumps([{"id": i, "name": n} for i, n in subs])
-        return 0, json.dumps(
-            {"properties": {"rows": [[amt, svc, "KRW"] for svc, amt in rows]}}
+    def __init__(self, subs, rows, fail, error, throttles, retry_after, standard_retry_after):
+        self.subs, self.rows, self.fail, self.error = subs, rows, fail, error
+        self.throttles, self.retry_after = throttles, retry_after
+        self.standard_retry_after = standard_retry_after
+        self.calls: list[tuple[str, ...]] = []
+        self.configs: list[str] = []
+        self.waited: list[float] = []
+
+    def run(self, *args: str) -> tuple[int, str]:
+        self.calls.append(args)
+        if args[:3] == ("az", "account", "list"):
+            if self.fail == "account":
+                return 1, self.error
+            return 0, json.dumps([{"id": i, "name": n} for i, n in self.subs])
+        if args[:3] == ("az", "account", "get-access-token"):
+            if self.fail == "token":
+                return 1, self.error
+            return 0, json.dumps({"accessToken": TOKEN})
+        return 127, f"unexpected call: {args}"
+
+    def curl(self, *args: str, config: str = "") -> tuple[int, str]:
+        # argv0 is added back because the probe's `_curl` prepends it, and the guards
+        # below tell an az call from a curl one by looking at the whole command line.
+        self.calls.append(("curl", *args))
+        self.configs.append(config)
+        if self.fail == "cost":
+            return 0, _http(500, {}, self.error)
+        if self.throttles > 0:
+            self.throttles -= 1
+            headers = {}
+            if self.retry_after is not None:
+                headers["clienttype-retry-after"] = self.retry_after
+            if self.standard_retry_after is not None:
+                headers["retry-after"] = self.standard_retry_after
+            return 0, _http(429, headers, '{"error":{"code":"429","message":"Please retry."}}')
+        payload = json.dumps(
+            {"properties": {"rows": [[amt, svc, "KRW"] for svc, amt in self.rows]}}
         )
+        return 0, _http(200, {}, payload)
 
-    return _run, calls
+    def sleep(self, seconds: float) -> None:
+        self.waited.append(seconds)
+
+    @property
+    def posts(self) -> list[tuple[str, ...]]:
+        return [c for c in self.calls if c and c[0] == "curl"]
+
+
+def _http(status: int, headers: dict, body: str) -> str:
+    """What `curl -D -` hands back: header block, blank line, body."""
+    reason = {200: "OK", 429: "Too Many Requests", 500: "Internal Server Error"}[status]
+    lines = [f"HTTP/1.1 {status} {reason}", "content-type: application/json"]
+    lines += [f"{k}: {v}" for k, v in headers.items()]
+    return "\r\n".join(lines) + "\r\n\r\n" + body
+
+
+def fake_az(probe, monkeypatch, subs=(("sub-1", "one"),),
+            rows=(("Container Registry", 1989.33),), fail: str | None = None,
+            error: str = "boom", throttles: int = 0,
+            retry_after: str | None = "40", standard_retry_after: str | None = None):
+    """Wires the fake transport into the probe and hands back the recorder.
+
+    `_sleep` is replaced too: the point of this feature is *how long* it waits, and a
+    guard that proves that by waiting 40 seconds is a guard people delete.
+    """
+    az = FakeAzure(subs, rows, fail, error, throttles, retry_after, standard_retry_after)
+    monkeypatch.setattr(probe, "_run", az.run)
+    monkeypatch.setattr(probe, "_curl", az.curl)
+    monkeypatch.setattr(probe, "_sleep", az.sleep)
+    return az
 
 
 class TestAzureAsksTheRightCall:
     def test_the_command_that_returns_a_false_zero_is_never_used(self, probe, monkeypatch):
         """`az consumption usage list` succeeds, returns rows, and has no cost in
         them. Using it would be indistinguishable from a working probe."""
-        runner, calls = fake_az()
-        monkeypatch.setattr(probe, "_run", runner)
+        az = fake_az(probe, monkeypatch)
         probe.azure_spend(*WINDOW)
-        assert not any("consumption" in part for c in calls for part in c), (
+        assert not any("consumption" in part for c in az.calls for part in c), (
             "the probe reached for the CLI whose pretaxCost is null on every row"
         )
 
@@ -388,10 +452,9 @@ class TestAzureAsksTheRightCall:
     def test_the_window_is_sent_explicitly(self, probe, monkeypatch):
         """`TheLastMonth` is rejected by this API ("currently not supported"), so a
         named timeframe would fail at exactly the moment someone asked for history."""
-        runner, calls = fake_az()
-        monkeypatch.setattr(probe, "_run", runner)
+        az = fake_az(probe, monkeypatch)
         probe.azure_spend(*WINDOW)
-        bodies = [json.loads(c[c.index("--body") + 1]) for c in calls if "--body" in c]
+        bodies = [json.loads(c[c.index("--data") + 1]) for c in az.posts if "--data" in c]
         assert bodies, "no query was sent"
         assert bodies[0]["timeframe"] == "Custom"
         assert bodies[0]["timePeriod"]["from"].startswith(WINDOW[0])
@@ -399,38 +462,58 @@ class TestAzureAsksTheRightCall:
 
     def test_only_the_cost_query_endpoint_is_posted_to(self, probe, monkeypatch):
         """This probe promises to change nothing, and it issues a POST. That is fine
-        for a query endpoint and not fine for anything else, so pin the URL."""
-        runner, calls = fake_az()
-        monkeypatch.setattr(probe, "_run", runner)
+        for a query endpoint and not fine for anything else, so pin the URL.
+
+        Moved onto the curl transport with the retry work: the assertion used to read
+        `az rest --url`, which no longer exists, and a guard that matches nothing
+        passes forever. Hence the count check — vacuous is the failure mode here.
+        """
+        az = fake_az(probe, monkeypatch)
         probe.azure_spend(*WINDOW)
-        for call in calls:
-            if "post" in call:
-                url = call[call.index("--url") + 1]
-                assert "/Microsoft.CostManagement/query?" in url, f"unexpected POST: {url}"
+        posted = [c for c in az.posts if "POST" in c]
+        assert posted, "no POST was seen at all — this guard was watching nothing"
+        for call in posted:
+            url = call[call.index("--url") + 1]
+            assert "/Microsoft.CostManagement/query?" in url, f"unexpected POST: {url}"
+
+    def test_the_transport_keeps_the_response_headers(self, probe, monkeypatch):
+        """Without the header dump there is no interval to wait, and the retry below
+        silently degrades into the fixed-interval guess it exists to replace."""
+        az = fake_az(probe, monkeypatch)
+        probe.azure_spend(*WINDOW)
+        assert all("-D" in c and c[c.index("-D") + 1] == "-" for c in az.posts)
+
+    def test_the_bearer_token_never_lands_in_argv(self, probe, monkeypatch):
+        """`ps` is readable by every process on the machine. The token goes to curl
+        on stdin (`--config -`); the URL stays in argv because the guard above pins it."""
+        az = fake_az(probe, monkeypatch)
+        probe.azure_spend(*WINDOW)
+        assert not any(TOKEN in part for c in az.calls for part in c), (
+            "the access token was passed as a command-line argument"
+        )
+        assert any(TOKEN in cfg for cfg in az.configs), "the token never reached curl"
 
 
 class TestAzureSweepsAndFailsLoudly:
     def test_every_subscription_is_swept(self, probe, monkeypatch):
-        runner, calls = fake_az(subs=(("sub-1", "one"), ("sub-2", "two")))
-        monkeypatch.setattr(probe, "_run", runner)
+        az = fake_az(probe, monkeypatch, subs=(("sub-1", "one"), ("sub-2", "two")))
         result = probe.azure_spend(*WINDOW)
         assert [name for name, _, _ in result] == ["one", "two"]
-        queried = {c[c.index("--url") + 1] for c in calls if "--url" in c}
+        queried = {c[c.index("--url") + 1] for c in az.posts if "--url" in c}
         assert len(queried) == 2, "a subscription never queried cannot be ruled out"
 
-    @pytest.mark.parametrize("broken", ["account", "rest"])
+    @pytest.mark.parametrize("broken", ["account", "token", "cost"])
     def test_a_failed_lookup_is_none_not_an_empty_report(self, probe, monkeypatch, broken):
         """Returning [] here would print a clean, totally empty Azure section — the
-        false zero wearing a different hat."""
-        runner, _ = fake_az(fail=broken)
-        monkeypatch.setattr(probe, "_run", runner)
+        false zero wearing a different hat. "token" is new with the curl transport:
+        minting the token is a step that can fail on its own now."""
+        fake_az(probe, monkeypatch, fail=broken)
         assert probe.azure_spend(*WINDOW) is None
 
     def test_an_unmeasured_azure_makes_the_probe_exit_nonzero(self, probe, source, monkeypatch):
         """Unlike GCP, Azure spend *is* knowable — so failing to read it is a failed
         lookup, not a known gap, and must be treated like the AWS failure."""
-        runner, _ = fake_az(fail="account")
-        monkeypatch.setattr(probe, "_run", runner)
+        fake_az(probe, monkeypatch, fail="account")
         assert probe.report_azure(*WINDOW) is False
         assert "if not report_azure(start, end):\n        unmeasured = True" in source
 
@@ -439,8 +522,7 @@ class TestAzureSweepsAndFailsLoudly:
         a row — hit live on 2026-08-09. That is transient and the fix is to wait a
         minute, but a bare "could not measure" makes it look like a broken credential
         and sends someone off checking logins instead."""
-        runner, _ = fake_az(fail="rest")
-        monkeypatch.setattr(probe, "_run", runner)
+        fake_az(probe, monkeypatch, fail="cost")
         probe.report_azure(*WINDOW)
         captured = capsys.readouterr()
         assert "boom" in captured.out, (
@@ -451,8 +533,7 @@ class TestAzureSweepsAndFailsLoudly:
     def test_currency_is_carried_not_assumed(self, probe, monkeypatch, capsys):
         """The AWS half prints dollars; this subscription bills in KRW. Printing a
         bare number, or a $, would silently mix two units in one report."""
-        runner, _ = fake_az()
-        monkeypatch.setattr(probe, "_run", runner)
+        fake_az(probe, monkeypatch)
         probe.report_azure(*WINDOW)
         out = capsys.readouterr().out
         assert "KRW" in out and "$" not in out
@@ -734,12 +815,7 @@ class TestAzure429SaysHowLongToWait:
     """
 
     def test_a_429_tells_the_reader_the_wait_is_knowable(self, probe, monkeypatch, capsys):
-        runner, _ = fake_az(
-            fail="rest",
-            error='ERROR: Too Many Requests({"error":{"code":"429",'
-                  '"message":"Too many requests. Please retry."}})',
-        )
-        monkeypatch.setattr(probe, "_run", runner)
+        fake_az(probe, monkeypatch, throttles=99)
         probe.report_azure("2026-09-01", "2026-09-02")
         out = capsys.readouterr().out
         assert "clienttype-retry-after" in out, (
@@ -750,10 +826,8 @@ class TestAzure429SaysHowLongToWait:
     def test_a_non_throttle_failure_does_not_get_the_throttle_advice(self, probe, monkeypatch, capsys):
         """Advice printed under every failure teaches readers to skip it, and would
         send someone chasing a rate limit when the credential is what broke."""
-        runner, _ = fake_az(
-            fail="rest", error="ERROR: AADSTS700082: refresh token has expired",
-        )
-        monkeypatch.setattr(probe, "_run", runner)
+        fake_az(probe, monkeypatch, fail="cost",
+                error="ERROR: AADSTS700082: refresh token has expired")
         probe.report_azure("2026-09-01", "2026-09-02")
         out = capsys.readouterr().out
         assert "clienttype-retry-after" not in out
@@ -762,3 +836,73 @@ class TestAzure429SaysHowLongToWait:
         """A fixed short interval is indistinguishable from a permanent failure, and
         that is exactly how it was misread."""
         assert "고정 간격" in probe.AZURE_429_HINT
+
+
+class TestAzure429IsWaitedOutNotGuessed:
+    """The interval comes from the server or the probe does not retry at all.
+
+    Naming the header in a hint left the waiting to whoever read the report, and the
+    report is read the next morning. These drive the probe doing it itself — the only
+    part that stays a human's is the case where the server never named an interval,
+    because that is where a number would have to be invented.
+    """
+
+    def test_it_waits_exactly_what_the_server_asked_and_then_succeeds(self, probe, monkeypatch):
+        az = fake_az(probe, monkeypatch, throttles=1, retry_after="40")
+        result = probe.azure_spend(*WINDOW)
+        assert result is not None, "a throttle the server told us to wait out is not a failure"
+        assert az.waited == [40.0], f"waited {az.waited} instead of the 40s asked for"
+        assert len(az.posts) == 2
+
+    def test_the_bucket_specific_header_wins_over_the_standard_one(self, probe, monkeypatch):
+        """Measured 2026-09-01: `clienttype-requests` was the exhausted bucket
+        (DefaultQuota:0) while entity, tenant and QPU had room. Taking the shorter,
+        standard header would retry early and read back as a permanent failure."""
+        az = fake_az(probe, monkeypatch, throttles=1, retry_after="40",
+                     standard_retry_after="5")
+        probe.azure_spend(*WINDOW)
+        assert az.waited == [40.0]
+
+    def test_a_429_with_no_interval_is_not_retried_on_a_guessed_one(self, probe, monkeypatch):
+        """The whole correction: a fixed interval below what the server wants is
+        indistinguishable from a permanent failure. No header, no retry."""
+        az = fake_az(probe, monkeypatch, throttles=99, retry_after=None)
+        assert probe.azure_spend(*WINDOW) is None
+        assert az.waited == []
+        assert len(az.posts) == 1, "retried on an interval nobody asked for"
+
+    def test_it_gives_up_after_the_declared_number_of_retries(self, probe, monkeypatch):
+        """Bounded, because an unattended probe that waits forever is a probe nobody
+        runs. The count is the constant, not a literal, so the two cannot drift."""
+        az = fake_az(probe, monkeypatch, throttles=99, retry_after="40")
+        assert probe.azure_spend(*WINDOW) is None
+        assert len(az.posts) == probe.AZURE_MAX_RETRIES + 1
+        assert az.waited == [40.0] * probe.AZURE_MAX_RETRIES
+
+    def test_an_absurd_interval_is_clamped(self, probe, monkeypatch):
+        """A header is input. `retry-after: 86400` would hang the probe for a day."""
+        az = fake_az(probe, monkeypatch, throttles=1, retry_after="86400")
+        probe.azure_spend(*WINDOW)
+        assert az.waited == [probe.AZURE_MAX_WAIT_SECONDS]
+
+    def test_an_unparseable_interval_is_not_a_zero_second_wait(self, probe, monkeypatch):
+        """HTTP allows `Retry-After` as a date. Reading that as 0 would turn this into
+        a tight retry loop against a server that is already throttling."""
+        az = fake_az(probe, monkeypatch, throttles=99, retry_after="Wed, 01 Sep 2026 00:00:00 GMT")
+        assert probe.azure_spend(*WINDOW) is None
+        assert az.waited == []
+        assert len(az.posts) == 1
+
+    def test_the_waiting_is_announced_to_whoever_is_watching(self, probe, monkeypatch, capsys):
+        """40 silent seconds looks hung, and someone who kills it concludes the
+        throttle is permanent — which is the misreading this whole item is about."""
+        fake_az(probe, monkeypatch, throttles=1, retry_after="40")
+        probe.report_azure(*WINDOW)
+        assert "40초" in capsys.readouterr().out
+
+    def test_a_curl_level_failure_is_not_mistaken_for_a_response(self, probe):
+        """curl's own error text has no status line. Parsing it as one would invent a
+        status, and status 0 is the one thing that must never look like 200."""
+        status, body, headers = probe._split_http("curl: (6) Could not resolve host")
+        assert (status, headers) == (0, {})
+        assert "Could not resolve host" in body
