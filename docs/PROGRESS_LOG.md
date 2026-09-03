@@ -7,6 +7,12 @@
 
 ---
 
+## 2026-09-03 — harness 1.4.0: 무인 루프의 기본값이 바뀌었고, 새 문서는 가드가 먼저 잡았다 (gate 2410)
+
+- Status: overnight-harness **1.2.0 → 1.4.0**. Makefile harness 블록을 새 스니펫으로 교체(모델 라우팅 actor `claude-sonnet-5` / critic `claude-fable-5-1`, ledger·resume·trajectory 타깃), `docs/LESSONS.md` 생성, `harness-config`에 `lessons` 경로·예산(40줄) 추가. 설치기가 되살린 `docs/engineering/`은 b078094에서 지운 경로라 다시 뺐다.
+- Behavior change (1.4.0 기본값, Claude 엔진): `OVERNIGHT_CONTRACT=auto`(lean WorkContract), `OVERNIGHT_CRITIC` 빈 값 = `auto`, 턴 예산 초과는 **기록만**(되돌리지 않음, `OVERNIGHT_TURN_FAIL_CLOSE=1`로 복원). 다음 `make overnight`부터 적용.
+- Verified: `make check` **2410 passed + 2 skipped**(2407 → **+3**). 첫 실행은 **4 red** — 새 `lessons` 예산이 세 선언 검사(정책표·머리말·vacuity 집합)에 없었고 진입점 gate 숫자가 2409≠2412였다. 가드가 설계대로 잡은 것이라 숫자 대신 선언을 맞췄다. `harness-init.sh --check` OK, `make overnight-where` → 1.4.0.
+
 ## 2026-09-03 — 씨앗을 다시 채웠다: 넷은 초록에서 시작하는 가드다 (gate 2407)
 
 - Status: 09-02에 `[auto]`가 5/5 소진돼 무인 루프가 집어갈 것이 **0**이었다. `/overnight-seed`로 판단하고 **다섯**을 기록했다(PR #73). 이 체크포인트로 ①은 **닫혔다** ⇒ 남은 씨앗 **넷**.

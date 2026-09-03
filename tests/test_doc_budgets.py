@@ -103,7 +103,7 @@ class TestEveryDocIsWithinBudget:
 
     def test_the_sweep_covers_the_entry_points(self):
         """Vacuity check: a config typo must not silently empty this file."""
-        assert {k for k, _, _ in _budgeted_docs()} == {"brief", "status", "plan", "log"}
+        assert {k for k, _, _ in _budgeted_docs()} == {"brief", "status", "plan", "log", "lessons"}
 
 
 class TestEveryDocIsWithinItsCharacterBudget:

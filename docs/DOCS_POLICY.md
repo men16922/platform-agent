@@ -27,6 +27,7 @@ docs/AGENT_BRIEF.md
 | `STATUS.md` | ≤ 120줄 | 현재 구현 상태, 검증 baseline, active focus, open risks |
 | `NEXT_PLAN.md` | ≤ 120줄 | **열린 작업만** (완료 이력 아님) |
 | `PROGRESS_LOG.md` | ≤ 120줄 | 최신 3–5개 증분. 넘치면 `COMPLETED_SUMMARY.md`로 압축 |
+| `LESSONS.md` | ≤ 40줄 | 에이전트의 메모리 — 문서에 없던 레포 사실 한 줄씩(harness 1.4.0). 넘치면 `/tidy-docs`가 `DECISIONS`/`COMPLETED_SUMMARY`로 압축 |
 | `COMPLETED_SUMMARY.md` | 압축 | 완료 milestone 압축 |
 | `DECISIONS.md` | 누적 | 되돌리기 어려운 결정만 (Decision/Reason/Impact) |
 

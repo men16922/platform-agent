@@ -7,12 +7,13 @@
     "plan": "docs/NEXT_PLAN.md",
     "log": "docs/PROGRESS_LOG.md",
     "completed": "docs/COMPLETED_SUMMARY.md",
-    "decisions": "docs/DECISIONS.md"
+    "decisions": "docs/DECISIONS.md",
+    "lessons": "docs/LESSONS.md"
   },
   "archive_dir": "docs/archive",
   "gate": "make check",
   "smoke": "make test",
-  "budgets": { "brief": 60, "status": 120, "plan": 120, "log": 120 },
+  "budgets": { "brief": 60, "status": 120, "plan": 120, "log": 120, "lessons": 40 },
   "$char_budgets_comment": "Added 2026-08-30. The line budget above passed all day while AGENT_BRIEF grew to 9,783 chars — one line reached 3,621 (37% of the file). Lines are what /tidy-docs and the budget guard could see; characters are what the agent actually pays. Declared here only (one copy, deliberately): DOCS_POLICY states the line budgets and the docs repeat them, and a fourth spelling of a number is how they drift (M19).",
   "char_budgets": { "brief": 8000, "status": 11000, "plan": 11000, "log": 12000 },
   "engine": "claude",

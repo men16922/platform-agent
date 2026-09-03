@@ -7,12 +7,22 @@
 #   .codex/rules/overnight.rules               — Codex command rules
 #   scripts/overnight/PROMPT.md                — optional per-repo prompt override (else plugin default)
 #   scripts/overnight/{logs,STOP,DONE}         — runtime state
+#   docs/LESSONS.md                            — the actor's memory surface (committed)
 #
 # The loop's commit gate is $GATE_CMD (default `make check`). Define a `check` target that proves
 # correctness OFFLINE + DETERMINISTICALLY and allow-list it in scripts/overnight/overnight-settings.json.
 #
 # Select the engine with ENGINE=claude|codex|opencode|agy|kiro. Default stays Claude.
 ENGINE ?= claude
+
+# Model routing (1.4.0, Claude engine). The actor does bounded implementation; the critic is a
+# read-only reviewer whose judgment is what you pay for. Blank = the CLI's own default. These
+# are per-repo policy, so edit them here rather than in the plugin.
+CLAUDE_MODEL ?= claude-sonnet-5
+CLAUDE_EFFORT ?=
+OVERNIGHT_CRITIC_MODEL ?= claude-fable-5-1
+CLAUDE_CRITIC_EFFORT ?=
+export CLAUDE_MODEL CLAUDE_EFFORT OVERNIGHT_CRITIC_MODEL CLAUDE_CRITIC_EFFORT
 
 # HARNESS_ROOT resolution (env override → per-repo pin → highest installed version). This mirrors
 # the plugin's bin/harness-locate.sh; override ad hoc with `make overnight HARNESS_ROOT=/path`.
@@ -71,8 +81,24 @@ overnight-logs:                     ## tail the runner log
 	@mkdir -p $(OVN)/logs; touch $(OVN)/logs/runner.log; tail -f $(OVN)/logs/runner.log
 overnight-dashboard: _harness-guard ## tmux dashboard (falls back to status.sh)
 	@bash $(OVN_SRC)/dashboard.sh
+overnight-ledger-check: _harness-guard ## validate event history before trusting status/report
+	@python3 $(OVN_SRC)/lib/ledger.py check $(OVN)/logs/events.jsonl
+overnight-ledger-state: _harness-guard ## project deterministic per-mission state as JSON
+	@python3 $(OVN_SRC)/lib/ledger.py project $(OVN)/logs/events.jsonl
+overnight-trajectory: _harness-guard ## render causal node/edge trajectory; optional MISSION and FORMAT=json
+	@python3 $(OVN_SRC)/lib/trajectory.py $(OVN)/logs/events.jsonl \
+	  $(if $(MISSION),--mission "$(MISSION)",) --format "$(or $(FORMAT),text)"
+overnight-resume: _harness-guard       ## resume MISSION with DECISION=approve|reject
+	@test -x "$(OVN_SRC)/resume.sh" || { echo "installed overnight-harness does not provide resume.sh"; exit 1; }
+	@test -n "$(MISSION)" || { echo "MISSION=<mission-id> is required"; exit 2; }
+	@test "$(DECISION)" = "approve" -o "$(DECISION)" = "reject" || { echo "DECISION=approve|reject is required"; exit 2; }
+	@HARNESS_REPO_ROOT="$(CURDIR)" bash $(OVN_SRC)/resume.sh "$(MISSION)" --"$(DECISION)"
+overnight-provenance-compare: _harness-guard ## compare two manifests; optional LEFT_RESULT/RIGHT_RESULT
+	@test -n "$(LEFT)" -a -n "$(RIGHT)" || { echo "LEFT=<manifest> and RIGHT=<manifest> are required"; exit 2; }
+	@python3 $(OVN_SRC)/lib/provenance.py compare --left "$(LEFT)" --right "$(RIGHT)" \
+	  --left-result "$(LEFT_RESULT)" --right-result "$(RIGHT_RESULT)"
 overnight-where:                    ## print the resolved plugin location (debug)
 	@echo "HARNESS_ROOT = $(HARNESS_ROOT)"; echo "runner       = $(OVN_SRC)/run.sh"
 
-.PHONY: overnight overnight-watch overnight-once overnight-claude-once overnight-codex-once overnight-opencode-once overnight-agy-once overnight-kiro-once overnight-stop overnight-clean overnight-status overnight-logs overnight-dashboard overnight-where _harness-guard
+.PHONY: overnight overnight-watch overnight-once overnight-claude-once overnight-codex-once overnight-opencode-once overnight-agy-once overnight-kiro-once overnight-stop overnight-clean overnight-status overnight-logs overnight-dashboard overnight-ledger-check overnight-ledger-state overnight-trajectory overnight-resume overnight-provenance-compare overnight-where _harness-guard
 # ===== end overnight harness targets =====
