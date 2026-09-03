@@ -1,6 +1,6 @@
 # STATUS — platform-agent
 
-최종 갱신: 2026-09-02
+최종 갱신: 2026-09-03
 
 > 현재 구현 상태 / 검증 baseline / active focus / open risks. **≤120줄** 유지.
 > ⚠️**압축본이다(2026-09-02)** — 상세는 **삭제가 아니라 이동**했다:
@@ -12,6 +12,10 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- `make check` → **2410** (2026-09-03 로컬 macOS·py3.13 · **CI도 같은 게이트**, ubuntu·py3.13 —
+  **CI 숫자는 PR 체크가 권위**). **+3**: overnight-harness **1.2.0→1.4.0** — `docs/LESSONS.md`(≤40줄)가
+  세 선언 검사(라인·정책표·머리말)에 편입됐다. Makefile은 모델 라우팅(actor `claude-sonnet-5` /
+  critic `claude-fable-5-1`, `?=`)과 ledger·resume·trajectory 타깃을 얻었다. 코드 변경 0.
 - `make check` → **2407** (2026-09-02 로컬 macOS·py3.13 · **CI도 같은 게이트**, ubuntu·py3.13 —
   **CI 숫자는 PR 체크가 권위**). **+10**: **`MEASURABLE`이 금액을 대신 묻는다**(M50) — 인쇄만 하던
   분기가 질의를 돌리고, **PROMOTION을 나머지 크레딧과 갈라** 인쇄한다. ⚠️**첫 가드가 그 변이를
