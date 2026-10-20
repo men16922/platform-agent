@@ -1,0 +1,114 @@
+{
+  "milestone": "M80",
+  "observed_at": "2026-09-12T23:36:45.954569+00:00",
+  "scope": "read-only remote settings; unsaved UI preview discarded; local review preparation",
+  "app_id": 4924748,
+  "installation_id": 161238144,
+  "repository_id": 1367740190,
+  "ui_observations": {
+    "before": {
+      "contents": "No access",
+      "single_file": "Read and write",
+      "pull_requests": "Read and write",
+      "metadata": "Read-only",
+      "selected_count": 2,
+      "mandatory_count": 1,
+      "path": "platform/tenants/acme.yaml"
+    },
+    "unsaved_preview": {
+      "contents": "Read-only",
+      "single_file": "Read and write",
+      "selected_count": 3,
+      "mandatory_count": 1,
+      "save_changes_enabled": true
+    },
+    "after_reload": {
+      "selected_count": 2,
+      "mandatory_count": 1,
+      "save_changes_disabled": true
+    },
+    "installation": {
+      "only_select_repositories": true,
+      "selected_count": 1,
+      "repository": "men16922/platform-agent-p5e-authz-r2",
+      "permissions": [
+        "single_file write acme",
+        "metadata read",
+        "pull_requests read/write"
+      ]
+    }
+  },
+  "limits": {
+    "permission_saves": 0,
+    "installation_accepts": 0,
+    "tokens_minted": 0,
+    "api_writes": 0,
+    "deletions": 0
+  },
+  "unproven": [
+    "server acceptance of combined permissions",
+    "token permission behavior",
+    "PR creation success with Contents read"
+  ],
+  "local_verification": {
+    "review_json_fixture_base64_and_hashes": "passed",
+    "each_fixture_diff": "+1/-0",
+    "request_count": 4,
+    "network_calls": 0
+  },
+  "review_sha256": "a47f64681fcdab183691545f11d4d0260fa92dd76347d15feecc9c839c7b5825",
+  "operator_readback": {
+    "private": true,
+    "actions_enabled": false,
+    "main": {
+      "observer": "operator",
+      "complete": true,
+      "ref": "main",
+      "commit": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "main": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "parents": [],
+      "files": {
+        "platform/tenants/acme.yaml": {
+          "sha": "398abe6c528238244a8e3713bc2b48523ae8b915",
+          "mode": "100644"
+        },
+        "platform/tenants/globex.yaml": {
+          "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4",
+          "mode": "100644"
+        }
+      }
+    },
+    "existing_diagnostic": {
+      "observer": "operator",
+      "complete": true,
+      "ref": "p5e/20260913-02-diagnostic",
+      "commit": "9d17b496128a7ec2a771041816c937db7e6366a3",
+      "main": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "parents": [
+        "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c"
+      ],
+      "files": {
+        "platform/tenants/acme.yaml": {
+          "sha": "9a88d6901ff18873745c272665e175921156ca9a",
+          "mode": "100644"
+        },
+        "platform/tenants/globex.yaml": {
+          "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4",
+          "mode": "100644"
+        }
+      }
+    },
+    "proposed_branch_absent": true,
+    "pr_count": 0
+  },
+  "gate": {
+    "command": "make check",
+    "environment": "2026-09-13 local macOS Python 3.13",
+    "passed": 3058,
+    "skipped": 2,
+    "warnings": 21,
+    "seconds": 90.2,
+    "log": "/tmp/platform-agent-m80-gate.log",
+    "remote_ci": "not run"
+  }
+}

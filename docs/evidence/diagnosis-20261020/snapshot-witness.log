@@ -1,0 +1,3 @@
+{"case": "lookalike", "completion": "complete", "parsed": null, "binding_valid": false}
+{"case": "counterexample", "completion": "complete", "parsed": null, "binding_valid": false}
+{"case": "supported-recovery", "completion": "complete", "parsed": null, "binding_valid": false}

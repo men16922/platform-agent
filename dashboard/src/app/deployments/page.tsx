@@ -47,7 +47,7 @@ export default async function DeploymentsPage() {
       </div>
 
       {/* Deployments controller (table + trigger modals) */}
-      <DeploymentsControl initialDeployments={deployments} tornDownClusters={tornDownClusters} />
+      <DeploymentsControl initialDeployments={deployments} tornDownClusters={tornDownClusters} localExecution={process.env.DASHBOARD_DATA_SOURCE === "local"} />
     </div>
   );
 }

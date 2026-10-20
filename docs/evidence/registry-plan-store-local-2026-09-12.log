@@ -1,0 +1,11 @@
+PASS new process reads complete server payload
+PASS duplicate request_id cannot overwrite
+PASS 8 concurrent consumers -> 1 claim, 7 conflicts; retry remains closed
+PASS subject swap cannot consume another preview
+PASS current grant revocation precedes claim
+PASS changed base revision requires replan
+PASS TTL deletion not required; expiry during authorization/read also rejects
+PASS stored output corruption rejected
+PASS real missing users table fails closed before claim
+PASS real missing plan table rejects reads/writes; no publication adapter invoked
+PASS temporary local tables removed; no AWS endpoint or GitHub write used

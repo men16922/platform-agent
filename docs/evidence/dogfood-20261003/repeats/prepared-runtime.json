@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-03T06:33:53.956007+00:00",
+  "candidate": "candidate-v3.json",
+  "identity": "Existing platform-agent-system/platform-agent-deployer",
+  "scope": "Same approved local experiment; permissions unchanged",
+  "pids": {
+    "mlx": 46760,
+    "proxy": 46761,
+    "router": 76188,
+    "dashboard": 76189
+  }
+}

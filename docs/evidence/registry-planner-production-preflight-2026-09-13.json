@@ -1,0 +1,108 @@
+{
+  "observed_at": "2026-09-13T12:57:31.047476+00:00",
+  "scope": "read-only preflight; no remote mutations",
+  "identity": {
+    "UserId": "AIDA5HDHDUO3FMSWJYSYF",
+    "Account": "908601828278",
+    "Arn": "arn:aws:iam::908601828278:user/q-user"
+  },
+  "users_table": {
+    "Arn": "arn:aws:dynamodb:us-east-1:908601828278:table/platform-agent-users",
+    "Status": "ACTIVE",
+    "KeySchema": [
+      {
+        "AttributeName": "username",
+        "KeyType": "HASH"
+      }
+    ],
+    "BillingMode": "PAY_PER_REQUEST",
+    "SSE": "ENABLED"
+  },
+  "subject_record": {},
+  "planner_stack": {
+    "exit_code": 254,
+    "stack_absent": true
+  },
+  "bootstrap": {
+    "Status": "CREATE_COMPLETE",
+    "Outputs": [
+      {
+        "OutputKey": "ImageRepositoryName",
+        "OutputValue": "cdk-hnb659fds-container-assets-908601828278-us-east-1",
+        "Description": "The name of the ECR repository which hosts docker image assets"
+      },
+      {
+        "OutputKey": "BucketName",
+        "OutputValue": "cdk-hnb659fds-assets-908601828278-us-east-1",
+        "Description": "The name of the S3 bucket owned by the CDK toolkit stack"
+      },
+      {
+        "OutputKey": "BootstrapVersion",
+        "OutputValue": "31",
+        "Description": "The version of the bootstrap resources that are currently mastered in this stack"
+      },
+      {
+        "OutputKey": "BucketDomainName",
+        "OutputValue": "cdk-hnb659fds-assets-908601828278-us-east-1.s3.us-east-1.amazonaws.com",
+        "Description": "The domain name of the S3 bucket owned by the CDK toolkit stack"
+      },
+      {
+        "OutputKey": "FileAssetKeyArn",
+        "OutputValue": "AWS_MANAGED_KEY",
+        "Description": "The ARN of the KMS key used to encrypt the asset bucket (deprecated)",
+        "ExportName": "CdkBootstrap-hnb659fds-FileAssetKeyArn"
+      }
+    ]
+  },
+  "oidc_provider": {
+    "Url": "oidc.vercel.com/men16922s-projects",
+    "ClientIDList": [
+      "https://vercel.com/men16922s-projects"
+    ],
+    "ThumbprintList": [
+      "ee44782835d8fb31394da5ceb840dc93849bcf5a"
+    ],
+    "CreateDate": "2026-07-18T10:36:11.826000+00:00",
+    "Tags": []
+  },
+  "public_registry": {
+    "observed_at": "2026-09-13T12:47:22.685392+00:00",
+    "scope": "public GitHub GET and pure planning; no user authorization or persistence",
+    "repository": "men16922/platform-agent",
+    "request": {
+      "tenant": "acme",
+      "env": "prod",
+      "capability": "logging",
+      "version": "7.1.0"
+    },
+    "plan": {
+      "contract_version": "registry-attachment/v1",
+      "request_id": "deployment-preflight-read-only",
+      "base_commit": "445d48df8eebd73199521719a5f7e98f40f074a2",
+      "catalog_blob": "09dedadf08fd7ea37484697dd0f24c22a3a26eb8",
+      "tenant_blob": "2d5418b0f1219dd9c5cdb36c230a30b0b6753fe4",
+      "values_path": "infra/onprem/addons/values/loki.yaml",
+      "values_blob": "94e418e1c240ccaa0200ea46674bde2c6d7c002c",
+      "path": "platform/tenants/acme.yaml",
+      "diff": "--- a/platform/tenants/acme.yaml\n+++ b/platform/tenants/acme.yaml\n@@ -38,3 +38,4 @@\n     delivery: flux\n     addons:\n       observability: kube-prometheus-stack 87.17.0\n+      logging: loki 7.1.0\n",
+      "output_sha256": "bce03166637841653dbd710b61c0232514bce9738214ff41f8535dc821f8886b",
+      "digest": "a69925ab456a2357da45fda7e924c90bc2e578ff3aceb6547045202dcf249efe",
+      "expires_at": "2026-09-13T12:52:19.263575+00:00"
+    },
+    "output_bytes": 1538,
+    "github_get_count": 12,
+    "authorized_user": false,
+    "stored": false,
+    "published": false
+  },
+  "vercel": {
+    "project_id": "prj_zvAvIBSR99TCVXhaxeAaXeTCahfp",
+    "team_id": "team_jxycTlFuqaY9gfAGxEWeOxJV",
+    "cached_root_directory": "dashboard",
+    "cached_node_version": "24.x",
+    "live_settings_verified": false,
+    "blocker": "Vercel authenticator challenge; CLI credentials unavailable",
+    "production_baseline_and_rollback_url": null
+  },
+  "remote_changes": []
+}

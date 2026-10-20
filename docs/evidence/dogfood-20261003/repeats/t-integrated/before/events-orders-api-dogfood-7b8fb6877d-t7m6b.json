@@ -1,0 +1,17 @@
+{
+  "source_id": "events-orders-api-dogfood-7b8fb6877d-t7m6b",
+  "started_at": "2026-10-03T12:52:11.479769+00:00",
+  "completed_at": "2026-10-03T12:52:11.513390+00:00",
+  "seconds": 0.034,
+  "args": [
+    "get",
+    "events",
+    "--field-selector",
+    "involvedObject.uid=07fb3152-2160-45fa-8cba-d51e1f33894d",
+    "-o",
+    "json"
+  ],
+  "exit_code": 0,
+  "stdout": "{\n    \"apiVersion\": \"v1\",\n    \"items\": [],\n    \"kind\": \"List\",\n    \"metadata\": {\n        \"resourceVersion\": \"\"\n    }\n}\n",
+  "stderr": ""
+}

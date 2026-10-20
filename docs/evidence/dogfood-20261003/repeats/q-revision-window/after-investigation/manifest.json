@@ -1,0 +1,113 @@
+{
+  "at": "2026-10-03T11:09:25.715082+00:00",
+  "window_start": "2026-10-03T11:09:25.173490+00:00",
+  "target": {
+    "context": "kind-platform-agent",
+    "identity_context": "dogfood-deployer",
+    "namespace": "acme-dev-observability",
+    "deployment": "orders-api-dogfood",
+    "uid": "8567c751-fc44-4e28-b63e-e21af534661f"
+  },
+  "revision": "28",
+  "images": [
+    "localhost:5001/orders-api-dogfood:missing-r1"
+  ],
+  "replicas": 2,
+  "reads": [
+    {
+      "source_id": "deployment-before",
+      "file": "deployment-before.json",
+      "sha256": "705e19bdc3d8f5e8c44b5e12dbd6a348775c38e2f6efc8576d86d1888d5e1118",
+      "started_at": "2026-10-03T11:09:25.173623+00:00",
+      "completed_at": "2026-10-03T11:09:25.304468+00:00",
+      "exit_code": 0
+    },
+    {
+      "source_id": "replicasets-pods",
+      "file": "replicasets-pods.json",
+      "sha256": "966e5cf40a42c3dba13b073588c6d1723ba6b49125afb3e5ed6670446788f30e",
+      "started_at": "2026-10-03T11:09:25.304995+00:00",
+      "completed_at": "2026-10-03T11:09:25.350853+00:00",
+      "exit_code": 0
+    },
+    {
+      "source_id": "describe",
+      "file": "describe.json",
+      "sha256": "2f1057bfd5d7cd4004803adb501c9728d3a0a1f7299521265c6d0e2d5acf87ac",
+      "started_at": "2026-10-03T11:09:25.351613+00:00",
+      "completed_at": "2026-10-03T11:09:25.405178+00:00",
+      "exit_code": 0
+    },
+    {
+      "source_id": "pod-list",
+      "file": "pod-list.json",
+      "sha256": "e490c85d23212a34da99b837ff61d220f4f296fdb04ad2cde3758c324fe64617",
+      "started_at": "2026-10-03T11:09:25.405586+00:00",
+      "completed_at": "2026-10-03T11:09:25.445642+00:00",
+      "exit_code": 0
+    },
+    {
+      "source_id": "events-orders-api-dogfood-5b5d45bdfd-c5d6w",
+      "file": "events-orders-api-dogfood-5b5d45bdfd-c5d6w.json",
+      "sha256": "e053c847d293ac5b1a294a597a141f40f12075ca9ef20f3582cbe25844c5044b",
+      "started_at": "2026-10-03T11:09:25.446112+00:00",
+      "completed_at": "2026-10-03T11:09:25.485451+00:00",
+      "exit_code": 0
+    },
+    {
+      "source_id": "logs-orders-api-dogfood-5b5d45bdfd-c5d6w",
+      "file": "logs-orders-api-dogfood-5b5d45bdfd-c5d6w.json",
+      "sha256": "71e49a7a897aeec76c2183959b6d5f7c988c8c45818485ff789834347c0ae8c6",
+      "started_at": "2026-10-03T11:09:25.485931+00:00",
+      "completed_at": "2026-10-03T11:09:25.527243+00:00",
+      "exit_code": 1
+    },
+    {
+      "source_id": "events-orders-api-dogfood-7b8fb6877d-8m6m8",
+      "file": "events-orders-api-dogfood-7b8fb6877d-8m6m8.json",
+      "sha256": "e0f107b7e129ce4ea5f0bb352b8c88df951126f5b3e86d0cfd667863220efe3b",
+      "started_at": "2026-10-03T11:09:25.527725+00:00",
+      "completed_at": "2026-10-03T11:09:25.562140+00:00",
+      "exit_code": 0
+    },
+    {
+      "source_id": "logs-orders-api-dogfood-7b8fb6877d-8m6m8",
+      "file": "logs-orders-api-dogfood-7b8fb6877d-8m6m8.json",
+      "sha256": "d88310c89f70daa3f16d29fc26fd6e4ef3cd79277a68f23429fd2d3548762ce2",
+      "started_at": "2026-10-03T11:09:25.562553+00:00",
+      "completed_at": "2026-10-03T11:09:25.605386+00:00",
+      "exit_code": 0
+    },
+    {
+      "source_id": "events-orders-api-dogfood-7b8fb6877d-t7m6b",
+      "file": "events-orders-api-dogfood-7b8fb6877d-t7m6b.json",
+      "sha256": "de6b7b9719b7fd4394bc3a8082be2d69dea706f2f7590c25468c36db723b2ae0",
+      "started_at": "2026-10-03T11:09:25.605879+00:00",
+      "completed_at": "2026-10-03T11:09:25.640739+00:00",
+      "exit_code": 0
+    },
+    {
+      "source_id": "logs-orders-api-dogfood-7b8fb6877d-t7m6b",
+      "file": "logs-orders-api-dogfood-7b8fb6877d-t7m6b.json",
+      "sha256": "cbcffe5bb2c5475ade715f9d1a424410db56bcb0f82b8f8e099be2cd19a4917d",
+      "started_at": "2026-10-03T11:09:25.641218+00:00",
+      "completed_at": "2026-10-03T11:09:25.679977+00:00",
+      "exit_code": 0
+    },
+    {
+      "source_id": "deployment-after",
+      "file": "deployment-after.json",
+      "sha256": "1becced36df60b41d2a23e4d8f40a76dbb6d16d01c6942c7cd793b331094c800",
+      "started_at": "2026-10-03T11:09:25.680449+00:00",
+      "completed_at": "2026-10-03T11:09:25.714484+00:00",
+      "exit_code": 0
+    }
+  ],
+  "deployment_identity_generation_resource_version_stable": true,
+  "limits": [
+    "Sequential observations, not an atomic snapshot. Sources retain their own acquisition times.",
+    "Log capture requests the last 30 seconds; log timestamps are distinct from acquisition time.",
+    "HTTP 200 in one Pod log does not prove that a failed new revision is healthy or that a service had an outage."
+  ],
+  "mutations": 0
+}

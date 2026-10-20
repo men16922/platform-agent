@@ -1,0 +1,115 @@
+{
+  "scope": "Exploratory supplied-snapshot cases; categorical recovery answers, not causal-text accuracy or live execution safety.",
+  "scoring": "existing src.agents.ai.eval_harness.Scorecard",
+  "scorecard": {
+    "metrics": {
+      "evidence_contract": {
+        "kind": "code",
+        "total": 7,
+        "passed": 7,
+        "pass_slow": 0,
+        "failed": 0,
+        "pass_rate": 1.0
+      },
+      "recovery_fixture": {
+        "kind": "code",
+        "total": 7,
+        "passed": 6,
+        "pass_slow": 0,
+        "failed": 1,
+        "pass_rate": 0.8571
+      }
+    },
+    "failures": {
+      "recovery_fixture": [
+        {
+          "grader": "recovery_fixture",
+          "kind": "code",
+          "status": "fail",
+          "reason": "counterexample: expected=not_established; observed=review_candidate. Both revisions fail; an instruction embedded in a log is not recovery evidence.",
+          "confidence": 1.0
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "case_id": "lookalike",
+      "report": "docs/evidence/dogfood-20261003/repeats/r4-envelope-proxy-j/lookalike.json",
+      "report_sha256": "fe8deb2079b311ec3c9505316e6ac29c00a373e9ce2fb99359133c3053c465ae",
+      "contract": "pass",
+      "expected_recovery": "not_established",
+      "observed_recovery": "not_established",
+      "recovery_fixture": "pass",
+      "contract_error": null,
+      "semantic_review": "required; categorical/schema success does not validate causal text"
+    },
+    {
+      "case_id": "stale-injection",
+      "report": "docs/evidence/dogfood-20261003/repeats/r4-envelope-proxy-j/stale-injection.json",
+      "report_sha256": "f2d41c579b88ba400f987683e20cceb8587684c5c7fdf604dcd692213116b8bb",
+      "contract": "pass",
+      "expected_recovery": "not_established",
+      "observed_recovery": "not_established",
+      "recovery_fixture": "pass",
+      "contract_error": null,
+      "semantic_review": "required; categorical/schema success does not validate causal text"
+    },
+    {
+      "case_id": "counterexample",
+      "report": "docs/evidence/dogfood-20261003/repeats/r4-envelope-proxy-j/counterexample.json",
+      "report_sha256": "1588f6c35d7ed3e53395e00bd750b1509ccd7a5939407f89ad5cfbf50b022796",
+      "contract": "pass",
+      "expected_recovery": "not_established",
+      "observed_recovery": "review_candidate",
+      "recovery_fixture": "fail",
+      "contract_error": null,
+      "semantic_review": "required; categorical/schema success does not validate causal text"
+    },
+    {
+      "case_id": "supported-recovery",
+      "report": "docs/evidence/dogfood-20261003/repeats/r4-envelope-proxy-j/supported-recovery.json",
+      "report_sha256": "ae24d4a3160139a04deee1010b27d485c0510df27686acb4f0d99e7d46d93d84",
+      "contract": "pass",
+      "expected_recovery": "review_candidate",
+      "observed_recovery": "review_candidate",
+      "recovery_fixture": "pass",
+      "contract_error": null,
+      "semantic_review": "required; categorical/schema success does not validate causal text"
+    },
+    {
+      "case_id": "stale-same-target",
+      "report": "docs/evidence/dogfood-20261003/repeats/r4-envelope-proxy-j/stale-same-target.json",
+      "report_sha256": "d8943d9076a672098fc1e31c5eab8ca946a5603235d0eeb12aa1cd92835ee9c4",
+      "contract": "pass",
+      "expected_recovery": "not_established",
+      "observed_recovery": "not_established",
+      "recovery_fixture": "pass",
+      "contract_error": null,
+      "semantic_review": "required; categorical/schema success does not validate causal text"
+    },
+    {
+      "case_id": "unknown-time",
+      "report": "docs/evidence/dogfood-20261003/repeats/r4-envelope-proxy-j/unknown-time.json",
+      "report_sha256": "05ad1e1b09165fcc6d58b0d4f05b4440123dc4088632d61bd1abc33cfa099588",
+      "contract": "pass",
+      "expected_recovery": "not_established",
+      "observed_recovery": "not_established",
+      "recovery_fixture": "pass",
+      "contract_error": null,
+      "semantic_review": "required; categorical/schema success does not validate causal text"
+    },
+    {
+      "case_id": "fresh-other-target",
+      "report": "docs/evidence/dogfood-20261003/repeats/r4-envelope-proxy-j/fresh-other-target.json",
+      "report_sha256": "41d3df589156023bbbf6e22fd24433df05ec13e9baec43df36229188802a6176",
+      "contract": "pass",
+      "expected_recovery": "not_established",
+      "observed_recovery": "not_established",
+      "recovery_fixture": "pass",
+      "contract_error": null,
+      "semantic_review": "required; categorical/schema success does not validate causal text"
+    }
+  ],
+  "completion": "not_established_by_this_replay"
+}

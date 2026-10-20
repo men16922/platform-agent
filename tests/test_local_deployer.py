@@ -34,6 +34,7 @@ def _fake_adapters(provider):
                 replicas_desired=1,
                 endpoint="http://svc",
                 error=None,
+                metadata={"applied": True, "rollout_verified": True},
             ),
             validate=lambda spec: SimpleNamespace(
                 healthy=True, checks_passed=1, checks_total=1, details={"ready": "1/1"}, error=None
@@ -57,10 +58,12 @@ def test_build_image_tool_calls_adapter(monkeypatch):
 
 def test_deploy_tool_serializes_status_enum(monkeypatch):
     monkeypatch.setattr(ld, "get_deployment_adapters", _fake_adapters)
-    out = ld.deploy_to_cluster("orders-api", "orders-api", "1.0.0", "reg/img:1")
+    out = ld.deploy_to_cluster("orders-api", "orders-api", "1.0.0", "reg/img:1", replicas=1)
     assert out["status"] == "DEPLOYED"
     assert out["deployment_id"] == "d1"
     assert out["endpoint"] == "http://svc"
+    assert out["applied"] is True
+    assert out["rollout_verified"] is True
 
 
 def test_deploy_tools_registered():

@@ -1,0 +1,9 @@
+{
+  "at": "2026-10-03T07:03:51.047899+00:00",
+  "pid": 99617,
+  "bind": "127.0.0.1:8078",
+  "isolated_stores": true,
+  "cloud_credentials_forwarded": false,
+  "rbac_changed": false,
+  "candidate": "candidate-v5-diagnosis.json"
+}

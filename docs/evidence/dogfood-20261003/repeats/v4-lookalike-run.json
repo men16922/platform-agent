@@ -1,0 +1,53 @@
+{
+  "label": "v4-lookalike",
+  "request_id": "7acf754f-ee7a-4842-a894-afd4d806fe89",
+  "status": "failed",
+  "claims": 1,
+  "acceptance_to_persistence_sec": 3.681,
+  "tool_calls": {},
+  "record": null,
+  "state": {
+    "request_id": "7acf754f-ee7a-4842-a894-afd4d806fe89",
+    "actor": "local-dev",
+    "request": {
+      "instruction": "Read-only diagnosis exercise, no tools or resource changes. Snapshot A: a new Pod is Pending, waiting reason ImagePullBackOff, registry response manifest unknown. Snapshot B: the image is already running, but an HTTP readiness check returns 503 after a dependency timeout. Does the same root cause or rollback decision follow from both? Explain the difference, what is still uncertain, and what evidence would justify action. Do not invent evidence or claim the live orders-api-dogfood is in either state.",
+      "model": "local-qwen",
+      "provider": "onprem",
+      "environment": null
+    },
+    "fingerprint": "7e87036e6e0052b5956c95439775d990c669f0cec949d0a534d281896dd943af",
+    "instance": "117d8c099416459db9779cc2e5922d6d",
+    "status": "failed",
+    "updated_at": 1791010065.555885,
+    "events": [
+      {
+        "seq": 1,
+        "type": "ready",
+        "request_id": "7acf754f-ee7a-4842-a894-afd4d806fe89",
+        "agent": "local-qwen"
+      },
+      {
+        "type": "reasoning",
+        "text": "The two snapshots describe different root causes and thus lead to different rollback decisions.\n\nSnapshot A: `ImagePullBackOff` is a Kubernetes error indicating that the Pod cannot pull the image from the registry. This is a configuration or infrastructure issue related to image availability or registry access. The rollback decision here would be to revert to a previous working version of the image or revert the deployment configuration.\n\nSnapshot B: `503` HTTP readiness check failure after a dependency timeout suggests the application itself is failing to start or respond correctly. This is an application-level issue, not an infrastructure or configuration issue like in Snapshot A.\n\nEvidence that would justify action:\n- For Snapshot A: Registry connectivity issues, registry authentication problems, or image name/name resolution issues.\n- For Snapshot B: Application logs showing dependency errors, timeout errors, or application startup failures.\n\nIn summary, the root causes differ (infrastructure vs application), and the rollback decisions differ accordingly. Snapshot A suggests infrastructure or configuration issues, while Snapshot B suggests application-level problems. Action would depend on the specific evidence found in logs or monitoring data.",
+        "seq": 2,
+        "request_id": "7acf754f-ee7a-4842-a894-afd4d806fe89"
+      },
+      {
+        "type": "done",
+        "ok": false,
+        "agent": "local-qwen",
+        "model": "local-qwen",
+        "provider": "onprem",
+        "summary": "The two snapshots describe different root causes and thus lead to different rollback decisions.\n\nSnapshot A: `ImagePullBackOff` is a Kubernetes error indicating that the Pod cannot pull the image from the registry. This is a configuration or infrastructure issue related to image availability or registry access. The rollback decision here would be to revert to a previous working version of the image or revert the deployment configuration.\n\nSnapshot B: `503` HTTP readiness check failure after a dependency timeout suggests the application itself is failing to start or respond correctly. This is an application-level issue, not an infrastructure or configuration issue like in Snapshot A.\n\nEvidence that would justify action:\n- For Snapshot A: Registry connectivity issues, registry authentication problems, or image name/name resolution issues.\n- For Snapshot B: Application logs showing dependency errors, timeout errors, or application startup failures.\n\nIn summary, the root causes differ (infrastructure vs application), and the rollback decisions differ accordingly. Snapshot A suggests infrastructure or configuration issues, while Snapshot B suggests application-level problems. Action would depend on the specific evidence found in logs or monitoring data.",
+        "suitability": {
+          "verdict": "recommended",
+          "reason": "Native pairing — Local LLM (Qwen) is the On-Prem-native brain."
+        },
+        "record": null,
+        "seq": 3,
+        "request_id": "7acf754f-ee7a-4842-a894-afd4d806fe89"
+      }
+    ]
+  },
+  "activity_rows": []
+}

@@ -1,0 +1,55 @@
+{
+  "at": "2026-10-03T11:38:53.790837+00:00",
+  "candidate": "candidate-v16-pod-diagnostics.json",
+  "runtime_candidate": "candidate-v15-snapshot-contract.json",
+  "activated": false,
+  "reason": "Injected source still contaminates model health prose; candidate remains for review, not a diagnostic-quality promotion.",
+  "worktree_source_hashes_match": 287,
+  "running_candidate_source_hashes_match": 287,
+  "processes_unchanged_and_live": {
+    "mlx": 45929,
+    "proxy": 80940,
+    "router": 23160,
+    "dashboard": 23161,
+    "rejection_webhook": 57777
+  },
+  "production_changed_files": [
+    "src/agents/ai/deployment_evidence.py",
+    "src/agents/ai/ops_tools.py",
+    "src/agents/ai/local_deployer.py"
+  ],
+  "changes": [
+    "Same five Kubernetes reads and same identity; describe returns quoted current-Pod waiting text separately from deterministic recovery facts.",
+    "Quote binds source hash/time, RS/Pod UID, revision/container/image; excludes unrelated/terminating/unbound/stale observations.",
+    "Message1600/reason160/record8 limits explicitly report truncation/omission; original message hash retained.",
+    "Compatibility deployment_evidence and summarize_deployment remain free of diagnostic message prose."
+  ],
+  "verification": {
+    "related": "58 passed in1.21s; pod-diagnostics-related.log",
+    "mutations": "owner/source-hash/collector connection each red; original bytes restored; pod-diagnostics-mutations.json",
+    "full_gate": {
+      "passed": 3364,
+      "skipped": 2,
+      "warnings": 20,
+      "seconds": 140.62,
+      "environment": "2026-10-03 local macOS/Python3.13.5/Node22.23.3/temporary npm prefix",
+      "evidence": "pod-diagnostics-gate-final.log",
+      "initial_failure": "3363 passed/1 failed: NEXT_PLAN still3356. Corrected to3364. First replacement expected bold formatting and failed its assertion; actual header was then corrected before final gate passed. Original gate log preserved."
+    },
+    "documentation_followup": {
+      "passed": 55,
+      "seconds": 2.87,
+      "evidence": "pod-diagnostics-docs.log",
+      "diff_check": "git diff --check exit0",
+      "runtime_hashes_unchanged_after_gate": true
+    }
+  },
+  "model_review": "pod-diagnostics-replay-review.json",
+  "live_changes": "No router/dashboard/model restart or workload mutation this unit. Q restored state remains the last workload observation; no new HTTP health measurement.",
+  "remaining": [
+    "Existing semantic failures including source-instruction contamination",
+    "Final same-candidate normal/denial/recovery/loss suite and refreshed reproduction/comparison/demo",
+    "R5 extension after R3"
+  ],
+  "checkpoint_at": "2026-10-03T11:44:53.324563+00:00"
+}

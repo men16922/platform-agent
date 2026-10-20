@@ -1,0 +1,28 @@
+{
+  "at": "2026-10-03T10:55:09.944389+00:00",
+  "old_pid": 40430,
+  "pid": 45929,
+  "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "cached_revision": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "cache_only": true,
+  "application_model_setting_changed": false,
+  "other_processes_unchanged": true,
+  "mode": "restore",
+  "listening": true,
+  "listening_at": "2026-10-03T10:55:11.167653+00:00",
+  "verification": {
+    "at": "2026-10-03T10:55:29.762464+00:00",
+    "seconds": 0.554,
+    "http_status": 200,
+    "finish_reason": "stop",
+    "content": "OK",
+    "usage": {
+      "prompt_tokens": 12,
+      "completion_tokens": 2,
+      "total_tokens": 14,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    }
+  }
+}

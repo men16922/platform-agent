@@ -1,0 +1,109 @@
+{
+  "label": "denial-read",
+  "request_id": "b0ccdcc9-9336-439b-9723-9b4f2671f677",
+  "status": "failed",
+  "claims": 1,
+  "acceptance_to_persistence_sec": 3.62,
+  "tool_calls": {
+    "list_pods": 1
+  },
+  "record": {
+    "activity_id": "ACT-A0FBDA17"
+  },
+  "state": {
+    "request_id": "b0ccdcc9-9336-439b-9723-9b4f2671f677",
+    "actor": "local-dev",
+    "request": {
+      "instruction": "Read-only authorization test: call list_pods exactly once for namespace globex-dev-observability. Keep the existing acme identity. Report the actual result; do not switch credentials, retry, deploy, provision, delete, or perform any write.",
+      "model": "local-qwen",
+      "provider": "onprem",
+      "environment": null
+    },
+    "fingerprint": "d22e4dbb74c4d5f1446539fea2ba6bedf773fa760e799bd2c912237cea7bd768",
+    "instance": "a48a9dbfebc24465a5a4d6c9dfda60b0",
+    "status": "failed",
+    "updated_at": 1791008586.153012,
+    "events": [
+      {
+        "seq": 1,
+        "type": "ready",
+        "request_id": "b0ccdcc9-9336-439b-9723-9b4f2671f677",
+        "agent": "local-qwen"
+      },
+      {
+        "type": "tool_call",
+        "tool": "list_pods",
+        "args": {
+          "namespace": "globex-dev-observability"
+        },
+        "seq": 2,
+        "request_id": "b0ccdcc9-9336-439b-9723-9b4f2671f677"
+      },
+      {
+        "type": "tool_result",
+        "tool": "list_pods",
+        "ok": false,
+        "result": {
+          "ok": false,
+          "output": "Error from server (Forbidden): pods is forbidden: User \"system:serviceaccount:acme-dev-observability:platform-agent\" cannot list resource \"pods\" in API group \"\" in the namespace \"globex-dev-observability\"",
+          "error": "Error from server (Forbidden): pods is forbidden: User \"system:serviceaccount:acme-dev-observability:platform-agent\" cannot list resource \"pods\" in API group \"\" in the namespace \"globex-dev-observability\""
+        },
+        "seq": 3,
+        "request_id": "b0ccdcc9-9336-439b-9723-9b4f2671f677"
+      },
+      {
+        "type": "reasoning",
+        "text": "The authorization test failed as expected. The service account `platform-agent` from the `acme-dev-observability` namespace does not have permission to list pods in the `globex-dev-observability` namespace.\n\nThis is expected because the `acme-dev-observability` namespace is isolated from other namespaces, and the `platform-agent` service account does not have the necessary RBAC permissions to access pods in the `globex-dev-observability` namespace.\n\nThe error message confirms that the user `system:serviceaccount:acme-dev-observability:platform-agent` is forbidden from listing pods in the `globex-dev-observability` namespace. This is expected behavior for isolated namespaces in multi-tenant Kubernetes environments.\n",
+        "seq": 4,
+        "request_id": "b0ccdcc9-9336-439b-9723-9b4f2671f677"
+      },
+      {
+        "type": "done",
+        "ok": false,
+        "agent": "local-qwen",
+        "model": "local-qwen",
+        "provider": "onprem",
+        "summary": "The authorization test failed as expected. The service account `platform-agent` from the `acme-dev-observability` namespace does not have permission to list pods in the `globex-dev-observability` namespace.\n\nThis is expected because the `acme-dev-observability` namespace is isolated from other namespaces, and the `platform-agent` service account does not have the necessary RBAC permissions to access pods in the `globex-dev-observability` namespace.\n\nThe error message confirms that the user `system:serviceaccount:acme-dev-observability:platform-agent` is forbidden from listing pods in the `globex-dev-observability` namespace. This is expected behavior for isolated namespaces in multi-tenant Kubernetes environments.\n",
+        "suitability": {
+          "verdict": "recommended",
+          "reason": "Native pairing — Local LLM (Qwen) is the On-Prem-native brain."
+        },
+        "record": {
+          "activity_id": "ACT-A0FBDA17"
+        },
+        "seq": 5,
+        "request_id": "b0ccdcc9-9336-439b-9723-9b4f2671f677"
+      }
+    ]
+  },
+  "activity_rows": [
+    {
+      "PK": "ACTIVITY",
+      "SK": "2026-10-03T06:23:06Z#ACT-A0FBDA17",
+      "activity_id": "ACT-A0FBDA17",
+      "type": "investigate",
+      "agent": "On-Prem Agent (Local LLM (Qwen))",
+      "model": "local-qwen",
+      "provider": "onprem",
+      "action": "Read-only authorization test: call list_pods exactly once for namespace globex-dev-observability. Keep the existing acme identity. Report th",
+      "instruction": "Read-only authorization test: call list_pods exactly once for namespace globex-dev-observability. Keep the existing acme identity. Report the actual result; do not switch credentials, retry, deploy, provision, delete, or perform any write.",
+      "summary": "The authorization test failed as expected. The service account `platform-agent` from the `acme-dev-observability` namespace does not have permission to list pods in the `globex-dev-observability` namespace.\n\nThis is expected because the `acme-dev-observability` namespace is isolated from other namespaces, and the `platform-agent` service account does not have the necessary RBAC permissions to access pods in the `globex-dev-observability` namespace.\n\nThe error message confirms that the user `system:serviceaccount:acme-dev-observability:platform-agent` is forbidden from listing pods in the `globex-dev-observability` namespace. This is expected behavior for isolated namespaces in multi-tenant Kubernetes environments.\n",
+      "tool_calls": [
+        "list_pods"
+      ],
+      "trace": "[{\"kind\": \"tool\", \"tool\": \"list_pods\", \"args\": {\"namespace\": \"globex-dev-observability\"}, \"result\": {\"ok\": false, \"output\": \"Error from server (Forbidden): pods is forbidden: User \\\"system:serviceaccount:acme-dev-observability:platform-agent\\\" cannot list resource \\\"pods\\\" in API group \\\"\\\" in the namespace \\\"globex-dev-observability\\\"\", \"error\": \"Error from server (Forbidden): pods is forbidden: User \\\"system:serviceaccount:acme-dev-observability:platform-agent\\\" cannot list resource \\\"pods\\\" in API group \\\"\\\" in the namespace \\\"globex-dev-observability\\\"\"}}]",
+      "cost_metrics": {
+        "tool_calls_total": 1,
+        "tool_calls_by_name": {
+          "list_pods": 1
+        },
+        "reasoning_steps": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0
+      },
+      "status": "failed",
+      "created_at": "2026-10-03T06:23:06Z"
+    }
+  ]
+}

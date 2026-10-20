@@ -94,6 +94,47 @@ class SQLStateStore:
         finally:
             conn.close()
 
+    def latest(self, kind: str, key: str) -> dict[str, Any] | None:
+        """Read one key without reducing unrelated append-only histories."""
+        conn = self._conn()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                f"SELECT record FROM platform_state WHERE kind = {self._ph} "
+                f"AND key = {self._ph} ORDER BY id DESC LIMIT 1", (kind, key),
+            )
+            row = cur.fetchone()
+            return json.loads(row[0]) if row else None
+        finally:
+            conn.close()
+
+    def claim(self, kind: str, key: str, record: dict[str, Any]) -> bool:
+        """Atomically reserve a key and append its first state before any effect.
+
+        Claims are separate from history: subsequent state rows keep the existing
+        append-only contract. A crashed claimant is never implicitly replaced.
+        """
+        conn = self._conn()
+        try:
+            with conn:
+                cur = conn.cursor()
+                cur.execute("CREATE TABLE IF NOT EXISTS platform_state_claims "
+                            "(kind TEXT NOT NULL, key TEXT NOT NULL, PRIMARY KEY (kind, key))")
+                cur.execute(
+                    f"INSERT INTO platform_state_claims (kind, key) VALUES ({self._ph}, {self._ph}) "
+                    "ON CONFLICT (kind, key) DO NOTHING", (kind, key),
+                )
+                if cur.rowcount == 0:
+                    return False
+                cur.execute(
+                    f"INSERT INTO platform_state (kind, key, record) "
+                    f"VALUES ({self._ph}, {self._ph}, {self._ph})",
+                    (kind, key, json.dumps(record, default=str)),
+                )
+                return True
+        finally:
+            conn.close()
+
 
 def from_dsn(dsn: str) -> SQLStateStore:
     """Build a store for a DSN. ``postgresql://`` uses psycopg2; ``sqlite://<path>``

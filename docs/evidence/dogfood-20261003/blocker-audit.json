@@ -1,0 +1,51 @@
+{
+  "observed_at": "2026-10-03T04:09:33.039926+00:00",
+  "previous_goal_turn_classification": "progress: durable run implementation, offline verification and checkpoint",
+  "current_goal_turn_classification": "no progress: revalidated the same execution approval boundary",
+  "consecutive_goal_turns_with_same_boundary": 3,
+  "approval_received": false,
+  "automatic_review_reason": "Network access is outside the default unattended loop.",
+  "new_network_calls": 0,
+  "current_sources": {
+    "manifest": "durable-run-source-sha256.json",
+    "matching_files": 9,
+    "gate": "durable-run-gate.log",
+    "gate_result": "3269 passed, 2 skipped, 20 warnings",
+    "docs_result": "50 passed"
+  },
+  "completion_audit": [
+    {
+      "requirement": "R0 deployment and recovery baseline",
+      "state": "incomplete",
+      "evidence": "README.md: new orders-api-dogfood image prepared; no registry push or workload/recovery revision evidence"
+    },
+    {
+      "requirement": "R1 actual normal, denied, failed/recovered, lost-response and insufficient-evidence paths",
+      "state": "incomplete",
+      "evidence": "Existing read-only UI observations and local transport/storage checks cover only part of the required actual paths"
+    },
+    {
+      "requirement": "R2 fixes for reproduced blockers",
+      "state": "local checks passed; runtime/browser validation incomplete",
+      "evidence": "durable-run-gate.log, durable-run-docs.log and source hashes; updated source is not loaded in the running servers"
+    },
+    {
+      "requirement": "R3 normal three repeats; denial/recovery/loss two each; actual health/revision, zero false success/out-of-scope/duplicate effects",
+      "state": "not demonstrated",
+      "evidence": "No completed scenario matrix or runtime measurements for the new candidate"
+    },
+    {
+      "requirement": "60-90 second demo, reproducible procedure, measured before/after comparison",
+      "state": "partial draft only",
+      "evidence": "README.md contains initial procedure and UI defect comparison; final runtime measurements and demo are missing"
+    },
+    {
+      "requirement": "Conditional R4 evaluation and R5 expansion decision",
+      "state": "pending R1-R3 evidence",
+      "evidence": "Usage-and-evidence plan sections 4-6; no independent expansion is justified before actual-path validation"
+    }
+  ],
+  "impasse": "The next required evidence needs local dashboard/model/registry/kind network access and scoped workload changes. No new approval arrived. Further speculative features or repeat offline gates would not establish the required actual user flow.",
+  "next_action_after_approval": "Verify context, credentials and candidate hashes; update and restart owned local servers; verify browser refresh/loss readback; push the prepared local image and validate orders-api-dogfood in acme-dev-observability. Preserve existing resources and RBAC.",
+  "requested_goal_status": "blocked"
+}

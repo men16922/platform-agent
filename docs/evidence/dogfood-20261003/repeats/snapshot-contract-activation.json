@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-03T10:35:20.241280+00:00",
+  "candidate": "candidate-v15-snapshot-contract.json",
+  "old_pids": {
+    "router": 5123,
+    "dashboard": 5124
+  },
+  "new_pids": {
+    "router": 23160,
+    "dashboard": 23161
+  },
+  "source_count": 287,
+  "all_runtime_source_hashes_match": true,
+  "model_proxy_webhook_restarted": false
+}

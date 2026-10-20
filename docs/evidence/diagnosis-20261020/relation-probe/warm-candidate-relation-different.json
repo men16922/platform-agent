@@ -1,0 +1,129 @@
+{
+  "arm": "candidate",
+  "case_id": "relation-different",
+  "label": "warm",
+  "settings": {
+    "max_tokens": 1024,
+    "temperature": 0
+  },
+  "request": {
+    "question": "Do these snapshots establish the same or different root causes, or justify rollback? Explain what is uncertain.",
+    "target": {
+      "cluster": "kind-platform-agent",
+      "namespace": "acme-dev-observability",
+      "service": "orders-api-dogfood"
+    },
+    "window_start": "2026-10-03T06:59:00Z",
+    "as_of": "2026-10-03T07:03:00Z",
+    "sources": [
+      {
+        "source_id": "A",
+        "target": {
+          "cluster": "kind-platform-agent",
+          "namespace": "acme-dev-observability",
+          "service": "orders-api-dogfood"
+        },
+        "observed_at": "2026-10-03T07:00:00Z",
+        "provenance": "supplied_snapshot",
+        "text": "A new Pod is Pending with ImagePullBackOff, registry response manifest unknown; the registry tag listing confirms tag r2 was never pushed."
+      },
+      {
+        "source_id": "B",
+        "target": {
+          "cluster": "kind-platform-agent",
+          "namespace": "acme-dev-observability",
+          "service": "orders-api-dogfood"
+        },
+        "observed_at": "2026-10-03T07:01:00Z",
+        "provenance": "supplied_snapshot",
+        "text": "An HTTP readiness check returns 503; the database health check shows the primary refused connections during its scheduled restart, and registry pulls succeeded."
+      }
+    ]
+  },
+  "snapshot_diagnosis_sha256": "d7ebf0a61636c28126b87f0240bd74912660b423a1615223c2dc4a0e614ae766",
+  "usage": [
+    {
+      "prompt_tokens": 1020,
+      "completion_tokens": 341,
+      "total_tokens": 1361,
+      "prompt_tokens_details": {
+        "cached_tokens": 875
+      }
+    }
+  ],
+  "seconds": 4.092,
+  "raw_sha256": "0d45f7e2f1d75cb64101f0d05a4d9ed36833677021c50fafbe56747b9559888e",
+  "outcome": {
+    "ok": false,
+    "model": "local-qwen",
+    "provider": "onprem",
+    "summary": "### Cited observations\n- [A] A new Pod is Pending with ImagePullBackOff, registry response manifest unknown; the registry tag listing confirms tag r2 was never pushed.\n- [B] An HTTP readiness check returns 503; the database health check shows the primary refused connections during its scheduled restart, and registry pulls succeeded.\n\n### Possible explanation\nThe root cause appears to be different between the two snapshots. Snapshot A shows a missing image tag in the registry, which is causing ImagePullBackOff. Snapshot B shows a different issue, where the HTTP readiness check fails with a 503, but the database health check shows the primary refused connections during its scheduled restart, and registry pulls succeeded. This indicates a different underlying cause than Snapshot A.\n\n### Alternative explanation\nIt's possible that Snapshot A and B are related, such as the registry issue causing the 503 error in Snapshot B, but the evidence does not support this directly. The registry issue in Snapshot A is confirmed to be a missing tag, while Snapshot B shows a different error context.\n\n### Recovery review: not established\nThere is no evidence in the provided snapshots to support rollback or recovery actions. The evidence does not confirm a previous healthy revision or indicate a rollback path.\n\n### Next read-only evidence\n- Check registry tag availability\n- Validate image pull configuration\n- Review database connection health\n\nModel interpretation is unverified. No execution is authorized.",
+    "steps": [],
+    "suitability": {
+      "verdict": "recommended",
+      "reason": "Native pairing — Local LLM (Qwen) is the On-Prem-native brain."
+    },
+    "trace": [],
+    "inspection": null,
+    "model_completion": {
+      "status": "complete",
+      "finish_reason": "stop",
+      "text": "{\n  \"observations\": [\n    {\n      \"source_id\": \"A\",\n      \"quote\": \"A new Pod is Pending with ImagePullBackOff, registry response manifest unknown; the registry tag listing confirms tag r2 was never pushed.\"\n    },\n    {\n      \"source_id\": \"B\",\n \"quote\": \"An HTTP readiness check returns 503; the database health check shows the primary refused connections during its scheduled restart, and registry pulls succeeded.\"\n    }\n  ],\n  \"cause_assessment\": \"The root cause appears to be different between the two snapshots. Snapshot A shows a missing image tag in the registry, which is causing ImagePullBackOff. Snapshot B shows a different issue, where the HTTP readiness check fails with a 503, but the database health check shows the primary refused connections during its scheduled restart, and registry pulls succeeded. This indicates a different underlying cause than Snapshot A.\",\n  \"alternative_explanation\": \"It's possible that Snapshot A and B are related, such as the registry issue causing the 503 error in Snapshot B, but the evidence does not support this directly. The registry issue in Snapshot A is confirmed to be a missing tag, while Snapshot B shows a different error context.\",\n  \"recovery\": \"not_established\",\n  \"recovery_reason\": \"There is no evidence in the provided snapshots to support rollback or recovery actions. The evidence does not confirm a previous healthy revision or indicate a rollback path.\",\n  \"recovery_evidence\": [],\n  \"next_read_only_checks\": [\n    \"Check registry tag availability\",\n    \"Validate image pull configuration\",\n    \"Review database connection health\"\n  ]\n}",
+      "semantic_verified": false,
+      "model_responses": 1,
+      "tool_call_attempts": 0,
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 1020,
+        "output_tokens": 341
+      }
+    },
+    "snapshot_analysis": {
+      "target": {
+        "cluster": "kind-platform-agent",
+        "namespace": "acme-dev-observability",
+        "service": "orders-api-dogfood"
+      },
+      "window_start": "2026-10-03T06:59:00+00:00",
+      "as_of": "2026-10-03T07:03:00+00:00",
+      "interpretation": "Analysis of supplied records at the declared time; not a live observation or action approval.",
+      "applicable_source_ids": [
+        "A",
+        "B"
+      ],
+      "embedded_instructions": [],
+      "excluded": [],
+      "source_sha256": {
+        "A": "7a828c0109007ed634c27aeefd01039020bdadb86ee55537e90addd71a5ec03d",
+        "B": "9880166577779a45c0960e018909a93f061f796c764626e2bec9c2143260c9e7"
+      },
+      "status": "interpreted",
+      "model_called": true,
+      "citation_status": "valid",
+      "semantic_verified": false,
+      "execution_authorized": false,
+      "diagnosis": {
+        "observations": [
+          {
+            "source_id": "A",
+            "quote": "A new Pod is Pending with ImagePullBackOff, registry response manifest unknown; the registry tag listing confirms tag r2 was never pushed."
+          },
+          {
+            "source_id": "B",
+            "quote": "An HTTP readiness check returns 503; the database health check shows the primary refused connections during its scheduled restart, and registry pulls succeeded."
+          }
+        ],
+        "cause_assessment": "The root cause appears to be different between the two snapshots. Snapshot A shows a missing image tag in the registry, which is causing ImagePullBackOff. Snapshot B shows a different issue, where the HTTP readiness check fails with a 503, but the database health check shows the primary refused connections during its scheduled restart, and registry pulls succeeded. This indicates a different underlying cause than Snapshot A.",
+        "alternative_explanation": "It's possible that Snapshot A and B are related, such as the registry issue causing the 503 error in Snapshot B, but the evidence does not support this directly. The registry issue in Snapshot A is confirmed to be a missing tag, while Snapshot B shows a different error context.",
+        "recovery": "not_established",
+        "recovery_reason": "There is no evidence in the provided snapshots to support rollback or recovery actions. The evidence does not confirm a previous healthy revision or indicate a rollback path.",
+        "recovery_evidence": [],
+        "next_read_only_checks": [
+          "Check registry tag availability",
+          "Validate image pull configuration",
+          "Review database connection health"
+        ]
+      }
+    }
+  }
+}

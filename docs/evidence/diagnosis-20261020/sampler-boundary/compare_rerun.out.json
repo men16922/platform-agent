@@ -1,0 +1,149 @@
+{
+ "temp0_raw_identical_to_stock": {
+  "counterexample:27182": false,
+  "counterexample:31415": false,
+  "counterexample:42": false,
+  "lookalike:27182": false,
+  "lookalike:31415": false,
+  "lookalike:42": false,
+  "supported-recovery:27182": false,
+  "supported-recovery:31415": false,
+  "supported-recovery:42": false
+ },
+ "stock_t0": {
+  "completion": {
+   "complete": 9
+  },
+  "citation": {
+   "valid": 9
+  },
+  "recovery": {
+   "review_candidate": 6,
+   "not_established": 3
+  },
+  "distinct_raw_over_seeds": {
+   "lookalike": 1,
+   "counterexample": 1,
+   "supported-recovery": 1
+  }
+ },
+ "stock_t0.7": {
+  "completion": {
+   "incomplete": 3,
+   "complete": 6
+  },
+  "citation": {
+   "not_validated": 3,
+   "invalid": 6
+  },
+  "recovery": {
+   "None": 9
+  },
+  "distinct_raw_over_seeds": {
+   "lookalike": 1,
+   "counterexample": 1,
+   "supported-recovery": 1
+  }
+ },
+ "sampler_fixed_t0": {
+  "completion": {
+   "complete": 9
+  },
+  "citation": {
+   "valid": 9
+  },
+  "recovery": {
+   "review_candidate": 6,
+   "not_established": 3
+  },
+  "distinct_raw_over_seeds": {
+   "lookalike": 1,
+   "counterexample": 1,
+   "supported-recovery": 1
+  }
+ },
+ "sampler_fixed_t0.7": {
+  "completion": {
+   "complete": 9
+  },
+  "citation": {
+   "valid": 7,
+   "invalid": 2
+  },
+  "recovery": {
+   "review_candidate": 5,
+   "None": 2,
+   "not_established": 2
+  },
+  "distinct_raw_over_seeds": {
+   "lookalike": 3,
+   "counterexample": 3,
+   "supported-recovery": 3
+  }
+ },
+ "per_row_sampler_fixed_t0.7": [
+  {
+   "case": "counterexample",
+   "seed": 27182,
+   "completion": "complete",
+   "citation": "valid",
+   "recovery": "review_candidate"
+  },
+  {
+   "case": "counterexample",
+   "seed": 31415,
+   "completion": "complete",
+   "citation": "valid",
+   "recovery": "review_candidate"
+  },
+  {
+   "case": "counterexample",
+   "seed": 42,
+   "completion": "complete",
+   "citation": "valid",
+   "recovery": "review_candidate"
+  },
+  {
+   "case": "lookalike",
+   "seed": 27182,
+   "completion": "complete",
+   "citation": "invalid",
+   "recovery": null
+  },
+  {
+   "case": "lookalike",
+   "seed": 31415,
+   "completion": "complete",
+   "citation": "valid",
+   "recovery": "not_established"
+  },
+  {
+   "case": "lookalike",
+   "seed": 42,
+   "completion": "complete",
+   "citation": "valid",
+   "recovery": "not_established"
+  },
+  {
+   "case": "supported-recovery",
+   "seed": 27182,
+   "completion": "complete",
+   "citation": "invalid",
+   "recovery": null
+  },
+  {
+   "case": "supported-recovery",
+   "seed": 31415,
+   "completion": "complete",
+   "citation": "valid",
+   "recovery": "review_candidate"
+  },
+  {
+   "case": "supported-recovery",
+   "seed": 42,
+   "completion": "complete",
+   "citation": "valid",
+   "recovery": "review_candidate"
+  }
+ ]
+}

@@ -1,0 +1,20 @@
+{
+  "at": "2026-10-03T12:51:29.940131+00:00",
+  "same_existing_subjects": [
+    {
+      "subject": "system:serviceaccount:platform-agent-system:platform-agent-deployer",
+      "previous_expiry": "2026-10-03T13:04:32+00:00",
+      "expires_at": "2026-10-03T14:51:29+00:00",
+      "duration_seconds": 7200,
+      "permissions_changed": false
+    },
+    {
+      "subject": "system:serviceaccount:acme-dev-observability:platform-agent",
+      "previous_expiry": "2026-10-03T07:18:22+00:00",
+      "expires_at": "2026-10-03T14:51:29+00:00",
+      "duration_seconds": 7200,
+      "permissions_changed": false
+    }
+  ],
+  "scope": "Existing owned kubeconfigs only; no RBAC change"
+}

@@ -1,0 +1,28 @@
+{
+ "arm": "nonce",
+ "path": "proxy",
+ "seed": 27182,
+ "prompt_sha256": "a6726eea5a430a03",
+ "text": "The pod remains in a crashloopback state due to a missing dependency in its container configuration.",
+ "text_sha256": "bed813a703f8ffd774bfb6fbedebf3f68da0c41c3c0863ff9c5eadac0bf54666",
+ "finish_reason": "stop",
+ "non_top1_tokens": null,
+ "logprobs_tokens": null,
+ "seconds": 0.32,
+ "request": {
+  "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "messages": [
+   {
+    "role": "user",
+    "content": "[29366b98] Write one short sentence about a Kubernetes pod that keeps restarting."
+   }
+  ],
+  "max_tokens": 48,
+  "temperature": 0.7,
+  "top_p": 1.0,
+  "top_k": 0,
+  "repetition_penalty": 0,
+  "stream": false,
+  "seed": 27182
+ }
+}

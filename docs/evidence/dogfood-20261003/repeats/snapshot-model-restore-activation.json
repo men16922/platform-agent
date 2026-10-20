@@ -1,0 +1,38 @@
+{
+  "at": "2026-10-03T10:47:09.892986+00:00",
+  "old_pid": 33048,
+  "pid": 36807,
+  "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "cached_revision": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "cache_only": true,
+  "application_model_setting_changed": false,
+  "other_processes_unchanged": true,
+  "mode": "restore",
+  "listening": true,
+  "listening_at": "2026-10-03T10:47:11.119805+00:00",
+  "response_verified_at": "2026-10-03T10:47:44.202275+00:00",
+  "restoration_response": {
+    "id": "chatcmpl-13b5b51c-a98c-4899-8010-b889dd8420bb",
+    "object": "chat.completion",
+    "created": 0,
+    "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "OK"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 12,
+      "completion_tokens": 2,
+      "total_tokens": 14,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,30 @@
+M68: Required Lambda Docker bundling failures propagate
+Date: 2026-09-06. Local validation, no AWS deployment.
+
+Reproduction and change
+- Executed the actual CDK bash command against a directory without requirements-lambda.txt.
+- pip failed but trailing || true returned exit 0, with 0 output files.
+- Regression executes the production command with real pip and file I/O, offline.
+- Missing requirements, agents, or step_functions: 3 failing regressions before fix.
+- Complete inputs and optional missing __init__.py: 2 passing controls before fix.
+- Wrapped only the optional __init__.py copy in parentheses; preceding failures remain nonzero.
+- After fix: 5 passed in 2.87s. No AWS services mocked.
+
+Real runtime verification
+- public.ecr.aws/lambda/python:3.11, linux/arm64
+- Image digest sha256:88d00b3b86fb0be08969696343412c7a43a06508d1b5ba555185f14c27fd6c0b
+- Runtime reports Python 3.11.16, aarch64.
+- Before and after shell commands packaged actual requirements-lambda.txt, src/agents and src/step_functions successfully.
+- Fresh output for each build; only task sources and output mounted, no credentials.
+- Separate --network none container loaded all 13 CDK-configured handler symbols and confirmed callable.
+- After-fix package also loaded PyYAML native yaml.cyaml successfully.
+- boto3 client construction used no credentials and metadata was disabled; no live AWS operations invoked.
+- This validates Docker command packaging/import, not the host local bundler, full Python 3.11 test support, complete CDK CLI synthesis or deployment.
+
+Full gate
+- First: 1 failed, 2830 passed, 2 skipped in 60.98s. STATUS used an unrecognized gate-number format, so the guard read historical 2826.
+- Fixed the STATUS claim format; final make check: 2831 passed, 2 skipped, 21 warnings in 59.28s, local macOS/Python 3.13.
+- Existing mixed WIP preserved. No original commit or push.
+Supporting files: docs/evidence/incident-lambda-bundling-2026-09-06/
+
+Post-checkpoint doc/path/milestone/gate-number checks: 64 passed. git diff --check passed. Owned scratch sources/packages/setup metadata removed after durable evidence capture.

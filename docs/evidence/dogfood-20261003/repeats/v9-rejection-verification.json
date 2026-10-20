@@ -1,0 +1,41 @@
+{
+  "at": "2026-10-03T08:28:59.658404+00:00",
+  "candidate": "candidate-v9-incident-link.json",
+  "source_hashes_match_worktree_and_runtime": true,
+  "method": "Actual Chrome inline rejection -> Next API local-dev session -> loopback webhook -> JSONL stores -> actual incident detail and reload",
+  "fixtures": "Two synthetic pending requests; not live detector/analyzer or observed outages",
+  "request_incident_pairs": {
+    "APR-5E68FD70": "INC-EE9D12BA",
+    "APR-FD75E2D5": "INC-594DCDE0"
+  },
+  "pending_total": 0,
+  "executed_actions": [],
+  "rejection_does_not_resolve_incident": true,
+  "reason_bytes_preserved_in_both_stores": true,
+  "workload_uid_spec_unchanged_since_manual_restore": true,
+  "workload_revision": "27",
+  "proof": "v9-rejected-detail-reload.png",
+  "limits": [
+    "reported_by is caller-reported metadata, not webhook caller authentication",
+    "Separate approval/incident append operations are not crash-atomic; interruption between them is not validated",
+    "No new workload health assertion; manual-restore health observation is historical",
+    "No AWS, remote CI, GitHub OAuth or shared-deployer tenant isolation proof"
+  ],
+  "empty_reason_detail_verified": true,
+  "checks": {
+    "regression_before": "2 failed",
+    "related": "70 passed,2 warnings,9.87s",
+    "typescript": "tsc --noEmit exit0",
+    "full_gate": {
+      "passed": 3288,
+      "skipped": 2,
+      "warnings": 20,
+      "seconds": 117.99,
+      "evidence": "rejection-link-gate.log",
+      "environment": "2026-10-03 local macOS, Python3.13.5, Node22.23.3, temporary npm prefix"
+    }
+  },
+  "test_source_sha256": {
+    "tests/test_onprem_webhook.py": "5f3460333aef3278eb4f38625ad7d5840542133a841b92d330ea49be37de853f"
+  }
+}

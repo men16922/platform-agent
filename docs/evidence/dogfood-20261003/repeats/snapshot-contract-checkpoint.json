@@ -1,0 +1,24 @@
+{
+  "at": "2026-10-03T10:40:30.831017+00:00",
+  "candidate": "candidate-v15-snapshot-contract.json",
+  "runtime_source_count": 287,
+  "source_hashes_match": true,
+  "deployment_uid": "8567c751-fc44-4e28-b63e-e21af534661f",
+  "spec_unchanged": true,
+  "revision": "27",
+  "replicas": 2,
+  "new_http_health_observation": false,
+  "requests": 7,
+  "claims": 7,
+  "model_responses": 3,
+  "no_model_cases": 4,
+  "tool_calls": 0,
+  "deployment_records": 0,
+  "input_tokens": 2857,
+  "output_tokens": 887,
+  "model_case_seconds": [
+    4.029,
+    3.646,
+    4.825
+  ]
+}

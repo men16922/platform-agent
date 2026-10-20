@@ -1,0 +1,29 @@
+{
+  "id": "different-causes-negative",
+  "expected": "FAIL",
+  "parsed": {
+    "verdict": "PASS",
+    "unsupported_claim": "",
+    "reason": "The candidate correctly identifies that the two sources show different failure modes—provisioning (image pull) and runtime (readiness check). It does not assert a single root cause or justify rollback, aligning with the uncertainty in the evidence."
+  },
+  "completion": {
+    "status": "complete",
+    "finish_reason": "stop",
+    "text": "{\n  \"verdict\": \"PASS\",\n  \"unsupported_claim\": \"\",\n  \"reason\": \"The candidate correctly identifies that the two sources show different failure modes—provisioning (image pull) and runtime (readiness check). It does not assert a single root cause or justify rollback, aligning with the uncertainty in the evidence.\"\n}",
+    "semantic_verified": false,
+    "model_responses": 1,
+    "tool_call_attempts": 0,
+    "token_usage": {
+      "status": "reported",
+      "input_tokens": 1004,
+      "output_tokens": 70
+    }
+  },
+  "seconds": 1.324,
+  "http_attempts": [
+    {
+      "at": "2026-10-03T10:48:34.146830+00:00",
+      "status": 200
+    }
+  ]
+}

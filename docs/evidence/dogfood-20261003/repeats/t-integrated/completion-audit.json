@@ -1,0 +1,61 @@
+{
+  "unit": "T",
+  "approval": "existing local dogfood scope; no new permission request",
+  "scenario_source": "O/v15 287 files; same executable for all scenarios, explicitly selected existing tenant identity for denial",
+  "completed": [
+    "normal deploy 3",
+    "reload while running 2",
+    "failed deploy and user-confirmed rollback 2",
+    "restricted-identity cross-namespace UI refusal 2",
+    "direct read refusal 2 and create dry-run refusal 2",
+    "synthetic approval refusal and incident detail reload 2",
+    "missing-scope live runner refusal 2 with dispatch 0",
+    "original UID/full spec restored",
+    "report/reproduction/comparison and 72s still montage"
+  ],
+  "not_complete": [
+    "diagnostic semantic criteria in O/S",
+    "R3 overall",
+    "R4 overall",
+    "R5 HolmesGPT same-snapshot comparison"
+  ],
+  "not_claimed": [
+    "shared deployer tenant isolation",
+    "production verification",
+    "external dependency health",
+    "MTTR or general latency improvement",
+    "alert/analyzer-to-approval E2E",
+    "R/v16 activation",
+    "model replacement"
+  ],
+  "goal_status": "active",
+  "blocking_condition": "none: concrete progress this unit; diagnostic quality remains an open task",
+  "next_action": "Bind query applicability to revision and failure stage; handle contradictory structured observations using saved Q/S evidence. Keep positive recovery evidence and existing injection/lookalike/insufficient-evidence criteria. Do not repeat T execution suite.",
+  "source_verification": "runtime-check.json",
+  "suite_verification": "verification.json",
+  "gate": {
+    "command": "make check PY=/opt/anaconda3/bin/python",
+    "exit_code": 0,
+    "passed": 3364,
+    "skipped": 2,
+    "warnings": 20,
+    "seconds": 133.83,
+    "source": "worktree R/v16, not runtime O/v15",
+    "environment": "local macOS Python3.13.5 Node22.23.3 task-local npm prefix",
+    "log": "gate.log",
+    "sha256": "dca3129803091f9a2b680e2c5abae30f3c6da7810d4c8272fe08c2707d43ce1b"
+  },
+  "historical_O_gate": "snapshot-contract-gate.log: 3356 passed, 2 skipped; not rerun against O runtime in T",
+  "preservation": "No commit/push/cloud/RBAC expansion/resource deletion; existing labs/apps/keys/checkouts/branch/draft PR retained",
+  "documentation_tests": {
+    "passed": 55,
+    "seconds": 3.29
+  },
+  "diff_check_exit": 0,
+  "at": "2026-10-03T13:37:56.869042+00:00",
+  "delivery": {
+    "report": "report.md",
+    "video": "../../demo/t-integrated-v2/local-evidence-walkthrough-72s.mp4",
+    "qa": "../../demo/t-integrated-v2/qa.json"
+  }
+}

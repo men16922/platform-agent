@@ -1,0 +1,28 @@
+{
+  "at": "2026-10-19T20:26:39.971069+00:00",
+  "arm": "after",
+  "case_digest": "9501f4b1e8f2f9d1fe24c20efea98b6d63c2cae6075480367ac7aedb47145c12",
+  "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "model_revision": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "max_tokens": 1024,
+  "temperature": 0,
+  "request_limit": 2,
+  "tool_calls_limit": 1,
+  "retries": 0,
+  "scope": "Actual production readonly factory/router with one frozen describe tool; not live tools, browser, cluster or a tool-selection benchmark.",
+  "prompt_sha256": "914003b5387d3d75f0f499421a33e229ad27eb29321274ef8051790e38e69de4",
+  "files": {
+    "experiments/dogfood-diagnosis/consistency-resume/replay.py": "d44dbde2c8287fb10d6c728ae7a340b4b35583e29b52614fe2dbc0e607f660c5",
+    "experiments/dogfood-diagnosis/consistency-resume/measure.py": "dbb957a8d07a0f1ab90d9110e9a095451611945e2530294f34618905cbac7ada",
+    "src/agents/ai/deployment_evidence.py": "9f1460c54c8c93c4a6e85bc5912b7adbba31acdfd58eb800d925d756f792ebaa",
+    "src/agents/ai/local_deployer.py": "f3710c3cf6c35252494b72b9f397b874a229b6fb27451dfeac38d740a4f462b5",
+    "src/agents/ai/inspection_report.py": "547bb5aa6364a28a1ef8c8edc7fa92c6e2b7e71efc5c7e8890de478a8a60c5ac",
+    "src/agents/ai/investigation_proposals.py": "67ecf22f5f1cefbf5736e747c403e7ac15563225b728ddab5a0b473d4e14e5b6",
+    "src/agents/ai/model_router.py": "4756716f761220915d8abdfd94e4f33507ef90df09dd58b407aeeca33a655817"
+  },
+  "model_settings": {
+    "max_tokens": 1024,
+    "temperature": 0
+  },
+  "endpoint": "http://127.0.0.1:18191/v1"
+}

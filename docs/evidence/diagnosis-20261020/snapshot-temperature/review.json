@@ -1,0 +1,207 @@
+{
+  "at": "2026-10-19T20:56:08.460309+00:00",
+  "status": "completed before user pause; candidate not adopted",
+  "control": "Same pinned Qwen, original snapshot inputs, prompt/schema,1024 tokens, request1/tool0/retry0. Each pair differs only in temperature. Explicit seed selects nonbatch path in both arms.",
+  "arms": {
+    "0": {
+      "responses": 9,
+      "completion": {
+        "complete": 9
+      },
+      "citations": {
+        "valid": 9
+      }
+    },
+    "0.7": {
+      "responses": 9,
+      "completion": {
+        "complete": 6,
+        "incomplete": 3
+      },
+      "citations": {
+        "invalid": 6,
+        "not_validated": 3
+      }
+    }
+  },
+  "rows": [
+    {
+      "case_id": "lookalike",
+      "seed": 42,
+      "temperature": 0,
+      "completion": "complete",
+      "citation_status": "valid",
+      "raw_sha256": "8b8f2c81bfd1f2df3467e4c8dde040e555d43f96b07b8c3a8c3b1050c286916f",
+      "record_sha256": "8296ae8c144fdff01c7eb92446f08e3df7a4e9c957c15aa351220cffb8a9e80d"
+    },
+    {
+      "case_id": "lookalike",
+      "seed": 42,
+      "temperature": 0.7,
+      "completion": "complete",
+      "citation_status": "invalid",
+      "raw_sha256": "c1350dcc739ceca18bf649213ccfdf55bf406ff842b1d6fb5ffc5a54601686a0",
+      "record_sha256": "63b3ee1426571ed5f45af97fa5f2f7a16c182cce0004394b149004e8cbf61dde"
+    },
+    {
+      "case_id": "lookalike",
+      "seed": 31415,
+      "temperature": 0,
+      "completion": "complete",
+      "citation_status": "valid",
+      "raw_sha256": "8b8f2c81bfd1f2df3467e4c8dde040e555d43f96b07b8c3a8c3b1050c286916f",
+      "record_sha256": "abb172be8741bf11b69f05726ed3fdb6e8ec35470f23a3fd11d2bfeff6ed1626"
+    },
+    {
+      "case_id": "lookalike",
+      "seed": 31415,
+      "temperature": 0.7,
+      "completion": "complete",
+      "citation_status": "invalid",
+      "raw_sha256": "c1350dcc739ceca18bf649213ccfdf55bf406ff842b1d6fb5ffc5a54601686a0",
+      "record_sha256": "3980e877ee6dbe88e53d2da561fb2fdfb7b63e7a430b38566678a7d0074a90c3"
+    },
+    {
+      "case_id": "lookalike",
+      "seed": 27182,
+      "temperature": 0,
+      "completion": "complete",
+      "citation_status": "valid",
+      "raw_sha256": "8b8f2c81bfd1f2df3467e4c8dde040e555d43f96b07b8c3a8c3b1050c286916f",
+      "record_sha256": "fa9cd9104a0271a13e0c381ab0d8b00c337c61311e7952ed4d84de50d0b87fb8"
+    },
+    {
+      "case_id": "lookalike",
+      "seed": 27182,
+      "temperature": 0.7,
+      "completion": "complete",
+      "citation_status": "invalid",
+      "raw_sha256": "c1350dcc739ceca18bf649213ccfdf55bf406ff842b1d6fb5ffc5a54601686a0",
+      "record_sha256": "67793fc8b241c46db428f7444a59540232c195077dfe39d2b156c789c0e6adb1"
+    },
+    {
+      "case_id": "counterexample",
+      "seed": 42,
+      "temperature": 0,
+      "completion": "complete",
+      "citation_status": "valid",
+      "raw_sha256": "333c3af53b24f7271de436c808e5fb31587d4c53340e7c912ad8077b49ffea47",
+      "record_sha256": "97bccdc7f51297ce5f94dae1cd41e7a9c32315e0932391bb3992f98ed0cb63bb"
+    },
+    {
+      "case_id": "counterexample",
+      "seed": 42,
+      "temperature": 0.7,
+      "completion": "incomplete",
+      "citation_status": "not_validated",
+      "raw_sha256": "b956bbf154647e73fe1129e3ad0a24137736f2704cf3d78b423540d8cb9c2897",
+      "record_sha256": "901cfee9916d82a6506e5a7b64b9470c8a857a18a253a8ccb4ae1ce5ae828f9d"
+    },
+    {
+      "case_id": "counterexample",
+      "seed": 31415,
+      "temperature": 0,
+      "completion": "complete",
+      "citation_status": "valid",
+      "raw_sha256": "333c3af53b24f7271de436c808e5fb31587d4c53340e7c912ad8077b49ffea47",
+      "record_sha256": "e674f18cbe40ce975d44006a8d38dda61987c0bb15bb78bb9ee7d9ed0cd8e4d8"
+    },
+    {
+      "case_id": "counterexample",
+      "seed": 31415,
+      "temperature": 0.7,
+      "completion": "incomplete",
+      "citation_status": "not_validated",
+      "raw_sha256": "b956bbf154647e73fe1129e3ad0a24137736f2704cf3d78b423540d8cb9c2897",
+      "record_sha256": "8aa1da89b0e094004e9660490ef3de302c3d27b497867cc292dbbdf90b99bc85"
+    },
+    {
+      "case_id": "counterexample",
+      "seed": 27182,
+      "temperature": 0,
+      "completion": "complete",
+      "citation_status": "valid",
+      "raw_sha256": "333c3af53b24f7271de436c808e5fb31587d4c53340e7c912ad8077b49ffea47",
+      "record_sha256": "b8ec6a1fbd0cd3545d9bf8695f20ab261f6b17803526bee4e6930791ff0c746c"
+    },
+    {
+      "case_id": "counterexample",
+      "seed": 27182,
+      "temperature": 0.7,
+      "completion": "incomplete",
+      "citation_status": "not_validated",
+      "raw_sha256": "b956bbf154647e73fe1129e3ad0a24137736f2704cf3d78b423540d8cb9c2897",
+      "record_sha256": "5adcc4e5266d85225c33e2ff1d476c30a5dffa81dd26a8491a8de7631bc809e5"
+    },
+    {
+      "case_id": "supported-recovery",
+      "seed": 42,
+      "temperature": 0,
+      "completion": "complete",
+      "citation_status": "valid",
+      "raw_sha256": "678f84806f268f1aa53d9dd533172c772489d061d3d20026a3a4c057fcb3b900",
+      "record_sha256": "a6e730f4e15ddbd820a6665559382b9a5cb4c4b6d379fffd22946776b96fdc21"
+    },
+    {
+      "case_id": "supported-recovery",
+      "seed": 42,
+      "temperature": 0.7,
+      "completion": "complete",
+      "citation_status": "invalid",
+      "raw_sha256": "14d86a3552e670658345cd0bbd00e2ec8c3b68cb62b314eacc52c6c400d8ba33",
+      "record_sha256": "f948ffe721bcee29e17674ba758643f38c336915b1055d4cd21615dc46c27385"
+    },
+    {
+      "case_id": "supported-recovery",
+      "seed": 31415,
+      "temperature": 0,
+      "completion": "complete",
+      "citation_status": "valid",
+      "raw_sha256": "678f84806f268f1aa53d9dd533172c772489d061d3d20026a3a4c057fcb3b900",
+      "record_sha256": "e3a70dbad200327ab4a2f23e9e4d15605815e63f68c61e58cb3d5192c02af9ef"
+    },
+    {
+      "case_id": "supported-recovery",
+      "seed": 31415,
+      "temperature": 0.7,
+      "completion": "complete",
+      "citation_status": "invalid",
+      "raw_sha256": "14d86a3552e670658345cd0bbd00e2ec8c3b68cb62b314eacc52c6c400d8ba33",
+      "record_sha256": "602c7a293851dcf9ba67d42cfc8207d8f0122fab42fea4706cc0bb8615c35a71"
+    },
+    {
+      "case_id": "supported-recovery",
+      "seed": 27182,
+      "temperature": 0,
+      "completion": "complete",
+      "citation_status": "valid",
+      "raw_sha256": "678f84806f268f1aa53d9dd533172c772489d061d3d20026a3a4c057fcb3b900",
+      "record_sha256": "0375ccddbb7be879dcb0970fb7bcc6cf9856ac300e770f4b9acc4e5c2d75b884"
+    },
+    {
+      "case_id": "supported-recovery",
+      "seed": 27182,
+      "temperature": 0.7,
+      "completion": "complete",
+      "citation_status": "invalid",
+      "raw_sha256": "14d86a3552e670658345cd0bbd00e2ec8c3b68cb62b314eacc52c6c400d8ba33",
+      "record_sha256": "5da9b890aa3ebe6a426eed9ae58ce0d5e09fc7b8af04275634f2cc60de9dfba6"
+    }
+  ],
+  "identical_text_across_seeds": {
+    "lookalike:0": true,
+    "lookalike:0.7": true,
+    "counterexample:0": true,
+    "counterexample:0.7": true,
+    "supported-recovery:0": true,
+    "supported-recovery:0.7": true
+  },
+  "finding": "temperature0 retains the known semantic failures. temperature0.7 has no valid diagnosis:6 complete but citation/schema-invalid,3 incomplete. No quality improvement or setting adoption.",
+  "unresolved": "At each fixed case/temperature, all three distinct recorded seeds produced byte-identical raw text. Requests carry their respective seeds. Sampler/RNG/cache/proxy cause is not established; repeated outputs are not independent stochastic samples.",
+  "next_after_resume": "Inspect the current loaded MLX sampler/seed and cache behavior and distinguish upstream from proxy using bounded controls before interpreting sampling claims. Do not infer a root cause from identical hashes alone.",
+  "limits": [
+    "No source rewriting, automatic key repair, best-of-N selection or semantic success from refusal.",
+    "This single-variable temperature measurement is not the complete official recommended sampling configuration.",
+    "No production source/settings change, model replacement, cluster access or paid API in this experiment."
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "at": "2026-10-03T07:03:51.045953+00:00",
+  "method": "Local create_pending fixtures for actual dashboard -> reject webhook path, not detected real incidents",
+  "records": [
+    {
+      "PK": "APPROVAL",
+      "approval_id": "APR-7D95B306",
+      "status": "pending",
+      "created_at": "2026-10-03T07:03:51.045483+00:00",
+      "updated_at": "2026-10-03T07:03:51.045483+00:00",
+      "service": "orders-api-dogfood",
+      "severity": "P2",
+      "runbook_id": "dogfood-rejection-fixture",
+      "remediation_mode": "APPROVE",
+      "actions": [
+        "rollback_release"
+      ],
+      "decision": {
+        "analyzer": {
+          "root_cause": "Synthetic rejection exercise 1; supplied pending fixture, no observed outage.",
+          "severity": "P2",
+          "confidence": 0.0
+        },
+        "actions": [
+          "rollback_release"
+        ],
+        "remediation_mode": "APPROVE"
+      }
+    },
+    {
+      "PK": "APPROVAL",
+      "approval_id": "APR-52AF4AE1",
+      "status": "pending",
+      "created_at": "2026-10-03T07:03:51.045862+00:00",
+      "updated_at": "2026-10-03T07:03:51.045862+00:00",
+      "service": "orders-api-dogfood",
+      "severity": "P2",
+      "runbook_id": "dogfood-rejection-fixture",
+      "remediation_mode": "APPROVE",
+      "actions": [
+        "rollback_release"
+      ],
+      "decision": {
+        "analyzer": {
+          "root_cause": "Synthetic rejection exercise 2; supplied pending fixture, no observed outage.",
+          "severity": "P2",
+          "confidence": 0.0
+        },
+        "actions": [
+          "rollback_release"
+        ],
+        "remediation_mode": "APPROVE"
+      }
+    }
+  ]
+}

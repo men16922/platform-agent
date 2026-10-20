@@ -11,7 +11,7 @@ const agents = [
   { cloud: "aws" as const, name: "Strands Agent", provider: "AWS", llm: "Bedrock Claude", runtime: "Bedrock AgentCore", path: "Claude → supervisor → AWS deployment tools" },
   { cloud: "gcp" as const, name: "ADK Agent", provider: "Google Cloud", llm: "Gemini 3.5 Flash", runtime: "Vertex AI Agent Engine", path: "Gemini → supervisor → GKE tools" },
   { cloud: "azure" as const, name: "MS Agent", provider: "Microsoft Azure", llm: "GPT-5.4", runtime: "Foundry Agent Service", path: "GPT-5.4 → supervisor → AKS tools" },
-  { cloud: "onprem" as const, name: "On-Prem Agent", provider: "On-Premise", llm: "Local Qwen + kagent", runtime: "Local Qwen", path: "Qwen → supervisor → kagent" },
+  { cloud: "onprem" as const, name: "On-Prem Agent", provider: "On-Premise", llm: "Local Qwen", runtime: "Local Qwen", path: "Local model and request tools" },
 ];
 
 export function AgentsWorkspace() {

@@ -1,0 +1,21 @@
+{
+  "source_sha256_restored": "fb4929e0df97cf892d774f93bd59baa493091302d165bb301557a503aff90a73",
+  "mutations": [
+    {
+      "mutation": "actor_id",
+      "exit_code": 1,
+      "log": "/tmp/platform-agent-m84-mutation-actor_id.log"
+    },
+    {
+      "mutation": "issue_conflict",
+      "exit_code": 1,
+      "log": "/tmp/platform-agent-m84-mutation-issue_conflict.log"
+    },
+    {
+      "mutation": "app_stability",
+      "exit_code": 1,
+      "log": "/tmp/platform-agent-m84-mutation-app_stability.log"
+    }
+  ],
+  "restored": true
+}

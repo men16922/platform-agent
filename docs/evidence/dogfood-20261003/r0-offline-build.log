@@ -1,0 +1,34 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 150B done
+#1 DONE 0.0s
+
+#2 [internal] load metadata for localhost:5001/orders-api:v1.4.2
+#2 DONE 0.0s
+
+#3 [internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [internal] load build context
+#4 transferring context: 745B done
+#4 DONE 0.0s
+
+#5 [1/2] FROM localhost:5001/orders-api:v1.4.2@sha256:a7efa4cffc1931cf1965806d1bc6ed8f50f6cf6922a903bfbd6145d438a33f52
+#5 resolve localhost:5001/orders-api:v1.4.2@sha256:a7efa4cffc1931cf1965806d1bc6ed8f50f6cf6922a903bfbd6145d438a33f52 done
+#5 DONE 0.0s
+
+#6 [2/2] COPY app.py /app.py
+#6 DONE 0.0s
+
+#7 exporting to image
+#7 exporting layers 0.0s done
+#7 exporting manifest sha256:f93c062eeddfaca47fedc9025d649e32c6248a03d0c0c2eb144b0dfafda51286 done
+#7 exporting config sha256:10427b2848f8d6e30ff00a065fabf786b1b58a249fed69ef2d5bdb6151fc703e
+#7 exporting config sha256:10427b2848f8d6e30ff00a065fabf786b1b58a249fed69ef2d5bdb6151fc703e done
+#7 exporting attestation manifest sha256:efc952c82bc2c276ca7bb9448a28e3909a3ac00520c133bc2db5a54ce834adea done
+#7 exporting manifest list sha256:51915981952d0204d0a8964acfd23cb9905e56bce46bc79a34bced1f3f2e5496 done
+#7 naming to localhost:5001/orders-api-dogfood:r0 done
+#7 unpacking to localhost:5001/orders-api-dogfood:r0 0.0s done
+#7 DONE 0.1s

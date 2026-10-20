@@ -1,0 +1,32 @@
+[
+  {
+    "PK": "INCIDENT",
+    "incident_id": "INC-C80D1A1B",
+    "alarm_name": "orders-api-dogfood",
+    "provider": "onprem",
+    "severity": "P2",
+    "mode": "APPROVE",
+    "root_cause": "Synthetic rejection exercise 2; supplied pending fixture, no observed outage.",
+    "runbook_id": "dogfood-rejection-fixture",
+    "resolved": false,
+    "executed_actions": [],
+    "confidence": 0.0,
+    "trace_id": null,
+    "created_at": "2026-10-03T07:11:24.027478+00:00"
+  },
+  {
+    "PK": "INCIDENT",
+    "incident_id": "INC-39805552",
+    "alarm_name": "orders-api-dogfood",
+    "provider": "onprem",
+    "severity": "P2",
+    "mode": "APPROVE",
+    "root_cause": "Synthetic rejection exercise 1; supplied pending fixture, no observed outage.",
+    "runbook_id": "dogfood-rejection-fixture",
+    "resolved": false,
+    "executed_actions": [],
+    "confidence": 0.0,
+    "trace_id": null,
+    "created_at": "2026-10-03T07:12:20.852959+00:00"
+  }
+]

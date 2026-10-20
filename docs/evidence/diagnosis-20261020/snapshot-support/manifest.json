@@ -1,0 +1,13 @@
+{
+  "model_revision": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "settings": {
+    "max_tokens": 1024,
+    "temperature": 0,
+    "requests": 1,
+    "tools": 0,
+    "retries": 0
+  },
+  "changed": "Experimental output schema and its exact-source support validator only; original prompt and seven sources unchanged.",
+  "limits": "Experimental recovery support obligations; no production schema change.\n\nExact quotes establish source binding only. A reviewer must still assess whether\nthe quoted text supports its assigned role. Original inputs and raw output stay.\n",
+  "source_sha256": "f56e92de69807f5dc259df2a20731ae7a64a5bb345681999b4d5c868d808bea2"
+}

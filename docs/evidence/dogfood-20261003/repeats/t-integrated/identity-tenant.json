@@ -1,0 +1,16 @@
+{
+  "at": "2026-10-03T13:03:59.814583+00:00",
+  "identity_profile": "tenant",
+  "old_pids": {
+    "router": 23160,
+    "dashboard": 23161
+  },
+  "new_pids": {
+    "router": 62274,
+    "dashboard": 62275
+  },
+  "candidate": "O/v15",
+  "source_count": 287,
+  "rbac_change": false,
+  "model_proxy_webhook_restarted": false
+}

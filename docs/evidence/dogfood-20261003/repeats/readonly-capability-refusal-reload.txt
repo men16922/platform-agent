@@ -1,0 +1,128 @@
+Browser tab: 1640936920, Title: "Platform Agent — Multi-Cloud Operations Dashboard", URL: "http://localhost:3000/agents".
+1 AXWebArea Platform Agent — Multi-Cloud Operations Dashboard, URL: localhost:3000/agents
+	2 container
+		3 text ✦
+		4 heading Platform Agent, Value: 1
+			5 text Platform Agent
+		6 text Autonomous cloud operations
+		7 text WORKSPACE
+		8 link Description: ⌘ Overview, Value: localhost:3000/
+		9 link Description: ✦ Agents, Value: localhost:3000/agents
+		10 link Description: ⬡ Provisioning, Value: localhost:3000/provisioning
+		11 link Description: ↗ Deployments, Value: localhost:3000/deployments
+		12 link Description: 🕑 History, Value: localhost:3000/history
+		13 link Description: ◈ Incidents, Value: localhost:3000/incidents
+		14 link Description: 🛡 Audit Logs, Value: localhost:3000/audit
+		15 link Description: 👥 Users, Value: localhost:3000/users
+		16 text Operations workspace Review recorded runs and observations.
+	17 container
+		18 container
+			19 text Platform Agent /  Agent activity
+		20 text OPERATIONS WORKSPACE
+		21 text Recorded activity
+		22 button Notifications
+		23 text ADMIN
+		24 button L, Help: Local Dev (local-dev) (admin) — Click to sign out
+		25 text REASONING AND EXECUTION TRACE
+		26 heading Agent activity, Value: 2
+			27 text Agent activity
+		28 text AI Agent autonomous tool-calling log — each agent selects and executes tools without human intervention LIVE · ON-PREM
+		29 heading 1. SELECT EXECUTION AGENT, Value: 3
+			30 text 1. SELECT EXECUTION AGENT
+		31 text The selection controls runtime and chat context.
+		32 container
+			33 image AWS
+			34 text Strands Agent AWS Bedrock Claude
+			35 button 🔧 Tools 5
+				36 text 🔧 Tools
+				37 text 5
+		38 container
+			39 image Google Cloud
+			40 text ADK Agent Google Cloud Gemini 3.5 Flash
+			41 button 🔧 Tools 5
+				42 text 🔧 Tools
+				43 text 5
+		44 container
+			45 image Microsoft Azure
+			46 text MS Agent Microsoft Azure GPT-5.4
+			47 button 🔧 Tools 5
+				48 text 🔧 Tools
+				49 text 5
+		50 container
+			51 text ✓ SELECTED
+			52 image Cloud Native Computing Foundation
+			53 text On-Prem Agent On-Premise Local Qwen + kagent
+			54 button 🔧 Tools 13
+				55 text 🔧 Tools
+				56 text 13
+		57 text 2. SELECTED RUNTIME
+		58 heading On-Prem Agent · Local LLM (Qwen), Value: 3
+			59 text On-Prem Agent  ·  Local LLM (Qwen)
+		60 text Local Qwen handles the request, the supervisor selects the specialist, and kagent owns Kubernetes diagnostics.
+		61 text Router connected
+		62 image Local LLM (Qwen)
+		63 text SELECTED AI MODEL
+		64 container
+			65 text Applies to  On-Prem Agent ; supervisor and kagent use their configured runtime.
+		66 pop up button (collapsed, settable) Value: Local LLM (Qwen) — recommended, Secondary Actions: Expand
+			67 menu
+				68 (selected) Local LLM (Qwen) — recommended
+				69 Azure OpenAI GPT — allowed
+				70 Bedrock Claude — allowed
+				71 Vertex Gemini — allowed
+		72 text 0 1 READY PATH
+		73 image Local LLM (Qwen)
+		74 text Qwen2.5/3-Coder (MLX)
+		75 text recommended model selection
+		76 text 0 2 READY PATH Supervisor
+		77 text Route + policy boundary
+		78 text 0 3 READY PATH kagent A2A
+		79 text Kubernetes tools + trace
+		80 text Qwen → supervisor → kagent
+		81 heading Ask On-Prem Agent, Value: 3
+			82 text Ask  On-Prem Agent
+		83 text Runs with the Agent and AI Model selected above. Investigate, deploy, or recover with a live trace.
+		84 image Local LLM (Qwen)
+		85 text RECOMMENDED Native pairing — Local LLM (Qwen) is the On-Prem-native brain. ONPREM · LOCAL-QWEN · READ-ONLY REQUESTED Roll back orders-api-dogfood in namespace acme-dev-observability to its previous revision now. Do not run diagnostics. READ-ONLY TOOLS FAILED
+		86 image Local LLM (Qwen)
+		87 text LOCAL-QWEN
+		88 text Rollback is an action that modifies the deployment, which is outside the scope of read-only inspection. Rollback requires mutation permissions and is not allowed under the read-only constraints provided.
+		89 container
+			90 text To rollback a deployment, one must use  kubectl rollout undo  or equivalent tools that modify the resource. Since this is a read-only environment, rollback cannot be performed.
+		91 text To proceed with rollback, the following steps must be taken:
+		92 container
+			93 text 1. Confirm the current revision and previous revision using  describe_deployment .
+		94 container
+			95 text 2. Use  kubectl rollout undo  or equivalent to rollback to the previous revision.
+		96 text This action is not permitted in the current environment. Please use a Kubernetes client with appropriate permissions to perform the rollback.
+		97 checkbox (settable, integer) Description: Read-only inspection, Value: 0
+		98 text Operational actions are available when requested. Select read-only inspection to limit this request.
+		99 text field (settable)
+		100 button (disabled) Run
+		101 container
+			102 text Request:  4a74ee4b-0bf5-4752-9704-6e83effb1f9f
+		103 button Check recorded result
+		104 heading RECENT ACTIVITY, Value: 3
+			105 text RECENT ACTIVITY
+		106 text Latest  5  of  38  verified actions
+		107 container
+			108 image Cloud Native Computing Foundation
+			109 text ONPREM
+			110 image Local LLM (Qwen)
+			111 text On-Prem Agent (Local LLM (Qwen)) — Call describe_deployment exactly once for orders-api-dogfood in namespace acme-dev-observability. Report current and previous revisions, rol 7:02:17 PM COMPLETE describe_deployment
+		112 container
+			113 image Cloud Native Computing Foundation
+			114 text ONPREM
+			115 image Local LLM (Qwen)
+			116 text On-Prem Agent (Local LLM (Qwen)) — Read-only inspection: call describe_deployment exactly once for deployment orders-api-dogfood in namespace acme-dev-observability. Do not de 6:37:03 PM COMPLETE describe_deployment
+		117 container
+			118 image Cloud Native Computing Foundation
+			119 text ONPREM
+			120 image Local LLM (Qwen)
+			121 text On-Prem Agent (Local LLM (Qwen)) — Read-only inspection: call describe_deployment exactly once for deployment orders-api-dogfood in namespace acme-dev-observability. Do not de 6:13:05 PM COMPLETE describe_deployment
+		122 link Value: localhost:3000/deployments/DEP-09D8589C, Description: Cloud Native Computing Foundation ONPREM AI On-Prem Executor — Deploy reviewed image: {"environment": "dev", "image_uri": "localhost:5001/orders-api-dogfood:r0", "namespace": "globex-dev-observability", 3:45:49 PM FAILED deploy_to_cluster View trace →
+		123 link Value: localhost:3000/deployments/DEP-71D41B0B, Description: Cloud Native Computing Foundation ONPREM AI On-Prem Executor — Deploy reviewed image: {"environment": "dev", "image_uri": "localhost:5001/orders-api-dogfood:r0", "namespace": "globex-dev-observability", 3:45:28 PM FAILED deploy_to_cluster View trace →
+	124 pop up button (collapsed) Description: Open Next.js Dev Tools, ID: next-logo, Secondary Actions: Expand
+		125 image
+
+The focused UI element is 1 AXWebArea Platform Agent — Multi-Cloud Operations Dashboard, URL: localhost:3000/agents

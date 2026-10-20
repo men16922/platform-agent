@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-03T08:51:03.032957+00:00",
+  "old_owned_pid": 67295,
+  "temporary_pid": 92255,
+  "model": "mlx-community/Qwen3.8-27B-4bit",
+  "proxy_candidate": "candidate-v10-model-proxy.json",
+  "cache_only": true,
+  "experiment_limits": {
+    "max_tokens": 4096,
+    "timeout_per_case_seconds": 180,
+    "agent_requests_per_case": 2,
+    "sdk_retries": 0,
+    "operational_tools": 0
+  },
+  "default_application_model_changed": false,
+  "restore_required": true
+}

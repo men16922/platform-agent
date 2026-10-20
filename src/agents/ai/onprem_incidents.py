@@ -30,6 +30,10 @@ def _store_path() -> Path:
     return Path(os.getenv("PLATFORM_INCIDENT_FILE") or _DEFAULT_STORE).expanduser()
 
 
+def new_incident_id() -> str:
+    return f"INC-{uuid.uuid4().hex[:8].upper()}"
+
+
 def record_incident(
     *,
     # ⚠️ `str | None`, not `str` — corrected 2026-09-01 to match what this function
@@ -60,11 +64,16 @@ def record_incident(
     confidence: float | None = None,
     trace_id: str | None = None,
     triggered_at: str | None = None,
+    approval_id: str | None = None,
+    approval_decision: str | None = None,
+    approval_decided_at: str | None = None,
+    rejection_reason: str | None = None,
+    reported_by: str | None = None,
 ) -> dict[str, Any]:
     """Append one on-prem incident (dashboard Incident shape); returns the record."""
     record = {
         "PK": "INCIDENT",
-        "incident_id": incident_id or f"INC-{uuid.uuid4().hex[:8].upper()}",
+        "incident_id": incident_id or new_incident_id(),
         "alarm_name": alarm_name or "on-prem incident",
         "provider": "onprem",
         "severity": severity or "P3",
@@ -96,6 +105,14 @@ def record_incident(
     # as "fired at the epoch", which is what a defaulted value would mean.
     if triggered_at:
         record["triggered_at"] = triggered_at
+    if approval_id and approval_decision in ("approved", "rejected"):
+        record.update(approval_id=approval_id, approval_decision=approval_decision)
+        if approval_decided_at:
+            record["approval_decided_at"] = approval_decided_at
+        if rejection_reason is not None:
+            record["rejection_reason"] = rejection_reason
+        if reported_by is not None:
+            record["reported_by"] = reported_by
     # When the remediation finished. The webhook records the incident directly
     # after the executor returns, so the write moment is the resolution moment —
     # for the rows that were actually resolved. On-prem never wrote this field at

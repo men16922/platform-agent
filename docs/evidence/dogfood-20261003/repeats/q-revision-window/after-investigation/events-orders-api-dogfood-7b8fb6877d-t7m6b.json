@@ -1,0 +1,17 @@
+{
+  "source_id": "events-orders-api-dogfood-7b8fb6877d-t7m6b",
+  "started_at": "2026-10-03T11:09:25.605879+00:00",
+  "completed_at": "2026-10-03T11:09:25.640739+00:00",
+  "seconds": 0.035,
+  "args": [
+    "get",
+    "events",
+    "--field-selector",
+    "involvedObject.uid=07fb3152-2160-45fa-8cba-d51e1f33894d",
+    "-o",
+    "json"
+  ],
+  "exit_code": 0,
+  "stdout": "{\n    \"apiVersion\": \"v1\",\n    \"items\": [\n        {\n            \"apiVersion\": \"v1\",\n            \"count\": 3,\n            \"eventTime\": null,\n            \"firstTimestamp\": \"2026-10-03T08:05:46Z\",\n            \"involvedObject\": {\n                \"apiVersion\": \"v1\",\n                \"fieldPath\": \"spec.containers{orders-api-dogfood}\",\n                \"kind\": \"Pod\",\n                \"name\": \"orders-api-dogfood-7b8fb6877d-t7m6b\",\n                \"namespace\": \"acme-dev-observability\",\n                \"resourceVersion\": \"4303252\",\n                \"uid\": \"07fb3152-2160-45fa-8cba-d51e1f33894d\"\n            },\n            \"kind\": \"Event\",\n            \"lastTimestamp\": \"2026-10-03T10:50:57Z\",\n            \"message\": \"Liveness probe failed: Get \\\"http://10.244.1.37:8080/healthz\\\": context deadline exceeded (Client.Timeout exceeded while awaiting headers)\",\n            \"metadata\": {\n                \"creationTimestamp\": \"2026-10-03T10:50:57Z\",\n                \"name\": \"orders-api-dogfood-7b8fb6877d-t7m6b.18daf66c47092287\",\n                \"namespace\": \"acme-dev-observability\",\n                \"resourceVersion\": \"4350420\",\n                \"uid\": \"92b8bd4b-622b-49bb-8e6d-84708c63af51\"\n            },\n            \"reason\": \"Unhealthy\",\n            \"reportingComponent\": \"kubelet\",\n            \"reportingInstance\": \"platform-agent-worker\",\n            \"source\": {\n                \"component\": \"kubelet\",\n                \"host\": \"platform-agent-worker\"\n            },\n            \"type\": \"Warning\"\n        }\n    ],\n    \"kind\": \"List\",\n    \"metadata\": {\n        \"resourceVersion\": \"\"\n    }\n}\n",
+  "stderr": ""
+}

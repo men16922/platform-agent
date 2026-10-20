@@ -1,0 +1,100 @@
+{
+  "date": "2026-09-13",
+  "scope": "real GitHub operator read-only adapter verification",
+  "repository_id": 1367338348,
+  "main": {
+    "observer": "operator",
+    "complete": true,
+    "ref": "main",
+    "commit": "103e44f68adc78ebb325ddb0927f23f5622e97fc",
+    "main": "103e44f68adc78ebb325ddb0927f23f5622e97fc",
+    "parents": [],
+    "files": {
+      "platform/tenants/acme.yaml": {
+        "sha": "398abe6c528238244a8e3713bc2b48523ae8b915",
+        "mode": "100644"
+      },
+      "platform/tenants/globex.yaml": {
+        "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4",
+        "mode": "100644"
+      }
+    }
+  },
+  "diagnostic": {
+    "observer": "operator",
+    "complete": true,
+    "ref": "p5e/20260905-01-diagnostic",
+    "commit": "0e3d3bf54e2e585b092927f1f3001e78aeea6d92",
+    "main": "103e44f68adc78ebb325ddb0927f23f5622e97fc",
+    "parents": [
+      "103e44f68adc78ebb325ddb0927f23f5622e97fc"
+    ],
+    "files": {
+      "platform/tenants/acme.yaml": {
+        "sha": "9a88d6901ff18873745c272665e175921156ca9a",
+        "mode": "100644"
+      },
+      "platform/tenants/globex.yaml": {
+        "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4",
+        "mode": "100644"
+      }
+    }
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab"
+    },
+    {
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/main"
+    },
+    {
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/main"
+    },
+    {
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/commits/103e44f68adc78ebb325ddb0927f23f5622e97fc"
+    },
+    {
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/trees/2320324b3576eed10ef79522daa3cbcb95bfa94d?recursive=1"
+    },
+    {
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/main"
+    },
+    {
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/main"
+    },
+    {
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/main"
+    },
+    {
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/p5e%2F20260905-01-diagnostic"
+    },
+    {
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/commits/0e3d3bf54e2e585b092927f1f3001e78aeea6d92"
+    },
+    {
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/trees/4faa3cfedba556a91e56c4d9b4b4c8463182e891?recursive=1"
+    },
+    {
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/p5e%2F20260905-01-diagnostic"
+    },
+    {
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/main"
+    }
+  ],
+  "writes": 0,
+  "private_keys_read": false,
+  "installation_authorization_tested": false
+}

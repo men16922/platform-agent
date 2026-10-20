@@ -1,0 +1,22 @@
+......................................................................   [100%]
+=============================== warnings summary ===============================
+src/agents/ai/onprem_webhook_api.py:376
+  /Users/men1692/Desktop/AWS/platform-agent/src/agents/ai/onprem_webhook_api.py:376: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+../../../../../opt/anaconda3/lib/python3.13/site-packages/fastapi/applications.py:4601
+  /opt/anaconda3/lib/python3.13/site-packages/fastapi/applications.py:4601: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+70 passed, 2 warnings in 9.87s

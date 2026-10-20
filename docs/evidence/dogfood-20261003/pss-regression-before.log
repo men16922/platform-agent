@@ -1,0 +1,32 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+________ TestOnPremClusterAdapter.test_deploy_generates_valid_manifest _________
+
+self = <tests.test_deployment_adapters.TestOnPremClusterAdapter object at 0x102adb390>
+
+    def test_deploy_generates_valid_manifest(self):
+        spec = ServiceSpec(name="api", image="api", version="v1", ports=[8080], replicas=3)
+        adapter = OnPremClusterAdapter()
+        manifest = adapter._generate_manifest(spec, "localhost:5001/api:v1")
+    
+        assert manifest["apiVersion"] == "v1"
+        assert manifest["kind"] == "List"
+        assert len(manifest["items"]) == 2
+    
+        deployment = manifest["items"][0]
+        assert deployment["kind"] == "Deployment"
+        assert deployment["spec"]["replicas"] == 3
+        container = deployment["spec"]["template"]["spec"]["containers"][0]
+        assert container["image"] == "localhost:5001/api:v1"
+        assert container["ports"][0]["containerPort"] == 8080
+        assert "livenessProbe" in container
+        # Tenant namespaces enforce restricted Pod Security; a Deployment apply
+        # succeeding is not enough if its ReplicaSet cannot create any Pods.
+        pod = deployment["spec"]["template"]["spec"]
+>       assert pod["securityContext"]["runAsNonRoot"] is True
+E       KeyError: 'securityContext'
+
+tests/test_deployment_adapters.py:217: KeyError
+=========================== short test summary info ============================
+FAILED tests/test_deployment_adapters.py::TestOnPremClusterAdapter::test_deploy_generates_valid_manifest
+1 failed in 0.07s

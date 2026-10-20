@@ -1,0 +1,168 @@
+{
+  "status": "review_ready_not_authorized_not_executed",
+  "owner": "men16922",
+  "repository": "men16922/platform-agent-p5e-authz-r2",
+  "private": true,
+  "app_slug": "men16922-platform-agent-p5e-r2",
+  "app_public": false,
+  "installation_selection": "only-lab-repository",
+  "permissions": {
+    "single_file": "write",
+    "pull_requests": "write",
+    "metadata": "read"
+  },
+  "single_file_paths": [
+    "platform/tenants/acme.yaml"
+  ],
+  "contents": "none",
+  "webhook": false,
+  "oauth": false,
+  "branch": "p5e/20260913-02",
+  "diagnostic_branch": "p5e/20260913-02-diagnostic",
+  "api_version": "2026-03-10",
+  "seed_root": "seed",
+  "production_repository": "men16922/platform-agent",
+  "production_writes_allowed": false,
+  "live_approval": "required_before_creation",
+  "request_templates": [
+    {
+      "id": "setup_repository",
+      "identity": "operator",
+      "method": "POST",
+      "path": "/user/repos",
+      "body": {
+        "name": "platform-agent-p5e-authz-r2",
+        "private": true,
+        "auto_init": false,
+        "has_issues": false,
+        "has_projects": false,
+        "has_wiki": false,
+        "description": "Disposable P5-E permission experiment; synthetic fixtures only"
+      },
+      "expectation": "201; record repository numeric id and full_name; never reuse an existing repository"
+    },
+    {
+      "id": "disable_lab_actions",
+      "identity": "operator",
+      "method": "PUT",
+      "path": "/repos/men16922/platform-agent-p5e-authz-r2/actions/permissions",
+      "body": {
+        "enabled": false
+      },
+      "expectation": "204; GET confirms enabled=false before any fixture pushes; no workflow files are seeded"
+    },
+    {
+      "id": "check_installation",
+      "identity": "app-jwt",
+      "method": "GET",
+      "path": "/app/installations/{installation_id}",
+      "body": null,
+      "expectation": "200; exact app id/account, selected repositories, single acme path, only single_file/write pull_requests/write metadata/read; validate legacy single_file_name or paths consistently"
+    },
+    {
+      "id": "mint_probe_token",
+      "identity": "app-jwt",
+      "method": "POST",
+      "path": "/app/installations/{installation_id}/access_tokens",
+      "body": {
+        "repository_ids": [
+          "{repository_id:int}"
+        ],
+        "permissions": {
+          "single_file": "write",
+          "pull_requests": "write",
+          "metadata": "read"
+        }
+      },
+      "expectation": "201; validate exact repo id, permissions, installation single_file_paths; token must never enter log"
+    },
+    {
+      "id": "token_repositories",
+      "identity": "installation-token",
+      "method": "GET",
+      "path": "/installation/repositories",
+      "body": null,
+      "expectation": "200; exact one repository id, private=true; this is also token-validity control"
+    },
+    {
+      "id": "branch",
+      "identity": "installation-token",
+      "method": "POST",
+      "path": "/repos/men16922/platform-agent-p5e-authz-r2/git/refs",
+      "body": {
+        "ref": "refs/heads/p5e/20260913-02",
+        "sha": "{B:seed_commit_sha}"
+      },
+      "expectation": "201 for full-flow hypothesis; valid-token permission rejection predicts unsupported single_file ref creation; no automatic permission expansion"
+    },
+    {
+      "id": "diagnostic_branch_only_if_primary_ref_denied",
+      "identity": "operator",
+      "method": "POST",
+      "path": "/repos/men16922/platform-agent-p5e-authz-r2/git/refs",
+      "body": {
+        "ref": "refs/heads/p5e/20260913-02-diagnostic",
+        "sha": "{B:seed_commit_sha}"
+      },
+      "expectation": "201; mark entire downstream result diagnostic_only; never count as installation-token branch success"
+    },
+    {
+      "id": "target",
+      "identity": "installation-token",
+      "method": "PUT",
+      "path": "/repos/men16922/platform-agent-p5e-authz-r2/contents/platform/tenants/acme.yaml",
+      "body": {
+        "message": "P5-E synthetic target permission probe",
+        "content": "IyBTeW50aGV0aWMgUDUtRSBmaXh0dXJlLiBObyBkZWxpdmVyeSBjb250cm9sbGVyIHdhdGNoZXMgdGhpcyByZXBvc2l0b3J5Lgppc29sYXRpb246IHNvZnQKbmFtaW5nX3ByZWZpeDogYWNtZQplbnZpcm9ubWVudHM6CiAgZGV2OgogICAgY2x1c3RlcjogcDVlLWRldgogICAgc3Vic3RyYXRlOiBraW5kCiAgICBkZWxpdmVyeTogYXJnb2NkCiAgICBhZGRvbnM6CiAgICAgIGxvZ2dpbmc6IGxva2kgNy4xLjAKICBwcm9kOgogICAgY2x1c3RlcjogcDVlLXByb2QKICAgIHN1YnN0cmF0ZTogazNzCiAgICBkZWxpdmVyeTogZmx1eAogICAgYWRkb25zOgogICAgICBvYnNlcnZhYmlsaXR5OiBrdWJlLXByb21ldGhldXMtc3RhY2sgODcuMTcuMAogICAgICBsb2dnaW5nOiBsb2tpIDcuMS4wCg==",
+        "sha": "398abe6c528238244a8e3713bc2b48523ae8b915",
+        "branch": "{selected_branch}"
+      },
+      "expectation": "200 and exact one added addon for target"
+    },
+    {
+      "id": "sibling",
+      "identity": "installation-token",
+      "method": "PUT",
+      "path": "/repos/men16922/platform-agent-p5e-authz-r2/contents/platform/tenants/globex.yaml",
+      "body": {
+        "message": "P5-E synthetic sibling permission probe",
+        "content": "IyBTeW50aGV0aWMgUDUtRSBmaXh0dXJlLiBObyBkZWxpdmVyeSBjb250cm9sbGVyIHdhdGNoZXMgdGhpcyByZXBvc2l0b3J5Lgppc29sYXRpb246IHNvZnQKbmFtaW5nX3ByZWZpeDogZ2xvYmV4CmVudmlyb25tZW50czoKICBkZXY6CiAgICBjbHVzdGVyOiBwNWUtZGV2CiAgICBzdWJzdHJhdGU6IGtpbmQKICAgIGRlbGl2ZXJ5OiBhcmdvY2QKICAgIGFkZG9uczoKICAgICAgbG9nZ2luZzogbG9raSA3LjEuMAogIHByb2Q6CiAgICBjbHVzdGVyOiBwNWUtcHJvZAogICAgc3Vic3RyYXRlOiBrM3MKICAgIGRlbGl2ZXJ5OiBmbHV4CiAgICBhZGRvbnM6CiAgICAgIG9ic2VydmFiaWxpdHk6IGt1YmUtcHJvbWV0aGV1cy1zdGFjayA4Ny4xNy4wCiAgICAgIGxvZ2dpbmc6IGxva2kgNy4xLjAK",
+        "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4",
+        "branch": "{selected_branch}"
+      },
+      "expectation": "403 or concealed 404 with valid-token + operator existence controls AND unchanged branch/target/sibling hashes; 409/422/429 is inconclusive, any 2xx is boundary failure"
+    },
+    {
+      "id": "pull_request",
+      "identity": "installation-token",
+      "method": "POST",
+      "path": "/repos/men16922/platform-agent-p5e-authz-r2/pulls",
+      "body": {
+        "title": "P5-E isolated single-file permission probe",
+        "head": "{selected_branch}",
+        "base": "main",
+        "body": "Synthetic authorization experiment. Do not merge.",
+        "draft": true,
+        "maintainer_can_modify": false
+      },
+      "expectation": "201 only after target success and sibling unchanged; capture URL, author, head/base SHA and files; operator-created branch makes this diagnostic-only"
+    },
+    {
+      "id": "pr_files",
+      "identity": "installation-token",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-r2/pulls/{pull_number}/files?per_page=100",
+      "body": null,
+      "expectation": "200; exactly platform/tenants/acme.yaml; status modified, additions 1, deletions 0; inspect content/tree independently with operator"
+    },
+    {
+      "id": "revoke_token",
+      "identity": "installation-token",
+      "method": "DELETE",
+      "path": "/installation/token",
+      "body": null,
+      "expectation": "204; subsequent /installation/repositories rejects authentication; no renewed token for automatic retry"
+    }
+  ],
+  "retention": "retain repository, branches, draft PR, App, installation, PEM and checkout; only supplied installation token is revoked"
+}

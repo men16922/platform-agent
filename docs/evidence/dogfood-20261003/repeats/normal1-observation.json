@@ -1,0 +1,403 @@
+{
+  "label": "normal1",
+  "healthy_observed_at": "2026-10-03T06:09:13.703059+00:00",
+  "revision": "7",
+  "uid": "8567c751-fc44-4e28-b63e-e21af534661f",
+  "replicas": 2,
+  "image": "localhost:5001/orders-api-dogfood:r0",
+  "observations": [
+    {
+      "at": "2026-10-03T06:08:20.305863+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:21.513549+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:22.607135+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:23.701474+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:24.787668+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:25.890427+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:26.986370+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:28.084129+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:29.171821+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:30.266157+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:31.357877+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:32.460519+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:33.563168+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:34.667092+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:35.759523+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:36.851804+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:37.946806+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:39.045909+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:40.131993+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:41.229151+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:42.322304+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:43.422141+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:44.518104+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:45.615328+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:46.704119+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:47.793164+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:48.889435+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:49.975763+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:51.064795+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:52.158576+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:53.246770+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:54.342001+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:55.440217+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:56.530589+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:57.629870+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:58.720683+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:08:59.810051+00:00",
+      "revision": "6",
+      "generation": 7,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r1",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:09:00.908442+00:00",
+      "revision": "7",
+      "generation": 8,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:09:02.003318+00:00",
+      "revision": "7",
+      "generation": 8,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:09:03.084099+00:00",
+      "revision": "7",
+      "generation": 8,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:09:04.172235+00:00",
+      "revision": "7",
+      "generation": 8,
+      "ready": false,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:09:05.271178+00:00",
+      "revision": "7",
+      "generation": 8,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:09:06.478674+00:00",
+      "revision": "7",
+      "generation": 8,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:09:07.646538+00:00",
+      "revision": "7",
+      "generation": 8,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:09:08.812552+00:00",
+      "revision": "7",
+      "generation": 8,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:09:09.993298+00:00",
+      "revision": "7",
+      "generation": 8,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:09:11.182355+00:00",
+      "revision": "7",
+      "generation": 8,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:09:12.362742+00:00",
+      "revision": "7",
+      "generation": 8,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:09:13.545483+00:00",
+      "revision": "7",
+      "generation": 8,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": true
+    }
+  ],
+  "method": "Read-only 1s polling and actual kubelet health-200 log from each current Pod; not browser HTTP."
+}

@@ -1,0 +1,7 @@
+{"id": "q-failing", "schema_applicability": "not_validated", "seconds": 5.743, "error": {"type": "ValueError", "message": "current_revision_support_required:image_reference"}}
+{"id": "q-injected", "schema_applicability": "not_validated", "seconds": 4.946, "error": {"type": "ValueError", "message": "current_revision_support_required:image_reference"}}
+{"id": "q-restored", "schema_applicability": "valid", "seconds": 3.235, "error": null}
+{"id": "s-both-failing-consistent", "schema_applicability": "not_validated", "seconds": 5.042, "error": {"type": "ValueError", "message": "current_revision_support_required:dependency_health"}}
+{"id": "s-original-contradiction", "schema_applicability": "not_validated", "seconds": 5.076, "error": {"type": "ValueError", "message": "Duplicate proposal kind."}}
+{"id": "positive-recovery", "schema_applicability": "valid", "seconds": 4.057, "error": null}
+{"id": "positive-complete", "schema_applicability": "valid", "seconds": 2.522, "error": null}

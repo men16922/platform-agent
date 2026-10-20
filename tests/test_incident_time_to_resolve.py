@@ -44,12 +44,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from tests._ts_toolchain import require_ts_toolchain
+
 from src.agents.ai import onprem_incidents as incidents
 from src.agents.operations.aws import reporting
 from src.agents.operations.oncall_reporter import build_weekly_oncall_report, summarize_incidents
 
 INCIDENT_DATA = Path("dashboard/src/lib/incident-data.ts")
 INCIDENT_TIME = Path("dashboard/src/lib/incident-time.ts")
+TSC = Path("dashboard/node_modules/.bin/tsc")
 
 # The rows below used to hardcode 2026-07-29. `_fetch_incidents_from_dynamo`
 # places a row by `created_at` against a *live* clock, so those fixtures aged out
@@ -320,8 +323,8 @@ class TestTheScanFetchesWhatTheMapperReads:
 # ---------------------------------------------------------------------------
 
 pytestmark_ts = pytest.mark.skipif(
-    shutil.which("npx") is None or not INCIDENT_TIME.is_file(),
-    reason="npx/incident-time.ts unavailable — cannot execute the policy",
+    not INCIDENT_TIME.is_file(),
+    reason="incident-time.ts unavailable — cannot execute the policy",
 )
 
 
@@ -329,9 +332,10 @@ def _ttr(triggered, created, resolved):
     def js(v):
         return "undefined" if v is None else f"'{v}'"
 
+    require_ts_toolchain(TSC, shutil.which("node") is not None, "dashboard dependencies required to compile " + INCIDENT_TIME.name)
     with tempfile.TemporaryDirectory() as out:
         subprocess.run(
-            ["npx", "tsc", str(INCIDENT_TIME), "--outDir", out, "--module", "commonjs",
+            [str(TSC), str(INCIDENT_TIME), "--outDir", out, "--module", "commonjs",
              "--target", "es2020", "--skipLibCheck"],
             capture_output=True, text=True, timeout=180,
         )

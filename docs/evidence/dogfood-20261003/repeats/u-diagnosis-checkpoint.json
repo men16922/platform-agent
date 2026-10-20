@@ -1,0 +1,51 @@
+{
+  "at": "2026-10-03T13:45:11.591461+00:00",
+  "unit": "U",
+  "goal_status": "paused",
+  "reason": "User requested to stop here and checkpoint",
+  "completed_this_unit": "Read existing Q/R/S evidence, current normalizer/report/proposal code, and primary Kubernetes documentation. No implementation or new diagnostic reproduction was executed.",
+  "hypothesis": "rollout_complete is based on Deployment aggregate counts without an explicit cross-object disagreement assessment; the existing completion test updates aggregate counts while retaining a failed current Pod. This is a code-review hypothesis awaiting a fresh reproduction and controlled measurement.",
+  "not_claimed": "No causal fix, semantic improvement, new health observation or finished R3/R4/R5. Prior commentary saying a cause was confirmed was stronger than the performed measurement.",
+  "resume_first_action": "Reproduce aggregate-vs-current-RS/Pod disagreement using the saved raw Q/S inputs, alongside an internally consistent positive recovery control. Then implement only the confirmed consistency/query-applicability issue, retaining raw observations and original diagnosis criteria.",
+  "source_checks": {
+    "candidate-v15-snapshot-contract.json": {
+      "files": 287,
+      "mismatches": []
+    },
+    "candidate-v16-pod-diagnostics.json": {
+      "files": 287,
+      "mismatches": []
+    }
+  },
+  "runtime": "O/v15 unchanged",
+  "worktree": "R/v16 unchanged; not activated",
+  "last_workload_evidence": "t-integrated/final/manifest.json, 13:12 UTC; original UID/full spec r0 replicas2 revision37; not re-queried during U",
+  "last_full_gate": "T local worktree: 3364 passed, 2 skipped, 20 warnings, 133.83s; not rerun in U",
+  "preservation": "No model calls, process restart, token refresh, cluster mutation, permission expansion, commit/push or resource deletion in U",
+  "references": [
+    {
+      "url": "https://kubernetes.io/docs/reference/kubernetes-api/apps/deployment-v1/",
+      "use": "Status counts and observedGeneration semantics; consulted 2026-10-03"
+    },
+    {
+      "url": "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/",
+      "use": "Waiting/running/terminated lifecycle distinctions; consulted 2026-10-03"
+    },
+    {
+      "url": "https://kubernetes.io/docs/concepts/cluster-administration/logging/",
+      "use": "Previous container instantiation logs; consulted 2026-10-03"
+    }
+  ],
+  "read_source_sha256": {
+    "src/agents/ai/deployment_evidence.py": "c0ee58a5f665a6ad428f707b3e62aa4fd568724ed08b920b3d768c6c80c7b102",
+    "src/agents/ai/inspection_report.py": "eb9d3afac396fa5277d0270f98390df24ebf553da60f75f74bf2a3bfc913ff4f",
+    "src/agents/ai/ops_tools.py": "edc0925530321fc6facdbe0f20c4b10599f68e14f5e0c020ef1056b28f6b9dc4",
+    "tests/test_deployment_evidence.py": "f30753d7f596a752fdf67d821ef1e8353b84b77d41c9c05d9b8ab6c51ea32af8",
+    "experiments/dogfood-diagnosis/proposal_contract.py": "135d6fc1f68c47955c1df57077e40c390dffd0249b969fdcce174d55de7cd343"
+  },
+  "checkpoint_verification": {
+    "documentation_tests": 55,
+    "diff_check_exit_code": 0,
+    "full_gate_rerun": false
+  }
+}

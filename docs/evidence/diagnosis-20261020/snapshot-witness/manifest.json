@@ -1,0 +1,11 @@
+{
+  "at": "2026-10-19T20:49:44.737534+00:00",
+  "model_revision": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "max_tokens": 1024,
+  "temperature": 0,
+  "requests_per_case": 1,
+  "tools": 0,
+  "retries": 0,
+  "protocol": "Isolated evidence-to-claim check with the fixed Qwen; no product change.\n\nThis extra model call is a different protocol from a one-call diagnosis. It does\nnot authenticate source statements or grant execution; binding is not semantics.\n",
+  "source_sha256": "891c42d8e7c2e3f4e31c031f7ef59362eec465f435da1e2cffd7c457d295d169"
+}

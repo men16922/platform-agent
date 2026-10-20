@@ -1,0 +1,51 @@
+M64 — P5-E offline evidence judge, 2026-09-06 local macOS / Python 3.13
+Scope: normalized observations for the four P5-E calls in the existing plan.
+No request sender, token minting, GitHub/AWS service mock, live authorization
+experiment, deployment, commit, or push. All input fixtures are synthetic.
+
+Files: src/agents/platform/writer_evidence.py; scripts/judge_registry_writer.py;
+experiments/phase5-writer/README.md and fixtures/supported.synthetic.json;
+tests/test_writer_evidence.py; DOCUMENT CLI classification in test_report_streams.
+Synthetic blob IDs were computed independently with git hash-object on the existing
+seed/expected YAML. Synthetic a/b commit SHAs and numeric IDs are not live evidence.
+
+Checks: exact lab/IDs/selected repository/permissions/single-file path;
+installation-token call identity, method/path and actual normalized request fields;
+operator-observed refs, complete trees, blob/mode, parent/main and step continuity;
+sibling 2xx or any unexpected change is a boundary failure;
+403/404 needs independent token/existence/SHA/rate-limit controls and unchanged state;
+401/409/422/429/503/timeout/redirect never proves permission denial;
+diagnostic branch remains diagnostic-only, including intermediate failures;
+PR URL/author App/head/base/repository/files endpoint/files list must agree.
+Outputs always state scope=offline_evidence_consistency and live_verified=false.
+The checker cannot authenticate input provenance or certify cleanup completion.
+
+Focused result: 104 passed in 0.32s.
+Real CLI subprocess: JSON stdout, supported exit 0, other verdicts exit 1;
+input error exit 2, empty stdout, fixed stderr without source content.
+
+Mutation discovery: deleting the parent check initially left 100 tests green.
+The old parent fixture also broke downstream equality, which masked the missing
+parent guard. Updated all later snapshots to agree on the SAME wrong parent;
+this isolates the parent invariant rather than testing incidental inconsistency.
+Final mutation results (all exit 1, source bytes restored in finally):
+- diagnostic promoted to supported: 1 failed, 103 passed.
+- 401 allowed as permission denial: 2 failed, 102 passed.
+- denial controls bypassed: 22 failed, 82 passed.
+- parent check removed: 1 failed, 103 passed.
+- target tree check removed: 4 failed, 100 passed.
+- PR files check bypassed: 5 failed, 99 passed.
+- credential control bypassed: 5 failed, 99 passed.
+- sibling 2xx detection removed: 3 failed, 101 passed.
+After mutation restoration, reason codes were exposed as fixed error identifiers;
+all 104 focused tests passed again. No input values are echoed in those codes.
+
+Collection: 2815 tests collected in 1.71s (+104).
+Full make check: exit 0, 2813 passed, 2 skipped, 21 warnings in 52.99s.
+Log: scripts/overnight/logs/phase5-writer-judge-gate.log.
+
+Final source/fixture SHA256:
+3c6306b4dc4ba053336d6841ddf0439f700b581f17473769335a298b65cfbb43  src/agents/platform/writer_evidence.py
+1c98f2181ab5be388a93a06292345a9eeea36e42d80e590cadc36d60e36d5d8d  scripts/judge_registry_writer.py
+98cbcef2c3ce6a79fab95bc68df60e3a33e0806ab2deb651fcfcec42555836d1  tests/test_writer_evidence.py
+81d215a4f5598e6df9a98cbe1ad415d26d5badc2c2e2a31c49989376985897b2  experiments/phase5-writer/fixtures/supported.synthetic.json

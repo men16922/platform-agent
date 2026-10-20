@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-03T07:06:28.788831+00:00",
+  "fixture_ids": {
+    "APR-7D95B306": "pending",
+    "APR-52AF4AE1": "pending"
+  },
+  "actual_rejections": 0,
+  "activity_rows": 0,
+  "incident_rows": 0,
+  "workload_spec_unchanged": true,
+  "status": "UI verification incomplete: Reject opened a native prompt; dialog handling did not complete; native Chrome reported user changed app. Stopped UI automation, preserved both fixtures. No bypass/API substitution.",
+  "candidate": "candidate-v5-diagnosis.json"
+}

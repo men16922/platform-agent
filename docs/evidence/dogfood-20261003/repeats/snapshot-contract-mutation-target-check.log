@@ -1,0 +1,14 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_metadata_exclusion_does_not_read_instructions_or_drop_valid_positive_evidence _
+
+    def test_metadata_exclusion_does_not_read_instructions_or_drop_valid_positive_evidence():
+        for index in [1,4,5,6]:
+            q=SnapshotQuestion.model_validate(CASES[index]['input']);p=prepare(q)
+>           assert not p['sources'] and p['excluded']
+E           AssertionError: assert (not [{'observed_at': '2026-10-03T07:00:00Z', 'provenance': 'supplied_snapshot', 'source_id': 'snapshot', 'target': {'cluster': 'kind-platform-agent', 'namespace': 'globex-dev-observability', 'service': 'orders-api-dogfood'}, ...}])
+
+tests/test_snapshot_diagnosis.py:45: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_snapshot_diagnosis.py::test_metadata_exclusion_does_not_read_instructions_or_drop_valid_positive_evidence
+1 failed, 7 deselected in 0.94s

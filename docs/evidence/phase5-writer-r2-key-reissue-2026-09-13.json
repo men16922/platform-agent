@@ -1,0 +1,18 @@
+{
+  "observed_at": "2026-09-13T01:38:55.067645+00:00",
+  "status": "KEY_CREATED_DOWNLOAD_BLOCKED_USER_HANDOFF",
+  "authorization": "User requested to obtain the missing R2 key again",
+  "app_id": 4924748,
+  "app_slug": "men16922-platform-agent-p5e-r2",
+  "existing_key_id": 4447759,
+  "new_key_id": 4449076,
+  "new_public_fingerprint": "SHA256:93LYvOkmIbZOLBEK7BYvrk77beXXfvjjPVPx5d5n8MU=",
+  "key_generation_clicks": 1,
+  "download_error": "ERR_BLOCKED_BY_CLIENT",
+  "matching_pem_files_in_downloads": 0,
+  "keys_deleted": 0,
+  "trial_mint_attempts": 0,
+  "trial_operation_attempts": 0,
+  "next_action": "User directly generates and downloads a usable PEM from the existing App settings, then provides only the local path",
+  "gate": "Not rerun: evidence and handoff documentation only; application code unchanged"
+}

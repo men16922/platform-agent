@@ -1,0 +1,16 @@
+{
+  "at": "2026-10-03T10:26:57.280938+00:00",
+  "goal_status": "active",
+  "meaningful_progress": true,
+  "approval_wait": false,
+  "completed": [
+    "N runtime display and usage metadata",
+    "Seven actual UI cases and hash-bound review"
+  ],
+  "remaining": [
+    "Source target/time/injection failures in actual diagnosis path",
+    "Final same-candidate normal3/denial2/recovery2/loss2 bundle and refreshed comparison/reproduction/demo",
+    "R5 one same-condition external agent comparison after R3"
+  ],
+  "next": "Apply the existing source target/time/provenance contract to the actual diagnostic input path, preserve eligible positive evidence and useful next checks, and replay the failed outputs. Avoid additional prompt-only retries or claiming semantics from source IDs alone."
+}

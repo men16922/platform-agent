@@ -1,0 +1,54 @@
+{
+  "milestone": "M88",
+  "date": "2026-09-13",
+  "scope": "stored Lambda, plan-table CDK and package local verification",
+  "tests": {
+    "related": "113 passed; 20 new",
+    "restored": "58 passed plus packaged DynamoDB Local verifier passed",
+    "collection": 3217,
+    "full_gate": {
+      "command": "make check",
+      "passed": 3215,
+      "skipped": 2,
+      "warnings": 21,
+      "seconds": 97.44,
+      "machine": "local macOS Python 3.13",
+      "exit_code": 0
+    },
+    "mutations": 4
+  },
+  "actual_cdk_app_synth": {
+    "resources": 8,
+    "application_resources": 7,
+    "cdk_metadata_resources": 1,
+    "lookups": false,
+    "template": "registry-lambda-storage-cdk-2026-09-13.json"
+  },
+  "packaged_runtime": {
+    "platform": "Linux ARM64",
+    "python": "3.13",
+    "official_image": "public.ecr.aws/lambda/python:3.13",
+    "digest": "sha256:1311e440c4919f69e4c8aa57fabfb06a93deb0d0e3201d33379d392a63eda122",
+    "network_enabled": false,
+    "modules": 8,
+    "native_pyyaml": true
+  },
+  "source_sha256": {
+    "src/agents/platform/registry_lambda.py": "d701cc916f1135357e11f607fd287b8f78d5e6cffd9917a210ece5f92e22472e",
+    "src/agents/platform/registry_plan_store.py": "45541fe7476b4cb1e75f02c00d7a61c0ddc13b64be0516f86e8bc9803bf07bc0",
+    "src/agents/platform/registry_preview_service.py": "de8ebb2938e362fd0905e6e74fbe328fafa9da79c6345b1973ed1185457fe1a2",
+    "src/stacks/registry_planner_stack.ts": "435a56ee3a7f9d175d4946822ecb003fa442c7261d3e838d9492fbcecf8a1c3f",
+    "scripts/build_registry_planner.py": "b7fef6597f4f9485bce37e3aabfd3e72a09fb7d2a026fec776d2f7e1f3fe8cc0",
+    "scripts/verify_registry_planner_local.py": "510967c56b959ba1d2c5ab13a4da56727d0d50b75cb54830e2c0fee93c157a4e",
+    "tests/test_registry_runtime.py": "6400377c9e55a346a3f0d667bc0933aa923e0ab2d4a832e17ed4fa55dd2d3544",
+    "tests/test_registry_planner_stack.py": "1feceac638c4e99484115aa489967371ca3e83a5563bc9cb3168886015b98302"
+  },
+  "existing_resources_and_global_configuration_retained": true,
+  "owned_test_resources_removed": true,
+  "remote_ci_executed": false,
+  "remote_aws_github_api_calls": 0,
+  "deployed": false,
+  "publication_verified": false,
+  "remaining": "dashboard AWS prepare/status transport, remote rollout and publication",
+  "evidence_note": "CDK CLI adds one metadata resource to the seven application resources; captured template has eight total."
+}

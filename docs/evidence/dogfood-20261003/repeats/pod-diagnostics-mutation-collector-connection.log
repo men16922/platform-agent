@@ -1,0 +1,138 @@
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_ test_existing_describe_tool_collects_with_same_identity_and_retains_failures[None] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x104dea8b0>
+failure = None
+
+    @pytest.mark.parametrize("failure", [None, "forbidden", "changed"])
+    def test_existing_describe_tool_collects_with_same_identity_and_retains_failures(monkeypatch, failure):
+        d, objects = snapshot(); commands = []; reads = 0
+        objects[2]["status"]["containerStatuses"][0]["state"]["waiting"]["message"] = "failed to resolve reference app:missing: not found"
+        monkeypatch.setenv("PLATFORM_DEPLOY_KUBECONFIG", "/test/restricted-config")
+        def run(cmd, **kwargs):
+            nonlocal reads
+            commands.append(cmd)
+            assert cmd[:3] == ["kubectl", "--kubeconfig", "/test/restricted-config"]
+            args = cmd[3:]
+            if args[0] == "describe": out = "Deployment description"
+            elif args == ["config", "current-context"]: out = "kind-test"
+            else:
+                assert args[:2] == ["--context", "kind-test"]
+                assert args[2] == "get" and args[4:6] == ["-n", "acme"]
+                if args[3] == "replicasets,pods":
+                    assert args[6:8] == ["-l", "app=orders"]
+                    if failure == "forbidden":
+                        return SimpleNamespace(returncode=1, stdout="", stderr="Forbidden")
+                    out = json.dumps({"items": objects})
+                else:
+                    reads += 1
+                    observed = deepcopy(d)
+                    if failure == "changed" and reads == 2: observed["metadata"]["resourceVersion"] = "56"
+                    out = json.dumps(observed)
+            return SimpleNamespace(returncode=0, stdout=out, stderr="")
+        monkeypatch.setattr(ops_tools.subprocess, "run", run)
+        result = ops_tools.describe_deployment("orders", "acme")
+        assert result["ok"] is True
+        if failure:
+            assert result["evidence"]["recovery"]["status"] == "not_established"
+            assert ("Forbidden" if failure == "forbidden" else "changed") in result["evidence"]["error"]
+            assert len(commands) == (4 if failure == "forbidden" else 5)
+            assert result["diagnostic_observations"]["status"] == "unavailable"
+            assert result["diagnostic_observations"]["records"] == []
+        else:
+            assert result["evidence"]["recovery"]["status"] == "review_candidate"
+            assert len(commands) == 5
+>           quoted = result["diagnostic_observations"]["records"][0]
+E           KeyError: 'diagnostic_observations'
+
+tests/test_deployment_evidence.py:159: KeyError
+_ test_existing_describe_tool_collects_with_same_identity_and_retains_failures[forbidden] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x104de9940>
+failure = 'forbidden'
+
+    @pytest.mark.parametrize("failure", [None, "forbidden", "changed"])
+    def test_existing_describe_tool_collects_with_same_identity_and_retains_failures(monkeypatch, failure):
+        d, objects = snapshot(); commands = []; reads = 0
+        objects[2]["status"]["containerStatuses"][0]["state"]["waiting"]["message"] = "failed to resolve reference app:missing: not found"
+        monkeypatch.setenv("PLATFORM_DEPLOY_KUBECONFIG", "/test/restricted-config")
+        def run(cmd, **kwargs):
+            nonlocal reads
+            commands.append(cmd)
+            assert cmd[:3] == ["kubectl", "--kubeconfig", "/test/restricted-config"]
+            args = cmd[3:]
+            if args[0] == "describe": out = "Deployment description"
+            elif args == ["config", "current-context"]: out = "kind-test"
+            else:
+                assert args[:2] == ["--context", "kind-test"]
+                assert args[2] == "get" and args[4:6] == ["-n", "acme"]
+                if args[3] == "replicasets,pods":
+                    assert args[6:8] == ["-l", "app=orders"]
+                    if failure == "forbidden":
+                        return SimpleNamespace(returncode=1, stdout="", stderr="Forbidden")
+                    out = json.dumps({"items": objects})
+                else:
+                    reads += 1
+                    observed = deepcopy(d)
+                    if failure == "changed" and reads == 2: observed["metadata"]["resourceVersion"] = "56"
+                    out = json.dumps(observed)
+            return SimpleNamespace(returncode=0, stdout=out, stderr="")
+        monkeypatch.setattr(ops_tools.subprocess, "run", run)
+        result = ops_tools.describe_deployment("orders", "acme")
+        assert result["ok"] is True
+        if failure:
+            assert result["evidence"]["recovery"]["status"] == "not_established"
+            assert ("Forbidden" if failure == "forbidden" else "changed") in result["evidence"]["error"]
+            assert len(commands) == (4 if failure == "forbidden" else 5)
+>           assert result["diagnostic_observations"]["status"] == "unavailable"
+E           KeyError: 'diagnostic_observations'
+
+tests/test_deployment_evidence.py:154: KeyError
+_ test_existing_describe_tool_collects_with_same_identity_and_retains_failures[changed] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x104e420f0>
+failure = 'changed'
+
+    @pytest.mark.parametrize("failure", [None, "forbidden", "changed"])
+    def test_existing_describe_tool_collects_with_same_identity_and_retains_failures(monkeypatch, failure):
+        d, objects = snapshot(); commands = []; reads = 0
+        objects[2]["status"]["containerStatuses"][0]["state"]["waiting"]["message"] = "failed to resolve reference app:missing: not found"
+        monkeypatch.setenv("PLATFORM_DEPLOY_KUBECONFIG", "/test/restricted-config")
+        def run(cmd, **kwargs):
+            nonlocal reads
+            commands.append(cmd)
+            assert cmd[:3] == ["kubectl", "--kubeconfig", "/test/restricted-config"]
+            args = cmd[3:]
+            if args[0] == "describe": out = "Deployment description"
+            elif args == ["config", "current-context"]: out = "kind-test"
+            else:
+                assert args[:2] == ["--context", "kind-test"]
+                assert args[2] == "get" and args[4:6] == ["-n", "acme"]
+                if args[3] == "replicasets,pods":
+                    assert args[6:8] == ["-l", "app=orders"]
+                    if failure == "forbidden":
+                        return SimpleNamespace(returncode=1, stdout="", stderr="Forbidden")
+                    out = json.dumps({"items": objects})
+                else:
+                    reads += 1
+                    observed = deepcopy(d)
+                    if failure == "changed" and reads == 2: observed["metadata"]["resourceVersion"] = "56"
+                    out = json.dumps(observed)
+            return SimpleNamespace(returncode=0, stdout=out, stderr="")
+        monkeypatch.setattr(ops_tools.subprocess, "run", run)
+        result = ops_tools.describe_deployment("orders", "acme")
+        assert result["ok"] is True
+        if failure:
+            assert result["evidence"]["recovery"]["status"] == "not_established"
+            assert ("Forbidden" if failure == "forbidden" else "changed") in result["evidence"]["error"]
+            assert len(commands) == (4 if failure == "forbidden" else 5)
+>           assert result["diagnostic_observations"]["status"] == "unavailable"
+E           KeyError: 'diagnostic_observations'
+
+tests/test_deployment_evidence.py:154: KeyError
+=========================== short test summary info ============================
+FAILED tests/test_deployment_evidence.py::test_existing_describe_tool_collects_with_same_identity_and_retains_failures[None]
+FAILED tests/test_deployment_evidence.py::test_existing_describe_tool_collects_with_same_identity_and_retains_failures[forbidden]
+FAILED tests/test_deployment_evidence.py::test_existing_describe_tool_collects_with_same_identity_and_retains_failures[changed]
+3 failed, 24 deselected in 0.06s

@@ -1,0 +1,75 @@
+{
+  "label": "v4-recovery1",
+  "healthy_observed_at": "2026-10-03T06:42:37.250216+00:00",
+  "revision": "23",
+  "uid": "8567c751-fc44-4e28-b63e-e21af534661f",
+  "replicas": 2,
+  "image": "localhost:5001/orders-api-dogfood:r0",
+  "observations": [
+    {
+      "at": "2026-10-03T06:42:28.647531+00:00",
+      "revision": "23",
+      "generation": 24,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:42:29.933977+00:00",
+      "revision": "23",
+      "generation": 24,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:42:31.122654+00:00",
+      "revision": "23",
+      "generation": 24,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:42:32.304064+00:00",
+      "revision": "23",
+      "generation": 24,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:42:33.486535+00:00",
+      "revision": "23",
+      "generation": 24,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:42:34.694105+00:00",
+      "revision": "23",
+      "generation": 24,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:42:35.881893+00:00",
+      "revision": "23",
+      "generation": 24,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:42:37.071982+00:00",
+      "revision": "23",
+      "generation": 24,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": true
+    }
+  ],
+  "method": "Read-only 1s polling and actual kubelet health-200 log from each current Pod; not browser HTTP."
+}

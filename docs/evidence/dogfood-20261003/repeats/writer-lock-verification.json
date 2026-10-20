@@ -1,0 +1,55 @@
+{
+  "at": "2026-10-03T07:45:43.297125+00:00",
+  "candidate": "candidate-v8-local-gate.json",
+  "trigger": "rejection-metadata-gate.log: 1 failed,3284 passed,2 skipped,20 warnings,125.56s",
+  "reproduction": {
+    "trials_until_failure": 24,
+    "unexpected_state": {
+      "state": "UNKNOWN",
+      "reason": "workflow_store_or_context_invalid",
+      "cleanup": "NOT_ATTEMPTED",
+      "live_verified": false,
+      "diagnostic_only": false
+    },
+    "exceptions": [
+      {
+        "thread": 6248574976,
+        "function": "mkdir",
+        "type": "FileExistsError",
+        "errno": 17,
+        "code": "[Errno 17] File exists: 'eb7575233137c2b8835b37213c079f981e2729f75df74e77a7d93acd4407a4cc'"
+      },
+      {
+        "thread": 6248574976,
+        "function": "open",
+        "type": "FileNotFoundError",
+        "errno": 2,
+        "code": "[Errno 2] No such file or directory: 'workflow.lock'"
+      }
+    ],
+    "external_write_result": "Synthetic loopback stages each called once, not real GitHub writes"
+  },
+  "change": "Retry only local workflow.lock open on FileNotFoundError, max3; retain O_NOFOLLOW and flock before any observer/send. Other/persistent errors remain UNKNOWN before calls. No external request retry.",
+  "regressions": {
+    "before": "2 failed,1 passed,37 deselected",
+    "after": "65 passed,13.75s; writer workflow+attempt modules",
+    "coverage": "transient absence recovery, persistent absence and permission fail closed, existing concurrent mapping and crash tests"
+  },
+  "native_probe_after": {
+    "trials": 50,
+    "failures": 0,
+    "natural_missing_open_events": 0
+  },
+  "limits": [
+    "Native after-probe did not hit ENOENT; recovery behavior is proven by controlled syscall fault injection, not by a naturally occurring post-fix error.",
+    "Underlying file-system implementation cause is not established; observation is concurrent local open returning ENOENT.",
+    "No credentials, remote GitHub operations or deployed planner behavior tested."
+  ],
+  "final_gate": {
+    "passed": 3288,
+    "skipped": 2,
+    "warnings": 20,
+    "seconds": 304.27,
+    "evidence": "rejection-metadata-gate-final.log"
+  }
+}

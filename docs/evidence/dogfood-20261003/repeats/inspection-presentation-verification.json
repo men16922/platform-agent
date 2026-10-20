@@ -1,0 +1,77 @@
+{
+  "at": "2026-10-03T09:43:09.219086+00:00",
+  "candidate": "candidate-v12-inspection-presentation.json",
+  "completed": "Code-derived observations/recovery are the durable summary and primary chat card; model text/completion is retained separately as unverified interpretation",
+  "changes": [
+    "One shared local outcome projection for regular and streaming routes",
+    "Known read-only tool runs with describe evidence receive target-bound inspection reports; mutating/missing-evidence runs are not relabelled as inspections",
+    "Final ModelResponse finish_reason/state distinguishes complete, incomplete and unknown; semantic_verified remains false",
+    "Both SSE paths and durable replay retain inspection/model_completion",
+    "Chat shows observed revision/rollout/health/recovery/source IDs and times; model drafts and final interpretation are separate collapsed sections; matching final streamed text is not duplicated"
+  ],
+  "verification": {
+    "related": "41 passed,2.58s; inspection-presentation-related.log",
+    "typescript": "tsc --noEmit exit0; inspection-presentation-typescript.log",
+    "new_test_count": 10,
+    "full_gate": {
+      "passed": 3335,
+      "skipped": 2,
+      "warnings": 20,
+      "seconds": 135.89,
+      "environment": "2026-10-03 local macOS/Python3.13.5/Node22.23.3/temporary npm prefix",
+      "evidence": "inspection-presentation-gate.log"
+    },
+    "controls": "Incorrect/length-limited text, unknown/filtered/error completion, target mismatch, missing evidence, mutating-run exclusion, supported previous revision, actual local SQLite/SSE replay and React rendering",
+    "documentation_followup": {
+      "passed": 55,
+      "seconds": 3.52,
+      "evidence": "inspection-presentation-docs.log",
+      "diff_check": "git diff --check exit0",
+      "scope": "docs-only follow-up after checkpoint; no product source change after full gate"
+    }
+  },
+  "saved_failure_replay": {
+    "evidence": "inspection-presentation-saved-replay.json",
+    "before_summary_characters": 6400,
+    "after_summary_characters": 191,
+    "raw_model_text_preserved": true,
+    "model_calls": 0,
+    "legacy_finish_reason": "not recorded, so unknown; no retroactive stop/length inference"
+  },
+  "actual_ui": {
+    "request_id": "3da3703c-cd18-454f-a75c-bca769b393e7",
+    "activity_id": "ACT-221E1A08",
+    "claims": 1,
+    "tool_calls": {
+      "describe_deployment": 1
+    },
+    "acceptance_to_persistence_sec": 13.296,
+    "record": "ACTIVITY only, no DEPLOY row",
+    "summary": "acme-dev-observability/orders-api-dogfood: revision 27; rollout complete. Application health not established. Recovery candidate not established. Observed at 2026-10-03T09:36:58.078772+00:00.",
+    "model_completion": {
+      "status": "complete",
+      "finish_reason": "stop",
+      "semantic_verified": false
+    },
+    "model_semantics": "FAIL remains in original interpretation: calls deployment healthy and ready. The primary observation card and durable summary correctly say health not established; normal stop does not validate meaning.",
+    "browser": "Actual default Chrome/router request, refresh retained the same request/card/completion; source disclosure and unverified model disclosure opened independently",
+    "evidence": [
+      "inspection-presentation-ui-run.json",
+      "inspection-presentation-ui-reload.txt",
+      "inspection-presentation-ui-expanded.txt",
+      "inspection-presentation-ui.png"
+    ]
+  },
+  "activation": "inspection-presentation-activation.json: owned router47342/dashboard47343; model/proxy/webhook unchanged;286 source hashes matched worktree/runtime",
+  "nonchange": "inspection-presentation-checkpoint.json and inspection-presentation-after-deployment.json: UID/spec unchanged,r0/rev27/2 replicas;no new external HTTP health observation",
+  "limits": [
+    "Presentation boundary does not make model interpretation correct",
+    "Default agent still registers mutating tools; this actual request called only one read tool",
+    "Positive recovery and incomplete completion presentation tested offline; actual UI run was no-candidate with stop",
+    "Legacy stored records without new metadata are preserved; this is not a historical data migration",
+    "D/I deployment/rejection evidence remains separate from L; final full scenario bundle still required",
+    "No external agent comparison, remote deployment, commit/push, RBAC expansion or resource cleanup"
+  ],
+  "next": "Add explicit read-only request capability through UI/API/router/factory and durable request binding; then test useful evidence-linked hypotheses/next checks with sufficient/insufficient and contrary cases. Do not count collapsed wrong prose as semantic correctness.",
+  "checkpoint_at": "2026-10-03T09:50:04.726136+00:00"
+}

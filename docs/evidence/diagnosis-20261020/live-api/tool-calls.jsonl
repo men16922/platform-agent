@@ -1,0 +1,4 @@
+{"at": "2026-10-19T20:31:37.510708+00:00", "tool": "describe_deployment", "args": {"deployment": "orders-api-dogfood", "namespace": "acme-dev-observability"}, "dispatched": true}
+{"at": "2026-10-19T20:31:37.510885+00:00", "tool": "rollout_status", "args": {"deployment": "orders-api-dogfood", "namespace": "acme-dev-observability"}, "dispatched": true}
+{"at": "2026-10-19T20:31:37.510923+00:00", "tool": "list_namespaces", "args": {}, "dispatched": false}
+{"at": "2026-10-19T20:31:37.514724+00:00", "tool": "list_pods", "args": {"namespace": "acme-dev-observability"}, "dispatched": true}

@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-03T12:50:17.958539+00:00",
+  "source_checks": {
+    "candidate-v15-snapshot-contract.json": {
+      "files": 287,
+      "mismatches": []
+    },
+    "candidate-v16-pod-diagnostics.json": {
+      "files": 287,
+      "mismatches": []
+    }
+  },
+  "processes": "  PID COMM\n23160 /opt/anaconda3/bin/python\n23161 /opt/homebrew/opt/node@22/bin/node\n45929 /Users/men1692/Desktop/AWS/platform-agent/.venv-mlx/bin/python\n57777 /opt/anaconda3/bin/python\n80940 /opt/anaconda3/bin/python\n",
+  "runtime": "O/v15",
+  "worktree": "R/v16",
+  "initial_workload_capture": "pending",
+  "previous_turn": "progress: S actual 18 response contract replays, failures changed next action; no blocked condition"
+}

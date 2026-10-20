@@ -1,0 +1,35 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_readonly_regular_and_legacy_stream_never_delegate_or_record_a_deployment _
+
+local_api = (<starlette.testclient.TestClient object at 0x107429e80>, PosixPath('/private/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/pytest-of-men1692/pytest-71/test_readonly_regular_and_lega0'), [])
+
+    def test_readonly_regular_and_legacy_stream_never_delegate_or_record_a_deployment(local_api):
+        client, path, called = local_api
+        class FrontDoor:
+            def handle(self, instruction):
+                raise AssertionError("Read-only must not delegate")
+        # Raising is not enough: the old front-door swallowed errors. Count calls.
+        front_calls = []
+        class CountFrontDoor(FrontDoor):
+            def handle(self, instruction):
+                front_calls.append(instruction)
+                return super().handle(instruction)
+        api.app.dependency_overrides[api.get_front_door] = lambda: CountFrontDoor()
+        body = {"instruction":"Roll back orders now", "read_only":True}
+        result = client.post("/api/local-deploy", json=body)
+        assert result.status_code == 200 and result.json()["read_only"] is True
+        assert result.json()["delegated"] is False and result.json()["ok"] is False
+        response = client.post("/api/local-deploy/stream", json=body)
+        events = [json.loads(line[6:]) for line in response.text.splitlines() if line.startswith("data: ")]
+        assert events[0]["read_only"] is True and events[-1]["read_only"] is True
+        assert events[-1]["ok"] is False
+        rows = [json.loads(line) for line in (path/"activity.jsonl").read_text().splitlines()]
+>       assert len(rows) == 2 and {row["PK"] for row in rows} == {"ACTIVITY"}
+E       AssertionError: assert (4 == 2)
+E        +  where 4 = len([{'PK': 'DEPLOY', 'SK': '2026-10-03T09:59:02Z#DEP-AB973A72', 'agent': 'On-Prem Agent (Local LLM (Qwen))', 'cluster': '...-10-03T09:59:02Z#ACT-595123A1', 'action': 'Rollback unknown to previous revision', 'activity_id': 'ACT-595123A1', ...}])
+
+tests/test_readonly_capability.py:161: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_readonly_capability.py::test_readonly_regular_and_legacy_stream_never_delegate_or_record_a_deployment
+1 failed in 0.67s

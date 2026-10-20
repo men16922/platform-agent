@@ -1,0 +1,36 @@
+M69: P5-E setup attempt, aborted before authentication experiment; cleanup complete
+Date: 2026-09-06. Outcome: inconclusive, no permission-test requests sent.
+
+Authorization and setup
+- User instructed completion after concrete scope review; resumed within that exact scope.
+- GitHub Confirm access cleared; observed Create GitHub App form in authenticated Chrome.
+- Before submission: single_file write only platform/tenants/acme.yaml, pull_requests write, metadata read; all other repository permissions No access. Private account-only, webhook/OAuth disabled.
+- gh owner repo pagination confirmed target absent before creation.
+- Created private men16922/platform-agent-p5e-authz-lab, repository ID 1358934947.
+- Disabled Actions with API and independently verified enabled=false.
+- Created men16922-platform-agent-p5e, App ID 4848286.
+- Generated one private key; GitHub settings showed key ID 4366703.
+
+Blocking observation
+- Key-generation response navigated Chrome to /settings/apps/men16922-platform-agent-p5e/key with ERR_BLOCKED_BY_CLIENT.
+- Matching experiment PEM files in the normal Downloads directory: 0 at check time. No key contents read/output.
+- Reading chrome://downloads/ was explicitly rejected by Browser Use URL security policy; no workaround was attempted for that blocked action.
+- No second key generated. No App installation, JWT/installation token, seed push, test branch, content PUT or PR.
+- Native app control had also waited on macOS permissions; browser AX path remained usable for setup and cleanup.
+
+Cleanup and verification
+- App deletion UI initially reported queued; later owner App listing omitted experiment and direct settings URL returned Page not found.
+- gh App API returned 404 as supplemental evidence, not the sole absence proof.
+- Repository DELETE API returned 403; did not expand token permissions. Used authenticated owner repository settings to delete only verified ID/full_name above.
+- UI stated repository successfully deleted. Authenticated API returned 404; paginated owner repo listing absent.
+- Existing App SlackOpsDevOps and original platform-agent repo unchanged.
+- Key revoked with deleted App. No installation token existed to revoke; no installation/PR existed to remove.
+- No PEM downloaded through the agent's verified path. If the browser separately retained a copy, App deletion invalidated it; global disk absence is not claimed.
+
+Interpretation and next step
+- This does not test whether single_file can create a ref or write a file. Do not classify as supported or unsupported.
+- A future run requires a user-supported key download handoff; retain exact resource scope, keep credentials out of chat/logs, and do not bypass browser security controls.
+- P5-E real credential test and PR adapter/submission UI remain incomplete. Original commit/push/deploy not performed.
+Supporting files: docs/evidence/phase5-writer-attempt-2026-09-06/
+
+Post-checkpoint doc/path/milestone/gate-number checks: 64 passed. git diff --check passed. Owned scratch sources/packages/setup metadata removed after durable evidence capture.

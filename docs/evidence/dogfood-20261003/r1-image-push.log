@@ -1,0 +1,58 @@
+The push refers to repository [localhost:5001/orders-api-dogfood]
+893598fa51bf: Waiting
+3be819c1c8cf: Waiting
+7ee15fb3a5cd: Waiting
+4f4fb700ef54: Waiting
+5de3447f1694: Waiting
+83b66262eec7: Waiting
+0e9da9acf2e9: Waiting
+f90b390cea84: Waiting
+0e9da9acf2e9: Waiting
+f90b390cea84: Waiting
+893598fa51bf: Waiting
+3be819c1c8cf: Waiting
+7ee15fb3a5cd: Waiting
+4f4fb700ef54: Waiting
+5de3447f1694: Waiting
+83b66262eec7: Waiting
+0e9da9acf2e9: Waiting
+f90b390cea84: Waiting
+893598fa51bf: Waiting
+3be819c1c8cf: Waiting
+7ee15fb3a5cd: Waiting
+4f4fb700ef54: Waiting
+5de3447f1694: Waiting
+83b66262eec7: Waiting
+893598fa51bf: Waiting
+3be819c1c8cf: Waiting
+7ee15fb3a5cd: Waiting
+4f4fb700ef54: Waiting
+5de3447f1694: Waiting
+83b66262eec7: Waiting
+0e9da9acf2e9: Waiting
+f90b390cea84: Waiting
+893598fa51bf: Waiting
+3be819c1c8cf: Waiting
+7ee15fb3a5cd: Waiting
+4f4fb700ef54: Waiting
+5de3447f1694: Waiting
+83b66262eec7: Waiting
+0e9da9acf2e9: Waiting
+f90b390cea84: Waiting
+0e9da9acf2e9: Waiting
+f90b390cea84: Waiting
+893598fa51bf: Waiting
+3be819c1c8cf: Waiting
+7ee15fb3a5cd: Waiting
+4f4fb700ef54: Waiting
+5de3447f1694: Waiting
+83b66262eec7: Waiting
+3be819c1c8cf: Layer already exists
+7ee15fb3a5cd: Already exists
+4f4fb700ef54: Layer already exists
+5de3447f1694: Layer already exists
+83b66262eec7: Layer already exists
+0e9da9acf2e9: Layer already exists
+f90b390cea84: Layer already exists
+893598fa51bf: Layer already exists
+r1: digest: sha256:51915981952d0204d0a8964acfd23cb9905e56bce46bc79a34bced1f3f2e5496 size: 856

@@ -1,0 +1,28 @@
+{
+  "scope": "Fixed original Qwen, isolated evidence-to-claim task, no recovery draft/question; additional protocol separate from baseline one-call diagnosis.",
+  "cases": [
+    {
+      "case": "lookalike",
+      "sha256": "f3b1d94deedb1d15dc1ec80309263ab36eeb38f95283692715a9268c06a514ab",
+      "format": "invalid: key contains a leading space inside its quotes",
+      "semantic_review": "Do not promote the invalid result; positive/negative labels alone are not acceptance."
+    },
+    {
+      "case": "counterexample",
+      "sha256": "3b9c736c7baeeec801334f44b29613a8ac86359e508d494bd1f5f1100ced2199",
+      "format": "invalid: key contains a leading space inside its quotes",
+      "semantic_review": "incorrect previous_revision_healthy=supported cites both revisions timing out"
+    },
+    {
+      "case": "supported-recovery",
+      "sha256": "68dc649c2e03de7516ae35bcea080f908ec19bc8b221ce2c161782cb1f8349aa",
+      "format": "invalid: key contains a leading space inside its quotes",
+      "semantic_review": "Do not promote the invalid result; positive/negative labels alone are not acceptance."
+    }
+  ],
+  "completed": 3,
+  "binding_valid": 0,
+  "finding": "Even apart from malformed keys, the counterexample marks a prior revision healthy using the same quote that says it timed out. The dedicated same-model witness is not an independent reliable verifier.",
+  "adoption": "Not adopted; no source sanitizing, automatic key repair or product change.",
+  "next": "Keep Qwen fixed per user. Prefer independently checkable structured observations and explicit human evidence review; do not silently present a model-voted fact as verified or count model abstention as positive recovery. Existing declared-text criteria remain open."
+}

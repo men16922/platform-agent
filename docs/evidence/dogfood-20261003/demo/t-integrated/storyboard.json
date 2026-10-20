@@ -1,0 +1,35 @@
+{
+  "duration_sec": 72,
+  "candidate": "O/v15, exact executable source fixed; existing tenant identity used only for denial",
+  "format": "Actual screenshot montage, not continuous recording; video duration is not task latency",
+  "scenes": [
+    {
+      "image": "../../repeats/t-integrated/normal3-after-loss.png",
+      "seconds": 18,
+      "title": "01 · 정상 배포와 요청 복원",
+      "subtitle": "정상 3회 · 새로고침 2회 · 각 요청은 한 번만 실행",
+      "sha256": "96bd199ce03051c2120481f73326da87f24a68f5a365489c48ad2282f8e4b92a"
+    },
+    {
+      "image": "../../repeats/t-integrated/recovery2-reload.png",
+      "seconds": 18,
+      "title": "02 · 실패 기록을 유지하며 복구",
+      "subtitle": "실패·수동 복구 2회 · 동일 UID와 배포 사양 복원",
+      "sha256": "2240e2398b02718971cf5cdb2886f8c3f7e1ea005afd26c7891fd2e113ef07ec"
+    },
+    {
+      "image": "../../repeats/t-integrated/denial2-reload.png",
+      "seconds": 18,
+      "title": "03 · 제한 신원의 접근 거부",
+      "subtitle": "다른 namespace 요청 2회 거부 · 자원 변경 없음",
+      "sha256": "a06cd9437acfedebdd083e6b888c7945a18717c3a65d3ae0f84d58858a6b3b5c"
+    },
+    {
+      "image": "../../repeats/t-integrated/approval1-detail.png",
+      "seconds": 18,
+      "title": "04 · 거부 사유와 사건 연결",
+      "subtitle": "합성 승인 거부 2회 · 조치 0 · AI 진단은 미완료",
+      "sha256": "41816858f3be30305ae7e3eb553208937eb992dcd89ad8186275c0fe42664660"
+    }
+  ]
+}

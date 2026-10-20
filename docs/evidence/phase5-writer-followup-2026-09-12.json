@@ -1,0 +1,34 @@
+{
+  "observed_at": "2026-09-12T14:31:05.522936+00:00",
+  "mode": "read_only_after_user_stopped_cleanup",
+  "repository": "men16922/platform-agent-p5e-authz-lab",
+  "repository_id": 1367338348,
+  "private": true,
+  "actions": {
+    "enabled": false,
+    "sha_pinning_required": false
+  },
+  "compare": {
+    "status": "ahead",
+    "ahead_by": 1,
+    "behind_by": 0,
+    "base": "103e44f68adc78ebb325ddb0927f23f5622e97fc",
+    "head": "0e3d3bf54e2e585b092927f1f3001e78aeea6d92",
+    "files": [
+      {
+        "filename": "platform/tenants/acme.yaml",
+        "status": "modified",
+        "additions": 1,
+        "deletions": 0,
+        "sha": "9a88d6901ff18873745c272665e175921156ca9a",
+        "patch": "@@ -14,3 +14,4 @@ environments:\n     delivery: flux\n     addons:\n       observability: kube-prometheus-stack 87.17.0\n+      logging: loki 7.1.0"
+      }
+    ]
+  },
+  "pull_requests": [],
+  "key_exists": true,
+  "key_mode": "0o600",
+  "checkout_exists": true,
+  "diagnostic_limit": "PR 422 response body was not persisted by the runner. Exact cause cannot be reconstructed; no write request repeated.",
+  "draft_availability_source": "https://github.blog/changelog/2025-05-01-draft-pull-requests-are-now-available-in-all-repositories/"
+}

@@ -1,0 +1,41 @@
+2026-09-05 P5-B current-user write-grant contract (M56)
+Entry: src.agents.platform.registry_authorization.plan_authorized_snapshot
+Runtime: /opt/anaconda3/bin/python3.13, macOS
+
+Boundary:
+- Trusted session subject is separate from the four user request fields.
+- Lowercase subject matches existing dashboard user keys; returned username
+  must match the lookup key.
+- Current role must be operator/admin AND registry_write_tenants must contain
+  the exact tenant name. Admin is not exempt. Read-side tenants are ignored.
+- Each request rereads the user. No cached/demo result after an error.
+- Missing session=401; absent/mismatched/malformed/denied user=403; outage=503.
+- Request copied before lookup; mutation cannot switch the approved tenant.
+
+Focused verification (actual registry planner and repository file fixtures,
+plain user/snapshot read adapters, no AWS service mocks):
+Command: python3.13 -m pytest tests/test_registry_authorization.py tests/test_registry_planner.py tests/test_registry_write.py -q
+........................................................................ [ 38%]
+........................................................................ [ 77%]
+...........................................                              [100%]
+187 passed in 2.64s
+
+Mutation results (byte copies restored, fresh pycache per mutation):
+record subject binding: exit=1; 2 failed, 4 passed, 51 deselected in 0.13s
+role restriction: exit=1; 4 failed, 3 passed, 50 deselected in 0.17s
+explicit tenant grant: exit=1; 10 failed, 10 passed, 37 deselected in 0.31s
+read grant promotion: exit=1; 2 failed, 1 passed, 54 deselected in 0.12s
+outage status: exit=1; 1 failed, 56 deselected in 0.07s
+canonical identity: exit=1; 1 failed, 56 deselected in 0.07s
+copied request: exit=1; 1 failed, 56 deselected in 0.09s
+Source byte-restored: True
+
+Limits: no session authentication implementation or production user-store
+adapter. Reader is trusted to provide current authentic records without
+fallback. No AWS/GitHub calls, grant/config changes, deployment, commit/push
+or PR creation. Submission must reauthorize; preview cannot atomically bind
+future permissions across separate stores.
+
+Recovered focused suite: 187 passed in 2.67s
+Full local gate: make check
+2591 passed, 2 skipped, 21 warnings in 48.40s

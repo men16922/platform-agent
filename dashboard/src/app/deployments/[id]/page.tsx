@@ -9,6 +9,7 @@ import { Markdown } from "@/components/markdown";
 export const dynamic = "force-dynamic";
 
 const statusBadge: Record<string, string> = {
+  unknown: "bg-white/5 text-[var(--muted)] border-white/20",
   success: "bg-emerald-400/12 text-[var(--success)] border-emerald-500/40",
   failed: "bg-red-400/12 text-[var(--danger)] border-red-500/40",
   "rolling-back": "bg-amber-400/12 text-[var(--warning)] border-amber-500/40",

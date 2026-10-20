@@ -1,0 +1,274 @@
+- complementary:
+  - generic: ✦
+  - heading "Platform Agent" [level=1]
+  - paragraph: Autonomous cloud operations
+  - navigation:
+    - paragraph: Workspace
+    - link "⌘ Overview":
+      - /url: /
+      - generic: ⌘
+      - generic: Overview
+    - link "✦ Agents":
+      - /url: /agents
+      - generic: ✦
+      - generic: Agents
+    - link "⬡ Provisioning":
+      - /url: /provisioning
+      - generic: ⬡
+      - generic: Provisioning
+    - link "↗ Deployments":
+      - /url: /deployments
+      - generic: ↗
+      - generic: Deployments
+    - link "🕑 History":
+      - /url: /history
+      - generic: 🕑
+      - generic: History
+    - link "◈ Incidents":
+      - /url: /incidents
+      - generic: ◈
+      - generic: Incidents
+    - link "🛡 Audit Logs":
+      - /url: /audit
+      - generic: 🛡
+      - generic: Audit Logs
+    - link "👥 Users":
+      - /url: /users
+      - generic: 👥
+      - generic: Users
+  - generic: Operations workspace
+  - generic: Review recorded runs and observations.
+- main:
+  - paragraph: Platform Agent / Agent activity
+  - paragraph: Operations workspace
+  - generic: Recorded activity
+  - button "Notifications": ⌁
+  - generic: admin
+  - button "L"
+  - paragraph: Reasoning and execution trace
+  - heading "Agent activity" [level=2]
+  - paragraph: AI Agent autonomous tool-calling log — each agent selects and executes tools without human intervention
+  - generic: LIVE · ON-PREM
+  - heading "1. Select execution agent" [level=3]
+  - generic: The selection controls runtime and chat context.
+  - img "AWS"
+  - generic: Strands Agent
+  - generic: AWS
+  - generic: Bedrock Claude
+  - button "🔧 Tools 5":
+    - text: 🔧 Tools
+    - generic: "5"
+  - img "Google Cloud"
+  - generic: ADK Agent
+  - generic: Google Cloud
+  - generic: Gemini 3.5 Flash
+  - button "🔧 Tools 5":
+    - text: 🔧 Tools
+    - generic: "5"
+  - img "Microsoft Azure"
+  - generic: MS Agent
+  - generic: Microsoft Azure
+  - generic: GPT-5.4
+  - button "🔧 Tools 5":
+    - text: 🔧 Tools
+    - generic: "5"
+  - generic: ✓ SELECTED
+  - img "Cloud Native Computing Foundation"
+  - generic: On-Prem Agent
+  - generic: On-Premise
+  - generic: Local Qwen + kagent
+  - button "🔧 Tools 13":
+    - text: 🔧 Tools
+    - generic: "13"
+  - paragraph: 2. Selected runtime
+  - heading "On-Prem Agent · Local LLM (Qwen)" [level=3]
+  - paragraph: Local Qwen handles the request, the supervisor selects the specialist, and kagent owns Kubernetes diagnostics.
+  - generic: Router connected
+  - generic "Local LLM (Qwen)":
+    - img "Local LLM (Qwen)"
+  - generic: Selected AI model
+  - generic: Applies to On-Prem Agent; supervisor and kagent use their configured runtime.
+  - combobox:
+    - option "Local LLM (Qwen) — recommended" [selected]
+    - option "Azure OpenAI GPT — allowed"
+    - option "Bedrock Claude — allowed"
+    - option "Vertex Gemini — allowed"
+  - generic: "01"
+  - generic: READY PATH
+  - generic "Local LLM (Qwen)":
+    - img "Local LLM (Qwen)"
+  - text: Qwen2.5/3-Coder (MLX)
+  - generic: recommended model selection
+  - generic: "02"
+  - generic: READY PATH
+  - generic: Supervisor
+  - generic: Route + policy boundary
+  - generic: "03"
+  - generic: READY PATH
+  - generic: kagent A2A
+  - generic: Kubernetes tools + trace
+  - paragraph: Qwen → supervisor → kagent
+  - heading "Ask On-Prem Agent" [level=3]
+  - paragraph: Runs with the Agent and AI Model selected above. Investigate, deploy, or recover with a live trace.
+  - generic "Local LLM (Qwen)":
+    - img "Local LLM (Qwen)"
+  - generic: recommended
+  - generic: Native pairing — Local LLM (Qwen) is the On-Prem-native brain.
+  - generic: onprem
+  - text: ·
+  - generic: local-qwen
+  - text: Deploy the already-pushed localhost:5001/orders-api-dogfood:r1 image. Call deploy_to_cluster with service_name orders-api-dogfood, image orders-api-dogfood, version r1, image_uri localhost:5001/orders-api-dogfood:r1, provider onprem, namespace acme-dev-observability, replicas 2. Keep default health_path and default ports; omit the ports argument. Only modify orders-api-dogfood. No build, push, provisioning, deletion, retry or other resources. Then validate_deployment for the same service and namespace. Report tool results briefly.
+  - generic: FAILED
+  - generic "Local LLM (Qwen)":
+    - img "Local LLM (Qwen)"
+  - text: local-qwen
+  - button "✗ deploy_to_cluster ▸":
+    - generic: ✗
+    - code: deploy_to_cluster
+    - generic: ▸
+  - button "✓ validate_deployment ▸":
+    - generic: ✓
+    - code: validate_deployment
+    - generic: ▸
+  - paragraph: "The deployment of `orders-api-dogfood` failed to complete within the timeout period, but the deployment was successfully applied to the cluster. The validation step confirmed that the deployment rolled out successfully, but it failed to validate readiness within the timeout window. Here's a summary of the actions taken: 1. Deployed the `orders-api-dogfood` service to the `acme-dev-observability` namespace with 2 replicas. 2. Attempted to validate the deployment, but it timed out during readiness check. Despite the validation failure, the deployment was successfully applied to the cluster. The service should still be accessible at `http://localhost:80` once the pod is fully ready. The validation failure might be due to the pod not being ready within the timeout window, but the deployment itself was successful."
+  - paragraph:
+    - text: The deployment of
+    - code: orders-api-dogfood
+    - text: failed to complete within the timeout period, but the deployment was successfully applied to the cluster. The validation step confirmed that the deployment rolled out successfully, but it failed to validate readiness within the timeout window.
+  - paragraph: "Here's a summary of the actions taken:"
+  - paragraph:
+    - text: 1. Deployed the
+    - code: orders-api-dogfood
+    - text: service to the
+    - code: acme-dev-observability
+    - text: namespace with 2 replicas.
+  - paragraph: 2. Attempted to validate the deployment, but it timed out during readiness check.
+  - paragraph:
+    - text: Despite the validation failure, the deployment was successfully applied to the cluster. The service should still be accessible at
+    - code: http://localhost:80
+    - text: once the pod is fully ready. The validation failure might be due to the pod not being ready within the timeout window, but the deployment itself was successful.
+  - generic: onprem
+  - text: ·
+  - generic: local-qwen
+  - text: Authorized denial test using the existing restricted acme identity. Call deploy_to_cluster once with service_name=orders-api-dogfood, image=orders-api-dogfood, version=r0, image_uri=localhost:5001/orders-api-dogfood:r0, namespace=globex-dev-observability, provider=onprem, replicas=2. This cross-namespace request must be refused by Kubernetes RBAC. Do not build, push, retry, change identity, provision, delete, or alter any other resources. Report the actual rejection.
+  - generic: FAILED
+  - generic "Local LLM (Qwen)":
+    - img "Local LLM (Qwen)"
+  - text: local-qwen
+  - button "✗ deploy_to_cluster ▸":
+    - generic: ✗
+    - code: deploy_to_cluster
+    - generic: ▸
+  - paragraph: "The deployment attempt was denied by Kubernetes RBAC as expected. The error message shows: ``` User \"system:serviceaccount:acme-dev-observability:platform-agent\" cannot get resource \"deployments\" in API group \"apps\" in the namespace \"globex-dev-observability\" ``` and ``` User \"system:serviceaccount:acme-dev-observability:platform-agent\" cannot get resource \"services\" in API group \"\" in the namespace \"globex-dev-observability\" ``` This confirms that the identity used does not have the necessary permissions to access resources in the `globex-dev-observability` namespace, as intended by the RBAC restrictions. The deployment was not created."
+  - paragraph: "The deployment attempt was denied by Kubernetes RBAC as expected. The error message shows:"
+  - paragraph: "```"
+  - paragraph: User "system:serviceaccount:acme-dev-observability:platform-agent" cannot get resource "deployments" in API group "apps" in the namespace "globex-dev-observability"
+  - paragraph: "```"
+  - paragraph: and
+  - paragraph: "```"
+  - paragraph: User "system:serviceaccount:acme-dev-observability:platform-agent" cannot get resource "services" in API group "" in the namespace "globex-dev-observability"
+  - paragraph: "```"
+  - paragraph:
+    - text: This confirms that the identity used does not have the necessary permissions to access resources in the
+    - code: globex-dev-observability
+    - text: namespace, as intended by the RBAC restrictions. The deployment was not created.
+  - generic: onprem
+  - text: ·
+  - generic: local-qwen
+  - text: Authorized denial test using the existing restricted acme identity. Call deploy_to_cluster once with service_name=orders-api-dogfood, image=orders-api-dogfood, version=r0, image_uri=localhost:5001/orders-api-dogfood:r0, namespace=globex-dev-observability, provider=onprem, replicas=2. This cross-namespace request must be refused by Kubernetes RBAC. Do not build, push, retry, change identity, provision, delete, or alter any other resources. Report the actual rejection.
+  - generic: FAILED
+  - generic "Local LLM (Qwen)":
+    - img "Local LLM (Qwen)"
+  - text: local-qwen
+  - button "✗ deploy_to_cluster ▸":
+    - generic: ✗
+    - code: deploy_to_cluster
+    - generic: ▸
+  - paragraph: "The deployment attempt was denied by Kubernetes RBAC as expected. The error message shows: ``` User \"system:serviceaccount:acme-dev-observability:platform-agent\" cannot get resource \"deployments\" in API group \"apps\" in the namespace \"globex-dev-observability\" ``` and ``` User \"system:serviceaccount:acme-dev-observability:platform-agent\" cannot get resource \"services\" in API group \"\" in the namespace \"globex-dev-observability\" ``` This confirms that the identity used does not have the necessary permissions to access resources in the `globex-dev-observability` namespace, as intended by the RBAC restrictions. The deployment was not created."
+  - paragraph: "The deployment attempt was denied by Kubernetes RBAC as expected. The error message shows:"
+  - paragraph: "```"
+  - paragraph: User "system:serviceaccount:acme-dev-observability:platform-agent" cannot get resource "deployments" in API group "apps" in the namespace "globex-dev-observability"
+  - paragraph: "```"
+  - paragraph: and
+  - paragraph: "```"
+  - paragraph: User "system:serviceaccount:acme-dev-observability:platform-agent" cannot get resource "services" in API group "" in the namespace "globex-dev-observability"
+  - paragraph: "```"
+  - paragraph:
+    - text: This confirms that the identity used does not have the necessary permissions to access resources in the
+    - code: globex-dev-observability
+    - text: namespace, as intended by the RBAC restrictions. The deployment was not created.
+  - textbox "Ask the agent — e.g. 'list pods in default' or 'deploy orders-api v1.4.2 with 2 replicas'": Authorized denial test using the existing restricted acme identity. Call deploy_to_cluster once with service_name=orders-api-dogfood, image=orders-api-dogfood, version=r0, image_uri=localhost:5001/orders-api-dogfood:r0, namespace=globex-dev-observability, provider=onprem, replicas=2. This cross-namespace request must be refused by Kubernetes RBAC. Do not build, push, retry, change identity, provision, delete, or alter any other resources. Report the actual rejection.
+  - button "Run"
+  - paragraph: "Request: 8e0ca490-0f3a-4421-904b-8eca86d4512c"
+  - button "Check recorded result"
+  - heading "Recent activity" [level=3]
+  - generic: Latest 5 of 18 verified actions
+  - link "Cloud Native Computing Foundation ONPREM Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen)) — Rollback orders-api-dogfood to previous revision 3:20:34 PM COMPLETE rollback_deployment View trace →":
+    - /url: /deployments/DEP-4FED4073
+    - img "Cloud Native Computing Foundation"
+    - text: ONPREM
+    - generic "Local LLM (Qwen)":
+      - img "Local LLM (Qwen)"
+    - generic: On-Prem Agent (Local LLM (Qwen))
+    - generic: —
+    - generic: Rollback orders-api-dogfood to previous revision
+    - generic: 3:20:34 PM
+    - generic: COMPLETE
+    - code: rollback_deployment
+    - generic: View trace →
+  - link "Cloud Native Computing Foundation ONPREM Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen)) — Deploy the already-pushed localhost:5001/orders-api-dogfood:r1 image. Call deploy_to_cluster with service_name orders-api-dogfood, image ord 3:18:46 PM FAILED deploy_to_cluster validate_deployment View trace →":
+    - /url: /deployments/DEP-4FED4073
+    - img "Cloud Native Computing Foundation"
+    - text: ONPREM
+    - generic "Local LLM (Qwen)":
+      - img "Local LLM (Qwen)"
+    - generic: On-Prem Agent (Local LLM (Qwen))
+    - generic: —
+    - generic: Deploy the already-pushed localhost:5001/orders-api-dogfood:r1 image. Call deploy_to_cluster with service_name orders-api-dogfood, image ord
+    - generic: 3:18:46 PM
+    - generic: FAILED
+    - code: deploy_to_cluster
+    - code: validate_deployment
+    - generic: View trace →
+  - link "Cloud Native Computing Foundation ONPREM Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen)) — Rollback orders-api-dogfood to previous revision 3:13:38 PM COMPLETE rollback_deployment View trace →":
+    - /url: /deployments/DEP-0239F536
+    - img "Cloud Native Computing Foundation"
+    - text: ONPREM
+    - generic "Local LLM (Qwen)":
+      - img "Local LLM (Qwen)"
+    - generic: On-Prem Agent (Local LLM (Qwen))
+    - generic: —
+    - generic: Rollback orders-api-dogfood to previous revision
+    - generic: 3:13:38 PM
+    - generic: COMPLETE
+    - code: rollback_deployment
+    - generic: View trace →
+  - 'link "Cloud Native Computing Foundation ONPREM Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen)) — Approved local failure test. Call deploy_to_cluster exactly once: service_name=orders-api-dogfood, image=orders-api-dogfood, version=missing 3:12:50 PM FAILED deploy_to_cluster View trace →"':
+    - /url: /deployments/DEP-0239F536
+    - img "Cloud Native Computing Foundation"
+    - text: ONPREM
+    - generic "Local LLM (Qwen)":
+      - img "Local LLM (Qwen)"
+    - generic: On-Prem Agent (Local LLM (Qwen))
+    - generic: —
+    - generic: "Approved local failure test. Call deploy_to_cluster exactly once: service_name=orders-api-dogfood, image=orders-api-dogfood, version=missing"
+    - generic: 3:12:50 PM
+    - generic: FAILED
+    - code: deploy_to_cluster
+    - generic: View trace →
+  - link "Cloud Native Computing Foundation ONPREM Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen)) — Deploy the already-pushed localhost:5001/orders-api-dogfood:r0 image. Call deploy_to_cluster with service_name orders-api-dogfood, image ord 3:11:09 PM COMPLETE deploy_to_cluster validate_deployment View trace →":
+    - /url: /deployments/DEP-6A7FB29D
+    - img "Cloud Native Computing Foundation"
+    - text: ONPREM
+    - generic "Local LLM (Qwen)":
+      - img "Local LLM (Qwen)"
+    - generic: On-Prem Agent (Local LLM (Qwen))
+    - generic: —
+    - generic: Deploy the already-pushed localhost:5001/orders-api-dogfood:r0 image. Call deploy_to_cluster with service_name orders-api-dogfood, image ord
+    - generic: 3:11:09 PM
+    - generic: COMPLETE
+    - code: deploy_to_cluster
+    - code: validate_deployment
+    - generic: View trace →
+- button "Open Next.js Dev Tools":
+- alert

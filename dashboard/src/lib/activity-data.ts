@@ -149,9 +149,14 @@ function mapDeploymentItem(item: Record<string, unknown>): Deployment | null {
     // than "default": the rollback action reads this, and guessing here is what
     // sent a tenant-namespaced service's rollback into `default`.
     namespace: typeof item.namespace === "string" && item.namespace ? item.namespace : undefined,
-    status: isValidDeployStatus(item.status) ? item.status : "success",
+    status: isValidDeployStatus(item.status) ? item.status : "unknown",
     agent: typeof item.agent === "string" ? item.agent : "Unknown Agent",
-    duration_sec: typeof item.duration_sec === "number" ? item.duration_sec : 0,
+    // Legacy agent rows wrote a constant zero. Only a measured zero is evidence.
+    duration_sec: typeof item.duration_sec === "number" && Number.isFinite(item.duration_sec)
+      && (item.duration_sec > 0 || (item.duration_sec === 0 && (item.duration_scope === "agent_run" || item.duration_scope === "executor_run")))
+      ? item.duration_sec : undefined,
+    duration_scope: item.duration_scope === "agent_run" || item.duration_scope === "executor_run" ? item.duration_scope : undefined,
+    applied: item.applied === true ? true : undefined,
     created_at: typeof item.created_at === "string" ? item.created_at : new Date().toISOString(),
   };
 }
@@ -558,6 +563,9 @@ function mapHealthItem(item: Record<string, unknown>): CloudHealth | null {
 
 export async function getProviderHealthFeed(): Promise<ProviderHealthFeed> {
   const syncedAt = new Date().toISOString();
+  if (isLocalMode()) {
+    return { health: [], source: "local", syncedAt, notice: "Local deployment records do not include provider health reports." };
+  }
   if (!isLiveMode()) {
     return {
       health: mockCloudHealth,

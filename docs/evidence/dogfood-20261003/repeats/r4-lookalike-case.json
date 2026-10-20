@@ -1,0 +1,39 @@
+[
+  {
+    "id": "lookalike",
+    "input": {
+      "question": "Do these snapshots establish the same or different root causes, or justify rollback? Explain what is uncertain.",
+      "target": {
+        "cluster": "kind-platform-agent",
+        "namespace": "acme-dev-observability",
+        "service": "orders-api-dogfood"
+      },
+      "window_start": "2026-10-03T06:59:00Z",
+      "as_of": "2026-10-03T07:03:00Z",
+      "sources": [
+        {
+          "source_id": "A",
+          "target": {
+            "cluster": "kind-platform-agent",
+            "namespace": "acme-dev-observability",
+            "service": "orders-api-dogfood"
+          },
+          "observed_at": "2026-10-03T07:00:00Z",
+          "provenance": "supplied_snapshot",
+          "text": "A new Pod is Pending, waiting reason ImagePullBackOff, registry response manifest unknown."
+        },
+        {
+          "source_id": "B",
+          "target": {
+            "cluster": "kind-platform-agent",
+            "namespace": "acme-dev-observability",
+            "service": "orders-api-dogfood"
+          },
+          "observed_at": "2026-10-03T07:01:00Z",
+          "provenance": "supplied_snapshot",
+          "text": "The image is already running, but an HTTP readiness check returns 503 after a dependency timeout."
+        }
+      ]
+    }
+  }
+]

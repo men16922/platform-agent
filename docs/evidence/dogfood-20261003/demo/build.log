@@ -1,0 +1,24 @@
+[libx264 @ 0x932c69180] width not divisible by 2 (1081x1261)
+[vost#0:0/libx264 @ 0x932cfc000] [enc:libx264 @ 0x9330301c0] Error while opening encoder - maybe incorrect parameters such as bit_rate, rate, width or height.
+[fc#0 @ 0x933014000] Error sending frames to consumers: Generic error in an external library
+[fc#0 @ 0x933014000] Task finished with error code: -542398533 (Generic error in an external library)
+[fc#0 @ 0x933014000] Terminating thread with return code -542398533 (Generic error in an external library)
+[vost#0:0/libx264 @ 0x932cfc000] [enc:libx264 @ 0x9330301c0] Could not open encoder before EOF
+[vost#0:0/libx264 @ 0x932cfc000] Task finished with error code: -22 (Invalid argument)
+[vost#0:0/libx264 @ 0x932cfc000] Terminating thread with return code -22 (Invalid argument)
+[out#0/mp4 @ 0x932c1c540] Nothing was written into output file, because at least one of its streams received no packets.
+Traceback (most recent call last):
+  File "/Users/men1692/Desktop/AWS/platform-agent/docs/evidence/dogfood-20261003/demo/build_demo.py", line 10, in <module>
+    subprocess.run([
+    ~~~~~~~~~~~~~~^^
+        "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+        "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", str(root / f"segment-{i:02}.mp4"),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ], check=True)
+    ^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/subprocess.py", line 577, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-loop', '1', '-framerate', '12', '-i', '/Users/men1692/Desktop/AWS/platform-agent/docs/evidence/dogfood-20261003/demo/../repeats/v4-cancel-review-screen.png', '-loop', '1', '-framerate', '12', '-i', '/Users/men1692/Desktop/AWS/platform-agent/docs/evidence/dogfood-20261003/demo/caption-00.png', '-filter_complex', '[0:v]scale=1080:1080:force_original_aspect_ratio=decrease,pad=1080:1260:(ow-iw)/2:0:black[screen];[screen][1:v]overlay=0:1080,setsar=1[out]', '-map', '[out]', '-t', '12', '-an', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-pix_fmt', 'yuv420p', '/Users/men1692/Desktop/AWS/platform-agent/docs/evidence/dogfood-20261003/demo/segment-00.mp4']' returned non-zero exit status 187.

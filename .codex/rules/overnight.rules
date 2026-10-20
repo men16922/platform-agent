@@ -30,12 +30,13 @@ prefix_rule(
     match = ["sudo make install"],
 )
 
-prefix_rule(
-    pattern = ["curl"],
-    decision = "forbidden",
-    justification = "Network access is outside the default unattended loop.",
-    match = ["curl https://example.com"],
-)
+# 2026-10-03: the user approved the scoped local dogfood validation and asked
+# to open its review boundary. Do not blanket-ban curl in this project layer:
+# it also loads in interactive sessions and blocks approved localhost checks.
+# Unmatched commands still use the session's ordinary execution review.
+# The unattended Codex runner separately sets workspace-write with
+# sandbox_workspace_write.network_access=false (plugin lib/engines.sh).
+# This is not an approval for external deployment, publishing, or other writes.
 
 prefix_rule(
     pattern = ["wget"],

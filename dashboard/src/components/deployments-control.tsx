@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import type { Deployment } from "@/lib/mock-data";
+import { deploymentDuration } from "@/lib/deployment-duration";
 import { ProviderLogo, providerBadgeStyles } from "@/components/provider-logo";
 import { ModelLogo, modelIdFromAgent } from "@/components/model-logo";
+import { PreparedDeploymentControl } from "@/components/prepared-deployment-control";
 
 const statusIcon = {
+  unknown: { icon: "?", color: "text-[var(--muted)]" },
   success: { icon: "✓", color: "text-[var(--success)]" },
   failed: { icon: "✗", color: "text-[var(--danger)]" },
   "rolling-back": { icon: "↺", color: "text-[var(--warning)]" },
@@ -18,14 +21,16 @@ const PAGE_SIZE = 10;
 
 interface DeploymentsControlProps {
   initialDeployments: Deployment[];
+  localExecution?: boolean;
   // Clusters whose provisioning was torn down — their apps can't be rolled back.
   tornDownClusters?: string[];
 }
 
-export function DeploymentsControl({ initialDeployments, tornDownClusters = [] }: DeploymentsControlProps) {
+export function DeploymentsControl({ initialDeployments, tornDownClusters = [], localExecution = false }: DeploymentsControlProps) {
   const router = useRouter();
   const { data: session } = useSession();
   const [deployments, setDeployments] = useState<Deployment[]>(initialDeployments);
+  useEffect(() => setDeployments(initialDeployments), [initialDeployments]);
   const [page, setPage] = useState(0);
   
   // Modal states
@@ -82,7 +87,6 @@ export function DeploymentsControl({ initialDeployments, tornDownClusters = [] }
         provider: provider as any,
         environment,
         status: "rolling-back", // show as processing status
-        duration_sec: 0,
         agent: "Strands Agent (Bedrock)",
         created_at: new Date().toISOString(),
       };
@@ -156,6 +160,7 @@ export function DeploymentsControl({ initialDeployments, tornDownClusters = [] }
 
   return (
     <div className="space-y-6">
+      {localExecution && isAllowed && session?.user?.username && <PreparedDeploymentControl key={session.user.username} username={session.user.username} />}
       {/* Notifications */}
       {(errorMsg || successMsg) && (
         <div className="flex items-center gap-3 rounded-lg border px-4 py-3 text-sm">
@@ -186,18 +191,18 @@ export function DeploymentsControl({ initialDeployments, tornDownClusters = [] }
         <p className="eyebrow text-xs uppercase tracking-wider text-[var(--muted)]">
           Deployment logs ({deployments.length} runs)
         </p>
-        {isAllowed ? (
+        {isAllowed && !localExecution ? (
           <button
             onClick={() => setShowTriggerModal(true)}
             className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-500 transition-all"
           >
             ✦ Trigger Deployment
           </button>
-        ) : (
+        ) : !isAllowed ? (
           <span className="text-[10px] text-[var(--muted)] italic bg-white/[0.02] border border-white/5 px-2.5 py-1 rounded-md">
             Sign in as Operator/Admin to trigger deployments or rollbacks.
           </span>
-        )}
+        ) : null}
       </div>
 
       {/* Trigger Modal */}
@@ -433,13 +438,13 @@ export function DeploymentsControl({ initialDeployments, tornDownClusters = [] }
                       {status.icon} {dep.status}
                     </span>
                   </td>
-                  <td className="p-3 text-right text-[var(--muted)]">{dep.duration_sec}s</td>
+                  <td className="p-3 text-right text-[var(--muted)]" title="Server execution time; excludes time before execution starts and after it finishes.">{deploymentDuration(dep)}</td>
                   <td className="p-3 text-right text-[var(--muted)] text-xs" suppressHydrationWarning>
                     {new Date(dep.created_at).toLocaleTimeString()}
                   </td>
                   {isAllowed && (
                     <td className="p-3 text-right">
-                      {dep.status === "success" ? (
+                      {dep.status === "success" || (dep.provider === "onprem" && dep.status === "failed" && dep.applied === true) ? (
                         clusterDown ? (
                           <span
                             title={dep.cluster ? "Cluster torn down — re-provision first" : "No linked cluster — rollback unavailable"}

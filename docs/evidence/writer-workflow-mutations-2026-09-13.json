@@ -1,0 +1,31 @@
+{
+  "scope": "actual loopback HTTP and synthetic independent Git observations",
+  "mutations": [
+    {
+      "mutation": "skip_post_write_validation",
+      "exit_code": 1,
+      "summary": "12 failed, 25 passed in 3.77s"
+    },
+    {
+      "mutation": "ignore_captured_status",
+      "exit_code": 1,
+      "summary": "1 failed, 36 passed in 3.75s"
+    },
+    {
+      "mutation": "ignore_fresh_snapshot",
+      "exit_code": 1,
+      "summary": "1 failed, 36 passed in 3.73s"
+    },
+    {
+      "mutation": "new_mapping_for_every_retry",
+      "exit_code": 1,
+      "summary": "16 failed, 21 passed in 4.26s"
+    },
+    {
+      "mutation": "trust_revoke_status_without_read",
+      "exit_code": 1,
+      "summary": "2 failed, 35 passed in 3.76s"
+    }
+  ],
+  "bytes_restored": true
+}

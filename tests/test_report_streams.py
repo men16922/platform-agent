@@ -86,6 +86,9 @@ SCRIPTS = REPO / "scripts"
 
 REPORT = {
     "attach_addon.py",
+    "build_registry_planner.py",
+    "verify_registry_planner_local.py",
+    "verify_registry_plan_store_local.py",
     "find_unconsumed_fields.py",
     "find_unwritten_keys.py",
     "live_model_sweep.py",
@@ -105,6 +108,10 @@ REPORT = {
 }
 
 DOCUMENT = {
+    "reconcile_registry_writer.py",
+    "run_registry_writer.py",
+    "capture_registry_writer_response.py",
+    "judge_registry_writer.py",
     "render_addons.py",       # ArgoCD/Flux manifests, piped to kubectl
     "render_deploy_identity.py",
     "render_tenancy.py",      # Namespace/Role/NetworkPolicy/Tenant manifests

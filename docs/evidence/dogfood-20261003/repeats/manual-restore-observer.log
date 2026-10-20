@@ -1,0 +1,1 @@
+{"label": "manual-restore", "healthy_observed_at": "2026-10-03T06:51:31.928738+00:00", "revision": "27", "uid": "8567c751-fc44-4e28-b63e-e21af534661f", "replicas": 2, "image": "localhost:5001/orders-api-dogfood:r0", "method": "Read-only 1s polling and actual kubelet health-200 log from each current Pod; not browser HTTP."}

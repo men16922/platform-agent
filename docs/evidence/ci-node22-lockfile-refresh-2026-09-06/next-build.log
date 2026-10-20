@@ -1,0 +1,60 @@
+
+> dashboard@0.1.0 build
+> next build
+
+▲ Next.js 16.3.3 (Turbopack)
+✓ Running next.config.ts took 220ms
+
+⚠ The Edge Runtime is deprecated. You can use the "nodejs" runtime instead. Learn more: https://nextjs.org/docs/messages/edge-runtime-deprecated
+  Creating an optimized production build ...
+✓ Compiled successfully in 8.6s
+  Running TypeScript ...
+  Finished TypeScript in 8.3s ...
+  Collecting page data using 15 workers ...
+⚠ Using edge runtime on a page currently disables static generation for that page
+  Generating static pages using 15 workers (0/3) ...
+✓ Generating static pages using 15 workers (3/3) in 193ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /agents
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/dashboard/activities
+├ ƒ /api/dashboard/agents/deploy
+├ ƒ /api/dashboard/agents/deploy/stream
+├ ƒ /api/dashboard/agents/models
+├ ƒ /api/dashboard/agents/onprem-status
+├ ƒ /api/dashboard/audit
+├ ƒ /api/dashboard/deployments
+├ ƒ /api/dashboard/deployments/[id]/rollback
+├ ƒ /api/dashboard/deployments/trigger
+├ ƒ /api/dashboard/health
+├ ƒ /api/dashboard/incidents
+├ ƒ /api/dashboard/incidents/[id]/approve
+├ ƒ /api/dashboard/platform/attach/preview
+├ ƒ /api/dashboard/platform/status
+├ ƒ /api/dashboard/users
+├ ƒ /audit
+├ ƒ /deployments
+├ ƒ /deployments/[id]
+├ ƒ /history
+├ ƒ /incidents
+├ ƒ /incidents/[id]
+├ ƒ /opengraph-image
+├ ƒ /provisioning
+├ ƒ /twitter-image
+└ ƒ /users
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.0.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+npm notice To update run: npm install -g npm@12.0.2
+npm notice

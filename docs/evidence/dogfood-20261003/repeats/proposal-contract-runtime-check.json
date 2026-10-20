@@ -1,0 +1,23 @@
+{
+  "at": "2026-10-03T12:41:54.756870+00:00",
+  "runtime_hashes": {
+    "candidate-v16-pod-diagnostics.json": {
+      "count": 287,
+      "mismatches": []
+    },
+    "candidate-v15-snapshot-contract.json": {
+      "count": 287,
+      "mismatches": []
+    }
+  },
+  "live_owned_pids": {
+    "mlx": 45929,
+    "proxy": 80940,
+    "router": 23160,
+    "dashboard": 23161,
+    "rejection_webhook": 57777
+  },
+  "production_changes_this_unit": 0,
+  "activation": false,
+  "last_workload_observation": "Q restored capture; no workload read/write or HTTP health measurement this unit"
+}

@@ -1,0 +1,7 @@
+--- a/platform/tenants/globex.yaml
++++ b/platform/tenants/globex.yaml
+@@ -14,3 +14,4 @@
+     delivery: flux
+     addons:
+       observability: kube-prometheus-stack 87.17.0
++      logging: loki 7.1.0

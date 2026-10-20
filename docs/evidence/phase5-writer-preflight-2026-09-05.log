@@ -1,0 +1,68 @@
+P5-E / M59 preflight — 2026-09-05, local macOS / Python 3.13
+Status: PREPARED, NOT EXECUTED. No remote POST/PUT/PATCH/DELETE, no App creation,
+no key generation, no installation, no repository creation, no PR creation.
+Existing mixed WIP preserved. No workspace commit/push or deployment.
+
+Read-only observations:
+gh api user --jq '{login,type}' -> men16922, User.
+gh api repos/men16922/platform-agent -> public, default_branch=main, admin=true.
+gh api user/installations -> 403: current token type cannot list App user installations.
+This is not evidence of no installed Apps.
+gh api repos/men16922/platform-agent-p5e-authz-lab -> 404.
+gh api apps/men16922-platform-agent-p5e -> 404.
+404 is not a reservation or proof that a new name can be registered.
+
+Actual Chrome / GitHub owner UI via CUA:
+/settings/apps showed no P5-E App; an existing unrelated App was left untouched.
+Opened /settings/apps/new with query parameters from app-registration.url.
+Expanded Repository permissions and inspected rendered controls:
+  name=men16922-platform-agent-p5e
+  Single file: Read and write; path platform/tenants/acme.yaml only
+  Pull requests: Read and write
+  Metadata: Read-only (mandatory)
+  Contents, Actions, Administration and other permissions: No access
+  Only on this account checked; webhook Active unchecked; OAuth during install unchecked
+Create GitHub App button was NOT clicked. No key or token existed for this probe.
+
+Official docs read:
+https://docs.github.com/en/apps/sharing-github-apps/registering-a-github-app-using-url-parameters
+  single_file=write and single_file_name are supported registration parameters.
+https://docs.github.com/en/rest/apps/apps#create-an-installation-access-token-for-an-app
+  repository_ids and permissions can narrow installation tokens; single_file enum exists.
+https://docs.github.com/en/rest/git/refs#create-a-reference
+  Contents write documented for ref creation.
+https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents
+  Contents write documented for file PUT; single_file is not listed as its permission set.
+https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request
+  Pull requests write documented; successful POST returns 201.
+https://docs.github.com/en/rest/apps/apps#delete-an-installation-for-the-authenticated-app
+  Removal responds 202 Accepted; plan requires observed removal, not acceptance alone.
+No live conclusion about single_file ref/contents behavior is drawn from docs alone.
+
+Prepared experiment artifacts:
+experiments/phase5-writer/review.json: exact identities/endpoints/bodies and conditions.
+experiments/phase5-writer/app-registration.url: prefilled registration form, not submitted.
+experiments/phase5-writer/seed: two synthetic tenant YAMLs, no copied production cluster identifiers.
+experiments/phase5-writer/expected: one-line logging addition and canonical diffs.
+Placeholders for live IDs/commit/branch/PR are explicitly unresolved until approved creation.
+No network runner or runtime writer introduced. Template validation is local only.
+
+Local artifact checks:
+Review/registration: exact private lab, single_file acme only, PR write, no Contents/Actions/Admin, production write false
+Real P5-A planner: synthetic acme/prod fixture -> expected exact one-line logging diff; inputs unchanged
+Both API PUT templates: valid Git blob SHA, base64 exact expected bytes, no main default branch
+No executable network runner added; placeholders B/repository_id/installation_id/selected_branch/PR are intentionally live-only metadata
+
+Final gate: make check -> 2667 passed, 2 skipped, 21 warnings in 50.04s; exit 0.
+Date/machine: 2026-09-05 local macOS / Python 3.13. No new tests or runtime changes.
+Document budgets and git diff --check passed.
+
+Artifact SHA-256:
+5076a7ad253c5ab6b749db8b796c3155a816d14d9753a13d56eab9051309da6d  experiments/phase5-writer/app-registration.url
+1b7cae9837e0155629ca0eb11d1d427a9f805826edda23497dfe89a4416c059f  experiments/phase5-writer/expected/acme.diff
+50cf085d6531a03761189a434e8224fd01dc8eeedc6d2a6082314c08676dba92  experiments/phase5-writer/expected/acme.yaml
+cf7d745d45ed812f0e2d8f2486deebc810c89122849847081cd11adcc6f8018f  experiments/phase5-writer/expected/globex.diff
+3ce597ab28f79ef896f6f826a3204ed01a8a0c42504f574792ec0ad9b5de3153  experiments/phase5-writer/expected/globex.yaml
+6bbe61954632c3b5c8507d53e09798b2cfa6f77b3290abb15b41d82d6682b53f  experiments/phase5-writer/review.json
+b4371ddcfe52c966d3c81e981657ad4caa5b7ab0da2796ef1938d45264fac580  experiments/phase5-writer/seed/platform/tenants/acme.yaml
+c0e6755092a99cccaf013dc03fb5cea2b5a357f9f7746dd7115843b535c80da7  experiments/phase5-writer/seed/platform/tenants/globex.yaml

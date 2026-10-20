@@ -1,0 +1,128 @@
+- complementary:
+  - generic: ✦
+  - heading "Platform Agent" [level=1]
+  - paragraph: Autonomous cloud operations
+  - navigation:
+    - paragraph: Workspace
+    - link "⌘ Overview":
+      - /url: /
+      - generic: ⌘
+      - generic: Overview
+    - link "✦ Agents":
+      - /url: /agents
+      - generic: ✦
+      - generic: Agents
+    - link "⬡ Provisioning":
+      - /url: /provisioning
+      - generic: ⬡
+      - generic: Provisioning
+    - link "↗ Deployments":
+      - /url: /deployments
+      - generic: ↗
+      - generic: Deployments
+    - link "🕑 History":
+      - /url: /history
+      - generic: 🕑
+      - generic: History
+    - link "◈ Incidents":
+      - /url: /incidents
+      - generic: ◈
+      - generic: Incidents
+    - link "🛡 Audit Logs":
+      - /url: /audit
+      - generic: 🛡
+      - generic: Audit Logs
+    - link "👥 Users":
+      - /url: /users
+      - generic: 👥
+      - generic: Users
+  - generic: Operations workspace
+  - generic: Review recorded runs and observations.
+- main:
+  - paragraph: Platform Agent / Overview
+  - paragraph: Operations workspace
+  - generic: Recorded activity
+  - button "Notifications": ⌁
+  - generic: admin
+  - button "L"
+  - paragraph: Operations command center
+  - heading "Platform overview" [level=2]
+  - paragraph: Autonomous visibility across AWS, GCP, Azure, and your on-prem estate.
+  - paragraph: Incident telemetry
+  - paragraph: Read-only feed
+  - generic: LIVE · ON-PREM
+  - generic: Operations workflow
+  - heading "Review the evidence behind each action." [level=3]
+  - paragraph: Follow recorded incidents and deployments, then inspect the execution trace before deciding what to do next.
+  - paragraph: Detect
+  - paragraph: Signals
+  - paragraph: Analyze
+  - paragraph: Analysis
+  - paragraph: Decide
+  - paragraph: Policy
+  - paragraph: Execute
+  - paragraph: Validate
+  - paragraph: Latest deployment record
+  - generic: LIVE · ON-PREM
+  - paragraph: unknown unknown
+  - term: Recorded status
+  - definition: success
+  - term: Namespace
+  - definition: acme-dev-observability
+  - term: Recorded at
+  - definition: 2026-10-03T03:14:04Z
+  - link "Review deployment →":
+    - /url: /deployments
+  - paragraph: Recorded results do not establish current cluster health.
+  - heading "Provider health" [level=3]
+  - generic: LIVE · ON-PREM
+  - paragraph: No provider health observations available. Local deployment records do not include provider health reports.
+  - generic: Incidents observed
+  - generic: "0"
+  - generic: Current incident feed
+  - generic: Resolved records
+  - generic: "0"
+  - generic: Marked resolved in this feed
+  - generic: Deployments in feed
+  - generic: "1"
+  - generic: 0 need attention
+  - generic: Reported successful
+  - generic: "1"
+  - generic: Deployment records marked success
+  - heading "Incident feed" [level=3]
+  - link "View all →":
+    - /url: /incidents
+  - heading "Deployment posture" [level=3]
+  - paragraph: Autonomous delivery control
+  - generic: AI ORCHESTRATED
+  - paragraph: Successful records
+  - generic: 1 in feed
+  - generic: ✓
+  - paragraph: unknown unknown
+  - paragraph: ONPREM · 0s
+  - paragraph: Deployment register
+  - paragraph: Recent deployment records
+  - generic: Latest records in feed
+  - table:
+    - rowgroup:
+      - row "Service Version Provider Agent Status Duration":
+        - columnheader "Service"
+        - columnheader "Version"
+        - columnheader "Provider"
+        - columnheader "Agent"
+        - columnheader "Status"
+        - columnheader "Duration"
+    - rowgroup:
+      - row "unknown unknown Cloud Native Computing Foundation ON-PREM On-Prem Agent (Local LLM (Qwen)) ✓ success 0s":
+        - cell "unknown"
+        - cell "unknown":
+          - code: unknown
+        - cell "Cloud Native Computing Foundation ON-PREM":
+          - img "Cloud Native Computing Foundation"
+          - text: ON-PREM
+        - cell "On-Prem Agent (Local LLM (Qwen))"
+        - cell "✓ success":
+          - generic: ✓ success
+        - cell "0s"
+- button "Open Next.js Dev Tools":
+- alert

@@ -1,0 +1,3 @@
+PASS actual Auth.js HTTP: AWS stored opt-in absent -> prepare/status503 before identity; forged body422; no-store
+READY_FOR_BROWSER http://localhost:63963
+PASS owned unconfigured-server stopped; no AWS request enabled

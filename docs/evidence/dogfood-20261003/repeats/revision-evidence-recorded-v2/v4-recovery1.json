@@ -1,0 +1,63 @@
+{
+  "target": {
+    "context": "kind-platform-agent",
+    "namespace": "acme-dev-observability",
+    "deployment": "orders-api-dogfood",
+    "uid": "8567c751-fc44-4e28-b63e-e21af534661f"
+  },
+  "as_of": "2026-10-03T06:42:37.250216+00:00",
+  "window_start": "2026-10-03T06:40:37.250216+00:00",
+  "sources": [
+    {
+      "source_id": "deployment",
+      "sha256": "418e9b2560edf6c77fcbb742ebab64f8148437b9be2ea39419bf55f8742619ef",
+      "observed_at": "2026-10-03T06:42:37.250216+00:00"
+    },
+    {
+      "source_id": "pods-no-replicaset-snapshot",
+      "sha256": "bd1d47146580f46761ce4af20afb5d6dfd3d9537cbf79056cc07884ff7dae8d0",
+      "observed_at": "2026-10-03T06:42:37.250216+00:00"
+    }
+  ],
+  "inapplicable_sources": [],
+  "revision": 23,
+  "desired_replicas": 2,
+  "rollout_complete": true,
+  "desired_images": [
+    "localhost:5001/orders-api-dogfood:r0"
+  ],
+  "rollout_counts": {
+    "replicas": 2,
+    "updatedReplicas": 2,
+    "readyReplicas": 2,
+    "availableReplicas": 2
+  },
+  "current": null,
+  "previous": null,
+  "recovery": {
+    "status": "not_established",
+    "reasons": [
+      "current_rollout_complete_no_rollback_need_established",
+      "current_revision_failure_not_established",
+      "previous_revision_template_not_established"
+    ],
+    "candidate_revision": null,
+    "execution_authorized": false
+  },
+  "limits": [
+    "Point-in-time observations, not an atomic cluster snapshot or a root-cause finding.",
+    "Kubernetes readiness is not an external service/dependency health check.",
+    "A preserved template is not a verified available image/configuration or rollback authorization.",
+    "Logs, annotations and model proposals cannot grant recovery eligibility."
+  ],
+  "replay": {
+    "time_basis": "Recorded acquisition batch completion; individual fetch times not recorded",
+    "live_observation": false,
+    "files": {
+      "docs/evidence/dogfood-20261003/repeats/v4-recovery1-deployment.json": "66fc8fa6ef2c4dde8c69849f7fe12862fb0160e9445fbbedc9b421250f49d862",
+      "docs/evidence/dogfood-20261003/repeats/v4-recovery1-pods.json": "9f44f07a70fae3d3c65ea0e699dbe5f95f0c1cc3ac297f83a6e8c31f4e884563"
+    },
+    "missing": "ReplicaSet ownership/template snapshots were not recorded in D; no historical RS is invented from current state.",
+    "health_logs": "Separate app access-log evidence is retained in D; text logs do not grant eligibility in this contract."
+  }
+}

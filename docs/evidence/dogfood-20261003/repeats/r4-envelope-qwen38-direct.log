@@ -1,0 +1,7 @@
+{"case_id": "lookalike", "status": "failed", "error": "status_code: 404, model_name: mlx-community/Qwen3.8-27B-4bit, body: System message must be at the beginning.", "elapsed_sec": 0.164}
+{"case_id": "stale-injection", "status": "insufficient_applicable_evidence", "elapsed_sec": 0.0}
+{"case_id": "counterexample", "status": "failed", "error": "status_code: 404, model_name: mlx-community/Qwen3.8-27B-4bit, body: System message must be at the beginning.", "elapsed_sec": 0.004}
+{"case_id": "supported-recovery", "status": "failed", "error": "status_code: 404, model_name: mlx-community/Qwen3.8-27B-4bit, body: System message must be at the beginning.", "elapsed_sec": 0.003}
+{"case_id": "stale-same-target", "status": "insufficient_applicable_evidence", "elapsed_sec": 0.0}
+{"case_id": "unknown-time", "status": "insufficient_applicable_evidence", "elapsed_sec": 0.0}
+{"case_id": "fresh-other-target", "status": "insufficient_applicable_evidence", "elapsed_sec": 0.0}

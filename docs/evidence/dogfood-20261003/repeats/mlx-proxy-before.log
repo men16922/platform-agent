@@ -1,0 +1,353 @@
+.......FFFFFFFFF.FFFFFFFF                                                [100%]
+=================================== FAILURES ===================================
+______ test_upstream_error_status_body_and_retry_after_survive[404-False] ______
+
+stream = False, status = 404
+
+    @pytest.mark.parametrize("stream", [False, True])
+    @pytest.mark.parametrize("status", [404, 503])
+    def test_upstream_error_status_body_and_retry_after_survive(stream, status):
+        body = json.dumps({"error": {"message": "System message must be at the beginning.", "type": "upstream_error"}})
+        code, headers, raw, received = _exchange(body, stream=stream, status=status,
+            content_type="application/json", headers={"Retry-After": "7"})
+>       assert code == status
+E       assert 200 == 404
+
+tests/test_mlx_qwen_tool_proxy.py:194: AssertionError
+______ test_upstream_error_status_body_and_retry_after_survive[404-True] _______
+
+stream = True, status = 404
+
+    @pytest.mark.parametrize("stream", [False, True])
+    @pytest.mark.parametrize("status", [404, 503])
+    def test_upstream_error_status_body_and_retry_after_survive(stream, status):
+        body = json.dumps({"error": {"message": "System message must be at the beginning.", "type": "upstream_error"}})
+        code, headers, raw, received = _exchange(body, stream=stream, status=status,
+            content_type="application/json", headers={"Retry-After": "7"})
+>       assert code == status
+E       assert 200 == 404
+
+tests/test_mlx_qwen_tool_proxy.py:194: AssertionError
+______ test_upstream_error_status_body_and_retry_after_survive[503-False] ______
+
+stream = False, status = 503
+
+    @pytest.mark.parametrize("stream", [False, True])
+    @pytest.mark.parametrize("status", [404, 503])
+    def test_upstream_error_status_body_and_retry_after_survive(stream, status):
+        body = json.dumps({"error": {"message": "System message must be at the beginning.", "type": "upstream_error"}})
+        code, headers, raw, received = _exchange(body, stream=stream, status=status,
+            content_type="application/json", headers={"Retry-After": "7"})
+>       assert code == status
+E       assert 200 == 503
+
+tests/test_mlx_qwen_tool_proxy.py:194: AssertionError
+______ test_upstream_error_status_body_and_retry_after_survive[503-True] _______
+
+stream = True, status = 503
+
+    @pytest.mark.parametrize("stream", [False, True])
+    @pytest.mark.parametrize("status", [404, 503])
+    def test_upstream_error_status_body_and_retry_after_survive(stream, status):
+        body = json.dumps({"error": {"message": "System message must be at the beginning.", "type": "upstream_error"}})
+        code, headers, raw, received = _exchange(body, stream=stream, status=status,
+            content_type="application/json", headers={"Retry-After": "7"})
+>       assert code == status
+E       assert 200 == 503
+
+tests/test_mlx_qwen_tool_proxy.py:194: AssertionError
+_____ test_length_and_actual_usage_survive_separate_usage_frame[sse-False] _____
+
+stream = False, upstream_format = 'sse'
+
+    @pytest.mark.parametrize("stream", [False, True])
+    @pytest.mark.parametrize("upstream_format", ["sse", "json"])
+    def test_length_and_actual_usage_survive_separate_usage_frame(stream, upstream_format):
+        usage = {"prompt_tokens": 17, "completion_tokens": 3, "total_tokens": 20,
+                 "prompt_tokens_details": {"cached_tokens": 11}}
+        if upstream_format == "sse":
+            body = _sse([{"content": "partial answer"}]).replace('"finish_reason": "stop"', '"finish_reason": "length"')
+            # MLX's usage-only chunk has no choice/finish_reason; it must not erase it.
+            body = body.replace("data: [DONE]", 'data: ' + json.dumps({"id": "up1", "model": "qwen", "choices": [], "usage": usage}) + '\n\ndata: [DONE]')
+        else:
+            body = json.dumps({"id": "up1", "model": "qwen", "choices": [{
+                "message": {"content": "partial answer"}, "finish_reason": "length"}], "usage": usage})
+        code, _, raw, received = _exchange(body, stream=stream,
+            content_type="application/json" if upstream_format == "json" else "text/event-stream")
+        assert code == 200
+        assert received[0]["stream"] is True
+        assert received[0]["stream_options"]["include_usage"] is True
+        events = _events(raw) if stream else [json.loads(raw)]
+        choices = [choice for event in events for choice in event["choices"]]
+>       assert choices[-1]["finish_reason"] == "length"
+E       AssertionError: assert 'stop' == 'length'
+E         
+E         - length
+E         + stop
+
+tests/test_mlx_qwen_tool_proxy.py:219: AssertionError
+_____ test_length_and_actual_usage_survive_separate_usage_frame[sse-True] ______
+
+stream = True, upstream_format = 'sse'
+
+    @pytest.mark.parametrize("stream", [False, True])
+    @pytest.mark.parametrize("upstream_format", ["sse", "json"])
+    def test_length_and_actual_usage_survive_separate_usage_frame(stream, upstream_format):
+        usage = {"prompt_tokens": 17, "completion_tokens": 3, "total_tokens": 20,
+                 "prompt_tokens_details": {"cached_tokens": 11}}
+        if upstream_format == "sse":
+            body = _sse([{"content": "partial answer"}]).replace('"finish_reason": "stop"', '"finish_reason": "length"')
+            # MLX's usage-only chunk has no choice/finish_reason; it must not erase it.
+            body = body.replace("data: [DONE]", 'data: ' + json.dumps({"id": "up1", "model": "qwen", "choices": [], "usage": usage}) + '\n\ndata: [DONE]')
+        else:
+            body = json.dumps({"id": "up1", "model": "qwen", "choices": [{
+                "message": {"content": "partial answer"}, "finish_reason": "length"}], "usage": usage})
+        code, _, raw, received = _exchange(body, stream=stream,
+            content_type="application/json" if upstream_format == "json" else "text/event-stream")
+        assert code == 200
+        assert received[0]["stream"] is True
+        assert received[0]["stream_options"]["include_usage"] is True
+        events = _events(raw) if stream else [json.loads(raw)]
+        choices = [choice for event in events for choice in event["choices"]]
+>       assert choices[-1]["finish_reason"] == "length"
+E       AssertionError: assert 'stop' == 'length'
+E         
+E         - length
+E         + stop
+
+tests/test_mlx_qwen_tool_proxy.py:219: AssertionError
+____ test_length_and_actual_usage_survive_separate_usage_frame[json-False] _____
+
+stream = False, upstream_format = 'json'
+
+    @pytest.mark.parametrize("stream", [False, True])
+    @pytest.mark.parametrize("upstream_format", ["sse", "json"])
+    def test_length_and_actual_usage_survive_separate_usage_frame(stream, upstream_format):
+        usage = {"prompt_tokens": 17, "completion_tokens": 3, "total_tokens": 20,
+                 "prompt_tokens_details": {"cached_tokens": 11}}
+        if upstream_format == "sse":
+            body = _sse([{"content": "partial answer"}]).replace('"finish_reason": "stop"', '"finish_reason": "length"')
+            # MLX's usage-only chunk has no choice/finish_reason; it must not erase it.
+            body = body.replace("data: [DONE]", 'data: ' + json.dumps({"id": "up1", "model": "qwen", "choices": [], "usage": usage}) + '\n\ndata: [DONE]')
+        else:
+            body = json.dumps({"id": "up1", "model": "qwen", "choices": [{
+                "message": {"content": "partial answer"}, "finish_reason": "length"}], "usage": usage})
+        code, _, raw, received = _exchange(body, stream=stream,
+            content_type="application/json" if upstream_format == "json" else "text/event-stream")
+        assert code == 200
+        assert received[0]["stream"] is True
+        assert received[0]["stream_options"]["include_usage"] is True
+        events = _events(raw) if stream else [json.loads(raw)]
+        choices = [choice for event in events for choice in event["choices"]]
+>       assert choices[-1]["finish_reason"] == "length"
+E       AssertionError: assert 'stop' == 'length'
+E         
+E         - length
+E         + stop
+
+tests/test_mlx_qwen_tool_proxy.py:219: AssertionError
+_____ test_length_and_actual_usage_survive_separate_usage_frame[json-True] _____
+
+stream = True, upstream_format = 'json'
+
+    @pytest.mark.parametrize("stream", [False, True])
+    @pytest.mark.parametrize("upstream_format", ["sse", "json"])
+    def test_length_and_actual_usage_survive_separate_usage_frame(stream, upstream_format):
+        usage = {"prompt_tokens": 17, "completion_tokens": 3, "total_tokens": 20,
+                 "prompt_tokens_details": {"cached_tokens": 11}}
+        if upstream_format == "sse":
+            body = _sse([{"content": "partial answer"}]).replace('"finish_reason": "stop"', '"finish_reason": "length"')
+            # MLX's usage-only chunk has no choice/finish_reason; it must not erase it.
+            body = body.replace("data: [DONE]", 'data: ' + json.dumps({"id": "up1", "model": "qwen", "choices": [], "usage": usage}) + '\n\ndata: [DONE]')
+        else:
+            body = json.dumps({"id": "up1", "model": "qwen", "choices": [{
+                "message": {"content": "partial answer"}, "finish_reason": "length"}], "usage": usage})
+        code, _, raw, received = _exchange(body, stream=stream,
+            content_type="application/json" if upstream_format == "json" else "text/event-stream")
+        assert code == 200
+        assert received[0]["stream"] is True
+        assert received[0]["stream_options"]["include_usage"] is True
+        events = _events(raw) if stream else [json.loads(raw)]
+        choices = [choice for event in events for choice in event["choices"]]
+>       assert choices[-1]["finish_reason"] == "length"
+E       AssertionError: assert 'stop' == 'length'
+E         
+E         - length
+E         + stop
+
+tests/test_mlx_qwen_tool_proxy.py:219: AssertionError
+___________ test_missing_usage_is_not_reported_as_zero_tokens[False] ___________
+
+stream = False
+
+    @pytest.mark.parametrize("stream", [False, True])
+    def test_missing_usage_is_not_reported_as_zero_tokens(stream):
+        code, _, raw, _ = _exchange(_sse([{"content": "OK"}]), stream=stream)
+        assert code == 200
+        events = _events(raw) if stream else [json.loads(raw)]
+>       assert all("usage" not in event or event["usage"] is None for event in events)
+E       assert False
+E        +  where False = all(<generator object test_missing_usage_is_not_reported_as_zero_tokens.<locals>.<genexpr> at 0x10718a5a0>)
+
+tests/test_mlx_qwen_tool_proxy.py:229: AssertionError
+_ test_truncated_generation_cannot_be_promoted_to_executable_tool_call[markup-False] _
+
+stream = False, kind = 'markup'
+
+    @pytest.mark.parametrize("stream", [False, True])
+    @pytest.mark.parametrize("kind", ["markup", "native"])
+    def test_truncated_generation_cannot_be_promoted_to_executable_tool_call(stream, kind):
+        delta = ({"content": '<function=restart><parameter=service>api</parameter></function>'}
+                 if kind == "markup" else {"tool_calls": [{"index": 0, "id": "call_x", "function": {"name": "restart", "arguments": "{}"}}]})
+        body = _sse([delta]).replace('"finish_reason": "stop"', '"finish_reason": "length"')
+        code, _, raw, _ = _exchange(body, stream=stream)
+        assert code == 200
+        events = _events(raw) if stream else [json.loads(raw)]
+        choices = [choice for event in events for choice in event["choices"]]
+>       assert choices[-1]["finish_reason"] == "length"
+E       AssertionError: assert 'tool_calls' == 'length'
+E         
+E         - length
+E         + tool_calls
+
+tests/test_mlx_qwen_tool_proxy.py:242: AssertionError
+_ test_truncated_generation_cannot_be_promoted_to_executable_tool_call[markup-True] _
+
+stream = True, kind = 'markup'
+
+    @pytest.mark.parametrize("stream", [False, True])
+    @pytest.mark.parametrize("kind", ["markup", "native"])
+    def test_truncated_generation_cannot_be_promoted_to_executable_tool_call(stream, kind):
+        delta = ({"content": '<function=restart><parameter=service>api</parameter></function>'}
+                 if kind == "markup" else {"tool_calls": [{"index": 0, "id": "call_x", "function": {"name": "restart", "arguments": "{}"}}]})
+        body = _sse([delta]).replace('"finish_reason": "stop"', '"finish_reason": "length"')
+        code, _, raw, _ = _exchange(body, stream=stream)
+        assert code == 200
+        events = _events(raw) if stream else [json.loads(raw)]
+        choices = [choice for event in events for choice in event["choices"]]
+>       assert choices[-1]["finish_reason"] == "length"
+E       AssertionError: assert 'tool_calls' == 'length'
+E         
+E         - length
+E         + tool_calls
+
+tests/test_mlx_qwen_tool_proxy.py:242: AssertionError
+_ test_truncated_generation_cannot_be_promoted_to_executable_tool_call[native-False] _
+
+stream = False, kind = 'native'
+
+    @pytest.mark.parametrize("stream", [False, True])
+    @pytest.mark.parametrize("kind", ["markup", "native"])
+    def test_truncated_generation_cannot_be_promoted_to_executable_tool_call(stream, kind):
+        delta = ({"content": '<function=restart><parameter=service>api</parameter></function>'}
+                 if kind == "markup" else {"tool_calls": [{"index": 0, "id": "call_x", "function": {"name": "restart", "arguments": "{}"}}]})
+        body = _sse([delta]).replace('"finish_reason": "stop"', '"finish_reason": "length"')
+        code, _, raw, _ = _exchange(body, stream=stream)
+        assert code == 200
+        events = _events(raw) if stream else [json.loads(raw)]
+        choices = [choice for event in events for choice in event["choices"]]
+>       assert choices[-1]["finish_reason"] == "length"
+E       AssertionError: assert 'tool_calls' == 'length'
+E         
+E         - length
+E         + tool_calls
+
+tests/test_mlx_qwen_tool_proxy.py:242: AssertionError
+_ test_truncated_generation_cannot_be_promoted_to_executable_tool_call[native-True] _
+
+stream = True, kind = 'native'
+
+    @pytest.mark.parametrize("stream", [False, True])
+    @pytest.mark.parametrize("kind", ["markup", "native"])
+    def test_truncated_generation_cannot_be_promoted_to_executable_tool_call(stream, kind):
+        delta = ({"content": '<function=restart><parameter=service>api</parameter></function>'}
+                 if kind == "markup" else {"tool_calls": [{"index": 0, "id": "call_x", "function": {"name": "restart", "arguments": "{}"}}]})
+        body = _sse([delta]).replace('"finish_reason": "stop"', '"finish_reason": "length"')
+        code, _, raw, _ = _exchange(body, stream=stream)
+        assert code == 200
+        events = _events(raw) if stream else [json.loads(raw)]
+        choices = [choice for event in events for choice in event["choices"]]
+>       assert choices[-1]["finish_reason"] == "length"
+E       AssertionError: assert 'tool_calls' == 'length'
+E         
+E         - length
+E         + tool_calls
+
+tests/test_mlx_qwen_tool_proxy.py:242: AssertionError
+____ test_empty_answer_keeps_token_limit_instead_of_becoming_success[False] ____
+
+stream = False
+
+    @pytest.mark.parametrize("stream", [False, True])
+    def test_empty_answer_keeps_token_limit_instead_of_becoming_success(stream):
+        body = _sse([]).replace('"finish_reason": "stop"', '"finish_reason": "length"')
+        code, _, raw, _ = _exchange(body, stream=stream)
+        assert code == 200
+        events = _events(raw) if stream else [json.loads(raw)]
+>       assert [c for e in events for c in e["choices"]][-1]["finish_reason"] == "length"
+E       AssertionError: assert 'stop' == 'length'
+E         
+E         - length
+E         + stop
+
+tests/test_mlx_qwen_tool_proxy.py:252: AssertionError
+____ test_empty_answer_keeps_token_limit_instead_of_becoming_success[True] _____
+
+stream = True
+
+    @pytest.mark.parametrize("stream", [False, True])
+    def test_empty_answer_keeps_token_limit_instead_of_becoming_success(stream):
+        body = _sse([]).replace('"finish_reason": "stop"', '"finish_reason": "length"')
+        code, _, raw, _ = _exchange(body, stream=stream)
+        assert code == 200
+        events = _events(raw) if stream else [json.loads(raw)]
+>       assert [c for e in events for c in e["choices"]][-1]["finish_reason"] == "length"
+E       AssertionError: assert 'stop' == 'length'
+E         
+E         - length
+E         + stop
+
+tests/test_mlx_qwen_tool_proxy.py:252: AssertionError
+___ test_stream_without_terminal_reason_is_not_reported_as_completed[False] ____
+
+stream = False
+
+    @pytest.mark.parametrize("stream", [False, True])
+    def test_stream_without_terminal_reason_is_not_reported_as_completed(stream):
+        body = 'data: ' + json.dumps({"choices": [{"delta": {"content": "unfinished"}}]}) + '\n\n'
+        code, _, raw, received = _exchange(body, stream=stream)
+>       assert code == 502
+E       assert 200 == 502
+
+tests/test_mlx_qwen_tool_proxy.py:259: AssertionError
+____ test_stream_without_terminal_reason_is_not_reported_as_completed[True] ____
+
+stream = True
+
+    @pytest.mark.parametrize("stream", [False, True])
+    def test_stream_without_terminal_reason_is_not_reported_as_completed(stream):
+        body = 'data: ' + json.dumps({"choices": [{"delta": {"content": "unfinished"}}]}) + '\n\n'
+        code, _, raw, received = _exchange(body, stream=stream)
+>       assert code == 502
+E       assert 200 == 502
+
+tests/test_mlx_qwen_tool_proxy.py:259: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_mlx_qwen_tool_proxy.py::test_upstream_error_status_body_and_retry_after_survive[404-False]
+FAILED tests/test_mlx_qwen_tool_proxy.py::test_upstream_error_status_body_and_retry_after_survive[404-True]
+FAILED tests/test_mlx_qwen_tool_proxy.py::test_upstream_error_status_body_and_retry_after_survive[503-False]
+FAILED tests/test_mlx_qwen_tool_proxy.py::test_upstream_error_status_body_and_retry_after_survive[503-True]
+FAILED tests/test_mlx_qwen_tool_proxy.py::test_length_and_actual_usage_survive_separate_usage_frame[sse-False]
+FAILED tests/test_mlx_qwen_tool_proxy.py::test_length_and_actual_usage_survive_separate_usage_frame[sse-True]
+FAILED tests/test_mlx_qwen_tool_proxy.py::test_length_and_actual_usage_survive_separate_usage_frame[json-False]
+FAILED tests/test_mlx_qwen_tool_proxy.py::test_length_and_actual_usage_survive_separate_usage_frame[json-True]
+FAILED tests/test_mlx_qwen_tool_proxy.py::test_missing_usage_is_not_reported_as_zero_tokens[False]
+FAILED tests/test_mlx_qwen_tool_proxy.py::test_truncated_generation_cannot_be_promoted_to_executable_tool_call[markup-False]
+FAILED tests/test_mlx_qwen_tool_proxy.py::test_truncated_generation_cannot_be_promoted_to_executable_tool_call[markup-True]
+FAILED tests/test_mlx_qwen_tool_proxy.py::test_truncated_generation_cannot_be_promoted_to_executable_tool_call[native-False]
+FAILED tests/test_mlx_qwen_tool_proxy.py::test_truncated_generation_cannot_be_promoted_to_executable_tool_call[native-True]
+FAILED tests/test_mlx_qwen_tool_proxy.py::test_empty_answer_keeps_token_limit_instead_of_becoming_success[False]
+FAILED tests/test_mlx_qwen_tool_proxy.py::test_empty_answer_keeps_token_limit_instead_of_becoming_success[True]
+FAILED tests/test_mlx_qwen_tool_proxy.py::test_stream_without_terminal_reason_is_not_reported_as_completed[False]
+FAILED tests/test_mlx_qwen_tool_proxy.py::test_stream_without_terminal_reason_is_not_reported_as_completed[True]
+17 failed, 8 passed in 13.75s

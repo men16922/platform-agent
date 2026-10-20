@@ -1,0 +1,536 @@
+....................................FFFFFFFFF.................F..FFFFF   [100%]
+=================================== FAILURES ===================================
+________ TestDetectionGapRefusesToOverstate.test_a_real_gap_is_reported ________
+
+self = <tests.test_incident_trigger_time.TestDetectionGapRefusesToOverstate object at 0x10bd3f9d0>
+
+    def test_a_real_gap_is_reported(self):
+>       assert _gap("2026-07-29T06:40:00Z", "2026-07-29T06:40:08Z") == {
+            "seconds": 8, "label": "8s"
+        }
+
+tests/test_incident_trigger_time.py:104: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_incident_trigger_time.py:96: in _gap
+    return _run(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "console.log(JSON.stringify(t.describeDetectionGap('2026-07-29T06:40:00Z','2026-07-29T06:40:08Z')))"
+
+    def _run(script: str):
+        with tempfile.TemporaryDirectory() as out:
+            subprocess.run(
+                ["npx", "tsc", str(SRC), "--outDir", out, "--module", "commonjs",
+                 "--target", "es2020", "--skipLibCheck"],
+                capture_output=True, text=True, timeout=180,
+            )
+            emitted = Path(out) / "incident-time.js"
+>           assert emitted.is_file(), "incident-time.ts did not emit"
+E           AssertionError: incident-time.ts did not emit
+E           assert False
+E            +  where False = is_file()
+E            +    where is_file = PosixPath('/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/tmp25uwovsg/incident-time.js').is_file
+
+tests/test_incident_trigger_time.py:83: AssertionError
+_ TestDetectionGapRefusesToOverstate.test_no_fire_time_renders_nothing_rather_than_zero _
+
+self = <tests.test_incident_trigger_time.TestDetectionGapRefusesToOverstate object at 0x10bd3fb10>
+
+    def test_no_fire_time_renders_nothing_rather_than_zero(self):
+>       assert _gap(None, "2026-07-29T06:40:08Z") is None
+
+tests/test_incident_trigger_time.py:109: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_incident_trigger_time.py:96: in _gap
+    return _run(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "console.log(JSON.stringify(t.describeDetectionGap(undefined,'2026-07-29T06:40:08Z')))"
+
+    def _run(script: str):
+        with tempfile.TemporaryDirectory() as out:
+            subprocess.run(
+                ["npx", "tsc", str(SRC), "--outDir", out, "--module", "commonjs",
+                 "--target", "es2020", "--skipLibCheck"],
+                capture_output=True, text=True, timeout=180,
+            )
+            emitted = Path(out) / "incident-time.js"
+>           assert emitted.is_file(), "incident-time.ts did not emit"
+E           AssertionError: incident-time.ts did not emit
+E           assert False
+E            +  where False = is_file()
+E            +    where is_file = PosixPath('/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/tmpv517lfld/incident-time.js').is_file
+
+tests/test_incident_trigger_time.py:83: AssertionError
+_ TestDetectionGapRefusesToOverstate.test_a_record_written_before_it_fired_is_not_a_negative_duration _
+
+self = <tests.test_incident_trigger_time.TestDetectionGapRefusesToOverstate object at 0x10bcd7100>
+
+    def test_a_record_written_before_it_fired_is_not_a_negative_duration(self):
+        """Clock skew between a spoke and the hub is normal. "detected -3s" on
+        screen destroys trust in every number beside it; an absent badge does not."""
+>       assert _gap("2026-07-29T06:40:08Z", "2026-07-29T06:40:05Z") is None
+
+tests/test_incident_trigger_time.py:114: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_incident_trigger_time.py:96: in _gap
+    return _run(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "console.log(JSON.stringify(t.describeDetectionGap('2026-07-29T06:40:08Z','2026-07-29T06:40:05Z')))"
+
+    def _run(script: str):
+        with tempfile.TemporaryDirectory() as out:
+            subprocess.run(
+                ["npx", "tsc", str(SRC), "--outDir", out, "--module", "commonjs",
+                 "--target", "es2020", "--skipLibCheck"],
+                capture_output=True, text=True, timeout=180,
+            )
+            emitted = Path(out) / "incident-time.js"
+>           assert emitted.is_file(), "incident-time.ts did not emit"
+E           AssertionError: incident-time.ts did not emit
+E           assert False
+E            +  where False = is_file()
+E            +    where is_file = PosixPath('/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/tmprf10cot7/incident-time.js').is_file
+
+tests/test_incident_trigger_time.py:83: AssertionError
+___ TestDetectionGapRefusesToOverstate.test_unparseable_input_is_not_guessed ___
+
+self = <tests.test_incident_trigger_time.TestDetectionGapRefusesToOverstate object at 0x10bcd7360>
+
+    def test_unparseable_input_is_not_guessed(self):
+>       assert _gap("not-a-date", "2026-07-29T06:40:05Z") is None
+
+tests/test_incident_trigger_time.py:117: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_incident_trigger_time.py:96: in _gap
+    return _run(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "console.log(JSON.stringify(t.describeDetectionGap('not-a-date','2026-07-29T06:40:05Z')))"
+
+    def _run(script: str):
+        with tempfile.TemporaryDirectory() as out:
+            subprocess.run(
+                ["npx", "tsc", str(SRC), "--outDir", out, "--module", "commonjs",
+                 "--target", "es2020", "--skipLibCheck"],
+                capture_output=True, text=True, timeout=180,
+            )
+            emitted = Path(out) / "incident-time.js"
+>           assert emitted.is_file(), "incident-time.ts did not emit"
+E           AssertionError: incident-time.ts did not emit
+E           assert False
+E            +  where False = is_file()
+E            +    where is_file = PosixPath('/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/tmpnzvr10gn/incident-time.js').is_file
+
+tests/test_incident_trigger_time.py:83: AssertionError
+_ TestDetectionGapRefusesToOverstate.test_labels_stay_honest_across_scales[59-59s] _
+
+self = <tests.test_incident_trigger_time.TestDetectionGapRefusesToOverstate object at 0x10bd6fad0>
+seconds = 59, label = '59s'
+
+    @pytest.mark.parametrize(
+        "seconds,label",
+        [(59, "59s"), (60, "1m"), (3599, "59m"), (3600, "1h"), (7500, "2h 5m")],
+    )
+    def test_labels_stay_honest_across_scales(self, seconds, label):
+        from datetime import datetime, timedelta, timezone
+    
+        fired = datetime(2026, 7, 29, 6, 40, tzinfo=timezone.utc)
+        recorded = fired + timedelta(seconds=seconds)
+>       got = _gap(fired.isoformat().replace("+00:00", "Z"),
+                   recorded.isoformat().replace("+00:00", "Z"))
+
+tests/test_incident_trigger_time.py:128: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_incident_trigger_time.py:96: in _gap
+    return _run(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "console.log(JSON.stringify(t.describeDetectionGap('2026-07-29T06:40:00Z','2026-07-29T06:40:59Z')))"
+
+    def _run(script: str):
+        with tempfile.TemporaryDirectory() as out:
+            subprocess.run(
+                ["npx", "tsc", str(SRC), "--outDir", out, "--module", "commonjs",
+                 "--target", "es2020", "--skipLibCheck"],
+                capture_output=True, text=True, timeout=180,
+            )
+            emitted = Path(out) / "incident-time.js"
+>           assert emitted.is_file(), "incident-time.ts did not emit"
+E           AssertionError: incident-time.ts did not emit
+E           assert False
+E            +  where False = is_file()
+E            +    where is_file = PosixPath('/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/tmpudxfd710/incident-time.js').is_file
+
+tests/test_incident_trigger_time.py:83: AssertionError
+_ TestDetectionGapRefusesToOverstate.test_labels_stay_honest_across_scales[60-1m] _
+
+self = <tests.test_incident_trigger_time.TestDetectionGapRefusesToOverstate object at 0x10bd36250>
+seconds = 60, label = '1m'
+
+    @pytest.mark.parametrize(
+        "seconds,label",
+        [(59, "59s"), (60, "1m"), (3599, "59m"), (3600, "1h"), (7500, "2h 5m")],
+    )
+    def test_labels_stay_honest_across_scales(self, seconds, label):
+        from datetime import datetime, timedelta, timezone
+    
+        fired = datetime(2026, 7, 29, 6, 40, tzinfo=timezone.utc)
+        recorded = fired + timedelta(seconds=seconds)
+>       got = _gap(fired.isoformat().replace("+00:00", "Z"),
+                   recorded.isoformat().replace("+00:00", "Z"))
+
+tests/test_incident_trigger_time.py:128: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_incident_trigger_time.py:96: in _gap
+    return _run(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "console.log(JSON.stringify(t.describeDetectionGap('2026-07-29T06:40:00Z','2026-07-29T06:41:00Z')))"
+
+    def _run(script: str):
+        with tempfile.TemporaryDirectory() as out:
+            subprocess.run(
+                ["npx", "tsc", str(SRC), "--outDir", out, "--module", "commonjs",
+                 "--target", "es2020", "--skipLibCheck"],
+                capture_output=True, text=True, timeout=180,
+            )
+            emitted = Path(out) / "incident-time.js"
+>           assert emitted.is_file(), "incident-time.ts did not emit"
+E           AssertionError: incident-time.ts did not emit
+E           assert False
+E            +  where False = is_file()
+E            +    where is_file = PosixPath('/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/tmp4931buap/incident-time.js').is_file
+
+tests/test_incident_trigger_time.py:83: AssertionError
+_ TestDetectionGapRefusesToOverstate.test_labels_stay_honest_across_scales[3599-59m] _
+
+self = <tests.test_incident_trigger_time.TestDetectionGapRefusesToOverstate object at 0x10bd36140>
+seconds = 3599, label = '59m'
+
+    @pytest.mark.parametrize(
+        "seconds,label",
+        [(59, "59s"), (60, "1m"), (3599, "59m"), (3600, "1h"), (7500, "2h 5m")],
+    )
+    def test_labels_stay_honest_across_scales(self, seconds, label):
+        from datetime import datetime, timedelta, timezone
+    
+        fired = datetime(2026, 7, 29, 6, 40, tzinfo=timezone.utc)
+        recorded = fired + timedelta(seconds=seconds)
+>       got = _gap(fired.isoformat().replace("+00:00", "Z"),
+                   recorded.isoformat().replace("+00:00", "Z"))
+
+tests/test_incident_trigger_time.py:128: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_incident_trigger_time.py:96: in _gap
+    return _run(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "console.log(JSON.stringify(t.describeDetectionGap('2026-07-29T06:40:00Z','2026-07-29T07:39:59Z')))"
+
+    def _run(script: str):
+        with tempfile.TemporaryDirectory() as out:
+            subprocess.run(
+                ["npx", "tsc", str(SRC), "--outDir", out, "--module", "commonjs",
+                 "--target", "es2020", "--skipLibCheck"],
+                capture_output=True, text=True, timeout=180,
+            )
+            emitted = Path(out) / "incident-time.js"
+>           assert emitted.is_file(), "incident-time.ts did not emit"
+E           AssertionError: incident-time.ts did not emit
+E           assert False
+E            +  where False = is_file()
+E            +    where is_file = PosixPath('/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/tmp99y6vacr/incident-time.js').is_file
+
+tests/test_incident_trigger_time.py:83: AssertionError
+_ TestDetectionGapRefusesToOverstate.test_labels_stay_honest_across_scales[3600-1h] _
+
+self = <tests.test_incident_trigger_time.TestDetectionGapRefusesToOverstate object at 0x10bcdba50>
+seconds = 3600, label = '1h'
+
+    @pytest.mark.parametrize(
+        "seconds,label",
+        [(59, "59s"), (60, "1m"), (3599, "59m"), (3600, "1h"), (7500, "2h 5m")],
+    )
+    def test_labels_stay_honest_across_scales(self, seconds, label):
+        from datetime import datetime, timedelta, timezone
+    
+        fired = datetime(2026, 7, 29, 6, 40, tzinfo=timezone.utc)
+        recorded = fired + timedelta(seconds=seconds)
+>       got = _gap(fired.isoformat().replace("+00:00", "Z"),
+                   recorded.isoformat().replace("+00:00", "Z"))
+
+tests/test_incident_trigger_time.py:128: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_incident_trigger_time.py:96: in _gap
+    return _run(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "console.log(JSON.stringify(t.describeDetectionGap('2026-07-29T06:40:00Z','2026-07-29T07:40:00Z')))"
+
+    def _run(script: str):
+        with tempfile.TemporaryDirectory() as out:
+            subprocess.run(
+                ["npx", "tsc", str(SRC), "--outDir", out, "--module", "commonjs",
+                 "--target", "es2020", "--skipLibCheck"],
+                capture_output=True, text=True, timeout=180,
+            )
+            emitted = Path(out) / "incident-time.js"
+>           assert emitted.is_file(), "incident-time.ts did not emit"
+E           AssertionError: incident-time.ts did not emit
+E           assert False
+E            +  where False = is_file()
+E            +    where is_file = PosixPath('/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/tmp1qyp88aw/incident-time.js').is_file
+
+tests/test_incident_trigger_time.py:83: AssertionError
+_ TestDetectionGapRefusesToOverstate.test_labels_stay_honest_across_scales[7500-2h 5m] _
+
+self = <tests.test_incident_trigger_time.TestDetectionGapRefusesToOverstate object at 0x10bcdb650>
+seconds = 7500, label = '2h 5m'
+
+    @pytest.mark.parametrize(
+        "seconds,label",
+        [(59, "59s"), (60, "1m"), (3599, "59m"), (3600, "1h"), (7500, "2h 5m")],
+    )
+    def test_labels_stay_honest_across_scales(self, seconds, label):
+        from datetime import datetime, timedelta, timezone
+    
+        fired = datetime(2026, 7, 29, 6, 40, tzinfo=timezone.utc)
+        recorded = fired + timedelta(seconds=seconds)
+>       got = _gap(fired.isoformat().replace("+00:00", "Z"),
+                   recorded.isoformat().replace("+00:00", "Z"))
+
+tests/test_incident_trigger_time.py:128: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_incident_trigger_time.py:96: in _gap
+    return _run(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = "console.log(JSON.stringify(t.describeDetectionGap('2026-07-29T06:40:00Z','2026-07-29T08:45:00Z')))"
+
+    def _run(script: str):
+        with tempfile.TemporaryDirectory() as out:
+            subprocess.run(
+                ["npx", "tsc", str(SRC), "--outDir", out, "--module", "commonjs",
+                 "--target", "es2020", "--skipLibCheck"],
+                capture_output=True, text=True, timeout=180,
+            )
+            emitted = Path(out) / "incident-time.js"
+>           assert emitted.is_file(), "incident-time.ts did not emit"
+E           AssertionError: incident-time.ts did not emit
+E           assert False
+E            +  where False = is_file()
+E            +    where is_file = PosixPath('/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/tmpao4jdfry/incident-time.js').is_file
+
+tests/test_incident_trigger_time.py:83: AssertionError
+_ TestTheScanFetchesWhatTheMapperReads.test_every_attribute_the_mapper_reads_is_projected _
+
+self = <tests.test_incident_time_to_resolve.TestTheScanFetchesWhatTheMapperReads object at 0x10bdd5090>
+
+    def test_every_attribute_the_mapper_reads_is_projected(self):
+        src = self._source()
+        missing = self._read_by_mapper(src) - self._projected(src)
+>       assert not missing, (
+            f"the Scan drops {sorted(missing)} before the mapper sees them — "
+            "a reader cannot recover an attribute the projection did not fetch"
+        )
+E       AssertionError: the Scan drops ['approval_decided_at', 'approval_decision', 'approval_id', 'rejection_reason', 'reported_by'] before the mapper sees them — a reader cannot recover an attribute the projection did not fetch
+E       assert not {'approval_decided_at', 'approval_decision', 'approval_id', 'rejection_reason', 'reported_by'}
+
+tests/test_incident_time_to_resolve.py:301: AssertionError
+_ TestTimeToResolveBadgeRefusesToOverstate.test_measured_from_the_fire_time_when_there_is_one _
+
+self = <tests.test_incident_time_to_resolve.TestTimeToResolveBadgeRefusesToOverstate object at 0x10bdd5310>
+
+    def test_measured_from_the_fire_time_when_there_is_one(self):
+>       assert _ttr("2026-07-29T00:00:00Z", "2026-07-29T00:10:00Z",
+                    "2026-07-29T00:30:00Z") == {"seconds": 1800, "label": "30m"}
+
+tests/test_incident_time_to_resolve.py:354: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+triggered = '2026-07-29T00:00:00Z', created = '2026-07-29T00:10:00Z'
+resolved = '2026-07-29T00:30:00Z'
+
+    def _ttr(triggered, created, resolved):
+        def js(v):
+            return "undefined" if v is None else f"'{v}'"
+    
+        with tempfile.TemporaryDirectory() as out:
+            subprocess.run(
+                ["npx", "tsc", str(INCIDENT_TIME), "--outDir", out, "--module", "commonjs",
+                 "--target", "es2020", "--skipLibCheck"],
+                capture_output=True, text=True, timeout=180,
+            )
+            emitted = Path(out) / "incident-time.js"
+>           assert emitted.is_file(), "incident-time.ts did not emit"
+E           AssertionError: incident-time.ts did not emit
+E           assert False
+E            +  where False = is_file()
+E            +    where is_file = PosixPath('/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/tmp11ri6n5m/incident-time.js').is_file
+
+tests/test_incident_time_to_resolve.py:339: AssertionError
+_ TestTimeToResolveBadgeRefusesToOverstate.test_falls_back_to_the_write_time_when_the_source_gave_none _
+
+self = <tests.test_incident_time_to_resolve.TestTimeToResolveBadgeRefusesToOverstate object at 0x10bdd5450>
+
+    def test_falls_back_to_the_write_time_when_the_source_gave_none(self):
+>       assert _ttr(None, "2026-07-29T00:10:00Z",
+                    "2026-07-29T00:30:00Z") == {"seconds": 1200, "label": "20m"}
+
+tests/test_incident_time_to_resolve.py:358: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+triggered = None, created = '2026-07-29T00:10:00Z'
+resolved = '2026-07-29T00:30:00Z'
+
+    def _ttr(triggered, created, resolved):
+        def js(v):
+            return "undefined" if v is None else f"'{v}'"
+    
+        with tempfile.TemporaryDirectory() as out:
+            subprocess.run(
+                ["npx", "tsc", str(INCIDENT_TIME), "--outDir", out, "--module", "commonjs",
+                 "--target", "es2020", "--skipLibCheck"],
+                capture_output=True, text=True, timeout=180,
+            )
+            emitted = Path(out) / "incident-time.js"
+>           assert emitted.is_file(), "incident-time.ts did not emit"
+E           AssertionError: incident-time.ts did not emit
+E           assert False
+E            +  where False = is_file()
+E            +    where is_file = PosixPath('/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/tmpuvytlzcy/incident-time.js').is_file
+
+tests/test_incident_time_to_resolve.py:339: AssertionError
+_ TestTimeToResolveBadgeRefusesToOverstate.test_open_incident_renders_no_badge_rather_than_zero _
+
+self = <tests.test_incident_time_to_resolve.TestTimeToResolveBadgeRefusesToOverstate object at 0x10bde95b0>
+
+    def test_open_incident_renders_no_badge_rather_than_zero(self):
+>       assert _ttr("2026-07-29T00:00:00Z", "2026-07-29T00:10:00Z", None) is None
+
+tests/test_incident_time_to_resolve.py:362: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+triggered = '2026-07-29T00:00:00Z', created = '2026-07-29T00:10:00Z'
+resolved = None
+
+    def _ttr(triggered, created, resolved):
+        def js(v):
+            return "undefined" if v is None else f"'{v}'"
+    
+        with tempfile.TemporaryDirectory() as out:
+            subprocess.run(
+                ["npx", "tsc", str(INCIDENT_TIME), "--outDir", out, "--module", "commonjs",
+                 "--target", "es2020", "--skipLibCheck"],
+                capture_output=True, text=True, timeout=180,
+            )
+            emitted = Path(out) / "incident-time.js"
+>           assert emitted.is_file(), "incident-time.ts did not emit"
+E           AssertionError: incident-time.ts did not emit
+E           assert False
+E            +  where False = is_file()
+E            +    where is_file = PosixPath('/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/tmpu1c7_y_9/incident-time.js').is_file
+
+tests/test_incident_time_to_resolve.py:339: AssertionError
+_ TestTimeToResolveBadgeRefusesToOverstate.test_resolution_before_the_fire_time_is_not_rendered _
+
+self = <tests.test_incident_time_to_resolve.TestTimeToResolveBadgeRefusesToOverstate object at 0x10bde96e0>
+
+    def test_resolution_before_the_fire_time_is_not_rendered(self):
+>       assert _ttr("2026-07-29T00:30:00Z", "2026-07-29T00:35:00Z",
+                    "2026-07-29T00:00:00Z") is None
+
+tests/test_incident_time_to_resolve.py:365: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+triggered = '2026-07-29T00:30:00Z', created = '2026-07-29T00:35:00Z'
+resolved = '2026-07-29T00:00:00Z'
+
+    def _ttr(triggered, created, resolved):
+        def js(v):
+            return "undefined" if v is None else f"'{v}'"
+    
+        with tempfile.TemporaryDirectory() as out:
+            subprocess.run(
+                ["npx", "tsc", str(INCIDENT_TIME), "--outDir", out, "--module", "commonjs",
+                 "--target", "es2020", "--skipLibCheck"],
+                capture_output=True, text=True, timeout=180,
+            )
+            emitted = Path(out) / "incident-time.js"
+>           assert emitted.is_file(), "incident-time.ts did not emit"
+E           AssertionError: incident-time.ts did not emit
+E           assert False
+E            +  where False = is_file()
+E            +    where is_file = PosixPath('/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/tmp19nyu1z3/incident-time.js').is_file
+
+tests/test_incident_time_to_resolve.py:339: AssertionError
+_ TestTimeToResolveBadgeRefusesToOverstate.test_unparseable_input_is_not_guessed _
+
+self = <tests.test_incident_time_to_resolve.TestTimeToResolveBadgeRefusesToOverstate object at 0x10be51c70>
+
+    def test_unparseable_input_is_not_guessed(self):
+>       assert _ttr("not-a-date", "2026-07-29T00:10:00Z", "2026-07-29T00:30:00Z") is None
+
+tests/test_incident_time_to_resolve.py:369: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+triggered = 'not-a-date', created = '2026-07-29T00:10:00Z'
+resolved = '2026-07-29T00:30:00Z'
+
+    def _ttr(triggered, created, resolved):
+        def js(v):
+            return "undefined" if v is None else f"'{v}'"
+    
+        with tempfile.TemporaryDirectory() as out:
+            subprocess.run(
+                ["npx", "tsc", str(INCIDENT_TIME), "--outDir", out, "--module", "commonjs",
+                 "--target", "es2020", "--skipLibCheck"],
+                capture_output=True, text=True, timeout=180,
+            )
+            emitted = Path(out) / "incident-time.js"
+>           assert emitted.is_file(), "incident-time.ts did not emit"
+E           AssertionError: incident-time.ts did not emit
+E           assert False
+E            +  where False = is_file()
+E            +    where is_file = PosixPath('/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/tmpiv5qzqoh/incident-time.js').is_file
+
+tests/test_incident_time_to_resolve.py:339: AssertionError
+=============================== warnings summary ===============================
+src/agents/ai/onprem_webhook_api.py:376
+  /Users/men1692/Desktop/AWS/platform-agent/src/agents/ai/onprem_webhook_api.py:376: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+../../../../../opt/anaconda3/lib/python3.13/site-packages/fastapi/applications.py:4601
+  /opt/anaconda3/lib/python3.13/site-packages/fastapi/applications.py:4601: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)  # ty: ignore[deprecated]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_incident_trigger_time.py::TestDetectionGapRefusesToOverstate::test_a_real_gap_is_reported
+FAILED tests/test_incident_trigger_time.py::TestDetectionGapRefusesToOverstate::test_no_fire_time_renders_nothing_rather_than_zero
+FAILED tests/test_incident_trigger_time.py::TestDetectionGapRefusesToOverstate::test_a_record_written_before_it_fired_is_not_a_negative_duration
+FAILED tests/test_incident_trigger_time.py::TestDetectionGapRefusesToOverstate::test_unparseable_input_is_not_guessed
+FAILED tests/test_incident_trigger_time.py::TestDetectionGapRefusesToOverstate::test_labels_stay_honest_across_scales[59-59s]
+FAILED tests/test_incident_trigger_time.py::TestDetectionGapRefusesToOverstate::test_labels_stay_honest_across_scales[60-1m]
+FAILED tests/test_incident_trigger_time.py::TestDetectionGapRefusesToOverstate::test_labels_stay_honest_across_scales[3599-59m]
+FAILED tests/test_incident_trigger_time.py::TestDetectionGapRefusesToOverstate::test_labels_stay_honest_across_scales[3600-1h]
+FAILED tests/test_incident_trigger_time.py::TestDetectionGapRefusesToOverstate::test_labels_stay_honest_across_scales[7500-2h 5m]
+FAILED tests/test_incident_time_to_resolve.py::TestTheScanFetchesWhatTheMapperReads::test_every_attribute_the_mapper_reads_is_projected
+FAILED tests/test_incident_time_to_resolve.py::TestTimeToResolveBadgeRefusesToOverstate::test_measured_from_the_fire_time_when_there_is_one
+FAILED tests/test_incident_time_to_resolve.py::TestTimeToResolveBadgeRefusesToOverstate::test_falls_back_to_the_write_time_when_the_source_gave_none
+FAILED tests/test_incident_time_to_resolve.py::TestTimeToResolveBadgeRefusesToOverstate::test_open_incident_renders_no_badge_rather_than_zero
+FAILED tests/test_incident_time_to_resolve.py::TestTimeToResolveBadgeRefusesToOverstate::test_resolution_before_the_fire_time_is_not_rendered
+FAILED tests/test_incident_time_to_resolve.py::TestTimeToResolveBadgeRefusesToOverstate::test_unparseable_input_is_not_guessed
+15 failed, 55 passed, 2 warnings in 2.89s

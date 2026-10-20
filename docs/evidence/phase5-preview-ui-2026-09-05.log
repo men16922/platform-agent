@@ -1,0 +1,192 @@
+P5-D / M58 — local preview UI and role-edit write grant preservation
+Date: 2026-09-05. Machine: local macOS, Python 3.13. Next.js 16.3.3.
+Scope: actual Auth.js dev credentials sessions + production Next server on loopback;
+local Python planner reads this repository Git HEAD; fixture JSON is reread per request.
+No remote Lambda invocation, Vercel deployment, real user grant change, commit/push or GitHub PR creation.
+
+Commands:
+  npm --prefix dashboard run build
+  /opt/anaconda3/bin/python3.13 -m pytest tests/test_registry_preview_ui.py tests/test_registry_local.py -q
+  make check
+
+HTTP procedure: GET /api/auth/csrf, POST /api/auth/callback/dev-credentials with
+its csrfToken, GET /api/auth/session, then authenticated POST to
+/api/dashboard/platform/attach/preview with Origin=http://localhost:3105 and
+X-Registry-Preview: 1, Content-Type: application/json. Cookie bytes are not logged.
+Each named user uses a newly started process with DASHBOARD_DEV_AUTH_USER pinned.
+Fixture grants are edited between requests and restored in finally.
+Allowed request: tenant=acme, env=prod, capability=logging, version=7.1.0.
+Response assertions: no-store, path=platform/tenants/acme.yaml, exactly logging: loki 7.1.0 diff.
+
+=== Final actual Auth.js HTTP matrix ===
+Real Auth.js session: operator-demo operator
+explicit grant 200 preview ready
+write grant revoked; same session 403 registry_write_forbidden
+read grant only 403 registry_write_forbidden
+already attached 409 already_attached
+forged username 422 invalid_request
+forged role 422 invalid_request
+forged path 422 invalid_request
+forged subject 422 invalid_request
+forged registry_write_tenants 422 invalid_request
+cross origin 403 cross_origin_request
+no origin 403 cross_origin_request
+no custom header 403 cross_origin_request
+cross-site fetch metadata 403 cross_origin_request
+oversize 413 request_too_large
+unauthenticated 401 session_required
+deleted user 403 registry_write_forbidden
+user store failure 503 user_store_unavailable
+
+Real Auth.js session: viewer-demo viewer
+viewer with write grant 403 registry_write_forbidden
+
+Real Auth.js session: men16922 admin
+explicit grant 200 preview ready
+write grant revoked; same session 403 registry_write_forbidden
+read grant only 403 registry_write_forbidden
+already attached 409 already_attached
+forged username 422 invalid_request
+forged role 422 invalid_request
+forged path 422 invalid_request
+forged subject 422 invalid_request
+forged registry_write_tenants 422 invalid_request
+cross origin 403 cross_origin_request
+no origin 403 cross_origin_request
+no custom header 403 cross_origin_request
+cross-site fetch metadata 403 cross_origin_request
+oversize 413 request_too_large
+unauthenticated 401 session_required
+deleted user 403 registry_write_forbidden
+user store failure 503 user_store_unavailable
+
+unconfigured planner: 503 planner_not_configured
+
+=== Actual DynamoDB Local + existing user POST route ===
+Real Auth.js admin users route + DynamoDB Local: role=viewer, latest write grant preserved=['acme']
+Real Auth.js admin users route + DynamoDB Local: role=operator, latest write grant preserved=['globex']
+Actual DynamoDB Local: two role audit records persisted
+Actual DynamoDB Local missing user table: HTTP 500, no demo success
+
+=== Mutations against executable TS/source wiring guards ===
+ignore Lambda FunctionError: RED 1 failed, 32 passed in 1.43s
+origin checks bypassed: RED 2 failed, 31 passed in 1.42s
+authority fields accepted: RED 6 failed, 27 passed in 1.42s
+expired preview accepted: RED 1 failed, 32 passed in 1.42s
+current session identity replaced: RED 1 failed, 32 passed in 1.41s
+role update overwrites write grant: RED 3 failed, 30 passed in 1.42s
+Restored bytes: 38 passed in 1.81s
+
+=== Final production build after mutation byte restoration ===
+
+> dashboard@0.1.0 build
+> next build
+
+▲ Next.js 16.3.3 (Turbopack)
+- Environments: .env.local
+⚠ Warning: Next.js ignored package-lock.json in /Users/men1692 because it is outside the current Git repository (/Users/men1692/Desktop/AWS/platform-agent).
+ To use this directory, set `turbopack.root` in your Next.js config.
+
+✓ Running next.config.ts took 14ms
+
+⚠ The Edge Runtime is deprecated. You can use the "nodejs" runtime instead. Learn more: https://nextjs.org/docs/messages/edge-runtime-deprecated
+  Creating an optimized production build ...
+✓ Compiled successfully in 437ms
+  Running TypeScript ...
+  Finished TypeScript in 928ms ...
+  Collecting page data using 15 workers ...
+⚠ Using edge runtime on a page currently disables static generation for that page
+  Generating static pages using 15 workers (0/3) ...
+✓ Generating static pages using 15 workers (3/3) in 79ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /agents
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/dashboard/activities
+├ ƒ /api/dashboard/agents/deploy
+├ ƒ /api/dashboard/agents/deploy/stream
+├ ƒ /api/dashboard/agents/models
+├ ƒ /api/dashboard/agents/onprem-status
+├ ƒ /api/dashboard/audit
+├ ƒ /api/dashboard/deployments
+├ ƒ /api/dashboard/deployments/[id]/rollback
+├ ƒ /api/dashboard/deployments/trigger
+├ ƒ /api/dashboard/health
+├ ƒ /api/dashboard/incidents
+├ ƒ /api/dashboard/incidents/[id]/approve
+├ ƒ /api/dashboard/platform/attach/preview
+├ ƒ /api/dashboard/platform/status
+├ ƒ /api/dashboard/users
+├ ƒ /audit
+├ ƒ /deployments
+├ ƒ /deployments/[id]
+├ ƒ /history
+├ ƒ /incidents
+├ ƒ /incidents/[id]
+├ ƒ /opengraph-image
+├ ƒ /provisioning
+├ ƒ /twitter-image
+└ ƒ /users
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+=== DynamoDB Local method and cleanup ===
+Owned container: platform-agent-p5d-dynamodb, amazon/dynamodb-local:latest,
+127.0.0.1:8105 -> 8000, -inMemory -sharedDb, --rm.
+Python boto3 created p5d-users(username HASH) and p5d-audit(audit_id HASH).
+Next used DASHBOARD_DATA_SOURCE=aws, AWS_ROLE_ARN empty,
+AWS_ENDPOINT_URL and AWS_ENDPOINT_URL_DYNAMODB=http://127.0.0.1:8105,
+dummy AWS credentials, DASHBOARD_USERS_TABLE=p5d-users, DASHBOARD_AUDIT_TABLE=p5d-audit.
+Auth.js local-dev session was admin. Before each role edit the fixture write grant
+was updated independently; actual consistent GetItem after the users POST proved
+its current value and read tenants remained. Audit table had two actual records.
+Removing the users table made the users POST return 500 (no demo success).
+Container stopped and --rm removed it; docker ps -a filter returned no match.
+All owned Next processes terminated; lsof port 3105 returned no listener.
+
+=== Browser inspection ===
+Actual Chrome via CUA, local Auth.js operator session.
+Clicked Sign in (Local Dev), navigated Provisioning, filled all four fields,
+submitted Create preview. Visually inspected screenshot: four labeled inputs,
+Preview ready, expiry, full base SHA and acme path, canonical one-line logging diff.
+Changed environment to dev: old preview cleared; submitted again and saw the
+already-attached alert. No PR submission control is present.
+Browser inspection preceded two nonvisual server hardenings (stdin error handler,
+response identifier whitespace rejection); final build and actual HTTP matrix above
+were rerun after both. No UI source changed after the visual inspection.
+
+=== Guard execution boundaries ===
+Six mutations were made one at a time and byte-restored in finally. Each produced
+assertion failures; restored suite: 38 passed. First mutation-run reporter itself
+mistook the source excerpt `error` for a pytest error count; summary-line parsing
+fixed the reporter and all six were rerun. No source remained mutated.
+Initial final gate: 1 failed, 2666 passed, 2 skipped in 54.87s; only failure was the
+new evidence pointer before this log existed. Final rerun follows below.
+TS tests require dashboard npm dependencies; they skip explicitly if unavailable.
+Remote SDK FunctionError handling is tested through decoded Invoke result values,
+not by mocking an AWS service or claiming a live Lambda call.
+
+=== Final implementation SHA-256 ===
+bd8e210244edba6d8c91611631dc8147e8b2ecc8991ef674d5ecae372d017066  dashboard/src/lib/registry-preview-contract.ts
+13e9c4afefb4d15da5968afc29e996c88d0171839fa5eaf3beb659a6cad470b6  dashboard/src/lib/registry-preview.ts
+a0c0e9782d05185d998142166d71e1fcd5bc6a97157abc96ef6b1f15bf7ffefa  dashboard/src/lib/user-role-update.ts
+5319ce8e0b6fe23ae27b6900ae52914f1813dd10a29c84fff3be013550b2ac0c  dashboard/src/lib/user-data.ts
+72268d1fae6091f70da70f95590b947962672ae3be0b1e40b0312fd4add6d334  dashboard/src/app/api/dashboard/platform/attach/preview/route.ts
+e2d2a41b9ee8355da0e9b351433c43b34ef6f707e33053cfb41320892d744c53  dashboard/src/components/registry-attachment-preview.tsx
+c97b54f86778a86d3e341f14dd8f64854a47d3421afbd1f90a12f855ee72c2fe  dashboard/src/app/provisioning/page.tsx
+2c585a75a87d385984dca8f8f41d60877aa725e9d7a192665bfa0614526c1ac4  src/agents/platform/registry_local.py
+0475c7db9fb1bcff71a147fc6de55a5b9b2d88da12e8536d41bbcd2244e88356  tests/test_registry_preview_ui.py
+41672b1675454223ad144806b6cec712786438506c4bb6711d09217e77688805  tests/test_registry_local.py
+
+=== Final gate ===
+make check: 2667 passed, 2 skipped, 21 warnings in 50.34s
+Exit code: 0. Local macOS / Python 3.13, 2026-09-05.
+git diff --check: exit 0. Final implementation hashes above reverified.

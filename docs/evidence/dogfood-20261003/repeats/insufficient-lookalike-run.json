@@ -1,0 +1,53 @@
+{
+  "label": "insufficient-lookalike",
+  "request_id": "fe50a420-030e-4b8b-a4cc-126a1e37f824",
+  "status": "failed",
+  "claims": 1,
+  "acceptance_to_persistence_sec": 4.208,
+  "tool_calls": {},
+  "record": null,
+  "state": {
+    "request_id": "fe50a420-030e-4b8b-a4cc-126a1e37f824",
+    "actor": "local-dev",
+    "request": {
+      "instruction": "Read-only diagnosis exercise, no tools or resource changes. Snapshot A: a new Pod is Pending, waiting reason ImagePullBackOff, registry response manifest unknown. Snapshot B: the image is already running, but an HTTP readiness check returns 503 after a dependency timeout. Does the same root cause or rollback decision follow from both? Explain the difference, what is still uncertain, and what evidence would justify action. Do not invent evidence or claim the live orders-api-dogfood is in either state.",
+      "model": "local-qwen",
+      "provider": "onprem",
+      "environment": null
+    },
+    "fingerprint": "7e87036e6e0052b5956c95439775d990c669f0cec949d0a534d281896dd943af",
+    "instance": "a48a9dbfebc24465a5a4d6c9dfda60b0",
+    "status": "failed",
+    "updated_at": 1791008663.967094,
+    "events": [
+      {
+        "seq": 1,
+        "type": "ready",
+        "request_id": "fe50a420-030e-4b8b-a4cc-126a1e37f824",
+        "agent": "local-qwen"
+      },
+      {
+        "type": "reasoning",
+        "text": "The two snapshots describe different root causes and thus require different actions:\n\n1. **Snapshot A: ImagePullBackOff**\n   - **Root Cause:** The Pod cannot pull the image from the registry.\n   - **Evidence:** Registry response manifest unknown.\n   - **Uncertainty:** The registry might be misconfigured, the image tag might not exist, or network connectivity issues could prevent pulling the image.\n\n2. **Snapshot B: HTTP 503 Readiness Check**\n   - **Root Cause:** The application inside the Pod is running but failing its readiness probe.\n   - **Evidence:** HTTP 503 response from the readiness endpoint, indicating the application is not ready to handle traffic.\n   - **Uncertainty:** The application might be experiencing dependency timeouts or other transient issues.\n\n**Actionable Differences:** \n- For Snapshot A, the focus should be on verifying the registry configuration and image availability.\n- For Snapshot B, the focus should be on application health and dependencies.\n\n**Evidence Needed for Action:** \n- For Snapshot A, confirm registry connectivity and image existence.\n- For Snapshot B, check application logs for dependency issues or errors.\n\nNo rollback is warranted in either case without further evidence of application instability or errors. The actions differ based on the observed symptoms and underlying issues.",
+        "seq": 2,
+        "request_id": "fe50a420-030e-4b8b-a4cc-126a1e37f824"
+      },
+      {
+        "type": "done",
+        "ok": false,
+        "agent": "local-qwen",
+        "model": "local-qwen",
+        "provider": "onprem",
+        "summary": "The two snapshots describe different root causes and thus require different actions:\n\n1. **Snapshot A: ImagePullBackOff**\n   - **Root Cause:** The Pod cannot pull the image from the registry.\n   - **Evidence:** Registry response manifest unknown.\n   - **Uncertainty:** The registry might be misconfigured, the image tag might not exist, or network connectivity issues could prevent pulling the image.\n\n2. **Snapshot B: HTTP 503 Readiness Check**\n   - **Root Cause:** The application inside the Pod is running but failing its readiness probe.\n   - **Evidence:** HTTP 503 response from the readiness endpoint, indicating the application is not ready to handle traffic.\n   - **Uncertainty:** The application might be experiencing dependency timeouts or other transient issues.\n\n**Actionable Differences:** \n- For Snapshot A, the focus should be on verifying the registry configuration and image availability.\n- For Snapshot B, the focus should be on application health and dependencies.\n\n**Evidence Needed for Action:** \n- For Snapshot A, confirm registry connectivity and image existence.\n- For Snapshot B, check application logs for dependency issues or errors.\n\nNo rollback is warranted in either case without further evidence of application instability or errors. The actions differ based on the observed symptoms and underlying issues.",
+        "suitability": {
+          "verdict": "recommended",
+          "reason": "Native pairing — Local LLM (Qwen) is the On-Prem-native brain."
+        },
+        "record": null,
+        "seq": 3,
+        "request_id": "fe50a420-030e-4b8b-a4cc-126a1e37f824"
+      }
+    ]
+  },
+  "activity_rows": []
+}

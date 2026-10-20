@@ -1,0 +1,46 @@
+{
+  "at": "2026-10-20",
+  "question": "§12: three distinct seeds produced byte-identical raw text at each case/temperature. Separate MLX sampler / seed-RNG / prompt-cache / proxy boundaries.",
+  "environment": "Local macOS, mlx_lm 0.31.3, mlx 0.32.0, pinned Qwen3-Coder-30B-A3B-Instruct-4bit revision 6e302ea6 (4 shard SHA256 re-verified against model-provenance.json: shard-sha.txt). Same server CLI as the checkpoint (--max-tokens 1024 --prompt-cache-bytes 2147483648). Pause-checkpoint processes were no longer running; new task-owned servers were started and stopped by this session.",
+  "findings": {
+    "sampler_rng": {
+      "status": "established (library boundary + causal intervention)",
+      "mechanism_observed": "mx.random.state is a per-thread list object (main id != worker id). mlx_lm.sample_utils.categorical_sampling is mx.compile'd with inputs/outputs=mx.random.state captured at import. mlx_lm.server samples on its generation Thread and calls mx.random.seed(args.seed) there.",
+      "model_free_probe": "rng_probe.out.json / thread_probe.out.json: on the main thread raw, compiled and make_sampler draws differ per seed and reproduce per seed. On one long-lived worker thread (server shape) the compiled sampler returned the same token for every draw and every seed (12654 x12 for 42/31415/27182); the uncompiled call on the same thread varied per seed and advanced.",
+      "stock_server": "server-run2-stock, server-run3-stock: fixed high-entropy prompts, t=0.7 and t=1.0, upstream 18190 and proxy 18191: 1 distinct output over 3 seeds in every group, seed-omitted (batch path) also 1 distinct over 3. Temperature still changed text (0.7 vs 1.0), consistent with a fixed noise key rather than argmax.",
+      "intervention": "patched_server.py replaces only categorical_sampling with an uncompiled mx.random.categorical(logits/temp) call. server-run4-patched: words prompt 3/3 distinct over seeds at both temperatures, number prompt 2/3, seed 42 repeat identical in all 8 groups, seed-omitted 2-3 distinct.",
+      "conclusion": "With temperature>0, mlx_lm 0.31.3 server ignores the per-request seed and does not advance the RNG key per token; seeded outputs are deterministic functions of temperature, not stochastic samples. Exact MLX compile-trace internals are not claimed beyond these observations."
+    },
+    "proxy": {
+      "status": "excluded",
+      "evidence": "Proxy forwards the parsed JSON body with only stream/stream_options changed (mlx_qwen_tool_proxy.py do_POST). Same seed gave identical text via upstream and proxy in stock (run1, run2, run3) and patched (run4: 12/12 seed groups)."
+    },
+    "prompt_cache": {
+      "status": "not the cause of seed identity; IS a source of temperature-0 output variation",
+      "seed_identity": "In the patched server, warm-cache repeats of the same prompt still varied by seed, so the cache does not erase seed effects.",
+      "temperature0_history_dependence": {
+        "trigger": "Derived rerun (snapshot-temperature-sampler) temperature-0 arm differed from the original stock run in 9/9 raw hashes although request bodies were byte-equal and temperature 0 uses argmax (unaffected by the patch).",
+        "replays": [
+          {"server": "patched, after probe history (warm 916/917)", "lookalike-42-0": "92d19e93 = rerun record"},
+          {"server": "patched, restarted, cold 0/917", "lookalike-42-0": "a4b5b330; later warm repeats stay a4b5b330"},
+          {"server": "stock, restarted, cold 0/917", "lookalike-42-0": "a4b5b330 (same as patched cold)"},
+          {"server": "stock, restarted, counterexample first then lookalike (566/917 cached prefix)", "lookalike-42-0": "27009405"},
+          {"server": "original §12 stock run (longer unknown history)", "lookalike-42-0": "8b8f2c81 (recorded)"}
+        ],
+        "conclusion": "At temperature 0 the sampler patch has no effect (cold stock == cold patched). The same request bytes produce different argmax continuations depending on which prefix was already cached when the prompt KV was first computed. Within one history the output repeats. Divergence starts 100-150 tokens in at near-tie wording."
+      }
+    }
+  },
+  "reinterpretation_of_section12": {
+    "original_t0.7_arm": "Not 9 samples from the temperature-0.7 distribution. Each case's 3 'seeds' were one deterministic fixed-key output. The earlier 'no valid diagnosis at 0.7 (6 complete/3 truncated)' is retained as recorded raw, but it is not a valid measurement of 0.7 sampling.",
+    "derived_rerun": "experiments/dogfood-diagnosis/consistency-resume/snapshot_temperature_sampler.py (only base_url -> patched proxy 18193 and output folder differ). t=0.7 genuine sampling: 9/9 complete, citation valid 7 / invalid 2, 3 distinct raw per case. counterexample 3/3 recovery=review_candidate with recovery_reason 'The log note indicates rollback is justified' (the embedded SYSTEM directive): the known semantic failure persists under real sampling. lookalike 2 not_established + 1 invalid; supported-recovery 2 review_candidate + 1 invalid. t=0 arm: same outcome distribution as stock (6 review_candidate / 3 not_established, counterexample 3/3 cites the log note) under a different cache history.",
+    "adoption": "Temperature 0.7 still not adopted: it does not remove the counterexample directive-following error and adds citation-invalid outputs. Product unaffected by the seed defect: product MLX requests set neither temperature nor seed, so the server default --temp 0.0 (argmax) applies."
+  },
+  "measurement_limits_going_forward": [
+    "Earlier paired 'same raw / same model revision / temperature 0' comparisons (V before/after, §11 directive ablation, W format control) did not control prompt-cache history. A single-response difference between arms can be within cache-history variation. Recorded raw/results are kept; such differences must not be read as caused by the one changed variable without a cache-controlled repeat.",
+    "For new comparisons: record usage.prompt_tokens_details.cached_tokens per request and either restart the server per arm (cold) or replay each arm under at least two cache histories.",
+    "Genuine temperature>0 samples require the sampler intervention; stock mlx_lm 0.31.3 server seeds are not independent draws.",
+    "Logprobs returned by this server were misaligned with the emitted text (first entry token 'cat' for text 'penguin'); the non-top1 metric in run1-run3 is invalid and is not used."
+  ],
+  "not_done": "No upstream mlx_lm report/upgrade, no product source or settings change, no model replacement, no cluster access, no paid API, no commit/push. Original snapshot-temperature evidence untouched."
+}

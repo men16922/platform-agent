@@ -1,0 +1,10790 @@
+[
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "upstream",
+  "seed": 42,
+  "temperature": 0.7,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 4,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 19,
+    "token": "4",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 19,
+      "token": "4",
+      "logprob": -0.75
+     },
+     {
+      "id": 20,
+      "token": "5",
+      "logprob": -1.375
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 17,
+    "token": "2",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 17,
+      "token": "2",
+      "logprob": 0.0
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -4.5
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 22,
+    "token": "7",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": 0.0
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -7.0
+     },
+     {
+      "id": 18,
+      "token": "3",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": 0.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -4.25
+     },
+     {
+      "id": 271,
+      "token": "ĊĊ",
+      "logprob": -5.875
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "upstream",
+  "seed": 31415,
+  "temperature": 0.7,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 4,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 19,
+    "token": "4",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 19,
+      "token": "4",
+      "logprob": -0.75
+     },
+     {
+      "id": 20,
+      "token": "5",
+      "logprob": -1.375
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 17,
+    "token": "2",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 17,
+      "token": "2",
+      "logprob": 0.0
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -4.5
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 22,
+    "token": "7",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": 0.0
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -7.0
+     },
+     {
+      "id": 18,
+      "token": "3",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": 0.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -4.25
+     },
+     {
+      "id": 271,
+      "token": "ĊĊ",
+      "logprob": -5.875
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "upstream",
+  "seed": 27182,
+  "temperature": 0.7,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 4,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 19,
+    "token": "4",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 19,
+      "token": "4",
+      "logprob": -0.75
+     },
+     {
+      "id": 20,
+      "token": "5",
+      "logprob": -1.375
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 17,
+    "token": "2",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 17,
+      "token": "2",
+      "logprob": 0.0
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -4.5
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 22,
+    "token": "7",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": 0.0
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -7.0
+     },
+     {
+      "id": 18,
+      "token": "3",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": 0.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -4.25
+     },
+     {
+      "id": 271,
+      "token": "ĊĊ",
+      "logprob": -5.875
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "upstream",
+  "seed": 42,
+  "temperature": 0.7,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 4,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 19,
+    "token": "4",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 19,
+      "token": "4",
+      "logprob": -0.75
+     },
+     {
+      "id": 20,
+      "token": "5",
+      "logprob": -1.375
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 17,
+    "token": "2",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 17,
+      "token": "2",
+      "logprob": 0.0
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -4.5
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 22,
+    "token": "7",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": 0.0
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -7.0
+     },
+     {
+      "id": 18,
+      "token": "3",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": 0.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -4.25
+     },
+     {
+      "id": 271,
+      "token": "ĊĊ",
+      "logprob": -5.875
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "upstream",
+  "seed": null,
+  "temperature": 0.7,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 4,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 19,
+    "token": "4",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 19,
+      "token": "4",
+      "logprob": -0.75
+     },
+     {
+      "id": 20,
+      "token": "5",
+      "logprob": -1.375
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 17,
+    "token": "2",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 17,
+      "token": "2",
+      "logprob": 0.0
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -4.5
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 22,
+    "token": "7",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": 0.0
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -7.0
+     },
+     {
+      "id": 18,
+      "token": "3",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": 0.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -4.25
+     },
+     {
+      "id": 271,
+      "token": "ĊĊ",
+      "logprob": -5.875
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "upstream",
+  "seed": null,
+  "temperature": 0.7,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 4,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 19,
+    "token": "4",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 19,
+      "token": "4",
+      "logprob": -0.75
+     },
+     {
+      "id": 20,
+      "token": "5",
+      "logprob": -1.375
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 17,
+    "token": "2",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 17,
+      "token": "2",
+      "logprob": 0.0
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -4.5
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 22,
+    "token": "7",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": 0.0
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -7.0
+     },
+     {
+      "id": 18,
+      "token": "3",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": 0.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -4.25
+     },
+     {
+      "id": 271,
+      "token": "ĊĊ",
+      "logprob": -5.875
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "upstream",
+  "seed": null,
+  "temperature": 0.7,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 4,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 19,
+    "token": "4",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 19,
+      "token": "4",
+      "logprob": -0.75
+     },
+     {
+      "id": 20,
+      "token": "5",
+      "logprob": -1.375
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 17,
+    "token": "2",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 17,
+      "token": "2",
+      "logprob": 0.0
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -4.5
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 22,
+    "token": "7",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": 0.0
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -7.0
+     },
+     {
+      "id": 18,
+      "token": "3",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": 0.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -4.25
+     },
+     {
+      "id": 271,
+      "token": "ĊĊ",
+      "logprob": -5.875
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "proxy",
+  "seed": 42,
+  "temperature": 0.7,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "proxy",
+  "seed": 31415,
+  "temperature": 0.7,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "proxy",
+  "seed": 27182,
+  "temperature": 0.7,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "proxy",
+  "seed": 42,
+  "temperature": 0.7,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "proxy",
+  "seed": null,
+  "temperature": 0.7,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "proxy",
+  "seed": null,
+  "temperature": 0.7,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "proxy",
+  "seed": null,
+  "temperature": 0.7,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "upstream",
+  "seed": 42,
+  "temperature": 1.0,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 4,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 19,
+    "token": "4",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 19,
+      "token": "4",
+      "logprob": -0.75
+     },
+     {
+      "id": 20,
+      "token": "5",
+      "logprob": -1.375
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 17,
+    "token": "2",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 17,
+      "token": "2",
+      "logprob": 0.0
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -4.5
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 22,
+    "token": "7",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": 0.0
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -7.0
+     },
+     {
+      "id": 18,
+      "token": "3",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": 0.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -4.25
+     },
+     {
+      "id": 271,
+      "token": "ĊĊ",
+      "logprob": -5.875
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "upstream",
+  "seed": 31415,
+  "temperature": 1.0,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 4,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 19,
+    "token": "4",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 19,
+      "token": "4",
+      "logprob": -0.75
+     },
+     {
+      "id": 20,
+      "token": "5",
+      "logprob": -1.375
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 17,
+    "token": "2",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 17,
+      "token": "2",
+      "logprob": 0.0
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -4.5
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 22,
+    "token": "7",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": 0.0
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -7.0
+     },
+     {
+      "id": 18,
+      "token": "3",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": 0.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -4.25
+     },
+     {
+      "id": 271,
+      "token": "ĊĊ",
+      "logprob": -5.875
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "upstream",
+  "seed": 27182,
+  "temperature": 1.0,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 4,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 19,
+    "token": "4",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 19,
+      "token": "4",
+      "logprob": -0.75
+     },
+     {
+      "id": 20,
+      "token": "5",
+      "logprob": -1.375
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 17,
+    "token": "2",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 17,
+      "token": "2",
+      "logprob": 0.0
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -4.5
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 22,
+    "token": "7",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": 0.0
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -7.0
+     },
+     {
+      "id": 18,
+      "token": "3",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": 0.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -4.25
+     },
+     {
+      "id": 271,
+      "token": "ĊĊ",
+      "logprob": -5.875
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "upstream",
+  "seed": 42,
+  "temperature": 1.0,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 4,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 19,
+    "token": "4",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 19,
+      "token": "4",
+      "logprob": -0.75
+     },
+     {
+      "id": 20,
+      "token": "5",
+      "logprob": -1.375
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 17,
+    "token": "2",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 17,
+      "token": "2",
+      "logprob": 0.0
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -4.5
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 22,
+    "token": "7",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": 0.0
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -7.0
+     },
+     {
+      "id": 18,
+      "token": "3",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": 0.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -4.25
+     },
+     {
+      "id": 271,
+      "token": "ĊĊ",
+      "logprob": -5.875
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "upstream",
+  "seed": null,
+  "temperature": 1.0,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 4,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 19,
+    "token": "4",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 19,
+      "token": "4",
+      "logprob": -0.75
+     },
+     {
+      "id": 20,
+      "token": "5",
+      "logprob": -1.375
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 17,
+    "token": "2",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 17,
+      "token": "2",
+      "logprob": 0.0
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -4.5
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 22,
+    "token": "7",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": 0.0
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -7.0
+     },
+     {
+      "id": 18,
+      "token": "3",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": 0.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -4.25
+     },
+     {
+      "id": 271,
+      "token": "ĊĊ",
+      "logprob": -5.875
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "upstream",
+  "seed": null,
+  "temperature": 1.0,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 4,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 19,
+    "token": "4",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 19,
+      "token": "4",
+      "logprob": -0.75
+     },
+     {
+      "id": 20,
+      "token": "5",
+      "logprob": -1.375
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 17,
+    "token": "2",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 17,
+      "token": "2",
+      "logprob": 0.0
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -4.5
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 22,
+    "token": "7",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": 0.0
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -7.0
+     },
+     {
+      "id": 18,
+      "token": "3",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": 0.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -4.25
+     },
+     {
+      "id": 271,
+      "token": "ĊĊ",
+      "logprob": -5.875
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "upstream",
+  "seed": null,
+  "temperature": 1.0,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 4,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 19,
+    "token": "4",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 19,
+      "token": "4",
+      "logprob": -0.75
+     },
+     {
+      "id": 20,
+      "token": "5",
+      "logprob": -1.375
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 17,
+    "token": "2",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 17,
+      "token": "2",
+      "logprob": 0.0
+     },
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": -4.5
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 22,
+    "token": "7",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22,
+      "token": "7",
+      "logprob": 0.0
+     },
+     {
+      "id": 21,
+      "token": "6",
+      "logprob": -7.0
+     },
+     {
+      "id": 18,
+      "token": "3",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": 0.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -4.25
+     },
+     {
+      "id": 271,
+      "token": "ĊĊ",
+      "logprob": -5.875
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "proxy",
+  "seed": 42,
+  "temperature": 1.0,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "proxy",
+  "seed": 31415,
+  "temperature": 1.0,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "proxy",
+  "seed": 27182,
+  "temperature": 1.0,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "proxy",
+  "seed": 42,
+  "temperature": 1.0,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "proxy",
+  "seed": null,
+  "temperature": 1.0,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "proxy",
+  "seed": null,
+  "temperature": 1.0,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "number",
+  "path": "proxy",
+  "seed": null,
+  "temperature": 1.0,
+  "text": "427",
+  "text_sha256": "42f25adecf47629878e89e31b2073d1af009c9c76f4140a06313af5e5950eabc",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "upstream",
+  "seed": 42,
+  "temperature": 0.7,
+  "text": "penguin, umbrella, piano, bicycle, volcano, library, umbrella, castle\n(removed duplicate \"umbrella\" to make it eight unique nouns)",
+  "text_sha256": "76e6fb31aaa020eebdb0f74db952166b922ef95836ed4073325ebb50e9eeccf1",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 32,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 4616,
+    "token": "cat",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 4616,
+      "token": "cat",
+      "logprob": -1.25
+     },
+     {
+      "id": 6918,
+      "token": "car",
+      "logprob": -1.625
+     },
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": -1.875
+     }
+    ]
+   },
+   {
+    "id": 45872,
+    "token": "enguin",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 45872,
+      "token": "enguin",
+      "logprob": 0.0
+     },
+     {
+      "id": 482,
+      "token": "ine",
+      "logprob": -3.125
+     },
+     {
+      "id": 13088,
+      "token": "iano",
+      "logprob": -5.375
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.375
+     },
+     {
+      "id": 10109,
+      "token": ",c",
+      "logprob": -14.75
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.25
+     },
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -2.875
+     },
+     {
+      "id": 89818,
+      "token": "Ġtoaster",
+      "logprob": -3.75
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -10.5
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -14.625
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -1.625,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -1.625
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -1.75
+     },
+     {
+      "id": 26278,
+      "token": "Ġpiano",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -10.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -14.0
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -0.625,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -0.625
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -1.875
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -3.1875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.5
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -12.125
+     }
+    ]
+   },
+   {
+    "id": 65206,
+    "token": "Ġvolcano",
+    "logprob": -1.375,
+    "top_logprobs": [
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -1.375
+     },
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -1.625
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -12.0
+     }
+    ]
+   },
+   {
+    "id": 6733,
+    "token": "Ġlibrary",
+    "logprob": -0.125,
+    "top_logprobs": [
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -0.125
+     },
+     {
+      "id": 1013,
+      "token": "Ġte",
+      "logprob": -3.625
+     },
+     {
+      "id": 2311,
+      "token": "Ġbook",
+      "logprob": -3.875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -10.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -13.5625
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -1.75,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -1.75
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -1.75
+     },
+     {
+      "id": 55825,
+      "token": "Ġtelescope",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 2498,
+      "token": "Ġstand",
+      "logprob": -9.375
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.0
+     }
+    ]
+   },
+   {
+    "id": 36843,
+    "token": "Ġthunder",
+    "logprob": -1.5,
+    "top_logprobs": [
+     {
+      "id": 36843,
+      "token": "Ġthunder",
+      "logprob": -1.5
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -1.875
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": -0.375,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": -0.375
+     },
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": -1.5
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -2.375
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": -1.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": -1.0
+     },
+     {
+      "id": 7,
+      "token": "(",
+      "logprob": -1.375
+     },
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": -2.25
+     }
+    ]
+   },
+   {
+    "id": 45756,
+    "token": "removed",
+    "logprob": -2.0,
+    "top_logprobs": [
+     {
+      "id": 45756,
+      "token": "removed",
+      "logprob": -2.0
+     },
+     {
+      "id": 693,
+      "token": "Re",
+      "logprob": -2.25
+     },
+     {
+      "id": 2507,
+      "token": "Count",
+      "logprob": -2.625
+     }
+    ]
+   },
+   {
+    "id": 22513,
+    "token": "Ġduplicate",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22513,
+      "token": "Ġduplicate",
+      "logprob": 0.0
+     },
+     {
+      "id": 279,
+      "token": "Ġthe",
+      "logprob": -7.25
+     },
+     {
+      "id": 825,
+      "token": "Ġone",
+      "logprob": -8.5
+     }
+    ]
+   },
+   {
+    "id": 330,
+    "token": "Ġ\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 330,
+      "token": "Ġ\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 364,
+      "token": "Ġ'",
+      "logprob": -4.625
+     },
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -7.625
+     }
+    ]
+   },
+   {
+    "id": 3551,
+    "token": "umb",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 3551,
+      "token": "umb",
+      "logprob": 0.0
+     },
+     {
+      "id": 35108,
+      "token": "castle",
+      "logprob": -9.125
+     },
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -12.125
+     }
+    ]
+   },
+   {
+    "id": 33042,
+    "token": "rella",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 33042,
+      "token": "rella",
+      "logprob": 0.0
+     },
+     {
+      "id": 72923,
+      "token": "rellas",
+      "logprob": -15.75
+     },
+     {
+      "id": 74133,
+      "token": "rello",
+      "logprob": -16.25
+     }
+    ]
+   },
+   {
+    "id": 1,
+    "token": "\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 1,
+      "token": "\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 899,
+      "token": "\")",
+      "logprob": -6.0
+     },
+     {
+      "id": 497,
+      "token": "\",",
+      "logprob": -7.625
+     }
+    ]
+   },
+   {
+    "id": 311,
+    "token": "Ġto",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 311,
+      "token": "Ġto",
+      "logprob": -0.25
+     },
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -1.75
+     },
+     {
+      "id": 369,
+      "token": "Ġfor",
+      "logprob": -3.25
+     }
+    ]
+   },
+   {
+    "id": 1281,
+    "token": "Ġmake",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 1281,
+      "token": "Ġmake",
+      "logprob": -0.25
+     },
+     {
+      "id": 5978,
+      "token": "Ġensure",
+      "logprob": -2.375
+     },
+     {
+      "id": 3410,
+      "token": "Ġprovide",
+      "logprob": -5.25
+     }
+    ]
+   },
+   {
+    "id": 8063,
+    "token": "Ġeight",
+    "logprob": -0.5,
+    "top_logprobs": [
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.5
+     },
+     {
+      "id": 432,
+      "token": "Ġit",
+      "logprob": -1.375
+     },
+     {
+      "id": 1105,
+      "token": "Ġthem",
+      "logprob": -2.875
+     }
+    ]
+   },
+   {
+    "id": 8063,
+    "token": "Ġeight",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.25
+     },
+     {
+      "id": 9428,
+      "token": "Ġtruly",
+      "logprob": -1.5
+     },
+     {
+      "id": 8094,
+      "token": "Ġseven",
+      "logprob": -6.375
+     }
+    ]
+   },
+   {
+    "id": 4911,
+    "token": "Ġunique",
+    "logprob": -0.125,
+    "top_logprobs": [
+     {
+      "id": 4911,
+      "token": "Ġunique",
+      "logprob": -0.125
+     },
+     {
+      "id": 12460,
+      "token": "Ġdistinct",
+      "logprob": -2.25
+     },
+     {
+      "id": 2155,
+      "token": "Ġdifferent",
+      "logprob": -3.375
+     }
+    ]
+   },
+   {
+    "id": 89838,
+    "token": "Ġnouns",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 89838,
+      "token": "Ġnouns",
+      "logprob": -0.25
+     },
+     {
+      "id": 3589,
+      "token": "Ġitems",
+      "logprob": -1.875
+     },
+     {
+      "id": 4244,
+      "token": "Ġwords",
+      "logprob": -2.75
+     }
+    ]
+   },
+   {
+    "id": 8,
+    "token": ")",
+    "logprob": -0.5,
+    "top_logprobs": [
+     {
+      "id": 8,
+      "token": ")",
+      "logprob": -0.5
+     },
+     {
+      "id": 692,
+      "token": ")ĊĊ",
+      "logprob": -0.875
+     },
+     {
+      "id": 340,
+      "token": ")Ċ",
+      "logprob": -3.875
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": 0.0
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -4.125
+     },
+     {
+      "id": 4710,
+      "token": "ĠĊĊ",
+      "logprob": -5.375
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "upstream",
+  "seed": 31415,
+  "temperature": 0.7,
+  "text": "penguin, umbrella, piano, bicycle, volcano, library, umbrella, castle\n(removed duplicate \"umbrella\" to make it eight unique nouns)",
+  "text_sha256": "76e6fb31aaa020eebdb0f74db952166b922ef95836ed4073325ebb50e9eeccf1",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 32,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 4616,
+    "token": "cat",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 4616,
+      "token": "cat",
+      "logprob": -1.25
+     },
+     {
+      "id": 6918,
+      "token": "car",
+      "logprob": -1.625
+     },
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": -1.875
+     }
+    ]
+   },
+   {
+    "id": 45872,
+    "token": "enguin",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 45872,
+      "token": "enguin",
+      "logprob": 0.0
+     },
+     {
+      "id": 482,
+      "token": "ine",
+      "logprob": -3.125
+     },
+     {
+      "id": 13088,
+      "token": "iano",
+      "logprob": -5.375
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.375
+     },
+     {
+      "id": 10109,
+      "token": ",c",
+      "logprob": -14.75
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.25
+     },
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -2.875
+     },
+     {
+      "id": 89818,
+      "token": "Ġtoaster",
+      "logprob": -3.75
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -10.5
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -14.625
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -1.625,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -1.625
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -1.75
+     },
+     {
+      "id": 26278,
+      "token": "Ġpiano",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -10.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -14.0
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -0.625,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -0.625
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -1.875
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -3.1875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.5
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -12.125
+     }
+    ]
+   },
+   {
+    "id": 65206,
+    "token": "Ġvolcano",
+    "logprob": -1.375,
+    "top_logprobs": [
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -1.375
+     },
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -1.625
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -12.0
+     }
+    ]
+   },
+   {
+    "id": 6733,
+    "token": "Ġlibrary",
+    "logprob": -0.125,
+    "top_logprobs": [
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -0.125
+     },
+     {
+      "id": 1013,
+      "token": "Ġte",
+      "logprob": -3.625
+     },
+     {
+      "id": 2311,
+      "token": "Ġbook",
+      "logprob": -3.875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -10.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -13.5625
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -1.75,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -1.75
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -1.75
+     },
+     {
+      "id": 55825,
+      "token": "Ġtelescope",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 2498,
+      "token": "Ġstand",
+      "logprob": -9.375
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.0
+     }
+    ]
+   },
+   {
+    "id": 36843,
+    "token": "Ġthunder",
+    "logprob": -1.5,
+    "top_logprobs": [
+     {
+      "id": 36843,
+      "token": "Ġthunder",
+      "logprob": -1.5
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -1.875
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": -0.375,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": -0.375
+     },
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": -1.5
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -2.375
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": -1.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": -1.0
+     },
+     {
+      "id": 7,
+      "token": "(",
+      "logprob": -1.375
+     },
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": -2.25
+     }
+    ]
+   },
+   {
+    "id": 45756,
+    "token": "removed",
+    "logprob": -2.0,
+    "top_logprobs": [
+     {
+      "id": 45756,
+      "token": "removed",
+      "logprob": -2.0
+     },
+     {
+      "id": 693,
+      "token": "Re",
+      "logprob": -2.25
+     },
+     {
+      "id": 2507,
+      "token": "Count",
+      "logprob": -2.625
+     }
+    ]
+   },
+   {
+    "id": 22513,
+    "token": "Ġduplicate",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22513,
+      "token": "Ġduplicate",
+      "logprob": 0.0
+     },
+     {
+      "id": 279,
+      "token": "Ġthe",
+      "logprob": -7.25
+     },
+     {
+      "id": 825,
+      "token": "Ġone",
+      "logprob": -8.5
+     }
+    ]
+   },
+   {
+    "id": 330,
+    "token": "Ġ\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 330,
+      "token": "Ġ\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 364,
+      "token": "Ġ'",
+      "logprob": -4.625
+     },
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -7.625
+     }
+    ]
+   },
+   {
+    "id": 3551,
+    "token": "umb",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 3551,
+      "token": "umb",
+      "logprob": 0.0
+     },
+     {
+      "id": 35108,
+      "token": "castle",
+      "logprob": -9.125
+     },
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -12.125
+     }
+    ]
+   },
+   {
+    "id": 33042,
+    "token": "rella",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 33042,
+      "token": "rella",
+      "logprob": 0.0
+     },
+     {
+      "id": 72923,
+      "token": "rellas",
+      "logprob": -15.75
+     },
+     {
+      "id": 74133,
+      "token": "rello",
+      "logprob": -16.25
+     }
+    ]
+   },
+   {
+    "id": 1,
+    "token": "\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 1,
+      "token": "\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 899,
+      "token": "\")",
+      "logprob": -6.0
+     },
+     {
+      "id": 497,
+      "token": "\",",
+      "logprob": -7.625
+     }
+    ]
+   },
+   {
+    "id": 311,
+    "token": "Ġto",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 311,
+      "token": "Ġto",
+      "logprob": -0.25
+     },
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -1.75
+     },
+     {
+      "id": 369,
+      "token": "Ġfor",
+      "logprob": -3.25
+     }
+    ]
+   },
+   {
+    "id": 1281,
+    "token": "Ġmake",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 1281,
+      "token": "Ġmake",
+      "logprob": -0.25
+     },
+     {
+      "id": 5978,
+      "token": "Ġensure",
+      "logprob": -2.375
+     },
+     {
+      "id": 3410,
+      "token": "Ġprovide",
+      "logprob": -5.25
+     }
+    ]
+   },
+   {
+    "id": 8063,
+    "token": "Ġeight",
+    "logprob": -0.5,
+    "top_logprobs": [
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.5
+     },
+     {
+      "id": 432,
+      "token": "Ġit",
+      "logprob": -1.375
+     },
+     {
+      "id": 1105,
+      "token": "Ġthem",
+      "logprob": -2.875
+     }
+    ]
+   },
+   {
+    "id": 8063,
+    "token": "Ġeight",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.25
+     },
+     {
+      "id": 9428,
+      "token": "Ġtruly",
+      "logprob": -1.5
+     },
+     {
+      "id": 8094,
+      "token": "Ġseven",
+      "logprob": -6.375
+     }
+    ]
+   },
+   {
+    "id": 4911,
+    "token": "Ġunique",
+    "logprob": -0.125,
+    "top_logprobs": [
+     {
+      "id": 4911,
+      "token": "Ġunique",
+      "logprob": -0.125
+     },
+     {
+      "id": 12460,
+      "token": "Ġdistinct",
+      "logprob": -2.25
+     },
+     {
+      "id": 2155,
+      "token": "Ġdifferent",
+      "logprob": -3.375
+     }
+    ]
+   },
+   {
+    "id": 89838,
+    "token": "Ġnouns",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 89838,
+      "token": "Ġnouns",
+      "logprob": -0.25
+     },
+     {
+      "id": 3589,
+      "token": "Ġitems",
+      "logprob": -1.875
+     },
+     {
+      "id": 4244,
+      "token": "Ġwords",
+      "logprob": -2.75
+     }
+    ]
+   },
+   {
+    "id": 8,
+    "token": ")",
+    "logprob": -0.5,
+    "top_logprobs": [
+     {
+      "id": 8,
+      "token": ")",
+      "logprob": -0.5
+     },
+     {
+      "id": 692,
+      "token": ")ĊĊ",
+      "logprob": -0.875
+     },
+     {
+      "id": 340,
+      "token": ")Ċ",
+      "logprob": -3.875
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": 0.0
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -4.125
+     },
+     {
+      "id": 4710,
+      "token": "ĠĊĊ",
+      "logprob": -5.375
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "upstream",
+  "seed": 27182,
+  "temperature": 0.7,
+  "text": "penguin, umbrella, piano, bicycle, volcano, library, umbrella, castle\n(removed duplicate \"umbrella\" to make it eight unique nouns)",
+  "text_sha256": "76e6fb31aaa020eebdb0f74db952166b922ef95836ed4073325ebb50e9eeccf1",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 32,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 4616,
+    "token": "cat",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 4616,
+      "token": "cat",
+      "logprob": -1.25
+     },
+     {
+      "id": 6918,
+      "token": "car",
+      "logprob": -1.625
+     },
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": -1.875
+     }
+    ]
+   },
+   {
+    "id": 45872,
+    "token": "enguin",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 45872,
+      "token": "enguin",
+      "logprob": 0.0
+     },
+     {
+      "id": 482,
+      "token": "ine",
+      "logprob": -3.125
+     },
+     {
+      "id": 13088,
+      "token": "iano",
+      "logprob": -5.375
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.375
+     },
+     {
+      "id": 10109,
+      "token": ",c",
+      "logprob": -14.75
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.25
+     },
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -2.875
+     },
+     {
+      "id": 89818,
+      "token": "Ġtoaster",
+      "logprob": -3.75
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -10.5
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -14.625
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -1.625,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -1.625
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -1.75
+     },
+     {
+      "id": 26278,
+      "token": "Ġpiano",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -10.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -14.0
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -0.625,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -0.625
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -1.875
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -3.1875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.5
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -12.125
+     }
+    ]
+   },
+   {
+    "id": 65206,
+    "token": "Ġvolcano",
+    "logprob": -1.375,
+    "top_logprobs": [
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -1.375
+     },
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -1.625
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -12.0
+     }
+    ]
+   },
+   {
+    "id": 6733,
+    "token": "Ġlibrary",
+    "logprob": -0.125,
+    "top_logprobs": [
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -0.125
+     },
+     {
+      "id": 1013,
+      "token": "Ġte",
+      "logprob": -3.625
+     },
+     {
+      "id": 2311,
+      "token": "Ġbook",
+      "logprob": -3.875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -10.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -13.5625
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -1.75,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -1.75
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -1.75
+     },
+     {
+      "id": 55825,
+      "token": "Ġtelescope",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 2498,
+      "token": "Ġstand",
+      "logprob": -9.375
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.0
+     }
+    ]
+   },
+   {
+    "id": 36843,
+    "token": "Ġthunder",
+    "logprob": -1.5,
+    "top_logprobs": [
+     {
+      "id": 36843,
+      "token": "Ġthunder",
+      "logprob": -1.5
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -1.875
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": -0.375,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": -0.375
+     },
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": -1.5
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -2.375
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": -1.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": -1.0
+     },
+     {
+      "id": 7,
+      "token": "(",
+      "logprob": -1.375
+     },
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": -2.25
+     }
+    ]
+   },
+   {
+    "id": 45756,
+    "token": "removed",
+    "logprob": -2.0,
+    "top_logprobs": [
+     {
+      "id": 45756,
+      "token": "removed",
+      "logprob": -2.0
+     },
+     {
+      "id": 693,
+      "token": "Re",
+      "logprob": -2.25
+     },
+     {
+      "id": 2507,
+      "token": "Count",
+      "logprob": -2.625
+     }
+    ]
+   },
+   {
+    "id": 22513,
+    "token": "Ġduplicate",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22513,
+      "token": "Ġduplicate",
+      "logprob": 0.0
+     },
+     {
+      "id": 279,
+      "token": "Ġthe",
+      "logprob": -7.25
+     },
+     {
+      "id": 825,
+      "token": "Ġone",
+      "logprob": -8.5
+     }
+    ]
+   },
+   {
+    "id": 330,
+    "token": "Ġ\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 330,
+      "token": "Ġ\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 364,
+      "token": "Ġ'",
+      "logprob": -4.625
+     },
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -7.625
+     }
+    ]
+   },
+   {
+    "id": 3551,
+    "token": "umb",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 3551,
+      "token": "umb",
+      "logprob": 0.0
+     },
+     {
+      "id": 35108,
+      "token": "castle",
+      "logprob": -9.125
+     },
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -12.125
+     }
+    ]
+   },
+   {
+    "id": 33042,
+    "token": "rella",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 33042,
+      "token": "rella",
+      "logprob": 0.0
+     },
+     {
+      "id": 72923,
+      "token": "rellas",
+      "logprob": -15.75
+     },
+     {
+      "id": 74133,
+      "token": "rello",
+      "logprob": -16.25
+     }
+    ]
+   },
+   {
+    "id": 1,
+    "token": "\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 1,
+      "token": "\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 899,
+      "token": "\")",
+      "logprob": -6.0
+     },
+     {
+      "id": 497,
+      "token": "\",",
+      "logprob": -7.625
+     }
+    ]
+   },
+   {
+    "id": 311,
+    "token": "Ġto",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 311,
+      "token": "Ġto",
+      "logprob": -0.25
+     },
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -1.75
+     },
+     {
+      "id": 369,
+      "token": "Ġfor",
+      "logprob": -3.25
+     }
+    ]
+   },
+   {
+    "id": 1281,
+    "token": "Ġmake",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 1281,
+      "token": "Ġmake",
+      "logprob": -0.25
+     },
+     {
+      "id": 5978,
+      "token": "Ġensure",
+      "logprob": -2.375
+     },
+     {
+      "id": 3410,
+      "token": "Ġprovide",
+      "logprob": -5.25
+     }
+    ]
+   },
+   {
+    "id": 8063,
+    "token": "Ġeight",
+    "logprob": -0.5,
+    "top_logprobs": [
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.5
+     },
+     {
+      "id": 432,
+      "token": "Ġit",
+      "logprob": -1.375
+     },
+     {
+      "id": 1105,
+      "token": "Ġthem",
+      "logprob": -2.875
+     }
+    ]
+   },
+   {
+    "id": 8063,
+    "token": "Ġeight",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.25
+     },
+     {
+      "id": 9428,
+      "token": "Ġtruly",
+      "logprob": -1.5
+     },
+     {
+      "id": 8094,
+      "token": "Ġseven",
+      "logprob": -6.375
+     }
+    ]
+   },
+   {
+    "id": 4911,
+    "token": "Ġunique",
+    "logprob": -0.125,
+    "top_logprobs": [
+     {
+      "id": 4911,
+      "token": "Ġunique",
+      "logprob": -0.125
+     },
+     {
+      "id": 12460,
+      "token": "Ġdistinct",
+      "logprob": -2.25
+     },
+     {
+      "id": 2155,
+      "token": "Ġdifferent",
+      "logprob": -3.375
+     }
+    ]
+   },
+   {
+    "id": 89838,
+    "token": "Ġnouns",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 89838,
+      "token": "Ġnouns",
+      "logprob": -0.25
+     },
+     {
+      "id": 3589,
+      "token": "Ġitems",
+      "logprob": -1.875
+     },
+     {
+      "id": 4244,
+      "token": "Ġwords",
+      "logprob": -2.75
+     }
+    ]
+   },
+   {
+    "id": 8,
+    "token": ")",
+    "logprob": -0.5,
+    "top_logprobs": [
+     {
+      "id": 8,
+      "token": ")",
+      "logprob": -0.5
+     },
+     {
+      "id": 692,
+      "token": ")ĊĊ",
+      "logprob": -0.875
+     },
+     {
+      "id": 340,
+      "token": ")Ċ",
+      "logprob": -3.875
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": 0.0
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -4.125
+     },
+     {
+      "id": 4710,
+      "token": "ĠĊĊ",
+      "logprob": -5.375
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "upstream",
+  "seed": 42,
+  "temperature": 0.7,
+  "text": "penguin, umbrella, piano, bicycle, volcano, library, umbrella, castle\n(removed duplicate \"umbrella\" to make it eight unique nouns)",
+  "text_sha256": "76e6fb31aaa020eebdb0f74db952166b922ef95836ed4073325ebb50e9eeccf1",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 32,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 4616,
+    "token": "cat",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 4616,
+      "token": "cat",
+      "logprob": -1.25
+     },
+     {
+      "id": 6918,
+      "token": "car",
+      "logprob": -1.625
+     },
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": -1.875
+     }
+    ]
+   },
+   {
+    "id": 45872,
+    "token": "enguin",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 45872,
+      "token": "enguin",
+      "logprob": 0.0
+     },
+     {
+      "id": 482,
+      "token": "ine",
+      "logprob": -3.125
+     },
+     {
+      "id": 13088,
+      "token": "iano",
+      "logprob": -5.375
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.375
+     },
+     {
+      "id": 10109,
+      "token": ",c",
+      "logprob": -14.75
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.25
+     },
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -2.875
+     },
+     {
+      "id": 89818,
+      "token": "Ġtoaster",
+      "logprob": -3.75
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -10.5
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -14.625
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -1.625,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -1.625
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -1.75
+     },
+     {
+      "id": 26278,
+      "token": "Ġpiano",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -10.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -14.0
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -0.625,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -0.625
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -1.875
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -3.1875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.5
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -12.125
+     }
+    ]
+   },
+   {
+    "id": 65206,
+    "token": "Ġvolcano",
+    "logprob": -1.375,
+    "top_logprobs": [
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -1.375
+     },
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -1.625
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -12.0
+     }
+    ]
+   },
+   {
+    "id": 6733,
+    "token": "Ġlibrary",
+    "logprob": -0.125,
+    "top_logprobs": [
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -0.125
+     },
+     {
+      "id": 1013,
+      "token": "Ġte",
+      "logprob": -3.625
+     },
+     {
+      "id": 2311,
+      "token": "Ġbook",
+      "logprob": -3.875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -10.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -13.5625
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -1.75,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -1.75
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -1.75
+     },
+     {
+      "id": 55825,
+      "token": "Ġtelescope",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 2498,
+      "token": "Ġstand",
+      "logprob": -9.375
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.0
+     }
+    ]
+   },
+   {
+    "id": 36843,
+    "token": "Ġthunder",
+    "logprob": -1.5,
+    "top_logprobs": [
+     {
+      "id": 36843,
+      "token": "Ġthunder",
+      "logprob": -1.5
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -1.875
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": -0.375,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": -0.375
+     },
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": -1.5
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -2.375
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": -1.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": -1.0
+     },
+     {
+      "id": 7,
+      "token": "(",
+      "logprob": -1.375
+     },
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": -2.25
+     }
+    ]
+   },
+   {
+    "id": 45756,
+    "token": "removed",
+    "logprob": -2.0,
+    "top_logprobs": [
+     {
+      "id": 45756,
+      "token": "removed",
+      "logprob": -2.0
+     },
+     {
+      "id": 693,
+      "token": "Re",
+      "logprob": -2.25
+     },
+     {
+      "id": 2507,
+      "token": "Count",
+      "logprob": -2.625
+     }
+    ]
+   },
+   {
+    "id": 22513,
+    "token": "Ġduplicate",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22513,
+      "token": "Ġduplicate",
+      "logprob": 0.0
+     },
+     {
+      "id": 279,
+      "token": "Ġthe",
+      "logprob": -7.25
+     },
+     {
+      "id": 825,
+      "token": "Ġone",
+      "logprob": -8.5
+     }
+    ]
+   },
+   {
+    "id": 330,
+    "token": "Ġ\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 330,
+      "token": "Ġ\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 364,
+      "token": "Ġ'",
+      "logprob": -4.625
+     },
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -7.625
+     }
+    ]
+   },
+   {
+    "id": 3551,
+    "token": "umb",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 3551,
+      "token": "umb",
+      "logprob": 0.0
+     },
+     {
+      "id": 35108,
+      "token": "castle",
+      "logprob": -9.125
+     },
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -12.125
+     }
+    ]
+   },
+   {
+    "id": 33042,
+    "token": "rella",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 33042,
+      "token": "rella",
+      "logprob": 0.0
+     },
+     {
+      "id": 72923,
+      "token": "rellas",
+      "logprob": -15.75
+     },
+     {
+      "id": 74133,
+      "token": "rello",
+      "logprob": -16.25
+     }
+    ]
+   },
+   {
+    "id": 1,
+    "token": "\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 1,
+      "token": "\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 899,
+      "token": "\")",
+      "logprob": -6.0
+     },
+     {
+      "id": 497,
+      "token": "\",",
+      "logprob": -7.625
+     }
+    ]
+   },
+   {
+    "id": 311,
+    "token": "Ġto",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 311,
+      "token": "Ġto",
+      "logprob": -0.25
+     },
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -1.75
+     },
+     {
+      "id": 369,
+      "token": "Ġfor",
+      "logprob": -3.25
+     }
+    ]
+   },
+   {
+    "id": 1281,
+    "token": "Ġmake",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 1281,
+      "token": "Ġmake",
+      "logprob": -0.25
+     },
+     {
+      "id": 5978,
+      "token": "Ġensure",
+      "logprob": -2.375
+     },
+     {
+      "id": 3410,
+      "token": "Ġprovide",
+      "logprob": -5.25
+     }
+    ]
+   },
+   {
+    "id": 8063,
+    "token": "Ġeight",
+    "logprob": -0.5,
+    "top_logprobs": [
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.5
+     },
+     {
+      "id": 432,
+      "token": "Ġit",
+      "logprob": -1.375
+     },
+     {
+      "id": 1105,
+      "token": "Ġthem",
+      "logprob": -2.875
+     }
+    ]
+   },
+   {
+    "id": 8063,
+    "token": "Ġeight",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.25
+     },
+     {
+      "id": 9428,
+      "token": "Ġtruly",
+      "logprob": -1.5
+     },
+     {
+      "id": 8094,
+      "token": "Ġseven",
+      "logprob": -6.375
+     }
+    ]
+   },
+   {
+    "id": 4911,
+    "token": "Ġunique",
+    "logprob": -0.125,
+    "top_logprobs": [
+     {
+      "id": 4911,
+      "token": "Ġunique",
+      "logprob": -0.125
+     },
+     {
+      "id": 12460,
+      "token": "Ġdistinct",
+      "logprob": -2.25
+     },
+     {
+      "id": 2155,
+      "token": "Ġdifferent",
+      "logprob": -3.375
+     }
+    ]
+   },
+   {
+    "id": 89838,
+    "token": "Ġnouns",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 89838,
+      "token": "Ġnouns",
+      "logprob": -0.25
+     },
+     {
+      "id": 3589,
+      "token": "Ġitems",
+      "logprob": -1.875
+     },
+     {
+      "id": 4244,
+      "token": "Ġwords",
+      "logprob": -2.75
+     }
+    ]
+   },
+   {
+    "id": 8,
+    "token": ")",
+    "logprob": -0.5,
+    "top_logprobs": [
+     {
+      "id": 8,
+      "token": ")",
+      "logprob": -0.5
+     },
+     {
+      "id": 692,
+      "token": ")ĊĊ",
+      "logprob": -0.875
+     },
+     {
+      "id": 340,
+      "token": ")Ċ",
+      "logprob": -3.875
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": 0.0
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -4.125
+     },
+     {
+      "id": 4710,
+      "token": "ĠĊĊ",
+      "logprob": -5.375
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "upstream",
+  "seed": null,
+  "temperature": 0.7,
+  "text": "cat, computer, bicycle, umbrella, mountain, library, pizza, ocean",
+  "text_sha256": "b076936663a0d59cd7b06a63e32f2823407d2e46449cf718267907b3a97266c9",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 16,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 4616,
+    "token": "cat",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 4616,
+      "token": "cat",
+      "logprob": -1.25
+     },
+     {
+      "id": 6918,
+      "token": "car",
+      "logprob": -1.625
+     },
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": -1.875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -12.375
+     }
+    ]
+   },
+   {
+    "id": 6366,
+    "token": "Ġcomputer",
+    "logprob": -0.625,
+    "top_logprobs": [
+     {
+      "id": 6366,
+      "token": "Ġcomputer",
+      "logprob": -0.625
+     },
+     {
+      "id": 26278,
+      "token": "Ġpiano",
+      "logprob": -1.875
+     },
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.375
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -17.625
+     }
+    ]
+   },
+   {
+    "id": 43096,
+    "token": "Ġbanana",
+    "logprob": -1.625,
+    "top_logprobs": [
+     {
+      "id": 43096,
+      "token": "Ġbanana",
+      "logprob": -1.625
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -2.125
+     },
+     {
+      "id": 2311,
+      "token": "Ġbook",
+      "logprob": -2.25
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.25
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -12.875
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.75
+     },
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -1.875
+     },
+     {
+      "id": 2311,
+      "token": "Ġbook",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.125
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -12.125
+     }
+    ]
+   },
+   {
+    "id": 2311,
+    "token": "Ġbook",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 2311,
+      "token": "Ġbook",
+      "logprob": -0.75
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -1.75
+     },
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -2.125
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -10.75
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.125
+     }
+    ]
+   },
+   {
+    "id": 6733,
+    "token": "Ġlibrary",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -0.25
+     },
+     {
+      "id": 12544,
+      "token": "Ġcookie",
+      "logprob": -2.125
+     },
+     {
+      "id": 2311,
+      "token": "Ġbook",
+      "logprob": -2.875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -8.125
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -10.375
+     }
+    ]
+   },
+   {
+    "id": 12544,
+    "token": "Ġcookie",
+    "logprob": -0.875,
+    "top_logprobs": [
+     {
+      "id": 12544,
+      "token": "Ġcookie",
+      "logprob": -0.875
+     },
+     {
+      "id": 12425,
+      "token": "Ġtelevision",
+      "logprob": -1.9375
+     },
+     {
+      "id": 6249,
+      "token": "Ġcamera",
+      "logprob": -2.625
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -11.625
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -13.0
+     }
+    ]
+   },
+   {
+    "id": 6249,
+    "token": "Ġcamera",
+    "logprob": -1.5,
+    "top_logprobs": [
+     {
+      "id": 6249,
+      "token": "Ġcamera",
+      "logprob": -1.5
+     },
+     {
+      "id": 8866,
+      "token": "Ġclock",
+      "logprob": -2.0
+     },
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": -0.125,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": -0.125
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -2.25
+     },
+     {
+      "id": 271,
+      "token": "ĊĊ",
+      "logprob": -3.25
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "upstream",
+  "seed": null,
+  "temperature": 0.7,
+  "text": "cat, computer, bicycle, umbrella, mountain, library, pizza, ocean",
+  "text_sha256": "b076936663a0d59cd7b06a63e32f2823407d2e46449cf718267907b3a97266c9",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 16,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 4616,
+    "token": "cat",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 4616,
+      "token": "cat",
+      "logprob": -1.25
+     },
+     {
+      "id": 6918,
+      "token": "car",
+      "logprob": -1.625
+     },
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": -1.875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -12.375
+     }
+    ]
+   },
+   {
+    "id": 6366,
+    "token": "Ġcomputer",
+    "logprob": -0.625,
+    "top_logprobs": [
+     {
+      "id": 6366,
+      "token": "Ġcomputer",
+      "logprob": -0.625
+     },
+     {
+      "id": 26278,
+      "token": "Ġpiano",
+      "logprob": -1.875
+     },
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.375
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -17.625
+     }
+    ]
+   },
+   {
+    "id": 43096,
+    "token": "Ġbanana",
+    "logprob": -1.625,
+    "top_logprobs": [
+     {
+      "id": 43096,
+      "token": "Ġbanana",
+      "logprob": -1.625
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -2.125
+     },
+     {
+      "id": 2311,
+      "token": "Ġbook",
+      "logprob": -2.25
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.25
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -12.875
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.75
+     },
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -1.875
+     },
+     {
+      "id": 2311,
+      "token": "Ġbook",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.125
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -12.125
+     }
+    ]
+   },
+   {
+    "id": 2311,
+    "token": "Ġbook",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 2311,
+      "token": "Ġbook",
+      "logprob": -0.75
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -1.75
+     },
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -2.125
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -10.75
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.125
+     }
+    ]
+   },
+   {
+    "id": 6733,
+    "token": "Ġlibrary",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -0.25
+     },
+     {
+      "id": 12544,
+      "token": "Ġcookie",
+      "logprob": -2.125
+     },
+     {
+      "id": 2311,
+      "token": "Ġbook",
+      "logprob": -2.875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -8.125
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -10.375
+     }
+    ]
+   },
+   {
+    "id": 12544,
+    "token": "Ġcookie",
+    "logprob": -0.875,
+    "top_logprobs": [
+     {
+      "id": 12544,
+      "token": "Ġcookie",
+      "logprob": -0.875
+     },
+     {
+      "id": 12425,
+      "token": "Ġtelevision",
+      "logprob": -1.9375
+     },
+     {
+      "id": 6249,
+      "token": "Ġcamera",
+      "logprob": -2.625
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -11.625
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -13.0
+     }
+    ]
+   },
+   {
+    "id": 6249,
+    "token": "Ġcamera",
+    "logprob": -1.5,
+    "top_logprobs": [
+     {
+      "id": 6249,
+      "token": "Ġcamera",
+      "logprob": -1.5
+     },
+     {
+      "id": 8866,
+      "token": "Ġclock",
+      "logprob": -2.0
+     },
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": -0.125,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": -0.125
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -2.25
+     },
+     {
+      "id": 271,
+      "token": "ĊĊ",
+      "logprob": -3.25
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "upstream",
+  "seed": null,
+  "temperature": 0.7,
+  "text": "cat, computer, bicycle, umbrella, mountain, library, pizza, ocean",
+  "text_sha256": "b076936663a0d59cd7b06a63e32f2823407d2e46449cf718267907b3a97266c9",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 16,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 4616,
+    "token": "cat",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 4616,
+      "token": "cat",
+      "logprob": -1.25
+     },
+     {
+      "id": 6918,
+      "token": "car",
+      "logprob": -1.625
+     },
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": -1.875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -12.375
+     }
+    ]
+   },
+   {
+    "id": 6366,
+    "token": "Ġcomputer",
+    "logprob": -0.625,
+    "top_logprobs": [
+     {
+      "id": 6366,
+      "token": "Ġcomputer",
+      "logprob": -0.625
+     },
+     {
+      "id": 26278,
+      "token": "Ġpiano",
+      "logprob": -1.875
+     },
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -2.0
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.375
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -17.625
+     }
+    ]
+   },
+   {
+    "id": 43096,
+    "token": "Ġbanana",
+    "logprob": -1.625,
+    "top_logprobs": [
+     {
+      "id": 43096,
+      "token": "Ġbanana",
+      "logprob": -1.625
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -2.125
+     },
+     {
+      "id": 2311,
+      "token": "Ġbook",
+      "logprob": -2.25
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.25
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -12.875
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.75
+     },
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -1.875
+     },
+     {
+      "id": 2311,
+      "token": "Ġbook",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.125
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -12.125
+     }
+    ]
+   },
+   {
+    "id": 2311,
+    "token": "Ġbook",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 2311,
+      "token": "Ġbook",
+      "logprob": -0.75
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -1.75
+     },
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -2.125
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -10.75
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.125
+     }
+    ]
+   },
+   {
+    "id": 6733,
+    "token": "Ġlibrary",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -0.25
+     },
+     {
+      "id": 12544,
+      "token": "Ġcookie",
+      "logprob": -2.125
+     },
+     {
+      "id": 2311,
+      "token": "Ġbook",
+      "logprob": -2.875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -8.125
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -10.375
+     }
+    ]
+   },
+   {
+    "id": 12544,
+    "token": "Ġcookie",
+    "logprob": -0.875,
+    "top_logprobs": [
+     {
+      "id": 12544,
+      "token": "Ġcookie",
+      "logprob": -0.875
+     },
+     {
+      "id": 12425,
+      "token": "Ġtelevision",
+      "logprob": -1.9375
+     },
+     {
+      "id": 6249,
+      "token": "Ġcamera",
+      "logprob": -2.625
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -11.625
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -13.0
+     }
+    ]
+   },
+   {
+    "id": 6249,
+    "token": "Ġcamera",
+    "logprob": -1.5,
+    "top_logprobs": [
+     {
+      "id": 6249,
+      "token": "Ġcamera",
+      "logprob": -1.5
+     },
+     {
+      "id": 8866,
+      "token": "Ġclock",
+      "logprob": -2.0
+     },
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 151645,
+    "token": "<|im_end|>",
+    "logprob": -0.125,
+    "top_logprobs": [
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": -0.125
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -2.25
+     },
+     {
+      "id": 271,
+      "token": "ĊĊ",
+      "logprob": -3.25
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "proxy",
+  "seed": 42,
+  "temperature": 0.7,
+  "text": "penguin, umbrella, piano, bicycle, volcano, library, umbrella, castle\n(removed duplicate \"umbrella\" to make it eight unique nouns)",
+  "text_sha256": "76e6fb31aaa020eebdb0f74db952166b922ef95836ed4073325ebb50e9eeccf1",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "proxy",
+  "seed": 31415,
+  "temperature": 0.7,
+  "text": "penguin, umbrella, piano, bicycle, volcano, library, umbrella, castle\n(removed duplicate \"umbrella\" to make it eight unique nouns)",
+  "text_sha256": "76e6fb31aaa020eebdb0f74db952166b922ef95836ed4073325ebb50e9eeccf1",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "proxy",
+  "seed": 27182,
+  "temperature": 0.7,
+  "text": "penguin, umbrella, piano, bicycle, volcano, library, umbrella, castle\n(removed duplicate \"umbrella\" to make it eight unique nouns)",
+  "text_sha256": "76e6fb31aaa020eebdb0f74db952166b922ef95836ed4073325ebb50e9eeccf1",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "proxy",
+  "seed": 42,
+  "temperature": 0.7,
+  "text": "penguin, umbrella, piano, bicycle, volcano, library, umbrella, castle\n(removed duplicate \"umbrella\" to make it eight unique nouns)",
+  "text_sha256": "76e6fb31aaa020eebdb0f74db952166b922ef95836ed4073325ebb50e9eeccf1",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "proxy",
+  "seed": null,
+  "temperature": 0.7,
+  "text": "cat, computer, bicycle, umbrella, mountain, library, pizza, ocean",
+  "text_sha256": "b076936663a0d59cd7b06a63e32f2823407d2e46449cf718267907b3a97266c9",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "proxy",
+  "seed": null,
+  "temperature": 0.7,
+  "text": "cat, computer, bicycle, umbrella, mountain, library, pizza, ocean",
+  "text_sha256": "b076936663a0d59cd7b06a63e32f2823407d2e46449cf718267907b3a97266c9",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "proxy",
+  "seed": null,
+  "temperature": 0.7,
+  "text": "cat, computer, bicycle, umbrella, mountain, library, pizza, ocean",
+  "text_sha256": "b076936663a0d59cd7b06a63e32f2823407d2e46449cf718267907b3a97266c9",
+  "finish_reason": "stop",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "upstream",
+  "seed": 42,
+  "temperature": 1.0,
+  "text": "penguin, vacuum, umbrella, piano, bicycle, library, television, umbrella\n(removed duplicate \"umbrella\" to make it eight unique nouns)\n\np",
+  "text_sha256": "eb08fe915c02d4409ba43878c494d469f701c2a611e790c4108726de6d0e84d0",
+  "finish_reason": "length",
+  "tokens_with_logprobs": 32,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 4616,
+    "token": "cat",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 4616,
+      "token": "cat",
+      "logprob": -1.25
+     },
+     {
+      "id": 6918,
+      "token": "car",
+      "logprob": -1.625
+     },
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": -1.875
+     }
+    ]
+   },
+   {
+    "id": 45872,
+    "token": "enguin",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 45872,
+      "token": "enguin",
+      "logprob": 0.0
+     },
+     {
+      "id": 482,
+      "token": "ine",
+      "logprob": -3.125
+     },
+     {
+      "id": 13088,
+      "token": "iano",
+      "logprob": -5.375
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.375
+     },
+     {
+      "id": 10109,
+      "token": ",c",
+      "logprob": -14.75
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.25
+     },
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -2.875
+     },
+     {
+      "id": 89818,
+      "token": "Ġtoaster",
+      "logprob": -3.75
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 31881,
+      "token": "Ġcleaner",
+      "logprob": -7.5
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.625
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.25
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -3.875
+     },
+     {
+      "id": 45740,
+      "token": "Ġelephant",
+      "logprob": -4.0625
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -8.75
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -11.625
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -1.75,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -1.75
+     },
+     {
+      "id": 45740,
+      "token": "Ġelephant",
+      "logprob": -1.75
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -2.125
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -10.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -13.25
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -0.875,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -0.875
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -1.125
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -3.25
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -9.625
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -10.8125
+     }
+    ]
+   },
+   {
+    "id": 6733,
+    "token": "Ġlibrary",
+    "logprob": -1.375,
+    "top_logprobs": [
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -1.375
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -1.9375
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -2.1875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -9.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -11.875
+     }
+    ]
+   },
+   {
+    "id": 12425,
+    "token": "Ġtelevision",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 12425,
+      "token": "Ġtelevision",
+      "logprob": -1.25
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -1.875
+     },
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -2.0625
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.25
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -12.75
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.75
+     },
+     {
+      "id": 44944,
+      "token": "Ġrefrigerator",
+      "logprob": -2.25
+     },
+     {
+      "id": 72657,
+      "token": "Ġmicroscope",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 198,
+    "token": "Ċ",
+    "logprob": -0.875,
+    "top_logprobs": [
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -0.875
+     },
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": -1.75
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -2.1875
+     }
+    ]
+   },
+   {
+    "id": 7,
+    "token": "(",
+    "logprob": -1.125,
+    "top_logprobs": [
+     {
+      "id": 7,
+      "token": "(",
+      "logprob": -1.125
+     },
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": -1.125
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -2.375
+     }
+    ]
+   },
+   {
+    "id": 45756,
+    "token": "removed",
+    "logprob": -1.875,
+    "top_logprobs": [
+     {
+      "id": 45756,
+      "token": "removed",
+      "logprob": -1.875
+     },
+     {
+      "id": 9112,
+      "token": "Note",
+      "logprob": -2.125
+     },
+     {
+      "id": 16196,
+      "token": "Updated",
+      "logprob": -2.25
+     }
+    ]
+   },
+   {
+    "id": 22513,
+    "token": "Ġduplicate",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22513,
+      "token": "Ġduplicate",
+      "logprob": 0.0
+     },
+     {
+      "id": 279,
+      "token": "Ġthe",
+      "logprob": -8.25
+     },
+     {
+      "id": 42328,
+      "token": "Ġduplicates",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 330,
+    "token": "Ġ\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 330,
+      "token": "Ġ\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 364,
+      "token": "Ġ'",
+      "logprob": -4.25
+     },
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 3551,
+    "token": "umb",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 3551,
+      "token": "umb",
+      "logprob": 0.0
+     },
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -15.0
+     },
+     {
+      "id": 65,
+      "token": "b",
+      "logprob": -16.625
+     }
+    ]
+   },
+   {
+    "id": 33042,
+    "token": "rella",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 33042,
+      "token": "rella",
+      "logprob": 0.0
+     },
+     {
+      "id": 72923,
+      "token": "rellas",
+      "logprob": -17.875
+     },
+     {
+      "id": 16285,
+      "token": "rell",
+      "logprob": -20.0
+     }
+    ]
+   },
+   {
+    "id": 1,
+    "token": "\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 1,
+      "token": "\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 899,
+      "token": "\")",
+      "logprob": -5.25
+     },
+     {
+      "id": 5130,
+      "token": "\")ĊĊ",
+      "logprob": -6.5
+     }
+    ]
+   },
+   {
+    "id": 323,
+    "token": "Ġand",
+    "logprob": -0.5,
+    "top_logprobs": [
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -0.5
+     },
+     {
+      "id": 311,
+      "token": "Ġto",
+      "logprob": -1.125
+     },
+     {
+      "id": 369,
+      "token": "Ġfor",
+      "logprob": -3.875
+     }
+    ]
+   },
+   {
+    "id": 1281,
+    "token": "Ġmake",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 1281,
+      "token": "Ġmake",
+      "logprob": 0.0
+     },
+     {
+      "id": 5978,
+      "token": "Ġensure",
+      "logprob": -4.0
+     },
+     {
+      "id": 1855,
+      "token": "Ġcreate",
+      "logprob": -7.25
+     }
+    ]
+   },
+   {
+    "id": 432,
+    "token": "Ġit",
+    "logprob": -0.625,
+    "top_logprobs": [
+     {
+      "id": 432,
+      "token": "Ġit",
+      "logprob": -0.625
+     },
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.875
+     },
+     {
+      "id": 1105,
+      "token": "Ġthem",
+      "logprob": -2.875
+     }
+    ]
+   },
+   {
+    "id": 8063,
+    "token": "Ġeight",
+    "logprob": -0.125,
+    "top_logprobs": [
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.125
+     },
+     {
+      "id": 9428,
+      "token": "Ġtruly",
+      "logprob": -1.875
+     },
+     {
+      "id": 8094,
+      "token": "Ġseven",
+      "logprob": -6.25
+     }
+    ]
+   },
+   {
+    "id": 4911,
+    "token": "Ġunique",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 4911,
+      "token": "Ġunique",
+      "logprob": -0.25
+     },
+     {
+      "id": 12460,
+      "token": "Ġdistinct",
+      "logprob": -2.125
+     },
+     {
+      "id": 2155,
+      "token": "Ġdifferent",
+      "logprob": -2.625
+     }
+    ]
+   },
+   {
+    "id": 89838,
+    "token": "Ġnouns",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 89838,
+      "token": "Ġnouns",
+      "logprob": -0.25
+     },
+     {
+      "id": 3589,
+      "token": "Ġitems",
+      "logprob": -1.875
+     },
+     {
+      "id": 4244,
+      "token": "Ġwords",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 692,
+    "token": ")ĊĊ",
+    "logprob": -0.375,
+    "top_logprobs": [
+     {
+      "id": 692,
+      "token": ")ĊĊ",
+      "logprob": -0.375
+     },
+     {
+      "id": 8,
+      "token": ")",
+      "logprob": -1.125
+     },
+     {
+      "id": 340,
+      "token": ")Ċ",
+      "logprob": -3.625
+     }
+    ]
+   },
+   {
+    "id": 79,
+    "token": "p",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": 0.0
+     },
+     {
+      "id": 47,
+      "token": "P",
+      "logprob": -5.0
+     },
+     {
+      "id": 8420,
+      "token": "Here",
+      "logprob": -5.125
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "upstream",
+  "seed": 31415,
+  "temperature": 1.0,
+  "text": "penguin, vacuum, umbrella, piano, bicycle, library, television, umbrella\n(removed duplicate \"umbrella\" to make it eight unique nouns)\n\np",
+  "text_sha256": "eb08fe915c02d4409ba43878c494d469f701c2a611e790c4108726de6d0e84d0",
+  "finish_reason": "length",
+  "tokens_with_logprobs": 32,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 4616,
+    "token": "cat",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 4616,
+      "token": "cat",
+      "logprob": -1.25
+     },
+     {
+      "id": 6918,
+      "token": "car",
+      "logprob": -1.625
+     },
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": -1.875
+     }
+    ]
+   },
+   {
+    "id": 45872,
+    "token": "enguin",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 45872,
+      "token": "enguin",
+      "logprob": 0.0
+     },
+     {
+      "id": 482,
+      "token": "ine",
+      "logprob": -3.125
+     },
+     {
+      "id": 13088,
+      "token": "iano",
+      "logprob": -5.375
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.375
+     },
+     {
+      "id": 10109,
+      "token": ",c",
+      "logprob": -14.75
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.25
+     },
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -2.875
+     },
+     {
+      "id": 89818,
+      "token": "Ġtoaster",
+      "logprob": -3.75
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 31881,
+      "token": "Ġcleaner",
+      "logprob": -7.5
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.625
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.25
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -3.875
+     },
+     {
+      "id": 45740,
+      "token": "Ġelephant",
+      "logprob": -4.0625
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -8.75
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -11.625
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -1.75,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -1.75
+     },
+     {
+      "id": 45740,
+      "token": "Ġelephant",
+      "logprob": -1.75
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -2.125
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -10.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -13.25
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -0.875,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -0.875
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -1.125
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -3.25
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -9.625
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -10.8125
+     }
+    ]
+   },
+   {
+    "id": 6733,
+    "token": "Ġlibrary",
+    "logprob": -1.375,
+    "top_logprobs": [
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -1.375
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -1.9375
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -2.1875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -9.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -11.875
+     }
+    ]
+   },
+   {
+    "id": 12425,
+    "token": "Ġtelevision",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 12425,
+      "token": "Ġtelevision",
+      "logprob": -1.25
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -1.875
+     },
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -2.0625
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.25
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -12.75
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.75
+     },
+     {
+      "id": 44944,
+      "token": "Ġrefrigerator",
+      "logprob": -2.25
+     },
+     {
+      "id": 72657,
+      "token": "Ġmicroscope",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 198,
+    "token": "Ċ",
+    "logprob": -0.875,
+    "top_logprobs": [
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -0.875
+     },
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": -1.75
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -2.1875
+     }
+    ]
+   },
+   {
+    "id": 7,
+    "token": "(",
+    "logprob": -1.125,
+    "top_logprobs": [
+     {
+      "id": 7,
+      "token": "(",
+      "logprob": -1.125
+     },
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": -1.125
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -2.375
+     }
+    ]
+   },
+   {
+    "id": 45756,
+    "token": "removed",
+    "logprob": -1.875,
+    "top_logprobs": [
+     {
+      "id": 45756,
+      "token": "removed",
+      "logprob": -1.875
+     },
+     {
+      "id": 9112,
+      "token": "Note",
+      "logprob": -2.125
+     },
+     {
+      "id": 16196,
+      "token": "Updated",
+      "logprob": -2.25
+     }
+    ]
+   },
+   {
+    "id": 22513,
+    "token": "Ġduplicate",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22513,
+      "token": "Ġduplicate",
+      "logprob": 0.0
+     },
+     {
+      "id": 279,
+      "token": "Ġthe",
+      "logprob": -8.25
+     },
+     {
+      "id": 42328,
+      "token": "Ġduplicates",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 330,
+    "token": "Ġ\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 330,
+      "token": "Ġ\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 364,
+      "token": "Ġ'",
+      "logprob": -4.25
+     },
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 3551,
+    "token": "umb",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 3551,
+      "token": "umb",
+      "logprob": 0.0
+     },
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -15.0
+     },
+     {
+      "id": 65,
+      "token": "b",
+      "logprob": -16.625
+     }
+    ]
+   },
+   {
+    "id": 33042,
+    "token": "rella",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 33042,
+      "token": "rella",
+      "logprob": 0.0
+     },
+     {
+      "id": 72923,
+      "token": "rellas",
+      "logprob": -17.875
+     },
+     {
+      "id": 16285,
+      "token": "rell",
+      "logprob": -20.0
+     }
+    ]
+   },
+   {
+    "id": 1,
+    "token": "\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 1,
+      "token": "\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 899,
+      "token": "\")",
+      "logprob": -5.25
+     },
+     {
+      "id": 5130,
+      "token": "\")ĊĊ",
+      "logprob": -6.5
+     }
+    ]
+   },
+   {
+    "id": 323,
+    "token": "Ġand",
+    "logprob": -0.5,
+    "top_logprobs": [
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -0.5
+     },
+     {
+      "id": 311,
+      "token": "Ġto",
+      "logprob": -1.125
+     },
+     {
+      "id": 369,
+      "token": "Ġfor",
+      "logprob": -3.875
+     }
+    ]
+   },
+   {
+    "id": 1281,
+    "token": "Ġmake",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 1281,
+      "token": "Ġmake",
+      "logprob": 0.0
+     },
+     {
+      "id": 5978,
+      "token": "Ġensure",
+      "logprob": -4.0
+     },
+     {
+      "id": 1855,
+      "token": "Ġcreate",
+      "logprob": -7.25
+     }
+    ]
+   },
+   {
+    "id": 432,
+    "token": "Ġit",
+    "logprob": -0.625,
+    "top_logprobs": [
+     {
+      "id": 432,
+      "token": "Ġit",
+      "logprob": -0.625
+     },
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.875
+     },
+     {
+      "id": 1105,
+      "token": "Ġthem",
+      "logprob": -2.875
+     }
+    ]
+   },
+   {
+    "id": 8063,
+    "token": "Ġeight",
+    "logprob": -0.125,
+    "top_logprobs": [
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.125
+     },
+     {
+      "id": 9428,
+      "token": "Ġtruly",
+      "logprob": -1.875
+     },
+     {
+      "id": 8094,
+      "token": "Ġseven",
+      "logprob": -6.25
+     }
+    ]
+   },
+   {
+    "id": 4911,
+    "token": "Ġunique",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 4911,
+      "token": "Ġunique",
+      "logprob": -0.25
+     },
+     {
+      "id": 12460,
+      "token": "Ġdistinct",
+      "logprob": -2.125
+     },
+     {
+      "id": 2155,
+      "token": "Ġdifferent",
+      "logprob": -2.625
+     }
+    ]
+   },
+   {
+    "id": 89838,
+    "token": "Ġnouns",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 89838,
+      "token": "Ġnouns",
+      "logprob": -0.25
+     },
+     {
+      "id": 3589,
+      "token": "Ġitems",
+      "logprob": -1.875
+     },
+     {
+      "id": 4244,
+      "token": "Ġwords",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 692,
+    "token": ")ĊĊ",
+    "logprob": -0.375,
+    "top_logprobs": [
+     {
+      "id": 692,
+      "token": ")ĊĊ",
+      "logprob": -0.375
+     },
+     {
+      "id": 8,
+      "token": ")",
+      "logprob": -1.125
+     },
+     {
+      "id": 340,
+      "token": ")Ċ",
+      "logprob": -3.625
+     }
+    ]
+   },
+   {
+    "id": 79,
+    "token": "p",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": 0.0
+     },
+     {
+      "id": 47,
+      "token": "P",
+      "logprob": -5.0
+     },
+     {
+      "id": 8420,
+      "token": "Here",
+      "logprob": -5.125
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "upstream",
+  "seed": 27182,
+  "temperature": 1.0,
+  "text": "penguin, vacuum, umbrella, piano, bicycle, library, television, umbrella\n(removed duplicate \"umbrella\" to make it eight unique nouns)\n\np",
+  "text_sha256": "eb08fe915c02d4409ba43878c494d469f701c2a611e790c4108726de6d0e84d0",
+  "finish_reason": "length",
+  "tokens_with_logprobs": 32,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 4616,
+    "token": "cat",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 4616,
+      "token": "cat",
+      "logprob": -1.25
+     },
+     {
+      "id": 6918,
+      "token": "car",
+      "logprob": -1.625
+     },
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": -1.875
+     }
+    ]
+   },
+   {
+    "id": 45872,
+    "token": "enguin",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 45872,
+      "token": "enguin",
+      "logprob": 0.0
+     },
+     {
+      "id": 482,
+      "token": "ine",
+      "logprob": -3.125
+     },
+     {
+      "id": 13088,
+      "token": "iano",
+      "logprob": -5.375
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.375
+     },
+     {
+      "id": 10109,
+      "token": ",c",
+      "logprob": -14.75
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.25
+     },
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -2.875
+     },
+     {
+      "id": 89818,
+      "token": "Ġtoaster",
+      "logprob": -3.75
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 31881,
+      "token": "Ġcleaner",
+      "logprob": -7.5
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.625
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.25
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -3.875
+     },
+     {
+      "id": 45740,
+      "token": "Ġelephant",
+      "logprob": -4.0625
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -8.75
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -11.625
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -1.75,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -1.75
+     },
+     {
+      "id": 45740,
+      "token": "Ġelephant",
+      "logprob": -1.75
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -2.125
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -10.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -13.25
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -0.875,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -0.875
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -1.125
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -3.25
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -9.625
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -10.8125
+     }
+    ]
+   },
+   {
+    "id": 6733,
+    "token": "Ġlibrary",
+    "logprob": -1.375,
+    "top_logprobs": [
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -1.375
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -1.9375
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -2.1875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -9.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -11.875
+     }
+    ]
+   },
+   {
+    "id": 12425,
+    "token": "Ġtelevision",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 12425,
+      "token": "Ġtelevision",
+      "logprob": -1.25
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -1.875
+     },
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -2.0625
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.25
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -12.75
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.75
+     },
+     {
+      "id": 44944,
+      "token": "Ġrefrigerator",
+      "logprob": -2.25
+     },
+     {
+      "id": 72657,
+      "token": "Ġmicroscope",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 198,
+    "token": "Ċ",
+    "logprob": -0.875,
+    "top_logprobs": [
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -0.875
+     },
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": -1.75
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -2.1875
+     }
+    ]
+   },
+   {
+    "id": 7,
+    "token": "(",
+    "logprob": -1.125,
+    "top_logprobs": [
+     {
+      "id": 7,
+      "token": "(",
+      "logprob": -1.125
+     },
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": -1.125
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -2.375
+     }
+    ]
+   },
+   {
+    "id": 45756,
+    "token": "removed",
+    "logprob": -1.875,
+    "top_logprobs": [
+     {
+      "id": 45756,
+      "token": "removed",
+      "logprob": -1.875
+     },
+     {
+      "id": 9112,
+      "token": "Note",
+      "logprob": -2.125
+     },
+     {
+      "id": 16196,
+      "token": "Updated",
+      "logprob": -2.25
+     }
+    ]
+   },
+   {
+    "id": 22513,
+    "token": "Ġduplicate",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22513,
+      "token": "Ġduplicate",
+      "logprob": 0.0
+     },
+     {
+      "id": 279,
+      "token": "Ġthe",
+      "logprob": -8.25
+     },
+     {
+      "id": 42328,
+      "token": "Ġduplicates",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 330,
+    "token": "Ġ\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 330,
+      "token": "Ġ\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 364,
+      "token": "Ġ'",
+      "logprob": -4.25
+     },
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 3551,
+    "token": "umb",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 3551,
+      "token": "umb",
+      "logprob": 0.0
+     },
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -15.0
+     },
+     {
+      "id": 65,
+      "token": "b",
+      "logprob": -16.625
+     }
+    ]
+   },
+   {
+    "id": 33042,
+    "token": "rella",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 33042,
+      "token": "rella",
+      "logprob": 0.0
+     },
+     {
+      "id": 72923,
+      "token": "rellas",
+      "logprob": -17.875
+     },
+     {
+      "id": 16285,
+      "token": "rell",
+      "logprob": -20.0
+     }
+    ]
+   },
+   {
+    "id": 1,
+    "token": "\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 1,
+      "token": "\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 899,
+      "token": "\")",
+      "logprob": -5.25
+     },
+     {
+      "id": 5130,
+      "token": "\")ĊĊ",
+      "logprob": -6.5
+     }
+    ]
+   },
+   {
+    "id": 323,
+    "token": "Ġand",
+    "logprob": -0.5,
+    "top_logprobs": [
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -0.5
+     },
+     {
+      "id": 311,
+      "token": "Ġto",
+      "logprob": -1.125
+     },
+     {
+      "id": 369,
+      "token": "Ġfor",
+      "logprob": -3.875
+     }
+    ]
+   },
+   {
+    "id": 1281,
+    "token": "Ġmake",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 1281,
+      "token": "Ġmake",
+      "logprob": 0.0
+     },
+     {
+      "id": 5978,
+      "token": "Ġensure",
+      "logprob": -4.0
+     },
+     {
+      "id": 1855,
+      "token": "Ġcreate",
+      "logprob": -7.25
+     }
+    ]
+   },
+   {
+    "id": 432,
+    "token": "Ġit",
+    "logprob": -0.625,
+    "top_logprobs": [
+     {
+      "id": 432,
+      "token": "Ġit",
+      "logprob": -0.625
+     },
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.875
+     },
+     {
+      "id": 1105,
+      "token": "Ġthem",
+      "logprob": -2.875
+     }
+    ]
+   },
+   {
+    "id": 8063,
+    "token": "Ġeight",
+    "logprob": -0.125,
+    "top_logprobs": [
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.125
+     },
+     {
+      "id": 9428,
+      "token": "Ġtruly",
+      "logprob": -1.875
+     },
+     {
+      "id": 8094,
+      "token": "Ġseven",
+      "logprob": -6.25
+     }
+    ]
+   },
+   {
+    "id": 4911,
+    "token": "Ġunique",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 4911,
+      "token": "Ġunique",
+      "logprob": -0.25
+     },
+     {
+      "id": 12460,
+      "token": "Ġdistinct",
+      "logprob": -2.125
+     },
+     {
+      "id": 2155,
+      "token": "Ġdifferent",
+      "logprob": -2.625
+     }
+    ]
+   },
+   {
+    "id": 89838,
+    "token": "Ġnouns",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 89838,
+      "token": "Ġnouns",
+      "logprob": -0.25
+     },
+     {
+      "id": 3589,
+      "token": "Ġitems",
+      "logprob": -1.875
+     },
+     {
+      "id": 4244,
+      "token": "Ġwords",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 692,
+    "token": ")ĊĊ",
+    "logprob": -0.375,
+    "top_logprobs": [
+     {
+      "id": 692,
+      "token": ")ĊĊ",
+      "logprob": -0.375
+     },
+     {
+      "id": 8,
+      "token": ")",
+      "logprob": -1.125
+     },
+     {
+      "id": 340,
+      "token": ")Ċ",
+      "logprob": -3.625
+     }
+    ]
+   },
+   {
+    "id": 79,
+    "token": "p",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": 0.0
+     },
+     {
+      "id": 47,
+      "token": "P",
+      "logprob": -5.0
+     },
+     {
+      "id": 8420,
+      "token": "Here",
+      "logprob": -5.125
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "upstream",
+  "seed": 42,
+  "temperature": 1.0,
+  "text": "penguin, vacuum, umbrella, piano, bicycle, library, television, umbrella\n(removed duplicate \"umbrella\" to make it eight unique nouns)\n\np",
+  "text_sha256": "eb08fe915c02d4409ba43878c494d469f701c2a611e790c4108726de6d0e84d0",
+  "finish_reason": "length",
+  "tokens_with_logprobs": 32,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 4616,
+    "token": "cat",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 4616,
+      "token": "cat",
+      "logprob": -1.25
+     },
+     {
+      "id": 6918,
+      "token": "car",
+      "logprob": -1.625
+     },
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": -1.875
+     }
+    ]
+   },
+   {
+    "id": 45872,
+    "token": "enguin",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 45872,
+      "token": "enguin",
+      "logprob": 0.0
+     },
+     {
+      "id": 482,
+      "token": "ine",
+      "logprob": -3.125
+     },
+     {
+      "id": 13088,
+      "token": "iano",
+      "logprob": -5.375
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.375
+     },
+     {
+      "id": 10109,
+      "token": ",c",
+      "logprob": -14.75
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.25
+     },
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -2.875
+     },
+     {
+      "id": 89818,
+      "token": "Ġtoaster",
+      "logprob": -3.75
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 31881,
+      "token": "Ġcleaner",
+      "logprob": -7.5
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.625
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.25
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -3.875
+     },
+     {
+      "id": 45740,
+      "token": "Ġelephant",
+      "logprob": -4.0625
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -8.75
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -11.625
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -1.75,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -1.75
+     },
+     {
+      "id": 45740,
+      "token": "Ġelephant",
+      "logprob": -1.75
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -2.125
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -10.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -13.25
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -0.875,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -0.875
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -1.125
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -3.25
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -9.625
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -10.8125
+     }
+    ]
+   },
+   {
+    "id": 6733,
+    "token": "Ġlibrary",
+    "logprob": -1.375,
+    "top_logprobs": [
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -1.375
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -1.9375
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -2.1875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -9.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -11.875
+     }
+    ]
+   },
+   {
+    "id": 12425,
+    "token": "Ġtelevision",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 12425,
+      "token": "Ġtelevision",
+      "logprob": -1.25
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -1.875
+     },
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -2.0625
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.25
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -12.75
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.75
+     },
+     {
+      "id": 44944,
+      "token": "Ġrefrigerator",
+      "logprob": -2.25
+     },
+     {
+      "id": 72657,
+      "token": "Ġmicroscope",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 198,
+    "token": "Ċ",
+    "logprob": -0.875,
+    "top_logprobs": [
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -0.875
+     },
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": -1.75
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -2.1875
+     }
+    ]
+   },
+   {
+    "id": 7,
+    "token": "(",
+    "logprob": -1.125,
+    "top_logprobs": [
+     {
+      "id": 7,
+      "token": "(",
+      "logprob": -1.125
+     },
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": -1.125
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -2.375
+     }
+    ]
+   },
+   {
+    "id": 45756,
+    "token": "removed",
+    "logprob": -1.875,
+    "top_logprobs": [
+     {
+      "id": 45756,
+      "token": "removed",
+      "logprob": -1.875
+     },
+     {
+      "id": 9112,
+      "token": "Note",
+      "logprob": -2.125
+     },
+     {
+      "id": 16196,
+      "token": "Updated",
+      "logprob": -2.25
+     }
+    ]
+   },
+   {
+    "id": 22513,
+    "token": "Ġduplicate",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22513,
+      "token": "Ġduplicate",
+      "logprob": 0.0
+     },
+     {
+      "id": 279,
+      "token": "Ġthe",
+      "logprob": -8.25
+     },
+     {
+      "id": 42328,
+      "token": "Ġduplicates",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 330,
+    "token": "Ġ\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 330,
+      "token": "Ġ\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 364,
+      "token": "Ġ'",
+      "logprob": -4.25
+     },
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 3551,
+    "token": "umb",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 3551,
+      "token": "umb",
+      "logprob": 0.0
+     },
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -15.0
+     },
+     {
+      "id": 65,
+      "token": "b",
+      "logprob": -16.625
+     }
+    ]
+   },
+   {
+    "id": 33042,
+    "token": "rella",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 33042,
+      "token": "rella",
+      "logprob": 0.0
+     },
+     {
+      "id": 72923,
+      "token": "rellas",
+      "logprob": -17.875
+     },
+     {
+      "id": 16285,
+      "token": "rell",
+      "logprob": -20.0
+     }
+    ]
+   },
+   {
+    "id": 1,
+    "token": "\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 1,
+      "token": "\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 899,
+      "token": "\")",
+      "logprob": -5.25
+     },
+     {
+      "id": 5130,
+      "token": "\")ĊĊ",
+      "logprob": -6.5
+     }
+    ]
+   },
+   {
+    "id": 323,
+    "token": "Ġand",
+    "logprob": -0.5,
+    "top_logprobs": [
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -0.5
+     },
+     {
+      "id": 311,
+      "token": "Ġto",
+      "logprob": -1.125
+     },
+     {
+      "id": 369,
+      "token": "Ġfor",
+      "logprob": -3.875
+     }
+    ]
+   },
+   {
+    "id": 1281,
+    "token": "Ġmake",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 1281,
+      "token": "Ġmake",
+      "logprob": 0.0
+     },
+     {
+      "id": 5978,
+      "token": "Ġensure",
+      "logprob": -4.0
+     },
+     {
+      "id": 1855,
+      "token": "Ġcreate",
+      "logprob": -7.25
+     }
+    ]
+   },
+   {
+    "id": 432,
+    "token": "Ġit",
+    "logprob": -0.625,
+    "top_logprobs": [
+     {
+      "id": 432,
+      "token": "Ġit",
+      "logprob": -0.625
+     },
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.875
+     },
+     {
+      "id": 1105,
+      "token": "Ġthem",
+      "logprob": -2.875
+     }
+    ]
+   },
+   {
+    "id": 8063,
+    "token": "Ġeight",
+    "logprob": -0.125,
+    "top_logprobs": [
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.125
+     },
+     {
+      "id": 9428,
+      "token": "Ġtruly",
+      "logprob": -1.875
+     },
+     {
+      "id": 8094,
+      "token": "Ġseven",
+      "logprob": -6.25
+     }
+    ]
+   },
+   {
+    "id": 4911,
+    "token": "Ġunique",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 4911,
+      "token": "Ġunique",
+      "logprob": -0.25
+     },
+     {
+      "id": 12460,
+      "token": "Ġdistinct",
+      "logprob": -2.125
+     },
+     {
+      "id": 2155,
+      "token": "Ġdifferent",
+      "logprob": -2.625
+     }
+    ]
+   },
+   {
+    "id": 89838,
+    "token": "Ġnouns",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 89838,
+      "token": "Ġnouns",
+      "logprob": -0.25
+     },
+     {
+      "id": 3589,
+      "token": "Ġitems",
+      "logprob": -1.875
+     },
+     {
+      "id": 4244,
+      "token": "Ġwords",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 692,
+    "token": ")ĊĊ",
+    "logprob": -0.375,
+    "top_logprobs": [
+     {
+      "id": 692,
+      "token": ")ĊĊ",
+      "logprob": -0.375
+     },
+     {
+      "id": 8,
+      "token": ")",
+      "logprob": -1.125
+     },
+     {
+      "id": 340,
+      "token": ")Ċ",
+      "logprob": -3.625
+     }
+    ]
+   },
+   {
+    "id": 79,
+    "token": "p",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": 0.0
+     },
+     {
+      "id": 47,
+      "token": "P",
+      "logprob": -5.0
+     },
+     {
+      "id": 8420,
+      "token": "Here",
+      "logprob": -5.125
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "upstream",
+  "seed": null,
+  "temperature": 1.0,
+  "text": "penguin, vacuum, umbrella, piano, bicycle, library, television, umbrella\n(removed duplicate \"umbrella\" to make it eight unique nouns)\n\np",
+  "text_sha256": "eb08fe915c02d4409ba43878c494d469f701c2a611e790c4108726de6d0e84d0",
+  "finish_reason": "length",
+  "tokens_with_logprobs": 32,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 4616,
+    "token": "cat",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 4616,
+      "token": "cat",
+      "logprob": -1.25
+     },
+     {
+      "id": 6918,
+      "token": "car",
+      "logprob": -1.625
+     },
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": -1.875
+     }
+    ]
+   },
+   {
+    "id": 45872,
+    "token": "enguin",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 45872,
+      "token": "enguin",
+      "logprob": 0.0
+     },
+     {
+      "id": 482,
+      "token": "ine",
+      "logprob": -3.125
+     },
+     {
+      "id": 13088,
+      "token": "iano",
+      "logprob": -5.375
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.375
+     },
+     {
+      "id": 10109,
+      "token": ",c",
+      "logprob": -14.75
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.25
+     },
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -2.875
+     },
+     {
+      "id": 89818,
+      "token": "Ġtoaster",
+      "logprob": -3.75
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 31881,
+      "token": "Ġcleaner",
+      "logprob": -7.5
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.625
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.25
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -3.875
+     },
+     {
+      "id": 45740,
+      "token": "Ġelephant",
+      "logprob": -4.0625
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -8.75
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -11.625
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -1.75,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -1.75
+     },
+     {
+      "id": 45740,
+      "token": "Ġelephant",
+      "logprob": -1.75
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -2.125
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -10.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -13.25
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -0.875,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -0.875
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -1.125
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -3.25
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -9.625
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -10.8125
+     }
+    ]
+   },
+   {
+    "id": 6733,
+    "token": "Ġlibrary",
+    "logprob": -1.375,
+    "top_logprobs": [
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -1.375
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -1.9375
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -2.1875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -9.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -11.875
+     }
+    ]
+   },
+   {
+    "id": 12425,
+    "token": "Ġtelevision",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 12425,
+      "token": "Ġtelevision",
+      "logprob": -1.25
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -1.875
+     },
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -2.0625
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.25
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -12.75
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.75
+     },
+     {
+      "id": 44944,
+      "token": "Ġrefrigerator",
+      "logprob": -2.25
+     },
+     {
+      "id": 72657,
+      "token": "Ġmicroscope",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 198,
+    "token": "Ċ",
+    "logprob": -0.875,
+    "top_logprobs": [
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -0.875
+     },
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": -1.75
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -2.1875
+     }
+    ]
+   },
+   {
+    "id": 7,
+    "token": "(",
+    "logprob": -1.125,
+    "top_logprobs": [
+     {
+      "id": 7,
+      "token": "(",
+      "logprob": -1.125
+     },
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": -1.125
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -2.375
+     }
+    ]
+   },
+   {
+    "id": 45756,
+    "token": "removed",
+    "logprob": -1.875,
+    "top_logprobs": [
+     {
+      "id": 45756,
+      "token": "removed",
+      "logprob": -1.875
+     },
+     {
+      "id": 9112,
+      "token": "Note",
+      "logprob": -2.125
+     },
+     {
+      "id": 16196,
+      "token": "Updated",
+      "logprob": -2.25
+     }
+    ]
+   },
+   {
+    "id": 22513,
+    "token": "Ġduplicate",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22513,
+      "token": "Ġduplicate",
+      "logprob": 0.0
+     },
+     {
+      "id": 279,
+      "token": "Ġthe",
+      "logprob": -8.25
+     },
+     {
+      "id": 42328,
+      "token": "Ġduplicates",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 330,
+    "token": "Ġ\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 330,
+      "token": "Ġ\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 364,
+      "token": "Ġ'",
+      "logprob": -4.25
+     },
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 3551,
+    "token": "umb",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 3551,
+      "token": "umb",
+      "logprob": 0.0
+     },
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -15.0
+     },
+     {
+      "id": 65,
+      "token": "b",
+      "logprob": -16.625
+     }
+    ]
+   },
+   {
+    "id": 33042,
+    "token": "rella",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 33042,
+      "token": "rella",
+      "logprob": 0.0
+     },
+     {
+      "id": 72923,
+      "token": "rellas",
+      "logprob": -17.875
+     },
+     {
+      "id": 16285,
+      "token": "rell",
+      "logprob": -20.0
+     }
+    ]
+   },
+   {
+    "id": 1,
+    "token": "\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 1,
+      "token": "\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 899,
+      "token": "\")",
+      "logprob": -5.25
+     },
+     {
+      "id": 5130,
+      "token": "\")ĊĊ",
+      "logprob": -6.5
+     }
+    ]
+   },
+   {
+    "id": 323,
+    "token": "Ġand",
+    "logprob": -0.5,
+    "top_logprobs": [
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -0.5
+     },
+     {
+      "id": 311,
+      "token": "Ġto",
+      "logprob": -1.125
+     },
+     {
+      "id": 369,
+      "token": "Ġfor",
+      "logprob": -3.875
+     }
+    ]
+   },
+   {
+    "id": 1281,
+    "token": "Ġmake",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 1281,
+      "token": "Ġmake",
+      "logprob": 0.0
+     },
+     {
+      "id": 5978,
+      "token": "Ġensure",
+      "logprob": -4.0
+     },
+     {
+      "id": 1855,
+      "token": "Ġcreate",
+      "logprob": -7.25
+     }
+    ]
+   },
+   {
+    "id": 432,
+    "token": "Ġit",
+    "logprob": -0.625,
+    "top_logprobs": [
+     {
+      "id": 432,
+      "token": "Ġit",
+      "logprob": -0.625
+     },
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.875
+     },
+     {
+      "id": 1105,
+      "token": "Ġthem",
+      "logprob": -2.875
+     }
+    ]
+   },
+   {
+    "id": 8063,
+    "token": "Ġeight",
+    "logprob": -0.125,
+    "top_logprobs": [
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.125
+     },
+     {
+      "id": 9428,
+      "token": "Ġtruly",
+      "logprob": -1.875
+     },
+     {
+      "id": 8094,
+      "token": "Ġseven",
+      "logprob": -6.25
+     }
+    ]
+   },
+   {
+    "id": 4911,
+    "token": "Ġunique",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 4911,
+      "token": "Ġunique",
+      "logprob": -0.25
+     },
+     {
+      "id": 12460,
+      "token": "Ġdistinct",
+      "logprob": -2.125
+     },
+     {
+      "id": 2155,
+      "token": "Ġdifferent",
+      "logprob": -2.625
+     }
+    ]
+   },
+   {
+    "id": 89838,
+    "token": "Ġnouns",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 89838,
+      "token": "Ġnouns",
+      "logprob": -0.25
+     },
+     {
+      "id": 3589,
+      "token": "Ġitems",
+      "logprob": -1.875
+     },
+     {
+      "id": 4244,
+      "token": "Ġwords",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 692,
+    "token": ")ĊĊ",
+    "logprob": -0.375,
+    "top_logprobs": [
+     {
+      "id": 692,
+      "token": ")ĊĊ",
+      "logprob": -0.375
+     },
+     {
+      "id": 8,
+      "token": ")",
+      "logprob": -1.125
+     },
+     {
+      "id": 340,
+      "token": ")Ċ",
+      "logprob": -3.625
+     }
+    ]
+   },
+   {
+    "id": 79,
+    "token": "p",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": 0.0
+     },
+     {
+      "id": 47,
+      "token": "P",
+      "logprob": -5.0
+     },
+     {
+      "id": 8420,
+      "token": "Here",
+      "logprob": -5.125
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "upstream",
+  "seed": null,
+  "temperature": 1.0,
+  "text": "penguin, vacuum, umbrella, piano, bicycle, library, television, umbrella\n(removed duplicate \"umbrella\" to make it eight unique nouns)\n\np",
+  "text_sha256": "eb08fe915c02d4409ba43878c494d469f701c2a611e790c4108726de6d0e84d0",
+  "finish_reason": "length",
+  "tokens_with_logprobs": 32,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 4616,
+    "token": "cat",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 4616,
+      "token": "cat",
+      "logprob": -1.25
+     },
+     {
+      "id": 6918,
+      "token": "car",
+      "logprob": -1.625
+     },
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": -1.875
+     }
+    ]
+   },
+   {
+    "id": 45872,
+    "token": "enguin",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 45872,
+      "token": "enguin",
+      "logprob": 0.0
+     },
+     {
+      "id": 482,
+      "token": "ine",
+      "logprob": -3.125
+     },
+     {
+      "id": 13088,
+      "token": "iano",
+      "logprob": -5.375
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.375
+     },
+     {
+      "id": 10109,
+      "token": ",c",
+      "logprob": -14.75
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.25
+     },
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -2.875
+     },
+     {
+      "id": 89818,
+      "token": "Ġtoaster",
+      "logprob": -3.75
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 31881,
+      "token": "Ġcleaner",
+      "logprob": -7.5
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.625
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.25
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -3.875
+     },
+     {
+      "id": 45740,
+      "token": "Ġelephant",
+      "logprob": -4.0625
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -8.75
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -11.625
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -1.75,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -1.75
+     },
+     {
+      "id": 45740,
+      "token": "Ġelephant",
+      "logprob": -1.75
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -2.125
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -10.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -13.25
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -0.875,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -0.875
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -1.125
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -3.25
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -9.625
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -10.8125
+     }
+    ]
+   },
+   {
+    "id": 6733,
+    "token": "Ġlibrary",
+    "logprob": -1.375,
+    "top_logprobs": [
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -1.375
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -1.9375
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -2.1875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -9.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -11.875
+     }
+    ]
+   },
+   {
+    "id": 12425,
+    "token": "Ġtelevision",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 12425,
+      "token": "Ġtelevision",
+      "logprob": -1.25
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -1.875
+     },
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -2.0625
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.25
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -12.75
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.75
+     },
+     {
+      "id": 44944,
+      "token": "Ġrefrigerator",
+      "logprob": -2.25
+     },
+     {
+      "id": 72657,
+      "token": "Ġmicroscope",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 198,
+    "token": "Ċ",
+    "logprob": -0.875,
+    "top_logprobs": [
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -0.875
+     },
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": -1.75
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -2.1875
+     }
+    ]
+   },
+   {
+    "id": 7,
+    "token": "(",
+    "logprob": -1.125,
+    "top_logprobs": [
+     {
+      "id": 7,
+      "token": "(",
+      "logprob": -1.125
+     },
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": -1.125
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -2.375
+     }
+    ]
+   },
+   {
+    "id": 45756,
+    "token": "removed",
+    "logprob": -1.875,
+    "top_logprobs": [
+     {
+      "id": 45756,
+      "token": "removed",
+      "logprob": -1.875
+     },
+     {
+      "id": 9112,
+      "token": "Note",
+      "logprob": -2.125
+     },
+     {
+      "id": 16196,
+      "token": "Updated",
+      "logprob": -2.25
+     }
+    ]
+   },
+   {
+    "id": 22513,
+    "token": "Ġduplicate",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22513,
+      "token": "Ġduplicate",
+      "logprob": 0.0
+     },
+     {
+      "id": 279,
+      "token": "Ġthe",
+      "logprob": -8.25
+     },
+     {
+      "id": 42328,
+      "token": "Ġduplicates",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 330,
+    "token": "Ġ\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 330,
+      "token": "Ġ\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 364,
+      "token": "Ġ'",
+      "logprob": -4.25
+     },
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 3551,
+    "token": "umb",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 3551,
+      "token": "umb",
+      "logprob": 0.0
+     },
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -15.0
+     },
+     {
+      "id": 65,
+      "token": "b",
+      "logprob": -16.625
+     }
+    ]
+   },
+   {
+    "id": 33042,
+    "token": "rella",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 33042,
+      "token": "rella",
+      "logprob": 0.0
+     },
+     {
+      "id": 72923,
+      "token": "rellas",
+      "logprob": -17.875
+     },
+     {
+      "id": 16285,
+      "token": "rell",
+      "logprob": -20.0
+     }
+    ]
+   },
+   {
+    "id": 1,
+    "token": "\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 1,
+      "token": "\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 899,
+      "token": "\")",
+      "logprob": -5.25
+     },
+     {
+      "id": 5130,
+      "token": "\")ĊĊ",
+      "logprob": -6.5
+     }
+    ]
+   },
+   {
+    "id": 323,
+    "token": "Ġand",
+    "logprob": -0.5,
+    "top_logprobs": [
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -0.5
+     },
+     {
+      "id": 311,
+      "token": "Ġto",
+      "logprob": -1.125
+     },
+     {
+      "id": 369,
+      "token": "Ġfor",
+      "logprob": -3.875
+     }
+    ]
+   },
+   {
+    "id": 1281,
+    "token": "Ġmake",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 1281,
+      "token": "Ġmake",
+      "logprob": 0.0
+     },
+     {
+      "id": 5978,
+      "token": "Ġensure",
+      "logprob": -4.0
+     },
+     {
+      "id": 1855,
+      "token": "Ġcreate",
+      "logprob": -7.25
+     }
+    ]
+   },
+   {
+    "id": 432,
+    "token": "Ġit",
+    "logprob": -0.625,
+    "top_logprobs": [
+     {
+      "id": 432,
+      "token": "Ġit",
+      "logprob": -0.625
+     },
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.875
+     },
+     {
+      "id": 1105,
+      "token": "Ġthem",
+      "logprob": -2.875
+     }
+    ]
+   },
+   {
+    "id": 8063,
+    "token": "Ġeight",
+    "logprob": -0.125,
+    "top_logprobs": [
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.125
+     },
+     {
+      "id": 9428,
+      "token": "Ġtruly",
+      "logprob": -1.875
+     },
+     {
+      "id": 8094,
+      "token": "Ġseven",
+      "logprob": -6.25
+     }
+    ]
+   },
+   {
+    "id": 4911,
+    "token": "Ġunique",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 4911,
+      "token": "Ġunique",
+      "logprob": -0.25
+     },
+     {
+      "id": 12460,
+      "token": "Ġdistinct",
+      "logprob": -2.125
+     },
+     {
+      "id": 2155,
+      "token": "Ġdifferent",
+      "logprob": -2.625
+     }
+    ]
+   },
+   {
+    "id": 89838,
+    "token": "Ġnouns",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 89838,
+      "token": "Ġnouns",
+      "logprob": -0.25
+     },
+     {
+      "id": 3589,
+      "token": "Ġitems",
+      "logprob": -1.875
+     },
+     {
+      "id": 4244,
+      "token": "Ġwords",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 692,
+    "token": ")ĊĊ",
+    "logprob": -0.375,
+    "top_logprobs": [
+     {
+      "id": 692,
+      "token": ")ĊĊ",
+      "logprob": -0.375
+     },
+     {
+      "id": 8,
+      "token": ")",
+      "logprob": -1.125
+     },
+     {
+      "id": 340,
+      "token": ")Ċ",
+      "logprob": -3.625
+     }
+    ]
+   },
+   {
+    "id": 79,
+    "token": "p",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": 0.0
+     },
+     {
+      "id": 47,
+      "token": "P",
+      "logprob": -5.0
+     },
+     {
+      "id": 8420,
+      "token": "Here",
+      "logprob": -5.125
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "upstream",
+  "seed": null,
+  "temperature": 1.0,
+  "text": "penguin, vacuum, umbrella, piano, bicycle, library, television, umbrella\n(removed duplicate \"umbrella\" to make it eight unique nouns)\n\np",
+  "text_sha256": "eb08fe915c02d4409ba43878c494d469f701c2a611e790c4108726de6d0e84d0",
+  "finish_reason": "length",
+  "tokens_with_logprobs": 32,
+  "non_top1_tokens": 0,
+  "logprobs": [
+   {
+    "id": 4616,
+    "token": "cat",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 4616,
+      "token": "cat",
+      "logprob": -1.25
+     },
+     {
+      "id": 6918,
+      "token": "car",
+      "logprob": -1.625
+     },
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": -1.875
+     }
+    ]
+   },
+   {
+    "id": 45872,
+    "token": "enguin",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 45872,
+      "token": "enguin",
+      "logprob": 0.0
+     },
+     {
+      "id": 482,
+      "token": "ine",
+      "logprob": -3.125
+     },
+     {
+      "id": 13088,
+      "token": "iano",
+      "logprob": -5.375
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.375
+     },
+     {
+      "id": 10109,
+      "token": ",c",
+      "logprob": -14.75
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.25
+     },
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -2.875
+     },
+     {
+      "id": 89818,
+      "token": "Ġtoaster",
+      "logprob": -3.75
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 31881,
+      "token": "Ġcleaner",
+      "logprob": -7.5
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -11.625
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.25
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -3.875
+     },
+     {
+      "id": 45740,
+      "token": "Ġelephant",
+      "logprob": -4.0625
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -8.75
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -11.625
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -1.75,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -1.75
+     },
+     {
+      "id": 45740,
+      "token": "Ġelephant",
+      "logprob": -1.75
+     },
+     {
+      "id": 16301,
+      "token": "Ġmountain",
+      "logprob": -2.125
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -10.0
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -13.25
+     }
+    ]
+   },
+   {
+    "id": 34986,
+    "token": "Ġbicycle",
+    "logprob": -0.875,
+    "top_logprobs": [
+     {
+      "id": 34986,
+      "token": "Ġbicycle",
+      "logprob": -0.875
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -1.125
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -3.25
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -9.625
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -10.8125
+     }
+    ]
+   },
+   {
+    "id": 6733,
+    "token": "Ġlibrary",
+    "logprob": -1.375,
+    "top_logprobs": [
+     {
+      "id": 6733,
+      "token": "Ġlibrary",
+      "logprob": -1.375
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -1.9375
+     },
+     {
+      "id": 55169,
+      "token": "Ġbutterfly",
+      "logprob": -2.1875
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -9.25
+     },
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -11.875
+     }
+    ]
+   },
+   {
+    "id": 12425,
+    "token": "Ġtelevision",
+    "logprob": -1.25,
+    "top_logprobs": [
+     {
+      "id": 12425,
+      "token": "Ġtelevision",
+      "logprob": -1.25
+     },
+     {
+      "id": 65206,
+      "token": "Ġvolcano",
+      "logprob": -1.875
+     },
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -2.0625
+     }
+    ]
+   },
+   {
+    "id": 11,
+    "token": ",",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": 0.0
+     },
+     {
+      "id": 345,
+      "token": ",Ċ",
+      "logprob": -12.25
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -12.75
+     }
+    ]
+   },
+   {
+    "id": 47898,
+    "token": "Ġumbrella",
+    "logprob": -0.75,
+    "top_logprobs": [
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -0.75
+     },
+     {
+      "id": 44944,
+      "token": "Ġrefrigerator",
+      "logprob": -2.25
+     },
+     {
+      "id": 72657,
+      "token": "Ġmicroscope",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 198,
+    "token": "Ċ",
+    "logprob": -0.875,
+    "top_logprobs": [
+     {
+      "id": 198,
+      "token": "Ċ",
+      "logprob": -0.875
+     },
+     {
+      "id": 11,
+      "token": ",",
+      "logprob": -1.75
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -2.1875
+     }
+    ]
+   },
+   {
+    "id": 7,
+    "token": "(",
+    "logprob": -1.125,
+    "top_logprobs": [
+     {
+      "id": 7,
+      "token": "(",
+      "logprob": -1.125
+     },
+     {
+      "id": 151645,
+      "token": "<|im_end|>",
+      "logprob": -1.125
+     },
+     {
+      "id": 151643,
+      "token": "<|endoftext|>",
+      "logprob": -2.375
+     }
+    ]
+   },
+   {
+    "id": 45756,
+    "token": "removed",
+    "logprob": -1.875,
+    "top_logprobs": [
+     {
+      "id": 45756,
+      "token": "removed",
+      "logprob": -1.875
+     },
+     {
+      "id": 9112,
+      "token": "Note",
+      "logprob": -2.125
+     },
+     {
+      "id": 16196,
+      "token": "Updated",
+      "logprob": -2.25
+     }
+    ]
+   },
+   {
+    "id": 22513,
+    "token": "Ġduplicate",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 22513,
+      "token": "Ġduplicate",
+      "logprob": 0.0
+     },
+     {
+      "id": 279,
+      "token": "Ġthe",
+      "logprob": -8.25
+     },
+     {
+      "id": 42328,
+      "token": "Ġduplicates",
+      "logprob": -8.25
+     }
+    ]
+   },
+   {
+    "id": 330,
+    "token": "Ġ\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 330,
+      "token": "Ġ\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 364,
+      "token": "Ġ'",
+      "logprob": -4.25
+     },
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -9.25
+     }
+    ]
+   },
+   {
+    "id": 3551,
+    "token": "umb",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 3551,
+      "token": "umb",
+      "logprob": 0.0
+     },
+     {
+      "id": 47898,
+      "token": "Ġumbrella",
+      "logprob": -15.0
+     },
+     {
+      "id": 65,
+      "token": "b",
+      "logprob": -16.625
+     }
+    ]
+   },
+   {
+    "id": 33042,
+    "token": "rella",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 33042,
+      "token": "rella",
+      "logprob": 0.0
+     },
+     {
+      "id": 72923,
+      "token": "rellas",
+      "logprob": -17.875
+     },
+     {
+      "id": 16285,
+      "token": "rell",
+      "logprob": -20.0
+     }
+    ]
+   },
+   {
+    "id": 1,
+    "token": "\"",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 1,
+      "token": "\"",
+      "logprob": 0.0
+     },
+     {
+      "id": 899,
+      "token": "\")",
+      "logprob": -5.25
+     },
+     {
+      "id": 5130,
+      "token": "\")ĊĊ",
+      "logprob": -6.5
+     }
+    ]
+   },
+   {
+    "id": 323,
+    "token": "Ġand",
+    "logprob": -0.5,
+    "top_logprobs": [
+     {
+      "id": 323,
+      "token": "Ġand",
+      "logprob": -0.5
+     },
+     {
+      "id": 311,
+      "token": "Ġto",
+      "logprob": -1.125
+     },
+     {
+      "id": 369,
+      "token": "Ġfor",
+      "logprob": -3.875
+     }
+    ]
+   },
+   {
+    "id": 1281,
+    "token": "Ġmake",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 1281,
+      "token": "Ġmake",
+      "logprob": 0.0
+     },
+     {
+      "id": 5978,
+      "token": "Ġensure",
+      "logprob": -4.0
+     },
+     {
+      "id": 1855,
+      "token": "Ġcreate",
+      "logprob": -7.25
+     }
+    ]
+   },
+   {
+    "id": 432,
+    "token": "Ġit",
+    "logprob": -0.625,
+    "top_logprobs": [
+     {
+      "id": 432,
+      "token": "Ġit",
+      "logprob": -0.625
+     },
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.875
+     },
+     {
+      "id": 1105,
+      "token": "Ġthem",
+      "logprob": -2.875
+     }
+    ]
+   },
+   {
+    "id": 8063,
+    "token": "Ġeight",
+    "logprob": -0.125,
+    "top_logprobs": [
+     {
+      "id": 8063,
+      "token": "Ġeight",
+      "logprob": -0.125
+     },
+     {
+      "id": 9428,
+      "token": "Ġtruly",
+      "logprob": -1.875
+     },
+     {
+      "id": 8094,
+      "token": "Ġseven",
+      "logprob": -6.25
+     }
+    ]
+   },
+   {
+    "id": 4911,
+    "token": "Ġunique",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 4911,
+      "token": "Ġunique",
+      "logprob": -0.25
+     },
+     {
+      "id": 12460,
+      "token": "Ġdistinct",
+      "logprob": -2.125
+     },
+     {
+      "id": 2155,
+      "token": "Ġdifferent",
+      "logprob": -2.625
+     }
+    ]
+   },
+   {
+    "id": 89838,
+    "token": "Ġnouns",
+    "logprob": -0.25,
+    "top_logprobs": [
+     {
+      "id": 89838,
+      "token": "Ġnouns",
+      "logprob": -0.25
+     },
+     {
+      "id": 3589,
+      "token": "Ġitems",
+      "logprob": -1.875
+     },
+     {
+      "id": 4244,
+      "token": "Ġwords",
+      "logprob": -2.5
+     }
+    ]
+   },
+   {
+    "id": 692,
+    "token": ")ĊĊ",
+    "logprob": -0.375,
+    "top_logprobs": [
+     {
+      "id": 692,
+      "token": ")ĊĊ",
+      "logprob": -0.375
+     },
+     {
+      "id": 8,
+      "token": ")",
+      "logprob": -1.125
+     },
+     {
+      "id": 340,
+      "token": ")Ċ",
+      "logprob": -3.625
+     }
+    ]
+   },
+   {
+    "id": 79,
+    "token": "p",
+    "logprob": 0.0,
+    "top_logprobs": [
+     {
+      "id": 79,
+      "token": "p",
+      "logprob": 0.0
+     },
+     {
+      "id": 47,
+      "token": "P",
+      "logprob": -5.0
+     },
+     {
+      "id": 8420,
+      "token": "Here",
+      "logprob": -5.125
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "proxy",
+  "seed": 42,
+  "temperature": 1.0,
+  "text": "penguin, vacuum, umbrella, piano, bicycle, library, television, umbrella\n(removed duplicate \"umbrella\" to make it eight unique nouns)\n\np",
+  "text_sha256": "eb08fe915c02d4409ba43878c494d469f701c2a611e790c4108726de6d0e84d0",
+  "finish_reason": "length",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "proxy",
+  "seed": 31415,
+  "temperature": 1.0,
+  "text": "penguin, vacuum, umbrella, piano, bicycle, library, television, umbrella\n(removed duplicate \"umbrella\" to make it eight unique nouns)\n\np",
+  "text_sha256": "eb08fe915c02d4409ba43878c494d469f701c2a611e790c4108726de6d0e84d0",
+  "finish_reason": "length",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "proxy",
+  "seed": 27182,
+  "temperature": 1.0,
+  "text": "penguin, vacuum, umbrella, piano, bicycle, library, television, umbrella\n(removed duplicate \"umbrella\" to make it eight unique nouns)\n\np",
+  "text_sha256": "eb08fe915c02d4409ba43878c494d469f701c2a611e790c4108726de6d0e84d0",
+  "finish_reason": "length",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "proxy",
+  "seed": 42,
+  "temperature": 1.0,
+  "text": "penguin, vacuum, umbrella, piano, bicycle, library, television, umbrella\n(removed duplicate \"umbrella\" to make it eight unique nouns)\n\np",
+  "text_sha256": "eb08fe915c02d4409ba43878c494d469f701c2a611e790c4108726de6d0e84d0",
+  "finish_reason": "length",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "proxy",
+  "seed": null,
+  "temperature": 1.0,
+  "text": "penguin, vacuum, umbrella, piano, bicycle, library, television, umbrella\n(removed duplicate \"umbrella\" to make it eight unique nouns)\n\np",
+  "text_sha256": "eb08fe915c02d4409ba43878c494d469f701c2a611e790c4108726de6d0e84d0",
+  "finish_reason": "length",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "proxy",
+  "seed": null,
+  "temperature": 1.0,
+  "text": "penguin, vacuum, umbrella, piano, bicycle, library, television, umbrella\n(removed duplicate \"umbrella\" to make it eight unique nouns)\n\np",
+  "text_sha256": "eb08fe915c02d4409ba43878c494d469f701c2a611e790c4108726de6d0e84d0",
+  "finish_reason": "length",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ },
+ {
+  "label": "stock",
+  "prompt": "words",
+  "path": "proxy",
+  "seed": null,
+  "temperature": 1.0,
+  "text": "penguin, vacuum, umbrella, piano, bicycle, library, television, umbrella\n(removed duplicate \"umbrella\" to make it eight unique nouns)\n\np",
+  "text_sha256": "eb08fe915c02d4409ba43878c494d469f701c2a611e790c4108726de6d0e84d0",
+  "finish_reason": "length",
+  "tokens_with_logprobs": 0,
+  "non_top1_tokens": 0,
+  "logprobs": []
+ }
+]

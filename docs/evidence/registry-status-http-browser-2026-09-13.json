@@ -1,0 +1,46 @@
+{
+  "scope": "local Chrome through Auth.js, Next production build, Python CLI and DynamoDB Local",
+  "request_id": "10e65e0b-88ee-4426-a8cf-6563584a677a",
+  "observed_ui": [
+    "This request is still a preview.",
+    "Preparation outcome unknown. Check this request’s status.",
+    "Preparation could not be confirmed. Check this request’s status before taking another action.",
+    "Prepared · not published. The request is prepared and retained. Publication is not verified."
+  ],
+  "prepare_button_disabled_after_response_loss": true,
+  "reload_and_manual_request_id_recovery": true,
+  "browser_calls": [
+    {
+      "method": "POST",
+      "path": "/api/dashboard/platform/attach/preview",
+      "status": 200,
+      "dropped": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/dashboard/platform/attach/status",
+      "status": 200,
+      "dropped": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/dashboard/platform/attach/prepare",
+      "status": 200,
+      "dropped": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/dashboard/platform/attach/status",
+      "status": 200,
+      "dropped": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/dashboard/platform/attach/status",
+      "status": 200,
+      "dropped": false
+    }
+  ],
+  "prepare_resubmitted": false,
+  "remote_github_or_aws_calls": 0
+}

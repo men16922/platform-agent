@@ -1,0 +1,21 @@
+{
+  "reviewer": "coding assistant, not independent operator or model judge",
+  "run_sha256": "0e7da1d27658932f282e70ab12b5ce8bbe9fe45f0c3120e6925b94fd377c0aa5",
+  "shared_input_sha256": "e3cfbbb29bade5d280597b1963f7d8da6abbe349e1c5e1aad890bbebde1768d3",
+  "factual_observations": "pass for this one observed image-pull failure",
+  "health_recovery_uncertainty": "pass: does not infer health from Running/Available or authorize rollback",
+  "tool_selection": "partial: three allowed reads, but rollout waiting adds 10 seconds without exposing the Pod-specific pull error",
+  "next_check": "partial: suggests fetching Pod logs although the failed image has never started; Pod status message/events are the relevant missing evidence",
+  "overall": "partial, not PASS",
+  "quotes": [
+    "The root cause of the `ImagePullBackOff` error is not confirmed.",
+    "Fetch logs from the pod(s) to confirm the image pull error.",
+    "The previous revision (revision 27) is not confirmed as healthy or a viable rollback candidate."
+  ],
+  "manual_reference": [
+    "The exact shared tool results establish revision28 cannot pull its image, revision27 has two running Pods, and rollout did not complete within the tool timeout.",
+    "These shared results do not establish external application health, registry manifest availability, access-denial cause, or a healthy rollback candidate.",
+    "Inspect the current revision Pod waiting message and UID-bound events; then query the relevant image reference in the configured registry. Read logs only from a container that has started, preserving revision identity.",
+    "The current describe collector already reads the Pod JSON containing the specific error, but summarize_deployment drops its message. Preserve that raw observation separately from deterministic health/recovery assessment; do not classify root cause from substring matching."
+  ]
+}

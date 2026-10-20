@@ -1,0 +1,1 @@
+{"case": "recorded-pull-failure", "seconds": 2.303, "http_attempts": 1, "completion": {}, "error": {"type": "UsageLimitExceeded", "message": "The next tool call(s) would exceed the tool_calls_limit of 1 (tool_calls=3)."}}

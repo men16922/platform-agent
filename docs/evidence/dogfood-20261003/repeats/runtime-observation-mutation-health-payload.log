@@ -1,0 +1,32 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______ test_router_connection_check_requires_the_expected_health_payload _______
+
+run_js = <function run_js.<locals>.run at 0x1090562a0>
+
+    def test_router_connection_check_requires_the_expected_health_payload(run_js):
+        result = run_js('''
+    const rows=[],calls=[];
+    for (const reply of [{status:'ok',service:'model-router-api'}, {status:'ok',service:'other'},
+     {status:'error',service:'model-router-api'},null,'bad-json','http-failure','network-failure']) {
+     const get=load('src/app/api/dashboard/agents/onprem-status/route.ts',{}, {fetch:async(url,options)=>{
+      calls.push({url,cache:options.cache,hasSignal:!!options.signal});
+      if(reply==='network-failure') throw new Error('unavailable');
+      if(reply==='bad-json') return new Response('not JSON');
+      if(reply==='http-failure') return Response.json({status:'ok',service:'model-router-api'},{status:503});
+      return Response.json(reply);
+     }}).GET;
+     const response=await get();rows.push({body:await response.json(),cache:response.headers.get('cache-control')});
+    }
+    console.log(JSON.stringify({rows,calls}));
+    ''')
+>       assert [r["body"]["router"] for r in result["rows"]] == ["connected"] + ["unavailable"] * 6
+E       AssertionError: assert ['connected',...ailable', ...] == ['connected',...ailable', ...]
+E         
+E         At index 1 diff: 'connected' != 'unavailable'
+E         Use -v to get more diff
+
+tests/test_local_run_dashboard.py:93: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_local_run_dashboard.py::test_router_connection_check_requires_the_expected_health_payload
+1 failed in 0.25s

@@ -1,0 +1,19 @@
+M72 / 2026-09-13 / local macOS ARM64 Python 3.13
+Command: python scripts/verify_registry_plan_store_local.py --endpoint http://127.0.0.1:55804
+Actual DynamoDB Local in a task-owned container; the script creates and removes only UUID test tables.
+Final restored-source run after three deliberately rejected mutations.
+No production Lambda, GitHub writer, real key or remote infrastructure used.
+
+PASS new process reads complete server payload
+PASS duplicate request_id cannot overwrite
+PASS 8 concurrent consumers -> 1 claim, 7 conflicts; retry remains closed
+PASS subject swap cannot consume another preview
+PASS current grant revocation precedes claim
+PASS changed base revision requires replan
+PASS TTL deletion not required; expiry during authorization/read also rejects
+PASS stored output corruption rejected
+PASS service never returns expired success after planning or persistence
+PASS real Git + separate CLI preview/prepare processes; missing storage never succeeds
+PASS real missing users table fails closed before claim
+PASS real missing plan table rejects reads/writes; no publication adapter invoked
+PASS temporary local tables removed; no AWS endpoint or GitHub write used

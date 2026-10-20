@@ -1,0 +1,8 @@
+
+> platform-agent-cdk@0.1.0 synth
+> cdk synth --no-lookups --quiet
+
+npm error code ENOTCACHED
+npm error request to https://registry.npmjs.org/ts-node failed: cache mode is 'only-if-cached' but no cached response is available.
+npm error A complete log of this run can be found in: /root/.npm/_logs/2026-09-06T03_03_54_470Z-debug-0.log
+npx ts-node --prefer-ts-exts bin/app.ts: Subprocess exited with error 1

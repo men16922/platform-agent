@@ -1,0 +1,21 @@
+{
+  "scope": "actual local files/processes and loopback HTTP",
+  "mutations": [
+    {
+      "mutation": "remove_exclusive_intent",
+      "exit_code": 1,
+      "summary": "21 failed, 4 passed in 10.89s"
+    },
+    {
+      "mutation": "send_without_durable_intent",
+      "exit_code": 1,
+      "summary": "21 failed, 4 passed in 10.45s"
+    },
+    {
+      "mutation": "omit_intent_fsync",
+      "exit_code": 1,
+      "summary": "6 failed, 19 passed in 10.03s"
+    }
+  ],
+  "bytes_restored": true
+}

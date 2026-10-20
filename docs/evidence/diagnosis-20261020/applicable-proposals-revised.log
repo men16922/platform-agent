@@ -1,0 +1,7 @@
+{"id": "q-failing", "schema_applicability": "valid", "seconds": 6.196, "error": null}
+{"id": "q-injected", "schema_applicability": "valid", "seconds": 4.99, "error": null}
+{"id": "q-restored", "schema_applicability": "valid", "seconds": 3.162, "error": null}
+{"id": "s-both-failing-consistent", "schema_applicability": "valid", "seconds": 5.216, "error": null}
+{"id": "s-original-contradiction", "schema_applicability": "not_validated", "seconds": 4.344, "error": {"type": "ValueError", "message": "inapplicable_hypothesis:image_reference"}}
+{"id": "positive-recovery", "schema_applicability": "valid", "seconds": 4.604, "error": null}
+{"id": "positive-complete", "schema_applicability": "valid", "seconds": 2.602, "error": null}

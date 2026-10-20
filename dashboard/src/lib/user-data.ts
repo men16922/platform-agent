@@ -1,6 +1,7 @@
-import { GetCommand, PutCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { GetCommand, UpdateCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { getDocumentClient } from "@/lib/aws-client";
 import type { Role } from "@/lib/auth";
+import { userRoleUpdate } from "@/lib/user-role-update";
 
 export interface UserRecord {
   username: string;
@@ -14,6 +15,8 @@ export interface UserRecord {
    * would make the system unadministrable after the first mistake.
    */
   tenants?: string[];
+  /** Managed separately. Role/read-grant edits must preserve this attribute. */
+  registry_write_tenants?: string[];
   updated_at: string;
 }
 
@@ -65,7 +68,7 @@ export async function getUserRecord(username: string): Promise<UserRecord | null
  * Create or update a user record.
  *
  * `tenants` is **absent-means-keep**, not absent-means-none. The write is a
- * whole-item Put, so the first version of this function silently revoked every
+ * whole-item Put originally, so the first version silently revoked every
  * grant a user had the moment an admin changed their role — the two controls sit
  * next to each other in the same panel, and nothing on screen said one erased
  * the other. Passing `[]` still revokes; that has to stay expressible.
@@ -80,7 +83,19 @@ export async function upsertUserRecord(
   const normalizedUsername = username.toLowerCase();
   const updated_at = new Date().toISOString();
 
-  const existing = tenants === undefined ? await getUserRecord(normalizedUsername) : null;
+  if (isLiveMode()) {
+    // Atomic partial update: a concurrent write-grant change is preserved too.
+    // Storage failure must not become a successful demo update.
+    const result = await getDocumentClient().send(new UpdateCommand({
+      TableName: getTableName(),
+      ...userRoleUpdate(normalizedUsername, role, updated_at, email, name, tenants),
+      ReturnValues: "ALL_NEW",
+    }));
+    if (!result.Attributes) throw new Error("User update returned no record");
+    return result.Attributes as UserRecord;
+  }
+  const existing = await getUserRecord(normalizedUsername);
+  // tenants === undefined means keep on the demo side as well.
   const grants = tenants ?? existing?.tenants;
 
   const user: UserRecord = {
@@ -93,28 +108,11 @@ export async function upsertUserRecord(
   // Absent, not empty: a user with no grants should not carry a `tenants: []`
   // key that reads as a deliberate revocation in the table and in audit diffs.
   if (grants && grants.length > 0) user.tenants = grants;
+  if (existing?.registry_write_tenants !== undefined)
+    user.registry_write_tenants = [...existing.registry_write_tenants];
 
-  if (!isLiveMode()) {
-    mockUsers = mockUsers.filter((u) => u.username.toLowerCase() !== normalizedUsername);
-    mockUsers.push(user);
-    return user;
-  }
-
-  try {
-    const client = getDocumentClient();
-    await client.send(
-      new PutCommand({
-        TableName: getTableName(),
-        Item: user,
-      })
-    );
-  } catch (error) {
-    console.error("user-data.upsertUserRecord.failed", error);
-    // Fallback locally
-    mockUsers = mockUsers.filter((u) => u.username.toLowerCase() !== normalizedUsername);
-    mockUsers.push(user);
-  }
-
+  mockUsers = mockUsers.filter((u) => u.username.toLowerCase() !== normalizedUsername);
+  mockUsers.push(user);
   return user;
 }
 

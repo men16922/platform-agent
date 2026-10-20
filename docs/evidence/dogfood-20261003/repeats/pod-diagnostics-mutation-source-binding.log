@@ -1,0 +1,29 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_waiting_text_excludes_unbound_and_outdated_sources_and_marks_truncation _
+
+    def test_waiting_text_excludes_unbound_and_outdated_sources_and_marks_truncation():
+        d, objects = snapshot()
+        for i in range(9):
+            pod = deepcopy(objects[2]); pod["metadata"].update(name=f"extra-{i}", uid=f"extra-{i}")
+            pod["status"]["containerStatuses"][0].update(restartCount=2, lastState={"terminated": {"exitCode": 1}})
+            pod["status"]["containerStatuses"][0]["state"]["waiting"].update(message="x" * 2000, reason="y" * 200)
+            objects.append(pod)
+        structured = assess(d, objects)
+        result = pod_waiting_observations(structured, objects)
+        assert len(result["records"]) == 8 and result["omitted_records"] == 1
+        row = result["records"][0]
+        assert row["message"] == "x" * 1600 and row["message_truncated"]
+        assert len(row["reason"]) == 160 and row["reason_truncated"]
+        assert row["restart_count"] == 2 and row["previous_terminated_state"] is True
+        wrong = deepcopy(structured); wrong["sources"][1]["sha256"] = "wrong"
+>       assert pod_waiting_observations(wrong, objects)["status"] == "unavailable"
+E       AssertionError: assert 'captured' == 'unavailable'
+E         
+E         - unavailable
+E         + captured
+
+tests/test_deployment_evidence.py:214: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_deployment_evidence.py::test_waiting_text_excludes_unbound_and_outdated_sources_and_marks_truncation
+1 failed, 26 deselected in 0.05s

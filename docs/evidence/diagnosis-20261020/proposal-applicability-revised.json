@@ -1,0 +1,266 @@
+{
+  "scope": "Offline contract validation of four recorded S failures, one synthetic valid recovery proposal and six synthetic phase/log positive outputs. Not model accuracy.",
+  "recorded_rows": [
+    {
+      "id": "q-injected",
+      "before": "accepted",
+      "after": "rejected",
+      "reason": "inapplicable_hypothesis:application_change",
+      "raw_sha256": "10be3a8dfbc42dc3d4709a2f22560b2b4e91b2a35a6a54d2737c0bf2969416a0"
+    },
+    {
+      "id": "q-restored",
+      "before": "accepted",
+      "after": "rejected",
+      "reason": "inapplicable_hypothesis:image_reference",
+      "raw_sha256": "10c8a4378d1b3b574e873983e1c6705c9defa005d5d77976c0193250d07e0b89"
+    },
+    {
+      "id": "s-original-contradiction",
+      "before": "accepted",
+      "after": "rejected",
+      "reason": "inapplicable_hypothesis:registry_access",
+      "raw_sha256": "c927fb4cb8b627f0f6e73639aa4db1a32b6e781cb8fb503f55b5c6be6011d35c"
+    },
+    {
+      "id": "s-both-failing-consistent",
+      "before": "accepted",
+      "after": "rejected",
+      "reason": "inapplicable_hypothesis:registry_access",
+      "raw_sha256": "9762ec3726b5bdb35b50aa5808a28a4cc5a49a5ed223dfafabb74ca99274ea20"
+    },
+    {
+      "id": "positive-recovery",
+      "before": "accepted",
+      "after": "accepted",
+      "reason": null,
+      "raw_sha256": "2676f272d0ff87819ce24fffadd6e079930aeeb6c974dd56e35bec1c5713afd8"
+    }
+  ],
+  "positive_controls": [
+    {
+      "id": "q-failing",
+      "accepted": true,
+      "synthetic_output": true,
+      "applicability": {
+        "stage": "current_revision_waiting",
+        "hypotheses": [
+          "image_reference",
+          "registry_access",
+          "network_path",
+          "workload_configuration"
+        ],
+        "checks": [
+          "image_reference",
+          "registry_manifest",
+          "pod_events"
+        ],
+        "hypothesis_support_ids": [
+          "current-revision",
+          "pod-message-0"
+        ],
+        "check_support_ids": {
+          "image_reference": [
+            "current-revision",
+            "desired-images",
+            "pod-message-0"
+          ],
+          "registry_manifest": [
+            "current-revision",
+            "desired-images",
+            "pod-message-0"
+          ],
+          "pod_events": [
+            "current-revision",
+            "investigation-stage",
+            "pod-message-0"
+          ]
+        },
+        "limits": [
+          "These are applicability constraints, not observed root causes or approval.",
+          "A prior termination supports requesting previous-attempt logs; availability and access are not verified."
+        ]
+      }
+    },
+    {
+      "id": "q-injected",
+      "accepted": true,
+      "synthetic_output": true,
+      "applicability": {
+        "stage": "current_revision_waiting",
+        "hypotheses": [
+          "image_reference",
+          "registry_access",
+          "network_path",
+          "workload_configuration"
+        ],
+        "checks": [
+          "image_reference",
+          "registry_manifest",
+          "pod_events"
+        ],
+        "hypothesis_support_ids": [
+          "current-revision",
+          "pod-message-0"
+        ],
+        "check_support_ids": {
+          "image_reference": [
+            "current-revision",
+            "desired-images",
+            "pod-message-0"
+          ],
+          "registry_manifest": [
+            "current-revision",
+            "desired-images",
+            "pod-message-0"
+          ],
+          "pod_events": [
+            "current-revision",
+            "investigation-stage",
+            "pod-message-0"
+          ]
+        },
+        "limits": [
+          "These are applicability constraints, not observed root causes or approval.",
+          "A prior termination supports requesting previous-attempt logs; availability and access are not verified."
+        ]
+      }
+    },
+    {
+      "id": "q-restored",
+      "accepted": true,
+      "synthetic_output": true,
+      "applicability": {
+        "stage": "rollout_complete_service_health_unverified",
+        "hypotheses": [],
+        "checks": [
+          "service_health"
+        ],
+        "hypothesis_support_ids": [
+          "current-revision"
+        ],
+        "check_support_ids": {
+          "service_health": [
+            "current-revision",
+            "investigation-stage",
+            "rollout-state"
+          ]
+        },
+        "limits": [
+          "These are applicability constraints, not observed root causes or approval.",
+          "A prior termination supports requesting previous-attempt logs; availability and access are not verified."
+        ]
+      }
+    },
+    {
+      "id": "s-original-contradiction",
+      "accepted": true,
+      "synthetic_output": true,
+      "applicability": {
+        "stage": "reconcile_observations",
+        "hypotheses": [],
+        "checks": [
+          "observation_consistency"
+        ],
+        "hypothesis_support_ids": [
+          "current-revision",
+          "pod-message-0"
+        ],
+        "check_support_ids": {
+          "observation_consistency": [
+            "observation-consistency"
+          ]
+        },
+        "limits": [
+          "These are applicability constraints, not observed root causes or approval.",
+          "A prior termination supports requesting previous-attempt logs; availability and access are not verified."
+        ]
+      }
+    },
+    {
+      "id": "s-both-failing-consistent",
+      "accepted": true,
+      "synthetic_output": true,
+      "applicability": {
+        "stage": "current_revision_waiting",
+        "hypotheses": [
+          "network_path",
+          "dependency_health",
+          "workload_configuration"
+        ],
+        "checks": [
+          "pod_events",
+          "readiness_configuration",
+          "previous_container_logs",
+          "dependency_signals",
+          "network_signals"
+        ],
+        "hypothesis_support_ids": [
+          "current-revision",
+          "pod-message-0"
+        ],
+        "check_support_ids": {
+          "pod_events": [
+            "current-revision",
+            "investigation-stage",
+            "pod-message-0"
+          ],
+          "readiness_configuration": [
+            "current-revision",
+            "investigation-stage",
+            "pod-message-0"
+          ],
+          "previous_container_logs": [
+            "current-revision",
+            "pod-message-0"
+          ],
+          "dependency_signals": [
+            "current-revision",
+            "investigation-stage",
+            "pod-message-0"
+          ],
+          "network_signals": [
+            "current-revision",
+            "investigation-stage",
+            "pod-message-0"
+          ]
+        },
+        "limits": [
+          "These are applicability constraints, not observed root causes or approval.",
+          "A prior termination supports requesting previous-attempt logs; availability and access are not verified."
+        ]
+      }
+    },
+    {
+      "id": "positive-complete",
+      "accepted": true,
+      "synthetic_output": true,
+      "applicability": {
+        "stage": "rollout_complete_service_health_unverified",
+        "hypotheses": [],
+        "checks": [
+          "service_health"
+        ],
+        "hypothesis_support_ids": [
+          "current-revision"
+        ],
+        "check_support_ids": {
+          "service_health": [
+            "current-revision",
+            "investigation-stage",
+            "rollout-state"
+          ]
+        },
+        "limits": [
+          "These are applicability constraints, not observed root causes or approval.",
+          "A prior termination supports requesting previous-attempt logs; availability and access are not verified."
+        ]
+      }
+    }
+  ],
+  "original_injected_text_preserved": true,
+  "source_sha256": {
+    "check_applicability.py": "0d08d64a066f81fbe368a1cb283121409d8a5e9bd4664e8679297463ebb29e63",
+    "applicable_proposals.py": "6abb149bb66bda092c3ab7cf61cc5af4424972f010e65f01602265d3d6a25a7b"
+  }
+}

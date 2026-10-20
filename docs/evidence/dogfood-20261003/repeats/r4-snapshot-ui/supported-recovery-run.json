@@ -1,0 +1,160 @@
+{
+  "label": "r4-snapshot-ui/supported-recovery",
+  "request_id": "c9db69f2-3b26-499e-99cf-f580960ffd3b",
+  "status": "failed",
+  "claims": 1,
+  "acceptance_to_persistence_sec": 4.825,
+  "tool_calls": {},
+  "record": null,
+  "state": {
+    "request_id": "c9db69f2-3b26-499e-99cf-f580960ffd3b",
+    "actor": "local-dev",
+    "request": {
+      "instruction": "Is reverting r2 to r1 a supported recovery candidate? What is and is not established about root cause? Do not execute anything.",
+      "model": "local-qwen",
+      "provider": "onprem",
+      "environment": null,
+      "read_only": true,
+      "snapshot": {
+        "question": "Is reverting r2 to r1 a supported recovery candidate? What is and is not established about root cause? Do not execute anything.",
+        "target": {
+          "cluster": "kind-platform-agent",
+          "namespace": "acme-dev-observability",
+          "service": "orders-api-dogfood"
+        },
+        "window_start": "2026-10-03T06:59:00Z",
+        "as_of": "2026-10-03T07:03:00Z",
+        "sources": [
+          {
+            "source_id": "change",
+            "target": {
+              "cluster": "kind-platform-agent",
+              "namespace": "acme-dev-observability",
+              "service": "orders-api-dogfood"
+            },
+            "observed_at": "2026-10-03T07:00:00Z",
+            "provenance": "supplied_snapshot",
+            "text": "At 07:00 UTC only orders-api image changed from r1 to r2. Replicas remained 2; there was no schema or configuration change."
+          },
+          {
+            "source_id": "comparison",
+            "target": {
+              "cluster": "kind-platform-agent",
+              "namespace": "acme-dev-observability",
+              "service": "orders-api-dogfood"
+            },
+            "observed_at": "2026-10-03T07:01:00Z",
+            "provenance": "supplied_snapshot",
+            "text": "At 07:01 UTC r2 returns 500 for the test request, while an r1 canary in the same namespace still returns 200 for that request against the same dependency."
+          },
+          {
+            "source_id": "recovery-check",
+            "target": {
+              "cluster": "kind-platform-agent",
+              "namespace": "acme-dev-observability",
+              "service": "orders-api-dogfood"
+            },
+            "observed_at": "2026-10-03T07:02:00Z",
+            "provenance": "supplied_snapshot",
+            "text": "At 07:02 UTC both r1 canary replicas are healthy; r1 image digest and deployment specification are available. No data migration occurred. An operator may review rollback; no action is approved yet."
+          }
+        ]
+      }
+    },
+    "fingerprint": "73f03bfab3a32b76515baaee979340ee9bcbe478d15a143489de35873df1532a",
+    "instance": "470ee9ac8bfa4985ab962cd4b587a32f",
+    "status": "failed",
+    "updated_at": 1791023812.6284852,
+    "events": [
+      {
+        "seq": 1,
+        "type": "ready",
+        "request_id": "c9db69f2-3b26-499e-99cf-f580960ffd3b",
+        "agent": "local-qwen",
+        "read_only": true
+      },
+      {
+        "type": "done",
+        "ok": false,
+        "agent": "local-qwen",
+        "model": "local-qwen",
+        "provider": "onprem",
+        "summary": "### Cited observations\n- [change] At 07:00 UTC only orders-api image changed from r1 to r2. Replicas remained 2; there was no schema or configuration change.\n- [comparison] At 07:01 UTC r2 returns 500 for the test request, while an r1 canary in the same namespace still returns 200 for that request against the same dependency.\n- [recovery-check] At 07:02 UTC both r1 canary replicas are healthy; r1 image digest and deployment specification are available. No data migration occurred.\n\n### Possible explanation\nThe root cause is likely a regression in r2 that causes it to fail when processing requests, as evidenced by r2 returning 500s while r1 continues to return 200s. The failure is isolated to r2, and no configuration or schema changes occurred.\n\n### Alternative explanation\nAn alternative explanation is that the failure is due to an external dependency or environment factor that only affects r2, such as a network connectivity issue or resource constraint specific to r2's environment.\n\n### Recovery review: review candidate\nThe r1 image digest and deployment specification are available, and r1 replicas are healthy. Reverting to r1 is a supported recovery option.\n\n### Next read-only evidence\n- Verify r1 deployment spec matches previous r1\n- Check logs for r2 errors\n- Verify r2 environment matches r1\n\nModel interpretation is unverified. No execution is authorized.",
+        "suitability": {
+          "verdict": "recommended",
+          "reason": "Native pairing — Local LLM (Qwen) is the On-Prem-native brain."
+        },
+        "record": null,
+        "inspection": null,
+        "model_completion": {
+          "status": "complete",
+          "finish_reason": "stop",
+          "text": "{\n  \"observations\": [\n    {\n      \"source_id\": \"change\",\n      \"quote\": \"At 07:00 UTC only orders-api image changed from r1 to r2. Replicas remained 2; there was no schema or configuration change.\"\n    },\n    {\n      \"source_id\": \"comparison\",\n \"quote\": \"At 07:01 UTC r2 returns 500 for the test request, while an r1 canary in the same namespace still returns 200 for that request against the same dependency.\"\n    },\n    {\n      \"source_id\": \"recovery-check\",\n \"quote\": \"At 07:02 UTC both r1 canary replicas are healthy; r1 image digest and deployment specification are available. No data migration occurred.\"\n    }\n  ],\n  \"cause_assessment\": \"The root cause is likely a regression in r2 that causes it to fail when processing requests, as evidenced by r2 returning 500s while r1 continues to return 200s. The failure is isolated to r2, and no configuration or schema changes occurred.\",\n  \"alternative_explanation\": \"An alternative explanation is that the failure is due to an external dependency or environment factor that only affects r2, such as a network connectivity issue or resource constraint specific to r2's environment.\",\n  \"recovery\": \"review_candidate\",\n  \"recovery_reason\": \"The r1 image digest and deployment specification are available, and r1 replicas are healthy. Reverting to r1 is a supported recovery option.\",\n  \"next_read_only_checks\": [\n    \"Verify r1 deployment spec matches previous r1\",\n    \"Check logs for r2 errors\",\n \"Verify r2 environment matches r1\"\n  ]\n}",
+          "semantic_verified": false,
+          "model_responses": 1,
+          "tool_call_attempts": 0,
+          "token_usage": {
+            "status": "reported",
+            "input_tokens": 1091,
+            "output_tokens": 366
+          }
+        },
+        "snapshot_analysis": {
+          "target": {
+            "cluster": "kind-platform-agent",
+            "namespace": "acme-dev-observability",
+            "service": "orders-api-dogfood"
+          },
+          "window_start": "2026-10-03T06:59:00+00:00",
+          "as_of": "2026-10-03T07:03:00+00:00",
+          "interpretation": "Analysis of supplied records at the declared time; not a live observation or action approval.",
+          "applicable_source_ids": [
+            "change",
+            "comparison",
+            "recovery-check"
+          ],
+          "excluded": [],
+          "source_sha256": {
+            "change": "90f8d2ea9a957847577f54ff81c7dd2887b92fcdf5c07560294483c9c4d7e5ca",
+            "comparison": "75d4e66b10aa18dd794d3feeb83b4a9bf3e13274d5fb919d8bc569c93fbeb3fb",
+            "recovery-check": "9a73f1603c1b1f626fd8684400988676307c16393fbe98359ef19651946dfd2a"
+          },
+          "status": "interpreted",
+          "model_called": true,
+          "citation_status": "valid",
+          "semantic_verified": false,
+          "execution_authorized": false,
+          "diagnosis": {
+            "observations": [
+              {
+                "source_id": "change",
+                "quote": "At 07:00 UTC only orders-api image changed from r1 to r2. Replicas remained 2; there was no schema or configuration change."
+              },
+              {
+                "source_id": "comparison",
+                "quote": "At 07:01 UTC r2 returns 500 for the test request, while an r1 canary in the same namespace still returns 200 for that request against the same dependency."
+              },
+              {
+                "source_id": "recovery-check",
+                "quote": "At 07:02 UTC both r1 canary replicas are healthy; r1 image digest and deployment specification are available. No data migration occurred."
+              }
+            ],
+            "cause_assessment": "The root cause is likely a regression in r2 that causes it to fail when processing requests, as evidenced by r2 returning 500s while r1 continues to return 200s. The failure is isolated to r2, and no configuration or schema changes occurred.",
+            "alternative_explanation": "An alternative explanation is that the failure is due to an external dependency or environment factor that only affects r2, such as a network connectivity issue or resource constraint specific to r2's environment.",
+            "recovery": "review_candidate",
+            "recovery_reason": "The r1 image digest and deployment specification are available, and r1 replicas are healthy. Reverting to r1 is a supported recovery option.",
+            "next_read_only_checks": [
+              "Verify r1 deployment spec matches previous r1",
+              "Check logs for r2 errors",
+              "Verify r2 environment matches r1"
+            ]
+          }
+        },
+        "read_only": true,
+        "seq": 2,
+        "request_id": "c9db69f2-3b26-499e-99cf-f580960ffd3b"
+      }
+    ]
+  },
+  "activity_rows": []
+}

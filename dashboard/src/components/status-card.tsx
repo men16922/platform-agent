@@ -42,7 +42,7 @@ export function StatusCard({ health }: { health: CloudHealth }) {
           <span>{new Date(health.last_deployment).toLocaleTimeString()}</span>
         </div>
       </div>
-      <div className="mt-4 flex items-center gap-2"><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/7"><div className="h-full rounded-full" style={{ width: health.status === "healthy" ? "100%" : "68%", backgroundColor: config.color, opacity: health.status === "healthy" ? 1 : 0.7 }} /></div><span className="text-[10px] text-[var(--muted)]">{health.status === "healthy" ? "100" : "68"}%</span></div>
+      <p className="mt-4 text-[10px] text-[var(--muted)]">Last reported: {health.last_check}</p>
     </div>
   );
 }

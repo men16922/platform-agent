@@ -1,0 +1,83 @@
+{
+  "label": "v4-final",
+  "healthy_observed_at": "2026-10-03T06:49:19.075960+00:00",
+  "revision": "25",
+  "uid": "8567c751-fc44-4e28-b63e-e21af534661f",
+  "replicas": 2,
+  "image": "localhost:5001/orders-api-dogfood:r0",
+  "observations": [
+    {
+      "at": "2026-10-03T06:49:09.380347+00:00",
+      "revision": "25",
+      "generation": 26,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:49:10.560024+00:00",
+      "revision": "25",
+      "generation": 26,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:49:11.762505+00:00",
+      "revision": "25",
+      "generation": 26,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:49:12.950895+00:00",
+      "revision": "25",
+      "generation": 26,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:49:14.142385+00:00",
+      "revision": "25",
+      "generation": 26,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:49:15.336127+00:00",
+      "revision": "25",
+      "generation": 26,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:49:16.567174+00:00",
+      "revision": "25",
+      "generation": 26,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:49:17.736946+00:00",
+      "revision": "25",
+      "generation": 26,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:49:18.912939+00:00",
+      "revision": "25",
+      "generation": 26,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": true
+    }
+  ],
+  "method": "Read-only 1s polling and actual kubelet health-200 log from each current Pod; not browser HTTP."
+}

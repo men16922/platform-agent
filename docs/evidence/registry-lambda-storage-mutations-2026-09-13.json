@@ -1,0 +1,26 @@
+{
+  "mutations": [
+    {
+      "guard": "sdk_write_retry",
+      "exit_code": 1,
+      "summary": "1 failed, 50 deselected in 0.19s"
+    },
+    {
+      "guard": "plan_update_permission",
+      "exit_code": 1,
+      "summary": "1 failed, 6 deselected in 2.12s"
+    },
+    {
+      "guard": "claim_retention",
+      "exit_code": 1,
+      "summary": "1 failed, 6 deselected in 1.83s"
+    },
+    {
+      "guard": "packaged_operation_routing",
+      "exit_code": 1,
+      "scope": "real DynamoDB Local verifier",
+      "summary": "FAILED: 'observation'"
+    }
+  ],
+  "all_sources_and_asset_restored": true
+}

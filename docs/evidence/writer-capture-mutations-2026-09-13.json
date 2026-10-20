@@ -1,0 +1,26 @@
+{
+  "scope": "synthetic input/local files/loopback HTTP",
+  "mutations": [
+    {
+      "mutation": "raw_message_leak",
+      "exit_code": 1,
+      "summary": "2 failed, 44 passed in 3.51s"
+    },
+    {
+      "mutation": "raw_error_field_leak",
+      "exit_code": 1,
+      "summary": "1 failed, 45 passed in 3.52s"
+    },
+    {
+      "mutation": "omit_journal_publication",
+      "exit_code": 1,
+      "summary": "8 failed, 38 passed in 3.51s"
+    },
+    {
+      "mutation": "accept_duplicate_request_id",
+      "exit_code": 1,
+      "summary": "1 failed, 45 passed in 3.49s"
+    }
+  ],
+  "bytes_restored": true
+}

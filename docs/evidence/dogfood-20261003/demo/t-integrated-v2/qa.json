@@ -1,0 +1,37 @@
+{
+  "at": "2026-10-03T13:30:54.109413+00:00",
+  "decision": "accepted as an evidence still montage",
+  "video_sha256": "d8129e63be3fe4619a906867f91583fe054bb413b12b0af9add24dab0822041f",
+  "probe": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1920,
+        "height": 1080,
+        "r_frame_rate": "12/1"
+      }
+    ],
+    "format": {
+      "duration": "72.000000",
+      "size": "443003"
+    }
+  },
+  "inspected_frames_seconds": [
+    5,
+    23,
+    41,
+    59
+  ],
+  "review": "Four actual UI stills remain visible above captions; Korean captions and limitation footer do not clip. No UI text, state, or result was edited. Not a continuous recording or a latency measurement.",
+  "source_format": "JPEG screenshot bytes retained under historical .png filenames; decoded by content",
+  "source_hashes_verified": true,
+  "supersedes": "../t-integrated/qa.json",
+  "frame_sha256": {
+    "qa-frame-05.png": "a22f751cc5c0f682d7519a14f4ff47f418756cb10e760c8a222a742dba783172",
+    "qa-frame-59.png": "231cecd2a3a70ebd401b5cd4be1f2300e79a22e8d6343d83112191e337d6c27f",
+    "qa-frame-41.png": "f5b971d771d649f8271c85154cf62d89f4b056b61b372150f1f716210d0db954",
+    "qa-frame-23.png": "3b6a57ca8d0e43b2ad4975a6751ba67daad21b9a032f5de5ed8fbf991732f067"
+  }
+}

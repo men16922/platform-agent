@@ -1,0 +1,6 @@
+PASS packaged handler uses context request ID and persists preview before success
+PASS status is minimal/nonmutating and duplicate preview cannot overwrite the saved ID
+PASS eight real DB preparations: one claim/seven conflicts; expired claim retained without TTL or publication
+PASS current grant revocation/deleted user403 and foreign/missing request404
+PASS real missing plan/user tables return sanitized503; no unsaved preview success
+PASS owned local tables deleted; no cloud endpoint or GitHub API used

@@ -1,0 +1,59 @@
+[
+  {
+    "observed_at": "2026-10-03T11:11:13.212495+00:00",
+    "url": "http://127.0.0.1:5001/v2/orders-api-dogfood/manifests/missing-r1",
+    "accept": "application/vnd.oci.image.index.v1+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json",
+    "status": 404,
+    "seconds": 0.09,
+    "content_type": "application/json; charset=utf-8",
+    "digest": null,
+    "body": {
+      "errors": [
+        {
+          "code": "MANIFEST_UNKNOWN",
+          "message": "manifest unknown",
+          "detail": {
+            "Tag": "missing-r1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "observed_at": "2026-10-03T11:11:13.302282+00:00",
+    "url": "http://127.0.0.1:5001/v2/orders-api-dogfood/manifests/r0",
+    "accept": "application/vnd.oci.image.index.v1+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json",
+    "status": 200,
+    "seconds": 0.028,
+    "content_type": "application/vnd.oci.image.index.v1+json",
+    "digest": "sha256:51915981952d0204d0a8964acfd23cb9905e56bce46bc79a34bced1f3f2e5496",
+    "body": {
+      "schemaVersion": 2,
+      "mediaType": "application/vnd.oci.image.index.v1+json",
+      "manifests": [
+        {
+          "mediaType": "application/vnd.oci.image.manifest.v1+json",
+          "digest": "sha256:f93c062eeddfaca47fedc9025d649e32c6248a03d0c0c2eb144b0dfafda51286",
+          "size": 1622,
+          "platform": {
+            "architecture": "arm64",
+            "os": "linux"
+          }
+        },
+        {
+          "mediaType": "application/vnd.oci.image.manifest.v1+json",
+          "digest": "sha256:efc952c82bc2c276ca7bb9448a28e3909a3ac00520c133bc2db5a54ce834adea",
+          "size": 566,
+          "annotations": {
+            "vnd.docker.reference.digest": "sha256:f93c062eeddfaca47fedc9025d649e32c6248a03d0c0c2eb144b0dfafda51286",
+            "vnd.docker.reference.type": "attestation-manifest"
+          },
+          "platform": {
+            "architecture": "unknown",
+            "os": "unknown"
+          }
+        }
+      ]
+    }
+  }
+]

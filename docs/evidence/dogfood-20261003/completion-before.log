@@ -1,0 +1,54 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_______ test_accepted_change_with_failed_rollout_is_not_success[deploy] ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x106f84b00>
+action = 'deploy'
+
+    @pytest.mark.parametrize("action", ["deploy", "rollback"])
+    def test_accepted_change_with_failed_rollout_is_not_success(monkeypatch, action):
+        calls = []
+    
+        def run(command, **kwargs):
+            calls.append(command)
+            failed = "status" in command
+            return SimpleNamespace(returncode=1 if failed else 0, stdout="accepted" if not failed else "",
+                                   stderr="rollout timed out" if failed else "")
+    
+        monkeypatch.setattr(onprem.subprocess, "run", run)
+        monkeypatch.setenv("PLATFORM_DEPLOY_KUBECONFIG", "/local/test-deployer")
+        adapter = onprem.OnPremClusterAdapter()
+        spec = ServiceSpec(name="orders-api-dogfood", image="orders-api-dogfood", version="missing", namespace="acme-dev-observability")
+        result = adapter.deploy(spec, "localhost:5001/orders-api-dogfood:missing") if action == "deploy" else adapter.rollback(spec)
+>       assert (result.status == DeployStatus.FAILED if action == "deploy" else result.success is False)
+E       assert False
+
+tests/test_onprem_completion.py:25: AssertionError
+______ test_accepted_change_with_failed_rollout_is_not_success[rollback] _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x106f84510>
+action = 'rollback'
+
+    @pytest.mark.parametrize("action", ["deploy", "rollback"])
+    def test_accepted_change_with_failed_rollout_is_not_success(monkeypatch, action):
+        calls = []
+    
+        def run(command, **kwargs):
+            calls.append(command)
+            failed = "status" in command
+            return SimpleNamespace(returncode=1 if failed else 0, stdout="accepted" if not failed else "",
+                                   stderr="rollout timed out" if failed else "")
+    
+        monkeypatch.setattr(onprem.subprocess, "run", run)
+        monkeypatch.setenv("PLATFORM_DEPLOY_KUBECONFIG", "/local/test-deployer")
+        adapter = onprem.OnPremClusterAdapter()
+        spec = ServiceSpec(name="orders-api-dogfood", image="orders-api-dogfood", version="missing", namespace="acme-dev-observability")
+        result = adapter.deploy(spec, "localhost:5001/orders-api-dogfood:missing") if action == "deploy" else adapter.rollback(spec)
+>       assert (result.status == DeployStatus.FAILED if action == "deploy" else result.success is False)
+E       assert False
+
+tests/test_onprem_completion.py:25: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_onprem_completion.py::test_accepted_change_with_failed_rollout_is_not_success[deploy]
+FAILED tests/test_onprem_completion.py::test_accepted_change_with_failed_rollout_is_not_success[rollback]
+2 failed in 0.06s

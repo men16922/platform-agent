@@ -1,0 +1,26 @@
+{
+  "at": "2026-10-03T08:31:17.256876+00:00",
+  "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "endpoint": "http://127.0.0.1:18090/v1",
+  "multiple_system_messages": false,
+  "model_settings": {
+    "max_tokens": 1024,
+    "extra_body": {
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      }
+    }
+  },
+  "pydantic_ai_distributions": {
+    "pydantic-ai-slim": "2.9.0"
+  },
+  "operational_tools": 0,
+  "request_limit": 2,
+  "timeout_per_case_seconds": 60,
+  "files": {
+    "experiments/dogfood-diagnosis/cases.json": "0a0492556093c6dc485ecf5c31646560f471e6749c1eb57cd9a26c1a8ddcbf19",
+    "/Users/men1692/Desktop/AWS/platform-agent/experiments/dogfood-diagnosis/run_local.py": "7748de1ec5b13a82a9d39248d07b8ae602a1926215dfd1b8a7920a9f5d580565",
+    "/Users/men1692/Desktop/AWS/platform-agent/experiments/dogfood-diagnosis/contract.py": "cd5135ab4a5da54c824b124ee99cee6f05f6636e67bb128db75cd4e7b2fb3b04"
+  },
+  "interpretation": "Prototype only; citation/metadata validity does not prove semantic correctness."
+}

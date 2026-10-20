@@ -211,6 +211,13 @@ class TestOnPremClusterAdapter:
         assert container["image"] == "localhost:5001/api:v1"
         assert container["ports"][0]["containerPort"] == 8080
         assert "livenessProbe" in container
+        # Tenant namespaces enforce restricted Pod Security; a Deployment apply
+        # succeeding is not enough if its ReplicaSet cannot create any Pods.
+        pod = deployment["spec"]["template"]["spec"]
+        assert pod["securityContext"]["runAsNonRoot"] is True
+        assert pod["securityContext"]["seccompProfile"]["type"] == "RuntimeDefault"
+        assert container["securityContext"]["allowPrivilegeEscalation"] is False
+        assert container["securityContext"]["capabilities"]["drop"] == ["ALL"]
 
         service = manifest["items"][1]
         assert service["kind"] == "Service"

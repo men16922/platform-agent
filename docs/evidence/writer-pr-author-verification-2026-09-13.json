@@ -1,0 +1,42 @@
+{
+  "milestone": "M84",
+  "observed_at": "2026-09-13T11:17:50.356814+00:00",
+  "before": {
+    "failed": 5,
+    "log": "/tmp/platform-agent-m84-before.log",
+    "cause": "Nullable or malformed performed_via_github_app indexed without shape check"
+  },
+  "related": {
+    "passed": 95,
+    "new_tests": 25,
+    "log": "/tmp/platform-agent-m84-related.log"
+  },
+  "mutations": "docs/evidence/writer-pr-author-mutations-2026-09-13.json",
+  "live_evidence": "docs/evidence/phase5-writer-pr-author-live-2026-09-13.json",
+  "changes": [
+    "Legacy observer emits fixed pr_author_app_unavailable; no expected-ID fallback",
+    "Separate GET-only App/bot/PR/Issue author account binding; no workflow success promotion"
+  ],
+  "credential_hygiene": {
+    "repository_pem_retained": true,
+    "repository_pem_mode": "0600",
+    "exact_local_git_exclusion": true,
+    "global_config_changed": false
+  },
+  "sources": [
+    "https://github.com/actions/create-github-app-token#configure-git-cli-for-an-apps-bot-user",
+    "https://docs.github.com/en/rest/users/users#get-a-user",
+    "https://docs.github.com/en/graphql/reference/apps#bot"
+  ],
+  "gate": {
+    "status": "PASSED",
+    "command": "make check",
+    "environment": "2026-09-13 local macOS Python 3.13",
+    "remote_ci": "not run",
+    "passed": 3099,
+    "skipped": 2,
+    "warnings": 21,
+    "seconds": 91.79,
+    "log": "/tmp/platform-agent-m84-gate.log"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "date": "2026-09-13",
+  "repository_id": 1367740190,
+  "private": true,
+  "default_branch": "main",
+  "pull_requests": 0,
+  "snapshot": {
+    "observer": "operator",
+    "complete": true,
+    "ref": "p5e/20260913-02-diagnostic",
+    "commit": "9d17b496128a7ec2a771041816c937db7e6366a3",
+    "main": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+    "parents": [
+      "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c"
+    ],
+    "files": {
+      "platform/tenants/acme.yaml": {
+        "sha": "9a88d6901ff18873745c272665e175921156ca9a",
+        "mode": "100644"
+      },
+      "platform/tenants/globex.yaml": {
+        "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4",
+        "mode": "100644"
+      }
+    }
+  },
+  "compare": {
+    "status": "ahead",
+    "ahead_by": 1,
+    "behind_by": 0,
+    "total_commits": 1
+  },
+  "files": [
+    {
+      "filename": "platform/tenants/acme.yaml",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "sha": "9a88d6901ff18873745c272665e175921156ca9a"
+    }
+  ],
+  "owner_plan_name": null
+}

@@ -1,0 +1,30 @@
+Collecting boto3==1.42.0
+  Downloading boto3-1.42.0-py3-none-any.whl (140 kB)
+Collecting botocore==1.41.6
+  Downloading botocore-1.41.6-py3-none-any.whl (14.4 MB)
+Collecting s3transfer==0.16.0
+  Using cached s3transfer-0.16.0-py3-none-any.whl (86 kB)
+Collecting jmespath==1.0.1
+  Using cached jmespath-1.0.1-py3-none-any.whl (20 kB)
+Collecting python-dateutil==2.9.0.post0
+  Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+Collecting six==1.17.0
+  Using cached six-1.17.0-py2.py3-none-any.whl (11 kB)
+Collecting urllib3==2.5.0
+  Using cached urllib3-2.5.0-py3-none-any.whl (129 kB)
+Collecting PyYAML==6.0.2
+  Downloading PyYAML-6.0.2-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (733 kB)
+INFO: pip is looking at multiple versions of <Python from Requires-Python> to determine which version is compatible with other requirements. This could take a while.
+INFO: pip is looking at multiple versions of boto3 to determine which version is compatible with other requirements. This could take a while.
+ERROR: Cannot install -r /Users/men1692/Desktop/AWS/platform-agent/requirements-registry-planner.txt (line 3) and urllib3==2.5.0 because these package versions have conflicting dependencies.
+
+The conflict is caused by:
+    The user requested urllib3==2.5.0
+    botocore 1.41.6 depends on urllib3<1.27 and >=1.25.4; python_version < "3.10"
+
+To fix this you could try to:
+1. loosen the range of package versions you've specified
+2. remove package versions to allow pip attempt to solve the dependency conflict
+
+ERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/user_guide/#fixing-conflicting-dependencies
+FAILED: Command '['/Library/Developer/CommandLineTools/usr/bin/python3', '-m', 'pip', 'install', '--disable-pip-version-check', '--platform', 'manylinux2014_aarch64', '--python-version', '3.13', '--implementation', 'cp', '--abi', 'cp313', '--only-binary=:all:', '--no-compile', '--target', '/Users/men1692/Desktop/AWS/platform-agent/_workspace/planner-release-20260915/lambda-asset', '-r', '/Users/men1692/Desktop/AWS/platform-agent/requirements-registry-planner.txt']' returned non-zero exit status 1.

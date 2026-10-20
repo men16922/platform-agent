@@ -1,0 +1,47 @@
+M63 preview stream boundaries — 2026-09-06 local macOS / Python 3.13 / Node v26.5.0
+Scope: readPreviewRequest in dashboard/src/lib/registry-preview-contract.ts;
+13 additional executable Web Request/ReadableStream regressions in
+ tests/test_registry_preview_ui.py. No AWS mocks/services or remote HTTP calls.
+
+Before: focused new tests = 12 failed, 1 passed, 33 deselected in 1.10s.
+- cancel rejection replaced request_too_large/413 with cancel failed/no status.
+- pending cancel left the read promise unresolved past the 150ms test deadline.
+- source read error escaped as a raw Error instead of invalid_request/422.
+- success, invalid JSON/UTF-8, and oversize paths left request.body.locked=true.
+The existing byte limit itself already rejected oversized requests.
+
+Fix: keep the read loop inside the existing error normalization boundary;
+request cancellation without awaiting cleanup and handle its rejection;
+release the reader in finally. Preserve the 4096-byte accumulated limit.
+No new upload timeout policy: the test deadline observes cancellation hang only.
+
+After: preview contract suite = 46 passed in 1.88s (+13).
+Boundary: 4095/4096 accepted, 4097 rejected; multi-chunk cumulative bytes;
+absent/understated/overstated Content-Length cannot bypass the byte check;
+no pull of unread tail after overflow; cancel called once; rejected/pending cancel
+cannot replace or delay 413; empty/malformed/invalid UTF-8/errored body -> 422;
+missing body -> 422; reader unlocked on success and all acquired-reader failures.
+
+Mutations (each reverted to the saved source bytes in finally):
+- > becomes >=: 4 failed, 9 passed.
+- accumulated size becomes current chunk size: 6 failed, 7 passed.
+- remove cancellation: 6 failed, 7 passed.
+- await cancellation: 1 failed, 12 passed.
+- omit releaseLock: 12 failed, 1 passed.
+- bypass invalid_request normalization: 4 failed, 9 passed.
+All six mutation subprocesses returned exit 1, not infrastructure errors.
+
+Sources inspected before dashboard edit:
+- installed Next.js route-handlers guide and route API reference: standard Web Request.
+- https://streams.spec.whatwg.org/#default-reader-cancel
+- https://streams.spec.whatwg.org/#default-reader-release-lock
+
+Limits: local compiled TypeScript on Node v26.5.0, not remote CI's Node 22.
+No live HTTP upload/disconnect/hosting timeout, deployment, commit, or push.
+Existing WIP retained. M58 old progress entry archived verbatim.
+Full gate: make check exit 0; 2709 passed, 2 skipped, 21 warnings in 53.10s.
+Log: scripts/overnight/logs/preview-stream-gate.log.
+
+Source SHA256 after mutation restoration:
+c85e94a5ae7e3dc7e5a1673cb562904ed57b4b00e7d92d3566be8aa84b36466b  dashboard/src/lib/registry-preview-contract.ts
+08ddc71a994bc489950324adb0d9593c939e10439af29ad7eaf64d8071265cc2  tests/test_registry_preview_ui.py

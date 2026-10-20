@@ -1,0 +1,69 @@
+{
+  "at": "2026-10-03T09:17:25.994677+00:00",
+  "candidate": "candidate-v11-revision-evidence.json",
+  "parent": "candidate-v10-model-proxy.json",
+  "completed": "Structured revision/owner/readiness facts connected to existing describe_deployment and observed through actual Chrome/default router",
+  "contract": {
+    "source_binding": "Canonical JSON SHA256, acquisition timestamps, window, requested namespace/name and deployment UID",
+    "ownership": "Deployment->ReplicaSet->Pod controller UID chain; matching current template and previous numeric revision",
+    "recovery": "Specific previous revision with observed generation, matching running/ready Pods, configured readiness probes and enough available replicas; current revision failure evidence required",
+    "untrusted_text": "Logs/annotation prose and model recommendations are never parsed as eligibility",
+    "authority": "Review candidate only, no execution authorization, external health, image/config availability or causal proof"
+  },
+  "offline": {
+    "new_cases": 19,
+    "first_related": "44 passed,1 failed,1 warning,0.83s: existing command guard did not understand context pinning/local config read",
+    "after_related": "45 passed,1 warning,0.83s",
+    "guard_change": "Understands leading context/kubeconfig flags and exact config.current-context only; no RBAC change",
+    "historical_replay": "revision-evidence-recorded-v2/; failure revision22 incomplete; recovered revision23 rollout complete; no invented ReplicaSets or failure acquisition time",
+    "historical_harness_error": "First replay assumed Kubernetes List envelope for both captures; recovery capture is a bare list. First partial output retained in revision-evidence-recorded/."
+  },
+  "full_gate": {
+    "passed": 3325,
+    "skipped": 2,
+    "warnings": 20,
+    "seconds": 134.97,
+    "environment": "2026-10-03 local macOS/Python3.13.5/Node22.23.3/temporary npm prefix",
+    "evidence": "revision-evidence-gate.log"
+  },
+  "actual_tool": {
+    "evidence": "revision-evidence-live/",
+    "identity": "platform-agent-system/platform-agent-deployer",
+    "current_revision": 27,
+    "previous_revision": 26,
+    "rollout_complete": true,
+    "current_and_previous_health": "not_established",
+    "reason": "Current Pod template lacks readiness probes; previous revision has no ready Pods. No external health request was added."
+  },
+  "bounded_model_route": {
+    "attempt1": "revision-evidence-model-route/result.json: two actual200 model responses, then probe failed because RunUsage property was called; raw messages preserved; first answer ends in an unsupported generic conditional rollback suggestion",
+    "attempt2": "revision-evidence-model-route-v2/result.json: corrected probe,5.086s,two HTTP200 model responses,one describe tool, input4500/output281; current/recovery/health distinction preserved for this case",
+    "limit": "Factory registered only describe_deployment and bounded requests/tools; not the default router configuration"
+  },
+  "actual_ui": {
+    "request_id": "e5b11d13-e5e0-4e77-ac0a-798f82ebfbb0",
+    "activity_id": "ACT-48259C99",
+    "claims": 1,
+    "tool_calls": {
+      "describe_deployment": 1
+    },
+    "acceptance_to_persistence_sec": 20.793,
+    "record_kind": "ACTIVITY only; no deployment record",
+    "reload": "Same request/result restored without resubmission; revision-evidence-ui-reload.txt",
+    "screenshot": "revision-evidence-ui.png",
+    "source_result": "Structured current.health_basis=not_established; recovery.status=not_established",
+    "semantic_verdict": "FAIL: final free prose calls workload healthy based on readiness despite absent probe evidence, and repeats extensively. Correct tool facts did not guarantee correct model summary.",
+    "completion_limit": "succeeded/SUCCESS marks tool/run completion, not diagnostic semantic correctness. Runtime final model termination/usage not retained in this run report."
+  },
+  "nonchange": "Actual UID/spec unchanged after direct and UI requests; revision-evidence-ui-after-deployment.json; r0/rev27/2 replicas. No new HTTP health measurement.",
+  "activation": "revision-evidence-activation.json;284 runtime source hashes match; only owned router restarted",
+  "limits": [
+    "No final same-candidate deployment/rejection/diagnosis bundle",
+    "No general injection defense or semantic accuracy claim",
+    "Normal/default agent still has mutation tools; this UI request called only one read tool",
+    "No secret reads, RBAC expansion, cloud action, commit, push or cleanup"
+  ],
+  "next": "Make structured observed state/recovery visible independently from model interpretation in the read-only product flow; preserve hypotheses/next checks as unverified interpretation, record incomplete model output explicitly, then replay positive/negative evidence cases and verify UI/reload.",
+  "documentation_followup": "55 passed,2.96s; revision-evidence-docs.log; git diff --check passed",
+  "checkpoint": "revision-evidence-checkpoint.json"
+}

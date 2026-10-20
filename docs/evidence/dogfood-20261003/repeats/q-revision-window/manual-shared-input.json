@@ -1,0 +1,125 @@
+{
+  "run_sha256": "0e7da1d27658932f282e70ab12b5ce8bbe9fe45f0c3120e6925b94fd377c0aa5",
+  "question": "Investigate the latest rollout of orders-api-dogfood in namespace acme-dev-observability on the configured local cluster. Use at most three read-only tool calls and make no changes. Choose the tools needed to distinguish current rollout observations from possible explanations. Report what is actually established about the new revision, the previous revision, application health, and whether rollback is a supported review candidate. State missing evidence and the next targeted read-only check; do not treat a completed rollout or a running Pod alone as proof of application health.",
+  "tool_results": [
+    {
+      "type": "tool_result",
+      "tool": "list_pods",
+      "ok": true,
+      "result": {
+        "ok": true,
+        "output": "NAME                                  READY   STATUS             RESTARTS   AGE     IP            NODE                     NOMINATED NODE   READINESS GATES\norders-api-dogfood-5b5d45bdfd-c5d6w   0/1     ImagePullBackOff   0          92s     10.244.1.38   platform-agent-worker    <none>           <none>\norders-api-dogfood-7b8fb6877d-8m6m8   1/1     Running            0          4h16m   10.244.2.28   platform-agent-worker2   <none>           <none>\norders-api-dogfood-7b8fb6877d-t7m6b   1/1     Running            0          4h16m   10.244.1.37   platform-agent-worker    <none>           <none>",
+        "error": null
+      },
+      "seq": 5,
+      "request_id": "fb3cdde2-fb86-48ec-bf0f-561668d02666"
+    },
+    {
+      "type": "tool_result",
+      "tool": "describe_deployment",
+      "ok": true,
+      "result": {
+        "ok": true,
+        "output": "Name:                   orders-api-dogfood\nNamespace:              acme-dev-observability\nCreationTimestamp:      Sat, 03 Oct 2026 14:19:47 +0900\nLabels:                 capsule.clastix.io/managed-by=acme-dev\n                        projectcapsule.dev/tenant=acme-dev\nAnnotations:            deployment.kubernetes.io/revision: 28\nSelector:               app=orders-api-dogfood\nReplicas:               2 desired | 1 updated | 3 total | 2 available | 1 unavailable\nStrategyType:           RollingUpdate\nMinReadySeconds:        0\nRollingUpdateStrategy:  25% max unavailable, 25% max surge\nPod Template:\n  Labels:  app=orders-api-dogfood\n  Containers:\n   orders-api-dogfood:\n    Image:      localhost:5001/orders-api-dogfood:missing-r1\n    Port:       8080/TCP\n    Host Port:  0/TCP\n    Limits:\n      cpu:     250m\n      memory:  256Mi\n    Requests:\n      cpu:         250m\n      memory:      256Mi\n    Liveness:      http-get http://:8080/healthz delay=5s timeout=1s period=10s #success=1 #failure=3\n    Environment:   <none>\n    Mounts:        <none>\n  Volumes:         <none>\n  Node-Selectors:  <none>\n  Tolerations:     <none>\nConditions:\n  Type           Status  Reason\n  ----           ------  ------\n  Available      True    MinimumReplicasAvailable\n  Progressing    True    ReplicaSetUpdated\nOldReplicaSets:  orders-api-dogfood-7b8fb6877d (2/2 replicas created), orders-api-dogfood-7fd548c97 (0/0 replicas created), orders-api-dogfood-5798f97898 (0/0 replicas created)\nNewReplicaSet:   orders-api",
+        "error": null,
+        "evidence": {
+          "target": {
+            "context": "dogfood-deployer",
+            "namespace": "acme-dev-observability",
+            "deployment": "orders-api-dogfood",
+            "uid": "8567c751-fc44-4e28-b63e-e21af534661f"
+          },
+          "as_of": "2026-10-03T11:07:58.796524+00:00",
+          "window_start": "2026-10-03T11:07:58.660933+00:00",
+          "sources": [
+            {
+              "source_id": "deployment",
+              "sha256": "6c558e968fb8392683d8c3e2f3ba024cdbbc4831f8672f220c0b096ed04715b2",
+              "observed_at": "2026-10-03T11:07:58.725400+00:00"
+            },
+            {
+              "source_id": "replicasets-pods",
+              "sha256": "53a8f0ecb0b44f6ff893e0d09da9d9808b1417d7222243d8a5f83374fe2f261a",
+              "observed_at": "2026-10-03T11:07:58.764853+00:00"
+            }
+          ],
+          "inapplicable_sources": [],
+          "revision": 28,
+          "desired_replicas": 2,
+          "rollout_complete": false,
+          "desired_images": [
+            "localhost:5001/orders-api-dogfood:missing-r1"
+          ],
+          "rollout_counts": {
+            "replicas": 3,
+            "updatedReplicas": 1,
+            "readyReplicas": 2,
+            "availableReplicas": 2
+          },
+          "current": {
+            "revision": 28,
+            "replicaset": "orders-api-dogfood-5b5d45bdfd",
+            "uid": "5d7a3baa-6c12-404f-8695-72cce075c0fb",
+            "template_sha256": "481a7b4956e9e5e78a2288e2a4aa77f7ec0791a57da08973b1fcf54201df5c89",
+            "images": [
+              "localhost:5001/orders-api-dogfood:missing-r1"
+            ],
+            "ready_pods": [],
+            "waiting_reasons": [
+              "ImagePullBackOff"
+            ],
+            "generation_observed": true,
+            "available_replicas": 0,
+            "health_basis": "not_established"
+          },
+          "previous": {
+            "revision": 27,
+            "replicaset": "orders-api-dogfood-7b8fb6877d",
+            "uid": "d18d8102-6a21-4ff0-bca3-34434a02bb65",
+            "template_sha256": "ca5c23383f5614ed4f3496d3a5cd8976b8586454666977ac92d220da14313dfc",
+            "images": [
+              "localhost:5001/orders-api-dogfood:r0"
+            ],
+            "ready_pods": [
+              "orders-api-dogfood-7b8fb6877d-8m6m8",
+              "orders-api-dogfood-7b8fb6877d-t7m6b"
+            ],
+            "waiting_reasons": [],
+            "generation_observed": true,
+            "available_replicas": 2,
+            "health_basis": "not_established"
+          },
+          "recovery": {
+            "status": "not_established",
+            "reasons": [
+              "previous_revision_health_not_established"
+            ],
+            "candidate_revision": null,
+            "execution_authorized": false
+          },
+          "limits": [
+            "Point-in-time observations, not an atomic cluster snapshot or a root-cause finding.",
+            "Kubernetes readiness is not an external service/dependency health check.",
+            "A preserved template is not a verified available image/configuration or rollback authorization.",
+            "Logs, annotations and model proposals cannot grant recovery eligibility."
+          ]
+        }
+      },
+      "seq": 6,
+      "request_id": "fb3cdde2-fb86-48ec-bf0f-561668d02666"
+    },
+    {
+      "type": "tool_result",
+      "tool": "rollout_status",
+      "ok": false,
+      "result": {
+        "ok": false,
+        "output": "Waiting for deployment \"orders-api-dogfood\" rollout to finish: 1 out of 2 new replicas have been updated...",
+        "error": "error: timed out waiting for the condition"
+      },
+      "seq": 7,
+      "request_id": "fb3cdde2-fb86-48ec-bf0f-561668d02666"
+    }
+  ],
+  "scope": "Exact results available to the model. The operator-only Pod events, Pod logs and registry query are additional evidence, not retroactive model inputs."
+}

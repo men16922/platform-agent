@@ -1,0 +1,23 @@
+{
+  "results": [
+    {
+      "mutation": "pod-owner",
+      "test_selector": "test_waiting_text_does_not_cross_current_pod_identity",
+      "exit_code": 1,
+      "detected": true
+    },
+    {
+      "mutation": "source-binding",
+      "test_selector": "test_waiting_text_excludes_unbound",
+      "exit_code": 1,
+      "detected": true
+    },
+    {
+      "mutation": "collector-connection",
+      "test_selector": "test_existing_describe_tool_collects",
+      "exit_code": 1,
+      "detected": true
+    }
+  ],
+  "original_bytes_restored": true
+}

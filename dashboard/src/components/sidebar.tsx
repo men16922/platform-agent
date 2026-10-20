@@ -57,9 +57,8 @@ export function Sidebar() {
         })}
       </nav>
       <div className="m-3 rounded-xl border border-[var(--card-border)] bg-white/[0.025] p-3 text-xs text-[var(--muted)]">
-        <div className="flex items-center gap-2 font-medium text-[#dce5f5]"><span className="pulse-dot" />System operational</div>
-        <div className="mt-2">4 providers connected</div>
-        <div className="mt-1">490 checks passing</div>
+        <div className="flex items-center gap-2 font-medium text-[#dce5f5]">Operations workspace</div>
+        <div className="mt-2">Review recorded runs and observations.</div>
       </div>
     </aside>
   );

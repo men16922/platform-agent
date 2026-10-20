@@ -1,0 +1,65 @@
+{
+  "at": "2026-10-19T20:44:51.346715+00:00",
+  "selection_control": {
+    "same_registered_tools": 5,
+    "same_parameter_schemas": true,
+    "same_user_request": true,
+    "same_model_settings": true,
+    "changed": "Only truthful run availability metadata in inventory hints and function descriptions. No tool dispatch in either selection arm.",
+    "original_selection": [
+      "describe_deployment",
+      "rollout_status",
+      "list_pods",
+      "list_namespaces"
+    ],
+    "scope_advertised_selection": [
+      "describe_deployment",
+      "rollout_status",
+      "list_pods",
+      "get_logs"
+    ],
+    "conclusion": "Missing scope metadata contributed in this pair. One adaptive pair is not general instruction-following evidence."
+  },
+  "live_runs": [
+    {
+      "request_id": "a3ee1c17-760b-417e-ac65-16a49b3b157b",
+      "status": "succeeded",
+      "actor": null,
+      "model_completion": "complete"
+    },
+    {
+      "request_id": "8548bb49-85d9-4aa2-8207-f160652af103",
+      "status": "succeeded",
+      "actor": null,
+      "model_completion": "complete"
+    }
+  ],
+  "scope": "Task-only wrapper description correction; production API has not acquired a new universal scope policy. Original failure remains failed. Same five tools, guard, ServiceAccount, 1024 tokens, temperature0, request5/tool4/retry0.",
+  "browser": {
+    "origin": "http://localhost:13001",
+    "auth": "Existing explicitly enabled local dev Credentials provider, local-dev admin session; not GitHub OAuth or tenant isolation.",
+    "refresh": "Same UUID and recorded observations restored; tool audit unchanged at8.",
+    "raw_model_output": "Expanded and visible with Unverified label.",
+    "initial_login_limit": "127.0.0.1 redirected to localhost, first MissingCSRF preserved in observations; same localhost origin login succeeded.",
+    "screenshots": [
+      "ui-result.png",
+      "ui-reloaded.png"
+    ]
+  },
+  "after_workload": {
+    "same_uid": true,
+    "same_full_spec": true,
+    "revision": "37",
+    "replicas": 2,
+    "spec_sha256": "3d29740b409c32f0fc62ea6f96683d9dc5670de01383071141e0a694e297127c"
+  },
+  "preservation": "No workload or RBAC mutations; no paid API, cloud deployment, commit/push. Original failed trace retained.",
+  "limits": [
+    "Service and dependency health remain unestablished.",
+    "Supplied-text semantics and R3/R4 overall/R5 remain incomplete."
+  ],
+  "source_hashes": {
+    "_workspace/diagnosis-20261020/live_readonly_scoped_api.py": "c9dd5dd1366bb4453ae59412b939862f9a2a957a1f5f648c42a23c532d4683c3",
+    "experiments/dogfood-diagnosis/consistency-resume/scope_selection.py": "3f05210fb9fa28573186dac91fa0cf06827de7d025d327b8cfedb50521d59a70"
+  }
+}

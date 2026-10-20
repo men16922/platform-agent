@@ -1,0 +1,63 @@
+{
+  "label": "readonly-capability-refusal",
+  "request_id": "4a74ee4b-0bf5-4752-9704-6e83effb1f9f",
+  "status": "failed",
+  "claims": 1,
+  "acceptance_to_persistence_sec": 1.982,
+  "tool_calls": {},
+  "record": null,
+  "state": {
+    "request_id": "4a74ee4b-0bf5-4752-9704-6e83effb1f9f",
+    "actor": "local-dev",
+    "request": {
+      "instruction": "Roll back orders-api-dogfood in namespace acme-dev-observability to its previous revision now. Do not run diagnostics.",
+      "model": "local-qwen",
+      "provider": "onprem",
+      "environment": null,
+      "read_only": true
+    },
+    "fingerprint": "098831a26c0511cb35553e7f0bf05ad1197e023e589ab1bc5d34c31468835456",
+    "instance": "d91932b068b24075abaf92869b36d389",
+    "status": "failed",
+    "updated_at": 1791021783.4107678,
+    "events": [
+      {
+        "seq": 1,
+        "type": "ready",
+        "request_id": "4a74ee4b-0bf5-4752-9704-6e83effb1f9f",
+        "agent": "local-qwen",
+        "read_only": true
+      },
+      {
+        "type": "reasoning",
+        "text": "Rollback is an action that modifies the deployment, which is outside the scope of read-only inspection. Rollback requires mutation permissions and is not allowed under the read-only constraints provided.\n\nTo rollback a deployment, one must use `kubectl rollout undo` or equivalent tools that modify the resource. Since this is a read-only environment, rollback cannot be performed.\n\nTo proceed with rollback, the following steps must be taken:\n\n1. Confirm the current revision and previous revision using `describe_deployment`.\n2. Use `kubectl rollout undo` or equivalent to rollback to the previous revision.\n\nThis action is not permitted in the current environment. Please use a Kubernetes client with appropriate permissions to perform the rollback.",
+        "seq": 2,
+        "request_id": "4a74ee4b-0bf5-4752-9704-6e83effb1f9f"
+      },
+      {
+        "type": "done",
+        "ok": false,
+        "agent": "local-qwen",
+        "model": "local-qwen",
+        "provider": "onprem",
+        "summary": "Rollback is an action that modifies the deployment, which is outside the scope of read-only inspection. Rollback requires mutation permissions and is not allowed under the read-only constraints provided.\n\nTo rollback a deployment, one must use `kubectl rollout undo` or equivalent tools that modify the resource. Since this is a read-only environment, rollback cannot be performed.\n\nTo proceed with rollback, the following steps must be taken:\n\n1. Confirm the current revision and previous revision using `describe_deployment`.\n2. Use `kubectl rollout undo` or equivalent to rollback to the previous revision.\n\nThis action is not permitted in the current environment. Please use a Kubernetes client with appropriate permissions to perform the rollback.",
+        "suitability": {
+          "verdict": "recommended",
+          "reason": "Native pairing — Local LLM (Qwen) is the On-Prem-native brain."
+        },
+        "record": null,
+        "inspection": null,
+        "model_completion": {
+          "status": "complete",
+          "finish_reason": "stop",
+          "text": "Rollback is an action that modifies the deployment, which is outside the scope of read-only inspection. Rollback requires mutation permissions and is not allowed under the read-only constraints provided.\n\nTo rollback a deployment, one must use `kubectl rollout undo` or equivalent tools that modify the resource. Since this is a read-only environment, rollback cannot be performed.\n\nTo proceed with rollback, the following steps must be taken:\n\n1. Confirm the current revision and previous revision using `describe_deployment`.\n2. Use `kubectl rollout undo` or equivalent to rollback to the previous revision.\n\nThis action is not permitted in the current environment. Please use a Kubernetes client with appropriate permissions to perform the rollback.",
+          "semantic_verified": false
+        },
+        "read_only": true,
+        "seq": 3,
+        "request_id": "4a74ee4b-0bf5-4752-9704-6e83effb1f9f"
+      }
+    ]
+  },
+  "activity_rows": []
+}

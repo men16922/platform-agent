@@ -28,10 +28,10 @@ def test_kubectl_nonzero_is_error(monkeypatch):
 
 
 def test_all_ops_tools_use_readonly_verbs(monkeypatch):
-    verbs = []
+    commands = []
 
     def run(cmd, **kwargs):
-        verbs.append(cmd[1])
+        commands.append(cmd[1:])
         return SimpleNamespace(returncode=0, stdout="ok", stderr="")
 
     monkeypatch.setattr(ops_tools.subprocess, "run", run)
@@ -41,7 +41,15 @@ def test_all_ops_tools_use_readonly_verbs(monkeypatch):
     ops_tools.rollout_status("d")
     ops_tools.list_namespaces()
     # Only read verbs — no apply/delete/create/scale/patch.
-    assert set(verbs) <= {"get", "logs", "describe", "rollout"}
+    for command in commands:
+        while command[0] in {"--context", "--kubeconfig"}:
+            command = command[2:]
+        if command[0] == "config":
+            assert command == ["config", "current-context"]
+        elif command[0] == "rollout":
+            assert command[1] == "status"
+        else:
+            assert command[0] in {"get", "logs", "describe"}
 
 
 def test_ops_tools_exported():

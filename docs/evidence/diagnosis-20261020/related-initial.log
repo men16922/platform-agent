@@ -1,0 +1,1146 @@
+.......................................FFFFFFFFFFF                       [100%]
+=================================== FAILURES ===================================
+____________ test_replay_deduplicates_events_and_matches_live_view _____________
+
+run_js = <function run_js.<locals>.run at 0x120c4f6a0>
+
+    def test_replay_deduplicates_events_and_matches_live_view(run_js):
+>       result = run_js('''
+    const events = [
+     {seq:1,type:'ready'}, {seq:2,type:'reasoning',text:'Inspect'},
+     {seq:3,type:'tool_call',tool:'list_pods',args:{namespace:'acme'}},
+     {seq:4,type:'tool_result',tool:'list_pods',ok:true,result:{pods:[]}},
+     {seq:5,type:'done',ok:true,summary:'Read complete'}
+    ];
+    console.log(JSON.stringify({live:view(events), recovered:view([...events,...events],'succeeded')}));
+    ''')
+
+tests/test_local_run_dashboard.py:50: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_local_run_dashboard.py:42: in run
+    result = subprocess.run(["node", "-e", script], cwd=DASH, check=True, text=True,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, depe...ew([...events,...events],'succeeded')}));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"],)
+kwargs = {'cwd': PosixPath('/Users/men1692/Desktop/AWS/platform-agent/dashboard'), 'env': {'AWS_PROFILE': 'q-user', 'AWS_REGION...-east-1', 'BUN_INSTALL': '/Users/men1692/.bun', 'CLAUDE_CODE_SSE_PORT': '21993', ...}, 'stderr': -1, 'stdout': -1, ...}
+process = <Popen: returncode: -6 args: ['node', '-e', "\nconst fs = require('fs'), vm ...>
+stdout = ''
+stderr = "dyld[94104]: Library not loaded: /opt/homebrew/opt/simdjson/lib/libsimdjson.33.dylib\n  Referenced from: <5EAB63C1-CB.../libsimdjson.33.dylib' (no such file), '/opt/homebrew/Cellar/simdjson/5.0.3/lib/libsimdjson.33.dylib' (no such file)\n"
+retcode = -6
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, dependencies = {}, globals = {}) {\n  const exports = {};\n  const code = ts.transpileModule(fs.readFileSync(path, 'utf8'), {\n    compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX}\n  }).outputText;\n  vm.runInNewContext(code, {exports, require: name => {\n    if (!(name in dependencies)) throw new Error(`Unexpected import: ${name}`);\n    return dependencies[name];\n  }, Response, Request, AbortSignal, process: {env: {}}, ...globals}, {filename: path});\n  return exports;\n}\nconst view = load('src/lib/agent-run-view.ts').runView;\n(async () => { \nconst events = [\n {seq:1,type:'ready'}, {seq:2,type:'reasoning',text:'Inspect'},\n {seq:3,type:'tool_call',tool:'list_pods',args:{namespace:'acme'}},\n {seq:4,type:'tool_result',tool:'list_pods',ok:true,result:{pods:[]}},\n {seq:5,type:'done',ok:true,summary:'Read complete'}\n];\nconsole.log(JSON.stringify({live:view(events), recovered:view([...events,...events],'succeeded')}));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"]' died with <Signals.SIGABRT: 6>.
+
+/opt/anaconda3/lib/python3.13/subprocess.py:577: CalledProcessError
+___ test_readonly_mode_is_server_recorded_and_not_inferred_from_legacy_tools ___
+
+run_js = <function run_js.<locals>.run at 0x120c4f6a0>
+
+    def test_readonly_mode_is_server_recorded_and_not_inferred_from_legacy_tools(run_js):
+>       result = run_js('''
+    const ready={type:'ready',read_only:true}, done={type:'done',ok:true,read_only:true,summary:'Read'};
+    console.log(JSON.stringify({live:view([ready]),replay:view([ready,done],'succeeded'),
+     legacy:view([{type:'tool_call',tool:'describe_deployment'},{type:'done',ok:true}],'succeeded'),
+     invalid:view([{type:'ready',read_only:'true'}]),normal:view([{type:'ready',read_only:false}]),
+     noTools:view([{type:'done',ok:false,model_completion:{status:'complete',text:'Analysis',tool_call_attempts:0}}]),
+     unknownTools:view([{type:'done',ok:false,model_completion:{status:'complete',text:'Legacy analysis'}}])}));
+    ''')
+
+tests/test_local_run_dashboard.py:66: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_local_run_dashboard.py:42: in run
+    result = subprocess.run(["node", "-e", script], cwd=DASH, check=True, text=True,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, depe...'complete',text:'Legacy analysis'}}])}));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"],)
+kwargs = {'cwd': PosixPath('/Users/men1692/Desktop/AWS/platform-agent/dashboard'), 'env': {'AWS_PROFILE': 'q-user', 'AWS_REGION...-east-1', 'BUN_INSTALL': '/Users/men1692/.bun', 'CLAUDE_CODE_SSE_PORT': '21993', ...}, 'stderr': -1, 'stdout': -1, ...}
+process = <Popen: returncode: -6 args: ['node', '-e', "\nconst fs = require('fs'), vm ...>
+stdout = ''
+stderr = "dyld[94105]: Library not loaded: /opt/homebrew/opt/simdjson/lib/libsimdjson.33.dylib\n  Referenced from: <5EAB63C1-CB.../libsimdjson.33.dylib' (no such file), '/opt/homebrew/Cellar/simdjson/5.0.3/lib/libsimdjson.33.dylib' (no such file)\n"
+retcode = -6
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, dependencies = {}, globals = {}) {\n  const exports = {};\n  const code = ts.transpileModule(fs.readFileSync(path, 'utf8'), {\n    compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX}\n  }).outputText;\n  vm.runInNewContext(code, {exports, require: name => {\n    if (!(name in dependencies)) throw new Error(`Unexpected import: ${name}`);\n    return dependencies[name];\n  }, Response, Request, AbortSignal, process: {env: {}}, ...globals}, {filename: path});\n  return exports;\n}\nconst view = load('src/lib/agent-run-view.ts').runView;\n(async () => { \nconst ready={type:'ready',read_only:true}, done={type:'done',ok:true,read_only:true,summary:'Read'};\nconsole.log(JSON.stringify({live:view([ready]),replay:view([ready,done],'succeeded'),\n legacy:view([{type:'tool_call',tool:'describe_deployment'},{type:'done',ok:true}],'succeeded'),\n invalid:view([{type:'ready',read_only:'true'}]),normal:view([{type:'ready',read_only:false}]),\n noTools:view([{type:'done',ok:false,model_completion:{status:'complete',text:'Analysis',tool_call_attempts:0}}]),\n unknownTools:view([{type:'done',ok:false,model_completion:{status:'complete',text:'Legacy analysis'}}])}));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"]' died with <Signals.SIGABRT: 6>.
+
+/opt/anaconda3/lib/python3.13/subprocess.py:577: CalledProcessError
+______ test_router_connection_check_requires_the_expected_health_payload _______
+
+run_js = <function run_js.<locals>.run at 0x120c4f6a0>
+
+    def test_router_connection_check_requires_the_expected_health_payload(run_js):
+>       result = run_js('''
+    const rows=[],calls=[];
+    for (const reply of [{status:'ok',service:'model-router-api'}, {status:'ok',service:'other'},
+     {status:'error',service:'model-router-api'},null,'bad-json','http-failure','network-failure']) {
+     const get=load('src/app/api/dashboard/agents/onprem-status/route.ts',{}, {fetch:async(url,options)=>{
+      calls.push({url,cache:options.cache,hasSignal:!!options.signal});
+      if(reply==='network-failure') throw new Error('unavailable');
+      if(reply==='bad-json') return new Response('not JSON');
+      if(reply==='http-failure') return Response.json({status:'ok',service:'model-router-api'},{status:503});
+      return Response.json(reply);
+     }}).GET;
+     const response=await get();rows.push({body:await response.json(),cache:response.headers.get('cache-control')});
+    }
+    console.log(JSON.stringify({rows,calls}));
+    ''')
+
+tests/test_local_run_dashboard.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_local_run_dashboard.py:42: in run
+    result = subprocess.run(["node", "-e", script], cwd=DASH, check=True, text=True,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, depe...onsole.log(JSON.stringify({rows,calls}));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"],)
+kwargs = {'cwd': PosixPath('/Users/men1692/Desktop/AWS/platform-agent/dashboard'), 'env': {'AWS_PROFILE': 'q-user', 'AWS_REGION...-east-1', 'BUN_INSTALL': '/Users/men1692/.bun', 'CLAUDE_CODE_SSE_PORT': '21993', ...}, 'stderr': -1, 'stdout': -1, ...}
+process = <Popen: returncode: -6 args: ['node', '-e', "\nconst fs = require('fs'), vm ...>
+stdout = ''
+stderr = "dyld[94106]: Library not loaded: /opt/homebrew/opt/simdjson/lib/libsimdjson.33.dylib\n  Referenced from: <5EAB63C1-CB.../libsimdjson.33.dylib' (no such file), '/opt/homebrew/Cellar/simdjson/5.0.3/lib/libsimdjson.33.dylib' (no such file)\n"
+retcode = -6
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, dependencies = {}, globals = {}) {\n  const exports = {};\n  const code = ts.transpileModule(fs.readFileSync(path, 'utf8'), {\n    compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX}\n  }).outputText;\n  vm.runInNewContext(code, {exports, require: name => {\n    if (!(name in dependencies)) throw new Error(`Unexpected import: ${name}`);\n    return dependencies[name];\n  }, Response, Request, AbortSignal, process: {env: {}}, ...globals}, {filename: path});\n  return exports;\n}\nconst view = load('src/lib/agent-run-view.ts').runView;\n(async () => { \nconst rows=[],calls=[];\nfor (const reply of [{status:'ok',service:'model-router-api'}, {status:'ok',service:'other'},\n {status:'error',service:'model-router-api'},null,'bad-json','http-failure','network-failure']) {\n const get=load('src/app/api/dashboard/agents/onprem-status/route.ts',{}, {fetch:async(url,options)=>{\n  calls.push({url,cache:options.cache,hasSignal:!!options.signal});\n  if(reply==='network-failure') throw new Error('unavailable');\n  if(reply==='bad-json') return new Response('not JSON');\n  if(reply==='http-failure') return Response.json({status:'ok',service:'model-router-api'},{status:503});\n  return Response.json(reply);\n }}).GET;\n const response=await get();rows.push({body:await response.json(),cache:response.headers.get('cache-control')});\n}\nconsole.log(JSON.stringify({rows,calls}));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"]' died with <Signals.SIGABRT: 6>.
+
+/opt/anaconda3/lib/python3.13/subprocess.py:577: CalledProcessError
+_ test_runtime_panel_never_promotes_connection_to_model_or_delegation_readiness _
+
+run_js = <function run_js.<locals>.run at 0x120c4f6a0>
+
+    def test_runtime_panel_never_promotes_connection_to_model_or_delegation_readiness(run_js):
+>       result = run_js('''
+    const React=require('react'), render=require('react-dom/server').renderToStaticMarkup;
+    let status;
+    const Panel=load('src/components/onprem-runtime-panel.tsx',{
+     'react/jsx-runtime':require('react/jsx-runtime'),
+     'react':{useState:initial=>[status??initial,()=>{}],useEffect:()=>{}},
+     '@/components/model-logo':{ModelLogo:()=>null}
+    }).OnPremRuntimePanel;
+    const rows=[];
+    for(const cloud of ['onprem','aws']) for(const router of ['checking','connected','unavailable']) {
+     status={router,checked_at:router==='checking'?undefined:'2026-10-03T10:00:00Z'};
+     const props={agent:{cloud,name:'Agent',provider:cloud,runtime:'Qwen',llm:'Qwen',path:'UNVERIFIED PATH'},
+      model:null,models:[],modelId:'local-qwen',onModelChange:()=>{}};
+     rows.push({cloud,router,html:render(React.createElement(Panel,props))});
+    }
+    console.log(JSON.stringify(rows));
+    ''')
+
+tests/test_local_run_dashboard.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_local_run_dashboard.py:42: in run
+    result = subprocess.run(["node", "-e", script], cwd=DASH, check=True, text=True,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, depe...);\n}\nconsole.log(JSON.stringify(rows));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"],)
+kwargs = {'cwd': PosixPath('/Users/men1692/Desktop/AWS/platform-agent/dashboard'), 'env': {'AWS_PROFILE': 'q-user', 'AWS_REGION...-east-1', 'BUN_INSTALL': '/Users/men1692/.bun', 'CLAUDE_CODE_SSE_PORT': '21993', ...}, 'stderr': -1, 'stdout': -1, ...}
+process = <Popen: returncode: -6 args: ['node', '-e', "\nconst fs = require('fs'), vm ...>
+stdout = ''
+stderr = "dyld[94107]: Library not loaded: /opt/homebrew/opt/simdjson/lib/libsimdjson.33.dylib\n  Referenced from: <5EAB63C1-CB.../libsimdjson.33.dylib' (no such file), '/opt/homebrew/Cellar/simdjson/5.0.3/lib/libsimdjson.33.dylib' (no such file)\n"
+retcode = -6
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, dependencies = {}, globals = {}) {\n  const exports = {};\n  const code = ts.transpileModule(fs.readFileSync(path, 'utf8'), {\n    compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX}\n  }).outputText;\n  vm.runInNewContext(code, {exports, require: name => {\n    if (!(name in dependencies)) throw new Error(`Unexpected import: ${name}`);\n    return dependencies[name];\n  }, Response, Request, AbortSignal, process: {env: {}}, ...globals}, {filename: path});\n  return exports;\n}\nconst view = load('src/lib/agent-run-view.ts').runView;\n(async () => { \nconst React=require('react'), render=require('react-dom/server').renderToStaticMarkup;\nlet status;\nconst Panel=load('src/components/onprem-runtime-panel.tsx',{\n 'react/jsx-runtime':require('react/jsx-runtime'),\n 'react':{useState:initial=>[status??initial,()=>{}],useEffect:()=>{}},\n '@/components/model-logo':{ModelLogo:()=>null}\n}).OnPremRuntimePanel;\nconst rows=[];\nfor(const cloud of ['onprem','aws']) for(const router of ['checking','connected','unavailable']) {\n status={router,checked_at:router==='checking'?undefined:'2026-10-03T10:00:00Z'};\n const props={agent:{cloud,name:'Agent',provider:cloud,runtime:'Qwen',llm:'Qwen',path:'UNVERIFIED PATH'},\n  model:null,models:[],modelId:'local-qwen',onModelChange:()=>{}};\n rows.push({cloud,router,html:render(React.createElement(Panel,props))});\n}\nconsole.log(JSON.stringify(rows));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"]' died with <Signals.SIGABRT: 6>.
+
+/opt/anaconda3/lib/python3.13/subprocess.py:577: CalledProcessError
+_ test_both_deploy_proxies_preserve_mode_and_reject_invalid_values_before_dispatch _
+
+run_js = <function run_js.<locals>.run at 0x120c4f6a0>
+
+    def test_both_deploy_proxies_preserve_mode_and_reject_invalid_values_before_dispatch(run_js):
+>       result = run_js('''
+    let role='operator'; const calls=[],statuses=[];
+    const dependencies={'@/auth':{auth:async()=>({user:{username:'alice',role}})},'@/lib/audit-data':{writeAuditLog:async()=>{}}};
+    for (const file of ['src/app/api/dashboard/agents/deploy/stream/route.ts','src/app/api/dashboard/agents/deploy/route.ts']) {
+     const post=load(file,dependencies,{fetch:async(url,options)=>{calls.push({url,...options});return Response.json({ok:true});}}).POST;
+     const base={instruction:'inspect',model:'local-qwen',provider:'onprem',request_id:'7e9c73ce-557c-41d8-9d58-ce1b2d805bdc'};
+     const send=body=>post(new Request('http://test/api',{method:'POST',body:JSON.stringify(body)}));
+     statuses.push((await send({...base,read_only:true})).status,(await send({...base,read_only:false})).status);
+     for (const value of ['true','false',1,0,null]) statuses.push((await send({...base,read_only:value})).status);
+     statuses.push((await send({...base,read_only:true,provider:'aws'})).status);
+     for (const denied of ['viewer','unexpected']) { role=denied;statuses.push((await send({...base,read_only:true})).status); }
+     role='operator';
+    }
+    console.log(JSON.stringify({calls,statuses}));
+    ''')
+
+tests/test_local_run_dashboard.py:132: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_local_run_dashboard.py:42: in run
+    result = subprocess.run(["node", "-e", script], cwd=DASH, check=True, text=True,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, depe...le.log(JSON.stringify({calls,statuses}));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"],)
+kwargs = {'cwd': PosixPath('/Users/men1692/Desktop/AWS/platform-agent/dashboard'), 'env': {'AWS_PROFILE': 'q-user', 'AWS_REGION...-east-1', 'BUN_INSTALL': '/Users/men1692/.bun', 'CLAUDE_CODE_SSE_PORT': '21993', ...}, 'stderr': -1, 'stdout': -1, ...}
+process = <Popen: returncode: -6 args: ['node', '-e', "\nconst fs = require('fs'), vm ...>
+stdout = ''
+stderr = "dyld[94108]: Library not loaded: /opt/homebrew/opt/simdjson/lib/libsimdjson.33.dylib\n  Referenced from: <5EAB63C1-CB.../libsimdjson.33.dylib' (no such file), '/opt/homebrew/Cellar/simdjson/5.0.3/lib/libsimdjson.33.dylib' (no such file)\n"
+retcode = -6
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, dependencies = {}, globals = {}) {\n  const exports = {};\n  const code = ts.transpileModule(fs.readFileSync(path, 'utf8'), {\n    compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX}\n  }).outputText;\n  vm.runInNewContext(code, {exports, require: name => {\n    if (!(name in dependencies)) throw new Error(`Unexpected import: ${name}`);\n    return dependencies[name];\n  }, Response, Request, AbortSignal, process: {env: {}}, ...globals}, {filename: path});\n  return exports;\n}\nconst view = load('src/lib/agent-run-view.ts').runView;\n(async () => { \nlet role='operator'; const calls=[],statuses=[];\nconst dependencies={'@/auth':{auth:async()=>({user:{username:'alice',role}})},'@/lib/audit-data':{writeAuditLog:async()=>{}}};\nfor (const file of ['src/app/api/dashboard/agents/deploy/stream/route.ts','src/app/api/dashboard/agents/deploy/route.ts']) {\n const post=load(file,dependencies,{fetch:async(url,options)=>{calls.push({url,...options});return Response.json({ok:true});}}).POST;\n const base={instruction:'inspect',model:'local-qwen',provider:'onprem',request_id:'7e9c73ce-557c-41d8-9d58-ce1b2d805bdc'};\n const send=body=>post(new Request('http://test/api',{method:'POST',body:JSON.stringify(body)}));\n statuses.push((await send({...base,read_only:true})).status,(await send({...base,read_only:false})).status);\n for (const value of ['true','false',1,0,null]) statuses.push((await send({...base,read_only:value})).status);\n statuses.push((await send({...base,read_only:true,provider:'aws'})).status);\n for (const denied of ['viewer','unexpected']) { role=denied;statuses.push((await send({...base,read_only:true})).status); }\n role='operator';\n}\nconsole.log(JSON.stringify({calls,statuses}));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"]' died with <Signals.SIGABRT: 6>.
+
+/opt/anaconda3/lib/python3.13/subprocess.py:577: CalledProcessError
+______ test_unknown_missing_or_inconsistent_result_never_projects_success ______
+
+run_js = <function run_js.<locals>.run at 0x120c4f6a0>
+
+    def test_unknown_missing_or_inconsistent_result_never_projects_success(run_js):
+>       result = run_js('''console.log(JSON.stringify([
+    view([{type:'done',ok:true,summary:'completed'}], 'unknown', 'Unconfirmed'),
+    view([], 'succeeded'), view([{type:'done',ok:true}], 'failed'),
+    view([{type:'done',ok:'true'}], 'succeeded')
+    ]));''')
+
+tests/test_local_run_dashboard.py:152: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_local_run_dashboard.py:42: in run
+    result = subprocess.run(["node", "-e", script], cwd=DASH, check=True, text=True,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, depe...type:'done',ok:'true'}], 'succeeded')\n])); })().catch(error => { console.error(error); process.exitCode = 1; });\n"],)
+kwargs = {'cwd': PosixPath('/Users/men1692/Desktop/AWS/platform-agent/dashboard'), 'env': {'AWS_PROFILE': 'q-user', 'AWS_REGION...-east-1', 'BUN_INSTALL': '/Users/men1692/.bun', 'CLAUDE_CODE_SSE_PORT': '21993', ...}, 'stderr': -1, 'stdout': -1, ...}
+process = <Popen: returncode: -6 args: ['node', '-e', "\nconst fs = require('fs'), vm ...>
+stdout = ''
+stderr = "dyld[94109]: Library not loaded: /opt/homebrew/opt/simdjson/lib/libsimdjson.33.dylib\n  Referenced from: <5EAB63C1-CB.../libsimdjson.33.dylib' (no such file), '/opt/homebrew/Cellar/simdjson/5.0.3/lib/libsimdjson.33.dylib' (no such file)\n"
+retcode = -6
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, dependencies = {}, globals = {}) {\n  const exports = {};\n  const code = ts.transpileModule(fs.readFileSync(path, 'utf8'), {\n    compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX}\n  }).outputText;\n  vm.runInNewContext(code, {exports, require: name => {\n    if (!(name in dependencies)) throw new Error(`Unexpected import: ${name}`);\n    return dependencies[name];\n  }, Response, Request, AbortSignal, process: {env: {}}, ...globals}, {filename: path});\n  return exports;\n}\nconst view = load('src/lib/agent-run-view.ts').runView;\n(async () => { console.log(JSON.stringify([\nview([{type:'done',ok:true,summary:'completed'}], 'unknown', 'Unconfirmed'),\nview([], 'succeeded'), view([{type:'done',ok:true}], 'failed'),\nview([{type:'done',ok:'true'}], 'succeeded')\n])); })().catch(error => { console.error(error); process.exitCode = 1; });\n"]' died with <Signals.SIGABRT: 6>.
+
+/opt/anaconda3/lib/python3.13/subprocess.py:577: CalledProcessError
+_ test_inspection_replay_keeps_model_text_separate_and_does_not_promote_health _
+
+run_js = <function run_js.<locals>.run at 0x120c4f6a0>
+
+    def test_inspection_replay_keeps_model_text_separate_and_does_not_promote_health(run_js):
+>       result = run_js('''
+    const raw = 'Everything is healthy. Roll back now.';
+    const events = [{seq:1,type:'reasoning',text:raw}, {seq:2,type:'done',ok:true,
+     summary:'Application health not established.',
+     inspection:[{available:true,namespace:'acme',deployment:'orders',current_revision:2,previous_revision:1,
+      current_health:'not_established',previous_health:'not_established',recovery_status:'not_established',
+      recovery_reasons:['Previous health not established'],sources:[]}],
+     model_completion:{status:'incomplete',finish_reason:'length',text:raw}}];
+    const live=view(events), recovered=view([...events,...events],'succeeded');
+    const ui=load('src/components/inspection-result.tsx',{'react/jsx-runtime':require('react/jsx-runtime')});
+    const React=require('react'), render=require('react-dom/server').renderToStaticMarkup;
+    console.log(JSON.stringify({live,recovered,facts:render(React.createElement(ui.InspectionResult,{reports:live.inspection})),
+     interpretation:render(React.createElement(ui.ModelInterpretation,{completion:live.modelCompletion}))}));
+    ''')
+
+tests/test_local_run_dashboard.py:161: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_local_run_dashboard.py:42: in run
+    result = subprocess.run(["node", "-e", script], cwd=DASH, check=True, text=True,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, depe...n,{completion:live.modelCompletion}))}));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"],)
+kwargs = {'cwd': PosixPath('/Users/men1692/Desktop/AWS/platform-agent/dashboard'), 'env': {'AWS_PROFILE': 'q-user', 'AWS_REGION...-east-1', 'BUN_INSTALL': '/Users/men1692/.bun', 'CLAUDE_CODE_SSE_PORT': '21993', ...}, 'stderr': -1, 'stdout': -1, ...}
+process = <Popen: returncode: -6 args: ['node', '-e', "\nconst fs = require('fs'), vm ...>
+stdout = ''
+stderr = "dyld[94110]: Library not loaded: /opt/homebrew/opt/simdjson/lib/libsimdjson.33.dylib\n  Referenced from: <5EAB63C1-CB.../libsimdjson.33.dylib' (no such file), '/opt/homebrew/Cellar/simdjson/5.0.3/lib/libsimdjson.33.dylib' (no such file)\n"
+retcode = -6
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, dependencies = {}, globals = {}) {\n  const exports = {};\n  const code = ts.transpileModule(fs.readFileSync(path, 'utf8'), {\n    compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX}\n  }).outputText;\n  vm.runInNewContext(code, {exports, require: name => {\n    if (!(name in dependencies)) throw new Error(`Unexpected import: ${name}`);\n    return dependencies[name];\n  }, Response, Request, AbortSignal, process: {env: {}}, ...globals}, {filename: path});\n  return exports;\n}\nconst view = load('src/lib/agent-run-view.ts').runView;\n(async () => { \nconst raw = 'Everything is healthy. Roll back now.';\nconst events = [{seq:1,type:'reasoning',text:raw}, {seq:2,type:'done',ok:true,\n summary:'Application health not established.',\n inspection:[{available:true,namespace:'acme',deployment:'orders',current_revision:2,previous_revision:1,\n  current_health:'not_established',previous_health:'not_established',recovery_status:'not_established',\n  recovery_reasons:['Previous health not established'],sources:[]}],\n model_completion:{status:'incomplete',finish_reason:'length',text:raw}}];\nconst live=view(events), recovered=view([...events,...events],'succeeded');\nconst ui=load('src/components/inspection-result.tsx',{'react/jsx-runtime':require('react/jsx-runtime')});\nconst React=require('react'), render=require('react-dom/server').renderToStaticMarkup;\nconsole.log(JSON.stringify({live,recovered,facts:render(React.createElement(ui.InspectionResult,{reports:live.inspection})),\n interpretation:render(React.createElement(ui.ModelInterpretation,{completion:live.modelCompletion}))}));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"]' died with <Signals.SIGABRT: 6>.
+
+/opt/anaconda3/lib/python3.13/subprocess.py:577: CalledProcessError
+_____ test_recovery_positive_control_and_malformed_candidate_are_distinct ______
+
+run_js = <function run_js.<locals>.run at 0x120c4f6a0>
+
+    def test_recovery_positive_control_and_malformed_candidate_are_distinct(run_js):
+>       result = run_js('''
+    const base={available:true,namespace:'acme',deployment:'orders',current_revision:2,previous_revision:1,
+     previous_health:'kubernetes_readiness',recovery_status:'review_candidate',candidate_revision:1,sources:[]};
+    const rows=[base,{...base,candidate_revision:2},{...base,candidate_revision:true},{...base,previous_health:'not_established'}];
+    const reports=rows.map(row=>view([{type:'done',ok:true,inspection:[row]}]).inspection[0]);
+    const ui=load('src/components/inspection-result.tsx',{'react/jsx-runtime':require('react/jsx-runtime')});
+    console.log(JSON.stringify({reports,html:require('react-dom/server').renderToStaticMarkup(require('react').createElement(ui.InspectionResult,{reports:[reports[0]]}))}));
+    ''')
+
+tests/test_local_run_dashboard.py:187: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_local_run_dashboard.py:42: in run
+    result = subprocess.run(["node", "-e", script], cwd=DASH, check=True, text=True,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, depe...ectionResult,{reports:[reports[0]]}))}));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"],)
+kwargs = {'cwd': PosixPath('/Users/men1692/Desktop/AWS/platform-agent/dashboard'), 'env': {'AWS_PROFILE': 'q-user', 'AWS_REGION...-east-1', 'BUN_INSTALL': '/Users/men1692/.bun', 'CLAUDE_CODE_SSE_PORT': '21993', ...}, 'stderr': -1, 'stdout': -1, ...}
+process = <Popen: returncode: -6 args: ['node', '-e', "\nconst fs = require('fs'), vm ...>
+stdout = ''
+stderr = "dyld[94113]: Library not loaded: /opt/homebrew/opt/simdjson/lib/libsimdjson.33.dylib\n  Referenced from: <5EAB63C1-CB.../libsimdjson.33.dylib' (no such file), '/opt/homebrew/Cellar/simdjson/5.0.3/lib/libsimdjson.33.dylib' (no such file)\n"
+retcode = -6
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, dependencies = {}, globals = {}) {\n  const exports = {};\n  const code = ts.transpileModule(fs.readFileSync(path, 'utf8'), {\n    compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX}\n  }).outputText;\n  vm.runInNewContext(code, {exports, require: name => {\n    if (!(name in dependencies)) throw new Error(`Unexpected import: ${name}`);\n    return dependencies[name];\n  }, Response, Request, AbortSignal, process: {env: {}}, ...globals}, {filename: path});\n  return exports;\n}\nconst view = load('src/lib/agent-run-view.ts').runView;\n(async () => { \nconst base={available:true,namespace:'acme',deployment:'orders',current_revision:2,previous_revision:1,\n previous_health:'kubernetes_readiness',recovery_status:'review_candidate',candidate_revision:1,sources:[]};\nconst rows=[base,{...base,candidate_revision:2},{...base,candidate_revision:true},{...base,previous_health:'not_established'}];\nconst reports=rows.map(row=>view([{type:'done',ok:true,inspection:[row]}]).inspection[0]);\nconst ui=load('src/components/inspection-result.tsx',{'react/jsx-runtime':require('react/jsx-runtime')});\nconsole.log(JSON.stringify({reports,html:require('react-dom/server').renderToStaticMarkup(require('react').createElement(ui.InspectionResult,{reports:[reports[0]]}))}));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"]' died with <Signals.SIGABRT: 6>.
+
+/opt/anaconda3/lib/python3.13/subprocess.py:577: CalledProcessError
+_____ test_proxies_use_session_actor_and_preserve_missing_conflict_status ______
+
+run_js = <function run_js.<locals>.run at 0x120c4f6a0>
+
+    def test_proxies_use_session_actor_and_preserve_missing_conflict_status(run_js):
+>       result = run_js('''
+    const calls = [];
+    const dependencies = {'@/auth':{auth:async()=>({user:{username:'alice',role:'operator'}})},
+     '@/lib/audit-data':{writeAuditLog:async()=>{}}};
+    const id = '7e9c73ce-557c-41d8-9d58-ce1b2d805bdc';
+    const post = load('src/app/api/dashboard/agents/deploy/stream/route.ts', dependencies, {
+     fetch:async(url,options)=>{calls.push({url,...options}); return Response.json({detail:'Conflict'}, {status:409});}
+    }).POST;
+    const get = load('src/app/api/dashboard/agents/runs/[id]/route.ts', dependencies, {
+     fetch:async(url,options)=>{calls.push({url,...options}); return Response.json({detail:'Run not found.'}, {status:404});}
+    }).GET;
+    const submitted = await post(new Request('http://test/api',{method:'POST',headers:{'X-Platform-Actor':'bob'},
+     body:JSON.stringify({instruction:'read pods',request_id:id,actor:'bob'})}));
+    const read = await get(new Request('http://test/api',{headers:{'X-Platform-Actor':'bob'}}), {params:Promise.resolve({id})});
+    console.log(JSON.stringify({calls,statuses:[submitted.status,read.status],cache:read.headers.get('cache-control')}));
+    ''')
+
+tests/test_local_run_dashboard.py:202: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_local_run_dashboard.py:42: in run
+    result = subprocess.run(["node", "-e", script], cwd=DASH, check=True, text=True,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, depe...che:read.headers.get('cache-control')}));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"],)
+kwargs = {'cwd': PosixPath('/Users/men1692/Desktop/AWS/platform-agent/dashboard'), 'env': {'AWS_PROFILE': 'q-user', 'AWS_REGION...-east-1', 'BUN_INSTALL': '/Users/men1692/.bun', 'CLAUDE_CODE_SSE_PORT': '21993', ...}, 'stderr': -1, 'stdout': -1, ...}
+process = <Popen: returncode: -6 args: ['node', '-e', "\nconst fs = require('fs'), vm ...>
+stdout = ''
+stderr = "dyld[94115]: Library not loaded: /opt/homebrew/opt/simdjson/lib/libsimdjson.33.dylib\n  Referenced from: <5EAB63C1-CB.../libsimdjson.33.dylib' (no such file), '/opt/homebrew/Cellar/simdjson/5.0.3/lib/libsimdjson.33.dylib' (no such file)\n"
+retcode = -6
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, dependencies = {}, globals = {}) {\n  const exports = {};\n  const code = ts.transpileModule(fs.readFileSync(path, 'utf8'), {\n    compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX}\n  }).outputText;\n  vm.runInNewContext(code, {exports, require: name => {\n    if (!(name in dependencies)) throw new Error(`Unexpected import: ${name}`);\n    return dependencies[name];\n  }, Response, Request, AbortSignal, process: {env: {}}, ...globals}, {filename: path});\n  return exports;\n}\nconst view = load('src/lib/agent-run-view.ts').runView;\n(async () => { \nconst calls = [];\nconst dependencies = {'@/auth':{auth:async()=>({user:{username:'alice',role:'operator'}})},\n '@/lib/audit-data':{writeAuditLog:async()=>{}}};\nconst id = '7e9c73ce-557c-41d8-9d58-ce1b2d805bdc';\nconst post = load('src/app/api/dashboard/agents/deploy/stream/route.ts', dependencies, {\n fetch:async(url,options)=>{calls.push({url,...options}); return Response.json({detail:'Conflict'}, {status:409});}\n}).POST;\nconst get = load('src/app/api/dashboard/agents/runs/[id]/route.ts', dependencies, {\n fetch:async(url,options)=>{calls.push({url,...options}); return Response.json({detail:'Run not found.'}, {status:404});}\n}).GET;\nconst submitted = await post(new Request('http://test/api',{method:'POST',headers:{'X-Platform-Actor':'bob'},\n body:JSON.stringify({instruction:'read pods',request_id:id,actor:'bob'})}));\nconst read = await get(new Request('http://test/api',{headers:{'X-Platform-Actor':'bob'}}), {params:Promise.resolve({id})});\nconsole.log(JSON.stringify({calls,statuses:[submitted.status,read.status],cache:read.headers.get('cache-control')}));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"]' died with <Signals.SIGABRT: 6>.
+
+/opt/anaconda3/lib/python3.13/subprocess.py:577: CalledProcessError
+____ test_proxies_reject_missing_auth_roles_and_invalid_ids_before_upstream ____
+
+run_js = <function run_js.<locals>.run at 0x120c4f6a0>
+
+    def test_proxies_reject_missing_auth_roles_and_invalid_ids_before_upstream(run_js):
+>       result = run_js('''
+    let calls = 0, session = null;
+    const dependencies = {'@/auth':{auth:async()=>session},'@/lib/audit-data':{writeAuditLog:async()=>{}}};
+    const globals = {fetch:async()=>{calls++;throw new Error('unexpected upstream');}};
+    const post = load('src/app/api/dashboard/agents/deploy/stream/route.ts',dependencies,globals).POST;
+    const get = load('src/app/api/dashboard/agents/runs/[id]/route.ts',dependencies,globals).GET;
+    const statuses = [];
+    for (const role of [null,'viewer','unexpected','operator']) {
+     session = role ? {user:{username:'alice',role}} : null;
+     statuses.push((await post(new Request('http://test/api',{method:'POST',body:JSON.stringify({instruction:'work',request_id:'invalid'})}))).status);
+     statuses.push((await get(new Request('http://test/api'),{params:Promise.resolve({id:'invalid'})})).status);
+    }
+    console.log(JSON.stringify({statuses,calls}));
+    ''')
+
+tests/test_local_run_dashboard.py:225: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_local_run_dashboard.py:42: in run
+    result = subprocess.run(["node", "-e", script], cwd=DASH, check=True, text=True,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, depe...le.log(JSON.stringify({statuses,calls}));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"],)
+kwargs = {'cwd': PosixPath('/Users/men1692/Desktop/AWS/platform-agent/dashboard'), 'env': {'AWS_PROFILE': 'q-user', 'AWS_REGION...-east-1', 'BUN_INSTALL': '/Users/men1692/.bun', 'CLAUDE_CODE_SSE_PORT': '21993', ...}, 'stderr': -1, 'stdout': -1, ...}
+process = <Popen: returncode: -6 args: ['node', '-e', "\nconst fs = require('fs'), vm ...>
+stdout = ''
+stderr = "dyld[94116]: Library not loaded: /opt/homebrew/opt/simdjson/lib/libsimdjson.33.dylib\n  Referenced from: <5EAB63C1-CB.../libsimdjson.33.dylib' (no such file), '/opt/homebrew/Cellar/simdjson/5.0.3/lib/libsimdjson.33.dylib' (no such file)\n"
+retcode = -6
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, dependencies = {}, globals = {}) {\n  const exports = {};\n  const code = ts.transpileModule(fs.readFileSync(path, 'utf8'), {\n    compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX}\n  }).outputText;\n  vm.runInNewContext(code, {exports, require: name => {\n    if (!(name in dependencies)) throw new Error(`Unexpected import: ${name}`);\n    return dependencies[name];\n  }, Response, Request, AbortSignal, process: {env: {}}, ...globals}, {filename: path});\n  return exports;\n}\nconst view = load('src/lib/agent-run-view.ts').runView;\n(async () => { \nlet calls = 0, session = null;\nconst dependencies = {'@/auth':{auth:async()=>session},'@/lib/audit-data':{writeAuditLog:async()=>{}}};\nconst globals = {fetch:async()=>{calls++;throw new Error('unexpected upstream');}};\nconst post = load('src/app/api/dashboard/agents/deploy/stream/route.ts',dependencies,globals).POST;\nconst get = load('src/app/api/dashboard/agents/runs/[id]/route.ts',dependencies,globals).GET;\nconst statuses = [];\nfor (const role of [null,'viewer','unexpected','operator']) {\n session = role ? {user:{username:'alice',role}} : null;\n statuses.push((await post(new Request('http://test/api',{method:'POST',body:JSON.stringify({instruction:'work',request_id:'invalid'})}))).status);\n statuses.push((await get(new Request('http://test/api'),{params:Promise.resolve({id:'invalid'})})).status);\n}\nconsole.log(JSON.stringify({statuses,calls}));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"]' died with <Signals.SIGABRT: 6>.
+
+/opt/anaconda3/lib/python3.13/subprocess.py:577: CalledProcessError
+___ test_prepared_proxy_preserves_reviewed_values_and_requires_session_role ____
+
+run_js = <function run_js.<locals>.run at 0x120c4f6a0>
+
+    def test_prepared_proxy_preserves_reviewed_values_and_requires_session_role(run_js):
+>       result = run_js('''
+    let session = null;
+    const calls = [], statuses = [];
+    const post = load('src/app/api/dashboard/deployments/prepared/route.ts', {
+     '@/auth':{auth:async()=>session}
+    }, {fetch:async(url,options)=>{calls.push({url,...options}); return Response.json({detail:'Conflict'}, {status:409});}}).POST;
+    const values = {request_id:'7e9c73ce-557c-41d8-9d58-ce1b2d805bdc', service_name:'orders-api-dogfood',
+     namespace:'acme-dev-observability', image_uri:'localhost:5001/orders-api-dogfood:r1', replicas:2, environment:'dev'};
+    for (const role of [null,'viewer','unexpected','operator']) {
+     session = role ? {user:{username:'alice',role}} : null;
+     statuses.push((await post(new Request('http://test/api',{method:'POST',headers:{'X-Platform-Actor':'bob'},body:JSON.stringify(values)}))).status);
+    }
+    const rollback = load('src/app/api/dashboard/deployments/[id]/rollback/route.ts', {
+     '@/auth':{auth:async()=>session}, '@/lib/audit-data':{writeAuditLog:async()=>{}},
+     '@/lib/aws-client':{}, '@aws-sdk/client-sfn':require('@aws-sdk/client-sfn'), 'uuid':require('uuid')
+    }, {fetch:async(url,options)=>{calls.push({url,...options}); return Response.json({ok:true,summary:'Recovered'});}}).POST;
+    await rollback(new Request('http://test/api',{method:'POST',body:JSON.stringify({service_name:values.service_name,
+     namespace:values.namespace,provider:'onprem',version:'r1',environment:'dev'})}),{params:Promise.resolve({id:'DEP-ONE'})});
+    console.log(JSON.stringify({calls,statuses,values}));
+    ''')
+
+tests/test_local_run_dashboard.py:243: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/test_local_run_dashboard.py:42: in run
+    result = subprocess.run(["node", "-e", script], cwd=DASH, check=True, text=True,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+input = None, capture_output = True, timeout = None, check = True
+popenargs = (['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, depe...JSON.stringify({calls,statuses,values}));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"],)
+kwargs = {'cwd': PosixPath('/Users/men1692/Desktop/AWS/platform-agent/dashboard'), 'env': {'AWS_PROFILE': 'q-user', 'AWS_REGION...-east-1', 'BUN_INSTALL': '/Users/men1692/.bun', 'CLAUDE_CODE_SSE_PORT': '21993', ...}, 'stderr': -1, 'stdout': -1, ...}
+process = <Popen: returncode: -6 args: ['node', '-e', "\nconst fs = require('fs'), vm ...>
+stdout = ''
+stderr = "dyld[94117]: Library not loaded: /opt/homebrew/opt/simdjson/lib/libsimdjson.33.dylib\n  Referenced from: <5EAB63C1-CB.../libsimdjson.33.dylib' (no such file), '/opt/homebrew/Cellar/simdjson/5.0.3/lib/libsimdjson.33.dylib' (no such file)\n"
+retcode = -6
+
+    def run(*popenargs,
+            input=None, capture_output=False, timeout=None, check=False, **kwargs):
+        """Run command with arguments and return a CompletedProcess instance.
+    
+        The returned instance will have attributes args, returncode, stdout and
+        stderr. By default, stdout and stderr are not captured, and those attributes
+        will be None. Pass stdout=PIPE and/or stderr=PIPE in order to capture them,
+        or pass capture_output=True to capture both.
+    
+        If check is True and the exit code was non-zero, it raises a
+        CalledProcessError. The CalledProcessError object will have the return code
+        in the returncode attribute, and output & stderr attributes if those streams
+        were captured.
+    
+        If timeout (seconds) is given and the process takes too long,
+         a TimeoutExpired exception will be raised.
+    
+        There is an optional argument "input", allowing you to
+        pass bytes or a string to the subprocess's stdin.  If you use this argument
+        you may not also use the Popen constructor's "stdin" argument, as
+        it will be used internally.
+    
+        By default, all communication is in bytes, and therefore any "input" should
+        be bytes, and the stdout and stderr will be bytes. If in text mode, any
+        "input" should be a string, and stdout and stderr will be strings decoded
+        according to locale encoding, or by "encoding" if set. Text mode is
+        triggered by setting any of text, encoding, errors or universal_newlines.
+    
+        The other arguments are the same as for the Popen constructor.
+        """
+        if input is not None:
+            if kwargs.get('stdin') is not None:
+                raise ValueError('stdin and input arguments may not both be used.')
+            kwargs['stdin'] = PIPE
+    
+        if capture_output:
+            if kwargs.get('stdout') is not None or kwargs.get('stderr') is not None:
+                raise ValueError('stdout and stderr arguments may not be used '
+                                 'with capture_output.')
+            kwargs['stdout'] = PIPE
+            kwargs['stderr'] = PIPE
+    
+        with Popen(*popenargs, **kwargs) as process:
+            try:
+                stdout, stderr = process.communicate(input, timeout=timeout)
+            except TimeoutExpired as exc:
+                process.kill()
+                if _mswindows:
+                    # Windows accumulates the output in a single blocking
+                    # read() call run on child threads, with the timeout
+                    # being done in a join() on those threads.  communicate()
+                    # _after_ kill() is required to collect that and add it
+                    # to the exception.
+                    exc.stdout, exc.stderr = process.communicate()
+                else:
+                    # POSIX _communicate already populated the output so
+                    # far into the TimeoutExpired exception.
+                    process.wait()
+                raise
+            except:  # Including KeyboardInterrupt, communicate handled that.
+                process.kill()
+                # We don't call process.wait() as .__exit__ does that for us.
+                raise
+            retcode = process.poll()
+            if check and retcode:
+>               raise CalledProcessError(retcode, process.args,
+                                         output=stdout, stderr=stderr)
+E               subprocess.CalledProcessError: Command '['node', '-e', "\nconst fs = require('fs'), vm = require('vm'), ts = require('typescript');\nfunction load(path, dependencies = {}, globals = {}) {\n  const exports = {};\n  const code = ts.transpileModule(fs.readFileSync(path, 'utf8'), {\n    compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX}\n  }).outputText;\n  vm.runInNewContext(code, {exports, require: name => {\n    if (!(name in dependencies)) throw new Error(`Unexpected import: ${name}`);\n    return dependencies[name];\n  }, Response, Request, AbortSignal, process: {env: {}}, ...globals}, {filename: path});\n  return exports;\n}\nconst view = load('src/lib/agent-run-view.ts').runView;\n(async () => { \nlet session = null;\nconst calls = [], statuses = [];\nconst post = load('src/app/api/dashboard/deployments/prepared/route.ts', {\n '@/auth':{auth:async()=>session}\n}, {fetch:async(url,options)=>{calls.push({url,...options}); return Response.json({detail:'Conflict'}, {status:409});}}).POST;\nconst values = {request_id:'7e9c73ce-557c-41d8-9d58-ce1b2d805bdc', service_name:'orders-api-dogfood',\n namespace:'acme-dev-observability', image_uri:'localhost:5001/orders-api-dogfood:r1', replicas:2, environment:'dev'};\nfor (const role of [null,'viewer','unexpected','operator']) {\n session = role ? {user:{username:'alice',role}} : null;\n statuses.push((await post(new Request('http://test/api',{method:'POST',headers:{'X-Platform-Actor':'bob'},body:JSON.stringify(values)}))).status);\n}\nconst rollback = load('src/app/api/dashboard/deployments/[id]/rollback/route.ts', {\n '@/auth':{auth:async()=>session}, '@/lib/audit-data':{writeAuditLog:async()=>{}},\n '@/lib/aws-client':{}, '@aws-sdk/client-sfn':require('@aws-sdk/client-sfn'), 'uuid':require('uuid')\n}, {fetch:async(url,options)=>{calls.push({url,...options}); return Response.json({ok:true,summary:'Recovered'});}}).POST;\nawait rollback(new Request('http://test/api',{method:'POST',body:JSON.stringify({service_name:values.service_name,\n namespace:values.namespace,provider:'onprem',version:'r1',environment:'dev'})}),{params:Promise.resolve({id:'DEP-ONE'})});\nconsole.log(JSON.stringify({calls,statuses,values}));\n })().catch(error => { console.error(error); process.exitCode = 1; });\n"]' died with <Signals.SIGABRT: 6>.
+
+/opt/anaconda3/lib/python3.13/subprocess.py:577: CalledProcessError
+=========================== short test summary info ============================
+FAILED tests/test_local_run_dashboard.py::test_replay_deduplicates_events_and_matches_live_view
+FAILED tests/test_local_run_dashboard.py::test_readonly_mode_is_server_recorded_and_not_inferred_from_legacy_tools
+FAILED tests/test_local_run_dashboard.py::test_router_connection_check_requires_the_expected_health_payload
+FAILED tests/test_local_run_dashboard.py::test_runtime_panel_never_promotes_connection_to_model_or_delegation_readiness
+FAILED tests/test_local_run_dashboard.py::test_both_deploy_proxies_preserve_mode_and_reject_invalid_values_before_dispatch
+FAILED tests/test_local_run_dashboard.py::test_unknown_missing_or_inconsistent_result_never_projects_success
+FAILED tests/test_local_run_dashboard.py::test_inspection_replay_keeps_model_text_separate_and_does_not_promote_health
+FAILED tests/test_local_run_dashboard.py::test_recovery_positive_control_and_malformed_candidate_are_distinct
+FAILED tests/test_local_run_dashboard.py::test_proxies_use_session_actor_and_preserve_missing_conflict_status
+FAILED tests/test_local_run_dashboard.py::test_proxies_reject_missing_auth_roles_and_invalid_ids_before_upstream
+FAILED tests/test_local_run_dashboard.py::test_prepared_proxy_preserves_reviewed_values_and_requires_session_role
+11 failed, 39 passed in 1.34s

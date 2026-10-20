@@ -1,0 +1,261 @@
+{
+  "date": "2026-09-13",
+  "milestone": "M77",
+  "scope": "real GitHub R2 installation-token experiment with operator-prepared diagnostic branch",
+  "repository": "men16922/platform-agent-p5e-authz-r2",
+  "repository_id": 1367740190,
+  "app_id": 4924748,
+  "installation_id": 161238144,
+  "app_permissions": {
+    "metadata": "read",
+    "pull_requests": "write",
+    "single_file": "write"
+  },
+  "single_file_paths": [
+    "platform/tenants/acme.yaml"
+  ],
+  "repository_selection": [
+    1367740190
+  ],
+  "key_validation": {
+    "mode": "0600",
+    "rsa_bits": 2048,
+    "jwt_get_app_status": 200
+  },
+  "primary": {
+    "state": "STOPPED",
+    "reason": "app_branch_creation_denied",
+    "cleanup": "OBSERVED_INVALID",
+    "live_verified": false,
+    "diagnostic_only": false
+  },
+  "diagnostic": {
+    "state": "STOPPED",
+    "reason": "pr_creation_not_proven",
+    "cleanup": "OBSERVED_INVALID",
+    "live_verified": false,
+    "diagnostic_only": true
+  },
+  "operator_diagnostic_preparation": {
+    "identity": "operator",
+    "status": 201,
+    "branch": "p5e/20260913-02-diagnostic",
+    "snapshot": {
+      "observer": "operator",
+      "complete": true,
+      "ref": "p5e/20260913-02-diagnostic",
+      "commit": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "main": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "parents": [],
+      "files": {
+        "platform/tenants/acme.yaml": {
+          "sha": "398abe6c528238244a8e3713bc2b48523ae8b915",
+          "mode": "100644"
+        },
+        "platform/tenants/globex.yaml": {
+          "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4",
+          "mode": "100644"
+        }
+      }
+    }
+  },
+  "http_captures": [
+    {
+      "scope": "c93af8d95239302c13d8b7f9391da3dd0a4956d0d8b106cdcd6b6d0cf6880d0e",
+      "operation": "create_ref",
+      "capture": {
+        "body_state": "object",
+        "errors": [],
+        "errors_state": "absent",
+        "errors_truncated": false,
+        "event_id": "aa577c3ed73c4f49b5ff0af94b6db759",
+        "github_request_id": "C754:1DC715:6F9739:A49D25:6AA5D0EF",
+        "http_status": 403,
+        "message_class": "integration_access_error",
+        "observed_at": "2026-09-12T22:23:44.197623+00:00",
+        "operation": "create_ref",
+        "schema_version": 1,
+        "transport": "response"
+      }
+    },
+    {
+      "scope": "c93af8d95239302c13d8b7f9391da3dd0a4956d0d8b106cdcd6b6d0cf6880d0e",
+      "operation": "revoke_token",
+      "capture": {
+        "body_state": "empty",
+        "errors": [],
+        "event_id": "a90d42380787487baaf2f94312d66de6",
+        "github_request_id": "C763:0C00:47E7F0:69026B:6AA5D0F4",
+        "http_status": 204,
+        "message_class": "unclassified",
+        "observed_at": "2026-09-12T22:23:48.327846+00:00",
+        "operation": "revoke_token",
+        "schema_version": 1,
+        "transport": "response"
+      }
+    },
+    {
+      "scope": "cd9e8bca6d7ed936cb1dcb846b94e825d411c2ed167b15125177b4fb9be4fc22",
+      "operation": "write_target",
+      "capture": {
+        "body_state": "object",
+        "errors": [],
+        "errors_state": "absent",
+        "errors_truncated": false,
+        "event_id": "826750f3ed914a76973cf64ad660de47",
+        "github_request_id": "C810:95247:78B57B:ADC3BC:6AA5D120",
+        "http_status": 200,
+        "message_class": "unclassified",
+        "observed_at": "2026-09-12T22:24:33.352627+00:00",
+        "operation": "write_target",
+        "schema_version": 1,
+        "transport": "response"
+      }
+    },
+    {
+      "scope": "cd9e8bca6d7ed936cb1dcb846b94e825d411c2ed167b15125177b4fb9be4fc22",
+      "operation": "write_sibling",
+      "capture": {
+        "body_state": "object",
+        "errors": [],
+        "errors_state": "absent",
+        "errors_truncated": false,
+        "event_id": "28634cd9193d40eaaf73ccc48e357f4b",
+        "github_request_id": "C829:3D6CAE:6FED36:A4FAA4:6AA5D126",
+        "http_status": 403,
+        "message_class": "integration_access_error",
+        "observed_at": "2026-09-12T22:24:38.897962+00:00",
+        "operation": "write_sibling",
+        "schema_version": 1,
+        "transport": "response"
+      }
+    },
+    {
+      "scope": "cd9e8bca6d7ed936cb1dcb846b94e825d411c2ed167b15125177b4fb9be4fc22",
+      "operation": "create_pr",
+      "capture": {
+        "body_state": "object",
+        "errors": [
+          {
+            "code": "custom",
+            "field": null,
+            "message_class": "unclassified",
+            "resource": "PullRequest"
+          }
+        ],
+        "errors_state": "list",
+        "errors_truncated": false,
+        "event_id": "21a0f989f942457494c99f45a18dfab4",
+        "github_request_id": "C84E:0BD9:4E5A52:7262CE:6AA5D12D",
+        "http_status": 422,
+        "message_class": "validation_failed",
+        "observed_at": "2026-09-12T22:24:45.962301+00:00",
+        "operation": "create_pr",
+        "schema_version": 1,
+        "transport": "response"
+      }
+    },
+    {
+      "scope": "cd9e8bca6d7ed936cb1dcb846b94e825d411c2ed167b15125177b4fb9be4fc22",
+      "operation": "revoke_token",
+      "capture": {
+        "body_state": "empty",
+        "errors": [],
+        "event_id": "8c8ed1eef2da4f3182cf320cb6a0f666",
+        "github_request_id": "C866:0B97:A1F93:10C5D2:6AA5D130",
+        "http_status": 204,
+        "message_class": "unclassified",
+        "observed_at": "2026-09-12T22:24:48.402168+00:00",
+        "operation": "revoke_token",
+        "schema_version": 1,
+        "transport": "response"
+      }
+    }
+  ],
+  "post_call_readback": {
+    "date": "2026-09-13",
+    "repository_id": 1367740190,
+    "private": true,
+    "default_branch": "main",
+    "pull_requests": 0,
+    "snapshot": {
+      "observer": "operator",
+      "complete": true,
+      "ref": "p5e/20260913-02-diagnostic",
+      "commit": "9d17b496128a7ec2a771041816c937db7e6366a3",
+      "main": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "parents": [
+        "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c"
+      ],
+      "files": {
+        "platform/tenants/acme.yaml": {
+          "sha": "9a88d6901ff18873745c272665e175921156ca9a",
+          "mode": "100644"
+        },
+        "platform/tenants/globex.yaml": {
+          "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4",
+          "mode": "100644"
+        }
+      }
+    },
+    "compare": {
+      "status": "ahead",
+      "ahead_by": 1,
+      "behind_by": 0,
+      "total_commits": 1
+    },
+    "files": [
+      {
+        "filename": "platform/tenants/acme.yaml",
+        "status": "modified",
+        "additions": 1,
+        "deletions": 0,
+        "sha": "9a88d6901ff18873745c272665e175921156ca9a"
+      }
+    ],
+    "owner_plan_name": null
+  },
+  "verdict": {
+    "automatic_branch_creation": "unsupported_observed_403",
+    "target_write": "observed_200_exact_expected_blob",
+    "sibling_boundary": "observed_403_with_valid_token_and_unchanged_sibling",
+    "pr_creation": "not_proven_observed_422",
+    "pr_error_detail": "validation_failed / PullRequest / custom / field null / unclassified",
+    "root_cause": "unresolved: custom detail discarded by fixed-message classifier",
+    "diagnostic_only": true,
+    "production_ready": false
+  },
+  "token_lifecycle": {
+    "minted": 2,
+    "revoke_204": 2,
+    "post_revoke_401": 2,
+    "remaining_known_live_tokens": 0
+  },
+  "retained": {
+    "r2_repository": true,
+    "r2_app": true,
+    "r2_installation": true,
+    "r2_key": true,
+    "r2_checkout": true,
+    "old_lab_key_checkout": "untouched"
+  },
+  "browser_readonly_checks": {
+    "compare_ui": "1 commit, 1 file, 1 addition, 0 deletions, able to merge",
+    "draft_option": "offered in owner UI; no owner submission",
+    "limitation": "owner UI availability is not installation-token permission proof"
+  },
+  "source_sha256": {
+    "src/agents/platform/writer_github.py": "af681dec40cbcf19fb21ba7b67b1a7e76a2276af3855ed26cd2cf5e6ca2d4637",
+    "src/agents/platform/writer_capture.py": "d90583592b0ae5b7625de4167ab45a2646a0eda5776616b0f7075f5325903298",
+    "src/agents/platform/writer_workflow.py": "df6d9608ed568221f5ef55471e2319c50157e7a1e74db8b608c062bed1b24365"
+  },
+  "gate": {
+    "command": "make check",
+    "passed": 3038,
+    "skipped": 2,
+    "warnings": 21,
+    "seconds": 87.71,
+    "exit_code": 0,
+    "log": "/tmp/platform-agent-m77-live-gate.log"
+  }
+}

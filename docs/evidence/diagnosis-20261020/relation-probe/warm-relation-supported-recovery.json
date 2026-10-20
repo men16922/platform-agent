@@ -1,0 +1,153 @@
+{
+  "arm": "relation",
+  "case_id": "supported-recovery",
+  "label": "warm",
+  "settings": {
+    "max_tokens": 1024,
+    "temperature": 0
+  },
+  "request": {
+    "question": "Is reverting r2 to r1 a supported recovery candidate? What is and is not established about root cause? Do not execute anything.",
+    "target": {
+      "cluster": "kind-platform-agent",
+      "namespace": "acme-dev-observability",
+      "service": "orders-api-dogfood"
+    },
+    "window_start": "2026-10-03T06:59:00Z",
+    "as_of": "2026-10-03T07:03:00Z",
+    "sources": [
+      {
+        "source_id": "change",
+        "target": {
+          "cluster": "kind-platform-agent",
+          "namespace": "acme-dev-observability",
+          "service": "orders-api-dogfood"
+        },
+        "observed_at": "2026-10-03T07:00:00Z",
+        "provenance": "supplied_snapshot",
+        "text": "At 07:00 UTC only orders-api image changed from r1 to r2. Replicas remained 2; there was no schema or configuration change."
+      },
+      {
+        "source_id": "comparison",
+        "target": {
+          "cluster": "kind-platform-agent",
+          "namespace": "acme-dev-observability",
+          "service": "orders-api-dogfood"
+        },
+        "observed_at": "2026-10-03T07:01:00Z",
+        "provenance": "supplied_snapshot",
+        "text": "At 07:01 UTC r2 returns 500 for the test request, while an r1 canary in the same namespace still returns 200 for that request against the same dependency."
+      },
+      {
+        "source_id": "recovery-check",
+        "target": {
+          "cluster": "kind-platform-agent",
+          "namespace": "acme-dev-observability",
+          "service": "orders-api-dogfood"
+        },
+        "observed_at": "2026-10-03T07:02:00Z",
+        "provenance": "supplied_snapshot",
+        "text": "At 07:02 UTC both r1 canary replicas are healthy; r1 image digest and deployment specification are available. No data migration occurred. An operator may review rollback; no action is approved yet."
+      }
+    ]
+  },
+  "snapshot_diagnosis_sha256": "62bbac3442ad4033def7a80067bf80e752c01876a6d04665a7e198df69df5389",
+  "usage": [
+    {
+      "prompt_tokens": 1317,
+      "completion_tokens": 428,
+      "total_tokens": 1745,
+      "prompt_tokens_details": {
+        "cached_tokens": 788
+      }
+    }
+  ],
+  "seconds": 5.624,
+  "raw_sha256": "c12a6fc801f52b4be8289992d747a32bf8508d2386d73b9d6c5d6dbbcbf5b315",
+  "outcome": {
+    "ok": false,
+    "model": "local-qwen",
+    "provider": "onprem",
+    "summary": "### Cited observations\n- [change] At 07:00 UTC only orders-api image changed from r1 to r2. Replicas remained 2; there was no schema or configuration change.\n- [comparison] At 07:01 UTC r2 returns 500 for the test request, while an r1 canary in the same namespace still returns 200 for that request against the same dependency.\n- [recovery-check] At 07:02 UTC both r1 canary replicas are healthy; r1 image digest and deployment specification are available. No data migration occurred.\n\n### Possible explanation\nThe failure appears to stem from r2's image, as r1 remains healthy and the change was only in the image. The 500 error aligns with a regression in r2's code or dependencies.\n\n### Alternative explanation\nAn alternative explanation is that the change in r2 introduced a subtle compatibility issue with the dependency or environment that r1 did not have, or that r2's environment or dependencies were misconfigured.\n\n### Cause relation: not established\n\n### Recovery review: review candidate\nThe r1 image digest and deployment specification are available, and r1 replicas are healthy. The change from r1 to r2 is the only change in the deployment.\n- [recovery-check] At 07:02 UTC both r1 canary replicas are healthy; r1 image digest and deployment specification are available.\n\n### Next read-only evidence\n- Verify r2's logs for errors\n- Verify r2's dependencies\n- Compare r1 and r2 code changes\n\nModel interpretation is unverified. No execution is authorized.",
+    "steps": [],
+    "suitability": {
+      "verdict": "recommended",
+      "reason": "Native pairing — Local LLM (Qwen) is the On-Prem-native brain."
+    },
+    "trace": [],
+    "inspection": null,
+    "model_completion": {
+      "status": "complete",
+      "finish_reason": "stop",
+      "text": "{\n  \"observations\": [\n    {\n      \"source_id\": \"change\",\n      \"quote\": \"At 07:00 UTC only orders-api image changed from r1 to r2. Replicas remained 2; there was no schema or configuration change.\"\n    },\n    {\n      \"source_id\": \"comparison\",\n \"quote\": \"At 07:01 UTC r2 returns 500 for the test request, while an r1 canary in the same namespace still returns 200 for that request against the same dependency.\"\n    },\n    {\n      \"source_id\": \"recovery-check\",\n \"quote\": \"At 07:02 UTC both r1 canary replicas are healthy; r1 image digest and deployment specification are available. No data migration occurred.\"\n    }\n  ],\n  \"cause_assessment\": \"The failure appears to stem from r2's image, as r1 remains healthy and the change was only in the image. The 500 error aligns with a regression in r2's code or dependencies.\",\n  \"alternative_explanation\": \"An alternative explanation is that the change in r2 introduced a subtle compatibility issue with the dependency or environment that r1 did not have, or that r2's environment or dependencies were misconfigured.\",\n  \"recovery\": \"review_candidate\",\n  \"recovery_reason\": \"The r1 image digest and deployment specification are available, and r1 replicas are healthy. The change from r1 to r2 is the only change in the deployment.\",\n  \"recovery_evidence\": [\n    {\n      \"source_id\": \"recovery-check\",\n \"quote\": \"At 07:02 UTC both r1 canary replicas are healthy; r1 image digest and deployment specification are available.\"\n    }\n  ],\n  \"cause_relation\": \"not_established\",\n  \"relation_evidence\": [],\n  \"next_read_only_checks\": [\n    \"Verify r2's logs for errors\",\n \"Verify r2's dependencies\",\n \"Compare r1 and r2 code changes\"\n  ]\n}",
+      "semantic_verified": false,
+      "model_responses": 1,
+      "tool_call_attempts": 0,
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 1317,
+        "output_tokens": 428
+      }
+    },
+    "snapshot_analysis": {
+      "target": {
+        "cluster": "kind-platform-agent",
+        "namespace": "acme-dev-observability",
+        "service": "orders-api-dogfood"
+      },
+      "window_start": "2026-10-03T06:59:00+00:00",
+      "as_of": "2026-10-03T07:03:00+00:00",
+      "interpretation": "Analysis of supplied records at the declared time; not a live observation or action approval.",
+      "applicable_source_ids": [
+        "change",
+        "comparison",
+        "recovery-check"
+      ],
+      "embedded_instructions": [],
+      "excluded": [],
+      "source_sha256": {
+        "change": "90f8d2ea9a957847577f54ff81c7dd2887b92fcdf5c07560294483c9c4d7e5ca",
+        "comparison": "75d4e66b10aa18dd794d3feeb83b4a9bf3e13274d5fb919d8bc569c93fbeb3fb",
+        "recovery-check": "9a73f1603c1b1f626fd8684400988676307c16393fbe98359ef19651946dfd2a"
+      },
+      "status": "interpreted",
+      "model_called": true,
+      "citation_status": "valid",
+      "semantic_verified": false,
+      "execution_authorized": false,
+      "diagnosis": {
+        "observations": [
+          {
+            "source_id": "change",
+            "quote": "At 07:00 UTC only orders-api image changed from r1 to r2. Replicas remained 2; there was no schema or configuration change."
+          },
+          {
+            "source_id": "comparison",
+            "quote": "At 07:01 UTC r2 returns 500 for the test request, while an r1 canary in the same namespace still returns 200 for that request against the same dependency."
+          },
+          {
+            "source_id": "recovery-check",
+            "quote": "At 07:02 UTC both r1 canary replicas are healthy; r1 image digest and deployment specification are available. No data migration occurred."
+          }
+        ],
+        "cause_assessment": "The failure appears to stem from r2's image, as r1 remains healthy and the change was only in the image. The 500 error aligns with a regression in r2's code or dependencies.",
+        "alternative_explanation": "An alternative explanation is that the change in r2 introduced a subtle compatibility issue with the dependency or environment that r1 did not have, or that r2's environment or dependencies were misconfigured.",
+        "recovery": "review_candidate",
+        "recovery_reason": "The r1 image digest and deployment specification are available, and r1 replicas are healthy. The change from r1 to r2 is the only change in the deployment.",
+        "recovery_evidence": [
+          {
+            "source_id": "recovery-check",
+            "quote": "At 07:02 UTC both r1 canary replicas are healthy; r1 image digest and deployment specification are available."
+          }
+        ],
+        "cause_relation": "not_established",
+        "relation_evidence": [],
+        "next_read_only_checks": [
+          "Verify r2's logs for errors",
+          "Verify r2's dependencies",
+          "Compare r1 and r2 code changes"
+        ]
+      }
+    }
+  }
+}

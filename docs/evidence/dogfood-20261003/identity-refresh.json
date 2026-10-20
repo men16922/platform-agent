@@ -1,0 +1,20 @@
+{
+  "at": "2026-10-03T05:18:22.441014+00:00",
+  "reason": "User approved local validation; previous restricted tokens expired.",
+  "identities": [
+    {
+      "service_account": "platform-agent-system/platform-agent-deployer",
+      "file": "deployer.kubeconfig",
+      "duration_requested": "2h",
+      "file_mode": "0600"
+    },
+    {
+      "service_account": "acme-dev-observability/platform-agent",
+      "file": "tenant.kubeconfig",
+      "duration_requested": "2h",
+      "file_mode": "0600"
+    }
+  ],
+  "rbac_changed": false,
+  "tokens_in_evidence": false
+}

@@ -1,0 +1,38 @@
+{
+  "at": "2026-10-03T08:55:28.446163+00:00",
+  "old_owned_pid": 92255,
+  "restored_pid": 97368,
+  "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "proxy_candidate": "candidate-v10-model-proxy.json",
+  "model_port": 18090,
+  "listening": true,
+  "cache_only": true,
+  "application_model_setting_changed": false,
+  "restoration_reason": "Single bounded4096-token/180s comparison timed out; no further cases or automatic retries. Client timeout does not prove upstream computation ended; owned comparison server was deliberately stopped before restore.",
+  "model_response_verified": true,
+  "verified_at": "2026-10-03T08:56:49.134820+00:00",
+  "verification_response": {
+    "id": "chatcmpl-9bc85728-6da4-45a9-823b-c36c7b663a87",
+    "object": "chat.completion",
+    "created": 0,
+    "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "OK"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 12,
+      "completion_tokens": 2,
+      "total_tokens": 14,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    }
+  }
+}

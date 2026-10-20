@@ -1,0 +1,37 @@
+{
+  "milestone": "M89",
+  "date": "2026-09-13",
+  "scope": "dashboard AWS preview/prepare/status transport and readiness, verified locally",
+  "tests": {
+    "typescript": "118 passed; 37 new",
+    "mutations": 5,
+    "collection": 3254,
+    "full_gate": {
+      "command": "make check",
+      "passed": 3252,
+      "skipped": 2,
+      "warnings": 21,
+      "seconds": 106.21,
+      "machine": "local macOS Python 3.13",
+      "exit_code": 0
+    },
+    "next_build": "npm run build exited 0"
+  },
+  "sdk_validation": "actual Lambda client single-attempt config; real SDK/OIDC credential failures in network-disabled Linux container",
+  "roundtrip": "TS input bytes -> actual Python service and DynamoDB Local -> TS decoders over local IPC; not AWS Invoke",
+  "browser": "local lost-response recovery and hidden controls for AWS stored opt-in absent",
+  "aws_opt_in": "REGISTRY_PLANNER_STORED_REQUESTS=1; operator declaration, not remote health proof",
+  "source_sha256": {
+    "dashboard/src/lib/registry-preview.ts": "bb6a006f0680929dc372c305049fb01313491731b0da1067e8cab70149da8209",
+    "dashboard/src/lib/registry-preview-contract.ts": "a8040857aa8ae4ee367f040dbab3fefcd1dc9d61d8aff76ce07a6ad0c8a4fd66",
+    "dashboard/src/lib/registry-planner-connection.ts": "d52529f223c56f0a8d5257d1a778d97f3371a82cecc9888492495d096b07e8ef",
+    "dashboard/src/app/provisioning/page.tsx": "506dda49508e560059ea0212b8fe96eaad489d025120193ae2538ed4f2dec4ec",
+    "tests/test_registry_preview_ui.py": "9f7499ce49a4dbb10c45b1d2a1c930a0b06353fc0d27823a801146ebc84c0f78"
+  },
+  "remote_aws_github_api_calls": 0,
+  "remote_ci_executed": false,
+  "deployed": false,
+  "publication_verified": false,
+  "owned_temporary_resources_removed": true,
+  "existing_resources_keys_and_global_settings_retained": true
+}

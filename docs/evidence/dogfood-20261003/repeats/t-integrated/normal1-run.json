@@ -1,0 +1,137 @@
+{
+  "label": "normal1",
+  "request_id": "8825f8e8-ae4c-42a7-b02b-b5e9315090ae",
+  "status": "succeeded",
+  "claims": 1,
+  "acceptance_to_persistence_sec": 4.004,
+  "tool_calls": {
+    "deploy_to_cluster": 1
+  },
+  "record": {
+    "deployment_id": "DEP-8E3CDB34",
+    "activity_id": "ACT-86D93E98"
+  },
+  "state": {
+    "request_id": "8825f8e8-ae4c-42a7-b02b-b5e9315090ae",
+    "actor": "local-dev",
+    "request": {
+      "service_name": "orders-api-dogfood",
+      "namespace": "acme-dev-observability",
+      "image_uri": "localhost:5001/orders-api-dogfood:r1",
+      "replicas": 2,
+      "environment": "dev",
+      "model": "onprem-executor",
+      "provider": "onprem"
+    },
+    "fingerprint": "edbea8d52c31b97e268f92622d379e0d6107ec5da00adfaaf58fb8882204f0df",
+    "instance": "470ee9ac8bfa4985ab962cd4b587a32f",
+    "status": "succeeded",
+    "updated_at": 1791031992.383918,
+    "events": [
+      {
+        "seq": 1,
+        "type": "ready",
+        "request_id": "8825f8e8-ae4c-42a7-b02b-b5e9315090ae",
+        "agent": "onprem-executor"
+      },
+      {
+        "type": "tool_call",
+        "tool": "deploy_to_cluster",
+        "args": {
+          "service_name": "orders-api-dogfood",
+          "namespace": "acme-dev-observability",
+          "image": "localhost:5001/orders-api-dogfood",
+          "version": "r1",
+          "image_uri": "localhost:5001/orders-api-dogfood:r1",
+          "replicas": 2,
+          "provider": "onprem",
+          "ports": [
+            8080
+          ],
+          "health_path": "/healthz"
+        },
+        "seq": 2,
+        "request_id": "8825f8e8-ae4c-42a7-b02b-b5e9315090ae"
+      },
+      {
+        "type": "tool_result",
+        "tool": "deploy_to_cluster",
+        "ok": true,
+        "result": {
+          "status": "success",
+          "deployment_id": "acme-dev-observability/orders-api-dogfood",
+          "namespace": "acme-dev-observability",
+          "replicas_desired": 2,
+          "endpoint": "http://localhost:80",
+          "error": "",
+          "applied": true,
+          "rollout_verified": true
+        },
+        "seq": 3,
+        "request_id": "8825f8e8-ae4c-42a7-b02b-b5e9315090ae"
+      },
+      {
+        "type": "done",
+        "ok": true,
+        "model": "onprem-executor",
+        "provider": "onprem",
+        "summary": "acme-dev-observability/orders-api-dogfood: rollout verified for localhost:5001/orders-api-dogfood:r1 with 2 replicas.",
+        "record": {
+          "deployment_id": "DEP-8E3CDB34",
+          "activity_id": "ACT-86D93E98"
+        },
+        "seq": 4,
+        "request_id": "8825f8e8-ae4c-42a7-b02b-b5e9315090ae"
+      }
+    ]
+  },
+  "activity_rows": [
+    {
+      "PK": "DEPLOY",
+      "SK": "2026-10-03T12:53:12Z#DEP-8E3CDB34",
+      "deployment_id": "DEP-8E3CDB34",
+      "type": "deploy",
+      "cluster": "platform-agent",
+      "service": "orders-api-dogfood",
+      "version": "r1",
+      "provider": "onprem",
+      "status": "success",
+      "agent": "On-Prem Executor",
+      "created_at": "2026-10-03T12:53:12Z",
+      "duration_sec": 4.001,
+      "duration_scope": "executor_run",
+      "applied": true,
+      "environment": "dev",
+      "namespace": "acme-dev-observability"
+    },
+    {
+      "PK": "ACTIVITY",
+      "SK": "2026-10-03T12:53:12Z#ACT-86D93E98",
+      "activity_id": "ACT-86D93E98",
+      "deployment_id": "DEP-8E3CDB34",
+      "type": "deploy",
+      "agent": "On-Prem Executor",
+      "model": "onprem-executor",
+      "provider": "onprem",
+      "action": "Deploy reviewed image: {\"environment\": \"dev\", \"image_uri\": \"localhost:5001/orders-api-dogfood:r1\", \"namespace\": \"acme-dev-observability\", \"r",
+      "instruction": "Deploy reviewed image: {\"environment\": \"dev\", \"image_uri\": \"localhost:5001/orders-api-dogfood:r1\", \"namespace\": \"acme-dev-observability\", \"replicas\": 2, \"request_id\": \"8825f8e8-ae4c-42a7-b02b-b5e9315090ae\", \"service_name\": \"orders-api-dogfood\"}",
+      "summary": "acme-dev-observability/orders-api-dogfood: rollout verified for localhost:5001/orders-api-dogfood:r1 with 2 replicas.",
+      "tool_calls": [
+        "deploy_to_cluster"
+      ],
+      "trace": "[{\"kind\": \"tool\", \"tool\": \"deploy_to_cluster\", \"args\": {\"service_name\": \"orders-api-dogfood\", \"namespace\": \"acme-dev-observability\", \"image\": \"localhost:5001/orders-api-dogfood\", \"version\": \"r1\", \"image_uri\": \"localhost:5001/orders-api-dogfood:r1\", \"replicas\": 2, \"provider\": \"onprem\", \"ports\": [8080], \"health_path\": \"/healthz\"}, \"result\": {\"status\": \"success\", \"deployment_id\": \"acme-dev-observability/orders-api-dogfood\", \"namespace\": \"acme-dev-observability\", \"replicas_desired\": 2, \"endpoint\": \"http://localhost:80\", \"error\": \"\", \"applied\": true, \"rollout_verified\": true}}]",
+      "cost_metrics": {
+        "tool_calls_total": 1,
+        "tool_calls_by_name": {
+          "deploy_to_cluster": 1
+        },
+        "reasoning_steps": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0
+      },
+      "status": "success",
+      "created_at": "2026-10-03T12:53:12Z"
+    }
+  ]
+}

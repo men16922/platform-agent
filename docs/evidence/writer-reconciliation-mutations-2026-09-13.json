@@ -1,0 +1,30 @@
+{
+  "restored": true,
+  "source_sha256": "3956ddd3ed491e623ad6cb05136644ff19e2725adc09a76cf171f4f7386b8089",
+  "mutations": [
+    {
+      "mutation": "token_invalidity",
+      "exit_code": 1,
+      "summary": "1 failed, 54 passed in 0.11s",
+      "log": "/tmp/platform-agent-m85-mutation-token_invalidity.log"
+    },
+    {
+      "mutation": "author_account",
+      "exit_code": 1,
+      "summary": "1 failed, 54 passed in 0.12s",
+      "log": "/tmp/platform-agent-m85-mutation-author_account.log"
+    },
+    {
+      "mutation": "freshness",
+      "exit_code": 1,
+      "summary": "1 failed, 54 passed in 0.12s",
+      "log": "/tmp/platform-agent-m85-mutation-freshness.log"
+    },
+    {
+      "mutation": "final_snapshot",
+      "exit_code": 1,
+      "summary": "1 failed, 54 passed in 0.12s",
+      "log": "/tmp/platform-agent-m85-mutation-final_snapshot.log"
+    }
+  ]
+}

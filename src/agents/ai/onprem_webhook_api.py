@@ -38,7 +38,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.agents.ai import onprem_approvals as approvals
 from src.agents.platform.scope import attest_decision
@@ -68,6 +68,14 @@ class PipelineResult(BaseModel):
     executed_actions: list[str] = []
     skipped_actions: list[str] = []
     resolved: bool = False
+
+
+class RejectionRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    reason: str = Field(default="", max_length=2000)
+    # The dashboard derives this from its session. The local webhook does not
+    # authenticate this value; keep it explicitly caller-reported.
+    reported_by: str | None = Field(default=None, max_length=256)
 
 
 def _summary(result: dict[str, Any]) -> dict[str, Any]:
@@ -273,8 +281,8 @@ def _apply_approval(approval_id: str) -> PipelineResult:
         executor_out = execute_incident(
             record["decision"], origin=SpanOrigin.from_dict(record.get("origin"))
         )
-    approvals.resolve(approval_id, "approved", executor_out=executor_out)
-    _record_incident_from_approval(record, resolved=executor_out.get("resolved", False), executor_out=executor_out)
+    decided = approvals.resolve(approval_id, "approved", executor_out=executor_out)
+    _record_incident_from_approval(decided or record, resolved=executor_out.get("resolved", False), executor_out=executor_out)
     logger.info("onprem_webhook.approved id=%s", approval_id)
     return PipelineResult(
         status="approved",
@@ -290,7 +298,7 @@ def _apply_approval(approval_id: str) -> PipelineResult:
     )
 
 
-def _apply_rejection(approval_id: str) -> PipelineResult:
+def _apply_rejection(approval_id: str, metadata: RejectionRequest | None = None) -> PipelineResult:
     """Reject 코어 — HTTP 엔드포인트와 Slack 결정 폴러가 공유한다."""
     record = approvals.get(approval_id)
     if record is None:
@@ -298,12 +306,21 @@ def _apply_rejection(approval_id: str) -> PipelineResult:
     if record.get("status") != "pending":
         raise ValueError(f"Already {record.get('status')}: {approval_id}")
 
-    approvals.resolve(approval_id, "rejected")
-    _record_incident_from_approval(record, resolved=False)
+    incident_id = incidents.new_incident_id()
+    decided = approvals.resolve(
+        approval_id, "rejected",
+        rejection_reason=metadata.reason if metadata is not None else None,
+        reported_by=metadata.reported_by if metadata is not None else None,
+        incident_id=incident_id,
+    )
+    if decided is None:
+        raise ValueError(f"Already processed: {approval_id}")
+    _record_incident_from_approval(decided, resolved=False)
     logger.info("onprem_webhook.rejected id=%s", approval_id)
     return PipelineResult(
         status="rejected",
         approval_id=approval_id,
+        incident_id=incident_id,
         severity=record.get("severity"),
         runbook_id=record.get("runbook_id"),
         remediation_mode=record.get("remediation_mode"),
@@ -323,10 +340,10 @@ async def approve(approval_id: str) -> PipelineResult:
 
 
 @app.post("/reject/{approval_id}", response_model=PipelineResult)
-async def reject(approval_id: str) -> PipelineResult:
+async def reject(approval_id: str, metadata: RejectionRequest | None = None) -> PipelineResult:
     """Reject a parked P2 remediation; no execution occurs."""
     try:
-        return _apply_rejection(approval_id)
+        return _apply_rejection(approval_id, metadata)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc.args[0])) from exc
     except ValueError as exc:
@@ -384,13 +401,18 @@ def _record_incident_from_approval(
         remediation_mode=record.get("remediation_mode"),
         resolved=resolved,
         executed_actions=executor_out.get("executed_actions", []),
-        incident_id=executor_out.get("incident_id"),
+        incident_id=executor_out.get("incident_id") or record.get("incident_id"),
         confidence=analyzer.get("confidence"),
         triggered_at=normalized.get("triggered_at"),
         # Also dropped here until now: the parked record carries the incident's
         # span origin (added with the approval-path tracing), so the timeline row
         # can deep-link to the trace instead of ending the chain at approval.
         trace_id=(record.get("origin") or {}).get("trace_id"),
+        approval_id=record.get("approval_id"),
+        approval_decision=record.get("status"),
+        approval_decided_at=record.get("updated_at"),
+        rejection_reason=record.get("rejection_reason"),
+        reported_by=record.get("reported_by"),
     )
 
 

@@ -1,0 +1,20 @@
+{
+  "at": "2026-10-03T10:25:16.949195+00:00",
+  "candidate": "candidate-v14b-runtime-observation.json",
+  "runtime_source_count": 286,
+  "worktree_and_runtime_hashes_match": true,
+  "deployment_uid": "8567c751-fc44-4e28-b63e-e21af534661f",
+  "deployment_spec_unchanged": true,
+  "revision": "27",
+  "replicas": 2,
+  "new_http_health_observation": false,
+  "model_responses": 7,
+  "input_tokens": 11458,
+  "output_tokens": 2455,
+  "duration_min_sec": 3.7,
+  "duration_max_sec": 8.329,
+  "duration_sum_sec": 36.068,
+  "claims": 7,
+  "tool_calls": 0,
+  "deployment_records": 0
+}

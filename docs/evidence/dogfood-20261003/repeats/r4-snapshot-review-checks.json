@@ -1,0 +1,22 @@
+{
+  "isolated_copy": true,
+  "originals_unchanged": true,
+  "checks": [
+    {
+      "case": "changed-source-resealed",
+      "detected": true
+    },
+    {
+      "case": "bad-hash",
+      "detected": true
+    },
+    {
+      "case": "fabricated-quote",
+      "detected": true
+    },
+    {
+      "case": "partial-not-pass",
+      "detected": true
+    }
+  ]
+}

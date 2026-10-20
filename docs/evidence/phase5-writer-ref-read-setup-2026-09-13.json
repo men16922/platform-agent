@@ -1,0 +1,96 @@
+{
+  "milestone": "M82",
+  "observed_at": "2026-09-12T23:57:42.401435+00:00",
+  "status": "AUTHORIZED_PERMISSION_APPLIED_WAITING_FOR_KEY_PATH",
+  "authorization": "User explicitly said 승인 after the exact M80 scope review",
+  "repository": "men16922/platform-agent-p5e-authz-r2",
+  "repository_id": 1367740190,
+  "app_id": 4924748,
+  "installation_id": 161238144,
+  "permissions": {
+    "single_file": "write",
+    "pull_requests": "write",
+    "metadata": "read",
+    "contents": "read"
+  },
+  "permissions_evidence": {
+    "source": "authenticated GitHub UI",
+    "app_save_confirmed": true,
+    "installation_accept_confirmed": true,
+    "installation_selected_repo_count": 1,
+    "api_jwt_reverification": false
+  },
+  "trial": {
+    "scope": "r2-ref-read-01",
+    "mint_attempts": 0,
+    "operation_attempts": 0,
+    "new_branch_created": false,
+    "pr_count": 0,
+    "reason": "R2 PEM absent at recorded Downloads path; exact-name Spotlight search returned no result",
+    "original_preflight_summary": "/tmp/platform-agent-p5e-r2-20260913-run/r2-ref-read-01/summary.json",
+    "resend_permitted": false,
+    "key_handoff_can_start_first_mint": true
+  },
+  "operator_readback": {
+    "actions_enabled": false,
+    "existing_diagnostic": {
+      "commit": "9d17b496128a7ec2a771041816c937db7e6366a3",
+      "complete": true,
+      "files": {
+        "platform/tenants/acme.yaml": {
+          "mode": "100644",
+          "sha": "9a88d6901ff18873745c272665e175921156ca9a"
+        },
+        "platform/tenants/globex.yaml": {
+          "mode": "100644",
+          "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+        }
+      },
+      "main": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "observer": "operator",
+      "parents": [
+        "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c"
+      ],
+      "ref": "p5e/20260913-02-diagnostic"
+    },
+    "main": {
+      "commit": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "complete": true,
+      "files": {
+        "platform/tenants/acme.yaml": {
+          "mode": "100644",
+          "sha": "398abe6c528238244a8e3713bc2b48523ae8b915"
+        },
+        "platform/tenants/globex.yaml": {
+          "mode": "100644",
+          "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+        }
+      },
+      "main": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "observer": "operator",
+      "parents": [],
+      "ref": "main"
+    },
+    "new_branch_absent": true,
+    "pr_count": 0,
+    "private": true
+  },
+  "retention": {
+    "r2_app_installation_repository_retained": true,
+    "existing_branches_unchanged": true,
+    "checkout_exists": true,
+    "r2_key_at_recorded_path_exists": false,
+    "file_deletions_by_this_attempt": 0,
+    "no_new_key_created": true
+  },
+  "gate": {
+    "command": "make check",
+    "environment": "2026-09-13 local macOS Python 3.13",
+    "passed": 3074,
+    "skipped": 2,
+    "warnings": 21,
+    "seconds": 84.64,
+    "log": "/tmp/platform-agent-m82-gate.log",
+    "remote_ci": "not run"
+  }
+}

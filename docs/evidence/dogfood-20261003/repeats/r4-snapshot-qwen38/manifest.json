@@ -1,0 +1,29 @@
+{
+  "at": "2026-10-03T10:44:40.726794+00:00",
+  "candidate": "candidate-v15-snapshot-contract.json",
+  "model": "mlx-community/Qwen3.8-27B-4bit",
+  "case_ids": [
+    "counterexample",
+    "lookalike",
+    "supported-recovery"
+  ],
+  "settings": {
+    "max_tokens": 1024,
+    "extra_body": {
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      }
+    }
+  },
+  "timeout_seconds": 90,
+  "sdk_http_retries": 0,
+  "path": "route_deploy(snapshot=...) -> current snapshot factory; no tools; direct local test, not browser",
+  "files": {
+    "docs/evidence/dogfood-20261003/repeats/r4-snapshot-ui/cases.json": "08d6cd6b1fb73de2d377eb9f777de4724db7fb9bfffa61d31a48d4c0dc40425d",
+    "experiments/dogfood-diagnosis/compare_snapshot_model.py": "87be324f7a47f60409dbcff5b71a2ecc3ffbed390a7285d772f92f1a088e4242",
+    "src/agents/ai/snapshot_diagnosis.py": "3db01f5dceb24e02a48866c7f7a07dcb90cd003b5b64519e08cb49962287c049",
+    "src/agents/ai/local_deployer.py": "bfd0b9ae306817dba5964a622035df750254e805a92859d4ae5767f8705a9c97",
+    "src/agents/ai/model_router.py": "2466f4e0545d163a3112c16d3f54fcd8912d26c959b0edcb4959b1b02b23ee64"
+  },
+  "limits": "Same cases/factory, changed model and explicit no-thinking setting. Not general accuracy/latency; no automatic model replacement."
+}

@@ -1,0 +1,14 @@
+{
+  "scope": "working tree source; not loaded into the running local servers",
+  "files": {
+    "src/agents/ai/state_store.py": "8cce096e3f878b46e3bfc28e979e2e96054468fe33a7e4a57ab909d44f3f8c4a",
+    "src/agents/ai/local_runs.py": "d874aeb9a96c0425e4c74c363873e81d9b14061deb076453d505c952d6304b21",
+    "src/agents/ai/local_deploy_api.py": "310105fda6a7bbc139e38d679c91600b9d309e71f65891ea19d933b849f02293",
+    "dashboard/src/app/api/dashboard/agents/deploy/stream/route.ts": "f44b5f2683e29079d121209fa8e8fab5eba9228cb58acd8dfef84a2af0542ace",
+    "dashboard/src/app/api/dashboard/agents/runs/[id]/route.ts": "adc2269710b6ad9a3c8f65674c66aef3ec2bc66fa0fa379604a572ddc6f82d61",
+    "dashboard/src/components/agent-deploy-chat.tsx": "3312213d7271cd31785af5bbb9879973e82d67adc27ed5f19f9d9216d232b5a8",
+    "dashboard/src/lib/agent-run-view.ts": "6818fa8c9a76f1420302c3b6d9e8fe906d702e80cb0df3595b4126e8feaf04fe",
+    "tests/test_local_runs.py": "e40ba5abe6f2cac56792a39756545f6dcef872a236646652025ef02b243dcb33",
+    "tests/test_local_run_dashboard.py": "c4a1f361e69e68cc2adc14d10545e42466e5b2f29e52fbaac4a25696d9a99b88"
+  }
+}

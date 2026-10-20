@@ -1,0 +1,27 @@
+{
+ "arm": "unseeded",
+ "path": "upstream",
+ "seed": null,
+ "prompt_sha256": "c168b394330ae471",
+ "text": "The pod enters a continuous restart loop due to a configuration error in its startup probe.",
+ "text_sha256": "b64f6cb50a2e4735bd9d38dd97e0fa5f348dbae1bcc916c65a6f99ffececca29",
+ "finish_reason": "stop",
+ "non_top1_tokens": null,
+ "logprobs_tokens": null,
+ "seconds": 0.27,
+ "request": {
+  "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "messages": [
+   {
+    "role": "user",
+    "content": "Write one short sentence about a Kubernetes pod that keeps restarting."
+   }
+  ],
+  "max_tokens": 48,
+  "temperature": 0.7,
+  "top_p": 1.0,
+  "top_k": 0,
+  "repetition_penalty": 0,
+  "stream": false
+ }
+}

@@ -1,0 +1,56 @@
+FF....                                                                   [100%]
+=================================== FAILURES ===================================
+_______ test_waiting_text_does_not_cross_current_pod_identity[namespace] _______
+
+change = 'namespace'
+
+    @pytest.mark.parametrize("change", ["namespace", "owner", "image", "terminating", "no_uid", "previous_revision"])
+    def test_waiting_text_does_not_cross_current_pod_identity(change):
+        d, objects = snapshot()
+        pod = objects[2]
+        pod["status"]["containerStatuses"][0]["state"]["waiting"]["message"] = "private other workload detail"
+        if change == "namespace": pod["metadata"]["namespace"] = "globex"
+        elif change == "owner": pod["metadata"]["ownerReferences"][0]["uid"] = "unrelated"
+        elif change == "image": pod["spec"]["containers"][0]["image"] = "other:image"
+        elif change == "terminating": pod["metadata"]["deletionTimestamp"] = NOW.isoformat()
+        elif change == "no_uid": pod["metadata"].pop("uid")
+        elif change == "previous_revision":
+            pod["metadata"]["ownerReferences"][0]["uid"] = "rs-1"
+            pod["spec"]["containers"][0]["image"] = "app:good"
+        result = pod_waiting_observations(assess(d, objects), objects)
+>       assert result["records"] == []
+E       AssertionError: assert [{'container'...78a96e', ...}] == []
+E         
+E         Left contains one more item: {'container': 'orders', 'image': 'app:missing', 'message': 'private other workload detail', 'message_sha256': '57698eb33ae2751b66b3a52d09ae10d37f3bdc7f9c5f6f83b339d8a7cf78a96e', ...}
+E         Use -v to get more diff
+
+tests/test_deployment_evidence.py:196: AssertionError
+_________ test_waiting_text_does_not_cross_current_pod_identity[owner] _________
+
+change = 'owner'
+
+    @pytest.mark.parametrize("change", ["namespace", "owner", "image", "terminating", "no_uid", "previous_revision"])
+    def test_waiting_text_does_not_cross_current_pod_identity(change):
+        d, objects = snapshot()
+        pod = objects[2]
+        pod["status"]["containerStatuses"][0]["state"]["waiting"]["message"] = "private other workload detail"
+        if change == "namespace": pod["metadata"]["namespace"] = "globex"
+        elif change == "owner": pod["metadata"]["ownerReferences"][0]["uid"] = "unrelated"
+        elif change == "image": pod["spec"]["containers"][0]["image"] = "other:image"
+        elif change == "terminating": pod["metadata"]["deletionTimestamp"] = NOW.isoformat()
+        elif change == "no_uid": pod["metadata"].pop("uid")
+        elif change == "previous_revision":
+            pod["metadata"]["ownerReferences"][0]["uid"] = "rs-1"
+            pod["spec"]["containers"][0]["image"] = "app:good"
+        result = pod_waiting_observations(assess(d, objects), objects)
+>       assert result["records"] == []
+E       AssertionError: assert [{'container'...78a96e', ...}] == []
+E         
+E         Left contains one more item: {'container': 'orders', 'image': 'app:missing', 'message': 'private other workload detail', 'message_sha256': '57698eb33ae2751b66b3a52d09ae10d37f3bdc7f9c5f6f83b339d8a7cf78a96e', ...}
+E         Use -v to get more diff
+
+tests/test_deployment_evidence.py:196: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_deployment_evidence.py::test_waiting_text_does_not_cross_current_pod_identity[namespace]
+FAILED tests/test_deployment_evidence.py::test_waiting_text_does_not_cross_current_pod_identity[owner]
+2 failed, 4 passed, 21 deselected in 0.07s

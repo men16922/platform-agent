@@ -1,0 +1,32 @@
+{
+  "label": "manual-restore",
+  "started_at": "2026-10-03T06:51:19.096232+00:00",
+  "commands_elapsed_sec": 3.858,
+  "start_to_health_observation_sec": 12.833,
+  "commands": [
+    {
+      "args": [
+        "set",
+        "image",
+        "deployment/orders-api-dogfood",
+        "orders-api-dogfood=localhost:5001/orders-api-dogfood:r0"
+      ],
+      "exit": 0,
+      "stdout": "deployment.apps/orders-api-dogfood image updated\n",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "rollout",
+        "status",
+        "deployment/orders-api-dogfood",
+        "--timeout=60s"
+      ],
+      "exit": 0,
+      "stdout": "Waiting for deployment \"orders-api-dogfood\" rollout to finish: 0 out of 2 new replicas have been updated...\nWaiting for deployment \"orders-api-dogfood\" rollout to finish: 1 out of 2 new replicas have been updated...\nWaiting for deployment \"orders-api-dogfood\" rollout to finish: 1 out of 2 new replicas have been updated...\nWaiting for deployment \"orders-api-dogfood\" rollout to finish: 1 out of 2 new replicas have been updated...\nWaiting for deployment \"orders-api-dogfood\" rollout to finish: 1 old replicas are pending termination...\nWaiting for deployment \"orders-api-dogfood\" rollout to finish: 1 old replicas are pending termination...\ndeployment \"orders-api-dogfood\" successfully rolled out\n",
+      "stderr": ""
+    }
+  ],
+  "human_typing_time_included": false,
+  "method": "Coding assistant executes the two explicit operator commands sequentially with no LLM; not a human usability study."
+}

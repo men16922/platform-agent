@@ -1,0 +1,34 @@
+..F
+=================================== FAILURES ===================================
+_ test_actual_readonly_factory_and_router_preserve_raw_and_enforce_phase[valid-True] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x107bcfe10>
+mode = 'valid', streaming = True
+
+    @pytest.mark.parametrize('streaming',[False,True])
+    @pytest.mark.parametrize('mode',['valid','wrong_phase','recollect'])
+    def test_actual_readonly_factory_and_router_preserve_raw_and_enforce_phase(monkeypatch,mode,streaming):
+        factory,calls,responses,raw,result=factory_for(monkeypatch,mode)
+        async def run():
+            if streaming:
+                events=[e async for e in mr.route_deploy_stream('inspect','local-qwen','onprem',read_only=True,agent_factory=factory)]
+                return events[-1]['outcome']
+            return await mr.route_deploy('inspect','local-qwen','onprem',read_only=True,agent_factory=factory)
+        outcome=asyncio.run(run());assert len(calls)==1 and len(responses)==2
+        report=outcome.inspection[-1];proposal=report['investigation_proposal']
+        assert outcome.model_completion['text']==raw[0]
+        assert any(raw[0] in t.get('text','') for t in outcome.trace)
+        assert proposal['semantic_verified'] is False and proposal['execution_authorized'] is False
+        assert report['sources']==result['evidence']['sources']
+        if mode=='valid':
+>           assert proposal['status']=='applicability_checked'
+E           AssertionError: assert 'invalid_model_output' == 'applicability_checked'
+E             
+E             - applicability_checked
+E             + invalid_model_output
+
+tests/test_investigation_proposals.py:86: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_investigation_proposals.py::test_actual_readonly_factory_and_router_preserve_raw_and_enforce_phase[valid-True]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 2 passed in 0.66s

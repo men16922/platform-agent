@@ -1,6 +1,6 @@
 # DECISIONS — platform-agent
 
-최종 갱신: 2026-08-17
+최종 갱신: 2026-10-20
 
 > 되돌리기 어려운 결정만. 형식: **Decision / Reason / Impact**. 최신이 위.
 
@@ -17,6 +17,18 @@
 > - **GitAIOps 실습서(Notiflex)** (외부 학습 레포) — Rollouts **AnalysisTemplate 메트릭 자동판정**(우리 무기한 pause 게이트의 미완점) · **OTel→Tempo로 4-step 파이프라인 자체 트레이싱** · 런북 **사전확인/사후검증 3단**(우리 `RunbookStep`엔 없음) · **allow/ask/deny 권한통제** · **Sync Wave**. 안티패턴=Kafka·멀티 노드풀·GKE 종속 시크릿·`--dangerously-skip-permissions`. 상세 → `docs/reference/gitaiops-notiflex-book.md`. (검토 2026-07-25)
 
 ---
+
+## D53 — supplied snapshot의 유사 증상 원인 관계는 사람 검토 경계로 둔다 (2026-10-20, 사용자 결정)
+
+- **Decision:** 고정 Qwen에서 lookalike(증상 이름으로 원인 차이 단정)는 알려진 모델 한계로 기록하고, R3 진단 시나리오의 해당 기준은 "실행·권한 범위 확대0, 모델 해석은 unverified 표시, 판단은 사람 검토"로 충족한 것으로 본다. 이 질문에 대한 추가 계약/프롬프트 실험은 하지 않는다. 삽입 지시 복구 가드(코드 거부)는 유지한다.
+- **Reason:** 역할 인용 계약·witness·cause_relation 필드 세 변형이 실패했고(relation-probe/review.json), 산문에서 증상과 근본 원인의 차이는 코드가 검증할 수 없다. 사용자가 모델 교체를 하지 않기로 했다.
+- **Impact:** 진단 출력의 원인 관계 서술은 semantic_verified=false 그대로 사람이 판단한다. 이를 모델 의미 정확도 통과로 세지 않는다. 모델 고정 해제나 외부 에이전트 비교(R5)는 별도 승인 시 재개한다.
+
+## D52 — Phase 5 플래너는 독립 Python Lambda, PR 발행 권한은 별도 경계
+
+- **Decision:** 프로덕션 실행 위치를 **독립 AWS Lambda(Python 3.13)**로 선택한다(설계 선택, 미배포). Next.js 서버가 전용 production OIDC 역할로 Invoke API를 호출한다. 로컬에서는 같은 Python 진입 함수를 사용한다. 플래너에는 GitHub 쓰기 토큰·공유 write App 서명키·클러스터 자격증명을 주지 않는다.
+- **Reason:** `.git`은 불필요하다. 다만 초기 두 파일 실증은 호스트 Helm values에 의존했다(M55 정정). P5-A는 catalog·tenant·대상 values를 같은 SHA로 읽어 기존 설치 가능성 검사까지 격리한다. FastAPI는 이미 있고 Vercel Python도 지원되므로 **기존 배제 근거는 철회**한다. Lambda 선택 이유는 실행 불가능성 대신 AWS OIDC/CDK 재사용과 역할·패키지 분리다. 상세·비교·인가 계약: `docs/plans/2026-09-05-phase5-planner-runtime.md`.
+- **Impact:** P5-A~D(snapshot·인가·읽기·Lambda·CDK·preview UI)는 M55~M58로 완료했다. 초기 GitHub 어댑터는 공개 저장소의 익명 GET만 사용해 토큰 발급 권한이 없다. 로컬 실제 세션·DynamoDB Local 검증을 마쳤고, 사용자 역할 변경은 partial Update로 write grant를 보존한다. 다음은 발행 자격증명 경계 실증안이다. `UserRecord.tenants`는 읽기 grant이고 live 조회 실패의 demo fallback을 쓰기 인가에 재사용하지 않는다. 자동 PR 발행은 **요청의 한 파일 경계와 토큰의 권한 경계를 함께** 증명해야 한다. `single_file` permission은 존재하지만 branch 생성에는 문서상 Contents write가 필요하므로 전체 흐름이 tenant 한 곳에 한정된다고 아직 주장하지 않는다. 원격 배포·App 생성·PR 발행·기존 설정 변경은 이번 결정에서 실행하지 않았다.
 
 ## D51 — **정적검사는 게이트에 들어가지 않는다. 측정만 기록한다**
 

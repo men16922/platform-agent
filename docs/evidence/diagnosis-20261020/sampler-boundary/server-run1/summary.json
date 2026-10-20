@@ -1,0 +1,224 @@
+{
+ "rows": [
+  {
+   "arm": "shared",
+   "path": "upstream",
+   "seed": 42,
+   "prompt_sha256": "c168b394330ae471",
+   "text": "The pod remains in a crashloopback state due to a configuration error that prevents it from starting successfully.",
+   "text_sha256": "6c3ef6a8b96d165e944f36000b0e6044bad3e596f52bad99558336df4a0ebf56",
+   "finish_reason": "stop",
+   "non_top1_tokens": 0,
+   "logprobs_tokens": 22,
+   "seconds": 2.25
+  },
+  {
+   "arm": "shared",
+   "path": "upstream",
+   "seed": 31415,
+   "prompt_sha256": "c168b394330ae471",
+   "text": "The pod remains in a crashloopback state due to a configuration error that prevents it from starting successfully.",
+   "text_sha256": "6c3ef6a8b96d165e944f36000b0e6044bad3e596f52bad99558336df4a0ebf56",
+   "finish_reason": "stop",
+   "non_top1_tokens": 0,
+   "logprobs_tokens": 22,
+   "seconds": 0.29
+  },
+  {
+   "arm": "shared",
+   "path": "upstream",
+   "seed": 27182,
+   "prompt_sha256": "c168b394330ae471",
+   "text": "The pod remains in a crashloopback state due to a configuration error that prevents it from starting successfully.",
+   "text_sha256": "6c3ef6a8b96d165e944f36000b0e6044bad3e596f52bad99558336df4a0ebf56",
+   "finish_reason": "stop",
+   "non_top1_tokens": 0,
+   "logprobs_tokens": 22,
+   "seconds": 0.31
+  },
+  {
+   "arm": "shared",
+   "path": "upstream",
+   "seed": 42,
+   "prompt_sha256": "c168b394330ae471",
+   "text": "The pod remains in a crashloopback state due to a configuration error that prevents it from starting successfully.",
+   "text_sha256": "6c3ef6a8b96d165e944f36000b0e6044bad3e596f52bad99558336df4a0ebf56",
+   "finish_reason": "stop",
+   "non_top1_tokens": 0,
+   "logprobs_tokens": 22,
+   "seconds": 0.3
+  },
+  {
+   "arm": "nonce",
+   "path": "upstream",
+   "seed": 42,
+   "prompt_sha256": "7b0b85c3c8fba99d",
+   "text": "The pod remains in a crashloopback state due to a configuration error that prevents it from starting properly.",
+   "text_sha256": "e81dfb1759f850c469925062155ed541150c11af382a195d7778bad6dc9bf8a5",
+   "finish_reason": "stop",
+   "non_top1_tokens": null,
+   "logprobs_tokens": null,
+   "seconds": 0.34
+  },
+  {
+   "arm": "nonce",
+   "path": "upstream",
+   "seed": 31415,
+   "prompt_sha256": "348d78775c1fa673",
+   "text": "The pod cycles through crashloopbackback states because of a missing dependency in its container configuration.",
+   "text_sha256": "5df8f4791ed907570954d8c789fce853a8148badc3eba955422924282a018c6b",
+   "finish_reason": "stop",
+   "non_top1_tokens": null,
+   "logprobs_tokens": null,
+   "seconds": 0.32
+  },
+  {
+   "arm": "nonce",
+   "path": "upstream",
+   "seed": 27182,
+   "prompt_sha256": "c0b2cf380ca62447",
+   "text": "The pod remains in a crashloopback state due to a configuration error that prevents it from starting properly.",
+   "text_sha256": "e81dfb1759f850c469925062155ed541150c11af382a195d7778bad6dc9bf8a5",
+   "finish_reason": "stop",
+   "non_top1_tokens": null,
+   "logprobs_tokens": null,
+   "seconds": 0.33
+  },
+  {
+   "arm": "shared",
+   "path": "proxy",
+   "seed": 42,
+   "prompt_sha256": "c168b394330ae471",
+   "text": "The pod remains in a crashloopback state due to a configuration error that prevents it from starting successfully.",
+   "text_sha256": "6c3ef6a8b96d165e944f36000b0e6044bad3e596f52bad99558336df4a0ebf56",
+   "finish_reason": "stop",
+   "non_top1_tokens": null,
+   "logprobs_tokens": null,
+   "seconds": 0.29
+  },
+  {
+   "arm": "shared",
+   "path": "proxy",
+   "seed": 31415,
+   "prompt_sha256": "c168b394330ae471",
+   "text": "The pod remains in a crashloopback state due to a configuration error that prevents it from starting successfully.",
+   "text_sha256": "6c3ef6a8b96d165e944f36000b0e6044bad3e596f52bad99558336df4a0ebf56",
+   "finish_reason": "stop",
+   "non_top1_tokens": null,
+   "logprobs_tokens": null,
+   "seconds": 0.29
+  },
+  {
+   "arm": "shared",
+   "path": "proxy",
+   "seed": 27182,
+   "prompt_sha256": "c168b394330ae471",
+   "text": "The pod remains in a crashloopback state due to a configuration error that prevents it from starting successfully.",
+   "text_sha256": "6c3ef6a8b96d165e944f36000b0e6044bad3e596f52bad99558336df4a0ebf56",
+   "finish_reason": "stop",
+   "non_top1_tokens": null,
+   "logprobs_tokens": null,
+   "seconds": 0.29
+  },
+  {
+   "arm": "shared",
+   "path": "proxy",
+   "seed": 42,
+   "prompt_sha256": "c168b394330ae471",
+   "text": "The pod remains in a crashloopback state due to a configuration error that prevents it from starting successfully.",
+   "text_sha256": "6c3ef6a8b96d165e944f36000b0e6044bad3e596f52bad99558336df4a0ebf56",
+   "finish_reason": "stop",
+   "non_top1_tokens": null,
+   "logprobs_tokens": null,
+   "seconds": 0.3
+  },
+  {
+   "arm": "nonce",
+   "path": "proxy",
+   "seed": 42,
+   "prompt_sha256": "9eafe7c0f1c0fe80",
+   "text": "The pod remains in a crashloopback state due to a configuration error that prevents it from starting properly.",
+   "text_sha256": "e81dfb1759f850c469925062155ed541150c11af382a195d7778bad6dc9bf8a5",
+   "finish_reason": "stop",
+   "non_top1_tokens": null,
+   "logprobs_tokens": null,
+   "seconds": 0.33
+  },
+  {
+   "arm": "nonce",
+   "path": "proxy",
+   "seed": 31415,
+   "prompt_sha256": "61e5c170f53500dd",
+   "text": "The pod remains in a crashloopback state due to a configuration error that prevents it from starting successfully.",
+   "text_sha256": "6c3ef6a8b96d165e944f36000b0e6044bad3e596f52bad99558336df4a0ebf56",
+   "finish_reason": "stop",
+   "non_top1_tokens": null,
+   "logprobs_tokens": null,
+   "seconds": 0.35
+  },
+  {
+   "arm": "nonce",
+   "path": "proxy",
+   "seed": 27182,
+   "prompt_sha256": "a6726eea5a430a03",
+   "text": "The pod remains in a crashloopback state due to a missing dependency in its container configuration.",
+   "text_sha256": "bed813a703f8ffd774bfb6fbedebf3f68da0c41c3c0863ff9c5eadac0bf54666",
+   "finish_reason": "stop",
+   "non_top1_tokens": null,
+   "logprobs_tokens": null,
+   "seconds": 0.32
+  },
+  {
+   "arm": "unseeded",
+   "path": "upstream",
+   "seed": null,
+   "prompt_sha256": "c168b394330ae471",
+   "text": "The pod enters a continuous restart loop due to a configuration error in its startup probe.",
+   "text_sha256": "b64f6cb50a2e4735bd9d38dd97e0fa5f348dbae1bcc916c65a6f99ffececca29",
+   "finish_reason": "stop",
+   "non_top1_tokens": null,
+   "logprobs_tokens": null,
+   "seconds": 0.28
+  },
+  {
+   "arm": "unseeded",
+   "path": "upstream",
+   "seed": null,
+   "prompt_sha256": "c168b394330ae471",
+   "text": "The pod enters a continuous restart loop due to a configuration error in its startup probe.",
+   "text_sha256": "b64f6cb50a2e4735bd9d38dd97e0fa5f348dbae1bcc916c65a6f99ffececca29",
+   "finish_reason": "stop",
+   "non_top1_tokens": null,
+   "logprobs_tokens": null,
+   "seconds": 0.28
+  },
+  {
+   "arm": "unseeded",
+   "path": "upstream",
+   "seed": null,
+   "prompt_sha256": "c168b394330ae471",
+   "text": "The pod enters a continuous restart loop due to a configuration error in its startup probe.",
+   "text_sha256": "b64f6cb50a2e4735bd9d38dd97e0fa5f348dbae1bcc916c65a6f99ffececca29",
+   "finish_reason": "stop",
+   "non_top1_tokens": null,
+   "logprobs_tokens": null,
+   "seconds": 0.27
+  }
+ ],
+ "summary": {
+  "upstream_shared_distinct_over_3_seeds": 1,
+  "proxy_shared_distinct_over_3_seeds": 1,
+  "upstream_vs_proxy_same_for_same_seed": {
+   "42": true,
+   "31415": true,
+   "27182": true
+  },
+  "unseeded_distinct_over_3": 1,
+  "upstream_logprob_non_top1": [
+   0,
+   0,
+   0,
+   0
+  ]
+ }
+}

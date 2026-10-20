@@ -1,0 +1,29 @@
+{
+  "at": "2026-10-03T09:00:49.005195+00:00",
+  "candidate": "candidate-v10-model-proxy.json",
+  "hashes": {
+    "worktree": {
+      "checked": 283,
+      "mismatches": []
+    },
+    "runtime": {
+      "checked": 283,
+      "mismatches": []
+    }
+  },
+  "owned_processes": {
+    "mlx": {
+      "pid": 97368,
+      "running": true,
+      "expected_command": true,
+      "expected_model": true
+    },
+    "proxy": {
+      "pid": 80940,
+      "running": true,
+      "expected_command": true,
+      "expected_model": null
+    }
+  },
+  "limit": "Process and file checks only; prior actual restored model response recorded separately."
+}

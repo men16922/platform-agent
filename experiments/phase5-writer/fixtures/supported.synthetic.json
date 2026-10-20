@@ -1,0 +1,258 @@
+{
+  "schema_version": 1,
+  "synthetic": true,
+  "repository": "men16922/platform-agent-p5e-authz-lab",
+  "expected_identity": {
+    "app_id": 123,
+    "installation_id": 456,
+    "repository_id": 789
+  },
+  "credential_control": {
+    "identity": "installation-token",
+    "status": 200,
+    "repository": "men16922/platform-agent-p5e-authz-lab",
+    "app_id": 123,
+    "installation_id": 456,
+    "repository_id": 789,
+    "permissions": {
+      "single_file": "write",
+      "pull_requests": "write",
+      "metadata": "read"
+    },
+    "single_file_paths": [
+      "platform/tenants/acme.yaml"
+    ],
+    "repository_selection": [
+      789
+    ]
+  },
+  "seed": {
+    "observer": "operator",
+    "complete": true,
+    "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "main": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "parents": [],
+    "files": {
+      "platform/tenants/acme.yaml": {
+        "mode": "100644",
+        "sha": "398abe6c528238244a8e3713bc2b48523ae8b915"
+      },
+      "platform/tenants/globex.yaml": {
+        "mode": "100644",
+        "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+      }
+    },
+    "ref": "main"
+  },
+  "branch_origin": "app",
+  "selected_branch": "p5e/20260905-01",
+  "branch": {
+    "identity": "installation-token",
+    "method": "POST",
+    "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/refs",
+    "body": {
+      "ref": "refs/heads/p5e/20260905-01",
+      "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "status": 201,
+    "response": {
+      "ref": "refs/heads/p5e/20260905-01",
+      "object": {
+        "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    }
+  },
+  "branch_snapshot": {
+    "observer": "operator",
+    "complete": true,
+    "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "main": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "parents": [],
+    "files": {
+      "platform/tenants/acme.yaml": {
+        "mode": "100644",
+        "sha": "398abe6c528238244a8e3713bc2b48523ae8b915"
+      },
+      "platform/tenants/globex.yaml": {
+        "mode": "100644",
+        "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+      }
+    },
+    "ref": "p5e/20260905-01"
+  },
+  "target": {
+    "identity": "installation-token",
+    "method": "PUT",
+    "path": "/repos/men16922/platform-agent-p5e-authz-lab/contents/platform/tenants/acme.yaml",
+    "body": {
+      "branch": "p5e/20260905-01",
+      "sha": "398abe6c528238244a8e3713bc2b48523ae8b915",
+      "content": "IyBTeW50aGV0aWMgUDUtRSBmaXh0dXJlLiBObyBkZWxpdmVyeSBjb250cm9sbGVyIHdhdGNoZXMgdGhpcyByZXBvc2l0b3J5Lgppc29sYXRpb246IHNvZnQKbmFtaW5nX3ByZWZpeDogYWNtZQplbnZpcm9ubWVudHM6CiAgZGV2OgogICAgY2x1c3RlcjogcDVlLWRldgogICAgc3Vic3RyYXRlOiBraW5kCiAgICBkZWxpdmVyeTogYXJnb2NkCiAgICBhZGRvbnM6CiAgICAgIGxvZ2dpbmc6IGxva2kgNy4xLjAKICBwcm9kOgogICAgY2x1c3RlcjogcDVlLXByb2QKICAgIHN1YnN0cmF0ZTogazNzCiAgICBkZWxpdmVyeTogZmx1eAogICAgYWRkb25zOgogICAgICBvYnNlcnZhYmlsaXR5OiBrdWJlLXByb21ldGhldXMtc3RhY2sgODcuMTcuMAogICAgICBsb2dnaW5nOiBsb2tpIDcuMS4wCg=="
+    },
+    "status": 200,
+    "before": {
+      "observer": "operator",
+      "complete": true,
+      "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "main": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "parents": [],
+      "files": {
+        "platform/tenants/acme.yaml": {
+          "mode": "100644",
+          "sha": "398abe6c528238244a8e3713bc2b48523ae8b915"
+        },
+        "platform/tenants/globex.yaml": {
+          "mode": "100644",
+          "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+        }
+      },
+      "ref": "p5e/20260905-01"
+    },
+    "after": {
+      "observer": "operator",
+      "complete": true,
+      "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "main": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "parents": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "files": {
+        "platform/tenants/acme.yaml": {
+          "mode": "100644",
+          "sha": "9a88d6901ff18873745c272665e175921156ca9a"
+        },
+        "platform/tenants/globex.yaml": {
+          "mode": "100644",
+          "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+        }
+      },
+      "ref": "p5e/20260905-01"
+    },
+    "response": {
+      "commit_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "blob_sha": "9a88d6901ff18873745c272665e175921156ca9a"
+    }
+  },
+  "sibling": {
+    "identity": "installation-token",
+    "method": "PUT",
+    "path": "/repos/men16922/platform-agent-p5e-authz-lab/contents/platform/tenants/globex.yaml",
+    "body": {
+      "branch": "p5e/20260905-01",
+      "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4",
+      "content": "IyBTeW50aGV0aWMgUDUtRSBmaXh0dXJlLiBObyBkZWxpdmVyeSBjb250cm9sbGVyIHdhdGNoZXMgdGhpcyByZXBvc2l0b3J5Lgppc29sYXRpb246IHNvZnQKbmFtaW5nX3ByZWZpeDogZ2xvYmV4CmVudmlyb25tZW50czoKICBkZXY6CiAgICBjbHVzdGVyOiBwNWUtZGV2CiAgICBzdWJzdHJhdGU6IGtpbmQKICAgIGRlbGl2ZXJ5OiBhcmdvY2QKICAgIGFkZG9uczoKICAgICAgbG9nZ2luZzogbG9raSA3LjEuMAogIHByb2Q6CiAgICBjbHVzdGVyOiBwNWUtcHJvZAogICAgc3Vic3RyYXRlOiBrM3MKICAgIGRlbGl2ZXJ5OiBmbHV4CiAgICBhZGRvbnM6CiAgICAgIG9ic2VydmFiaWxpdHk6IGt1YmUtcHJvbWV0aGV1cy1zdGFjayA4Ny4xNy4wCiAgICAgIGxvZ2dpbmc6IGxva2kgNy4xLjAK"
+    },
+    "status": 403,
+    "before": {
+      "observer": "operator",
+      "complete": true,
+      "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "main": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "parents": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "files": {
+        "platform/tenants/acme.yaml": {
+          "mode": "100644",
+          "sha": "9a88d6901ff18873745c272665e175921156ca9a"
+        },
+        "platform/tenants/globex.yaml": {
+          "mode": "100644",
+          "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+        }
+      },
+      "ref": "p5e/20260905-01"
+    },
+    "after": {
+      "observer": "operator",
+      "complete": true,
+      "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "main": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "parents": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "files": {
+        "platform/tenants/acme.yaml": {
+          "mode": "100644",
+          "sha": "9a88d6901ff18873745c272665e175921156ca9a"
+        },
+        "platform/tenants/globex.yaml": {
+          "mode": "100644",
+          "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+        }
+      },
+      "ref": "p5e/20260905-01"
+    },
+    "denial_controls": {
+      "token_valid": true,
+      "target_exists": true,
+      "sha_matches": true,
+      "rate_limit_excluded": true
+    }
+  },
+  "pull_request": {
+    "identity": "installation-token",
+    "method": "POST",
+    "path": "/repos/men16922/platform-agent-p5e-authz-lab/pulls",
+    "body": {
+      "head": "p5e/20260905-01",
+      "base": "main",
+      "draft": true,
+      "maintainer_can_modify": false
+    },
+    "status": 201,
+    "after": {
+      "observer": "operator",
+      "complete": true,
+      "commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "main": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "parents": [
+        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      ],
+      "files": {
+        "platform/tenants/acme.yaml": {
+          "mode": "100644",
+          "sha": "9a88d6901ff18873745c272665e175921156ca9a"
+        },
+        "platform/tenants/globex.yaml": {
+          "mode": "100644",
+          "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+        }
+      },
+      "ref": "p5e/20260905-01"
+    },
+    "response": {
+      "number": 1,
+      "url": "https://github.com/men16922/platform-agent-p5e-authz-lab/pull/1",
+      "author_app_id": 123,
+      "head": {
+        "ref": "p5e/20260905-01",
+        "sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "repo": "men16922/platform-agent-p5e-authz-lab"
+      },
+      "base": {
+        "ref": "main",
+        "sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "repo": "men16922/platform-agent-p5e-authz-lab"
+      },
+      "draft": true,
+      "merged": false
+    },
+    "files": {
+      "status": 200,
+      "complete": true,
+      "items": [
+        {
+          "filename": "platform/tenants/acme.yaml",
+          "status": "modified",
+          "additions": 1,
+          "deletions": 0,
+          "sha": "9a88d6901ff18873745c272665e175921156ca9a"
+        }
+      ],
+      "identity": "installation-token",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/pulls/1/files?per_page=100"
+    }
+  }
+}

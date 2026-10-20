@@ -1,0 +1,49 @@
+{
+  "at": "2026-10-03T07:33:10.524031+00:00",
+  "candidate": "candidate-v7-rejection-metadata.json",
+  "method": "Actual Chrome form -> Next API authenticated local-dev session -> live loopback webhook -> file readback, owned webhook restart, browser reload",
+  "fixture_kind": "Two manually parked synthetic approval fixtures, not observed outages or detector/analyzer E2E",
+  "ids": [
+    "APR-AB875982",
+    "APR-995861A4"
+  ],
+  "records": [
+    {
+      "approval_id": "APR-AB875982",
+      "status": "rejected",
+      "updated_at": "2026-10-03T07:30:00.490234+00:00",
+      "rejection_reason": "합성 검증 요청입니다. 현재 장애 근거가 없어 조치를 거부합니다.\n입력 사유가 저장되는지 확인합니다.",
+      "reported_by": "local-dev"
+    },
+    {
+      "approval_id": "APR-995861A4",
+      "status": "rejected",
+      "updated_at": "2026-10-03T07:30:22.847139+00:00",
+      "rejection_reason": "",
+      "reported_by": "local-dev"
+    }
+  ],
+  "rejected_this_candidate": 2,
+  "pending_total": 0,
+  "incident_ids_this_candidate": [
+    "INC-99807C0C",
+    "INC-40510543"
+  ],
+  "executed_actions": [],
+  "workload_uid_spec_unchanged": true,
+  "restart_pid": 18741,
+  "proof": "v7-rejection-reload.png",
+  "tests": {
+    "before": "2 failed,16 deselected",
+    "after": "33 passed,2 warnings,0.89s",
+    "typescript": "tsc --noEmit exit0"
+  },
+  "limits": [
+    "reported_by is dashboard session attribution forwarded as caller-reported metadata; local webhook does not authenticate that field.",
+    "Rejection reason is persisted in the approval store, not currently displayed in incident detail.",
+    "Incidents remain unresolved; mode APPROVE denotes approval-gated remediation, not an approved decision.",
+    "Approval record and incident record have no direct incident_id link for rejection; do not claim complete event-chain traceability.",
+    "No AWS, actual GitHub OAuth, alert ingestion or tenant-isolated shared deployer proof.",
+    "No new workload health check; last health200 evidence remains manual-restore at06:51:31UTC."
+  ]
+}

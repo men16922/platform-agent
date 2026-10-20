@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-03T07:14:06.299944+00:00",
+  "candidate": "candidate-v6-rejection.json",
+  "method": "Actual Chrome Incidents -> inline Reject confirmation -> existing Next API -> live loopback webhook -> isolated file stores",
+  "fixture_kind": "Two manually parked synthetic approval fixtures, not an alert/detector/analyzer end-to-end proof",
+  "approved": 0,
+  "rejected": 2,
+  "pending": 0,
+  "executed_actions": [],
+  "workload_uid_spec_unchanged": true,
+  "cancel": "v6-rejection-cancel.json",
+  "reload": "Actual browser reload retained empty pending queue and both unresolved incident records",
+  "limitations": [
+    "On-prem rejection reason is currently only sent to dashboard API/audit path; webhook approval record does not persist reason.",
+    "No AWS integration or real GitHub OAuth was tested.",
+    "Unresolved incidents are expected after rejecting proposed remediation; rejection is not resolution."
+  ]
+}

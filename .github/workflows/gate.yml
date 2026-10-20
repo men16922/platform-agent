@@ -96,6 +96,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev,state,observability,serving,onprem]"
 
+      # Install the toolchains used by the registry TS contract and CDK tests.
+      # tests/_ts_toolchain.py fails CI when a required toolchain is missing.
+      # Include both lockfiles in npm cache invalidation; install with npm ci.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            dashboard/package-lock.json
+            src/stacks/package-lock.json
+
+      - name: install dashboard TS toolchain
+        run: npm ci
+        working-directory: dashboard
+
+      - name: install CDK stacks TS toolchain
+        run: npm ci
+        working-directory: src/stacks
+
       # Without this the gate silently stops validating Terraform.
       #
       # Both `test_terraform_validate_passes` tests skip on

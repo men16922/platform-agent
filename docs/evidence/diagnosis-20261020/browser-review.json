@@ -1,0 +1,11 @@
+{
+  "url": "http://127.0.0.1:18777/review.html",
+  "title": "Recorded deployment observations",
+  "method": "Actual InspectionResult and runView, SSR with current Tailwind CSS, Chrome DOM and screenshot after reload",
+  "observed": [
+    "Disagreeing aggregate1 versus ready/available0 shown; rollout not confirmed and no recovery candidate",
+    "Positive previous readiness remains a specific review candidate without action authorization",
+    "Q restored revision29 complete, readiness health not established"
+  ],
+  "limits": "Historical component review, not authenticated dashboard, live cluster or model interpretation validation."
+}

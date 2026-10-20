@@ -1,0 +1,10 @@
+{
+  "local_worker_completed": true,
+  "execution_record_exists": true,
+  "request_lookup_endpoint": true,
+  "lookup_status": "succeeded",
+  "effect_count_after_retry": 1,
+  "replay_contains_done": true,
+  "network_used": false,
+  "scope": "local thread/file effect and direct ASGI handler; not Kubernetes, browser or live-model evidence"
+}

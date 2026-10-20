@@ -147,11 +147,54 @@ def test_p2_reject_does_not_execute(client, monkeypatch):
 
     rejected = client.post(f"/reject/{approval_id}").json()
     assert rejected["status"] == "rejected"
-    assert rejected["incident_id"] is None
+    incident = client.get("/incidents").json()["incidents"][0]
+    assert rejected["incident_id"] == incident["incident_id"]
+    assert webhook_mod.approvals.get(approval_id)["incident_id"] == incident["incident_id"]
+    assert incident["approval_id"] == approval_id
+    assert incident["approval_decision"] == "rejected"
+    assert incident["executed_actions"] == [] and incident["resolved"] is False
     assert client.get("/pending").json()["count"] == 0
 
     # A resolved approval cannot be approved again.
     assert client.post(f"/approve/{approval_id}").status_code == 409
+
+
+def test_rejection_preserves_reason_and_reported_actor(client, monkeypatch):
+    monkeypatch.setattr(pipeline_mod, "_analyze", _stub_analyze("P2"))
+    approval_id = client.post("/webhook/alertmanager", json=ALERTMANAGER_PAYLOAD).json()["approval_id"]
+    reason = "이 로그는 다른 서비스의 과거 기록입니다.\n현재 변경 근거가 없습니다."
+    response = client.post(f"/reject/{approval_id}", json={
+        "reason": reason, "reported_by": "local-reviewer",
+    })
+    assert response.status_code == 200
+    # Re-read the persisted row, not the HTTP response or an in-memory cache.
+    record = webhook_mod.approvals.get(approval_id)
+    assert record["status"] == "rejected"
+    assert record["rejection_reason"] == reason
+    assert record["reported_by"] == "local-reviewer"
+    assert record["updated_at"] >= record["created_at"]
+    incident = client.get("/incidents").json()["incidents"][0]
+    assert record["incident_id"] == incident["incident_id"] == response.json()["incident_id"]
+    assert incident["approval_id"] == approval_id
+    assert incident["approval_decision"] == "rejected"
+    assert incident["approval_decided_at"] == record["updated_at"]
+    assert incident["rejection_reason"] == reason
+    assert incident["reported_by"] == "local-reviewer"
+    assert incident["executed_actions"] == []
+    assert incident["resolved"] is False
+    # A repeated decision must not replace the original explanation.
+    assert client.post(f"/reject/{approval_id}", json={"reason": "replacement"}).status_code == 409
+    assert webhook_mod.approvals.get(approval_id) == record
+
+
+def test_invalid_rejection_metadata_leaves_request_pending(client, monkeypatch):
+    monkeypatch.setattr(pipeline_mod, "_analyze", _stub_analyze("P2"))
+    approval_id = client.post("/webhook/alertmanager", json=ALERTMANAGER_PAYLOAD).json()["approval_id"]
+    before = webhook_mod.approvals.get(approval_id)
+    for body in ({"reason": 123}, {"reason": "x" * 2001}, {"reported_by": {}}, {"status": "approved"}):
+        assert client.post(f"/reject/{approval_id}", json=body).status_code == 422
+        assert webhook_mod.approvals.get(approval_id) == before
+    assert client.get("/incidents").json()["count"] == 0
 
 
 def test_p3_manual_notifies_without_execution(client, monkeypatch):

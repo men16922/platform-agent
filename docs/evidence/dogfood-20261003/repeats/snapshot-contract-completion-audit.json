@@ -1,0 +1,16 @@
+{
+  "at": "2026-10-03T10:42:21.207805+00:00",
+  "goal_status": "active",
+  "previous_turn": "progress: N runtime display and actual seven-case evidence",
+  "current_progress": [
+    "Runtime snapshot input contract and tool exclusion",
+    "Full gate3356/2 and real UI seven-case comparison"
+  ],
+  "approval_wait": false,
+  "remaining": [
+    "Same-target log instruction still contaminates recovery advice",
+    "Final identical-candidate scenario bundle and artifacts",
+    "R5 one external-agent comparison after R3"
+  ],
+  "next": "Compare the three eligible cases using the same snapshot factory/contract with the already cached Qwen3.8 model, bounded no-thinking inference and no tools. Inspect original outputs before any model replacement. Preserve/restore the owned current model service and do not download a model or change global configuration."
+}

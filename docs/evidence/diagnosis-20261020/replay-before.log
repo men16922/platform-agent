@@ -1,0 +1,7 @@
+{"id": "q-failing", "arm": "before", "seconds": 12.173, "requests": 2, "calls": 1, "error": null, "completion": "complete"}
+{"id": "q-injected", "arm": "before", "seconds": 6.632, "requests": 2, "calls": 1, "error": null, "completion": "complete"}
+{"id": "q-restored", "arm": "before", "seconds": 6.605, "requests": 2, "calls": 1, "error": null, "completion": "complete"}
+{"id": "s-both-failing-consistent", "arm": "before", "seconds": 18.131, "requests": 2, "calls": 1, "error": null, "completion": "incomplete"}
+{"id": "s-original-contradiction", "arm": "before", "seconds": 9.838, "requests": 2, "calls": 1, "error": null, "completion": "complete"}
+{"id": "positive-recovery", "arm": "before", "seconds": 10.256, "requests": 2, "calls": 1, "error": null, "completion": "complete"}
+{"id": "positive-complete", "arm": "before", "seconds": 13.158, "requests": 2, "calls": 1, "error": null, "completion": "complete"}

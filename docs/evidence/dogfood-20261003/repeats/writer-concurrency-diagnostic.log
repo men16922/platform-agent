@@ -1,0 +1,334 @@
+{
+  "trial": 23,
+  "passed": false,
+  "results": [
+    {
+      "thread": 6164443136,
+      "result": {
+        "state": "BLOCKED",
+        "reason": "workflow_already_finished",
+        "cleanup": "NOT_ATTEMPTED",
+        "live_verified": false,
+        "diagnostic_only": false
+      }
+    },
+    {
+      "thread": 6181269504,
+      "result": {
+        "state": "BLOCKED",
+        "reason": "workflow_already_finished",
+        "cleanup": "NOT_ATTEMPTED",
+        "live_verified": false,
+        "diagnostic_only": false
+      }
+    },
+    {
+      "thread": 6198095872,
+      "result": {
+        "state": "BLOCKED",
+        "reason": "workflow_already_finished",
+        "cleanup": "NOT_ATTEMPTED",
+        "live_verified": false,
+        "diagnostic_only": false
+      }
+    },
+    {
+      "thread": 6214922240,
+      "result": {
+        "state": "BLOCKED",
+        "reason": "workflow_already_finished",
+        "cleanup": "NOT_ATTEMPTED",
+        "live_verified": false,
+        "diagnostic_only": false
+      }
+    },
+    {
+      "thread": 6231748608,
+      "result": {
+        "state": "BLOCKED",
+        "reason": "workflow_already_finished",
+        "cleanup": "NOT_ATTEMPTED",
+        "live_verified": false,
+        "diagnostic_only": false
+      }
+    },
+    {
+      "thread": 6248574976,
+      "result": {
+        "state": "UNKNOWN",
+        "reason": "workflow_store_or_context_invalid",
+        "cleanup": "NOT_ATTEMPTED",
+        "live_verified": false,
+        "diagnostic_only": false
+      }
+    },
+    {
+      "thread": 6265401344,
+      "result": {
+        "state": "BLOCKED",
+        "reason": "workflow_already_finished",
+        "cleanup": "NOT_ATTEMPTED",
+        "live_verified": false,
+        "diagnostic_only": false
+      }
+    },
+    {
+      "thread": 6282227712,
+      "result": {
+        "state": "CONSISTENT",
+        "reason": "four_call_evidence_consistent",
+        "cleanup": "OBSERVED_INVALID",
+        "live_verified": false,
+        "diagnostic_only": false
+      }
+    }
+  ],
+  "calls": [
+    "create_ref",
+    "write_target",
+    "write_sibling",
+    "create_pr",
+    "revoke_token"
+  ],
+  "exceptions": [
+    {
+      "thread": 6248574976,
+      "function": "mkdir",
+      "type": "FileExistsError",
+      "errno": 17,
+      "code": "[Errno 17] File exists: 'eb7575233137c2b8835b37213c079f981e2729f75df74e77a7d93acd4407a4cc'"
+    },
+    {
+      "thread": 6248574976,
+      "function": "open",
+      "type": "FileNotFoundError",
+      "errno": 2,
+      "code": "[Errno 2] No such file or directory: 'workflow.lock'"
+    },
+    {
+      "thread": 6282227712,
+      "function": "open",
+      "type": "FileNotFoundError",
+      "errno": 2,
+      "code": "[Errno 2] No such file or directory: 'result.json'"
+    },
+    {
+      "thread": 6282227712,
+      "function": "_read",
+      "type": "FileNotFoundError",
+      "errno": 2,
+      "code": "[Errno 2] No such file or directory: 'result.json'"
+    },
+    {
+      "thread": 6282227712,
+      "function": "open",
+      "type": "FileNotFoundError",
+      "errno": 2,
+      "code": "[Errno 2] No such file or directory: 'create_ref.verified.json'"
+    },
+    {
+      "thread": 6282227712,
+      "function": "_read",
+      "type": "FileNotFoundError",
+      "errno": 2,
+      "code": "[Errno 2] No such file or directory: 'create_ref.verified.json'"
+    },
+    {
+      "thread": 6282227712,
+      "function": "open",
+      "type": "FileNotFoundError",
+      "errno": 2,
+      "code": "[Errno 2] No such file or directory: 'intent.json'"
+    },
+    {
+      "thread": 6282227712,
+      "function": "open",
+      "type": "FileNotFoundError",
+      "errno": 2,
+      "code": "[Errno 2] No such file or directory: 'write_target.verified.json'"
+    },
+    {
+      "thread": 6282227712,
+      "function": "_read",
+      "type": "FileNotFoundError",
+      "errno": 2,
+      "code": "[Errno 2] No such file or directory: 'write_target.verified.json'"
+    },
+    {
+      "thread": 6282227712,
+      "function": "open",
+      "type": "FileNotFoundError",
+      "errno": 2,
+      "code": "[Errno 2] No such file or directory: 'intent.json'"
+    },
+    {
+      "thread": 6282227712,
+      "function": "open",
+      "type": "FileNotFoundError",
+      "errno": 2,
+      "code": "[Errno 2] No such file or directory: 'write_sibling.verified.json'"
+    },
+    {
+      "thread": 6282227712,
+      "function": "_read",
+      "type": "FileNotFoundError",
+      "errno": 2,
+      "code": "[Errno 2] No such file or directory: 'write_sibling.verified.json'"
+    },
+    {
+      "thread": 6282227712,
+      "function": "open",
+      "type": "FileNotFoundError",
+      "errno": 2,
+      "code": "[Errno 2] No such file or directory: 'intent.json'"
+    },
+    {
+      "thread": 6282227712,
+      "function": "open",
+      "type": "FileNotFoundError",
+      "errno": 2,
+      "code": "[Errno 2] No such file or directory: 'create_pr.verified.json'"
+    },
+    {
+      "thread": 6282227712,
+      "function": "_read",
+      "type": "FileNotFoundError",
+      "errno": 2,
+      "code": "[Errno 2] No such file or directory: 'create_pr.verified.json'"
+    },
+    {
+      "thread": 6282227712,
+      "function": "open",
+      "type": "FileNotFoundError",
+      "errno": 2,
+      "code": "[Errno 2] No such file or directory: 'intent.json'"
+    },
+    {
+      "thread": 6164443136,
+      "function": "mkdir",
+      "type": "FileExistsError",
+      "errno": 17,
+      "code": "[Errno 17] File exists: 'eb7575233137c2b8835b37213c079f981e2729f75df74e77a7d93acd4407a4cc'"
+    },
+    {
+      "thread": 6164443136,
+      "function": "open",
+      "type": "FileExistsError",
+      "errno": 17,
+      "code": "[Errno 17] File exists: 'scope.json'"
+    },
+    {
+      "thread": 6164443136,
+      "function": "_write_new",
+      "type": "FileExistsError",
+      "errno": 17,
+      "code": "[Errno 17] File exists: 'scope.json'"
+    },
+    {
+      "thread": 6265401344,
+      "function": "mkdir",
+      "type": "FileExistsError",
+      "errno": 17,
+      "code": "[Errno 17] File exists: 'eb7575233137c2b8835b37213c079f981e2729f75df74e77a7d93acd4407a4cc'"
+    },
+    {
+      "thread": 6265401344,
+      "function": "open",
+      "type": "FileExistsError",
+      "errno": 17,
+      "code": "[Errno 17] File exists: 'scope.json'"
+    },
+    {
+      "thread": 6265401344,
+      "function": "_write_new",
+      "type": "FileExistsError",
+      "errno": 17,
+      "code": "[Errno 17] File exists: 'scope.json'"
+    },
+    {
+      "thread": 6198095872,
+      "function": "mkdir",
+      "type": "FileExistsError",
+      "errno": 17,
+      "code": "[Errno 17] File exists: 'eb7575233137c2b8835b37213c079f981e2729f75df74e77a7d93acd4407a4cc'"
+    },
+    {
+      "thread": 6198095872,
+      "function": "open",
+      "type": "FileExistsError",
+      "errno": 17,
+      "code": "[Errno 17] File exists: 'scope.json'"
+    },
+    {
+      "thread": 6198095872,
+      "function": "_write_new",
+      "type": "FileExistsError",
+      "errno": 17,
+      "code": "[Errno 17] File exists: 'scope.json'"
+    },
+    {
+      "thread": 6181269504,
+      "function": "mkdir",
+      "type": "FileExistsError",
+      "errno": 17,
+      "code": "[Errno 17] File exists: 'eb7575233137c2b8835b37213c079f981e2729f75df74e77a7d93acd4407a4cc'"
+    },
+    {
+      "thread": 6181269504,
+      "function": "open",
+      "type": "FileExistsError",
+      "errno": 17,
+      "code": "[Errno 17] File exists: 'scope.json'"
+    },
+    {
+      "thread": 6181269504,
+      "function": "_write_new",
+      "type": "FileExistsError",
+      "errno": 17,
+      "code": "[Errno 17] File exists: 'scope.json'"
+    },
+    {
+      "thread": 6214922240,
+      "function": "mkdir",
+      "type": "FileExistsError",
+      "errno": 17,
+      "code": "[Errno 17] File exists: 'eb7575233137c2b8835b37213c079f981e2729f75df74e77a7d93acd4407a4cc'"
+    },
+    {
+      "thread": 6214922240,
+      "function": "open",
+      "type": "FileExistsError",
+      "errno": 17,
+      "code": "[Errno 17] File exists: 'scope.json'"
+    },
+    {
+      "thread": 6214922240,
+      "function": "_write_new",
+      "type": "FileExistsError",
+      "errno": 17,
+      "code": "[Errno 17] File exists: 'scope.json'"
+    },
+    {
+      "thread": 6231748608,
+      "function": "mkdir",
+      "type": "FileExistsError",
+      "errno": 17,
+      "code": "[Errno 17] File exists: 'eb7575233137c2b8835b37213c079f981e2729f75df74e77a7d93acd4407a4cc'"
+    },
+    {
+      "thread": 6231748608,
+      "function": "open",
+      "type": "FileExistsError",
+      "errno": 17,
+      "code": "[Errno 17] File exists: 'scope.json'"
+    },
+    {
+      "thread": 6231748608,
+      "function": "_write_new",
+      "type": "FileExistsError",
+      "errno": 17,
+      "code": "[Errno 17] File exists: 'scope.json'"
+    }
+  ]
+}
+Trials: 24 Failures: 1

@@ -1,0 +1,29 @@
+Exception in thread Thread-1 (_generate):
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.13/threading.py", line 1043, in _bootstrap_inner
+    self.run()
+    ~~~~~~~~^^
+  File "/opt/anaconda3/lib/python3.13/threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/men1692/Desktop/AWS/platform-agent/.venv-mlx/lib/python3.13/site-packages/mlx_lm/server.py", line 853, in _generate
+    prompt_responses, gen_responses = batch_generator.next()
+                                      ~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/men1692/Desktop/AWS/platform-agent/.venv-mlx/lib/python3.13/site-packages/mlx_lm/generate.py", line 1855, in next
+    return self._next()
+           ~~~~~~~~~~^^
+  File "/Users/men1692/Desktop/AWS/platform-agent/.venv-mlx/lib/python3.13/site-packages/mlx_lm/generate.py", line 1809, in _next
+    gen_batch = self._prompt_batch.split(split).generate(last_inputs)
+  File "/Users/men1692/Desktop/AWS/platform-agent/.venv-mlx/lib/python3.13/site-packages/mlx_lm/generate.py", line 1186, in generate
+    generation = GenerationBatch(
+        self.model,
+    ...<8 lines>...
+        self.max_tokens,
+    )
+  File "/Users/men1692/Desktop/AWS/platform-agent/.venv-mlx/lib/python3.13/site-packages/mlx_lm/generate.py", line 1288, in __init__
+    self._step()
+    ~~~~~~~~~~^^
+  File "/Users/men1692/Desktop/AWS/platform-agent/.venv-mlx/lib/python3.13/site-packages/mlx_lm/generate.py", line 1346, in _step
+    for processor in self.logits_processors[e]:
+                     ~~~~~~~~~~~~~~~~~~~~~~^^^
+TypeError: 'NoneType' object is not iterable

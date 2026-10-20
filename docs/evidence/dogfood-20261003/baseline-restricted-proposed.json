@@ -1,0 +1,96 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "orders-api-dogfood",
+        "namespace": "acme-dev-observability"
+      },
+      "spec": {
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "app": "orders-api-dogfood"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "orders-api-dogfood"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "orders-api-dogfood",
+                "image": "localhost:5001/orders-api:v1.4.2",
+                "ports": [
+                  {
+                    "containerPort": 8080
+                  }
+                ],
+                "resources": {
+                  "requests": {
+                    "cpu": "250m",
+                    "memory": "256Mi"
+                  },
+                  "limits": {
+                    "cpu": "250m",
+                    "memory": "256Mi"
+                  }
+                },
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/healthz",
+                    "port": 8080
+                  },
+                  "initialDelaySeconds": 5,
+                  "periodSeconds": 10
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                }
+              }
+            ],
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 10001,
+              "runAsGroup": 10001,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "orders-api-dogfood",
+        "namespace": "acme-dev-observability"
+      },
+      "spec": {
+        "selector": {
+          "app": "orders-api-dogfood"
+        },
+        "ports": [
+          {
+            "port": 8080,
+            "targetPort": 8080
+          }
+        ],
+        "type": "ClusterIP"
+      }
+    }
+  ]
+}

@@ -1,0 +1,141 @@
+2026-09-05 platform-agent documentation guard evidence
+
+Scope: four open auto tasks in NEXT_PLAN; no runtime or cloud resource changes.
+
+Environment: macOS-26.6.2-arm64-arm-64bit-Mach-O; Python 3.13.5
+
+Command: make check (before checkpoint test-count update)
+ ============================
+FAILED tests/test_gate_number_claims.py::test_claimed_total_matches_collection
+=========== 1 failed, 2425 passed, 2 skipped, 21 warnings in 44.45s ============
+make: *** [test] Error 1
+
+
+Command: pytest tests/test_doc_freshness_claims.py -q (before scheduled-date fix)
+ ============================
+FAILED tests/test_doc_freshness_claims.py::test_the_header_is_not_older_than_what_the_doc_says[AGENT_BRIEF.md]
+FAILED tests/test_doc_freshness_claims.py::test_the_header_is_not_older_than_what_the_doc_says[NEXT_PLAN.md]
+FAILED tests/test_doc_freshness_claims.py::test_the_header_is_not_older_than_what_the_doc_says[PROGRESS_LOG.md]
+FAILED tests/test_doc_freshness_claims.py::test_explicit_schedule_does_not_claim_past_verification
+FAILED tests/test_doc_freshness_claims.py::test_schedule_marker_does_not_exempt_other_dates_on_the_same_line
+5 failed, 7 passed in 0.03s
+
+
+Command: python /tmp/platform-agent-mutate-20260905.py
+missing Markdown in AGENT_BRIEF: exit=1
+FAILED tests/test_doc_paths_resolve.py::test_every_entry_document_path_exists_in_git_and_on_disk[AGENT_BRIEF.md]
+1 failed, 7 passed in 0.12s
+
+missing Markdown in STATUS: exit=1
+FAILED tests/test_doc_paths_resolve.py::test_every_entry_document_path_exists_in_git_and_on_disk[STATUS.md]
+1 failed, 7 passed in 0.12s
+
+missing Markdown in NEXT_PLAN: exit=1
+FAILED tests/test_doc_paths_resolve.py::test_every_entry_document_path_exists_in_git_and_on_disk[NEXT_PLAN.md]
+1 failed, 7 passed in 0.11s
+
+missing Markdown in PROGRESS_LOG: exit=1
+FAILED tests/test_doc_paths_resolve.py::test_every_entry_document_path_exists_in_git_and_on_disk[PROGRESS_LOG.md]
+1 failed, 7 passed in 0.12s
+
+missing Markdown in COMPLETED_SUMMARY: exit=1
+FAILED tests/test_doc_paths_resolve.py::test_every_entry_document_path_exists_in_git_and_on_disk[COMPLETED_SUMMARY.md]
+1 failed, 7 passed in 0.11s
+
+missing Markdown in DECISIONS: exit=1
+FAILED tests/test_doc_paths_resolve.py::test_every_entry_document_path_exists_in_git_and_on_disk[DECISIONS.md]
+1 failed, 7 passed in 0.11s
+
+unrecorded decision in AGENT_BRIEF: exit=1
+FAILED tests/test_decision_pointer_claims.py::test_every_cited_decision_is_recorded[AGENT_BRIEF.md]
+1 failed, 4 passed in 0.02s
+
+unrecorded decision in STATUS: exit=1
+FAILED tests/test_decision_pointer_claims.py::test_every_cited_decision_is_recorded[STATUS.md]
+1 failed, 4 passed in 0.02s
+
+unrecorded decision in NEXT_PLAN: exit=1
+FAILED tests/test_decision_pointer_claims.py::test_every_cited_decision_is_recorded[NEXT_PLAN.md]
+1 failed, 4 passed in 0.02s
+
+missing decision range interior: exit=1
+FAILED tests/test_decision_pointer_claims.py::test_every_cited_decision_is_recorded[NEXT_PLAN.md]
+2 failed, 3 passed in 0.02s
+
+duplicate character budget in docs/DOCS_POLICY.md: exit=1
+FAILED tests/test_char_budget_single_source.py::test_character_budget_numbers_have_one_source
+1 failed, 2 passed in 0.08s
+
+duplicate character budget in docs/NEXT_PLAN.md: exit=1
+FAILED tests/test_char_budget_single_source.py::test_character_budget_numbers_have_one_source
+1 failed, 2 passed in 0.07s
+
+duplicate character budget in docs/PROGRESS_LOG.md: exit=1
+FAILED tests/test_char_budget_single_source.py::test_character_budget_numbers_have_one_source
+1 failed, 2 passed in 0.06s
+
+duplicate character budget in docs/archive/progress-2026-08.md: exit=1
+FAILED tests/test_char_budget_single_source.py::test_character_budget_numbers_have_one_source
+1 failed, 2 passed in 0.06s
+
+duplicate character budget in docs/archive/progress-2026-09.md: exit=1
+FAILED tests/test_char_budget_single_source.py::test_character_budget_numbers_have_one_source
+1 failed, 2 passed in 0.06s
+
+duplicate character budget in docs/archive/status-baseline-2026-09.md: exit=1
+FAILED tests/test_char_budget_single_source.py::test_character_budget_numbers_have_one_source
+1 failed, 2 passed in 0.06s
+
+unformatted denominator: exit=1
+FAILED tests/test_char_budget_single_source.py::test_character_budget_numbers_have_one_source
+1 failed, 2 passed in 0.06s
+
+stale explicit limit: exit=1
+FAILED tests/test_char_budget_single_source.py::test_character_budget_numbers_have_one_source
+1 failed, 2 passed in 0.06s
+
+untracked local target: exit=1
+FAILED tests/test_doc_paths_resolve.py::test_every_entry_document_path_exists_in_git_and_on_disk[AGENT_BRIEF.md]
+1 failed, 7 passed in 0.11s
+
+RESTORED: exit=0
+................                                                         [100%]
+16 passed in 0.16s
+
+
+Date guard document mutations (each restored from a byte copy)
+scheduled date relabelled as verified: exit=1
+FAILED tests/test_doc_freshness_claims.py::test_the_header_is_not_older_than_what_the_doc_says[AGENT_BRIEF.md]
+1 failed, 11 passed in 0.02s
+
+completed date on scheduled line: exit=1
+FAILED tests/test_doc_freshness_claims.py::test_the_header_is_not_older_than_what_the_doc_says[AGENT_BRIEF.md]
+1 failed, 11 passed in 0.02s
+
+RESTORED: exit=0
+............                                                             [100%]
+12 passed in 0.02s
+
+
+Command: make check (after implementation and checkpoint)
+================ 2429 passed, 2 skipped, 21 warnings in 42.53s =================
+
+Final implementation verification (after compact JSON/colon budget-reference cases):
+Command: make check
+================ 2429 passed, 2 skipped, 21 warnings in 43.85s =================
+
+Final document checks before the last lexical-boundary refinement:
+..................................................................       [100%]
+66 passed in 4.34s
+
+Completion audit after final implementation:
+docs/AGENT_BRIEF.md: 58 lines, 6655 characters; within configured budgets
+docs/STATUS.md: 102 lines, 7030 characters; within configured budgets
+docs/NEXT_PLAN.md: 120 lines, 9396 characters; within configured budgets
+docs/PROGRESS_LOG.md: 63 lines, 7536 characters; within configured budgets
+docs/LESSONS.md: 25 lines, 1043 characters; within configured budgets
+STATUS preexisting text and warnings: whitespace-normalized identical after excluding new checkpoint/date
+Independent literal sweep: zero configured character-limit copies in all nonignored Markdown
+Open [auto] tasks: 0; four completed task boundaries retained in COMPLETED_SUMMARY M52
+Previous NEXT SESSION line: byte-identical text preserved in brief-detail archive
+PROGRESS_LOG holds newest 5 entries; two older entries preserved in monthly archive

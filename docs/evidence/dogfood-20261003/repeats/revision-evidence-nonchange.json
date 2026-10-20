@@ -1,0 +1,9 @@
+{
+  "at": "2026-10-03T09:11:32.493266+00:00",
+  "uid_spec_unchanged": true,
+  "revision": "27",
+  "replicas": 2,
+  "source_hashes_match": true,
+  "source_count": 284,
+  "health_limit": "No new HTTP health request; Kubernetes rollout state only"
+}

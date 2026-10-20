@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-03T08:42:51.686195+00:00",
+  "candidate": "candidate-v10-model-proxy.json",
+  "old_proxy_pid": 46761,
+  "new_proxy_pid": 80940,
+  "model_unchanged": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "model_pid": 67295,
+  "listeners": "same127.0.0.1:18091->18090",
+  "other_processes_restarted": false
+}

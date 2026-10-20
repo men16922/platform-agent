@@ -1,0 +1,50 @@
+M67: CDK app entrypoint dependency closure
+Date: 2026-09-06. Local macOS and disposable Linux amd64 / Node 22 validation.
+
+Reproduction
+- Actual cdk.json app: npx ts-node --prefer-ts-exts bin/app.ts.
+- Existing package.json and lockfile did not declare/install ts-node.
+- In Node 22.23.2 container, network none, empty npm cache and no global ts-node:
+  npm_config_offline=true npm run synth -- --no-lookups --quiet
+  exited 1: npm ENOTCACHED fetching ts-node. See before.log.
+
+Diagnosis and minimal fix
+- Added only ts-node ^10.9.2 to src/stacks devDependencies and locked npm resolution.
+- Same npm run synth now enters IncidentAgentStack and reaches Lambda bundling;
+  Node-only container then lacks pip and Docker, so full packaging still fails.
+- source-map-support/register import works: ts-node redirects it to its own
+  @cspotcode/source-map-support. No separate source-map dependency or app change needed.
+- Existing dependency versions and CDK app configuration unchanged.
+
+Runtime regression
+- tests/test_cdk_app_entrypoint.py executes cdk.json app in a temporary project.
+- Copies actual main TypeScript stack, bin/app.ts, config and Step Functions JSON.
+- PATH contains only node/npm/npx/sh; npm cache and home are new, npm offline=true.
+- No inherited AWS/GitHub credentials, no global ts-node executable, no NODE_PATH.
+- Uses actual CDK context plus aws:cdk:bundling-stacks=[] and a fake AWS account.
+- Validates emitted assembly identity/environment and core AWS resource types.
+- Before fix: 1 failed with same ENOTCACHED. After fix: 1 passed in 3.09s.
+- Test harness initially omitted sh in restricted PATH; corrected the fixture, not production code.
+- Bundling is disabled only for this app-entrypoint test. This is not proof that
+  default npm run synth packages Lambda dependencies or that AWS deployment succeeds.
+
+Installation
+- Host npm ci: 26 packages added / 47 audited, known vulnerabilities 0.
+- Removed copied scratch node_modules, then Linux npm ci from the final lockfile:
+  exit 0, 26 packages added / 47 audited, known vulnerabilities 0.
+- Direct configured app after dependency installation synthesized 98 resources offline.
+
+Scope
+- Original src/stacks/package.json + lockfile and one runtime regression changed.
+- Existing mixed WIP preserved; no original commit/push, remote CI or AWS deployment.
+- P5-E remote App/lab experiment still awaits reauthentication and scope confirmation.
+
+src/stacks/package.json sha256=6c1fab8e25f9b866c087ebe982868a596fbdc605d52447ede6f31af1c65e84d9
+src/stacks/package-lock.json sha256=e597bbb8709b1dbcc92bc0f1f4f0462779f13d4e2d8d6e9634958fc0ba905ee2
+tests/test_cdk_app_entrypoint.py sha256=4d0b99d96a70f7c600efb2fdb101fe1c7253cce26b8792099fa9755f5d4d84c3
+
+After clean Linux npm ci, configured app repeated with network none: exit 0, 98 resources.
+First full gate: 2 failed, 2824 passed, 2 skipped in 57.29s; both failures were missing M67 milestone documentation.
+
+Final make check: exit 0; 2826 passed, 2 skipped, 21 warnings in 56.49s (local macOS, Python 3.13).
+Post-checkpoint doc/path/milestone/gate-number checks: 64 passed in 2.45s. git diff --check passed. Owned scratch workspace removed. Original HEAD unchanged at 445d48df8eebd73199521719a5f7e98f40f074a2.

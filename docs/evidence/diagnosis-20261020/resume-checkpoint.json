@@ -1,0 +1,68 @@
+{
+  "at": "2026-10-19T20:56:08.464429+00:00",
+  "goal_status": "paused",
+  "last_goal_turn": "progress before pause:18 fixed-Qwen paired temperature measurements preserved; no successful candidate, identical raw across distinct seeds needs investigation",
+  "branch": "main",
+  "head": "445d48d",
+  "full_gate": "production-gate.log: 3380 passed, 3 skipped, 20 warnings, 119.20s; local macOS Python3.13.5 official Node22.23.3 private npm prefix",
+  "entry_plan": "docs/plans/2026-10-03-platform-agent-usage-and-evidence.md#12-고정-qwen-온도-대조와-일시중지-체크포인트",
+  "first_action": "Only after explicit resume: inspect loaded MLX sampler/seed/RNG/cache versus upstream/proxy behavior before further model/prompt/schema changes. Read snapshot-temperature/review.json. Fixed original Qwen; preserve original failures and positive recovery.",
+  "live_result": "Initial API18778 remains failed. Corrected task scope metadata API18779 and local Credentials dashboard13001 each succeeded; same UUID replay/refresh no additional reads, unchanged workload.",
+  "owned_processes": [
+    {
+      "port": 18190,
+      "pid": 16413,
+      "role": "task-owned pinned MLX",
+      "command": "/Users/men1692/Desktop/AWS/platform-agent/.venv-mlx/bin/python .venv-mlx/bin/mlx_lm.server --model mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit --host 127.0.0.1 --port 18190 --max-tokens 1024 --prompt-cache-bytes 2147483648"
+    },
+    {
+      "port": 18191,
+      "pid": 16568,
+      "role": "task-owned normalization proxy",
+      "command": "python -u -m src.agents.ai.mlx_qwen_tool_proxy --upstream http://127.0.0.1:18190 --host 127.0.0.1 --port 18191"
+    },
+    {
+      "port": 18778,
+      "pid": 42224,
+      "role": "task-owned readonly live API",
+      "command": "python -u _workspace/diagnosis-20261020/live_readonly_api.py"
+    },
+    {
+      "port": 18777,
+      "pid": 5825,
+      "role": "component review HTTP server",
+      "command": "python -m http.server 18777 --bind 127.0.0.1 --directory docs/evidence/diagnosis-20261020"
+    },
+    {
+      "port": 18779,
+      "pid": 52752,
+      "role": "Task-owned scope-advertised readonly API",
+      "command": "python -u _workspace/diagnosis-20261020/live_readonly_scoped_api.py"
+    },
+    {
+      "port": 13001,
+      "pid": 53798,
+      "role": "Task-owned isolated W dashboard Next dev child; parent53792",
+      "command": "next dev --webpack --hostname127.0.0.1 --port13001"
+    }
+  ],
+  "python": "/opt/anaconda3/bin/python",
+  "node_prefix": "/Users/men1692/Desktop/AWS/platform-agent/_workspace/diagnosis-20261020/npm-prefix",
+  "private_identity_path": "/Users/men1692/Desktop/AWS/platform-agent/_workspace/diagnosis-20261020/private/deployer.kubeconfig",
+  "identity_refresh_audit": "live-identity-refresh.json",
+  "preservation": "Original credentials, WIP, T artifacts, resources and prior failures preserved. No RBAC/workload change, paid API, cloud deployment, commit/push or deletion.",
+  "remaining": [
+    "Supplied-text snapshot semantic failures under fixed Qwen",
+    "R3/R4 overall",
+    "Conditional R5 after R3",
+    "Separate approval-gated remote priorities"
+  ],
+  "final_document_checks": "pause-docs.log: 61 passed in 2.23s; git diff --check passed; all entry line/char budgets satisfied; product11/11 hashes unchanged.",
+  "final_source_recheck": "All11 final product/test source hashes match w-source-manifest.json after checkpoint.",
+  "model_constraint": "User explicitly fixed original Qwen model; no model replacement/comparison.",
+  "new_full_gate": false,
+  "product_sources_match_frozen_w": 11,
+  "model_experiment_status": "snapshot_temperature.py completed18 outputs before pause; no new inference during checkpoint",
+  "process_policy": "Servers preserved, not stopped/restarted. Listener snapshot at checkpoint is point-in-time only; revalidate on resume.",
+  "listener_snapshot": "COMMAND     PID    USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME\npython3.1 16413 men1692    4u  IPv4 0x9d499ae55e36c643      0t0  TCP 127.0.0.1:18190 (LISTEN)\npython3.1 16568 men1692    3u  IPv4 0x426fd92a156abc34      0t0  TCP 127.0.0.1:18191 (LISTEN)\npython3.1 42224 men1692    6u  IPv4 0xbaf8c145a3253795      0t0  TCP 127.0.0.1:18778 (LISTEN)\npython3.1 52752 men1692    6u  IPv4 0x73fd7732a95f3c8c      0t0  TCP 127.0.0.1:18779 (LISTEN)\nnode      53798 men1692   13u  IPv4 0x8cb5ba89311ec756      0t0  TCP 127.0.0.1:13001 (LISTEN)\n"
+}

@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-03T06:49:09.198685+00:00",
+  "candidate": "candidate-v4.json",
+  "identity": "Existing platform-agent-system/platform-agent-deployer",
+  "permissions_changed": false,
+  "candidate_source_hashes_match": 283,
+  "pids": {
+    "mlx": 46760,
+    "proxy": 46761,
+    "router": 89112,
+    "dashboard": 89113
+  }
+}

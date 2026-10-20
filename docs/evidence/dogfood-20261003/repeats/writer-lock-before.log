@@ -1,0 +1,68 @@
+FF.                                                                      [100%]
+=================================== FAILURES ===================================
+_ test_lock_open_failure_never_bypasses_exclusive_execution[transient_missing] _
+
+directory = PosixPath('/private/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/pytest-of-men1692/pytest-54/test_lock_open_failure_never_b0/runs')
+lab = <tests.test_writer_workflow.Lab object at 0x1068b5be0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x106801480>
+failure = 'transient_missing'
+
+    @pytest.mark.parametrize('failure',['transient_missing','persistent_missing','permission'])
+    def test_lock_open_failure_never_bypasses_exclusive_execution(directory,lab,monkeypatch,failure):
+        original_open=os.open
+        attempts=[]
+        def opening(path,flags,*args,**kwargs):
+            if path=='workflow.lock':
+                attempts.append(flags)
+                if failure=='permission':raise PermissionError(13,'denied')
+                if failure=='persistent_missing' or len(attempts)==1:
+                    raise FileNotFoundError(2,'concurrent creation lookup')
+            return original_open(path,flags,*args,**kwargs)
+        monkeypatch.setattr(os,'open',opening)
+        result=run(directory,lab)
+        if failure=='transient_missing':
+>           assert result['state']=='CONSISTENT',result
+E           AssertionError: {'cleanup': 'NOT_ATTEMPTED', 'diagnostic_only': False, 'live_verified': False, 'reason': 'workflow_store_or_context_invalid', ...}
+E           assert 'UNKNOWN' == 'CONSISTENT'
+E             
+E             - CONSISTENT
+E             + UNKNOWN
+
+tests/test_writer_workflow.py:211: AssertionError
+_ test_lock_open_failure_never_bypasses_exclusive_execution[persistent_missing] _
+
+directory = PosixPath('/private/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/pytest-of-men1692/pytest-54/test_lock_open_failure_never_b1/runs')
+lab = <tests.test_writer_workflow.Lab object at 0x105a76ad0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x106801a70>
+failure = 'persistent_missing'
+
+    @pytest.mark.parametrize('failure',['transient_missing','persistent_missing','permission'])
+    def test_lock_open_failure_never_bypasses_exclusive_execution(directory,lab,monkeypatch,failure):
+        original_open=os.open
+        attempts=[]
+        def opening(path,flags,*args,**kwargs):
+            if path=='workflow.lock':
+                attempts.append(flags)
+                if failure=='permission':raise PermissionError(13,'denied')
+                if failure=='persistent_missing' or len(attempts)==1:
+                    raise FileNotFoundError(2,'concurrent creation lookup')
+            return original_open(path,flags,*args,**kwargs)
+        monkeypatch.setattr(os,'open',opening)
+        result=run(directory,lab)
+        if failure=='transient_missing':
+            assert result['state']=='CONSISTENT',result
+            assert len(attempts)==2
+            assert lab.calls==list(workflow.STAGES)+['revoke_token']
+            assert run(directory,lab)['state']=='BLOCKED'
+            assert lab.calls==list(workflow.STAGES)+['revoke_token']
+        else:
+            assert result['state']=='UNKNOWN' and result['cleanup']=='NOT_ATTEMPTED'
+>           assert len(attempts)==(3 if failure=='persistent_missing' else 1)
+E           assert 1 == 3
+E            +  where 1 = len([770])
+
+tests/test_writer_workflow.py:218: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_writer_workflow.py::test_lock_open_failure_never_bypasses_exclusive_execution[transient_missing]
+FAILED tests/test_writer_workflow.py::test_lock_open_failure_never_bypasses_exclusive_execution[persistent_missing]
+2 failed, 1 passed, 37 deselected in 0.23s

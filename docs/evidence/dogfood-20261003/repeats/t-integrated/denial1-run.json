@@ -1,0 +1,134 @@
+{
+  "label": "denial1",
+  "request_id": "0bed3d63-7b8a-4d89-be99-3b203ad2b5b5",
+  "status": "failed",
+  "claims": 1,
+  "acceptance_to_persistence_sec": 0.268,
+  "tool_calls": {
+    "deploy_to_cluster": 1
+  },
+  "record": {
+    "deployment_id": "DEP-8D72581B",
+    "activity_id": "ACT-9C7FD46B"
+  },
+  "state": {
+    "request_id": "0bed3d63-7b8a-4d89-be99-3b203ad2b5b5",
+    "actor": "local-dev",
+    "request": {
+      "service_name": "orders-api-dogfood",
+      "namespace": "globex-dev-observability",
+      "image_uri": "localhost:5001/orders-api-dogfood:r0",
+      "replicas": 2,
+      "environment": "dev",
+      "model": "onprem-executor",
+      "provider": "onprem"
+    },
+    "fingerprint": "a436afa65f497ba6fa368d24d452b35de9e172393528ad87cc3463d29e30bb44",
+    "instance": "7350ab7a1b554e12bbdc04c77ff9d046",
+    "status": "failed",
+    "updated_at": 1791032732.863918,
+    "events": [
+      {
+        "seq": 1,
+        "type": "ready",
+        "request_id": "0bed3d63-7b8a-4d89-be99-3b203ad2b5b5",
+        "agent": "onprem-executor"
+      },
+      {
+        "type": "tool_call",
+        "tool": "deploy_to_cluster",
+        "args": {
+          "service_name": "orders-api-dogfood",
+          "namespace": "globex-dev-observability",
+          "image": "localhost:5001/orders-api-dogfood",
+          "version": "r0",
+          "image_uri": "localhost:5001/orders-api-dogfood:r0",
+          "replicas": 2,
+          "provider": "onprem",
+          "ports": [
+            8080
+          ],
+          "health_path": "/healthz"
+        },
+        "seq": 2,
+        "request_id": "0bed3d63-7b8a-4d89-be99-3b203ad2b5b5"
+      },
+      {
+        "type": "tool_result",
+        "tool": "deploy_to_cluster",
+        "ok": false,
+        "result": {
+          "status": "failed",
+          "deployment_id": "",
+          "namespace": "default",
+          "replicas_desired": 0,
+          "endpoint": "",
+          "error": "Error from server (Forbidden): error when retrieving current configuration of:\nResource: \"apps/v1, Resource=deployments\", GroupVersionKind: \"apps/v1, Kind=Deployment\"\nName: \"orders-api-dogfood\", Namespace: \"globex-dev-observability\"\nfrom server for: \"STDIN\": deployments.apps \"orders-api-dogfood\" is forbidden: User \"system:serviceaccount:acme-dev-observability:platform-agent\" cannot get resource \"deployments\" in API group \"apps\" in the namespace \"globex-dev-observability\"\nError from server (Forbidden): error when retrieving current configuration of:\nResource: \"/v1, Resource=services\", GroupVersionKind: \"/v1, Kind=Service\"\nName: \"orders-api-dogfood\", Namespace: \"globex-dev-observability\"\nfrom server for: \"STDIN\": services \"orders-api-dogfood\" is forbidden: User \"system:serviceaccount:acme-dev-observability:platform-agent\" cannot get resource \"services\" in API group \"\" in the namespace \"globex-dev-observability\"\n"
+        },
+        "seq": 3,
+        "request_id": "0bed3d63-7b8a-4d89-be99-3b203ad2b5b5"
+      },
+      {
+        "type": "done",
+        "ok": false,
+        "model": "onprem-executor",
+        "provider": "onprem",
+        "summary": "Deployment failed: Error from server (Forbidden): error when retrieving current configuration of:\nResource: \"apps/v1, Resource=deployments\", GroupVersionKind: \"apps/v1, Kind=Deployment\"\nName: \"orders-api-dogfood\", Namespace: \"globex-dev-observability\"\nfrom server for: \"STDIN\": deployments.apps \"orders-api-dogfood\" is forbidden: User \"system:serviceaccount:acme-dev-observability:platform-agent\" cannot get resource \"deployments\" in API group \"apps\" in the namespace \"globex-dev-observability\"\nError from server (Forbidden): error when retrieving current configuration of:\nResource: \"/v1, Resource=services\", GroupVersionKind: \"/v1, Kind=Service\"\nName: \"orders-api-dogfood\", Namespace: \"globex-dev-observability\"\nfrom server for: \"STDIN\": services \"orders-api-dogfood\" is forbidden: User \"system:serviceaccount:acme-dev-observability:platform-agent\" cannot get resource \"services\" in API group \"\" in the namespace \"globex-dev-observability\"\n",
+        "record": {
+          "deployment_id": "DEP-8D72581B",
+          "activity_id": "ACT-9C7FD46B"
+        },
+        "seq": 4,
+        "request_id": "0bed3d63-7b8a-4d89-be99-3b203ad2b5b5"
+      }
+    ]
+  },
+  "activity_rows": [
+    {
+      "PK": "DEPLOY",
+      "SK": "2026-10-03T13:05:32Z#DEP-8D72581B",
+      "deployment_id": "DEP-8D72581B",
+      "type": "deploy",
+      "cluster": "platform-agent",
+      "service": "orders-api-dogfood",
+      "version": "r0",
+      "provider": "onprem",
+      "status": "failed",
+      "agent": "On-Prem Executor",
+      "created_at": "2026-10-03T13:05:32Z",
+      "duration_sec": 0.265,
+      "duration_scope": "executor_run",
+      "environment": "dev",
+      "namespace": "default"
+    },
+    {
+      "PK": "ACTIVITY",
+      "SK": "2026-10-03T13:05:32Z#ACT-9C7FD46B",
+      "activity_id": "ACT-9C7FD46B",
+      "deployment_id": "DEP-8D72581B",
+      "type": "deploy",
+      "agent": "On-Prem Executor",
+      "model": "onprem-executor",
+      "provider": "onprem",
+      "action": "Deploy reviewed image: {\"environment\": \"dev\", \"image_uri\": \"localhost:5001/orders-api-dogfood:r0\", \"namespace\": \"globex-dev-observability\", ",
+      "instruction": "Deploy reviewed image: {\"environment\": \"dev\", \"image_uri\": \"localhost:5001/orders-api-dogfood:r0\", \"namespace\": \"globex-dev-observability\", \"replicas\": 2, \"request_id\": \"0bed3d63-7b8a-4d89-be99-3b203ad2b5b5\", \"service_name\": \"orders-api-dogfood\"}",
+      "summary": "Deployment failed: Error from server (Forbidden): error when retrieving current configuration of:\nResource: \"apps/v1, Resource=deployments\", GroupVersionKind: \"apps/v1, Kind=Deployment\"\nName: \"orders-api-dogfood\", Namespace: \"globex-dev-observability\"\nfrom server for: \"STDIN\": deployments.apps \"orders-api-dogfood\" is forbidden: User \"system:serviceaccount:acme-dev-observability:platform-agent\" cannot get resource \"deployments\" in API group \"apps\" in the namespace \"globex-dev-observability\"\nError from server (Forbidden): error when retrieving current configuration of:\nResource: \"/v1, Resource=services\", GroupVersionKind: \"/v1, Kind=Service\"\nName: \"orders-api-dogfood\", Namespace: \"globex-dev-observability\"\nfrom server for: \"STDIN\": services \"orders-api-dogfood\" is forbidden: User \"system:serviceaccount:acme-dev-observability:platform-agent\" cannot get resource \"services\" in API group \"\" in the namespace \"globex-dev-observability\"\n",
+      "tool_calls": [
+        "deploy_to_cluster"
+      ],
+      "trace": "[{\"kind\": \"tool\", \"tool\": \"deploy_to_cluster\", \"args\": {\"service_name\": \"orders-api-dogfood\", \"namespace\": \"globex-dev-observability\", \"image\": \"localhost:5001/orders-api-dogfood\", \"version\": \"r0\", \"image_uri\": \"localhost:5001/orders-api-dogfood:r0\", \"replicas\": 2, \"provider\": \"onprem\", \"ports\": [8080], \"health_path\": \"/healthz\"}, \"result\": {\"status\": \"failed\", \"deployment_id\": \"\", \"namespace\": \"default\", \"replicas_desired\": 0, \"endpoint\": \"\", \"error\": \"Error from server (Forbidden): error when retrieving current configuration of:\\nResource: \\\"apps/v1, Resource=deployments\\\", GroupVersionKind: \\\"apps/v1, Kind=Deployment\\\"\\nName: \\\"orders-api-dogfood\\\", Namespace: \\\"globex-dev-observability\\\"\\nfrom server for: \\\"STDIN\\\": deployments.apps \\\"orders-api-dogfood\\\" is forbidden: User \\\"system:serviceaccount:acme-dev-observability:platform-agent\\\" cannot get resource \\\"deployments\\\" in API group \\\"apps\\\" in the namespace \\\"globex-dev-observability\\\"\\nError from server (Forbidden): error when retrieving current configuration of:\\nResource: \\\"/v1, Resource=services\\\", GroupVersionKind: \\\"/v1, Kind=Service\\\"\\nName: \\\"orders-api-dogfood\\\", Namespace: \\\"globex-dev-observability\\\"\\nfrom server for: \\\"STDIN\\\": services \\\"orders-api-dogfood\\\" is forbidden: User \\\"system:serviceaccount:acme-dev-observability:platform-agent\\\" cannot get resource \\\"services\\\" in API group \\\"\\\" in the namespace \\\"globex-dev-observability\\\"\\n\"}}]",
+      "cost_metrics": {
+        "tool_calls_total": 1,
+        "tool_calls_by_name": {
+          "deploy_to_cluster": 1
+        },
+        "reasoning_steps": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0
+      },
+      "status": "failed",
+      "created_at": "2026-10-03T13:05:32Z"
+    }
+  ]
+}

@@ -1,0 +1,1049 @@
+[
+  {
+    "id": "s-both-failing-consistent-neutral-image",
+    "raw": {
+      "deployment": {
+        "kind": "Deployment",
+        "metadata": {
+          "name": "orders",
+          "uid": "deployment-uid",
+          "namespace": "acme",
+          "generation": 2,
+          "resourceVersion": "55",
+          "annotations": {
+            "deployment.kubernetes.io/revision": "2"
+          }
+        },
+        "spec": {
+          "replicas": 1,
+          "selector": {
+            "matchLabels": {
+              "app": "orders"
+            }
+          },
+          "template": {
+            "metadata": {
+              "labels": {
+                "app": "orders"
+              }
+            },
+            "spec": {
+              "containers": [
+                {
+                  "name": "orders",
+                  "image": "registry.local/orders:release",
+                  "readinessProbe": {
+                    "httpGet": {
+                      "path": "/healthz",
+                      "port": 8080
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "status": {
+          "observedGeneration": 2,
+          "replicas": 2,
+          "updatedReplicas": 1,
+          "readyReplicas": 0,
+          "availableReplicas": 0
+        }
+      },
+      "objects": [
+        {
+          "kind": "ReplicaSet",
+          "metadata": {
+            "name": "rs-2",
+            "uid": "rs-2",
+            "namespace": "acme",
+            "generation": 1,
+            "ownerReferences": [
+              {
+                "kind": "Deployment",
+                "uid": "deployment-uid",
+                "controller": true
+              }
+            ],
+            "annotations": {
+              "deployment.kubernetes.io/revision": "2"
+            }
+          },
+          "spec": {
+            "replicas": 1,
+            "template": {
+              "metadata": {
+                "labels": {
+                  "app": "orders"
+                }
+              },
+              "spec": {
+                "containers": [
+                  {
+                    "name": "orders",
+                    "image": "registry.local/orders:release",
+                    "readinessProbe": {
+                      "httpGet": {
+                        "path": "/healthz",
+                        "port": 8080
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "status": {
+            "observedGeneration": 1,
+            "availableReplicas": 0
+          }
+        },
+        {
+          "kind": "ReplicaSet",
+          "metadata": {
+            "name": "rs-1",
+            "uid": "rs-1",
+            "namespace": "acme",
+            "generation": 1,
+            "ownerReferences": [
+              {
+                "kind": "Deployment",
+                "uid": "deployment-uid",
+                "controller": true
+              }
+            ],
+            "annotations": {
+              "deployment.kubernetes.io/revision": "1"
+            }
+          },
+          "spec": {
+            "replicas": 1,
+            "template": {
+              "metadata": {
+                "labels": {
+                  "app": "orders"
+                }
+              },
+              "spec": {
+                "containers": [
+                  {
+                    "name": "orders",
+                    "image": "registry.local/orders:stable",
+                    "readinessProbe": {
+                      "httpGet": {
+                        "path": "/healthz",
+                        "port": 8080
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "status": {
+            "observedGeneration": 1,
+            "availableReplicas": 0
+          }
+        },
+        {
+          "kind": "Pod",
+          "metadata": {
+            "name": "pod-2",
+            "uid": "pod-2",
+            "namespace": "acme",
+            "ownerReferences": [
+              {
+                "kind": "ReplicaSet",
+                "uid": "rs-2",
+                "controller": true
+              }
+            ]
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "orders",
+                "image": "registry.local/orders:release",
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/healthz",
+                    "port": 8080
+                  }
+                }
+              }
+            ]
+          },
+          "status": {
+            "conditions": [
+              {
+                "type": "Ready",
+                "status": "False"
+              }
+            ],
+            "containerStatuses": [
+              {
+                "name": "orders",
+                "ready": false,
+                "state": {
+                  "waiting": {
+                    "reason": "CrashLoopBackOff",
+                    "message": "Application startup failed after a connection timeout to the shared dependency. No dependency or network trace is supplied."
+                  }
+                },
+                "restartCount": 2,
+                "lastState": {
+                  "terminated": {
+                    "exitCode": 1
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "kind": "Pod",
+          "metadata": {
+            "name": "pod-1",
+            "uid": "pod-1",
+            "namespace": "acme",
+            "ownerReferences": [
+              {
+                "kind": "ReplicaSet",
+                "uid": "rs-1",
+                "controller": true
+              }
+            ]
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "orders",
+                "image": "registry.local/orders:stable",
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/healthz",
+                    "port": 8080
+                  }
+                }
+              }
+            ]
+          },
+          "status": {
+            "conditions": [
+              {
+                "type": "Ready",
+                "status": "False"
+              }
+            ],
+            "containerStatuses": [
+              {
+                "name": "orders",
+                "ready": false,
+                "state": {
+                  "waiting": {
+                    "reason": "CrashLoopBackOff",
+                    "message": "Application startup failed after a connection timeout to the shared dependency. No dependency or network trace is supplied."
+                  }
+                },
+                "restartCount": 2,
+                "lastState": {
+                  "terminated": {
+                    "exitCode": 1
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "tool_result": {
+      "ok": true,
+      "evidence": {
+        "target": {
+          "context": "recorded-local-context",
+          "namespace": "acme",
+          "deployment": "orders",
+          "uid": "deployment-uid"
+        },
+        "as_of": "2026-10-03T07:00:00+00:00",
+        "window_start": "2026-10-03T07:00:00+00:00",
+        "sources": [
+          {
+            "source_id": "deployment",
+            "sha256": "e0fff2e5a3811b709287c2d961932b8cb5d08c9ea4e47f568a487a9978b473f9",
+            "observed_at": "2026-10-03T07:00:00+00:00"
+          },
+          {
+            "source_id": "replicasets-pods",
+            "sha256": "c7a8bbdca5ccc295013477d302294e7ce618a1a2f4ca7bf6d4c0a8144f639965",
+            "observed_at": "2026-10-03T07:00:00+00:00"
+          }
+        ],
+        "inapplicable_sources": [],
+        "revision": 2,
+        "desired_replicas": 1,
+        "rollout_complete": false,
+        "observation_consistency": {
+          "status": "consistent",
+          "disagreements": [],
+          "unknown": []
+        },
+        "investigation": {
+          "stage": "current_revision_waiting",
+          "next_evidence": [
+            "pod_events",
+            "readiness_configuration",
+            "previous_container_logs"
+          ],
+          "failure_hypotheses_applicable": true
+        },
+        "desired_images": [
+          "registry.local/orders:release"
+        ],
+        "rollout_counts": {
+          "replicas": 2,
+          "updatedReplicas": 1,
+          "readyReplicas": 0,
+          "availableReplicas": 0
+        },
+        "current": {
+          "revision": 2,
+          "replicaset": "rs-2",
+          "uid": "rs-2",
+          "template_sha256": "e1667b03a0e8c0d33284ff53d2836226a24f31fe48f998e90e1dd67e69016602",
+          "images": [
+            "registry.local/orders:release"
+          ],
+          "ready_pods": [],
+          "waiting_reasons": [
+            "CrashLoopBackOff"
+          ],
+          "pod_count": 1,
+          "containers": [
+            {
+              "pod": "pod-2",
+              "pod_uid": "pod-2",
+              "container": "orders",
+              "state": "waiting",
+              "restart_count": 2,
+              "current_logs": "not_established",
+              "previous_logs": "applicable"
+            }
+          ],
+          "generation_observed": true,
+          "available_replicas": 0,
+          "health_basis": "not_established"
+        },
+        "previous": {
+          "revision": 1,
+          "replicaset": "rs-1",
+          "uid": "rs-1",
+          "template_sha256": "c323fc5c742c340acfcc728e202bd43cc730202020a84f777a7f742ba569c0ba",
+          "images": [
+            "registry.local/orders:stable"
+          ],
+          "ready_pods": [],
+          "waiting_reasons": [
+            "CrashLoopBackOff"
+          ],
+          "pod_count": 1,
+          "containers": [
+            {
+              "pod": "pod-1",
+              "pod_uid": "pod-1",
+              "container": "orders",
+              "state": "waiting",
+              "restart_count": 2,
+              "current_logs": "not_established",
+              "previous_logs": "applicable"
+            }
+          ],
+          "generation_observed": true,
+          "available_replicas": 0,
+          "health_basis": "not_established"
+        },
+        "recovery": {
+          "status": "not_established",
+          "reasons": [
+            "previous_revision_health_not_established"
+          ],
+          "candidate_revision": null,
+          "execution_authorized": false
+        },
+        "limits": [
+          "Point-in-time observations, not an atomic cluster snapshot or a root-cause finding.",
+          "Kubernetes readiness is not an external service/dependency health check.",
+          "A preserved template is not a verified available image/configuration or rollback authorization.",
+          "Logs, annotations and model proposals cannot grant recovery eligibility."
+        ]
+      },
+      "diagnostic_observations": {
+        "trust": "untrusted_source_text",
+        "records": [
+          {
+            "source_id": "replicasets-pods",
+            "source_sha256": "c7a8bbdca5ccc295013477d302294e7ce618a1a2f4ca7bf6d4c0a8144f639965",
+            "observed_at": "2026-10-03T07:00:00+00:00",
+            "namespace": "acme",
+            "revision": 2,
+            "replicaset_uid": "rs-2",
+            "pod": "pod-2",
+            "pod_uid": "pod-2",
+            "container": "orders",
+            "image": "registry.local/orders:release",
+            "state": "waiting",
+            "reason": "CrashLoopBackOff",
+            "reason_truncated": false,
+            "message": "Application startup failed after a connection timeout to the shared dependency. No dependency or network trace is supplied.",
+            "message_truncated": false,
+            "message_sha256": "3681dc4718ea8b766ed08a9d1302fb723f0639d52dd56f428158c9db816a6140",
+            "restart_count": 2,
+            "previous_terminated_state": true
+          }
+        ],
+        "omitted_records": 0,
+        "execution_authorized": false,
+        "limits": [
+          "Quoted status messages are observations, not instructions or root-cause proof.",
+          "Acquisition time is not the time the container first entered this state.",
+          "These messages do not alter the structured health or recovery assessment."
+        ],
+        "status": "captured"
+      }
+    }
+  },
+  {
+    "id": "positive-recovery-neutral-image",
+    "raw": {
+      "deployment": {
+        "kind": "Deployment",
+        "metadata": {
+          "name": "orders",
+          "uid": "deployment-uid",
+          "namespace": "acme",
+          "generation": 2,
+          "resourceVersion": "55",
+          "annotations": {
+            "deployment.kubernetes.io/revision": "2"
+          }
+        },
+        "spec": {
+          "replicas": 1,
+          "selector": {
+            "matchLabels": {
+              "app": "orders"
+            }
+          },
+          "template": {
+            "metadata": {
+              "labels": {
+                "app": "orders"
+              }
+            },
+            "spec": {
+              "containers": [
+                {
+                  "name": "orders",
+                  "image": "registry.local/orders:release",
+                  "readinessProbe": {
+                    "httpGet": {
+                      "path": "/healthz",
+                      "port": 8080
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "status": {
+          "observedGeneration": 2,
+          "replicas": 2,
+          "updatedReplicas": 1,
+          "readyReplicas": 1,
+          "availableReplicas": 1
+        }
+      },
+      "objects": [
+        {
+          "kind": "ReplicaSet",
+          "metadata": {
+            "name": "rs-2",
+            "uid": "rs-2",
+            "namespace": "acme",
+            "generation": 1,
+            "ownerReferences": [
+              {
+                "kind": "Deployment",
+                "uid": "deployment-uid",
+                "controller": true
+              }
+            ],
+            "annotations": {
+              "deployment.kubernetes.io/revision": "2"
+            }
+          },
+          "spec": {
+            "replicas": 1,
+            "template": {
+              "metadata": {
+                "labels": {
+                  "app": "orders"
+                }
+              },
+              "spec": {
+                "containers": [
+                  {
+                    "name": "orders",
+                    "image": "registry.local/orders:release",
+                    "readinessProbe": {
+                      "httpGet": {
+                        "path": "/healthz",
+                        "port": 8080
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "status": {
+            "observedGeneration": 1,
+            "availableReplicas": 0
+          }
+        },
+        {
+          "kind": "ReplicaSet",
+          "metadata": {
+            "name": "rs-1",
+            "uid": "rs-1",
+            "namespace": "acme",
+            "generation": 1,
+            "ownerReferences": [
+              {
+                "kind": "Deployment",
+                "uid": "deployment-uid",
+                "controller": true
+              }
+            ],
+            "annotations": {
+              "deployment.kubernetes.io/revision": "1"
+            }
+          },
+          "spec": {
+            "replicas": 1,
+            "template": {
+              "metadata": {
+                "labels": {
+                  "app": "orders"
+                }
+              },
+              "spec": {
+                "containers": [
+                  {
+                    "name": "orders",
+                    "image": "registry.local/orders:stable",
+                    "readinessProbe": {
+                      "httpGet": {
+                        "path": "/healthz",
+                        "port": 8080
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "status": {
+            "observedGeneration": 1,
+            "availableReplicas": 1
+          }
+        },
+        {
+          "kind": "Pod",
+          "metadata": {
+            "name": "pod-2",
+            "uid": "pod-2",
+            "namespace": "acme",
+            "ownerReferences": [
+              {
+                "kind": "ReplicaSet",
+                "uid": "rs-2",
+                "controller": true
+              }
+            ]
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "orders",
+                "image": "registry.local/orders:release",
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/healthz",
+                    "port": 8080
+                  }
+                }
+              }
+            ]
+          },
+          "status": {
+            "conditions": [
+              {
+                "type": "Ready",
+                "status": "False"
+              }
+            ],
+            "containerStatuses": [
+              {
+                "name": "orders",
+                "ready": false,
+                "state": {
+                  "waiting": {
+                    "reason": "ImagePullBackOff"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "kind": "Pod",
+          "metadata": {
+            "name": "pod-1",
+            "uid": "pod-1",
+            "namespace": "acme",
+            "ownerReferences": [
+              {
+                "kind": "ReplicaSet",
+                "uid": "rs-1",
+                "controller": true
+              }
+            ]
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "orders",
+                "image": "registry.local/orders:stable",
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/healthz",
+                    "port": 8080
+                  }
+                }
+              }
+            ]
+          },
+          "status": {
+            "conditions": [
+              {
+                "type": "Ready",
+                "status": "True"
+              }
+            ],
+            "containerStatuses": [
+              {
+                "name": "orders",
+                "ready": true,
+                "state": {
+                  "running": {}
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "tool_result": {
+      "ok": true,
+      "evidence": {
+        "target": {
+          "context": "recorded-local-context",
+          "namespace": "acme",
+          "deployment": "orders",
+          "uid": "deployment-uid"
+        },
+        "as_of": "2026-10-03T07:00:00+00:00",
+        "window_start": "2026-10-03T07:00:00+00:00",
+        "sources": [
+          {
+            "source_id": "deployment",
+            "sha256": "e42161c4bc656a87b029571d8d350e494122c68a92f1d58ffbb0b1912d7b6109",
+            "observed_at": "2026-10-03T07:00:00+00:00"
+          },
+          {
+            "source_id": "replicasets-pods",
+            "sha256": "dfaaf721ed397a4e8821ee0a49077dedb341dfaf6ee8e4ccbd20a9c4e9144b25",
+            "observed_at": "2026-10-03T07:00:00+00:00"
+          }
+        ],
+        "inapplicable_sources": [],
+        "revision": 2,
+        "desired_replicas": 1,
+        "rollout_complete": false,
+        "observation_consistency": {
+          "status": "consistent",
+          "disagreements": [],
+          "unknown": []
+        },
+        "investigation": {
+          "stage": "current_revision_waiting",
+          "next_evidence": [
+            "image_reference",
+            "registry_manifest",
+            "pod_events"
+          ],
+          "failure_hypotheses_applicable": true
+        },
+        "desired_images": [
+          "registry.local/orders:release"
+        ],
+        "rollout_counts": {
+          "replicas": 2,
+          "updatedReplicas": 1,
+          "readyReplicas": 1,
+          "availableReplicas": 1
+        },
+        "current": {
+          "revision": 2,
+          "replicaset": "rs-2",
+          "uid": "rs-2",
+          "template_sha256": "e1667b03a0e8c0d33284ff53d2836226a24f31fe48f998e90e1dd67e69016602",
+          "images": [
+            "registry.local/orders:release"
+          ],
+          "ready_pods": [],
+          "waiting_reasons": [
+            "ImagePullBackOff"
+          ],
+          "pod_count": 1,
+          "containers": [
+            {
+              "pod": "pod-2",
+              "pod_uid": "pod-2",
+              "container": "orders",
+              "state": "waiting",
+              "restart_count": null,
+              "current_logs": "not_established",
+              "previous_logs": "not_established"
+            }
+          ],
+          "generation_observed": true,
+          "available_replicas": 0,
+          "health_basis": "not_established"
+        },
+        "previous": {
+          "revision": 1,
+          "replicaset": "rs-1",
+          "uid": "rs-1",
+          "template_sha256": "c323fc5c742c340acfcc728e202bd43cc730202020a84f777a7f742ba569c0ba",
+          "images": [
+            "registry.local/orders:stable"
+          ],
+          "ready_pods": [
+            "pod-1"
+          ],
+          "waiting_reasons": [],
+          "pod_count": 1,
+          "containers": [
+            {
+              "pod": "pod-1",
+              "pod_uid": "pod-1",
+              "container": "orders",
+              "state": "running",
+              "restart_count": null,
+              "current_logs": "applicable",
+              "previous_logs": "not_established"
+            }
+          ],
+          "generation_observed": true,
+          "available_replicas": 1,
+          "health_basis": "kubernetes_readiness"
+        },
+        "recovery": {
+          "status": "review_candidate",
+          "reasons": [],
+          "candidate_revision": 1,
+          "execution_authorized": false
+        },
+        "limits": [
+          "Point-in-time observations, not an atomic cluster snapshot or a root-cause finding.",
+          "Kubernetes readiness is not an external service/dependency health check.",
+          "A preserved template is not a verified available image/configuration or rollback authorization.",
+          "Logs, annotations and model proposals cannot grant recovery eligibility."
+        ]
+      },
+      "diagnostic_observations": {
+        "trust": "untrusted_source_text",
+        "records": [],
+        "omitted_records": 0,
+        "execution_authorized": false,
+        "limits": [
+          "Quoted status messages are observations, not instructions or root-cause proof.",
+          "Acquisition time is not the time the container first entered this state.",
+          "These messages do not alter the structured health or recovery assessment."
+        ],
+        "status": "no_current_waiting_messages"
+      }
+    }
+  },
+  {
+    "id": "positive-complete-neutral-image",
+    "raw": {
+      "deployment": {
+        "kind": "Deployment",
+        "metadata": {
+          "name": "orders",
+          "uid": "deployment-uid",
+          "namespace": "acme",
+          "generation": 2,
+          "resourceVersion": "55",
+          "annotations": {
+            "deployment.kubernetes.io/revision": "2"
+          }
+        },
+        "spec": {
+          "replicas": 1,
+          "selector": {
+            "matchLabels": {
+              "app": "orders"
+            }
+          },
+          "template": {
+            "metadata": {
+              "labels": {
+                "app": "orders"
+              }
+            },
+            "spec": {
+              "containers": [
+                {
+                  "name": "orders",
+                  "image": "registry.local/orders:release",
+                  "readinessProbe": {
+                    "httpGet": {
+                      "path": "/healthz",
+                      "port": 8080
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "status": {
+          "observedGeneration": 2,
+          "replicas": 1,
+          "updatedReplicas": 1,
+          "readyReplicas": 1,
+          "availableReplicas": 1
+        }
+      },
+      "objects": [
+        {
+          "kind": "ReplicaSet",
+          "metadata": {
+            "name": "rs-2",
+            "uid": "rs-2",
+            "namespace": "acme",
+            "generation": 1,
+            "ownerReferences": [
+              {
+                "kind": "Deployment",
+                "uid": "deployment-uid",
+                "controller": true
+              }
+            ],
+            "annotations": {
+              "deployment.kubernetes.io/revision": "2"
+            }
+          },
+          "spec": {
+            "replicas": 1,
+            "template": {
+              "metadata": {
+                "labels": {
+                  "app": "orders"
+                }
+              },
+              "spec": {
+                "containers": [
+                  {
+                    "name": "orders",
+                    "image": "registry.local/orders:release",
+                    "readinessProbe": {
+                      "httpGet": {
+                        "path": "/healthz",
+                        "port": 8080
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "status": {
+            "observedGeneration": 1,
+            "availableReplicas": 1
+          }
+        },
+        {
+          "kind": "Pod",
+          "metadata": {
+            "name": "pod-2",
+            "uid": "pod-2",
+            "namespace": "acme",
+            "ownerReferences": [
+              {
+                "kind": "ReplicaSet",
+                "uid": "rs-2",
+                "controller": true
+              }
+            ]
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "orders",
+                "image": "registry.local/orders:release",
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/healthz",
+                    "port": 8080
+                  }
+                }
+              }
+            ]
+          },
+          "status": {
+            "conditions": [
+              {
+                "type": "Ready",
+                "status": "True"
+              }
+            ],
+            "containerStatuses": [
+              {
+                "name": "orders",
+                "ready": true,
+                "state": {
+                  "running": {}
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "tool_result": {
+      "ok": true,
+      "evidence": {
+        "target": {
+          "context": "recorded-local-context",
+          "namespace": "acme",
+          "deployment": "orders",
+          "uid": "deployment-uid"
+        },
+        "as_of": "2026-10-03T07:00:00+00:00",
+        "window_start": "2026-10-03T07:00:00+00:00",
+        "sources": [
+          {
+            "source_id": "deployment",
+            "sha256": "3a317f63e17ec9ecd9e9c6fa1576c1ac32ea5fe10ab2c585e95be1a865d8adb6",
+            "observed_at": "2026-10-03T07:00:00+00:00"
+          },
+          {
+            "source_id": "replicasets-pods",
+            "sha256": "4065cb94052064f8d617156c8b429f100d34941756c00629376585efc3828ed7",
+            "observed_at": "2026-10-03T07:00:00+00:00"
+          }
+        ],
+        "inapplicable_sources": [],
+        "revision": 2,
+        "desired_replicas": 1,
+        "rollout_complete": true,
+        "observation_consistency": {
+          "status": "consistent",
+          "disagreements": [],
+          "unknown": []
+        },
+        "investigation": {
+          "stage": "rollout_complete_service_health_unverified",
+          "next_evidence": [
+            "service_health"
+          ],
+          "failure_hypotheses_applicable": false
+        },
+        "desired_images": [
+          "registry.local/orders:release"
+        ],
+        "rollout_counts": {
+          "replicas": 1,
+          "updatedReplicas": 1,
+          "readyReplicas": 1,
+          "availableReplicas": 1
+        },
+        "current": {
+          "revision": 2,
+          "replicaset": "rs-2",
+          "uid": "rs-2",
+          "template_sha256": "e1667b03a0e8c0d33284ff53d2836226a24f31fe48f998e90e1dd67e69016602",
+          "images": [
+            "registry.local/orders:release"
+          ],
+          "ready_pods": [
+            "pod-2"
+          ],
+          "waiting_reasons": [],
+          "pod_count": 1,
+          "containers": [
+            {
+              "pod": "pod-2",
+              "pod_uid": "pod-2",
+              "container": "orders",
+              "state": "running",
+              "restart_count": null,
+              "current_logs": "applicable",
+              "previous_logs": "not_established"
+            }
+          ],
+          "generation_observed": true,
+          "available_replicas": 1,
+          "health_basis": "kubernetes_readiness"
+        },
+        "previous": null,
+        "recovery": {
+          "status": "not_established",
+          "reasons": [
+            "current_rollout_complete_no_rollback_need_established",
+            "current_revision_failure_not_established",
+            "previous_revision_template_not_established"
+          ],
+          "candidate_revision": null,
+          "execution_authorized": false
+        },
+        "limits": [
+          "Point-in-time observations, not an atomic cluster snapshot or a root-cause finding.",
+          "Kubernetes readiness is not an external service/dependency health check.",
+          "A preserved template is not a verified available image/configuration or rollback authorization.",
+          "Logs, annotations and model proposals cannot grant recovery eligibility."
+        ]
+      },
+      "diagnostic_observations": {
+        "trust": "untrusted_source_text",
+        "records": [],
+        "omitted_records": 0,
+        "execution_authorized": false,
+        "limits": [
+          "Quoted status messages are observations, not instructions or root-cause proof.",
+          "Acquisition time is not the time the container first entered this state.",
+          "These messages do not alter the structured health or recovery assessment."
+        ],
+        "status": "no_current_waiting_messages"
+      }
+    }
+  }
+]

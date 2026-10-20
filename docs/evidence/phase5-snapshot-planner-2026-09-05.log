@@ -1,0 +1,53 @@
+2026-09-05 P5-A offline snapshot/envelope verification (M55)
+
+Python: /opt/anaconda3/bin/python3.13 (macOS)
+Entry: src.agents.platform.registry_planner.plan_snapshot
+Contract: registry-attachment/v1; expiry = trusted now + 5 minutes
+Request: tenant=acme env=prod capability=logging version=7.1.0
+Reader: plain in-memory adapter backed by actual repository file bytes
+Inputs at the same commit:
+  platform/catalog.yaml
+  platform/tenants/acme.yaml
+  infra/onprem/addons/values/loki.yaml
+Output: platform/tenants/acme.yaml; one added logging: loki 7.1.0 line
+Input files unchanged; temporary directory removed; no network/subprocess.
+Host fallback explicitly disabled in the success regression test.
+
+Diagnosis:
+Initial M53 reproduction succeeded with host checkout values, but failed when
+DEFAULT_REGISTRY_ROOT pointed to the isolated snapshot. Required correction:
+include selected Helm values at the same SHA; pass values_repo_root explicitly.
+Existing CLI defaults preserved. The planner still checks installability.
+macOS /var vs /private/var paths also required resolving the temporary root
+before comparing against the existing planner's canonical output path.
+
+Focused verification:
+Command: /opt/anaconda3/bin/python3.13 -m pytest tests/test_registry_planner.py tests/test_registry_write.py -q
+........................................................................ [ 55%]
+..........................................................               [100%]
+130 passed in 2.35s
+
+Mutation verification (each source mutation restored from byte copy, no git reset):
+First single-edit mutation survived because another output guard caught the
+chosen sibling change. Added a wrong-environment single-line insertion test;
+then reran all eight mutations, each in a separate fresh Python pycache prefix.
+request extras: exit=1; 9 failed, 96 deselected in 0.27s
+path binding: exit=1; 3 failed, 9 passed, 93 deselected in 0.17s
+revision binding: exit=1; 3 failed, 9 passed, 93 deselected in 0.17s
+blob binding: exit=1; 6 failed, 6 passed, 93 deselected in 0.20s
+subject digest: exit=1; 1 failed, 7 passed, 97 deselected in 0.43s
+values isolation: exit=1; 1 failed, 104 deselected in 0.10s
+single edit: exit=1; 1 failed, 9 passed, 95 deselected in 0.28s
+file inventory: exit=1; 1 failed, 9 passed, 95 deselected in 0.29s
+Source byte-restored: True
+
+Trust/implementation limits:
+- Reader authenticates origin and verifies commit membership; SHA-1 is Git blob
+  identity, not origin authentication. No concrete GitHub adapter implemented.
+- Digest binds content/subject, not an authenticated signature. No server plan
+  persistence, grant lookup, submission/replay handling or expiry enforcement.
+- No AWS/GitHub calls, credentials, UI, deployment, commits, pushes or PRs.
+
+Full local gate:
+Command: make check
+2534 passed, 2 skipped, 21 warnings in 45.96s

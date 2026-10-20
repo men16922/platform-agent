@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-03T09:35:50.231783+00:00",
+  "candidate": "candidate-v12-inspection-presentation.json",
+  "old_pids": {
+    "router": 18626,
+    "dashboard": 96131
+  },
+  "new_pids": {
+    "router": 47342,
+    "dashboard": 47343
+  },
+  "source_count": 286,
+  "all_runtime_source_hashes_match": true,
+  "model_proxy_webhook_restarted": false
+}

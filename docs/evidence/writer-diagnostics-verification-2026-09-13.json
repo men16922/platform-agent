@@ -1,0 +1,75 @@
+{
+  "date": "2026-09-13",
+  "milestone": "M78",
+  "scope": "local private files and actual loopback HTTP; no remote retry",
+  "before_after": {
+    "source": "synthetic unknown message, not recovered M77 text",
+    "before": {
+      "schema_version": 1,
+      "operation": "create_pr",
+      "http_status": 422,
+      "transport": "response",
+      "github_request_id": null,
+      "body_state": "object",
+      "message_class": "validation_failed",
+      "errors": [
+        {
+          "resource": "PullRequest",
+          "field": null,
+          "code": "custom",
+          "message_class": "unclassified"
+        }
+      ],
+      "errors_state": "list",
+      "errors_truncated": false
+    },
+    "after": {
+      "errors_truncated": false,
+      "event_id": "a8260c812dfb470993ff23089b8b4f0b",
+      "github_request_id": null,
+      "http_status": 422,
+      "messages": [
+        {
+          "error_index": 0,
+          "excerpt": "Synthetic diagnostic: the requested operation is unavailable for this installation.",
+          "truncated": false
+        }
+      ],
+      "observed_at": "2026-09-12T22:41:58.496531+00:00",
+      "omitted_messages": 0,
+      "operation": "create_pr",
+      "redaction": "known_credentials_and_common_shapes_v1",
+      "schema_version": 1,
+      "scope": "operator_diagnostic_only"
+    }
+  },
+  "focused": {
+    "passed": 224,
+    "seconds": 24.45
+  },
+  "gate": {
+    "command": "make check",
+    "passed": 3058,
+    "skipped": 2,
+    "warnings": 21,
+    "seconds": 89.99,
+    "exit_code": 0,
+    "log": "/tmp/platform-agent-m78-gate.log"
+  },
+  "mutations": "docs/evidence/writer-diagnostics-mutations-2026-09-13.json",
+  "machine": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "remote_calls": 0,
+  "limits": [
+    "known credential and common-shape redaction is not general DLP",
+    "diagnostic prose is untrusted and cannot change authority",
+    "M77 custom detail is unrecoverable",
+    "new PR-only remote request prepared but not executed"
+  ],
+  "source_sha256": {
+    "src/agents/platform/writer_diagnostics.py": "f5735f509ad79395ee35e24fa68acd7056d963500fbdd9a5fdac2e95c2ebd1b8",
+    "src/agents/platform/writer_github.py": "d5e3247fa627e5eca30d925008b729c9db21a218f639c8d6d8cc040f3c93c6a6",
+    "scripts/run_registry_writer.py": "ea9937914746d4cb6308c6fd844224b65292e55d534cc723addacc353cc12680",
+    "tests/test_writer_diagnostics.py": "1a880c23cb3352cc762174a1e23f3f16a6489af88cdb7cf4395a02b87bf59a9f",
+    "tests/test_writer_github.py": "686f3591c2cb1e0cc5b98f40a201cab4f371a8a4f7b779c1c71a7e62128edb2e"
+  }
+}

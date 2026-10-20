@@ -1,0 +1,17 @@
+{
+  "case": {
+    "id": "supported-recovery",
+    "question": "Is reverting r2 to r1 a supported recovery candidate? What is and is not established about root cause? Do not execute anything.",
+    "sources": {
+      "change": "At 07:00 UTC only orders-api image changed from r1 to r2. Replicas remained 2; there was no schema or configuration change.",
+      "comparison": "At 07:01 UTC r2 returns 500 for the test request, while an r1 canary in the same namespace still returns 200 for that request against the same dependency.",
+      "recovery-check": "At 07:02 UTC both r1 canary replicas are healthy; r1 image digest and deployment specification are available. No data migration occurred. An operator may review rollback; no action is approved yet."
+    }
+  },
+  "started_at": "2026-10-03T07:16:43.929055+00:00",
+  "operational_tools": 0,
+  "status": "failed",
+  "error_type": "UnexpectedModelBehavior",
+  "error": "Exceeded maximum output retries (1)",
+  "elapsed_sec": 29.926
+}

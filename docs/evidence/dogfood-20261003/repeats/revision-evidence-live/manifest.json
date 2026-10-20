@@ -1,0 +1,50 @@
+{
+  "at": "2026-10-03T09:07:49.818635+00:00",
+  "method": "Actual existing describe tool with a passive JSON recording wrapper",
+  "identity": "platform-agent-system/platform-agent-deployer",
+  "mutating_calls": 0,
+  "calls": [
+    {
+      "args": [
+        "get",
+        "deployment/orders-api-dogfood",
+        "-n",
+        "acme-dev-observability"
+      ],
+      "context": "dogfood-deployer",
+      "at": "2026-10-03T09:07:49.737542+00:00",
+      "file": "docs/evidence/dogfood-20261003/repeats/revision-evidence-live/observation-1.json",
+      "sha256": "418a3afa817e4f2c5fbca2c0196ab5029b54f649790c1c045d57a98ae76da333"
+    },
+    {
+      "args": [
+        "get",
+        "replicasets,pods",
+        "-n",
+        "acme-dev-observability",
+        "-l",
+        "app=orders-api-dogfood"
+      ],
+      "context": "dogfood-deployer",
+      "at": "2026-10-03T09:07:49.780623+00:00",
+      "file": "docs/evidence/dogfood-20261003/repeats/revision-evidence-live/observation-2.json",
+      "sha256": "1b4b3bc461f0ded2934fa8566163b82f729efe2bffd12255ecebd3212373b94a"
+    },
+    {
+      "args": [
+        "get",
+        "deployment/orders-api-dogfood",
+        "-n",
+        "acme-dev-observability"
+      ],
+      "context": "dogfood-deployer",
+      "at": "2026-10-03T09:07:49.817517+00:00",
+      "file": "docs/evidence/dogfood-20261003/repeats/revision-evidence-live/observation-3.json",
+      "sha256": "418a3afa817e4f2c5fbca2c0196ab5029b54f649790c1c045d57a98ae76da333"
+    }
+  ],
+  "sources": {
+    "src/agents/ai/deployment_evidence.py": "f262ca596217fa3b251366af7701f2c757882515c7d778513039a4502bf872a9",
+    "src/agents/ai/ops_tools.py": "c85080e1345ccf7d72e53131536cf26c5f5d8f8c5d928d9cfcf891eb2127fff5"
+  }
+}

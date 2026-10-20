@@ -1,0 +1,41 @@
+Browser tab: 1640936920, Title: "Platform Agent — Multi-Cloud Operations Dashboard", URL: "http://localhost:3000/agents".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 155-158
+~				151 button (expanded) Observation sources (2), Secondary Actions: Collapse
++				165 content list
++					166 container
++						167 text deployment  ·  2026-10-03T09:36:57.996462+00:00
++						168 text SHA256:  f0c50058df5b6cb403b03c2456814273bc507bc59f1f3deedeb7f9bcf78efcdb
++					169 container
++						170 text replicasets-pods  ·  2026-10-03T09:36:58.040488+00:00
++						171 text SHA256:  9fa9bc02c9882e610d58506aa90b604ffe3938a0a0df3d90e0bbc3f6f5bca546
++		172 container
++			173 button (expanded) Model interpretation · Response complete · Unverified, Secondary Actions: Collapse
++				174 text Model interpretation · 
++				175 text Response complete
++				176 text  · Unverified
++			177 text This text may contain incorrect conclusions. Use the recorded observations for state and recovery review. It cannot authorize a change. The deployment `orders-api-dogfood` in namespace `acme-dev-observability` has revision 27 as current and revision 26 as previous.
+
+Current revision (27):
+- ReplicaSet: `orders-api-dogfood-7b8fb6877d`
+- Image: `localhost:5001/orders-api-dogfood:r0`
+- Ready pods: 2/2
+
+Previous revision (26):
+- ReplicaSet: `orders-api-dogfood-7fd548c97`
+- Image: `localhost:5001/orders-api-dogfood:r1`
+- Ready pods: 0
+
+Recovery assessment:
+- Status: Not established
+- Reason: Current rollout complete, no rollback needed, and previous revision health not established
+- Candidate revision for rollback: None
+- Execution authorized: No
+
+Rollout status:
+- Complete: Yes
+- Available replicas: 2
+- Ready replicas: 2
+
+The deployment is healthy and ready, but the previous revision's health is not established, so rollback is not authorized. The system cannot confirm whether the previous revision would be a viable rollback target. The recovery assessment is not established due to lack of evidence that the previous revision is healthy or that the current revision has issues requiring rollback.
+The focused UI element is 173 button (expanded) Model interpretation · Response complete · Unverified, Secondary Actions: Collapse

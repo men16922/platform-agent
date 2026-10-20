@@ -15,14 +15,15 @@
 # Select the engine with ENGINE=claude|codex|opencode|agy|kiro. Default stays Claude.
 ENGINE ?= claude
 
-# Model routing (1.4.0, Claude engine). The actor does bounded implementation; the critic is a
-# read-only reviewer whose judgment is what you pay for. Blank = the CLI's own default. These
-# are per-repo policy, so edit them here rather than in the plugin.
+# Per-repo model routing (harness 1.5.0). The runner selects defaults by the
+# effective critic engine, including cross-engine review. Keep the generic
+# override empty so Claude's default cannot leak into Codex or another engine.
 CLAUDE_MODEL ?= claude-sonnet-5
 CLAUDE_EFFORT ?=
-OVERNIGHT_CRITIC_MODEL ?= claude-fable-5-1
+CLAUDE_CRITIC_MODEL ?= claude-fable-5-1
+OVERNIGHT_CRITIC_MODEL ?=
 CLAUDE_CRITIC_EFFORT ?=
-export CLAUDE_MODEL CLAUDE_EFFORT OVERNIGHT_CRITIC_MODEL CLAUDE_CRITIC_EFFORT
+export CLAUDE_MODEL CLAUDE_EFFORT CLAUDE_CRITIC_MODEL OVERNIGHT_CRITIC_MODEL CLAUDE_CRITIC_EFFORT
 
 # HARNESS_ROOT resolution (env override → per-repo pin → highest installed version). This mirrors
 # the plugin's bin/harness-locate.sh; override ad hoc with `make overnight HARNESS_ROOT=/path`.

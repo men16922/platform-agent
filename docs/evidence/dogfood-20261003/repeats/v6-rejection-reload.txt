@@ -1,0 +1,94 @@
+- complementary:
+  - generic: ✦
+  - heading "Platform Agent" [level=1]
+  - paragraph: Autonomous cloud operations
+  - navigation:
+    - paragraph: Workspace
+    - link "⌘ Overview":
+      - /url: /
+      - generic: ⌘
+      - generic: Overview
+    - link "✦ Agents":
+      - /url: /agents
+      - generic: ✦
+      - generic: Agents
+    - link "⬡ Provisioning":
+      - /url: /provisioning
+      - generic: ⬡
+      - generic: Provisioning
+    - link "↗ Deployments":
+      - /url: /deployments
+      - generic: ↗
+      - generic: Deployments
+    - link "🕑 History":
+      - /url: /history
+      - generic: 🕑
+      - generic: History
+    - link "◈ Incidents":
+      - /url: /incidents
+      - generic: ◈
+      - generic: Incidents
+    - link "🛡 Audit Logs":
+      - /url: /audit
+      - generic: 🛡
+      - generic: Audit Logs
+    - link "👥 Users":
+      - /url: /users
+      - generic: 👥
+      - generic: Users
+  - generic: Operations workspace
+  - generic: Review recorded runs and observations.
+- main:
+  - paragraph: Platform Agent / Incidents
+  - paragraph: Operations workspace
+  - generic: Recorded activity
+  - button "Notifications": ⌁
+  - generic: admin
+  - button "L"
+  - paragraph: Autonomous response record
+  - heading "Incidents" [level=2]
+  - paragraph: Incident timeline across all cloud providers — detected, analyzed, and remediated by AI agents
+  - generic: LIVE · ON-PREM
+  - paragraph: P1 critical
+  - paragraph: "0"
+  - paragraph: P2 elevated
+  - paragraph: "2"
+  - paragraph: P3 advisory
+  - paragraph: "0"
+  - paragraph: Resolved
+  - paragraph: "0"
+  - paragraph: Needs review
+  - paragraph: "2"
+  - paragraph: Latest events
+  - generic: All providers
+  - generic: Last 24h
+  - link:
+    - /url: /incidents/INC-39805552
+    - article:
+      - generic: P2
+      - img "Cloud Native Computing Foundation"
+      - text: ON-PREM
+      - generic: APPROVE
+      - generic "LLM analysis confidence": 🧠 0%
+      - generic: 10/3/2026, 4:12:20 PM
+      - generic: ● OPEN
+      - code: INC-39805552
+      - generic: orders-api-dogfood
+      - paragraph: Synthetic rejection exercise 1; supplied pending fixture, no observed outage.
+      - generic: View analysis →
+  - link:
+    - /url: /incidents/INC-C80D1A1B
+    - article:
+      - generic: P2
+      - img "Cloud Native Computing Foundation"
+      - text: ON-PREM
+      - generic: APPROVE
+      - generic "LLM analysis confidence": 🧠 0%
+      - generic: 10/3/2026, 4:11:24 PM
+      - generic: ● OPEN
+      - code: INC-C80D1A1B
+      - generic: orders-api-dogfood
+      - paragraph: Synthetic rejection exercise 2; supplied pending fixture, no observed outage.
+      - generic: View analysis →
+- button "Open Next.js Dev Tools":
+- alert

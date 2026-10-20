@@ -1,0 +1,14 @@
+{
+  "at": "2026-10-03T09:19:57.791026+00:00",
+  "checks": {
+    "worktree": {
+      "checked": 284,
+      "mismatches": []
+    },
+    "runtime": {
+      "checked": 284,
+      "mismatches": []
+    }
+  },
+  "next": "Structured observation/recovery presentation separated from model interpretation; actual UI semantic failure remains"
+}

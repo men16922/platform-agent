@@ -1,0 +1,222 @@
+{
+  "observed_at": "2026-10-03T06:01:59.617739+00:00",
+  "scope": "Approved local kind-platform-agent / acme-dev-observability / orders-api-dogfood only",
+  "results": [
+    {
+      "request_id": "466fe126-4dc9-4028-bfb4-6da238177f1a",
+      "reported_status": "succeeded",
+      "record": {
+        "deployment_id": "DEP-699EF7A6",
+        "activity_id": "ACT-64524050"
+      },
+      "server_run_duration_sec": 8.888,
+      "acceptance_to_persistence_sec": 8.891,
+      "tool_calls": [
+        {
+          "name": "deploy_to_cluster",
+          "args": {
+            "service_name": "orders-api-dogfood",
+            "image": "orders-api-dogfood",
+            "version": "missing-r1",
+            "provider": "onprem",
+            "namespace": "acme-dev-observability",
+            "image_uri": "localhost:5001/orders-api-dogfood:missing-r1"
+          }
+        }
+      ]
+    },
+    {
+      "request_id": "475424a5-81af-42c2-ad64-4e711d36e766",
+      "reported_status": "failed",
+      "record": {
+        "deployment_id": "DEP-2E116163",
+        "activity_id": "ACT-9BEF5459"
+      },
+      "server_run_duration_sec": 68.46,
+      "acceptance_to_persistence_sec": 68.463,
+      "tool_calls": [
+        {
+          "name": "deploy_to_cluster",
+          "args": {
+            "service_name": "orders-api-dogfood",
+            "image": "orders-api-dogfood",
+            "version": "missing-r1",
+            "provider": "onprem",
+            "namespace": "acme-dev-observability",
+            "image_uri": "localhost:5001/orders-api-dogfood:missing-r1"
+          }
+        }
+      ]
+    },
+    {
+      "request_id": "e0901630-ce64-40ae-958b-2a9df0e77a8d",
+      "reported_status": "failed",
+      "record": {
+        "deployment_id": "DEP-ED8855BD",
+        "activity_id": "ACT-11EA1616"
+      },
+      "server_run_duration_sec": 79.187,
+      "acceptance_to_persistence_sec": 79.189,
+      "tool_calls": [
+        {
+          "name": "deploy_to_cluster",
+          "args": {
+            "service_name": "orders-api-dogfood",
+            "image": "orders-api-dogfood",
+            "version": "missing-r1",
+            "provider": "onprem",
+            "namespace": "acme-dev-observability",
+            "image_uri": "localhost:5001/orders-api-dogfood:missing-r1"
+          }
+        },
+        {
+          "name": "validate_deployment",
+          "args": {
+            "service_name": "orders-api-dogfood",
+            "provider": "onprem",
+            "namespace": "acme-dev-observability"
+          }
+        }
+      ]
+    },
+    {
+      "request_id": "4cbcda1b-bc08-4633-a1c1-2f0e8154683f",
+      "reported_status": "succeeded",
+      "record": {
+        "deployment_id": "DEP-C17FB962",
+        "activity_id": "ACT-DF9FC701"
+      },
+      "server_run_duration_sec": 21.081,
+      "acceptance_to_persistence_sec": 21.083,
+      "tool_calls": [
+        {
+          "name": "deploy_to_cluster",
+          "args": {
+            "service_name": "orders-api-dogfood",
+            "image": "orders-api-dogfood",
+            "version": "r1",
+            "image_uri": "localhost:5001/orders-api-dogfood:r1",
+            "provider": "onprem",
+            "namespace": "acme-dev-observability",
+            "health_path": "/healthz",
+            "replicas": 2,
+            "ports": "[8080]"
+          }
+        },
+        {
+          "name": "validate_deployment",
+          "args": {
+            "service_name": "orders-api-dogfood",
+            "provider": "onprem",
+            "namespace": "acme-dev-observability"
+          }
+        }
+      ]
+    },
+    {
+      "request_id": "cb3dd4e6-694c-40f5-a243-39327b0c576d",
+      "reported_status": "failed",
+      "record": {
+        "deployment_id": "DEP-A4D63B57",
+        "activity_id": "ACT-67A210B1"
+      },
+      "server_run_duration_sec": 15.427,
+      "acceptance_to_persistence_sec": 15.431,
+      "tool_calls": [
+        {
+          "name": "deploy_to_cluster",
+          "args": {
+            "service_name": "orders-api-dogfood",
+            "image": "orders-api-dogfood",
+            "version": "r1",
+            "image_uri": "localhost:5001/orders-api-dogfood:r1",
+            "provider": "onprem",
+            "namespace": "acme-dev-observability",
+            "health_path": "/healthz",
+            "replicas": 2,
+            "ports": "[8080]"
+          }
+        },
+        {
+          "name": "validate_deployment",
+          "args": {
+            "service_name": "orders-api-dogfood",
+            "provider": "onprem",
+            "namespace": "acme-dev-observability"
+          }
+        }
+      ]
+    },
+    {
+      "request_id": "0b348cc2-6075-4cd7-aaeb-89ccb7a54588",
+      "reported_status": "succeeded",
+      "record": {
+        "deployment_id": "DEP-5A88BA0A",
+        "activity_id": "ACT-4740B81F"
+      },
+      "server_run_duration_sec": 7.41,
+      "acceptance_to_persistence_sec": 7.412,
+      "tool_calls": [
+        {
+          "name": "deploy_to_cluster",
+          "args": {
+            "service_name": "orders-api-dogfood",
+            "image": "orders-api-dogfood",
+            "version": "r1",
+            "image_uri": "localhost:5001/orders-api-dogfood:r1",
+            "provider": "onprem",
+            "namespace": "acme-dev-observability",
+            "replicas": 2
+          }
+        },
+        {
+          "name": "validate_deployment",
+          "args": {
+            "service_name": "orders-api-dogfood",
+            "provider": "onprem",
+            "namespace": "acme-dev-observability"
+          }
+        }
+      ]
+    }
+  ],
+  "finding": "The first missing-image and first invalid-tool-argument requests were false successes; retain historical records as evidence. Later equivalent requests failed correctly.",
+  "normal_final": {
+    "request_id": "0b348cc2-6075-4cd7-aaeb-89ccb7a54588",
+    "revision": "6",
+    "desired": 2,
+    "ready": 2,
+    "image": "localhost:5001/orders-api-dogfood:r1",
+    "health_evidence": "normal-restored-health.log"
+  },
+  "rollback": "Actual UI rollback of DEP-ED8855BD restored the r1 pod template at revision 6; rollout undo did not restore a previous replica count. A later explicit deploy restored 2 replicas.",
+  "measurement_limit": "Server durations and UI click times are separate. Observer delays are not exact health-completion/MTTR measurements. No performance improvement claim.",
+  "remaining": [
+    "fixed-candidate normal/denial/recovery/loss repeats",
+    "actual UI tenant denial and insufficient evidence cases",
+    "R4 evaluation cases and R5 decision",
+    "repro and measured comparison and 60-90 second demo"
+  ],
+  "runtime_pids": {
+    "mlx": 46760,
+    "proxy": 46761,
+    "router": 48733,
+    "dashboard": 48734
+  },
+  "source_sha256": {
+    "src/agents/ai/deploy_recorder.py": "8c33e927c3a8a913dbf917165865d7496592c18869088984d77d93a663eaf916",
+    "src/agents/ai/local_deploy_api.py": "593012043671c3e73df6cd94163e10609558415d027c1ec9ec00bf32a4140244",
+    "src/agents/ai/model_router.py": "39d254ba3d65992ee6ea1681ae8c12cfa8cb04032826c25935645a752baa6beb",
+    "src/agents/ai/local_deployer.py": "0ae394a66695b6a1fe7b3fe744b6c366d2168a66332a9440c82406130e1db06d",
+    "src/agents/ai/pipeline.py": "7f7bf2c44709fb9d633cf826521e3bcd5fcedd9bac13649af491a6afd771b3b4",
+    "src/agents/adapters/deployment/onprem.py": "e1c5ed974bca6b8327f79dfa45351626e2ce9e0ad043b0c80658652076c1ac77",
+    "dashboard/src/lib/mock-data.ts": "139d35c6f726607a42bf07412581edf84deca726082297735dc6e6188402dcbd",
+    "dashboard/src/lib/activity-model.ts": "903c906bd7992ec9be6a211f64ec3d4be6e5ab168a32a091dcf55a9226fd38ff",
+    "dashboard/src/lib/activity-data.ts": "00086623832ee57de4c1b3e7bdfb648bdb42f9beffb405ddfcdea7c1a8d88229",
+    "dashboard/src/lib/deployment-duration.ts": "a46a2b872939364024d4c925c0efc9224c8b7243fc6dcee38ad41616018faba4",
+    "dashboard/src/components/deployments-control.tsx": "b733fac7e88d914aaa596ac8f92b412dc0f083d2ba0aeb9408226f44a3dd4162",
+    "dashboard/src/app/page.tsx": "4e8b1803205e0b4df2f72389a879128e0b8e4b74e007f53c813be17c20600287"
+  },
+  "rbac_changed": false,
+  "cloud_changes": false
+}

@@ -1,0 +1,37 @@
+{
+  "reviewer": "Coding assistant; full raw response and input review, not independent expert",
+  "scope": "Three new synthetic controls changing only image names under the same current factory/prompt/settings. Original failures retained.",
+  "finding": "The valid completed control stops inventing an invalid image when app:missing is replaced by a neutral reference. CrashLoopBackOff also loses image-pull speculation. This supports image-name sensitivity in these pairs, not a universal root cause or a product fix.",
+  "cases": [
+    {
+      "id": "s-both-failing-consistent-neutral-image",
+      "raw_only_image_references_changed": true,
+      "completion": "complete",
+      "review_status": "partial",
+      "quote": "The shared dependency is not accessible or is misconfigured.",
+      "reason": "Image-pull claim disappears; still overstates prior-log availability and does not distinguish previous container attempt from previous revision.",
+      "report_sha256": "e1f4dd35f5951efaf17c414a36ea8e3746edf0b5e61ee9ee64e828d1a6b6ba07",
+      "seconds": 6.983
+    },
+    {
+      "id": "positive-recovery-neutral-image",
+      "raw_only_image_references_changed": true,
+      "completion": "complete",
+      "review_status": "fail",
+      "quote": "The health of the previous revision is not confirmed as healthy or ready.",
+      "reason": "Retains review_candidate but contradicts structured previous Kubernetes readiness; no full pass.",
+      "report_sha256": "d2d375d31a86ec18b4e39838ef860c002d27ee6e043c2572053cbd4842765d5d",
+      "seconds": 7.334
+    },
+    {
+      "id": "positive-complete-neutral-image",
+      "raw_only_image_references_changed": true,
+      "completion": "complete",
+      "review_status": "pass",
+      "quote": "The pod is ready, but external service health or application logs are not yet verified.",
+      "reason": "Recognizes complete/ready workload and external-health limit, no image-name diagnosis or rollback invention.",
+      "report_sha256": "c5395ffa8e66a67bdfd331555d97a97017bb8f1da2c5f3821e1f6a8656296f85",
+      "seconds": 4.817
+    }
+  ]
+}

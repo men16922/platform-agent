@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-03T10:21:29.057347+00:00",
+  "candidate": "candidate-v14b-runtime-observation.json",
+  "old_pids": {
+    "router": 78632,
+    "dashboard": 78633
+  },
+  "new_pids": {
+    "router": 5123,
+    "dashboard": 5124
+  },
+  "source_count": 286,
+  "all_runtime_source_hashes_match": true,
+  "model_proxy_webhook_restarted": false
+}

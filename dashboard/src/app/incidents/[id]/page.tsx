@@ -14,16 +14,6 @@ const severityBadge: Record<Incident["severity"], string> = {
   P3: "border-blue-300/45 bg-blue-400/18 text-blue-100",
 };
 
-// Which brain analysed this incident — ties the record back to the model that
-// produced the root cause. On-prem runs the local Qwen (offline); each cloud
-// uses its native model.
-const analystByProvider: Record<Incident["provider"], string> = {
-  onprem: "Local Qwen (MLX, offline)",
-  aws: "Bedrock · Claude",
-  gcp: "Vertex AI · Gemini",
-  azure: "Azure OpenAI · GPT",
-};
-
 const providerLabel: Record<Incident["provider"], string> = {
   onprem: "ON-PREM",
   aws: "AWS",
@@ -120,11 +110,11 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
 
       {/* LLM analysis — the star of the detail view */}
       <section className="space-y-2">
-        <SectionTitle accent="#c4b5fd">LLM root-cause analysis</SectionTitle>
+        <SectionTitle accent="#c4b5fd">Recorded analysis</SectionTitle>
         <div className="surface space-y-4 p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="inline-flex items-center gap-2 text-[11px] font-semibold text-[#d9ccff]">
-              🧠 {analystByProvider[incident.provider]}
+              Analysis source not recorded
             </span>
             {hasConfidence ? (
               <span className="font-mono text-[11px] text-[var(--muted)]">confidence {confidencePct}%</span>
@@ -163,11 +153,6 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
                   }}
                 />
               </div>
-              {confidencePct === 0 && (
-                <p className="text-[10px] text-[var(--muted)]">
-                  0% = heuristic fallback (the model was unreachable, e.g. offline pod without a brain).
-                </p>
-              )}
             </div>
           )}
 
@@ -187,6 +172,27 @@ export default async function IncidentDetailPage({ params }: { params: Promise<{
       </section>
 
       {/* Actions */}
+      {incident.approval_id && incident.approval_decision && (
+        <section className="space-y-2">
+          <SectionTitle accent="#8ab4f8">Approval decision</SectionTitle>
+          <div className="surface space-y-3 p-5 text-sm">
+            <p className="font-semibold capitalize">Remediation {incident.approval_decision}</p>
+            <p className="text-xs text-[var(--muted)]">Request <code>{incident.approval_id}</code></p>
+            {incident.reported_by && <p className="text-xs text-[var(--muted)]">Reported reviewer: {incident.reported_by}</p>}
+            {incident.approval_decided_at && (
+              <p className="text-xs text-[var(--muted)]" suppressHydrationWarning>
+                Decision recorded: {new Date(incident.approval_decided_at).toLocaleString()}
+              </p>
+            )}
+            {incident.approval_decision === "rejected" && (
+              <p className="whitespace-pre-wrap text-[#e6edf7]">
+                {incident.rejection_reason || "No rejection reason provided."}
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+
       <section className="space-y-2">
         <SectionTitle accent="#69d3a7">
           Executed actions <span className="font-normal text-[var(--muted)]">— {incident.executed_actions.length}</span>

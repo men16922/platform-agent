@@ -1,0 +1,14 @@
+{
+  "stopped_owned_pids": {
+    "router": 38458,
+    "dashboard": 38459
+  },
+  "files": {
+    "src/agents/ai/deploy_recorder.py": "8c33e927c3a8a913dbf917165865d7496592c18869088984d77d93a663eaf916",
+    "src/agents/ai/local_deployer.py": "0ae394a66695b6a1fe7b3fe744b6c366d2168a66332a9440c82406130e1db06d",
+    "dashboard/src/lib/mock-data.ts": "139d35c6f726607a42bf07412581edf84deca726082297735dc6e6188402dcbd",
+    "dashboard/src/lib/activity-model.ts": "903c906bd7992ec9be6a211f64ec3d4be6e5ab168a32a091dcf55a9226fd38ff",
+    "dashboard/src/lib/activity-data.ts": "00086623832ee57de4c1b3e7bdfb648bdb42f9beffb405ddfcdea7c1a8d88229",
+    "dashboard/src/components/deployments-control.tsx": "b733fac7e88d914aaa596ac8f92b412dc0f083d2ba0aeb9408226f44a3dd4162"
+  }
+}

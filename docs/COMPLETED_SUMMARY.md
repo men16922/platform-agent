@@ -1,11 +1,20 @@
 # COMPLETED_SUMMARY — platform-agent
 
-최종 갱신: 2026-09-02
+최종 갱신: 2026-10-03
 
 > 완료된 milestone 압축. current docs 에는 링크만, 상세 체크리스트는 여기로 압축.
 > 도메인 원문 상세는 `bin/docs/archive/`.
 
 ---
+
+## 2026-10-03 — 단일 환경 실사용 검증의 완료 범위
+
+**목적:** 기존 배포·검증·복구를 실제 사용자 흐름에서 반복하고, 관측된 사용성/기록 결함만 보완했다. 조사·방향성 계획은 `docs/plans/2026-10-03-platform-agent-usage-and-evidence.md` §1~§7에 있다.
+**산출:** 거짓 성공·고정0초·응답 유실·모델 입력 재생성 문제를 고치고 준비된 이미지의 입력→검토→확인→rollout→같은 ID 조회를 연결했다. 승인 거부 사유/사건 연결, 읽기 전용 도구 범위, 관측/미검증 해석 구분 및 snapshot 대상/시각 계약도 기존 경로에 연결했다.
+**실측:** T 실행O/v15 정상3·제한 신원 거부2·실패 후 사용자 확인 복구2·새로고침2, 각 claim1/deploy1. 합성 승인 거부2·실행0, scope 누락2·dispatch0. 마지막 UID/전체 spec/r0/replicas2 복원(revision37). 재현 절차·전후 비교표·72초 정지화면 데모 완료. 증거 색인 `docs/evidence/dogfood-20261003/README.md`의 T 항목.
+**검증:** T 작업트리R/v16 `make check` 3364 passed·2 skipped·20 warnings,133.83초(로컬 macOS·Python3.13.5·Node22.23.3/임시prefix). 실행O 자체의 앞선3356/2와 구분한다. 신규 기능의 운영/원격 CI 검증이 아니다.
+**미완료:** 진단 의미 오류로 R3/R4 전체·R5 비교는 열려 있다. R 원문 전달 후보와 S 응답 계약은 미채택, U는 재현 전 코드 검토 가설이다. r0/r1 동일 digest·Pod liveness 관측·공유 deployer·합성 승인 경계를 유지하며 MTTR/테넌트 전체 격리/alert 분석 E2E로 확대하지 않는다. 사용자 요청으로 목표 paused.
+
 
 ## M0 — Operations 파이프라인 기준선 (완료)
 
@@ -37,6 +46,264 @@ override 계약: `src/agents/runbooks/schema.py`(`validate_runbook`). seed 시 m
 ## M6 — CDK deprecation 정리 (완료)
 
 DynamoDB `pointInTimeRecovery` → `pointInTimeRecoverySpecification`. Lambda `logRetention` → 함수별 전용 `logs.LogGroup` 을 `logGroup` 으로 주입. legacy `Custom::LogRetention` 커스텀 리소스 + 부수 IAM Role 제거. `npm run synth` deprecation 13건 → 0건.
+
+## M91 — Vercel 인증 해소·운영 조회·배포 후보 재생성 (사전 점검 완료, 2026-09-15)
+
+**산출:** 실제 Vercel project/production/도메인·반환 callback/OIDC 메타데이터와 AWS 기존 자원을 재확인했다. 사라진 tmp 후보를 Git 제외 작업 폴더에 재생성하고 §13의 정확 Origin·복구 대상·Hobby 롤백 조건을 확정했다.
+**검증:** 대시보드 소스 106파일 M90 일치·공식 Node 24 Linux ARM64 clean npm ci/build 성공·audit 0. Python 3.9 marker 충돌은 기준 3.13 실행으로 해소. Lambda 3.13 ARM64 읽기 전용/네트워크 차단 import 8모듈·native YAML·422와 실제 CDK no-lookups 8자원 합성 통과. template은 asset 해시 외 M90과 동일. 증거 `docs/evidence/registry-planner-resume-verification-2026-09-15.json`.
+**경계:** 원격 설정 조회와 로컬 후보 검증이다. AWS/Vercel 자원 변경·운영 로그인/Invoke/전환·PR 발행/원격 CI는 미실행이다. 실행 범위 확인이 다음이며 기존 WIP·lab/키/checkout 보존.
+
+## M90 — 저장형 플래너 배포 후보·AWS 사전 점검 (부분 완료, 2026-09-13)
+
+AWS 계정/리전·기존 사용자 테이블/OIDC/bootstrap·새 스택 부재와 공개 GitHub 계획을 읽기 전용으로 확인했다. 본인 사용자 Item은 없었다. 대시보드 WIP 12경로만 고정해 깨끗한 Linux Node 24 빌드, 기존 검증 Lambda asset과 실제 대상 CDK 합성을 완료했다. 원격 배포/권한 변경/Invoke/CI는 미실행이다.
+검토안은 `docs/plans/2026-09-05-phase5-planner-runtime.md` §13, 증거는 `docs/evidence/registry-planner-candidate-verification-2026-09-13.json`. Vercel 인증·현행 production/복구 URL·callback 확인이 남았다. 기존 자원/키/WIP 보존.
+
+## M89 — 대시보드 AWS 준비·상태 transport (로컬 완료, 2026-09-13)
+
+**산출:** 공통 연결 설정·고정 Invoke operation/subject/request·제한된 응답 해석. 준비/상태 API와 화면은 AWS 저장 기능의 명시적 활성화를 요구한다.
+**검증:** TS 118 passed(+37), Next build·실제 SDK 설정/네트워크 차단 실패·TS↔실제 Lambda/로컬 DB 왕복·인증 HTTP/Chrome 응답 유실 복구·변이 5종 red 후 복구. make check 3252 passed·2 skipped(106.21초, 2026-09-13 로컬 macOS·py3.13). 증거 `docs/evidence/registry-aws-transport-verification-2026-09-13.json`.
+**경계:** 로컬 구현/검증이며 AWS Invoke·OIDC 원격 교환·IAM 집행/배포·PR 발행은 미검증. 기존 자원/키 보존.
+
+## M88 — 저장형 Lambda·전용 계획 테이블 계약 (로컬 완료, 2026-09-13)
+
+**산출:** 실제 Lambda의 preview 저장/prepare/status·별도 테이블/CDK 최소 IAM·배포 asset 모듈 8개. 기존 preview 요청 모양과 발행 미확인 의미를 유지한다.
+**검증:** 관련 113 passed(+20), 실제 패키지/로컬 DB·8개 준비 경쟁·핵심 변이 4종 검출/복구, 공식 Python 3.13 Linux ARM64 import/SDK 설정·실제 CDK 앱 합성. make check 3215 passed·2 skipped(97.44초, 2026-09-13 로컬 macOS·py3.13). 증거 `docs/evidence/registry-lambda-storage-verification-2026-09-13.json`.
+**경계:** 정의/로컬 검증이며 원격 테이블·함수 배포가 아니다. 대시보드 AWS 준비/상태 transport와 발행은 후속이다. 기존 키/자원 보존.
+
+## M87 — 인증된 상태 HTTP·화면 복구 (로컬 완료, 2026-09-13)
+
+**산출:** session subject·request_id 전용 status 경로와 opt-in 로컬 준비/조회 UI. 준비 응답 유실 시 자동 재전송 없이 상태를 조회하고 CLAIMED를 발행 성공으로 표시하지 않는다.
+**검증:** TS 81 passed(+21), Next build·실제 Auth.js HTTP/DynamoDB Local·Chrome 유실/새로고침 복구, 핵심 변이 3종 red 후 바이트 복구. make check 3195 passed·2 skipped(88.14초, 2026-09-13 로컬 macOS·py3.13). 증거 `docs/evidence/registry-status-http-verification-2026-09-13.json`.
+**경계:** production Lambda 저장/상태 배선·원격 배포/발행은 별도다. 기존 자원/키 보존, 이번 임시 로컬 자원만 정리.
+
+## M86 — 본인 준비 요청 상태 조회 서비스 (로컬 완료, 2026-09-13)
+
+상태 서비스와 local --status는 현재 본인의 요청만 조회한다. 서버 저장 payload/상태 불변식·현재 write grant를 검증하고 DB를 다시 읽어 동시 claim을 반영한다. CLAIMED→PREVIEW 재개와 claim ID 변경은 거부한다. 만료된 레코드는 만료 여부를 표시하되 TTL/준비권을 갱신하지 않는다. 응답은 PREVIEW/CLAIMED·expires_at/expired·published=false로 제한하며 내부 payload와 claim_id를 노출하지 않는다.
+
+관련 60 passed(+20), 실제 DynamoDB Local·별도 CLI 프로세스와 4종 변이 검출/복구 확인. 본인/권한 회수/저장 변조/만료/동시 claim/실제 DB 테이블 부재를 검증했다. 임시 로컬 자원만 정리했고 원격 AWS/GitHub 호출은 없다. 증거 `docs/evidence/registry-status-verification-2026-09-13.json`. 인증 HTTP/화면 연결·production 저장/배포·발행은 별도다.
+
+## M85 — 네 권한 진단의 오프라인 증거 조정 (완료, 2026-09-13)
+
+고정 review bytes와 M83/M84 관측을 연결하는 writer_reconciliation·CLI를 추가했다. 시도/응답 ID·시각/토큰 유효 기간·신원/권한·Git/PR/작성 계정/파일·폐기 기록을 비교하며, 부분 일치/불충분/경계 위반을 구별한다. 원래 STOPPED와 네 증거 공백은 보존하고 발행 성공·재시도 권한으로 승격하지 않는다. 평가 시각과 관측 유효 기간은 호출자가 명시한다.
+
+신규 55 passed, 변이 4종 검출/복구. 보존 기록을 M84 관측 시각으로 두 번 평가해 동일한 consistent_partial, 입력 SHA 불변 확인. 원격 조회·쓰기·민팅·키 접근 없음. 근거 `docs/evidence/writer-reconciliation-verification-2026-09-13.json`. PREVIEW/CLAIMED 상태 조회·production 연결/배포/UI는 별도다.
+
+## M84 — nullable 작성 App 처리·별도 봇 계정 검증 (완료, 2026-09-13)
+
+실제 nullable Issue 필드를 본뜬 로컬 HTTP 5건이 TypeError/KeyError를 재현했다. 기존 관측기는 형태/정수 ID를 확인해 pr_author_app_unavailable로 거부하며 기존 성공 가드는 유지한다. 별도 GET 전용 observe_pr_author는 App JWT의 실제 ID/slug·운영자 조회 봇 ID·PR/Issue 작성자를 대조하고, 모순 필드·다른 계정·조회 중 App 변경을 거부한다. 관련 95 passed(+25), 변이 3종 검출/복구.
+
+실제 GET 11회로 App 4924748↔봇 328527925↔PR #1 작성자 대조, PR/files/refs 불변 확인. 원래 Issue null과 M83 STOPPED는 유지하며 과거 POST 자격증명/설치 신원 파일 조회를 증명했다고 하지 않는다. 설치 토큰 민팅·원격 쓰기 0회, 키/자원 보존. 상세는 `docs/evidence/writer-pr-author-verification-2026-09-13.json`. 전체 판정 연결·production writer/배포/UI는 별도다.
+
+## M83 — Contents read 추가 후 draft PR 생성 실측 (부분 검증, 2026-09-13)
+
+사용자 재다운로드 키로 정확한 네 권한·acme 경로·R2 저장소 한 곳을 API 대조하고, 운영자 branch 생성 201·설치 신원 ref 200·acme PUT 200·globex PUT 403·draft PR #1 생성 201을 확인했다. 독립 운영자 조회는 R2 App 봇·정확한 SHA·acme +1/-0·main/형제/기존 branch 불변을 확인했다. 토큰 revoke 204 후 같은 토큰 GET 401, 모든 자원/키/intent 보존.
+
+실제 Issue performed_via_github_app=null이어서 검증기의 TypeError를 재현했다. 엄격한 작성 App ID·설치 신원 PR 파일 조회는 미검증으로 유지하고 원래 STOPPED 결과를 보존했다. 쓰기/민팅 재시도 없이 운영자 GET으로 조정했다. 증거 `docs/evidence/phase5-writer-ref-read-live-2026-09-13.json`. 자동 branch·tenant 읽기 격리·production 연결/배포/UI는 미완료다.
+
+## M82 — 승인된 R2 읽기 권한 적용 (설정 완료·실험 미실행, 2026-09-13)
+
+사용자가 M80 범위를 승인해 기존 App 4924748의 Contents read를 추가하고 설치 161238144에서 수락했다. 선택 repo는 lab 1367740190 한 곳, acme single_file write/PR write/metadata read는 유지됨을 UI에서 확인했다. R2 PEM이 기록된 Downloads 경로에 없어 토큰 민팅 전 중단했다. 실제 네 작업은 0회이고 JWT API 권한 재대조도 미실행이다.
+
+운영자 읽기로 고정 main/기존 진단 head 불변·새 branch 부재·PR 0건을 확인했다. 파일 삭제/새 키 생성 없음. 증거 `docs/evidence/phase5-writer-ref-read-setup-2026-09-13.json`. 현재 키 경로만 인계받으면 재승인 없이 첫 토큰/작업을 시작할 수 있다. 이 항목은 권한 설정 결과이며 PR 발행 또는 production 완료가 아니다.
+
+## M81 — CLI bootstrap 실패 토큰 정리 (로컬 완료, 2026-09-13)
+
+--execute에서도 어댑터 생성/구성 오류가 executing 플래그 설정 전에 나면 전달된 토큰이 정리되지 않음을 실제 로컬 HTTP로 재현했다. private journal을 확인한 뒤 설치 토큰부터 인수하고 명시적 실행 요청의 이후 실패를 revoke/같은 토큰 401로 처리한다. journal 미확보·토큰 미인수는 호출자 책임이다. 오프라인은 계속 API 0회, 기존 권한 guard와 전체 workflow 재전송 차단은 유지한다.
+
+7 failed·7 passed → 신규 16 passed·관련 70 passed. 폐기 누락/오프라인 네트워크/조기 인수 변이 3종 검출 후 소스 바이트 복구. 반복 실행은 이미 무효인 토큰을 조회하고 두 번째 DELETE를 보내지 않았다. 증거 `docs/evidence/writer-bootstrap-cleanup-verification-2026-09-13.json`. 실제 GitHub 호출·민팅·권한 변경은 없으며 M80 승인 질문은 대기 중이다.
+
+## M80 — Contents read 후속 권한 시험 검토 (준비 완료, 2026-09-13)
+
+실제 App 4924748 권한 폼에서 Contents Read-only와 Single file Read and write가 미저장 상태로 공존함을 확인하고 새로고침으로 취소했다. 기존 설치 161238144는 lab 1367740190 한 곳·기존 세 권한이다. `experiments/phase5-writer/retry-20260913/ref-read-execution-review.md`와 ref-read-review.json에 변경할 네 권한·고정 요청·단계별 중단·토큰 폐기·자원 보존을 명시했다. base64/해시 및 synthetic 파일 각각 +1/-0 로컬 대조 완료.
+
+증거 `docs/evidence/phase5-writer-ref-read-review-2026-09-13.json`. 원격 권한 저장·민팅·API 쓰기·삭제는 0회이며 폼 공존만으로 서버 허용이나 PR 성공을 주장하지 않는다. 사용자 확인이 필요한 구체 범위는 기존 R2 App/설치 Contents read 추가·새 운영자 branch 1개·acme 허용/globex 거부 각 1회·조건부 draft PR 최대 1건이다. 기존 키를 사용하며 production writer/배포/UI는 미완료다.
+
+## M79 — R2 PR-only ref 읽기 오류 실측 (진단 완료·PR 미성공, 2026-09-13)
+
+사용자 계속 지시 후 기존 App/설치/branch를 재사용하고 검토된 PR POST 한 번만 실행했다. 422 상세 `not all refs are readable`를 비공개 진단에서 확인했다. PR 0건·snapshot 불변, 새 토큰 revoke 204 후 GET 401. 기존/R2 자원·종료 intent 보존. 증거 `docs/evidence/phase5-writer-r2-pr-diagnostic-2026-09-13.json`.
+
+공식 ref 조회 권한은 Contents read여서 현재 권한 부재와 일치하나, 추가 후 PR 성공 또는 기존 파일 경계 보존은 미실증이다. M70/M77의 버린 상세는 복원하지 않았다. `experiments/phase5-writer/retry-20260913/ref-read-followup.md`에 권한 추가 후보·publisher 분리·tenant repo 이관의 경계와 다음 로컬 검토를 정리했다. production writer/배포/UI는 미완료다.
+
+M79 문서 반영 후 `make check` 3058 passed·2 skipped(2026-09-13 로컬 macOS·py3.13, 증감 0). 옛 PEM은 기록된 Downloads 경로에서 미발견이며 이번 실행에는 삭제가 없었다. R2 PEM·두 checkout은 존재 확인.
+
+## M78 — opt-in 미분류 PR 오류 상세 수집 (로컬 완료, 2026-09-13)
+
+`writer_diagnostics.py`와 실제 GitHub 응답 경로·CLI --error-details-dir을 연결했다. 세 자격증명과 일반 토큰/PEM/URL 형태 제거, 오류당 512·합계 1024 UTF-8 바이트 제한, 사용자 소유 0700 디렉터리/0600 파일, request ID 연결. 기본 M73 기록·실행 권한은 유지하고 상세는 stdout/결과로 반환하지 않는다. 저장 실패는 UNKNOWN으로 중단하며 기존 종료 요청을 다시 열지 않는다.
+합성 미분류 문구가 사라지는 현상을 재현한 뒤 보존 전후를 확인했다. 실제 loopback HTTP·파일/새 프로세스 회귀 224 passed, 전체 3058 passed·2 skipped(로컬 macOS·py3.13, +20), 변이 3종 검출/복구. 증거 `docs/evidence/writer-diagnostics-verification-2026-09-13.json`. 임의 텍스트의 모든 비밀을 탐지한다는 보장은 없으며 reviewed synthetic 실험에만 사용한다. 실제 M77 문구는 복원 불가, 후속 PR-only 검토는 준비됐지만 원격 호출은 미실행이다.
+
+## M77 — R2 실제 단일 파일 권한 시험 (실측 완료·PR 미성공, 2026-09-13)
+
+새 private lab 1367740190·App 4924748·설치 161238144를 만들고 사용자 새 PEM으로 신원을 확인했다. ref 403으로 자동 branch 가설은 실패, 승인된 운영자 branch 진단에서 acme PUT 200·globex PUT 403·PR 422를 관측했다. 독립 Git 비교로 acme 한 줄·main/형제 불변·PR 0건 확인. 두 제한 토큰은 각각 revoke 204 후 GET 401 확인했고 기존/새 자원은 모두 보존했다.
+PR 오류는 validation_failed / PullRequest / custom까지 수집했으나 상세 문구가 unclassified로 남아 원인은 미확정이다. 키 원문/토큰/JWT는 저장하지 않았다. 증거 `docs/evidence/phase5-writer-r2-live-2026-09-13.json`. 다음은 custom 진단 수집 계약 보완이며 종료 실행 재전송·권한 확대·production 연결을 완료했다고 주장하지 않는다.
+
+## M76 — GitHub 요청·독립 관측 어댑터와 R2 실행 검토 (로컬 완료, 2026-09-13)
+
+`writer_github.py`가 고정 GitHub API·신원별 요청·현재 권한/저장소·commit/tree·PR/Issue 작성 App/파일 목록을 M75에 연결한다. 검증된 최소 관측 저장으로 재시작하며, `scripts/run_registry_writer.py`는 기본 오프라인 설정 검사와 명시적 실행/토큰 폐기를 제공한다. 키 읽기·App 생성·민팅은 별도 준비다.
+관련 회귀 249 passed, 전체 `make check` 3038 passed·2 skipped(로컬 macOS·py3.13, +50), 변이 5종 검출 후 복구. 초기 gate는 옛 문서 수집 수만 실패해 갱신했다. 실제 운영자 GET 13회로 보존 lab Git snapshot을 확인했으나 설치 토큰 쓰기·PR 422 원인은 미검증이다. 증거는 `docs/evidence/writer-github-verification-2026-09-13.json`. 새 lab/App·권한·보존·키 인계 범위는 `experiments/phase5-writer/retry-20260913/execution-review.md`; 원격 생성/쓰기는 미실행이다.
+
+## M75 — 단계별 진행·중단과 독립 관측 연결 (로컬 완료, 2026-09-13)
+
+- M73 수집·M74 단일 호출·기존 증거 판정기를 묶었다. 신원/seed/branch의 고정 매핑, policy/review/과거 관측 digest, 실제 HTTP 상태 대조와 현재 snapshot을 검사한다. 검증된 단계만 진행하고 종료 결과를 재사용해 다시 보내지 않는다.
+- 실제 로컬 HTTP+합성 Git 관측으로 회귀 153 passed, 핵심 변이 5종 검출·복구, 전체 게이트 2988 passed·2 skipped(+37)를 통과했다. 프로세스 사망/재시작·동시 실행·폐기 후 401 대조도 포함한다.
+- CONSISTENT는 관측의 일관성이며 live_verified=false다. GitHub 요청/관측 어댑터·새 키 인계·원격 발행은 남았다. 보존 lab은 GET으로 상태만 재확인했다. 상세는 PROGRESS_LOG M75·Phase 5 계획서 §12.
+
+## M74 — 호출 전 intent·단일 실행권 (로컬 완료, 2026-09-13)
+
+- private 디렉터리의 intent를 배타 생성·fsync한 뒤에만 요청을 전송한다. 기존 intent는 재시작/동시 실행에도 다시 사용하지 않는다. M73 수집기와 receipt를 연결하고 읽기 전용 상태를 제공한다.
+- 실제 HTTP 경쟁→1회 전송, 전송 전/후 프로세스 사망, 6개 fsync 실패 지점, 불완전/변조 기록을 검증했다. 집중 회귀 71 passed, 변이 3종 검출/복구, 전체 게이트 2951 passed·2 skipped(+25). 상세는 PROGRESS_LOG M74·Phase 5 계획서 §12.
+- OBSERVED는 HTTP 관측이며 PR 성공이 아니다. 전체 단계 제어·GitHub transport·token revoke/읽기 조정은 남았다. 새 디렉터리로 재시도하는 우회를 막을 상위 고정 매핑이 다음 작업이다.
+
+## M73 — 제한된 실패 응답 영속 수집 (로컬 완료, 2026-09-13)
+
+- 고정 message 분류·errors allowlist·형식 검증 request ID만 남기는 수집기를 구현했다. private 원자적 파일 저장, CLI stdin/출력 경계, stdlib HTTPResponse/HTTPError 연결을 실제 파일·프로세스·loopback 서버로 확인했다.
+- 회귀 208 passed, 비밀 누출/파일 공개 생략/중복 헤더 변이 4종 검출·복구, 전체 게이트 2926 passed·2 skipped(+46). 상세는 PROGRESS_LOG M73와 Phase 5 계획서 §12.
+- 수집 기록은 결과/권한/출처 증명이 아니고 M70 본문을 복원하지 않는다. 원격 API·키·보존 자원은 사용하지 않았다. 다음은 호출 전 intent 보존·불확실 결과 뒤 자동 재전송 방지다.
+
+## M72 — 로컬 preview 저장·제출 준비 연결 (완료, 2026-09-13)
+
+- planner 내부 artifact→DynamoDB 저장→기존 preview 응답을 연결했다. 저장 실패/작업 중 만료는 성공이 아니다. request_id만 받는 로컬 prepare API는 현재 권한·기준 SHA를 확인한 뒤 조건부 소비하고 내부 output/claim_id를 노출하지 않는다.
+- 실제 DynamoDB Local·독립 CLI·Auth.js HTTP 검증과 연결 변이 3종 검출 후 복구, dashboard build와 전체 게이트 2880 passed·2 skipped(+35)를 통과했다. 상세는 PROGRESS_LOG M72·Phase 5 계획서 §12.
+- CLAIMED/published=false는 준비권만 뜻한다. production 저장/PR 어댑터·제출 UI는 미구현이며 사용자 보존 lab/PEM/checkout은 변경하지 않았다. 다음은 원격 재측정 전 실패 응답 수집 계약이다.
+
+## M71 — 서버 변경안 저장·조건부 소비 (로컬 완료, 2026-09-12)
+
+- subject/request/output/envelope digest/5분 만료를 함께 저장하고 request_id 중복 생성을 거부한다. 현재 권한·base SHA를 확인한 뒤 상태/payload/subject/만료 조건으로 PREVIEW→CLAIMED를 한 번만 허용한다. production preview와 PR writer는 미연결이다.
+- 실제 DynamoDB Local의 프로세스 간 보존·동기화된 8개 소비 경쟁·회수/만료/변조/장애 거부, CAS·만료·TTL 변이 3종 검출 후 바이트 복구를 확인했다. 신규 14개 포함 전체 게이트 2845 passed·2 skipped(2026-09-12 로컬 macOS·py3.13). 상세와 증거는 PROGRESS_LOG M71·Phase 5 계획서 §12.
+- 사용자 보존 lab·키·checkout을 유지했다. 원격 쓰기·원본 commit/push·배포 없음. 다음은 preview 저장 연결과 제출 준비 경계이며 최종 성공/실패/불확실 상태 전이는 writer와 함께 구현한다.
+
+## M70 — P5-E 네 호출 실측·후속 경계 검토 (실측 완료, 자동 PR 미완료, 2026-09-12)
+
+- 정확한 최소 권한 설치 토큰으로 ref 403, 운영자 진단 branch에서 acme 200·globex 403, PR 422를 관측했다. main/형제 불변·대상 한 줄 diff·PR 0건을 운영자 읽기로 재확인했다. 판정은 diagnostic_only=true·sibling_boundary=supported·전체 inconclusive다.
+- PR 오류 본문 미수집으로 원인을 복원할 수 없다. 발행 경로를 임의로 고치지 않고 계획서 §12에 공통 서버 저장 계약과 두 발행 후보의 변경 범위/검증 조건을 구체화했다. 키 인계 대기는 해소됐다.
+- 토큰·설치·App은 폐기/삭제됐지만 사용자가 lab 삭제를 중단했다. lab 1367338348·로컬 키/checkout을 보존하며 추가 삭제 금지다. 원본 commit/push·배포 없음. 근거는 PROGRESS_LOG M70·`docs/evidence/phase5-writer-live-2026-09-12.json`.
+
+## M69 — P5-E 생성 시도와 실패 후 정리 (시도·정리 완료, 실증 미완료, 2026-09-06)
+
+- 사용자 재개 지시와 GitHub 본인 재인증 후 private lab ID 1358934947·App ID 4848286을 생성했다. Actions off, single_file write(acme.yaml)·PR write·metadata read만 설정했다. 키 ID 4366703은 생성됐지만 응답이 ERR_BLOCKED_BY_CLIENT로 이어졌으며 다운로드 기록 접근은 Browser Use URL 정책이 거부했다.
+- 설치 토큰·App 설치·seed push·네 권한 호출·PR은 0건이다. 권한을 넓히거나 차단 경로를 우회하지 않았다. 따라서 single_file 가설의 성공/실패를 판정할 수 없다. 재시도는 사용자 키 다운로드 인계가 선행이다.
+- App 삭제 큐 응답 후 소유자 목록·직접 설정 페이지 404로 부재를 확인했다. lab DELETE API는 403이어서 토큰 권한을 늘리지 않고 소유자 UI에서 동일 ID/full_name의 저장소를 삭제했다. 성공 화면·API 404·전체 소유자 목록 부재를 대조했다. 기존 App/운영 저장소는 보존했다. 증거 `docs/evidence/phase5-writer-attempt-2026-09-06.log`. 로컬 게이트 기준선은 M68의 2831 passed·2 skipped이며 실증 완료를 뜻하지 않는다.
+
+## M68 — Lambda Docker 패키징 실패 전파 (로컬 완료, 2026-09-06)
+
+- CDK Docker bundling 명령 끝의 || true가 requirements 설치·필수 agents/step_functions 복사 실패까지 종료 코드 0으로 덮었다. 선택적인 src/__init__.py 복사만 괄호로 묶어 오류 무시 범위를 좁혔다. 실제 pip·복사 명령 회귀 3 failed·2 passed → 5 passed.
+- 공식 Lambda Python 3.11 ARM64 이미지에서 정상 의존성 설치·소스 패키징을 수행했다. 네트워크와 자격증명이 없는 별도 컨테이너에서 핸들러 13개의 import·callable 확인을 완료했다. Python 3.11.16/aarch64이며 전체 Python 테스트나 AWS 서비스 실행을 증명하지 않는다. host local bundler·전체 CDK CLI 배포도 별도다.
+- 전체 `make check` **2831 passed, 2 skipped**(2026-09-06 로컬 macOS·py3.13, 59.28초, +5). 첫 게이트의 STATUS 숫자 형식 불일치 1건을 보완한 뒤 통과했다. 증거 `docs/evidence/incident-lambda-bundling-2026-09-06.log`. 기존 WIP 보존, 원본 commit/push·배포 없음. 새 P5-E lab/App 시험 범위는 재개 지시로 확인했으며 등록 화면의 사용자 본인 재인증을 기다린다.
+
+## M67 — CDK 기본 앱의 누락된 실행 의존성 (로컬 완료, 2026-09-06)
+
+- 실제 cdk.json app이 사용하는 ts-node가 manifest·lockfile에 없었다. 전역 도구·캐시·네트워크가 없는 Node 22에서 `npm run synth -- --no-lookups --quiet`가 ENOTCACHED로 실패했다. ts-node ^10.9.2 하나만 추가하자 앱이 Lambda bundling까지 진입했다. source-map-support import는 ts-node 내부 호환 경로로 처리됨을 확인했다.
+- 임시 프로젝트·제한 PATH·빈 npm 캐시에서 실제 기본 앱을 실행하는 회귀를 추가했다. 변경 전 1 failed → 변경 후 1 passed. 새 Linux npm ci 후 실제 context와 bundling 비활성 조건에서 98개 리소스를 합성했고 npm audit 0건을 확인했다. 일반 synth의 Lambda 패키징과 원격 배포는 별도다.
+- 첫 전체 게이트는 이 M67 요약이 없어 문서 연결 검사 2개가 실패했다(2824 passed, 2 skipped). 문서 반영 후 전체 `make check` **2826 passed, 2 skipped**(2026-09-06 로컬 macOS·py3.13, 56.49초, +1)로 통과했다. 증거 `docs/evidence/cdk-app-entrypoint-2026-09-06.log`. 원본 commit/push·원격 변경 없음, P5-E 재인증·실행 범위 확인 대기.
+
+## M66 — 새 Linux 설치 검증과 보안 lockfile 갱신 (로컬 완료, 2026-09-06)
+
+- M61에서 남은 새 환경 검증을 Linux amd64·Node 22.23.2·npm 10.9.8·Python 3.13.15로 수행했다. 초기 두 npm ci 성공, 네트워크 차단·CI selector 활성 상태에서 TS/CDK 관련 **69 passed, 0 skipped**. GitHub 원격 CI 실행은 아니다.
+- npm audit의 high dashboard 1·stacks 3을 확인해 기존 범위 안에서 browserslist 4.28.9·aws-cdk-lib 2.268.0·CLI 2.1140.0으로 갱신했다. 신규 schema 54와 기존 CLI의 불일치를 재현 후 해소했다. 갱신 뒤 새 설치·관련 69개 검사·dashboard production build·CLI assembly synth 통과, 두 audit 모두 알려진 취약점 0건이다. package.json·전역 스크립트 권한은 바꾸지 않았다.
+- 실제 cdk.json context로 전후 98개 리소스를 대조했다. runbook seed provider의 Node 22→24·코드 S3Key 두 필드만 다르며 IAM·앱 설정은 일치한다. 앱 bundling 비활성 상태이므로 Lambda 패키징·배포 또는 기본 ts-node synth 명령 검증으로 읽지 않는다.
+- 원본 npm ci 후 전체 `make check` **2825 passed, 2 skipped**(2026-09-06 로컬 macOS·py3.13, 55.56초, 증감 0). 증거 `docs/evidence/ci-node22-lockfile-refresh-2026-09-06.log`. 기존 WIP 보존, 원본 commit/push·배포 없음. P5-E 재인증 완료·원격 실행 범위 확인은 남았다.
+
+## M65 — P5-E 실행 검토와 엄격한 JSON 입력 (로컬 완료, 2026-09-06)
+
+- 실제 소유 저장소 목록/App 설정 UI와 지원 API 버전을 대조하고 `experiments/phase5-writer/execution-review.md`에 정확한 생성·권한·시험·최종 정리 범위를 기록했다. App 등록 진입은 GitHub Confirm access 재인증에서 멈췄다. 원격 변경은 없다.
+- 판정기의 boolean/float 정수 오인과 모순된 중복 JSON 키의 성공 판정을 재현해 수정했다. 신규 12 failed → 관련 **116 passed**, 변이 5종 검출. 전체 `make check` **2825 passed, 2 skipped**(2026-09-06 로컬 macOS·py3.13, +12). 증거 `docs/evidence/phase5-writer-execution-review-2026-09-06.log`. 사용자 인증·원격 실행 범위 확인이 남았고 전체 목표는 진행 중이다.
+
+## M64 — P5-E 오프라인 증거 판정기 (완료, 2026-09-06)
+
+- `writer_evidence.py`와 `judge_registry_writer.py`: 최소 신원/권한·정규화한 실제 요청·운영자 ref/parent/tree/main 관측·형제 불변·PR 작성 App/URL/파일 목록을 대조한다. supported/diagnostic_only/unsupported/boundary_failure/inconclusive와 고정 reason을 JSON으로 출력한다. 신뢰할 수 없는 입력 출처나 실제 원격 호출을 인증하지 않으며 live_verified=false다.
+- 입력 계약·합성 예제와 **104개 검사**를 추가했다. parent 검사 삭제를 가리던 후속 불일치를 제거한 회귀를 포함해 변이 8종을 검출했다. DOCUMENT stdout·실패 종료 코드·입력 오류 비노출도 실제 subprocess로 확인했다. 전체 `make check` **2813 passed, 2 skipped**(2026-09-06 로컬 macOS·py3.13, +104). 증거 `docs/evidence/phase5-writer-judge-2026-09-06.log`. 원격 실증/정리 완료·commit/push는 수행하지 않았다.
+
+## M63 — preview 스트림 경계와 reader 정리 (완료, 2026-09-06)
+
+- 실제 Request/ReadableStream으로 4 KiB 누적 한도·정확 경계·헤더 위조·취소 실패/미완료·읽기 실패·reader 해제를 검사했다. 신규 13개 중 변경 전 12 failed·1 passed. 취소가 413을 덮거나 지연하던 경로, 정규화되지 않은 읽기 실패, 남는 reader 잠금을 수정했다.
+- 수정 후 preview 계약 전체 **46 passed**, 변이 6종 검출. 전체 `make check` **2709 passed, 2 skipped**(2026-09-06 로컬 macOS·py3.13, +13). 증거 `docs/evidence/preview-stream-boundaries-2026-09-06.log`. 원격 HTTP/CI·호스팅 업로드 시간 제한 검증은 별도이며 commit/push·원격 변경은 없다.
+
+## M62 — overnight 결과 독립 검수와 후속 반영 (완료, 2026-09-06)
+
+- M61 결과 커밋 `2e81799`를 독립 게이트로 검수: **2686 passed, 2 skipped**(로컬 macOS·py3.13). 2회차/구현 커밋 1개, DONE(drained), 잔여 auto·새 blocked 0개.
+- 원본의 기존 WIP와 import 제거 두 건을 보존하고 결과 diff만 반영했다. 가드 검사는 호출 문자열 대신 실제 fixture의 로컬/두 CI selector × compiler/node 누락으로 보완했다(17 passed). bare skip+주석 변이가 기존 7개를 통과하던 결함을 재현했고 보완 후 3종 변이를 검출했다.
+- 원본 최종 `make check` **2696 passed, 2 skipped**(로컬 macOS·py3.13, +10). 문서 숫자 불일치 1건을 정정한 뒤 통과했다. 실행·커밋 기록도 정정했다. 증거 `docs/evidence/overnight-review-followup-2026-09-06.log`. 원본 후속 변경은 미커밋이며 push·원격 CI·배포는 수행하지 않았다.
+
+## M61 — CI의 TS/CDK 검증 누락 방지 (완료, 2026-09-06)
+
+- `gate.yml`에 `actions/setup-node@v4`(Node 22, `dashboard/package-lock.json`·`src/stacks/package-lock.json` 캐시)와 두 `npm ci` 스텝을 추가해 tsc 툴체인을 CI에도 준비한다. 이유는 terraform init 스텝과 같다: 준비되지 않으면 두 TS 계약 테스트가 `pytest.skip`으로 숨어 gate가 아무것도 검사하지 않고도 초록이 된다(Risk 12②).
+- `tests/_ts_toolchain.py`(신규, `require_ts_toolchain`)를 두 테스트 파일이 호출하게 바꿨다: 로컬(=`CI`·`GITHUB_ACTIONS` 미설정)은 계속 skip하고, 그 두 환경변수가 있으면 skip 대신 `pytest.fail`한다.
+- `tests/test_ci_ts_dependency_guard.py`(신규 7)로 회귀 검증: 툴체인 존재 시 무해함, 로컬은 skip, `CI`/`GITHUB_ACTIONS`는 fail, 두 계약 파일의 호출 문자열 검사. 이 검사는 주석만 남겨도 초록인 한계가 있어 M62에서 실제 fixture 실행으로 대체했다.
+- 로컬에 이미 설치돼 있던 `dashboard/node_modules`·`src/stacks/node_modules`로 TS 계약·CDK 합성 테스트가 변경 전후 모두 실제로 통과함을 확인했다(스킵 아님). 전체 `make check` **2686 passed, 2 skipped**(2026-09-06 로컬 macOS·py3.13, +7). 증거 `docs/evidence/ci-ts-cdk-dependency-guard-2026-09-06.log`.
+- `npm ci`·`npm install`·원격 CI 실행·push·배포·P5-E 자원 생성은 하지 않았다 — 커밋된 lockfile로 신선한 ubuntu 러너에서 `npm ci`가 실제로 성공하는지는 이 세션이 검증한 범위 밖이다.
+
+## M60 — 하네스 critic 기본값을 엔진별로 분리 (완료, 2026-09-06)
+
+- 저장소 Makefile과 재설치 snippet의 Claude critic 기본값을 `CLAUDE_CRITIC_MODEL`로 옮겼다. 공통 `OVERNIGHT_CRITIC_MODEL`은 비워 설치된 1.5.0이 실제 critic 엔진에 따라 선택하게 한다. 명시적인 공통 override는 유지한다. 플러그인 캐시/권한 경계는 수정하지 않았다.
+- 실제 make 하위 프로세스 환경을 검사한다. 기본값·Codex·Kiro·Claude→Codex critic·환경/명령행 override를 두 파일에서 확인: 변경 전 **12 failed** → 변경 후 **12 passed**. 실제 설치된 선택 코드·Codex argv 생성도 전송을 막은 채 검사해 `--model gpt-6-astra`를 확인했다.
+- 전체 `make check` **2679 passed, 2 skipped**(2026-09-06 로컬 macOS·py3.13, +12). 증거 `docs/evidence/harness-critic-routing-2026-09-06.log`. 모델 호출·overnight 실행·commit·push·배포는 하지 않았다. 기존 혼합 WIP 보존. 다음 로컬 작업은 CI의 TS/CDK 검사 누락 방지이며 P5-E 원격 실증은 별도다.
+
+## M59 — P5-E: single_file 발행 경계 실증안과 요청 본문 준비 (준비 완료, 2026-09-05)
+
+- 계획서 §10과 `experiments/phase5-writer/`에 private lab/App 이름·single_file 한 경로/PR write·seed/예상 diff·신원별 API 본문·판정/정리 절차를 확정했다. 운영자 seed/관측과 installation-token 시험을 분리하고 ref 거부 후 별도 진단 branch는 전체 흐름 성공으로 세지 않는다.
+- 실제 GitHub 소유자 등록 폼에서 acme 경로·PR write·Contents 미허용·owner-only·webhook off를 확인했다. Create는 누르지 않았다. 현재 gh의 installation 목록 403은 토큰 종류 제한이며 App 부재 증거로 쓰지 않았다. 문서상 ref와 file PUT은 Contents write를 요구하므로 single_file 성공을 미리 단정하지 않는다.
+- 로컬 검증: 가상 acme/prod YAML을 실제 P5-A 플래너에 넣어 한 줄 diff·출력 SHA와 대조, 두 PUT 본문의 Git blob SHA/base64 일치, 요청/등록안의 범위 일치. `make check` **2667 passed, 2 skipped**(2026-09-05 로컬 macOS·py3.13, 테스트 증감 0). 증거 `docs/evidence/phase5-writer-preflight-2026-09-05.log`.
+- **P5-E 전체 완료가 아니다.** 다음은 계획서 §10의 새 lab/App 생성·권한 부여·시험·정리 범위 검토 후 실제 실증이다. 원격 자원·App/key/token·설치·PR 생성·커밋·push·배포 없음. single_file 후보 경계도 파일 안의 dev/prod나 모든 PR metadata까지 격리하지는 않는다.
+
+## M58 — P5-D: 세션 기반 preview UI와 쓰기 grant 보존 (완료, 2026-09-05)
+
+- Provisioning에서 tenant/env/capability/version을 입력하면 canonical diff·base SHA·만료를 표시한다. 입력 변경 시 이전 preview를 지운다. 서버는 Auth.js username만 전달하며 정확 Origin·custom header·fetch metadata·JSON/크기 제한을 검증한다.
+- 전용 OIDC Invoke 역할을 사용하고 SDK FunctionError·업무 실패·미연결을 구분한다. 로컬 Git HEAD/사용자 JSON 어댑터는 명시적 local mode에서만 실행되며 Vercel에서는 거부한다. 역할/읽기 grant 수정은 실제 DynamoDB partial Update로 별도 write grant를 보존하고 저장 장애를 demo 성공으로 감추지 않는다.
+- 검증: 신규 **38 passed**, 전체 `make check` **2667 passed, 2 skipped**(2026-09-05 로컬 macOS·py3.13). Next.js production build·TypeScript, 실제 Auth.js operator/admin 허용·viewer 거부·같은 세션 grant 회수·읽기 grant만 있을 때 거부, 위조 422·CSRF 403·익명 401·장애/미연결 503. 실제 DynamoDB Local 사용자 route의 최신 grant 보존·감사 기록·테이블 장애, 브라우저 성공/이미 연결됨 오류 화면을 확인했다. 변이 6종 red → 바이트 복구 후 38 passed. 증거 `docs/evidence/phase5-preview-ui-2026-09-05.log`.
+- 로컬 서버·임시 컨테이너 정리. 원격 Invoke·Vercel 배포·실사용자 grant 변경·PR 생성 없음. TS 계약 검사는 dashboard npm 의존성이 없으면 skip하며 원격 검증을 대신하지 않는다. 다음은 P5-E 발행 자격증명 실증안 구체화다.
+
+## M57 — P5-C: Lambda·읽기·최소권한 CDK·배포 패키지 (완료, 2026-09-05)
+
+- `registry_lambda.handler`가 검증한 요청을 P5-B에 전달한다. DynamoDB GetItem은 강한 일관성·fallback 없음. 공개 GitHub commit/tree/blob의 경로와 regular-file mode·SHA를 대조하고 redirect·과대 응답·truncation을 거부한다.
+- `registry_planner_stack.ts`와 별도 `bin/registry_planner.ts`: 기존 운영 stack/provider 불변, production 전용 Invoke 역할, 정확 사용자 테이블 GetItem·전용 log stream 쓰기, Python 3.13 ARM64. 함수 URL·광역 managed policy·GitHub token·Secrets 권한 없음.
+- Linux ARM64 wheel 고정본과 여섯 플래너 모듈만 패키징했다. 신규 테스트 **38 passed**, 전체 `make check` **2629 passed, 2 skipped**(2026-09-05 로컬 macOS·py3.13, 51.37초), TypeScript build·실제 CDK 합성·패키지 격리 import. 실제 DynamoDB Local SDK 허용 200·권한 부족/삭제 403·테이블 장애 503. 임시 자원 정리. 변이 7종 red → 바이트 복구. 증거 `docs/evidence/phase5-lambda-runtime-2026-09-05.log`.
+- AWS Lambda 원격 실행·GitHub live 호출·private token·세션/UI·PR은 검증하지 않았다. CDK npm 의존성이 없는 환경은 해당 테스트를 skip한다. 다음은 P5-D UI·서버 route·로컬 세션 매트릭스이며 grant 편집 시 보존도 확인한다.
+
+## M56 — P5-B: 현재 사용자 레코드의 명시적 tenant 쓰기 grant (완료, 2026-09-05)
+
+- `registry_authorization.plan_authorized_snapshot()`: 신뢰하는 세션 주체를 소문자 저장 키로 정규화하고 `CurrentUserReader`에서 매번 조회한다. 레코드 username 일치 + operator/admin + 정확 tenant 쓰기 grant를 통과해야 P5-A를 호출한다. 읽기용 `tenants`와 세션 role을 인가 근거로 받지 않는다.
+- 세션 주체 없음 401, 사용자 부재·권한 부족 403, 조회 장애 503. 예외에 자격증명·호스트 경로를 노출하지 않는다. 조회 전에 요청을 검증·복사해 승인 대상과 플래너 입력을 고정한다. P5-A의 요청 검증 함수를 공유한다.
+- 검증: 관련 테스트 **187 passed**(+57). `make check` **2591 passed, 2 skipped**(2026-09-05 로컬 macOS·py3.13, 48.40초), 인가 변이 **7종 red** → 바이트 복구. 실제 파일을 사용하는 P5-A 연결과 admin/operator 허용, 거부 시 registry 읽기 0, 권한 회수·역할 변경·삭제·이전 성공 후 장애를 검사했다. 증거 `docs/evidence/phase5-write-grants-2026-09-05.log`.
+- 신뢰하는 어댑터의 현재 레코드 반환을 전제로 한다. 실제 AWS/세션 연결·grant 저장 설정·Lambda 배포·UI·PR 발행은 하지 않았다. 다음은 P5-C의 Lambda adapter·CDK 정의와 로컬 검증이다. 제출 시 권한을 다시 확인해야 한다.
+
+## M55 — P5-A: revision에 묶인 읽기 스냅샷과 변경안 (완료, 2026-09-05)
+
+- `src/agents/platform/registry_planner.py`: 사용자 요청은 tenant/env/capability/version만 받는다. 서버 주체·요청 ID·시각을 분리하고, 읽기 어댑터에서 고정 SHA의 catalog·대상 tenant·Helm values를 받는다. 경로·blob·크기·UTF-8·엄격 YAML 검증 뒤 기존 플래너를 재사용한다.
+- **M53 정정**: 두 파일 실증은 호스트 values를 읽고 있었다. 호스트 루트를 빈 디렉터리로 바꾸면 실패했고, `values_repo_root`를 주입해 해결했다. 값 파일까지 같은 revision과 digest로 묶으며 기존 CLI 기본 동작·설치 가능성 검사는 유지한다.
+- 출력은 canonical 경로·diff·만료 시각·digest다. 주체·요청·세 blob·출력 SHA-256·계약 버전·응답을 바인딩한다. 입력 파일·형제 tenant/env·기존 주석의 변경을 거부한다. digest는 인증 서명이 아니며 인가·서버 측 계획 저장·재제출 처리는 P5-B 이후 범위다.
+- 검증: 실제 레포 파일 세 개, 네트워크/프로세스 실행 금지, 호스트 values 경로 차단, 관련 테스트 **130 passed**. `make check` **2534 passed, 2 skipped**(2026-09-05 로컬 macOS·py3.13, 45.96초). 변이 8종 red → 바이트 복구. 첫 변이에서 의미 비교 검사를 우회해도 다른 검사들이 잡아낼 수 있음을 확인하고, 잘못된 환경에 한 줄만 추가하는 독립 회귀 사례를 더했다. 증거 `docs/evidence/phase5-snapshot-planner-2026-09-05.log`.
+- 다음은 P5-B: 현재 사용자 레코드의 명시적 write grant. 원격 조회·설정·배포·commit·push·PR 발행 없음.
+
+## M54 — GCP 비용 창 재측정: 달력은 늘었지만 같은 부하는 아니었다 (측정 완료, 2026-09-05)
+
+- 기존 export **3,053행**. 이 프로젝트 누적 사용액 **₩14.801301**, PROMOTION **−₩12.356601**, 기타 크레딧 **−₩2.444753**, 청구는 미세 반올림 차이를 제외하면 **≈₩0**. 결제계정 전체 사용액은 **₩251.18**이며 이 레포 몫과 구분했다.
+- 프로젝트의 일별 관측은 08-24~09-05이나 오래된 행의 금액은 거의 0이고 09-05는 04:00 UTC까지만 있다. 09-02·03 Cloud Storage는 각각 ₩0.062387, 09-04 Artifact Registry는 ₩5.376524, 09-05에는 Cloud Run ₩2.521778과 DISCOUNT가 나타난다. **긴 달력 범위를 안정된 부하로 읽지 않고 월 추정을 보류**했다.
+- BigQuery SELECT **3건**(전체 report·프로젝트/일·프로젝트/일/서비스), AWS CE **0건**. 추가 일별 질의 둘은 각각 `--maximum_bytes_billed=10485760`으로 제한했다. table numBytes는 실제 과금 스캔 바이트로 주장하지 않는다.
+- 증거 `docs/evidence/gcp-spend-window-2026-09-05.log`. 원격 자원·설정 변경 없음. 새 상시 GKE의 비용 추정이나 크레딧 만료 시점은 이 측정으로 답하지 않는다.
+
+## M53 — Phase 5 실행 위치 설계: 플래너에는 git 작업 트리가 필요 없었다 (설계·로컬 실증 완료, 2026-09-05)
+
+- **D52**: 독립 Python Lambda + Vercel 서버의 OIDC/IAM Invoke. `docs/plans/2026-09-05-phase5-planner-runtime.md`에 후보 비교·인가·snapshot/digest·동시 변경·재시도·PR 발행 경계·구현 순서 P5-A~F를 기록했다.
+- 초기 실증은 **catalog + 대상 tenant YAML 두 파일**을 임시 경로에 두고 실행했다. **M55 정정: 호스트의 Helm values를 추가로 읽었으므로 두 파일만으로 격리됐다는 결론은 틀렸다.** PATH에 실행 파일이 없고 subprocess/network를 거부하는 audit hook 아래에서도 계획이 생성됐다. 입력과 실제 workspace registry는 바뀌지 않았다. 기존 레지스트리 쓰기 테스트 **25 passed**.
+- FastAPI는 이미 존재하고 Vercel Python도 지원되므로 옛 배제 근거를 철회했다. 새 blocker는 **현재 사용자 레코드 기반 write grant**, demo fallback 없는 인가, **PR 발행 자격증명 경계**다. GitHub API에 single_file permission은 있지만 branch 생성에는 문서상 Contents write가 필요하므로 전체 흐름의 범위를 아직 증명하지 못했다.
+- 증거 `docs/evidence/phase5-planner-runtime-2026-09-05.log`. 이번 결과는 **설계·로컬 실증**이며 Lambda 배포·UI·실제 PR 생성은 아니다. 문서 반영 후 `make check` **2429 passed, 2 skipped**(2026-09-05 로컬 macOS·py3.13). 다음 구현은 P5-A다.
+
+## M52 — 문서 경로·결정 번호·문자 예산 가드와 STATUS 줄 여유 (완료, 2026-09-05)
+
+- 경로: 진입점 여섯(BRIEF·STATUS·NEXT_PLAN·PROGRESS_LOG·COMPLETED_SUMMARY·DECISIONS)의 구체적 Markdown 참조가 Git 추적 파일과 실제 파일에 모두 대응하는지 검사한다. archive는 **참조 대상**에는 포함하고 **검색 원문**에서는 제외한다. 접두 경로·확장자·glob/생략형 경계를 고정했다.
+- 결정: BRIEF·STATUS·NEXT_PLAN의 D번호를 `DECISIONS`의 `## D번호` 헤딩과 대조한다. 한국어 조사·개별 인용·범위의 중간 번호까지 검사한다. 본문에 이름만 적는 것은 정의가 아니다.
+- 문자 예산: archive를 포함한 Markdown에서 config의 문자 상한을 중복 표기하지 않도록 검사한다. **9개 문서의 21개 숫자 복제**를 설정 참조로 바꿨다. 실측 크기·비율·줄 예산은 유지했다. 처음 넓힌 선언 패턴이 `Status: 09-02`와 남은 글자 수를 오탐해, 선언 문맥을 좁히고 회귀 사례를 넣었다.
+- 줄 여유: `STATUS` 119→99줄(체크포인트 전), 공백 정규화 대조로 기존 본문 동일 확인. 현재 줄 수는 체크포인트 증분을 포함하며 아래 완료 기준 이내다.
+- 검증: 새 가드 **16 passed**. 실제 문서 변이 **19종 전부 red**, 매번 바이트 사본 복구 확인 후 **16 passed**. 전체 `make check` **2429 passed, 2 skipped**(2026-09-05 로컬 macOS·py3.13, 42.53초). 런타임 코드·클라우드 자원 변경 없음.
+
+- 후속 수정: 날짜 가드가 미래 예정일을 지난 검증일로 읽어 진입점 세 개를 오탐했다. 명시적인 `예정: YYYY-MM-DD`만 제외하고 같은 줄의 완료일은 계속 검사한다. 회귀 검사 +3, 문서 변이 2종 red → 복구 후 날짜 가드 12 passed.
+- 증거: `docs/evidence/doc-guards-2026-09-05.log`. `STATUS` 최종 **102줄**, 기존 본문은 신규 체크포인트 블록·갱신일을 제외하면 공백 정규화 동일. 열린 `[auto]` **0건**.
+
+### 완료한 계획의 경계 (당시 문구 보존)
+
+- [x] [auto] 진입점 문서가 지목하는 `docs/**/*.md` 경로의 실존 가드. Done: BRIEF·STATUS·NEXT_PLAN·PROGRESS_LOG·COMPLETED_SUMMARY·DECISIONS의 `docs/….md` 인용이 전부 실존(**오늘 dangling 0 — 초록에서 시작한다**). ⚠️**경계를 넣을 것**: `bin/docs/…`에서 `docs/…`만 잘라내면 없는 경로 3건이 **오탐으로 생긴다**(09-03 실측). ⚠️**2026-07 archive의 8건은 제외** — 그때 있던 파일을 적은 이력이지 지금의 주장이 아니다(M48이 주석을 뺀 것과 같은 이유).
+- [x] [auto] 진입점 문서가 인용하는 `D<번호>`의 실존 가드. Done: BRIEF·STATUS·NEXT_PLAN이 인용하는 D번호 **14개**가 `DECISIONS.md`에 실재(**오늘 전부 실재 — 초록에서 시작**). `test_milestone_pointer_claims`(M번호)의 **형제이고, 형제 집합은 세는 순간 전부 셀 것**.
+- [x] [auto] 문자 예산 숫자의 **유일 표기** 가드. Done: `harness-config.json` 밖에서 문자 예산(`char_budgets`)을 적는 문서가 0. 현재 archive **4곳**이 복제 중이고 09-02 로그가 *"선행 사례, 이번 범위 밖"*으로 이미 지목했다. ⚠️**줄 예산은 의도적으로 3곳**(config·`DOCS_POLICY`·문서 헤더)이고 기존 가드가 일치를 묻는다 — **문자 예산만 유일 표기다**(M19).
+- [x] [auto] `docs/STATUS.md`의 **줄** 예산 여유 회복. Done: ≤108줄(현재 115/120). ⚠️**문자는 58%라 여유롭다 — 이건 줄 문제다** ⇒ 인접 줄을 합쳐 문단을 넓히는 방향(09-02 NEXT_PLAN 압축이 *"두 예산은 반대 방향으로 당긴다"*를 남겼다). ⚠️**⚠️/⛔ 문장은 한 글자도 지우지 말 것.**
 
 ## M51 — 재개 조건이 2년 전에 멈춘 이슈를 보고 있었다 (완료, 2026-09-02)
 

@@ -1,5 +1,5 @@
 """
-A doc's `최종 갱신` must not be older than the newest date the doc itself states.
+A doc's `최종 갱신` must not be older than its newest recorded-event date.
 
 `AGENT_BRIEF` carries the rule that makes this load-bearing:
 
@@ -28,6 +28,11 @@ updated on 2026-08-18 is not.
 guessing which year it belongs to — a guard that guesses is a guard that will be
 wrong in January. Ignoring them costs nothing here: every drift of this kind so far
 showed up in a full date somewhere in the same file.
+
+An explicit `예정: YYYY-MM-DD` is a schedule, not evidence that an event already
+happened. On 2026-09-05 this guard rejected the next day's billing-query plan in
+three documents. Exempt that date token only; other dates on the same line still
+count. Unlabelled dates keep the original conservative behavior.
 """
 
 from __future__ import annotations
@@ -49,6 +54,7 @@ DOCS = [
 
 HEADER = re.compile(r"^최종 갱신:\s*(\d{4})-(\d{2})-(\d{2})\s*$", re.M)
 ANY_DATE = re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b")
+SCHEDULE_PREFIX = re.compile(r"\b예정:[ \t]*$")
 
 
 def _header_date(text: str) -> dt.date | None:
@@ -58,7 +64,10 @@ def _header_date(text: str) -> dt.date | None:
 
 def _mentioned_dates(text: str) -> list[dt.date]:
     out = []
-    for y, mo, d in ANY_DATE.findall(text):
+    for match in ANY_DATE.finditer(text):
+        if SCHEDULE_PREFIX.search(text[:match.start()]):
+            continue
+        y, mo, d = match.groups()
         try:
             out.append(dt.date(int(y), int(mo), int(d)))
         except ValueError:
@@ -97,3 +106,18 @@ def test_the_sweep_actually_reads_dates():
         f"only {sum(found.values())} full dates found across the entry points: {found}. "
         "These documents are dated throughout; near-zero means the pattern broke."
     )
+
+
+def test_explicit_schedule_does_not_claim_past_verification():
+    text = "최종 갱신: 2026-09-05\n다음 조회 예정: 2026-09-06 이후\n"
+    assert _mentioned_dates(text) == [dt.date(2026, 9, 5)]
+
+
+def test_schedule_marker_does_not_exempt_other_dates_on_the_same_line():
+    text = "최종 갱신: 2026-09-05\n예정: 2026-09-06 · 검증 완료: 2026-09-07\n"
+    assert _mentioned_dates(text) == [dt.date(2026, 9, 5), dt.date(2026, 9, 7)]
+
+
+def test_unlabelled_future_dates_and_similar_words_remain_checked():
+    text = "최종 갱신: 2026-09-05\n2026-09-06 검증 완료 · 미예정: 2026-09-07\n"
+    assert _mentioned_dates(text) == [dt.date(2026, 9, d) for d in (5, 6, 7)]

@@ -1,0 +1,20 @@
+{
+  "at": "2026-10-03T11:34:00.667054+00:00",
+  "candidate": "candidate-v16-pod-diagnostics.json",
+  "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "max_tokens": 1024,
+  "request_limit": 2,
+  "tool_limit": 1,
+  "http_retries": 0,
+  "scope": "Actual local model and production readonly factory/prompt/router, frozen replacement tool functions; not browser/live cluster or tool-selection benchmark.",
+  "describe_only_replay": true,
+  "explicit_target_labels": true,
+  "cases_sha256": "d6d7a7725bea703a2a4e17ccb84f13b1f567cf3595008fb444f6917c23b16d7f",
+  "files": {
+    "experiments/dogfood-diagnosis/replay_pod_diagnostics.py": "ca08a0914e6464a094ce52294023cf4b610326c588b35c5f43159e172f2db869",
+    "src/agents/ai/deployment_evidence.py": "c0ee58a5f665a6ad428f707b3e62aa4fd568724ed08b920b3d768c6c80c7b102",
+    "src/agents/ai/ops_tools.py": "edc0925530321fc6facdbe0f20c4b10599f68e14f5e0c020ef1056b28f6b9dc4",
+    "src/agents/ai/local_deployer.py": "9bf0f267990f218fe3c9f09297ec998b13e462d358b83cdcb7ca79558bf75da2",
+    "tests/test_deployment_evidence.py": "f30753d7f596a752fdf67d821ef1e8353b84b77d41c9c05d9b8ab6c51ea32af8"
+  }
+}

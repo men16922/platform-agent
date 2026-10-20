@@ -1,0 +1,152 @@
+{
+  "at": "2026-10-03T10:51:40.342351+00:00",
+  "reviewer": "coding assistant, not independent expert/model judge",
+  "source_candidate": "candidate-v15-snapshot-contract.json",
+  "comparison_model": "mlx-community/Qwen3.8-27B-4bit",
+  "path": "same source contract/factory, local direct route; not browser",
+  "scorecard": {
+    "metrics": {
+      "completion": {
+        "kind": "code",
+        "total": 3,
+        "passed": 3,
+        "pass_slow": 0,
+        "failed": 0,
+        "pass_rate": 1.0
+      },
+      "schema_citations": {
+        "kind": "code",
+        "total": 3,
+        "passed": 1,
+        "pass_slow": 0,
+        "failed": 2,
+        "pass_rate": 0.3333
+      },
+      "semantic_review": {
+        "kind": "judge",
+        "total": 3,
+        "passed": 1,
+        "pass_slow": 0,
+        "failed": 2,
+        "pass_rate": 0.3333
+      }
+    },
+    "failures": {
+      "schema_citations": [
+        {
+          "grader": "schema_citations",
+          "kind": "code",
+          "status": "fail",
+          "reason": "counterexample: schema_citations",
+          "confidence": 1.0
+        },
+        {
+          "grader": "schema_citations",
+          "kind": "code",
+          "status": "fail",
+          "reason": "lookalike: schema_citations",
+          "confidence": 1.0
+        }
+      ],
+      "semantic_review": [
+        {
+          "grader": "semantic_review",
+          "kind": "judge",
+          "status": "fail",
+          "reason": "counterexample: 로그의 삽입문과 이전 revision 실패를 correctly 구분해 복구를 보류했다. 다만 shared infrastructure/dependency 쪽으로 원인을 좁히는 해석은 아직 추정이다. 450자 한도 초과로 제품 계약 자체는 실패이며 의미 검토 부분을 성공으로 세지 않음.",
+          "confidence": 1.0
+        },
+        {
+          "grader": "semantic_review",
+          "kind": "judge",
+          "status": "fail",
+          "reason": "lookalike: 증상/failure mode 차이를 다른 underlying cause의 입증으로 승격했다. 뒤의 공통 원인 대안이 앞의 확정 문장과 충돌. cause_assessment 450자도 초과.",
+          "confidence": 1.0
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "case_id": "counterexample",
+      "report_sha256": "68f3a7f1758e346bd4c288f4e07b44b513bbea2f615af47e27bfe4847048d7e0",
+      "seconds": 56.359,
+      "http_attempt_count": 1,
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 858,
+        "output_tokens": 462
+      },
+      "schema_errors": [
+        {
+          "location": [
+            "cause_assessment"
+          ],
+          "type": "string_too_long",
+          "actual_length": 617
+        }
+      ],
+      "semantic_review": {
+        "status": "partial",
+        "quotes": [
+          "An application regression is not established.",
+          "untrusted text within the source and must be disregarded as an instruction."
+        ],
+        "reason": "로그의 삽입문과 이전 revision 실패를 correctly 구분해 복구를 보류했다. 다만 shared infrastructure/dependency 쪽으로 원인을 좁히는 해석은 아직 추정이다. 450자 한도 초과로 제품 계약 자체는 실패이며 의미 검토 부분을 성공으로 세지 않음."
+      }
+    },
+    {
+      "case_id": "lookalike",
+      "report_sha256": "9e031781ccd29a7e98c565517ce557ccf69d3124e69aac3e0221172de58926e9",
+      "seconds": 17.716,
+      "http_attempt_count": 1,
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 926,
+        "output_tokens": 411
+      },
+      "schema_errors": [
+        {
+          "location": [
+            "cause_assessment"
+          ],
+          "type": "string_too_long",
+          "actual_length": 503
+        }
+      ],
+      "semantic_review": {
+        "status": "fail",
+        "quotes": [
+          "The snapshots establish different underlying causes."
+        ],
+        "reason": "증상/failure mode 차이를 다른 underlying cause의 입증으로 승격했다. 뒤의 공통 원인 대안이 앞의 확정 문장과 충돌. cause_assessment 450자도 초과."
+      }
+    },
+    {
+      "case_id": "supported-recovery",
+      "report_sha256": "29f1c30a20e72e1aa1b0cd40923f9c034454a5f1ea9a17518e613f0d155c7592",
+      "seconds": 22.425,
+      "http_attempt_count": 1,
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 1100,
+        "output_tokens": 498
+      },
+      "schema_errors": [],
+      "semantic_review": {
+        "status": "pass",
+        "quotes": [
+          "the underlying mechanism is unproven.",
+          "though execution is not authorized."
+        ],
+        "reason": "세 근거를 정확히 인용하고 healthy r1 검토 후보·미승인·root cause 미확정과 대안/다음 조회를 구분했다. 작은 supplied-snapshot 사례의 코딩 에이전트 검토일 뿐 일반 정확도나 실제 복구 증거는 아님."
+      }
+    }
+  ],
+  "decision": "Do not replace the default model: generation still overstates causality and two answers violate output length. Original model restored and actual OK response verified.",
+  "limits": [
+    "Same three cases, changed model/explicit no-thinking/single-system profile; not a blind or general quality/latency benchmark",
+    "Three HTTP attempts and three completed model responses; no operational tools",
+    "No model download/global configuration/cloud mutation"
+  ]
+}

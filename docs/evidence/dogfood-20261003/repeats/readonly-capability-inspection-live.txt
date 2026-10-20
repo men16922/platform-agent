@@ -1,0 +1,220 @@
+Browser tab: 1640936920, Title: "Platform Agent — Multi-Cloud Operations Dashboard", URL: "http://localhost:3000/agents".
+1 AXWebArea Platform Agent — Multi-Cloud Operations Dashboard, URL: localhost:3000/agents
+	2 container
+		3 text ✦
+		4 heading Platform Agent, Value: 1
+			5 text Platform Agent
+		6 text Autonomous cloud operations
+		7 text WORKSPACE
+		8 link Description: ⌘ Overview, Value: localhost:3000/
+		9 link Description: ✦ Agents, Value: localhost:3000/agents
+		10 link Description: ⬡ Provisioning, Value: localhost:3000/provisioning
+		11 link Description: ↗ Deployments, Value: localhost:3000/deployments
+		12 link Description: 🕑 History, Value: localhost:3000/history
+		13 link Description: ◈ Incidents, Value: localhost:3000/incidents
+		93 link Description: 🛡 Audit Logs, Value: localhost:3000/audit
+		94 link Description: 👥 Users, Value: localhost:3000/users
+		14 text Operations workspace Review recorded runs and observations.
+	15 container
+		16 container
+			17 text Platform Agent /  Agent activity
+		18 text OPERATIONS WORKSPACE
+		19 text Recorded activity
+		20 button Notifications
+		95 text ADMIN
+		96 button L, Help: Local Dev (local-dev) (admin) — Click to sign out
+		21 text REASONING AND EXECUTION TRACE
+		22 heading Agent activity, Value: 2
+			23 text Agent activity
+		24 text AI Agent autonomous tool-calling log — each agent selects and executes tools without human intervention LIVE · ON-PREM
+		25 heading 1. SELECT EXECUTION AGENT, Value: 3
+			26 text 1. SELECT EXECUTION AGENT
+		27 text The selection controls runtime and chat context.
+		28 container
+			29 image AWS
+			30 text Strands Agent AWS Bedrock Claude
+			31 button 🔧 Tools 5
+				32 text 🔧 Tools
+				33 text 5
+		34 container
+			35 image Google Cloud
+			36 text ADK Agent Google Cloud Gemini 3.5 Flash
+			37 button 🔧 Tools 5
+				38 text 🔧 Tools
+				39 text 5
+		40 container
+			41 image Microsoft Azure
+			42 text MS Agent Microsoft Azure GPT-5.4
+			43 button 🔧 Tools 5
+				44 text 🔧 Tools
+				45 text 5
+		46 container
+			47 text ✓ SELECTED
+			48 image Cloud Native Computing Foundation
+			49 text On-Prem Agent On-Premise Local Qwen + kagent
+			50 button 🔧 Tools 13
+				51 text 🔧 Tools
+				52 text 13
+		53 text 2. SELECTED RUNTIME
+		54 heading On-Prem Agent · Local LLM (Qwen), Value: 3
+			55 text On-Prem Agent  ·  Local LLM (Qwen)
+		56 text Local Qwen handles the request, the supervisor selects the specialist, and kagent owns Kubernetes diagnostics.
+		57 text Router connected
+		97 image Local LLM (Qwen)
+		58 text SELECTED AI MODEL
+		59 container
+			60 text Applies to  On-Prem Agent ; supervisor and kagent use their configured runtime.
+		61 pop up button (collapsed, settable) Value: Local LLM (Qwen) — recommended, Secondary Actions: Expand
+			98 menu
+				99 (selected) Local LLM (Qwen) — recommended
+				100 Azure OpenAI GPT — allowed
+				101 Bedrock Claude — allowed
+				102 Vertex Gemini — allowed
+		103 text 0 1 READY PATH
+		104 image Local LLM (Qwen)
+		105 text Qwen2.5/3-Coder (MLX)
+		106 text recommended model selection
+		64 text 0 2 READY PATH Supervisor
+		65 text Route + policy boundary
+		66 text 0 3 READY PATH kagent A2A
+		67 text Kubernetes tools + trace
+		68 text Qwen → supervisor → kagent
+		69 heading Ask On-Prem Agent, Value: 3
+			70 text Ask  On-Prem Agent
+		71 text Runs with the Agent and AI Model selected above. Investigate, deploy, or recover with a live trace.
+		107 image Local LLM (Qwen)
+		108 text RECOMMENDED Native pairing — Local LLM (Qwen) is the On-Prem-native brain.
+		167 container
+			168 text ONPREM · LOCAL-QWEN Read-only inspection: call describe_deployment exactly once for deployment orders-api-dogfood in namespace acme-dev-observability. Do not deploy, roll back, provision, or change any resource. Report the current and previous revisions, rollout result, actual health evidence, and the structured recovery assessment with its reasons and limitations. Do not treat ready replicas as an external health check or invent a healthy previous revision. OBSERVATIONS RECORDED
+			169 image Local LLM (Qwen)
+			170 text LOCAL-QWEN
+			171 button ✓ describe_deployment ▸
+				172 text ✓
+				173 text describe_deployment
+				174 text ▸
+			175 container Recorded observations
+				176 container
+					177 text RECORDED OBSERVATIONS
+					178 heading acme-dev-observability/orders-api-dogfood, Value: 4
+						179 text acme-dev-observability / orders-api-dogfood
+					180 text Context:  dogfood-deployer  · Observed:  2026-10-03T09:36:58.078772+00:00
+					181 definition list
+						182 container Current revision
+							183 text Current revision
+						184 text 27
+						185 container Rollout
+							186 text Rollout
+						187 text Complete
+						188 container Available / desired
+							189 text Available / desired
+						190 container
+							191 text 2  /  2  replicas
+						192 container Application health
+							193 text Application health
+						194 text Not established
+						195 container Previous revision
+							196 text Previous revision
+						197 container
+							198 text 26  ·  health not established
+					199 heading Recovery review, Value: 5
+						200 text Recovery review
+					201 text No supported recovery candidate.
+					202 content list
+						203 container
+							204 AXListMarker • 
+							205 text The current rollout is complete; these observations do not establish a need to roll back.
+						206 container
+							207 AXListMarker • 
+							208 text A failure of the current revision is not established.
+						209 container
+							210 AXListMarker • 
+							211 text The previous revision's health is not established.
+					212 text This assessment does not authorize a change. These are recorded observations, not a root-cause finding. External service health and recovery on new nodes have not been verified.
+					213 button (collapsed) Observation sources (2), Secondary Actions: Expand
+						214 text Observation sources (
+						215 text 2
+						216 text )
+			217 button (collapsed) Model interpretation · Response complete · Unverified, Secondary Actions: Expand
+				218 text Model interpretation · 
+				219 text Response complete
+				220 text  · Unverified
+			221 text ONPREM · LOCAL-QWEN · READ-ONLY REQUESTED Call describe_deployment exactly once for orders-api-dogfood in namespace acme-dev-observability. Report current and previous revisions, rollout status, health evidence, and the recovery assessment. Explain what remains unknown; do not infer application health from the ready replica count. READ-ONLY TOOLS OBSERVATIONS RECORDED
+			222 image Local LLM (Qwen)
+			223 text LOCAL-QWEN
+			224 button ✓ describe_deployment ▸
+				225 text ✓
+				226 text describe_deployment
+				227 text ▸
+			228 container Recorded observations
+				229 container
+					230 text RECORDED OBSERVATIONS
+					231 heading acme-dev-observability/orders-api-dogfood, Value: 4
+						232 text acme-dev-observability / orders-api-dogfood
+					233 text Context:  dogfood-deployer  · Observed:  2026-10-03T10:02:13.245961+00:00
+					234 definition list
+						235 container Current revision
+							236 text Current revision
+						237 text 27
+						238 container Rollout
+							239 text Rollout
+						240 text Complete
+						241 container Available / desired
+							242 text Available / desired
+						243 container
+							244 text 2  /  2  replicas
+						245 container Application health
+							246 text Application health
+						247 text Not established
+						248 container Previous revision
+							249 text Previous revision
+						250 container
+							251 text 26  ·  health not established
+					252 heading Recovery review, Value: 5
+						253 text Recovery review
+					254 text No supported recovery candidate.
+					255 content list
+						256 container
+							257 AXListMarker • 
+							258 text The current rollout is complete; these observations do not establish a need to roll back.
+						259 container
+							260 AXListMarker • 
+							261 text A failure of the current revision is not established.
+						262 container
+							263 AXListMarker • 
+							264 text The previous revision's health is not established.
+					265 text This assessment does not authorize a change. These are recorded observations, not a root-cause finding. External service health and recovery on new nodes have not been verified.
+					266 button (collapsed) Observation sources (2), Secondary Actions: Expand
+						267 text Observation sources (
+						268 text 2
+						269 text )
+			270 button (collapsed) Model interpretation · Response complete · Unverified, Secondary Actions: Expand
+				271 text Model interpretation · 
+				272 text Response complete
+				273 text  · Unverified
+		74 checkbox (settable, integer) Description: Read-only inspection, Value: 1
+		75 text Only inspection tools are available for this request. Deploy, rollback and provisioning are disabled.
+		161 text field (settable) Call describe_deployment exactly once for orders-api-dogfood in namespace acme-dev-observability. Report current and previous revisions, rollout status, health evidence, and the recovery assessment. Explain what remains unknown; do not infer application health from the ready replica count.
+		76 button Run
+		162 container
+			163 text Request:  868f454b-f84f-4ec1-97b3-7341cbb85b95
+		164 button Check recorded result
+		77 heading RECENT ACTIVITY, Value: 3
+			78 text RECENT ACTIVITY
+		79 text Latest  5  of  37  verified actions
+		80 container
+			81 image Cloud Native Computing Foundation
+			82 text ONPREM
+			83 image Local LLM (Qwen)
+			84 text On-Prem Agent (Local LLM (Qwen)) — Read-only inspection: call describe_deployment exactly once for deployment orders-api-dogfood in namespace acme-dev-observability. Do not de 6:37:03 PM COMPLETE describe_deployment
+		85 container
+			86 image Cloud Native Computing Foundation
+			87 text ONPREM
+			88 image Local LLM (Qwen)
+			89 text On-Prem Agent (Local LLM (Qwen)) — Read-only inspection: call describe_deployment exactly once for deployment orders-api-dogfood in namespace acme-dev-observability. Do not de 6:13:05 PM COMPLETE describe_deployment
+		90 link Value: localhost:3000/deployments/DEP-09D8589C, Description: Cloud Native Computing Foundation ONPREM AI On-Prem Executor — Deploy reviewed image: {"environment": "dev", "image_uri": "localhost:5001/orders-api-dogfood:r0", "namespace": "globex-dev-observability", 3:45:49 PM FAILED deploy_to_cluster View trace →
+		91 link Value: localhost:3000/deployments/DEP-71D41B0B, Description: Cloud Native Computing Foundation ONPREM AI On-Prem Executor — Deploy reviewed image: {"environment": "dev", "image_uri": "localhost:5001/orders-api-dogfood:r0", "namespace": "globex-dev-observability", 3:45:28 PM FAILED deploy_to_cluster View trace →
+		92 link Value: localhost:3000/deployments/DEP-CDD3D374, Description: Cloud Native Computing Foundation ONPREM AI On-Prem Executor — Rollback orders-api-dogfood to previous revision 3:44:31 PM COMPLETE rollback_deployment View trace →
+	165 pop up button (collapsed) Description: Open Next.js Dev Tools, ID: next-logo, Secondary Actions: Expand
+		166 image
+
+The focused UI element is 1 AXWebArea Platform Agent — Multi-Cloud Operations Dashboard, URL: localhost:3000/agents

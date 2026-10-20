@@ -1,0 +1,25 @@
+{
+  "milestone": "M81",
+  "source_sha256": "111a8ce14269e849e76850b9ddc2aff3b811b1f04a38545b2948378bdb05fa07",
+  "restored_exact_bytes": true,
+  "mutations": [
+    {
+      "mutation": "skip_execute_cleanup",
+      "exit_code": 1,
+      "summary": "7 failed, 9 passed, 54 deselected in 1.58s",
+      "log": "/tmp/platform-agent-m81-skip_execute_cleanup.log"
+    },
+    {
+      "mutation": "revoke_during_offline_validation",
+      "exit_code": 1,
+      "summary": "7 failed, 9 passed, 54 deselected in 2.05s",
+      "log": "/tmp/platform-agent-m81-revoke_during_offline_validation.log"
+    },
+    {
+      "mutation": "take_custody_before_private_journal",
+      "exit_code": 1,
+      "summary": "2 failed, 14 passed, 54 deselected in 2.06s",
+      "log": "/tmp/platform-agent-m81-take_custody_before_private_journal.log"
+    }
+  ]
+}

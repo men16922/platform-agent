@@ -1,0 +1,82 @@
+{
+  "at": "2026-10-03T11:16:45.960874+00:00",
+  "candidate": "candidate-v15-snapshot-contract.json",
+  "production_changes": 0,
+  "runtime_hashes_match": 287,
+  "failure_request": "3173b5a5-3fc4-4c64-b305-d4cf927e528c",
+  "failure_claims": 1,
+  "failure_seconds": 60.638,
+  "investigation_request": "fb3cdde2-fb86-48ec-bf0f-561668d02666",
+  "investigation_claims": 1,
+  "investigation_seconds": 22.723,
+  "investigation_tools": {
+    "rollout_status": 1,
+    "describe_deployment": 1,
+    "list_pods": 1
+  },
+  "model_responses": 2,
+  "reported_usage": {
+    "status": "reported",
+    "input_tokens": 4562,
+    "output_tokens": 540
+  },
+  "investigation_mutations": 0,
+  "model_review": "partial, not PASS",
+  "cycle": {
+    "revisions": [
+      "27",
+      "28",
+      "29"
+    ],
+    "uid": "8567c751-fc44-4e28-b63e-e21af534661f",
+    "original_spec_restored": true,
+    "replicas": 2,
+    "rollback_source": "operator confirmed existing UI rollback, not model decision",
+    "rollback_actions": 1,
+    "post_confirmation_health": [
+      {
+        "pod": "orders-api-dogfood-7b8fb6877d-8m6m8",
+        "uid": "6a2c7a56-f466-488c-9142-a29527445cbf",
+        "post_confirmation_http_200": [
+          "2026-10-03T11:10:57.524267511Z 10.244.2.1 - - [03/Oct/2026 11:10:57] \"GET /healthz HTTP/1.1\" 200 -",
+          "2026-10-03T11:11:07.526791751Z 10.244.2.1 - - [03/Oct/2026 11:11:07] \"GET /healthz HTTP/1.1\" 200 -"
+        ]
+      },
+      {
+        "pod": "orders-api-dogfood-7b8fb6877d-t7m6b",
+        "uid": "07fb3152-2160-45fa-8cba-d51e1f33894d",
+        "post_confirmation_http_200": [
+          "2026-10-03T11:10:55.407858926Z 10.244.1.1 - - [03/Oct/2026 11:10:55] \"GET /healthz HTTP/1.1\" 200 -",
+          "2026-10-03T11:11:05.407974458Z 10.244.1.1 - - [03/Oct/2026 11:11:05] \"GET /healthz HTTP/1.1\" 200 -"
+        ]
+      }
+    ],
+    "ui_reload": "DEP-06D6643F rolled-back; investigation request/mode/revision28 preserved"
+  },
+  "registry": "Initial Accept header rejected the OCI r0 index with404; original response retained. OCI-aware followup finds missing-r1 manifest404 and r0 index200. Status code alone did not establish absence.",
+  "limits": [
+    "One new live cycle, not the final normal3/denial2/recovery2/loss2 suite.",
+    "Old Pods remained serving during failure; no outage/MTTR estimate. HTTP200 log checks do not prove readiness-probe or dependency/service end-to-end health.",
+    "Manual comparison is a coding-assistant reference on identical saved model tool outputs; no human thinking-time or general productivity improvement measured.",
+    "Operator collection has extra Pod events/logs and registry observations, with distinct timestamps. Never claim these were given to the model.",
+    "Historical Unhealthy event last seen10:50:57UTC predates this failure; it is not a new failure observation.",
+    "Previous synthetic diagnosis errors, R3/R4 final bundle/artifacts and R5 remain open."
+  ],
+  "next": "Preserve the already-read current Pod waiting message and identity as an explicitly untrusted diagnostic source beside existing deterministic revision/health facts. Replay this frozen case and the prior injection/positive/uncertain controls before another live candidate run.",
+  "documentation_verification": {
+    "passed": 55,
+    "seconds": 3.88,
+    "evidence": "revision-window-docs.log",
+    "diff_check": "git diff --check exit0",
+    "links_resolve": true
+  },
+  "full_gate": {
+    "status": "not rerun: product sources unchanged; preceding O gate remains authoritative",
+    "passed": 3356,
+    "skipped": 2,
+    "seconds": 138.14,
+    "evidence": "snapshot-contract-gate.log",
+    "environment": "2026-10-03 local macOS/Python3.13.5/Node22.23.3/temporary npm prefix"
+  },
+  "checkpoint_at": "2026-10-03T11:21:29.602865+00:00"
+}

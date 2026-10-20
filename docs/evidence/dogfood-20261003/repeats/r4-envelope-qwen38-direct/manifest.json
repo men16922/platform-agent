@@ -1,0 +1,17 @@
+{
+  "at": "2026-10-03T08:21:24.073804+00:00",
+  "model": "mlx-community/Qwen3.8-27B-4bit",
+  "endpoint": "http://127.0.0.1:18090/v1",
+  "pydantic_ai_distributions": {
+    "pydantic-ai-slim": "2.9.0"
+  },
+  "operational_tools": 0,
+  "request_limit": 2,
+  "timeout_per_case_seconds": 60,
+  "files": {
+    "experiments/dogfood-diagnosis/cases.json": "0a0492556093c6dc485ecf5c31646560f471e6749c1eb57cd9a26c1a8ddcbf19",
+    "/Users/men1692/Desktop/AWS/platform-agent/experiments/dogfood-diagnosis/run_local.py": "87c1db3a9cf770b5bc3f22d575ed6f68ec70048745ceaac949b62458b37b0f1d",
+    "/Users/men1692/Desktop/AWS/platform-agent/experiments/dogfood-diagnosis/contract.py": "cd5135ab4a5da54c824b124ee99cee6f05f6636e67bb128db75cd4e7b2fb3b04"
+  },
+  "interpretation": "Prototype only; citation/metadata validity does not prove semantic correctness."
+}

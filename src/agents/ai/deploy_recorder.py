@@ -16,10 +16,12 @@ import json
 import os
 import time
 import uuid
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
 from src.agents.ai.model_router import MODELS
+from src.agents.ai.ops_tools import OPS_TOOLS
 
 
 def _local_store_path() -> str | None:
@@ -97,6 +99,8 @@ def read_deploys(table: Any | None = None) -> list[dict[str, Any]]:
 
 
 def _agent_label(model_id: str) -> str:
+    if model_id == "onprem-executor":
+        return "On-Prem Executor"
     model = MODELS.get(model_id)
     if model is None:
         return "AI Model Router"
@@ -109,6 +113,7 @@ def _agent_label(model_id: str) -> str:
 # cluster it landed on (platform-agent/kind).
 _SERVICE_TOOLS = ("deploy_service", "build_image", "deploy_to_cluster", "rollback_deployment")
 _CLUSTER_TOOLS = ("provision_cluster", "teardown_cluster")
+_READ_ONLY_TOOLS = {tool.__name__ for tool in OPS_TOOLS} | {"validate_deployment"}
 
 
 def _infer_service_version(steps: list[dict[str, Any]]) -> tuple[str, str]:
@@ -140,6 +145,9 @@ def _classify_type(steps: list[dict[str, Any]]) -> str:
 
 def _persist(deploy_item: dict[str, Any], activity_item: dict[str, Any], table: Any | None) -> None:
     """Backend is chosen at persist time: injected table > DynamoDB env > local file."""
+    if (table is not None or os.getenv("PLATFORM_ACTIVITY_TABLE")) and "duration_sec" in deploy_item:
+        # boto3 rejects Python floats; keep local JSON numbers and remote decimals.
+        deploy_item = {**deploy_item, "duration_sec": Decimal(str(deploy_item["duration_sec"]))}
     if table is not None:
         table.put_item(Item=deploy_item)
         table.put_item(Item=activity_item)
@@ -294,6 +302,7 @@ def _write_row(
     ok: bool,
     trace: list[dict[str, Any]] | None,
     table: Any | None,
+    duration_sec: float | None = None,
 ) -> dict[str, str]:
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     deployment_id = "DEP-" + uuid.uuid4().hex[:8].upper()
@@ -314,9 +323,16 @@ def _write_row(
         "provider": provider,
         "status": status,
         "agent": agent,
-        "duration_sec": 0,
         "created_at": now,
     }
+    if duration_sec is not None:
+        deploy_item["duration_sec"] = round(duration_sec, 3)
+        deploy_item["duration_scope"] = "executor_run" if model == "onprem-executor" else "agent_run"
+    # Recovery is available for an applied rollout that failed verification,
+    # not for a build/signature failure which never changed the workload.
+    if any(s.get("tool") == "deploy_to_cluster" and isinstance(s.get("result"), dict)
+           and s["result"].get("applied") is True for s in steps):
+        deploy_item["applied"] = True
     # The tier the caller declared. Absent when they declared none — this used to
     # default to "dev" at the HTTP boundary, so every natural-language deploy from
     # the dashboard (which sends no environment at all) recorded "dev" no matter
@@ -351,6 +367,13 @@ def _write_row(
         "created_at": now,
     }
 
+    if kind == "investigate":
+        # A successful lookup proves the lookup completed, not that anything
+        # was deployed. Keep its trace/usage without creating a rollback target.
+        activity_item.pop("deployment_id")
+        _persist_activity(activity_item, table)
+        return {"activity_id": activity_id}
+
     _persist(deploy_item, activity_item, table)
     return {"deployment_id": deployment_id, "activity_id": activity_id}
 
@@ -366,6 +389,8 @@ def record_deploy(
     environment: str | None = None,
     trace: list[dict[str, Any]] | None = None,
     table: Any | None = None,
+    duration_sec: float | None = None,
+    read_only: bool = False,
 ) -> dict[str, str] | None:
     """Persist DEPLOY + ACTIVITY rows for a completed run.
 
@@ -381,6 +406,16 @@ def record_deploy(
 
     tools = {s.get("tool") for s in steps}
     default_cluster = "platform-agent" if provider == "onprem" else ""
+
+    # An excluded mutation name may still appear as a rejected model tool call.
+    # The request's enforced capability cannot create/supersede a deployment row.
+    if read_only or (tools and tools <= _READ_ONLY_TOOLS):
+        return _write_row(
+            kind="investigate", cluster=_infer_cluster(steps) or default_cluster,
+            instruction=instruction, model=model, provider=provider,
+            environment=environment, summary=summary, steps=steps, ok=ok,
+            trace=trace, table=table, duration_sec=duration_sec,
+        )
 
     # Natural-language teardown / rollback: route to the single-row lifecycle so an
     # Agent command reads the same as the UI buttons (supersede + cascade), instead of
@@ -404,7 +439,7 @@ def record_deploy(
             # The NL path is told no namespace; the row being superseded knows it.
             namespace=str(target.get("namespace") or "") if target else "",
             model=model, action=f"Rollback {service} to previous revision", summary=summary,
-            steps=steps, ok=ok, table=table,
+            steps=steps, ok=ok, table=table, duration_sec=duration_sec,
         )
 
     provision_steps = [s for s in steps if s.get("tool") in _CLUSTER_TOOLS]
@@ -428,6 +463,7 @@ def record_deploy(
         kind=_classify_type(steps), cluster=_infer_cluster(steps) or default_cluster,
         instruction=instruction, model=model, provider=provider,
         environment=environment, summary=summary, steps=steps, ok=ok, trace=trace, table=table,
+        duration_sec=duration_sec,
     )
 
 
@@ -447,6 +483,7 @@ def record_rollback(
     ok: bool,
     namespace: str | None = None,
     table: Any | None = None,
+    duration_sec: float | None = None,
 ) -> dict[str, str] | None:
     """Record a rollback as a single-row lifecycle event.
 
@@ -483,9 +520,11 @@ def record_rollback(
         "provider": provider,
         "status": status,
         "agent": agent,
-        "duration_sec": 0,
         "created_at": now,
     }
+    if duration_sec is not None:
+        deploy_item["duration_sec"] = round(duration_sec, 3)
+        deploy_item["duration_scope"] = "agent_run"
     # Same rule as _write_row: absent when the caller declared no tier.
     if environment:
         deploy_item["environment"] = environment

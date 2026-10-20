@@ -1,0 +1,192 @@
+{
+  "label": "revision-evidence-ui",
+  "request_id": "e5b11d13-e5e0-4e77-ac0a-798f82ebfbb0",
+  "status": "succeeded",
+  "claims": 1,
+  "acceptance_to_persistence_sec": 20.793,
+  "tool_calls": {
+    "describe_deployment": 1
+  },
+  "record": {
+    "activity_id": "ACT-48259C99"
+  },
+  "state": {
+    "request_id": "e5b11d13-e5e0-4e77-ac0a-798f82ebfbb0",
+    "actor": "local-dev",
+    "request": {
+      "instruction": "Read-only inspection: call describe_deployment exactly once for deployment orders-api-dogfood in namespace acme-dev-observability. Do not deploy, roll back, provision, or change any resource. Report the current and previous revisions, rollout result, actual health evidence, and the structured recovery assessment with its reasons and limitations. Do not treat ready replicas as an external health check or invent a healthy previous revision.",
+      "model": "local-qwen",
+      "provider": "onprem",
+      "environment": null
+    },
+    "fingerprint": "c17d2fef07dbebd940a5a4dc3f7c06fe44683d4c7708ccc67c038569a6cd94cc",
+    "instance": "a8eb98bdffbf4f62bf398dd990ee7a88",
+    "status": "succeeded",
+    "updated_at": 1791018785.5163069,
+    "events": [
+      {
+        "seq": 1,
+        "type": "ready",
+        "request_id": "e5b11d13-e5e0-4e77-ac0a-798f82ebfbb0",
+        "agent": "local-qwen"
+      },
+      {
+        "type": "tool_call",
+        "tool": "describe_deployment",
+        "args": {
+          "deployment": "orders-api-dogfood",
+          "namespace": "acme-dev-observability"
+        },
+        "seq": 2,
+        "request_id": "e5b11d13-e5e0-4e77-ac0a-798f82ebfbb0"
+      },
+      {
+        "type": "tool_result",
+        "tool": "describe_deployment",
+        "ok": true,
+        "result": {
+          "ok": true,
+          "output": "Name:                   orders-api-dogfood\nNamespace:              acme-dev-observability\nCreationTimestamp:      Sat, 03 Oct 2026 14:19:47 +0900\nLabels:                 capsule.clastix.io/managed-by=acme-dev\n                        projectcapsule.dev/tenant=acme-dev\nAnnotations:            deployment.kubernetes.io/revision: 27\nSelector:               app=orders-api-dogfood\nReplicas:               2 desired | 2 updated | 2 total | 2 available | 0 unavailable\nStrategyType:           RollingUpdate\nMinReadySeconds:        0\nRollingUpdateStrategy:  25% max unavailable, 25% max surge\nPod Template:\n  Labels:  app=orders-api-dogfood\n  Containers:\n   orders-api-dogfood:\n    Image:      localhost:5001/orders-api-dogfood:r0\n    Port:       8080/TCP\n    Host Port:  0/TCP\n    Limits:\n      cpu:     250m\n      memory:  256Mi\n    Requests:\n      cpu:         250m\n      memory:      256Mi\n    Liveness:      http-get http://:8080/healthz delay=5s timeout=1s period=10s #success=1 #failure=3\n    Environment:   <none>\n    Mounts:        <none>\n  Volumes:         <none>\n  Node-Selectors:  <none>\n  Tolerations:     <none>\nConditions:\n  Type           Status  Reason\n  ----           ------  ------\n  Available      True    MinimumReplicasAvailable\n  Progressing    True    NewReplicaSetAvailable\nOldReplicaSets:  orders-api-dogfood-7fd548c97 (0/0 replicas created), orders-api-dogfood-5b5d45bdfd (0/0 replicas created), orders-api-dogfood-5798f97898 (0/0 replicas created)\nNewReplicaSet:   orders-api-do",
+          "error": null,
+          "evidence": {
+            "target": {
+              "context": "dogfood-deployer",
+              "namespace": "acme-dev-observability",
+              "deployment": "orders-api-dogfood",
+              "uid": "8567c751-fc44-4e28-b63e-e21af534661f"
+            },
+            "as_of": "2026-10-03T09:12:49.389223+00:00",
+            "window_start": "2026-10-03T09:12:49.250994+00:00",
+            "sources": [
+              {
+                "source_id": "deployment",
+                "sha256": "f0c50058df5b6cb403b03c2456814273bc507bc59f1f3deedeb7f9bcf78efcdb",
+                "observed_at": "2026-10-03T09:12:49.314164+00:00"
+              },
+              {
+                "source_id": "replicasets-pods",
+                "sha256": "9fa9bc02c9882e610d58506aa90b604ffe3938a0a0df3d90e0bbc3f6f5bca546",
+                "observed_at": "2026-10-03T09:12:49.354229+00:00"
+              }
+            ],
+            "inapplicable_sources": [],
+            "revision": 27,
+            "desired_replicas": 2,
+            "rollout_complete": true,
+            "desired_images": [
+              "localhost:5001/orders-api-dogfood:r0"
+            ],
+            "rollout_counts": {
+              "replicas": 2,
+              "updatedReplicas": 2,
+              "readyReplicas": 2,
+              "availableReplicas": 2
+            },
+            "current": {
+              "revision": 27,
+              "replicaset": "orders-api-dogfood-7b8fb6877d",
+              "uid": "d18d8102-6a21-4ff0-bca3-34434a02bb65",
+              "template_sha256": "ca5c23383f5614ed4f3496d3a5cd8976b8586454666977ac92d220da14313dfc",
+              "images": [
+                "localhost:5001/orders-api-dogfood:r0"
+              ],
+              "ready_pods": [
+                "orders-api-dogfood-7b8fb6877d-8m6m8",
+                "orders-api-dogfood-7b8fb6877d-t7m6b"
+              ],
+              "waiting_reasons": [],
+              "generation_observed": true,
+              "available_replicas": 2,
+              "health_basis": "not_established"
+            },
+            "previous": {
+              "revision": 26,
+              "replicaset": "orders-api-dogfood-7fd548c97",
+              "uid": "6b83d25b-1b37-41ef-847d-bc6ba4a77ea3",
+              "template_sha256": "dbb238aa05d2d1f87a402872baf16ad8e19f5f6a41c6d7cb66c0a048a6e74611",
+              "images": [
+                "localhost:5001/orders-api-dogfood:r1"
+              ],
+              "ready_pods": [],
+              "waiting_reasons": [],
+              "generation_observed": true,
+              "available_replicas": 0,
+              "health_basis": "not_established"
+            },
+            "recovery": {
+              "status": "not_established",
+              "reasons": [
+                "current_rollout_complete_no_rollback_need_established",
+                "current_revision_failure_not_established",
+                "previous_revision_health_not_established"
+              ],
+              "candidate_revision": null,
+              "execution_authorized": false
+            },
+            "limits": [
+              "Point-in-time observations, not an atomic cluster snapshot or a root-cause finding.",
+              "Kubernetes readiness is not an external service/dependency health check.",
+              "A preserved template is not a verified available image/configuration or rollback authorization.",
+              "Logs, annotations and model proposals cannot grant recovery eligibility."
+            ]
+          }
+        },
+        "seq": 3,
+        "request_id": "e5b11d13-e5e0-4e77-ac0a-798f82ebfbb0"
+      },
+      {
+        "type": "reasoning",
+        "text": "The deployment `orders-api-dogfood` in namespace `acme-dev-observability` has revision 27 as current and revision 26 as previous. The rollout is complete, and the deployment is available with 2 ready replicas. The recovery assessment is not established, and the reasons include:\n\n- Current rollout failure not established\n- Previous revision health not established\n- No rollback candidate established\n\nThe recovery assessment does not authorize rollback, and the previous revision's health is not confirmed. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization.\n\nNo deployment or rollback actions were performed. The deployment is healthy and available, but the recovery assessment is not established. The previous revision's health is not confirmed, and no rollback candidate is established. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization",
+        "seq": 4,
+        "request_id": "e5b11d13-e5e0-4e77-ac0a-798f82ebfbb0"
+      },
+      {
+        "type": "done",
+        "ok": true,
+        "agent": "local-qwen",
+        "model": "local-qwen",
+        "provider": "onprem",
+        "summary": "The deployment `orders-api-dogfood` in namespace `acme-dev-observability` has revision 27 as current and revision 26 as previous. The rollout is complete, and the deployment is available with 2 ready replicas. The recovery assessment is not established, and the reasons include:\n\n- Current rollout failure not established\n- Previous revision health not established\n- No rollback candidate established\n\nThe recovery assessment does not authorize rollback, and the previous revision's health is not confirmed. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization.\n\nNo deployment or rollback actions were performed. The deployment is healthy and available, but the recovery assessment is not established. The previous revision's health is not confirmed, and no rollback candidate is established. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization",
+        "suitability": {
+          "verdict": "recommended",
+          "reason": "Native pairing — Local LLM (Qwen) is the On-Prem-native brain."
+        },
+        "record": {
+          "activity_id": "ACT-48259C99"
+        },
+        "seq": 5,
+        "request_id": "e5b11d13-e5e0-4e77-ac0a-798f82ebfbb0"
+      }
+    ]
+  },
+  "activity_rows": [
+    {
+      "PK": "ACTIVITY",
+      "SK": "2026-10-03T09:13:05Z#ACT-48259C99",
+      "activity_id": "ACT-48259C99",
+      "type": "investigate",
+      "agent": "On-Prem Agent (Local LLM (Qwen))",
+      "model": "local-qwen",
+      "provider": "onprem",
+      "action": "Read-only inspection: call describe_deployment exactly once for deployment orders-api-dogfood in namespace acme-dev-observability. Do not de",
+      "instruction": "Read-only inspection: call describe_deployment exactly once for deployment orders-api-dogfood in namespace acme-dev-observability. Do not deploy, roll back, provision, or change any resource. Report the current and previous revisions, rollout result, actual health evidence, and the structured recovery assessment with its reasons and limitations. Do not treat ready replicas as an external health check or invent a healthy previous revision.",
+      "summary": "The deployment `orders-api-dogfood` in namespace `acme-dev-observability` has revision 27 as current and revision 26 as previous. The rollout is complete, and the deployment is available with 2 ready replicas. The recovery assessment is not established, and the reasons include:\n\n- Current rollout failure not established\n- Previous revision health not established\n- No rollback candidate established\n\nThe recovery assessment does not authorize rollback, and the previous revision's health is not confirmed. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization.\n\nNo deployment or rollback actions were performed. The deployment is healthy and available, but the recovery assessment is not established. The previous revision's health is not confirmed, and no rollback candidate is established. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessmen",
+      "tool_calls": [
+        "describe_deployment"
+      ],
+      "trace": "[{\"kind\": \"tool\", \"tool\": \"describe_deployment\", \"args\": {\"deployment\": \"orders-api-dogfood\", \"namespace\": \"acme-dev-observability\"}, \"result\": {\"ok\": true, \"output\": \"Name:                   orders-api-dogfood\\nNamespace:              acme-dev-observability\\nCreationTimestamp:      Sat, 03 Oct 2026 14:19:47 +0900\\nLabels:                 capsule.clastix.io/managed-by=acme-dev\\n                        projectcapsule.dev/tenant=acme-dev\\nAnnotations:            deployment.kubernetes.io/revision: 27\\nSelector:               app=orders-api-dogfood\\nReplicas:               2 desired | 2 updated | 2 total | 2 available | 0 unavailable\\nStrategyType:           RollingUpdate\\nMinReadySeconds:        0\\nRollingUpdateStrategy:  25% max unavailable, 25% max surge\\nPod Template:\\n  Labels:  app=orders-api-dogfood\\n  Containers:\\n   orders-api-dogfood:\\n    Image:      localhost:5001/orders-api-dogfood:r0\\n    Port:       8080/TCP\\n    Host Port:  0/TCP\\n    Limits:\\n      cpu:     250m\\n      memory:  256Mi\\n    Requests:\\n      cpu:         250m\\n      memory:      256Mi\\n    Liveness:      http-get http://:8080/healthz delay=5s timeout=1s period=10s #success=1 #failure=3\\n    Environment:   <none>\\n    Mounts:        <none>\\n  Volumes:         <none>\\n  Node-Selectors:  <none>\\n  Tolerations:     <none>\\nConditions:\\n  Type           Status  Reason\\n  ----           ------  ------\\n  Available      True    MinimumReplicasAvailable\\n  Progressing    True    NewReplicaSetAvailable\\nOldReplicaSets:  orders-api-dogfood-7fd548c97 (0/0 replicas created), orders-api-dogfood-5b5d45bdfd (0/0 replicas created), orders-api-dogfood-5798f97898 (0/0 replicas created)\\nNewReplicaSet:   orders-api-do\", \"error\": null, \"evidence\": {\"target\": {\"context\": \"dogfood-deployer\", \"namespace\": \"acme-dev-observability\", \"deployment\": \"orders-api-dogfood\", \"uid\": \"8567c751-fc44-4e28-b63e-e21af534661f\"}, \"as_of\": \"2026-10-03T09:12:49.389223+00:00\", \"window_start\": \"2026-10-03T09:12:49.250994+00:00\", \"sources\": [{\"source_id\": \"deployment\", \"sha256\": \"f0c50058df5b6cb403b03c2456814273bc507bc59f1f3deedeb7f9bcf78efcdb\", \"observed_at\": \"2026-10-03T09:12:49.314164+00:00\"}, {\"source_id\": \"replicasets-pods\", \"sha256\": \"9fa9bc02c9882e610d58506aa90b604ffe3938a0a0df3d90e0bbc3f6f5bca546\", \"observed_at\": \"2026-10-03T09:12:49.354229+00:00\"}], \"inapplicable_sources\": [], \"revision\": 27, \"desired_replicas\": 2, \"rollout_complete\": true, \"desired_images\": [\"localhost:5001/orders-api-dogfood:r0\"], \"rollout_counts\": {\"replicas\": 2, \"updatedReplicas\": 2, \"readyReplicas\": 2, \"availableReplicas\": 2}, \"current\": {\"revision\": 27, \"replicaset\": \"orders-api-dogfood-7b8fb6877d\", \"uid\": \"d18d8102-6a21-4ff0-bca3-34434a02bb65\", \"template_sha256\": \"ca5c23383f5614ed4f3496d3a5cd8976b8586454666977ac92d220da14313dfc\", \"images\": [\"localhost:5001/orders-api-dogfood:r0\"], \"ready_pods\": [\"orders-api-dogfood-7b8fb6877d-8m6m8\", \"orders-api-dogfood-7b8fb6877d-t7m6b\"], \"waiting_reasons\": [], \"generation_observed\": true, \"available_replicas\": 2, \"health_basis\": \"not_established\"}, \"previous\": {\"revision\": 26, \"replicaset\": \"orders-api-dogfood-7fd548c97\", \"uid\": \"6b83d25b-1b37-41ef-847d-bc6ba4a77ea3\", \"template_sha256\": \"dbb238aa05d2d1f87a402872baf16ad8e19f5f6a41c6d7cb66c0a048a6e74611\", \"images\": [\"localhost:5001/orders-api-dogfood:r1\"], \"ready_pods\": [], \"waiting_reasons\": [], \"generation_observed\": true, \"available_replicas\": 0, \"health_basis\": \"not_established\"}, \"recovery\": {\"status\": \"not_established\", \"reasons\": [\"current_rollout_complete_no_rollback_need_established\", \"current_revision_failure_not_established\", \"previous_revision_health_not_established\"], \"candidate_revision\": null, \"execution_authorized\": false}, \"limits\": [\"Point-in-time observations, not an atomic cluster snapshot or a root-cause finding.\", \"Kubernetes readiness is not an external service/dependency health check.\", \"A preserved template is not a verified available image/configuration or rollback authorization.\", \"Logs, annotations and model proposals cannot grant recovery eligibility.\"]}}}]",
+      "cost_metrics": {
+        "tool_calls_total": 1,
+        "tool_calls_by_name": {
+          "describe_deployment": 1
+        },
+        "reasoning_steps": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0
+      },
+      "status": "success",
+      "created_at": "2026-10-03T09:13:05Z"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-03T08:18:54.966627+00:00",
+  "old_owned_pid": 46760,
+  "comparison_pid": 51289,
+  "model": "mlx-community/Qwen3.8-27B-4bit",
+  "cache_only": true,
+  "max_tokens": 1024,
+  "purpose": "same-snapshot local-model comparison, no operational tools",
+  "restore_required": "Restore existing Qwen3-Coder model on18090 after experiment; default application model unchanged."
+}

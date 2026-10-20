@@ -90,6 +90,12 @@ export function mapIncidentRecord(item: Record<string, unknown>): Incident | nul
     // "resolved in zero minutes".
     resolved_at:
       typeof item.resolved_at === "string" && item.resolved_at ? item.resolved_at : undefined,
+    approval_id: typeof item.approval_id === "string" ? item.approval_id : undefined,
+    approval_decision: item.approval_decision === "approved" || item.approval_decision === "rejected"
+      ? item.approval_decision : undefined,
+    approval_decided_at: typeof item.approval_decided_at === "string" ? item.approval_decided_at : undefined,
+    rejection_reason: typeof item.rejection_reason === "string" ? item.rejection_reason : undefined,
+    reported_by: typeof item.reported_by === "string" ? item.reported_by : undefined,
   };
 }
 
@@ -157,7 +163,7 @@ export async function getIncidentFeed(): Promise<IncidentFeed> {
         // here into a silent downgrade to the on-prem-only feed, which is a
         // failure mode this dashboard has already paid for once.
         ProjectionExpression:
-          "alarm_name, incident_id, provider, severity, #mode, root_cause, runbook_id, resolved, executed, executed_actions, created_at, resolved_at, triggered_at, #confidence, #reconciliation, trace_id, tenant, #env",
+          "alarm_name, incident_id, provider, severity, #mode, root_cause, runbook_id, resolved, executed, executed_actions, created_at, resolved_at, triggered_at, #confidence, #reconciliation, trace_id, tenant, #env, approval_id, approval_decision, approval_decided_at, rejection_reason, reported_by",
         ExpressionAttributeNames: {
           "#mode": "mode",
           "#env": "env",

@@ -179,7 +179,7 @@ class DeployPipeline:
                 return result
             else:
                 # Step failed — attempt rollback if deploy was done
-                if "deploy" in completed:
+                if "deploy" in completed or (node.name == "deploy" and step_result.output.get("applied") is True):
                     rollback_result = self._step_rollback(spec, context)
                     result.steps.append(rollback_result)
                 result.final_status = StepStatus.FAILED
@@ -323,7 +323,8 @@ class DeployPipeline:
 
         if result.status.value == "success":
             return StepResult(step_name="deploy", status=StepStatus.SUCCESS, output={"deployment_id": result.deployment_id})
-        return StepResult(step_name="deploy", status=StepStatus.FAILED, error=result.error or "Deploy failed")
+        return StepResult(step_name="deploy", status=StepStatus.FAILED,
+                          error=result.error or "Deploy failed", output={"applied": result.metadata.get("applied") is True})
 
     def _step_validate(self, spec: PipelineSpec, context: dict) -> StepResult:
         """Validate deployment health."""

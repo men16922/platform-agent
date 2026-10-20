@@ -1,0 +1,19 @@
+{
+  "head": "445d48d",
+  "scope": "Final current WIP source, including UI consumer rejection of conflicting/incomplete consistency. Not an activated product release.",
+  "files": {
+    "src/agents/ai/deployment_evidence.py": "9f1460c54c8c93c4a6e85bc5912b7adbba31acdfd58eb800d925d756f792ebaa",
+    "src/agents/ai/inspection_report.py": "547bb5aa6364a28a1ef8c8edc7fa92c6e2b7e71efc5c7e8890de478a8a60c5ac",
+    "src/agents/ai/local_deployer.py": "55db62db9fb0405d5574f2308eecd229a0f991ce185f45e2b1e8ee72b8810e20",
+    "dashboard/src/lib/agent-run-view.ts": "dcdaed740d9089617d3569cd8d98a8e8d0db48bc6ddca4812e0679b3ba5a5c40",
+    "dashboard/src/components/inspection-result.tsx": "98c30a8dbd3fbefc3f2e49b2bd572a87a8116724ed65dad952e7336480c668ef",
+    "tests/test_deployment_evidence.py": "551d3f8bb2a93da842bbc682245a30ba0f0e4222e0fb86b72f1e0cfd581f81b5",
+    "tests/test_local_run_dashboard.py": "0bd69f81febcae6076d68b8cbc6e4f8d1d1313b0b8bafaee0a961e3befa22396"
+  },
+  "model_evaluated_sources": "source-manifest.json",
+  "model_source_drift": {
+    "src/agents/ai/deployment_evidence.py": false,
+    "src/agents/ai/inspection_report.py": false,
+    "src/agents/ai/local_deployer.py": false
+  }
+}

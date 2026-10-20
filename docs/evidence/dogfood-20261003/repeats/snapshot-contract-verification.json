@@ -1,0 +1,89 @@
+{
+  "at": "2026-10-03T10:42:21.207805+00:00",
+  "candidate": "candidate-v15-snapshot-contract.json",
+  "completed": "Promoted the existing snapshot contract into the actual UI/API/durable router path. Target/time suitability is decided before model use; snapshot-only factory registers no tools. Originals remain in the request; exact-source citation/schema checks do not promote semantic correctness.",
+  "changes": [
+    "Explicit snapshot field requires read_only local-qwen/onprem and instruction equal to the declared question",
+    "UI accepts structured supplied observations; server records target/window/applicable IDs and exclusion reasons for replay",
+    "No matching source returns deterministic missing-evidence/next-read information with no model call",
+    "Valid sources use the same local model with no registered tools and one model-request budget; output requires every source to have a verbatim quote",
+    "Malformed/citation-invalid/model-incomplete output stays invalid with original response retained; no action or recovery is authorized",
+    "Existing non-snapshot request fingerprints omit the new null field; existing free-text behavior and operational credentials are unchanged"
+  ],
+  "verification": {
+    "related": "36 passed in 3.80s; snapshot-contract-related.log",
+    "typescript": "tsc --noEmit exit0; snapshot-contract-typescript.log",
+    "experiment_compatibility": "6 existing prototype boundary checks pass; snapshot-contract-experiment-compat.log",
+    "new_test_count": 8,
+    "full_gate": {
+      "passed": 3356,
+      "skipped": 2,
+      "warnings": 20,
+      "seconds": 138.14,
+      "environment": "2026-10-03 local macOS/Python3.13.5/Node22.23.3/temporary npm prefix",
+      "evidence": "snapshot-contract-gate.log"
+    },
+    "mutations": "Target applicability, citation check and zero-tool registration removed separately; relevant tests failed; original bytes restored before full gate. snapshot-contract-mutations.json",
+    "review_binding_checks": "Changed source with resealed review, wrong report hash, fabricated quote and partial promotion detected in isolated copies; r4-snapshot-review-checks.json",
+    "documentation_followup": {
+      "passed": 55,
+      "seconds": 3.26,
+      "evidence": "snapshot-contract-docs.log",
+      "diff_check": "git diff --check exit0",
+      "runtime_sources_unchanged_after_full_gate": true
+    }
+  },
+  "actual_ui": {
+    "cases": 7,
+    "source_applicability": "7/7 matches declared fixtures",
+    "model_calls": 3,
+    "no_model_cases": 4,
+    "model_citation_checks": "3/3",
+    "model_semantic_review": {
+      "pass": 1,
+      "partial": 1,
+      "fail": 1
+    },
+    "judge": "coding assistant, not independent expert/model judge; partial is not PASS",
+    "records": "r4-snapshot-ui/",
+    "scorecard": "r4-snapshot-ui-scorecard.json",
+    "browser": "Actual Chrome. Source exclusion, declared target/window and no-model explanation retained after last-request reload; fresh-other-target-reload.txt; snapshot-contract-review-ui.png",
+    "ui_observation_note": "One textarea label lookup expired before submission; DOM showed the existing control. Role-based selector was used; no duplicate request or model retry."
+  },
+  "nonchange_and_usage": {
+    "at": "2026-10-03T10:40:30.831017+00:00",
+    "candidate": "candidate-v15-snapshot-contract.json",
+    "runtime_source_count": 287,
+    "source_hashes_match": true,
+    "deployment_uid": "8567c751-fc44-4e28-b63e-e21af534661f",
+    "spec_unchanged": true,
+    "revision": "27",
+    "replicas": 2,
+    "new_http_health_observation": false,
+    "requests": 7,
+    "claims": 7,
+    "model_responses": 3,
+    "no_model_cases": 4,
+    "tool_calls": 0,
+    "deployment_records": 0,
+    "input_tokens": 2857,
+    "output_tokens": 887,
+    "model_case_seconds": [
+      4.029,
+      3.646,
+      4.825
+    ]
+  },
+  "activation": "snapshot-contract-activation.json; owned router23160/dashboard23161;287 runtime/worktree source hashes match;model97368/proxy80940 unchanged",
+  "limits": [
+    "O fixes eligibility and citation enforcement, not the semantic model failure. Counterexample invents a healthy prior revision and treats the embedded instruction as a decision.",
+    "Lookalike remains partial: appears different wording is insufficiently clear about unproven cause differences despite mentioning a possible common cause. Positive recovery case supports review and offers alternatives without executing.",
+    "N and O use the same sources/model but different input path/prompt; do not claim a controlled prompt-isolated or general model benchmark. Four code exclusions are not model accuracy.",
+    "Supplied metadata is caller-declared, not authenticated live telemetry. Ordinary free-text requests do not receive this structured snapshot filter.",
+    "Durable ok=false/failed remains action-centric when no operational action occurs; snapshot UI is neutral and labels model interpretations unverified.",
+    "No new service HTTP health observation, tenant isolation proof, remote CI, commit/push/cloud/RBAC change or deletion.",
+    "R3/R4, final same-candidate scenario bundle/reproduction/comparison/demo refresh and R5 remain incomplete."
+  ],
+  "next": "Compare the three eligible cases using the same snapshot factory/contract with the already cached Qwen3.8 model, bounded no-thinking inference and no tools. Inspect original outputs before any model replacement. Preserve/restore the owned current model service and do not download a model or change global configuration.",
+  "checkpoint_at": "2026-10-03T10:42:48.722790+00:00"
+}

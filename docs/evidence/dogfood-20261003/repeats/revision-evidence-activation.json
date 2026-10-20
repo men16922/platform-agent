@@ -1,0 +1,10 @@
+{
+  "at": "2026-10-03T09:12:01.199544+00:00",
+  "candidate": "candidate-v11-revision-evidence.json",
+  "old_router_pid": 96130,
+  "new_router_pid": 18626,
+  "source_count": 284,
+  "all_runtime_source_hashes_match": true,
+  "port": 8077,
+  "other_owned_servers_restarted": false
+}

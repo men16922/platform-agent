@@ -1,0 +1,37 @@
+{
+  "milestone": "M87",
+  "date": "2026-09-13",
+  "scope": "local authenticated status route and UI recovery",
+  "tests": {
+    "typescript_contract": "81 passed; 21 new",
+    "dashboard_build": "npm run build exited 0",
+    "mutations": "3 detected and exact bytes restored",
+    "full_gate": {
+      "command": "make check",
+      "passed": 3195,
+      "skipped": 2,
+      "warnings": 21,
+      "seconds": 88.14,
+      "machine": "local macOS Python 3.13",
+      "exit_code": 0,
+      "initial_failure": "one stale documentation count assertion; updated and full gate rerun"
+    }
+  },
+  "http_evidence": "registry-status-http-local-2026-09-13.log",
+  "browser_evidence": "registry-status-http-browser-2026-09-13.json",
+  "mutation_evidence": "registry-status-http-mutations-2026-09-13.json",
+  "source_sha256": {
+    "dashboard/src/app/api/dashboard/platform/attach/status/route.ts": "9ddceb0d2db4854ce963837c7634eccbddd74b92743f77c954b7315896f71281",
+    "dashboard/src/lib/registry-preview-contract.ts": "817d7ba815e2eefdccaf30bc9308fe679eb92ddf5babc81b1749553f7491b355",
+    "dashboard/src/lib/registry-preview.ts": "e63bcac0c7faf82b7d656a36b0cc32678f9b3c875aa404cdb940dcae42537c5a",
+    "dashboard/src/components/registry-attachment-preview.tsx": "d1909e96881c874c4323810f231ebe47453108ff7df1224626dc5fccd5b7e471",
+    "dashboard/src/app/provisioning/page.tsx": "ff663fd9c19bd1220c29ca65b86a4e9b8a4ce153c2e1bd4f9252369836f8d9b5",
+    "tests/test_registry_preview_ui.py": "a0f50a890ad44118b9fdc5cf86dfff2d386fc723fb7306d8c13d47490ff54efd"
+  },
+  "remote_ci_executed": false,
+  "remote_aws_github_calls": 0,
+  "existing_resources_retained": true,
+  "owned_temporary_test_resources_removed": true,
+  "production_storage_transport_deployed": false,
+  "publication_verified": false
+}

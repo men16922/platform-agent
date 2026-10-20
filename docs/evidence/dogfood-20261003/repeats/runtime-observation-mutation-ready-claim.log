@@ -1,0 +1,39 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_runtime_panel_never_promotes_connection_to_model_or_delegation_readiness _
+
+run_js = <function run_js.<locals>.run at 0x10614e3e0>
+
+    def test_runtime_panel_never_promotes_connection_to_model_or_delegation_readiness(run_js):
+        result = run_js('''
+    const React=require('react'), render=require('react-dom/server').renderToStaticMarkup;
+    let status;
+    const Panel=load('src/components/onprem-runtime-panel.tsx',{
+     'react/jsx-runtime':require('react/jsx-runtime'),
+     'react':{useState:initial=>[status??initial,()=>{}],useEffect:()=>{}},
+     '@/components/model-logo':{ModelLogo:()=>null}
+    }).OnPremRuntimePanel;
+    const rows=[];
+    for(const cloud of ['onprem','aws']) for(const router of ['checking','connected','unavailable']) {
+     status={router,checked_at:router==='checking'?undefined:'2026-10-03T10:00:00Z'};
+     const props={agent:{cloud,name:'Agent',provider:cloud,runtime:'Qwen',llm:'Qwen',path:'UNVERIFIED PATH'},
+      model:null,models:[],modelId:'local-qwen',onModelChange:()=>{}};
+     rows.push({cloud,router,html:render(React.createElement(Panel,props))});
+    }
+    console.log(JSON.stringify(rows));
+    ''')
+        for row in result:
+            html = row["html"]
+>           assert "READY PATH" not in html and "UNVERIFIED PATH" not in html
+E           assert ('READY PATH' not in '<section cl...p></section>'
+E             
+E             'READY PATH' is contained here:
+E             ?           ^^^^^^^^^^^^^^^^^
+E               pan><span>READY PATH</span></div><div class="mt-2 flex items-center gap-2 text-sm font-semibold">Qwen</div><div class="mt-1 text-[11px] text-[var(--muted)]">Model selection is not a readiness check.</div></div><div class="rounded-xl border border-white/8 bg-black/15 p-3"><div class="flex items-center justify-between text-[10px] font-bold tracking-[0.12em] text-emerald-100/60"><span>02</span><span>CHECKING</span></div><div class="mt-2 flex items-center gap-2 text-sm font-semibold">Local router</div><div class="mt-1 text-[11px...
+E             
+E             ...Full output truncated (2 lines hidden), use '-vv' to show)
+
+tests/test_local_run_dashboard.py:118: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_local_run_dashboard.py::test_runtime_panel_never_promotes_connection_to_model_or_delegation_readiness
+1 failed in 0.24s

@@ -1,0 +1,217 @@
+{
+  "milestone": "M83",
+  "observed_at": "2026-09-13T01:50:57.040450+00:00",
+  "status": "PR_CREATED_AUTHOR_APP_ID_UNVERIFIED",
+  "scope": "r2-ref-read-01",
+  "repository": "men16922/platform-agent-p5e-authz-r2",
+  "app_id": 4924748,
+  "installation_id": 161238144,
+  "repository_id": 1367740190,
+  "review_sha256": "a47f64681fcdab183691545f11d4d0260fa92dd76347d15feecc9c839c7b5825",
+  "credential_control": {
+    "app_id": 4924748,
+    "installation_id": 161238144,
+    "permissions": {
+      "contents": "read",
+      "metadata": "read",
+      "pull_requests": "write",
+      "single_file": "write"
+    },
+    "repository_selection": [
+      1367740190
+    ],
+    "single_file_paths": [
+      "platform/tenants/acme.yaml"
+    ]
+  },
+  "installation_ref_reads": [
+    {
+      "identity": "installation-token",
+      "ref": "main",
+      "sha": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "status": 200
+    },
+    {
+      "identity": "installation-token",
+      "ref": "p5e/20260913-03-ref-read",
+      "sha": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "status": 200
+    }
+  ],
+  "attempts": {
+    "create_pr": {
+      "attempt_id": "7e7345ede3e8457998878b1055034872",
+      "capture_event_id": "b3bcfd3ea74642c9a6a4fe42e5cabc60",
+      "http_status": 201,
+      "operation": "create_pr",
+      "state": "OBSERVED"
+    },
+    "create_ref": {
+      "attempt_id": "aa5139e43f5e41609fa49bb8b11fb19b",
+      "capture_event_id": "f7fc0fe72fa3466c8cd4d091b8944fa5",
+      "http_status": 201,
+      "operation": "create_ref",
+      "state": "OBSERVED"
+    },
+    "write_sibling": {
+      "attempt_id": "b6e11969aad84f158dec93f5939e8966",
+      "capture_event_id": "824beb2453764de3a047ea5518bea29d",
+      "http_status": 403,
+      "operation": "write_sibling",
+      "state": "OBSERVED"
+    },
+    "write_target": {
+      "attempt_id": "7d8571f6a4914283ab3b70036b76cc5e",
+      "capture_event_id": "8989cf07732c494887ce616ceebce3fb",
+      "http_status": 200,
+      "operation": "write_target",
+      "state": "OBSERVED"
+    }
+  },
+  "original_verification_failure": {
+    "reason": "TypeError",
+    "stage": "create_pr"
+  },
+  "operator_readback": {
+    "author": {
+      "id": 328527925,
+      "login": "men16922-platform-agent-p5e-r2[bot]",
+      "type": "Bot"
+    },
+    "base_sha": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+    "branch_unchanged": true,
+    "diagnosis": {
+      "exception": "TypeError",
+      "field": "issue.performed_via_github_app",
+      "field_is_null": true,
+      "reproduced": true
+    },
+    "draft": true,
+    "files": [
+      {
+        "additions": 1,
+        "deletions": 0,
+        "filename": "platform/tenants/acme.yaml",
+        "sha": "9a88d6901ff18873745c272665e175921156ca9a",
+        "status": "modified"
+      }
+    ],
+    "head_sha": "266b94800b0f1cf7cd776f39e91a6776f94ea6c2",
+    "identity": "operator",
+    "issue_author": {
+      "id": 328527925,
+      "login": "men16922-platform-agent-p5e-r2[bot]",
+      "type": "Bot"
+    },
+    "merged": false,
+    "mint_requests": 0,
+    "number": 1,
+    "observed_at": "2026-09-13T01:48:44.760520+00:00",
+    "performed_via_github_app_id": null,
+    "permission_boundary": "acme PUT 200; globex PUT 403; unchanged sibling; prior bound token evidence",
+    "pr_count": 1,
+    "protected_unchanged": true,
+    "revoked_token_get_status": 401,
+    "state": "open",
+    "strict_author_app_check": "UNVERIFIED",
+    "token_cleanup": "OBSERVED_INVALID",
+    "url": "https://github.com/men16922/platform-agent-p5e-authz-r2/pull/1",
+    "write_requests": 0
+  },
+  "protected_after": {
+    "existing_diagnostic": {
+      "commit": "9d17b496128a7ec2a771041816c937db7e6366a3",
+      "complete": true,
+      "files": {
+        "platform/tenants/acme.yaml": {
+          "mode": "100644",
+          "sha": "9a88d6901ff18873745c272665e175921156ca9a"
+        },
+        "platform/tenants/globex.yaml": {
+          "mode": "100644",
+          "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+        }
+      },
+      "main": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "observer": "operator",
+      "parents": [
+        "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c"
+      ],
+      "ref": "p5e/20260913-02-diagnostic"
+    },
+    "main": {
+      "commit": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "complete": true,
+      "files": {
+        "platform/tenants/acme.yaml": {
+          "mode": "100644",
+          "sha": "398abe6c528238244a8e3713bc2b48523ae8b915"
+        },
+        "platform/tenants/globex.yaml": {
+          "mode": "100644",
+          "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+        }
+      },
+      "main": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "observer": "operator",
+      "parents": [],
+      "ref": "main"
+    }
+  },
+  "branch_after": {
+    "commit": "266b94800b0f1cf7cd776f39e91a6776f94ea6c2",
+    "complete": true,
+    "files": {
+      "platform/tenants/acme.yaml": {
+        "mode": "100644",
+        "sha": "9a88d6901ff18873745c272665e175921156ca9a"
+      },
+      "platform/tenants/globex.yaml": {
+        "mode": "100644",
+        "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+      }
+    },
+    "main": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+    "observer": "operator",
+    "parents": [
+      "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c"
+    ],
+    "ref": "p5e/20260913-03-ref-read"
+  },
+  "revoke": {
+    "attempt_id": "88b0586634b349759f4473b5a3d3e1c7",
+    "capture_event_id": "22f866ae29b6405187cfb8c2ba601411",
+    "http_status": 204,
+    "operation": "revoke_token",
+    "state": "OBSERVED"
+  },
+  "cleanup": "OBSERVED_INVALID",
+  "revoked_token_get_status": 401,
+  "mint_attempts": 1,
+  "retry_writes": 0,
+  "retention": {
+    "key_exists": true,
+    "key_mode": "0600",
+    "keys_deleted": 0,
+    "resources_deleted": 0,
+    "original_failed_summary_preserved": true,
+    "execution_intents_preserved": true
+  },
+  "limits": [
+    "Operator prepared the branch; automatic branch creation is not proven",
+    "Contents read permits repository-wide reads; tenant read isolation is not proven",
+    "Independent numeric author App ID and installation-identity PR files read remain unverified",
+    "Production writer, deployment and UI integration remain unfinished"
+  ],
+  "gate": {
+    "status": "PASSED",
+    "command": "make check",
+    "environment": "2026-09-13 local macOS Python 3.13",
+    "remote_ci": "not run",
+    "passed": 3074,
+    "skipped": 2,
+    "warnings": 21,
+    "seconds": 84.38,
+    "log": "/tmp/platform-agent-m83-gate.log"
+  }
+}

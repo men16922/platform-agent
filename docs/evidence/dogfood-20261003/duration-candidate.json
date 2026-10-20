@@ -1,0 +1,16 @@
+{
+  "stopped_owned_pids": {
+    "router": 20386,
+    "dashboard": 20387
+  },
+  "files": {
+    "src/agents/ai/deploy_recorder.py": "87a3777c1b771c020f1455c636b6090ab4c832dad09674161bf4b8b1f16ed2ed",
+    "src/agents/ai/local_deploy_api.py": "593012043671c3e73df6cd94163e10609558415d027c1ec9ec00bf32a4140244",
+    "dashboard/src/lib/mock-data.ts": "1a41ce4030e3beaf62aaadfd16bfd3e339199de6bd7c4acb685e3ea7b47c912c",
+    "dashboard/src/lib/activity-model.ts": "60cf815f202ff620c968c27568e0f8877e07eeeadead9fabb9597aee60c51b0e",
+    "dashboard/src/lib/activity-data.ts": "b766dfe6fc249d652ddf1c0440fb8e3b00e2c0f3e5f865ba759a1dccadb4f2ca",
+    "dashboard/src/lib/deployment-duration.ts": "a46a2b872939364024d4c925c0efc9224c8b7243fc6dcee38ad41616018faba4",
+    "dashboard/src/components/deployments-control.tsx": "cf5e647a5be46c65157869b95855faaa9e3189c94c0b2a2507678518b6254a66",
+    "dashboard/src/app/page.tsx": "4e8b1803205e0b4df2f72389a879128e0b8e4b74e007f53c813be17c20600287"
+  }
+}

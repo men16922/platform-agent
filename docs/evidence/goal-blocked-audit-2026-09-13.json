@@ -1,0 +1,49 @@
+{
+  "observed_at": "2026-09-12T23:50:04.172531+00:00",
+  "objective": "잔여작업 최대한 수행해",
+  "previous_turn_classification": "progress: M81 bootstrap credential cleanup fixed and verified",
+  "blocker": "M80 R2 Contents read permission expansion and scoped remote trial await explicit user confirmation",
+  "consecutive_goal_turns_with_same_blocker": 3,
+  "approval_received": false,
+  "next_review": "experiments/phase5-writer/retry-20260913/ref-read-execution-review.md",
+  "current_evidence": {
+    "local_gate": {
+      "passed": 3074,
+      "skipped": 2,
+      "environment": "local macOS Python 3.13",
+      "log": "/tmp/platform-agent-m81-gate.log"
+    },
+    "followup_docs": {
+      "passed": 39,
+      "log": "/tmp/platform-agent-m81-docs.log"
+    },
+    "production_writer": "not connected",
+    "remote_deployment": "not performed",
+    "new_permission_trial": "not authorized or executed",
+    "open_auto_tasks": 0
+  },
+  "external_reopen_check": {
+    "repository": "sigstore/policy-controller",
+    "pull_1968": {
+      "state": "open",
+      "merged": false,
+      "updated_at": "2026-08-11T13:33:51Z"
+    },
+    "pull_2007": {
+      "merged": true,
+      "merged_at": "2026-08-24T19:26:40Z",
+      "merge_commit_sha": "d4c3f41c394afa24b7d2f63e6f2fff06a36fc322"
+    },
+    "latest_release": {
+      "tag": "v0.15.1",
+      "published_at": "2026-03-26T12:22:28Z"
+    },
+    "resume_condition_met": false,
+    "sources": [
+      "https://github.com/sigstore/policy-controller/pull/1968",
+      "https://github.com/sigstore/policy-controller/pull/2007",
+      "https://github.com/sigstore/policy-controller/releases/tag/v0.15.1"
+    ]
+  },
+  "audit_actions": "read-only source/API checks and this local checkpoint; no credential mint, permission save, resource/file deletion, commit, push, or deployment"
+}

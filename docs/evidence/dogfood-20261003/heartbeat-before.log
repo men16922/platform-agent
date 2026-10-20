@@ -1,0 +1,45 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____________ test_slow_event_survives_heartbeats_and_is_recorded ______________
+
+tmp_path = PosixPath('/private/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/pytest-of-men1692/pytest-14/test_slow_event_survives_heart0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x114ad2780>
+
+    def test_slow_event_survives_heartbeats_and_is_recorded(tmp_path, monkeypatch):
+        store = tmp_path / "activity.jsonl"
+        monkeypatch.delenv("PLATFORM_ACTIVITY_TABLE", raising=False)
+        monkeypatch.setenv("PLATFORM_ACTIVITY_FILE", str(store))
+        monkeypatch.setattr(api, "_SSE_HEARTBEAT_S", 0.01)
+        state = {"started": 0, "completed": 0, "cancelled": 0}
+    
+        async def slow_stream(*args, **kwargs):
+            state["started"] += 1
+            yield {"type": "tool_call", "tool": "list_pods", "args": {"namespace": "acme-dev-observability"}}
+            try:
+                await asyncio.sleep(0.055)
+            except asyncio.CancelledError:
+                state["cancelled"] += 1
+                raise
+            state["completed"] += 1
+            yield {"type": "result", "outcome": DeployOutcome(
+                ok=True, model="local-qwen", provider="onprem", summary="Read complete",
+                steps=[{"tool": "list_pods", "args": {"namespace": "acme-dev-observability"},
+                        "result": {"ok": True, "output": "No resources found"}}],
+            )}
+    
+        monkeypatch.setattr(api, "route_deploy_stream", slow_stream)
+        with TestClient(api.app) as client:
+            response = client.post("/api/local-deploy/stream", json={"instruction": "Read pods"})
+>       assert state == {"started": 1, "completed": 1, "cancelled": 0}
+E       AssertionError: assert {'cancelled':... 'started': 1} == {'cancelled':... 'started': 1}
+E         
+E         Omitting 1 identical items, use -vv to show
+E         Differing items:
+E         {'cancelled': 1} != {'cancelled': 0}
+E         {'completed': 0} != {'completed': 1}
+E         Use -v to get more diff
+
+tests/test_deploy_stream_heartbeat.py:36: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_deploy_stream_heartbeat.py::test_slow_event_survives_heartbeats_and_is_recorded
+1 failed in 0.93s

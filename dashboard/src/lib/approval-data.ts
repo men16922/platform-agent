@@ -96,10 +96,18 @@ async function getOnPremApproval(approvalId: string): Promise<ApprovalRequest | 
   return pending.find((a) => a.approval_id === approvalId) ?? null;
 }
 
-async function decideOnPrem(approvalId: string, decision: "approve" | "reject"): Promise<boolean> {
+async function decideOnPrem(
+  approvalId: string,
+  decision: "approve" | "reject",
+  rejection?: { reason: string; reported_by: string }
+): Promise<boolean> {
   const res = await fetch(`${getOnPremWebhookUrl()}/${decision}/${approvalId}`, {
     method: "POST",
     cache: "no-store",
+    ...(rejection ? {
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(rejection),
+    } : {}),
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
@@ -281,7 +289,7 @@ export async function rejectApprovalRequest(
 
   // On-prem: reject the parked decision via the webhook (no execution).
   if (request.source === "onprem") {
-    return decideOnPrem(approvalId, "reject");
+    return decideOnPrem(approvalId, "reject", { reason, reported_by: username });
   }
 
   if (!isLiveMode()) {

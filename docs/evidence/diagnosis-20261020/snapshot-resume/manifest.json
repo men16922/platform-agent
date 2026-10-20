@@ -1,0 +1,14 @@
+{
+  "model_revision": "6e302ea604ad9ab206367e2c501d1571023e7b6d",
+  "max_tokens": 1024,
+  "temperature": 0,
+  "http_request_limit": 1,
+  "tools": 0,
+  "retries": 0,
+  "scope": "Current production supplied-text snapshot path, exact original seven fixtures; no cluster calls. Revalidation, not a modified candidate.",
+  "source_hashes": {
+    "src/agents/ai/snapshot_diagnosis.py": "5fa410406b14198f5eae20e2fe6bc63299107a48b00ee5f2e7b2ddc4dd9173f6",
+    "src/agents/ai/local_deployer.py": "f3710c3cf6c35252494b72b9f397b874a229b6fb27451dfeac38d740a4f462b5",
+    "src/agents/ai/model_router.py": "4756716f761220915d8abdfd94e4f33507ef90df09dd58b407aeeca33a655817"
+  }
+}

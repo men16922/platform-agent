@@ -1,0 +1,33 @@
+{
+  "date": "2026-09-13",
+  "milestone": "M74",
+  "scope": "actual local files/processes and loopback HTTP",
+  "focused_tests": {
+    "passed": 71,
+    "seconds": 13.44
+  },
+  "gate": {
+    "command": "make check",
+    "passed": 2951,
+    "skipped": 2,
+    "warnings": 21,
+    "seconds": 76.35,
+    "exit_code": 0
+  },
+  "remote_api_calls": 0,
+  "retained_p5e_resources": "not accessed or changed",
+  "machine": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "mutations": "docs/evidence/writer-attempt-mutations-2026-09-13.json",
+  "sha256": {
+    "src/agents/platform/writer_attempt.py": "a9126e74badb8feb49667b49ed65e9cdac959fbd07bb7582a5bc3bccdce6d8f3",
+    "src/agents/platform/writer_capture.py": "d90583592b0ae5b7625de4167ab45a2646a0eda5776616b0f7075f5325903298",
+    "tests/test_writer_attempt.py": "4919e611709132b94031c6d47f439fa7f994cd4b05056034435523b6c8be3068",
+    "tests/test_writer_capture.py": "d5d19260a503a0f90c8b9c6c05000d68df8c432d7037c6c6147a5af2e4d139da"
+  },
+  "not_completed": [
+    "full experiment stage controller",
+    "GitHub transport and independent PR/ref reconciliation",
+    "token mint/revoke integration",
+    "production deployment or publication"
+  ]
+}

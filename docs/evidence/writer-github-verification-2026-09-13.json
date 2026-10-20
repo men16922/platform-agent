@@ -1,0 +1,48 @@
+{
+  "date": "2026-09-13",
+  "milestone": "M76",
+  "scope": "local HTTP GitHub-shaped synthetic responses plus real operator-only read audit",
+  "focused_tests": {
+    "passed": 249,
+    "seconds": 10.35
+  },
+  "gate": {
+    "command": "make check",
+    "passed": 3038,
+    "skipped": 2,
+    "warnings": 21,
+    "seconds": 81.01,
+    "exit_code": 0,
+    "log": "/tmp/platform-agent-m76-gate.log"
+  },
+  "initial_gate": {
+    "failed": 1,
+    "passed": 3037,
+    "skipped": 2,
+    "reason": "stale documented collection total",
+    "seconds": 81.74
+  },
+  "remote_write_calls": 0,
+  "remote_read_audit": "docs/evidence/writer-github-readonly-2026-09-13.json",
+  "private_keys_read": false,
+  "existing_checkout_accessed": false,
+  "machine": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "mutations": "docs/evidence/writer-github-mutations-2026-09-13.json",
+  "retry_bundle": "experiments/phase5-writer/retry-20260913/execution-review.md",
+  "sha256": {
+    "src/agents/platform/writer_github.py": "af681dec40cbcf19fb21ba7b67b1a7e76a2276af3855ed26cd2cf5e6ca2d4637",
+    "scripts/run_registry_writer.py": "a12f50967da87a71e9b6195ce6262164461d89318b130936070593ef428424ae",
+    "tests/test_writer_github.py": "b406222762459b55114f7368650d19b30e98963b1f5e6a476afbe897d81f6636",
+    "experiments/phase5-writer/retry-20260913/review.json": "8829482ca57fbb8b5197e4fc3569577c8365688a5de32716840d8ce767619230"
+  },
+  "limits": [
+    "synthetic HTTP responses do not prove real installation authorization",
+    "App/key/mint preparation and new remote experiment not executed",
+    "production deployment and PR publishing not connected",
+    "no commit, push or resource deletion"
+  ],
+  "doc_checks": {
+    "passed": 55,
+    "seconds": 2.54
+  }
+}
