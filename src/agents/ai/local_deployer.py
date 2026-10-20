@@ -442,7 +442,7 @@ _CATEGORY_BLURBS: dict[str, str] = {
 
 AGENT_TOOL_CATALOG: list[AgentTool] = [
     AgentTool(list_pods, "Investigate", "list pods in a namespace"),
-    AgentTool(get_logs, "Investigate", "recent logs from a deployment's pods"),
+    AgentTool(get_logs, "Investigate", "recent logs from a deployment's pods; previous=true reads the last terminated attempt"),
     AgentTool(describe_deployment, "Investigate", "replicas, events, bound revision evidence and recovery review assessment"),
     AgentTool(rollout_status, "Investigate", "rollout status of a deployment"),
     AgentTool(list_namespaces, "Investigate", "namespaces in the cluster"),

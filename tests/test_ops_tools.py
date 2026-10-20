@@ -37,6 +37,7 @@ def test_all_ops_tools_use_readonly_verbs(monkeypatch):
     monkeypatch.setattr(ops_tools.subprocess, "run", run)
     ops_tools.list_pods()
     ops_tools.get_logs("d")
+    ops_tools.get_logs("d", previous=True)
     ops_tools.describe_deployment("d")
     ops_tools.rollout_status("d")
     ops_tools.list_namespaces()
@@ -55,3 +56,13 @@ def test_all_ops_tools_use_readonly_verbs(monkeypatch):
 def test_ops_tools_exported():
     names = {t.__name__ for t in ops_tools.OPS_TOOLS}
     assert names == {"list_pods", "get_logs", "describe_deployment", "rollout_status", "list_namespaces"}
+
+
+def test_get_logs_reads_the_previous_attempt_only_when_asked(monkeypatch):
+    commands = []
+    monkeypatch.setattr(ops_tools.subprocess, "run",
+                        lambda cmd, **kw: commands.append(cmd) or SimpleNamespace(returncode=0, stdout="ok", stderr=""))
+    ops_tools.get_logs("orders", "acme", tail=5)
+    ops_tools.get_logs("orders", "acme", tail=5, previous=True)
+    assert "--previous" not in commands[0] and commands[1][-1] == "--previous"
+    assert commands[1][:-1] == commands[0]

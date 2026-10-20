@@ -1,0 +1,95 @@
+toolsets:
+  MongoDBAtlas:
+    enabled: false
+  aks/core:
+    enabled: false
+  aks/node-health:
+    enabled: false
+  argocd/core:
+    enabled: false
+  bash:
+    enabled: false
+  cilium/core:
+    enabled: false
+  confluence:
+    enabled: false
+  connectivity_check:
+    enabled: false
+  coralogix:
+    enabled: false
+  core_investigation:
+    enabled: false
+  crossplane/core:
+    enabled: false
+  database/sql:
+    enabled: false
+  datadog/general:
+    enabled: false
+  datadog/logs:
+    enabled: false
+  datadog/metrics:
+    enabled: false
+  datadog/traces:
+    enabled: false
+  docker/core:
+    enabled: false
+  elasticsearch/cluster:
+    enabled: false
+  elasticsearch/data:
+    enabled: false
+  grafana/dashboards:
+    enabled: false
+  grafana/loki:
+    enabled: false
+  grafana/tempo:
+    enabled: false
+  helm/core:
+    enabled: false
+  hubble/observability:
+    enabled: false
+  inspektor-gadget/node:
+    enabled: false
+  inspektor-gadget/tcpdump:
+    enabled: false
+  internet:
+    enabled: false
+  kafka/admin:
+    enabled: false
+  kubernetes/core:
+    enabled: false
+  kubernetes/kube-prometheus-stack:
+    enabled: false
+  kubernetes/live-metrics:
+    enabled: false
+  kubernetes/logs:
+    enabled: false
+  kubevela/core:
+    enabled: false
+  newrelic:
+    enabled: false
+  notion:
+    enabled: false
+  opensearch/query_assist:
+    enabled: false
+  openshift/core:
+    enabled: false
+  openshift/live-metrics:
+    enabled: false
+  openshift/logs:
+    enabled: false
+  openshift/security:
+    enabled: false
+  prometheus/metrics:
+    enabled: false
+  rabbitmq/core:
+    enabled: false
+  robusta:
+    enabled: false
+  servicenow/tables:
+    enabled: false
+  skills:
+    enabled: false
+  slab:
+    enabled: false
+  victorialogs:
+    enabled: false

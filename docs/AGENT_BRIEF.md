@@ -1,8 +1,8 @@
 # AGENT_BRIEF — platform-agent
 
-최종 갱신: 2026-10-20
+최종 갱신: 2026-10-21
 
-> ▶ NEXT SESSION: **기존 Qwen 고정.** `docs/plans/2026-10-03-platform-agent-usage-and-evidence.md` §13-1을 읽는다. R3는 D53(lookalike 사람 검토 경계)로 충족, R4 첫 묶음 정리. 열린 로컬 선택지는 `get_logs` previous 확장 여부(범위 결정). R5·원격은 미승인. 삽입 지시 가드 작업 트리 미커밋(전체 WIP 380항목과 얽혀 부분 커밋 불가 — 사용자 결정 필요).
+> ▶ NEXT SESSION: **로컬 진단 트랙 정리 완료, 원격은 미승인.** `docs/plans/2026-10-03-platform-agent-usage-and-evidence.md` §13~13-2. 삽입 지시 가드는 #76으로 병합, `get_logs(previous)`·R5 비교(미채택) 완료. 다음 후보는 NEXT_PLAN의 별도 원격 우선순위(Phase5/PR writer/4b, 각각 승인 필요)다. 단일 응답 대조는 cached_tokens·cold 재기동 반복으로만 해석.
 > 에이전트 진입점. **≤60줄** 유지. 다음 작업의 권위는 `docs/NEXT_PLAN.md`다.
 
 ## Read Path (순서대로, bulk-read 금지)
@@ -18,9 +18,9 @@
 - **목적:** AWS-native 플랫폼 에이전트. provision → deploy 검증 → detect → analyze → decide → execute → Slack 리포트.
 - **구현:** Operations·3-cloud AI Agent·온프렘 프로비저닝/배포/검증/롤백·kagent A2A·대시보드. Activity는 AWS+On-Prem을 병합하며 Provisioning/Deployments/History와 중첩 상세를 제공한다. 구현/과거 실증과 현재 운영 검증은 구분한다.
 - **로컬 모델:** Qwen3-Coder-30B-A3B. `make dev-up`은 MLX+proxy+router+dashboard를 기동한다. 모델 교체 실험은 미채택이다. mlx_lm 0.31.3 서버는 온도>0에서 seed를 무시하고(생성 스레드의 컴파일 sampler), 온도0 출력도 prompt-cache 이력에 따라 갈린다. 제품은 온도/seed 미지정(argmax).
-- **현재 후보:** 기존 앱 후보 O/v15, 작업 트리 W(10-20)+삽입 지시 복구 가드(`snapshot_diagnosis.py`, 미커밋). W는 격리 API18778(실패 보존)/18779(범위 설명 정렬)·UI13001에서 검증했으며 기존 앱/기본 포트는 전환하지 않았다. 원문/거부 응답을 보존한다. HEAD만으로 WIP 후보를 식별하지 않는다.
+- **현재 후보:** 기존 앱 후보 O/v15, 삽입 지시 복구 가드는 #76으로 main 병합(10-21). W는 격리 API18778(실패 보존)/18779(범위 설명 정렬)·UI13001에서 검증했으며 기존 앱/기본 포트는 전환하지 않았다. 원문/거부 응답을 보존한다. HEAD만으로 WIP 후보를 식별하지 않는다.
 - **최근 실측:** 10-20 같은 원래 SA UID의 1h 토큰만 task-private 갱신, 기존 workload 읽기. 현재 rev37/replicas2·Deployment UID/전체 spec은 T 최종값과 같다. 새 app/external health 증명 아님. T 반복/데모는 완료분으로 유지한다.
-- **검증:** `make check` → **3384 passed, 3 skipped**·20warnings·118.68초(2026-10-20 로컬 macOS·Python3.13.5·공식 Node22.23.3/임시 npm prefix). 삽입 지시 가드 단위4 신규·변이4 red. 모델 측정은 cold/warm 각5 case 단일 응답이며 의미 해결이 아니다(lookalike 형식 무효 회귀).
+- **검증:** `make check` → **3385 passed, 3 skipped**·20warnings·107.20초(2026-10-21 로컬 macOS·Python3.13.5·공식 Node22.23.3/임시 npm prefix). 삽입 지시 가드 단위4 신규·변이4 red. 모델 측정은 cold/warm 각5 case 단일 응답이며 의미 해결이 아니다(lookalike 형식 무효 회귀).
 - **Phase 5:** 독립 Python Lambda 설계와 저장/준비/상태 UI·AWS transport까지 로컬 완료. M91의 2026-09-15 인증 해소·배포 후보 검증은 운영 배포/Invoke/PR 발행 완료가 아니다.
 
 ## Guardrails

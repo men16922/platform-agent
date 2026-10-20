@@ -1,0 +1,6 @@
+id: 1
+data: {"seq": 1, "type": "ready", "request_id": "6b3943dd-8ace-4e24-b975-b3f386ea14da", "agent": "local-qwen", "read_only": true}
+
+id: 2
+data: {"type": "error", "state": "unknown", "request_id": "6b3943dd-8ace-4e24-b975-b3f386ea14da", "seq": 2, "error": "Execution result is unconfirmed. Inspect the workload before starting another request."}
+

@@ -1,23 +1,23 @@
 # NEXT_PLAN — platform-agent
 
-최종 갱신: 2026-10-20
+최종 갱신: 2026-10-21
 
 > **열린 작업만. ≤120줄.** 다음 작업의 유일한 권위다. 완료 이력은 `docs/COMPLETED_SUMMARY.md`, 최신 증분은 `docs/PROGRESS_LOG.md`.
 > 정리 전 원문·주의사항은 [10월 아카이브](archive/progress-2026-10.md#tidy-20261003-next-plan)와 `docs/archive/next-plan-detail-2026-09.md`에 보존했다.
 
-## 현재 상태 (2026-10-20, gate 3384·3 skipped — 로컬 macOS·Python3.13.5·공식 Node22.23.3/임시 npm prefix)
+## 현재 상태 (2026-10-21, gate 3385·3 skipped — 로컬 macOS·Python3.13.5·공식 Node22.23.3/임시 npm prefix)
 
-**10-20 "잔여 작업 완료시까지 수행"으로 재개.** sampler 경계는 규명 완료(계획서 §13), 작업 트리에 삽입 지시 복구 가드를 채택했다(미커밋). 의미 품질은 미충족이며 열린 `[auto]` 씨앗은 없다.
+**10-21 로컬 진단 트랙(R3/R4 첫 묶음/R5) 정리 완료.** sampler 경계·삽입 지시 가드(#76 병합)·이전 컨테이너 로그·R5 비교(계획서 §13~13-2). 원격 범위는 사용자 미승인으로 유지. 의미 품질은 미충족이며 열린 `[auto]` 씨앗은 없다.
 
 기존 앱 후보 O/v15와 작업 트리 W(10-20)를 구분한다. W는 제품 서버 미활성화, S 응답 계약도 미채택이다. 게이트는 작업 트리 기준이며 실행 후보 검증/원격 CI와 같지 않다. 완료한 Phase0·1a·1b·2·3 및 이후의 제한·재개 조건은 M10~M15와 각 계획서를 따른다.
 
 ## 재개 후 첫 우선순위 — 진단 R3/R4
 
 - [x] **Supplied snapshot 의미 오류:** 지시문 추종은 가드 후보로 4/4 정정(미커밋). lookalike는 D53(사람 검토 경계)로 R3 기준 충족 처리, 모델 의미 통과 아님. 계획서 §13-1.
-- [ ] **이전 컨테이너 로그(선택, 범위 결정 필요):** investigation_proposals의 `previous_container_logs`는 사람에게 보이는 다음 증거 제안(가용성 미검증 명시)이며, 고정 Investigate5의 `get_logs`에는 previous 옵션이 없다. 계약 결함이 아니라 도구 확장 여부의 결정이다. 확장 시 재시작 Pod 재현(kind 기동 필요)→cache 통제 하 선택 재측정. `r4-first-bundle/review.json`.
+- [x] **이전 컨테이너 로그:** 10-21 사용자 승인으로 `get_logs(previous)` 채택. 실제 재시작 대상·같은 SA로 검증, tool 4 상한에서는 묶음 거부(보존), tool 5에서 2/2 성공. 계획서 §13-2.
 - [ ] **측정 통제:** 단일 응답 대조는 `cached_tokens` 기록·arm별 cold 재기동+다른 이력 반복으로만 해석한다(STATUS Risk13). 진짜 표본이 필요하면 sampler 개입 서버(`sampler-boundary/patched_server.py`)를 측정 도구로만 쓰고 제품에 넣지 않는다. 가드 후보의 진짜 표본 측정은 아직 없다.
 - [x] **진단 기준 재검증:** 원문·양성 복구·삽입 지시·유사 증상·근거 부족 기준을 유지한 채 cold/warm·진짜 표본으로 재측정했다(§13). 형식 통과·전건 보류를 성공으로 세지 않았다.
-- [ ] **R5 조건부 비교 — 사용자 미승인(10-20 "None now"/lookalike는 D53 선택):** R3 충족 후 대상이지만 HolmesGPT 설치·호출은 승인 전 하지 않는다.
+- [x] **R5 조건부 비교:** 10-21 승인, HolmesGPT 0.43.0 동일 snapshot·모델·도구0 비교 완료(1/7 수용), 미채택. 도구0 조건의 설계 불일치 한계 명시. 계획서 §13-2.
 
 권위: `docs/plans/2026-10-03-platform-agent-usage-and-evidence.md` §4·§12. 새 자료는 `docs/evidence/diagnosis-20261020/production-contract-final/`, 과거 U checkpoint도 보존한다. T의 정상3·거부2·복구2·새로고침2 및 데모를 다시 반복하지 않는다. 다음 수정의 검증 범위는 실제 변경으로 정한다.
 
