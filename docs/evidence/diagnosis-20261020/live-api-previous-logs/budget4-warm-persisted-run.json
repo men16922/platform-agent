@@ -1,0 +1,22 @@
+{
+  "request_id": "b28316c6-68b0-406b-8069-7d9356822a1c",
+  "request": {
+    "instruction": "Investigate the current rollout and revision observations of deployment orders-api-dogfood in namespace acme-dev-observability. Make no changes. Determine what health and recovery are established or uncertain, then suggest the next targeted read-only evidence. Stay within this namespace/workload.",
+    "model": "local-qwen",
+    "provider": "onprem",
+    "environment": null,
+    "read_only": true
+  },
+  "status": "unknown",
+  "updated_at": 1792511266.566257,
+  "events": [
+    {
+      "seq": 1,
+      "type": "ready",
+      "request_id": "b28316c6-68b0-406b-8069-7d9356822a1c",
+      "agent": "local-qwen",
+      "read_only": true
+    }
+  ],
+  "error": "Execution result is unconfirmed. Inspect the workload before starting another request."
+}

@@ -1,0 +1,16 @@
+{
+  "at": "2026-10-21",
+  "change": "ops_tools.get_logs gains previous: bool = False (appends --previous). Same kubectl verb, deploy_kubectl identity pin and 1500-char output cap; Investigate catalog description notes the flag. tests/test_ops_tools.py: read-only verb check covers previous=True; new test asserts --previous only when asked; dropping the append turns it red.",
+  "reproduction": "kind-platform-agent restarted with Docker; orders-api-dogfood pods show restartCount 7 (lastState terminated Unknown). Current logs held only the new start; --previous held the terminated attempt (/healthz 200 lines up to 2026-10-19 21:21 UTC). The real tool function returned each correctly against the live cluster.",
+  "identity": "Same ServiceAccount platform-agent-system/platform-agent-deployer (uid 4163b0ef-31c1-48d4-bed7-4e00873bcb54) 1h token refreshed into the existing task-private 0600 kubeconfig (previous file backed up). RBAC changes 0. The restricted identity can read previous logs.",
+  "runs": {
+    "budget4 (W live-api-scoped conditions: request5/tool4, temperature0)": "cold and warm both: the model requested 5 parallel reads (describe, rollout, list_pods, get_logs, get_logs previous=true) in its first response; pydantic-ai refused the batch before dispatch (UsageLimitExceeded), 0 reads ran, the API recorded unknown/unconfirmed. Preserved as budget4-*.",
+    "budget5 (one variable: tool limit 4 -> 5)": "cold 14.707 s and warm 10.574 s both succeeded with 5 scoped reads including previous=true, all dispatched. Code-held inspection: rollout complete, health/recovery not established; model proposal service_health (contract-correct for a completed rollout). The previous logs were healthy health checks (restart came from Docker), so no judgment changed."
+  },
+  "workload_after": "uid 8567c751-fc44-4e28-b63e-e21af534661f, revision 37, replicas 2: unchanged.",
+  "findings": [
+    "The model requests previous logs unconditionally, before observing restarts: +1 read per investigation, not conditional reasoning.",
+    "Under a tool_calls_limit of 4 the expanded selection refuses the whole first batch. The product read-only route sets no tool-call limit (grep of src/agents/ai), so the product is not blocked; bounded experiments must budget 5."
+  ],
+  "adoption": "Adopted. Not evidence of diagnostic accuracy: one workload whose previous attempt was healthy, 2 runs."
+}

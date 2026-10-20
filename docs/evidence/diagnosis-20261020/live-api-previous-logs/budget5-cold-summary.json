@@ -1,0 +1,33 @@
+{
+  "label": "budget5-cold",
+  "request_id": "c49359de-3b41-41b0-886b-5e447726d935",
+  "seconds": 14.707,
+  "status": "succeeded",
+  "tools": [
+    {
+      "tool": "rollout_status",
+      "previous": null,
+      "dispatched": true
+    },
+    {
+      "tool": "describe_deployment",
+      "previous": null,
+      "dispatched": true
+    },
+    {
+      "tool": "get_logs",
+      "previous": false,
+      "dispatched": true
+    },
+    {
+      "tool": "get_logs",
+      "previous": true,
+      "dispatched": true
+    },
+    {
+      "tool": "list_pods",
+      "previous": null,
+      "dispatched": true
+    }
+  ]
+}

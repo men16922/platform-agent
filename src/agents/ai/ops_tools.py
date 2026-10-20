@@ -55,18 +55,25 @@ def list_pods(namespace: str = "default") -> dict:
     return _kubectl(["get", "pods", "-n", namespace, "-o", "wide"])
 
 
-def get_logs(deployment: str, namespace: str = "default", tail: int = 50) -> dict:
+def get_logs(deployment: str, namespace: str = "default", tail: int = 50, previous: bool = False) -> dict:
     """Fetch recent logs from a deployment's pods (read-only).
 
     Args:
         deployment: Deployment name.
         namespace: Kubernetes namespace.
         tail: Number of trailing log lines.
+        previous: Read the last terminated container attempt instead of the
+            running one. After a restart the current container holds only the
+            new start; the failing attempt's output is here. Fails when no
+            previous attempt exists.
 
     Returns:
         Dict with log output.
     """
-    return _kubectl(["logs", f"deployment/{deployment}", "-n", namespace, "--tail", str(tail)])
+    args = ["logs", f"deployment/{deployment}", "-n", namespace, "--tail", str(tail)]
+    if previous:
+        args.append("--previous")
+    return _kubectl(args)
 
 
 def describe_deployment(deployment: str, namespace: str = "default") -> dict:

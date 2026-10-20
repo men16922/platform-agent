@@ -1,11 +1,13 @@
 # STATUS — platform-agent
 
-최종 갱신: 2026-10-20
+최종 갱신: 2026-10-21
 
 > 현재 검증 baseline / active focus / risks. **≤120줄** 유지.
 > 상세 이력은 `COMPLETED_SUMMARY` **M0~M91** (`docs/COMPLETED_SUMMARY.md`)과 아카이브가 권위다. 아래 날짜는 관측일이며 현재 원격 상태를 뜻하지 않는다.
 
 ## 검증 Baseline (실제로 돌린 것만)
+
+- 2026-10-21 main+`get_logs(previous)` `make check` → **3385** passed·3 skipped·20warnings,107.20초. 로컬 macOS·Python3.13.5·공식Node22.23.3/임시 npm prefix. 신규 previous 조건부 테스트1. 원격 CI는 PR에서 확인.
 
 - 2026-10-20 W+삽입 지시 가드 `make check` → **3384** passed·3 skipped·20warnings,118.68초. 로컬 macOS·Python3.13.5·공식Node22.23.3/임시 npm prefix. 신규 snapshot 가드 단위4. 첫 실행은 문서 수치 미갱신으로 gate_number_claims 1 failed(3383/3)였고 문서 갱신 후 재실행한 값이다.
 
@@ -29,7 +31,7 @@
 
 지시문 ablation은 두 cache 이력·진짜 표본에서 재현돼 원인으로 확인했다. 작업 트리에 삽입 지시 복구 가드를 채택했다: 표식 기반 탐지 주석(원문 불변)+`review_candidate`의 `recovery_evidence` 필수+지시 구간 인용 코드 거부. baseline 대비 counterexample·표식 제거 변형 4/4 정정, 양성 복구 2/2 유지, 지시문 덧붙인 양성 1/2 fail-closed 거부, lookalike 2/2 길이 초과 형식 무효 회귀. 의미 해결·R3/R4 통과가 아니다. `injection-guard/review.json`.
 
-lookalike는 관계 필드 실험까지 실패(relation-probe/review.json)해 사용자 결정 D53으로 사람 검토 경계에 둔다. R3 시나리오 묶음은 이 경계와 T 완료분으로 충족 처리(모델 의미 통과 아님), R4 첫 묶음은 수동 기준 대비 도구 선택 4/5·이전 컨테이너 로그 공백으로 정리했다(r4-first-bundle/review.json). R5·원격은 미승인.
+lookalike는 관계 필드 실험까지 실패(relation-probe/review.json)해 사용자 결정 D53으로 사람 검토 경계에 둔다. R3 시나리오 묶음은 이 경계와 T 완료분으로 충족 처리(모델 의미 통과 아님), R4 첫 묶음은 수동 기준 대비 도구 선택 4/5·이전 컨테이너 로그 공백으로 정리했다(r4-first-bundle/review.json). 10-21 사용자 승인으로 #76 병합, `get_logs(previous)` 채택(실제 재시작 대상·같은 SA, tool 4 상한 묶음 거부 2/2·tool 5 성공 2/2), R5 HolmesGPT 비교 완료(1/7 수용, 도구0 조건 한계, 미채택). 원격은 미승인.
 
 ## Open Risks / Gaps
 

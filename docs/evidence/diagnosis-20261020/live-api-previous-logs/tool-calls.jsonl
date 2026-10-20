@@ -1,0 +1,10 @@
+{"at": "2026-10-20T15:49:41.750188+00:00", "tool": "rollout_status", "args": {"deployment": "orders-api-dogfood", "namespace": "acme-dev-observability"}, "dispatched": true}
+{"at": "2026-10-20T15:49:41.750221+00:00", "tool": "describe_deployment", "args": {"deployment": "orders-api-dogfood", "namespace": "acme-dev-observability"}, "dispatched": true}
+{"at": "2026-10-20T15:49:41.750247+00:00", "tool": "get_logs", "args": {"deployment": "orders-api-dogfood", "namespace": "acme-dev-observability", "tail": 50, "previous": false}, "dispatched": true}
+{"at": "2026-10-20T15:49:41.752226+00:00", "tool": "get_logs", "args": {"deployment": "orders-api-dogfood", "namespace": "acme-dev-observability", "tail": 50, "previous": true}, "dispatched": true}
+{"at": "2026-10-20T15:49:41.752299+00:00", "tool": "list_pods", "args": {"namespace": "acme-dev-observability"}, "dispatched": true}
+{"at": "2026-10-20T15:49:52.880246+00:00", "tool": "describe_deployment", "args": {"deployment": "orders-api-dogfood", "namespace": "acme-dev-observability"}, "dispatched": true}
+{"at": "2026-10-20T15:49:52.880375+00:00", "tool": "rollout_status", "args": {"deployment": "orders-api-dogfood", "namespace": "acme-dev-observability"}, "dispatched": true}
+{"at": "2026-10-20T15:49:52.880419+00:00", "tool": "list_pods", "args": {"namespace": "acme-dev-observability"}, "dispatched": true}
+{"at": "2026-10-20T15:49:52.884687+00:00", "tool": "get_logs", "args": {"deployment": "orders-api-dogfood", "namespace": "acme-dev-observability", "tail": 50, "previous": true}, "dispatched": true}
+{"at": "2026-10-20T15:49:52.886626+00:00", "tool": "get_logs", "args": {"deployment": "orders-api-dogfood", "namespace": "acme-dev-observability", "tail": 50, "previous": false}, "dispatched": true}
