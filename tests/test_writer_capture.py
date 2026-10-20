@@ -162,8 +162,10 @@ def test_eight_cli_processes_preserve_separate_complete_records(journal):
     assert len(ids)==8 and len(list(journal.directory.iterdir()))==8
 
 
+# Explicit ids: pytest exports the node id in PYTEST_CURRENT_TEST, and a 131 KB id
+# exceeds Linux's per-string exec limit (E2BIG) when the CLI subprocess is spawned.
 @pytest.mark.parametrize('raw',[CANARY, '{"status":422,"status":200,"body":"'+CANARY+'"}',
-                                 ' '*131073])
+                                 ' '*131073],ids=['canary','duplicate-status','oversize-131073'])
 def test_cli_invalid_input_has_only_fixed_diagnostic(journal,raw):
     run=cli(journal.directory,raw)
     assert run.returncode==2 and not run.stdout

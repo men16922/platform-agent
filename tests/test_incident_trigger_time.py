@@ -27,9 +27,12 @@ from pathlib import Path
 
 import pytest
 
+from tests._ts_toolchain import require_ts_toolchain
+
 from src.agents.ai import onprem_incidents as incidents
 
 SRC = Path("dashboard/src/lib/incident-time.ts")
+TSC = Path("dashboard/node_modules/.bin/tsc")
 
 
 @pytest.fixture(autouse=True)
@@ -67,15 +70,16 @@ class TestTheRecordKeepsTheFireTime:
 
 
 pytestmark_ts = pytest.mark.skipif(
-    shutil.which("npx") is None or not SRC.is_file(),
-    reason="npx/incident-time.ts unavailable — cannot execute the policy",
+    not SRC.is_file(),
+    reason="incident-time.ts unavailable — cannot execute the policy",
 )
 
 
 def _run(script: str):
+    require_ts_toolchain(TSC, shutil.which("node") is not None, "dashboard dependencies required to compile " + SRC.name)
     with tempfile.TemporaryDirectory() as out:
         subprocess.run(
-            ["npx", "tsc", str(SRC), "--outDir", out, "--module", "commonjs",
+            [str(TSC), str(SRC), "--outDir", out, "--module", "commonjs",
              "--target", "es2020", "--skipLibCheck"],
             capture_output=True, text=True, timeout=180,
         )

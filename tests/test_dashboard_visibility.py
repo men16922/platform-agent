@@ -22,22 +22,26 @@ from pathlib import Path
 
 import pytest
 
+from tests._ts_toolchain import require_ts_toolchain
+
 SRC = Path("dashboard/src/lib/visibility.ts")
+TSC = Path("dashboard/node_modules/.bin/tsc")
 
 pytestmark = pytest.mark.skipif(
-    shutil.which("npx") is None or not SRC.is_file(),
-    reason="npx/visibility.ts unavailable — cannot execute the TS policy",
+    not SRC.is_file(),
+    reason="visibility.ts unavailable — cannot execute the TS policy",
 )
 
 
 def _run(script: str):
     """Compile visibility.ts standalone and evaluate `script` against it."""
+    require_ts_toolchain(TSC, shutil.which("node") is not None, "dashboard dependencies required to compile " + SRC.name)
     with tempfile.TemporaryDirectory() as out:
         # The `@/lib/auth` import is type-only and erases, so a standalone
         # compile emits working JS; it reports the unresolved path alias and
         # still writes the output, which is why the return code is not checked.
         subprocess.run(
-            ["npx", "tsc", str(SRC), "--outDir", out, "--module", "commonjs",
+            [str(TSC), str(SRC), "--outDir", out, "--module", "commonjs",
              "--target", "es2020", "--skipLibCheck"],
             capture_output=True, text=True, timeout=180,
         )

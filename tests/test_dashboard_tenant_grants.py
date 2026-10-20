@@ -25,11 +25,14 @@ from pathlib import Path
 
 import pytest
 
+from tests._ts_toolchain import require_ts_toolchain
+
 SRC = Path("dashboard/src/lib/platform-roster.ts")
+TSC = Path("dashboard/node_modules/.bin/tsc")
 
 pytestmark = pytest.mark.skipif(
-    shutil.which("npx") is None or not SRC.is_file(),
-    reason="npx/platform-roster.ts unavailable — cannot execute the grant policy",
+    not SRC.is_file(),
+    reason="platform-roster.ts unavailable — cannot execute the grant policy",
 )
 
 ROSTER = "{tenants:['acme','globex'],identities:['acme/dev','globex/dev']}"
@@ -37,9 +40,10 @@ ROSTER = "{tenants:['acme','globex'],identities:['acme/dev','globex/dev']}"
 
 def _run(script: str):
     """Compile platform-roster.ts standalone and evaluate `script` against it."""
+    require_ts_toolchain(TSC, shutil.which("node") is not None, "dashboard dependencies required to compile " + SRC.name)
     with tempfile.TemporaryDirectory() as out:
         subprocess.run(
-            ["npx", "tsc", str(SRC), "--outDir", out, "--module", "commonjs",
+            [str(TSC), str(SRC), "--outDir", out, "--module", "commonjs",
              "--target", "es2020", "--skipLibCheck"],
             capture_output=True, text=True, timeout=180,
         )

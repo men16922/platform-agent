@@ -7,6 +7,12 @@
 
 ---
 
+## 2026-10-20 — PR #76 CI 전용 실패 2종 수정
+
+- Status: 사용자 선택으로 전체 WIP를 feat/2026-10-20-diagnosis-injection-guard에 커밋·push, PR #76. 첫 CI는 35 failed/3350 passed/2 skipped(로컬 3384/3 통과).
+- Diagnosed: (1) 34건은 루트 `npx tsc`가 `tsc@2.0.4`로 해석돼 emit 없음 — 깨끗한 worktree·공식 Node22만의 PATH에서 재현. (2) 1건은 131073자 매개변수가 node id→`PYTEST_CURRENT_TEST`(131153자)로 들어가 Linux E2BIG.
+- Changed: 테스트4개를 dashboard 자체 tsc+`require_ts_toolchain`로, writer_capture에 짧은 ids. 제품 코드 변경0, 테스트 수 불변. CI 조건 재현(CI=true, 전역 tsc 없음) 105 passed.
+
 ## 2026-10-20 — D53 사람 검토 경계 채택, R3 충족 처리와 R4 첫 묶음 정리
 
 - Status: 사용자 결정으로 lookalike는 사람 검토 경계(D53), R3 시나리오 묶음 충족 처리(모델 의미 통과 아님). R4 첫 묶음 정리. R5·원격 미승인.

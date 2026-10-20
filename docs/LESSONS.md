@@ -18,6 +18,7 @@ Not for: task status (that is `docs/PROGRESS_LOG.md`), open work (`docs/NEXT_PLA
 decisions with rationale (`docs/DECISIONS.md`).
 
 ## Entries
+- 2026-10-20 CI 전용 실패: 저장소 루트의 `npx tsc`는 TypeScript가 아니라 npm의 `tsc@2.0.4`로 해석된다(setup-node 도입 후 PR #76 34건). `dashboard/node_modules/.bin/tsc`+`require_ts_toolchain`을 쓴다. 또 pytest는 node id를 `PYTEST_CURRENT_TEST`로 내보내므로 131KB 매개변수 id는 Linux에서 subprocess E2BIG가 된다(macOS 통과). 긴 값에는 짧은 ids를 준다. Applies to: `tests/test_dashboard_*.py`, `tests/test_writer_capture.py`.
 - 2026-10-20 MLX 측정: mlx_lm 0.31.3 서버는 온도>0에서 요청 seed를 무시한다(컴파일 sampler가 import 스레드 RNG 상태에 묶임). 온도0도 prompt-cache 이력·seed 유무로 출력이 갈린다. 단일 응답 대조는 cached_tokens 기록과 cold 재기동 반복으로만 해석한다. Applies to: `docs/evidence/diagnosis-20261020/sampler-boundary/`.
 - 2026-10-20 진단 대조: 같은 Ready/CrashLoopBackOff raw에서 이미지 이름만 바꾸자 이미지 장애 추정이 사라졌다. 식별자의 단어는 원인 증거가 아니며 원래 실패를 중립 이름 대조군으로 교체하지 않는다. Applies to: `docs/evidence/diagnosis-20261020/lexical-review.json`.
 - 2026-10-03 MLX: 수정 전 proxy는 upstream 404를 빈 200으로 덮었다. usage-only SSE가 종료 사유를 지우지 않게 하고 잘린 도구 호출은 실행하지 않는다. client timeout도 upstream 종료가 아니다. Applies to: `src/agents/ai/mlx_qwen_tool_proxy.py`.
