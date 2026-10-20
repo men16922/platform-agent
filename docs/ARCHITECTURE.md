@@ -194,6 +194,10 @@
 - HTTP 표면 `src/agents/ai/local_deploy_api.py`: `GET /api/models?provider=`(환경별 선택지, recommended-first) + `POST /api/local-deploy`(model+provider+자연어 instruction → 실행). 대시보드 Agents 채팅이 이 API를 호출한다.
 - 실행부(로컬 API)가 결과를 기록하고 대시보드는 읽기만 한다(read-only 역할 유지).
 
+읽기 전용 온프렘 조사(`read_only=true`)는 같은 Investigate 카탈로그의 도구만 등록한다. `describe_deployment`의 구조화 관측은 Deployment·RS·Pod 일관성과 현재 컨테이너의 조회 적용 근거를 담고, factory는 그 관측에 맞는 제안 계약만 덧붙인다. `investigation_proposals.py`와 router는 모델이 선택한 가능성·다음 증거의 출처/단계를 검증한다. 상태·복구 후보·실행 권한은 코드가 유지하며, 불완전/불일치 관측은 재수집으로 표시한다.
+
+제안이 거부되거나 잘려도 원래 모델 응답과 도구 결과는 영속 trace에 남는다. 대시보드는 기록된 상태와 적용 조건을 통과한 제안을 구분한다. 이는 근본 원인 정확도, namespace/tenant 자격증명 격리, 조치 승인이나 실제 쿼리 실행을 보장하지 않는다. 원문 supplied-text snapshot 모드는 별도 경로다. 2026-10-20 검증과 남은 실제 scope 실패는 `docs/plans/2026-10-03-platform-agent-usage-and-evidence.md` §10에 기록했다.
+
 ### Agent Runtime 레이어 (AgentCore 레퍼런스 + 멀티클라우드 로드맵)
 
 > **방향:** "배포 전용"에서 **범용 agentic ops**로. 에이전트에게 자연어로 질의하면 가능한 작업을 tool call로 자율 수행하며(배포는 그중 하나), 각 환경은 그 클라우드의 **네이티브 매니지드 에이전트 런타임** 위에서 돈다. AI Model Router가 **Agent Runtime Router**로 확장된다.

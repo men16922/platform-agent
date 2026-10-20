@@ -1,0 +1,41 @@
+M60 — repository critic model routing, 2026-09-06 local macOS / Python 3.13
+Scope: Makefile and scripts/overnight/Makefile.harness.snippet only; plugin cache unchanged.
+Before: generic OVERNIGHT_CRITIC_MODEL defaulted to claude-fable-5-1 for all engines.
+After: CLAUDE_CRITIC_MODEL owns that default; generic override defaults empty.
+Existing explicit overrides retain make environment/command-line precedence.
+
+Actual make child-environment regression tests, both files:
+- default engine
+- Codex actor
+- Kiro actor
+- Claude actor / Codex critic
+- environment-specific Claude critic override
+- command-line generic override wins over environment generic override
+Before: 12 failed in 1.63s. After: 12 passed in 1.53s.
+
+Installed harness 1.5.0: extracted its exact effective-reviewer selection block,
+sourced lib/engines.sh, replaced only run_with_timeout with argv printing.
+Called codex_invoke critic under the real Makefile-exported environment.
+No actual model invocation or authentication request was executed. Result:
+codex
+--ask-for-approval
+never
+exec
+--cd
+/Users/men1692/Desktop/AWS/platform-agent
+--sandbox
+read-only
+--model
+gpt-6-astra
+--json
+offline-probe
+
+This proves argument routing, not model availability or performance.
+No overnight loop, workspace commit/push, cloud/remote modification or permission change.
+Full gate result appended after completion.
+
+Final make check: 2679 passed, 2 skipped, 21 warnings in 54.12s; exit 0.
+Local macOS / Python 3.13, 2026-09-06. git diff --check and doc budgets passed.
+b04d34ed3ae341c192a5690ccc646c5735cf5bc099fb3f04a449c6af61d156a0  Makefile
+7491c38aba0102ed5486cf0cd2475e4444776787df609da014a8e0fec8db652a  scripts/overnight/Makefile.harness.snippet
+2000761c5e9475776c29b86d8d8e9c22cd8af05773171773b7b52f3dd098484b  tests/test_harness_model_routing.py

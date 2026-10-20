@@ -1,0 +1,64 @@
+{
+  "observed_at": "2026-10-03T05:29:48.654007+00:00",
+  "approval_received": true,
+  "scope": "User-approved local dogfood namespace and service only",
+  "policy_note": "curl prefix prohibition is command-specific. It was incorrect to treat it as a blanket block on all approved local validation. The unchanged curl check remains rejected in this session; separate approved kubectl and actual dashboard workflows executed successfully.",
+  "baseline": {
+    "namespace": "acme-dev-observability",
+    "service": "orders-api-dogfood",
+    "revision": "1",
+    "ready": 1,
+    "image": "localhost:5001/orders-api-dogfood:r0"
+  },
+  "first_normal_run": {
+    "request_id": "f1558add-0412-41d8-85b5-bffee5913303",
+    "deployment_id": "DEP-102149DB",
+    "activity_id": "ACT-6BEC4FA3",
+    "server_recorded_duration_s": 7.342,
+    "duration_scope": "durable acceptance to final state persistence, not user-click-to-health time",
+    "previous_revision": "1",
+    "revision": "2",
+    "image": "localhost:5001/orders-api-dogfood:r1",
+    "ready": 2,
+    "desired": 2,
+    "same_workload_uid": true,
+    "tool_calls": [
+      "deploy_to_cluster",
+      "validate_deployment"
+    ],
+    "browser_after_reload": "DEP-102149DB / orders-api-dogfood / r1 / success",
+    "health_evidence": "r1-health-observation.log: 8 actual GET /healthz HTTP/1.1 200 log entries from two pods"
+  },
+  "read_refresh": {
+    "request_id": "b645f9e8-be11-4e12-b1b0-e2971cfd67eb",
+    "server_recorded_duration_s": 9.311,
+    "browser_refresh_during_run": true,
+    "readback_used_same_request_id": true,
+    "tool_calls": [
+      "list_pods",
+      "describe_deployment"
+    ],
+    "scope": "read-only Qwen/Kubernetes request; not deployment response-loss repeat"
+  },
+  "remaining": [
+    "R2 observed UI duration 0s vs actual run interval",
+    "R1 failure/recovery, denial, insufficient-evidence, deployment response-loss",
+    "R3 fixed-candidate repeats and complete timing/manual-intervention comparison",
+    "60-90s demo and final reproducible procedure",
+    "Conditional R4/R5 decision after runtime evidence"
+  ],
+  "browser_health_probe": {
+    "url": "http://127.0.0.1:18092/healthz",
+    "result": "ERR_BLOCKED_BY_CLIENT; not bypassed",
+    "owned_port_forward_session": "16294 ended with exit 0",
+    "alternative_evidence": "Existing Kubernetes workload logs independently show actual liveness health 200 responses; browser JSON body was not observed"
+  },
+  "runtime_pids": {
+    "mlx": 46760,
+    "proxy": 46761,
+    "router": 20386,
+    "dashboard": 20387
+  },
+  "rbac_changed": false,
+  "external_cloud_changes": false
+}

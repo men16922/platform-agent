@@ -1,0 +1,31 @@
+{
+  "as_of": "2026-09-13T11:15:21.698927+00:00",
+  "author_account": "consistent",
+  "author_observed_at": "2026-09-13T11:15:21.698927+00:00",
+  "automatic_branch_creation_verified": false,
+  "evidence_sha256": "b153d814bfd613a56c4498498640ab478be8f1c354d654b761fe469f92ccaf06",
+  "execution_started_at": "2026-09-13T01:46:11.334768+00:00",
+  "gaps": [
+    "issue_app_field_null",
+    "installation_identity_pr_files_unobserved",
+    "historical_request_credential_not_independently_proven",
+    "offline_records_not_authenticated"
+  ],
+  "last_attempt_observed_at": "2026-09-13T01:47:20.867788+00:00",
+  "live_verified": false,
+  "operator_pr_files": "consistent",
+  "original_execution_state": "STOPPED",
+  "original_failure": {
+    "reason": "TypeError",
+    "stage": "create_pr"
+  },
+  "pr_number": 1,
+  "reason": "diagnostic_reconciled_with_evidence_gaps",
+  "recorded_cleanup": "consistent",
+  "retry_authorized": false,
+  "review_sha256": "a47f64681fcdab183691545f11d4d0260fa92dd76347d15feecc9c839c7b5825",
+  "scope": "offline_ref_read_reconciliation",
+  "tenant_read_isolation_verified": false,
+  "verdict": "consistent_partial",
+  "writer_success_verified": false
+}

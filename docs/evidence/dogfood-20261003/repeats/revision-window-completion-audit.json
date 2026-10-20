@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-03T11:20:23.406134+00:00",
+  "goal_status": "active",
+  "previous_turn": "progress: P calibrated and rejected cached generator/critics; original model restored",
+  "current_progress": [
+    "One real failure/recovery with bound RS/Pod/time and post-confirmation health evidence",
+    "Actual read-only investigation and exact-input manual comparison located dropped Pod waiting error message"
+  ],
+  "approval_wait": false,
+  "remaining": [
+    "Prior injection and cause-difference semantic failures",
+    "R3 final same-candidate normal3/denial2/recovery2/loss2 and uncertainty requirements",
+    "R4 explanation/tool-selection improvement and final comparisons",
+    "Reproduction/comparison/demo refreshed to final candidate",
+    "R5 one extension after R3"
+  ],
+  "next": "Preserve current Pod identity/waiting message as untrusted diagnostic data beside deterministic facts, then replay frozen actual and existing adversarial/positive controls."
+}

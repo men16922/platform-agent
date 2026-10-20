@@ -1,0 +1,2 @@
+This CDK CLI is not compatible with the CDK library used by your application. Please upgrade the CLI to the latest version.
+(Cloud assembly schema version mismatch: Maximum schema version supported is 53.x.x, but found 54.0.0. You need at least CLI version 2.1140.0 to read this manifest.)

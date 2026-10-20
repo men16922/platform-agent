@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-03T08:32:31.235782+00:00",
+  "previous_owned_pid": 51289,
+  "restored_pid": 67295,
+  "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "host": "127.0.0.1",
+  "port": 18090,
+  "listening": true,
+  "downloaded_models": false,
+  "global_config_changed": false,
+  "application_model_setting_changed": false,
+  "serving_check": "Three direct same-contract Qwen3-Coder model calls completed with schema/citation-valid output in r4-envelope-coder-restored; semantic defects retained",
+  "restore_note": "SIGTERM took longer than initial 5-second wait; process and listener subsequently closed. No SIGKILL executed. Premature coder-direct run stopped before case artifact; excluded from quality comparison.",
+  "verified_at": "2026-10-03T08:33:43.227974+00:00"
+}

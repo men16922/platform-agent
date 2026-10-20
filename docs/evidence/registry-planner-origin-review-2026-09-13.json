@@ -1,0 +1,26 @@
+{
+  "observed_at": "2026-09-13T13:06:34.282611+00:00",
+  "previous_goal_turn": "progress: M90 candidate build, AWS preflight and reviewed deployment plan",
+  "browser_authentication": "live tab still shows Verify Your Identity; user input required",
+  "source_findings": {
+    "routes": [
+      "preview",
+      "prepare",
+      "status"
+    ],
+    "origin_precedence": [
+      "REGISTRY_PREVIEW_ORIGIN",
+      "AUTH_URL"
+    ],
+    "vercel_missing_origin_status": 503,
+    "mismatching_origin_status": 403,
+    "cached_env_keys_present": {
+      ".vercel/.env.production.local": [],
+      "dashboard/.vercel/.env.production.local": []
+    },
+    "live_vercel_env_verified": false
+  },
+  "review_correction": "Require exact production origin; pre-promotion checks cannot prove authenticated production path; explicitly verify after approved promotion with recorded rollback target",
+  "application_source_changed": false,
+  "remote_mutations": []
+}

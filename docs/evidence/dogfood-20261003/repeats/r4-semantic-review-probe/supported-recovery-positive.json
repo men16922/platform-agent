@@ -1,0 +1,29 @@
+{
+  "id": "supported-recovery-positive",
+  "expected": "PASS",
+  "parsed": {
+    "verdict": "PASS",
+    "unsupported_claim": "",
+    "reason": "The diagnosis correctly identifies that r2 fails while r1 remains healthy, and r1 is available for recovery. The diagnosis does not assert certainty about root cause, instead presenting alternatives. The recovery option is supported by available evidence."
+  },
+  "completion": {
+    "status": "complete",
+    "finish_reason": "stop",
+    "text": "{\n  \"verdict\": \"PASS\",\n  \"unsupported_claim\": \"\",\n  \"reason\": \"The diagnosis correctly identifies that r2 fails while r1 remains healthy, and r1 is available for recovery. The diagnosis does not assert certainty about root cause, instead presenting alternatives. The recovery option is supported by available evidence.\"\n}",
+    "semantic_verified": false,
+    "model_responses": 1,
+    "tool_call_attempts": 0,
+    "token_usage": {
+      "status": "reported",
+      "input_tokens": 1154,
+      "output_tokens": 67
+    }
+  },
+  "seconds": 1.393,
+  "http_attempts": [
+    {
+      "at": "2026-10-03T10:48:35.470850+00:00",
+      "status": 200
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+Browser tab: 1640936920, Title: "Platform Agent — Multi-Cloud Operations Dashboard", URL: "http://localhost:3000/agents".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 136
+~			127 text The recovery assessment does not authorize rollback, and the previous revision's health is not confirmed. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. No deployment or rollback actions were performed. The deployment is healthy and available, but the recovery assessment is not established. The previous revision's health is not confirmed, and no rollback candidate is established. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization. The assessment does not authorize rollback. The deployment is considered healthy based on Kubernetes readiness, but external service health is not confirmed. The assessment limits include that Kubernetes readiness is not an external service health check and that a preserved template is not a verified available image or rollback authorization ONPREM · LOCAL-QWEN Read-only inspection: call describe_deployment exactly once for deployment orders-api-dogfood in namespace acme-dev-observability. Do not deploy, roll back, provision, or change any resource. Report the current and previous revisions, rollout result, actual health evidence, and the structured recovery assessment with its reasons and limitations. Do not treat ready replicas as an external health check or invent a healthy previous revision. OBSERVATIONS RECORDED
++			136 button ✓ describe_deployment ▸
++				137 text ✓
++				138 text describe_deployment
++				139 text ▸
++			140 container Recorded observations
++				141 container
++					142 text RECORDED OBSERVATIONS
++					143 heading acme-dev-observability/orders-api-dogfood, Value: 4
++						144 text acme-dev-observability / orders-api-dogfood
++					145 text Context:  dogfood-deployer  · Observed:  2026-10-03T09:36:58.078772+00:00
++					146 definition list
++						147 container Current revision
++							148 text Current revision
++						149 text 27
++						150 container Rollout
++							151 text Rollout
++						152 text Complete
++						153 container Available / desired
++							154 text Available / desired
++						155 container
++							156 text 2  /  2  replicas
++						157 container Application health
++							158 text Application health
++						159 text Not established
++						160 container Previous revision
++							161 text Previous revision
++						162 container
++							163 text 26  ·  health not established
++					164 heading Recovery review, Value: 5
++						165 text Recovery review
++					166 text No supported recovery candidate.
++					167 content list
++						168 container
++							169 AXListMarker • 
++							170 text The current rollout is complete; these observations do not establish a need to roll back.
++						171 container
++							172 AXListMarker • 
++							173 text A failure of the current revision is not established.
++						174 container
++							175 AXListMarker • 
++							176 text The previous revision's health is not established.
++					177 text This assessment does not authorize a change. These are recorded observations, not a root-cause finding. External service health and recovery on new nodes have not been verified.
++					178 button (collapsed) Observation sources (2), Secondary Actions: Expand
++						179 text Observation sources (
++						180 text 2
++						181 text )
++			182 button (collapsed) Model interpretation · Response complete · Unverified, Secondary Actions: Expand
++				183 text Model interpretation · 
++				184 text Response complete
++				185 text  · Unverified
+~		128 text field (settable) Read-only inspection: call describe_deployment exactly once for deployment orders-api-dogfood in namespace acme-dev-observability. Do not deploy, roll back, provision, or change any resource. Report the current and previous revisions, rollout result, actual health evidence, and the structured recovery assessment with its reasons and limitations. Do not treat ready replicas as an external health check or invent a healthy previous revision.
+~		73 button Run
+~		131 button Check recorded result
+The focused UI element is 0 AXWebArea Platform Agent — Multi-Cloud Operations Dashboard, URL: localhost:3000/agents

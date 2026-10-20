@@ -1,0 +1,8 @@
+[pod/orders-api-dogfood-7fd548c97-7qbw8/orders-api-dogfood] 2026-10-03T05:25:10.324704002Z 10.244.1.1 - - [03/Oct/2026 05:25:10] "GET /healthz HTTP/1.1" 200 -
+[pod/orders-api-dogfood-7fd548c97-7qbw8/orders-api-dogfood] 2026-10-03T05:25:20.327744632Z 10.244.1.1 - - [03/Oct/2026 05:25:20] "GET /healthz HTTP/1.1" 200 -
+[pod/orders-api-dogfood-7fd548c97-7qbw8/orders-api-dogfood] 2026-10-03T05:25:30.327473845Z 10.244.1.1 - - [03/Oct/2026 05:25:30] "GET /healthz HTTP/1.1" 200 -
+[pod/orders-api-dogfood-7fd548c97-7qbw8/orders-api-dogfood] 2026-10-03T05:25:40.328147085Z 10.244.1.1 - - [03/Oct/2026 05:25:40] "GET /healthz HTTP/1.1" 200 -
+[pod/orders-api-dogfood-7fd548c97-wgpc5/orders-api-dogfood] 2026-10-03T05:25:13.459330212Z 10.244.2.1 - - [03/Oct/2026 05:25:13] "GET /healthz HTTP/1.1" 200 -
+[pod/orders-api-dogfood-7fd548c97-wgpc5/orders-api-dogfood] 2026-10-03T05:25:23.461782216Z 10.244.2.1 - - [03/Oct/2026 05:25:23] "GET /healthz HTTP/1.1" 200 -
+[pod/orders-api-dogfood-7fd548c97-wgpc5/orders-api-dogfood] 2026-10-03T05:25:33.462900679Z 10.244.2.1 - - [03/Oct/2026 05:25:33] "GET /healthz HTTP/1.1" 200 -
+[pod/orders-api-dogfood-7fd548c97-wgpc5/orders-api-dogfood] 2026-10-03T05:25:43.459631503Z 10.244.2.1 - - [03/Oct/2026 05:25:43] "GET /healthz HTTP/1.1" 200 -

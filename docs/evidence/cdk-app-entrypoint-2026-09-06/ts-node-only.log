@@ -1,0 +1,19 @@
+
+> platform-agent-cdk@0.1.0 synth
+> cdk synth --no-lookups --quiet
+
+Bundling asset IncidentAgentStack/DetectorFunction/Code/Stage...
+/bin/sh: 1: pip: not found
+/workspace/src/stacks/incident_agent_stack.ts:296
+    const detectorFn = new lambda.Function(this, 'DetectorFunction', {
+                       ^
+«FailedToBundleAsset» Failed to bundle asset IncidentAgentStack/DetectorFunction/Code/Stage, bundle output is located at /workspace/src/stacks/cdk.out/asset.2c6feff28d6b17c7fd2329a41ca8550976ffad379f7337474658c04f70b5b457-building: Error: spawnSync docker ENOENT
+    ...new Function2 in aws-cdk-lib...
+    at new IncidentAgentStack (/workspace/src/stacks/incident_agent_stack.ts:296:24)
+Relates to construct:
+    <.> (aws-cdk-lib.App)
+     └─ IncidentAgentStack (aws-cdk-lib.Stack)
+         └─ DetectorFunction (aws-cdk-lib.aws_lambda.Function)
+             └─ Code (aws-cdk-lib.aws_s3_assets.Asset)
+                 └─ Stage (aws-cdk-lib.AssetStaging)
+npx ts-node --prefer-ts-exts bin/app.ts: Subprocess exited with error 1

@@ -1,0 +1,93 @@
+[
+  {
+    "PK": "DEPLOY",
+    "SK": "2026-10-03T06:42:11Z#DEP-6668A39B",
+    "deployment_id": "DEP-6668A39B",
+    "type": "deploy",
+    "cluster": "platform-agent",
+    "service": "orders-api-dogfood",
+    "version": "missing-r1",
+    "provider": "onprem",
+    "status": "failed",
+    "agent": "On-Prem Executor",
+    "created_at": "2026-10-03T06:42:11Z",
+    "duration_sec": 60.347,
+    "duration_scope": "executor_run",
+    "applied": true,
+    "environment": "dev",
+    "namespace": "acme-dev-observability"
+  },
+  {
+    "PK": "ACTIVITY",
+    "SK": "2026-10-03T06:42:11Z#ACT-74AFBC65",
+    "activity_id": "ACT-74AFBC65",
+    "deployment_id": "DEP-6668A39B",
+    "type": "deploy",
+    "agent": "On-Prem Executor",
+    "model": "onprem-executor",
+    "provider": "onprem",
+    "action": "Deploy reviewed image: {\"environment\": \"dev\", \"image_uri\": \"localhost:5001/orders-api-dogfood:missing-r1\", \"namespace\": \"acme-dev-observabil",
+    "instruction": "Deploy reviewed image: {\"environment\": \"dev\", \"image_uri\": \"localhost:5001/orders-api-dogfood:missing-r1\", \"namespace\": \"acme-dev-observability\", \"replicas\": 2, \"request_id\": \"ed71226a-10a7-4ae6-acd7-6591f4ed2dc9\", \"service_name\": \"orders-api-dogfood\"}",
+    "summary": "Deployment failed: error: timed out waiting for the condition\n",
+    "tool_calls": [
+      "deploy_to_cluster"
+    ],
+    "trace": "[{\"kind\": \"tool\", \"tool\": \"deploy_to_cluster\", \"args\": {\"service_name\": \"orders-api-dogfood\", \"namespace\": \"acme-dev-observability\", \"image\": \"localhost:5001/orders-api-dogfood\", \"version\": \"missing-r1\", \"image_uri\": \"localhost:5001/orders-api-dogfood:missing-r1\", \"replicas\": 2, \"provider\": \"onprem\", \"ports\": [8080], \"health_path\": \"/healthz\"}, \"result\": {\"status\": \"failed\", \"deployment_id\": \"acme-dev-observability/orders-api-dogfood\", \"namespace\": \"acme-dev-observability\", \"replicas_desired\": 2, \"endpoint\": \"http://localhost:80\", \"error\": \"error: timed out waiting for the condition\\n\", \"applied\": true, \"rollout_verified\": false}}]",
+    "cost_metrics": {
+      "tool_calls_total": 1,
+      "tool_calls_by_name": {
+        "deploy_to_cluster": 1
+      },
+      "reasoning_steps": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "total_tokens": 0
+    },
+    "status": "failed",
+    "created_at": "2026-10-03T06:42:11Z"
+  },
+  {
+    "PK": "DEPLOY",
+    "SK": "2026-10-03T06:42:26Z#DEP-6668A39B",
+    "deployment_id": "DEP-6668A39B",
+    "type": "deploy",
+    "cluster": "platform-agent",
+    "service": "orders-api-dogfood",
+    "version": "missing-r1",
+    "provider": "onprem",
+    "status": "rolled-back",
+    "agent": "On-Prem Executor",
+    "created_at": "2026-10-03T06:42:26Z",
+    "environment": "dev",
+    "namespace": "acme-dev-observability"
+  },
+  {
+    "PK": "ACTIVITY",
+    "SK": "2026-10-03T06:42:26Z#ACT-BCF809B2",
+    "activity_id": "ACT-BCF809B2",
+    "deployment_id": "DEP-6668A39B",
+    "type": "deploy",
+    "agent": "On-Prem Executor",
+    "model": "onprem-executor",
+    "provider": "onprem",
+    "action": "Rollback orders-api-dogfood to previous revision",
+    "instruction": "Rollback orders-api-dogfood to previous revision",
+    "summary": "orders-api-dogfood rolled back to previous revision.",
+    "tool_calls": [
+      "rollback_deployment"
+    ],
+    "trace": "[{\"kind\": \"tool\", \"tool\": \"rollback_deployment\", \"args\": {\"service_name\": \"orders-api-dogfood\", \"version\": \"previous\", \"namespace\": \"acme-dev-observability\"}, \"result\": {\"success\": true, \"rolled_back_to\": \"previous\", \"error\": \"\"}}]",
+    "cost_metrics": {
+      "tool_calls_total": 1,
+      "tool_calls_by_name": {
+        "rollback_deployment": 1
+      },
+      "reasoning_steps": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "total_tokens": 0
+    },
+    "status": "success",
+    "created_at": "2026-10-03T06:42:26Z"
+  }
+]

@@ -1,0 +1,7 @@
+{
+  "dry_run": true,
+  "changed_input": "Only Pod/container securityContext; namespace policy unchanged",
+  "returncode": 0,
+  "stdout": "pod/orders-api-dogfood-preflight created (server dry run)\n",
+  "stderr": ""
+}

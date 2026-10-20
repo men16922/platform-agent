@@ -26,12 +26,14 @@ import json
 import logging
 import os
 import time
+from contextlib import aclosing, suppress
 from typing import Any, Callable
+from uuid import UUID
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictBool
 
 from src.agents.adapters.deployment import ServiceSpec
 from src.agents.ai.deploy_recorder import (
@@ -42,11 +44,14 @@ from src.agents.ai.deploy_recorder import (
 from src.agents.ai.local_deployer import rollback_deployment
 from src.agents.ai.model_router import (
     ENVIRONMENTS,
+    MODELS,
     models_for_environment,
     route_deploy,
     route_deploy_stream,
+    validate_execution_mode,
 )
 from src.agents.ai.provision_tools import teardown_cluster
+from src.agents.ai.prepared_deploy import router as prepared_deploy_router
 from src.agents.platform.collector import (
     StatusStore,
     UnauthenticatedReport,
@@ -58,6 +63,9 @@ from src.agents.platform.registry import load_registry
 logger = logging.getLogger(__name__)
 
 
+from src.agents.ai.snapshot_diagnosis import SnapshotQuestion, validate_snapshot_mode
+
+
 class DeployRequest(BaseModel):
     instruction: str = Field(..., min_length=1, description="Natural-language deploy instruction.")
     model: str = Field("local-qwen", description="AI model id (see /api/models).")
@@ -66,6 +74,9 @@ class DeployRequest(BaseModel):
     # all, so a default here is not a convenience — it is this API asserting a tier
     # the operator never chose, on every row that path writes.
     environment: str | None = Field(None, description="Deployment tier, when the caller declares one.")
+    request_id: UUID | None = Field(None, description="Stable ID for a durable local run; repeats observe the original.")
+    read_only: StrictBool = Field(False, description="Only register read-only tools; local-qwen/onprem only.")
+    snapshot: SnapshotQuestion | None = None
 
 
 class DeployStep(BaseModel):
@@ -88,6 +99,10 @@ class DeployResponse(BaseModel):
     delegated: bool = False
     route: str | None = None
     route_trace: list[dict[str, Any]] | None = None
+    inspection: list[dict[str, Any]] | None = None
+    model_completion: dict[str, Any] | None = None
+    snapshot_analysis: dict[str, Any] | None = None
+    read_only: bool = False
 
 
 class RollbackRequest(BaseModel):
@@ -149,6 +164,7 @@ def get_front_door() -> Any | None:
 
 
 app = FastAPI(title="platform-agent AI Model Router API", version="1.0")
+app.include_router(prepared_deploy_router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -264,11 +280,13 @@ async def local_deploy(
     factory: Callable[..., Any] | None = Depends(get_deployer_factory),
     front_door: Any | None = Depends(get_front_door),
 ) -> DeployResponse:
+    _validate_request_mode(req)
+    started = time.monotonic()
     # Front-door: classify the request and delegate to a registered A2A specialist
     # when one is configured; otherwise fall through to the in-process deployer.
     route: str | None = None
     route_trace: list[dict[str, Any]] | None = None
-    if front_door is not None:
+    if front_door is not None and not req.read_only:
         try:
             # handle() may do network I/O when delegating — keep the event loop free.
             s_outcome = await asyncio.to_thread(front_door.handle, req.instruction)
@@ -292,7 +310,9 @@ async def local_deploy(
             logger.warning("front-door supervisor failed; using in-process deployer", exc_info=True)
 
     try:
-        outcome = await route_deploy(req.instruction, req.model, req.provider, agent_factory=factory)
+        outcome = await route_deploy(req.instruction, req.model, req.provider, agent_factory=factory,
+                                     **({"read_only": True} if req.read_only else {}),
+                                     **({"snapshot": req.snapshot} if req.snapshot is not None else {}))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -310,6 +330,8 @@ async def local_deploy(
                 steps=outcome.steps,
                 ok=outcome.ok,
                 trace=outcome.trace,
+                duration_sec=time.monotonic() - started,
+                read_only=req.read_only,
             )
         except Exception:  # noqa: BLE001
             logger.warning("deploy recording failed", exc_info=True)
@@ -320,6 +342,10 @@ async def local_deploy(
         provider=outcome.provider,
         instruction=req.instruction,
         summary=outcome.summary,
+        inspection=getattr(outcome, "inspection", None),
+        model_completion=getattr(outcome, "model_completion", None),
+        snapshot_analysis=getattr(outcome, "snapshot_analysis", None),
+        read_only=req.read_only,
         steps=[DeployStep(**step) for step in outcome.steps],
         suitability=outcome.suitability,
         record=record,
@@ -343,17 +369,143 @@ _SSE_KEEPALIVE = ": keepalive\n\n"
 _SSE_HEARTBEAT_S = 15.0
 
 
+async def _events_with_heartbeats(events):
+    """Keep agent iteration in one task; idle transport heartbeats cannot cancel it."""
+    queue = asyncio.Queue(maxsize=16)
+
+    async def produce():
+        # Pydantic AI/AnyIO scopes must be entered and exited by the same task.
+        # Scheduling each __anext__ separately violates that contract.
+        try:
+            async with aclosing(events.__aiter__()) as iterator:
+                async for event in iterator:
+                    await queue.put(("event", event))
+        except Exception as exc:
+            await queue.put(("error", exc))
+        else:
+            await queue.put(("end", None))
+
+    producer = asyncio.create_task(produce())
+    try:
+        while True:
+            try:
+                kind, payload = await asyncio.wait_for(queue.get(), timeout=_SSE_HEARTBEAT_S)
+            except asyncio.TimeoutError:
+                yield None
+                continue
+            if kind == "end":
+                break
+            if kind == "error":
+                raise payload
+            yield payload
+    finally:
+        producer.cancel()
+        with suppress(asyncio.CancelledError):
+            await producer
+
+
+async def _recorded_run_events(req: DeployRequest, factory):
+    """Complete and record the agent run even when its SSE observer disconnects."""
+    started = time.monotonic()
+    async with aclosing(route_deploy_stream(
+        req.instruction, req.model, req.provider, agent_factory=factory,
+        **({"read_only": True} if req.read_only else {}),
+        **({"snapshot": req.snapshot} if req.snapshot is not None else {})
+    )) as events:
+        async for event in events:
+            if event["type"] != "result":
+                yield event
+                continue
+            outcome = event["outcome"]
+            record = None
+            if outcome.steps:
+                record = record_deploy(
+                    instruction=req.instruction, model=outcome.model, provider=outcome.provider,
+                    environment=req.environment, summary=outcome.summary,
+                    steps=outcome.steps, ok=outcome.ok, trace=outcome.trace,
+                    duration_sec=time.monotonic() - started,
+                    read_only=req.read_only,
+                )
+            yield {"type": "done", "ok": outcome.ok, "agent": outcome.model,
+                   "model": outcome.model, "provider": outcome.provider,
+                   "summary": outcome.summary, "suitability": outcome.suitability, "record": record,
+                   "inspection": getattr(outcome, "inspection", None),
+                   "model_completion": getattr(outcome, "model_completion", None),
+                   "snapshot_analysis": getattr(outcome, "snapshot_analysis", None),
+                   "read_only": req.read_only}
+
+
+def _validate_request_mode(req: DeployRequest) -> None:
+    try:
+        validate_execution_mode(req.model, req.provider, req.read_only)
+        validate_snapshot_mode(req.instruction, req.model, req.provider, req.read_only, req.snapshot)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+def _run_manager():
+    from src.agents.ai.local_runs import configured_manager
+    try:
+        return configured_manager()
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Durable local run storage is unavailable.") from exc
+
+
+@app.get("/api/local-deploy/runs/{request_id}")
+async def local_deploy_run(request_id: UUID, x_platform_actor: str = Header(default="")):
+    from src.agents.ai.local_runs import RunNotFound
+    if not x_platform_actor or len(x_platform_actor) > 128:
+        raise HTTPException(status_code=401, detail="An actor from the trusted local dashboard is required.")
+    try:
+        return _run_manager().snapshot(str(request_id), x_platform_actor)
+    except RunNotFound as exc:
+        raise HTTPException(status_code=404, detail="Run not found.") from exc
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail="Run state could not be read.") from exc
+
+
 @app.post("/api/local-deploy/stream")
 async def local_deploy_stream(
     req: DeployRequest,
     factory: Callable[..., Any] | None = Depends(get_deployer_factory),
+    x_platform_actor: str = Header(default=""),
 ) -> StreamingResponse:
     """SSE stream of tool-calling progress, ending with a 'done' event.
 
     Events: tool_call -> tool_result (repeated) -> done (or error).
     """
+    _validate_request_mode(req)
+    if req.request_id is not None:
+        from src.agents.ai.local_runs import RunConflict, RunNotFound
+        if not x_platform_actor or len(x_platform_actor) > 128:
+            raise HTTPException(status_code=401, detail="An actor from the trusted local dashboard is required.")
+        if req.model not in MODELS or req.provider not in ENVIRONMENTS:
+            raise HTTPException(status_code=400, detail="Unknown model or provider.")
+        manager = _run_manager()
+        request_id = str(req.request_id)
+        try:
+            manager.start(request_id, x_platform_actor,
+                          req.model_dump(mode="json", exclude={"request_id"} | ({"snapshot"} if req.snapshot is None else set())),
+                          lambda: _recorded_run_events(req, factory))
+        except RunNotFound as exc:
+            raise HTTPException(status_code=404, detail="Run not found.") from exc
+        except RunConflict as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail="Run could not be durably accepted.") from exc
+
+        async def observe():
+            async for event in manager.observe(request_id, x_platform_actor, _SSE_HEARTBEAT_S):
+                yield _SSE_KEEPALIVE if event is None else _sse(event, event_id=event["seq"])
+
+        return StreamingResponse(observe(), media_type="text/event-stream", headers={
+            "Cache-Control": "no-cache", "X-Accel-Buffering": "no", "X-Request-ID": request_id,
+        })
 
     async def generate():
+        started = time.monotonic()
         seq = 0
 
         def frame(obj: dict[str, Any]) -> str:
@@ -365,53 +517,57 @@ async def local_deploy_stream(
         # live tail before any backfill, closing the initial-render gap. The
         # `agent` field is reserved for per-agent attribution (A-3) — today the
         # deploy stream is single-agent, so it carries the model id.
-        yield frame({"type": "ready", "agent": req.model})
+        yield frame({"type": "ready", "agent": req.model, "read_only": req.read_only})
         try:
-            agen = route_deploy_stream(
-                req.instruction, req.model, req.provider, agent_factory=factory
-            ).__aiter__()
-            while True:
-                try:
-                    event = await asyncio.wait_for(agen.__anext__(), timeout=_SSE_HEARTBEAT_S)
-                except asyncio.TimeoutError:
-                    # No event for a while — keep the connection warm.
-                    yield _SSE_KEEPALIVE
-                    continue
-                except StopAsyncIteration:
-                    break
+            events = route_deploy_stream(
+                req.instruction, req.model, req.provider, agent_factory=factory,
+                **({"read_only": True} if req.read_only else {}),
+                **({"snapshot": req.snapshot} if req.snapshot is not None else {})
+            )
+            async with aclosing(_events_with_heartbeats(events)) as event_stream:
+                async for event in event_stream:
+                    if event is None:
+                        yield _SSE_KEEPALIVE
+                        continue
 
-                if event["type"] != "result":
-                    yield frame(event)
-                    continue
+                    if event["type"] != "result":
+                        yield frame(event)
+                        continue
 
-                outcome = event["outcome"]
-                record = None
-                if outcome.steps:
-                    try:
-                        record = record_deploy(
-                            instruction=req.instruction,
-                            model=outcome.model,
-                            provider=outcome.provider,
-                            environment=req.environment,
-                            summary=outcome.summary,
-                            steps=outcome.steps,
-                            ok=outcome.ok,
-                            trace=outcome.trace,
-                        )
-                    except Exception:  # noqa: BLE001
-                        logger.warning("deploy recording failed", exc_info=True)
-                yield frame(
-                    {
-                        "type": "done",
-                        "ok": outcome.ok,
-                        "agent": outcome.model,  # A-3: per-agent attribution field
-                        "model": outcome.model,
-                        "provider": outcome.provider,
-                        "summary": outcome.summary,
-                        "suitability": outcome.suitability,
-                        "record": record,
-                    }
-                )
+                    outcome = event["outcome"]
+                    record = None
+                    if outcome.steps:
+                        try:
+                            record = record_deploy(
+                                instruction=req.instruction,
+                                model=outcome.model,
+                                provider=outcome.provider,
+                                environment=req.environment,
+                                summary=outcome.summary,
+                                steps=outcome.steps,
+                                ok=outcome.ok,
+                                trace=outcome.trace,
+                                duration_sec=time.monotonic() - started,
+                                read_only=req.read_only,
+                            )
+                        except Exception:  # noqa: BLE001
+                            logger.warning("deploy recording failed", exc_info=True)
+                    yield frame(
+                        {
+                            "type": "done",
+                            "ok": outcome.ok,
+                            "agent": outcome.model,  # A-3: per-agent attribution field
+                            "model": outcome.model,
+                            "provider": outcome.provider,
+                            "summary": outcome.summary,
+                            "inspection": getattr(outcome, "inspection", None),
+                            "model_completion": getattr(outcome, "model_completion", None),
+                            "snapshot_analysis": getattr(outcome, "snapshot_analysis", None),
+                            "read_only": req.read_only,
+                            "suitability": outcome.suitability,
+                            "record": record,
+                        }
+                    )
         except ValueError as exc:
             yield frame({"type": "error", "error": str(exc)})
         except Exception as exc:  # noqa: BLE001

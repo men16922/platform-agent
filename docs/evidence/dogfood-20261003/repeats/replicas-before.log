@@ -1,0 +1,37 @@
+..F                                                                      [100%]
+=================================== FAILURES ===================================
+_______ test_omitted_replica_count_never_reaches_the_deployment_adapter ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x111a462c0>
+
+    def test_omitted_replica_count_never_reaches_the_deployment_adapter(monkeypatch):
+        from types import SimpleNamespace
+        mutations = []
+    
+        def deploy(spec, image_uri):
+            mutations.append(spec.replicas)
+            return SimpleNamespace(status=SimpleNamespace(value="success"), deployment_id="test/app",
+                                   namespace="test", replicas_desired=spec.replicas, endpoint="", error="", metadata={})
+    
+        monkeypatch.setattr(deployer, "get_deployment_adapters", lambda _: SimpleNamespace(cluster=SimpleNamespace(deploy=deploy)))
+    
+        def respond(messages, info):
+            if len(messages) == 1:
+                return ModelResponse(parts=[ToolCallPart("deploy_to_cluster", {
+                    "service_name": "app", "image": "app", "version": "v1", "image_uri": "local/app:v1",
+                    "namespace": "test", "provider": "onprem",
+                }, "missing-replicas")])
+            return ModelResponse(parts=[TextPart("Stopped")])
+    
+        outcome = asyncio.run(router.route_deploy("Deploy with 2 replicas", "local-qwen", "onprem",
+                            agent_factory=lambda **kwargs: deployer.create_local_deployer(model=FunctionModel(respond))))
+>       assert mutations == []
+E       assert [1] == []
+E         
+E         Left contains one more item: 1
+E         Use -v to get more diff
+
+tests/test_tool_validation_failure.py:80: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_tool_validation_failure.py::test_omitted_replica_count_never_reaches_the_deployment_adapter
+1 failed, 2 passed in 0.78s

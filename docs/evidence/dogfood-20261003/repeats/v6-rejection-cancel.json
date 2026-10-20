@@ -1,0 +1,11 @@
+{
+  "at": "2026-10-03T07:11:11.735204+00:00",
+  "candidate": "candidate-v6-rejection.json",
+  "after_inline_cancel": {
+    "rows": 2,
+    "statuses": {
+      "APR-7D95B306": "pending",
+      "APR-52AF4AE1": "pending"
+    }
+  }
+}

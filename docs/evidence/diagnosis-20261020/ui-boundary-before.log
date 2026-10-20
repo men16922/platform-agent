@@ -1,0 +1,25 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_____ test_recovery_positive_control_and_malformed_candidate_are_distinct ______
+
+run_js = <function run_js.<locals>.run at 0x105a4ede0>
+
+    def test_recovery_positive_control_and_malformed_candidate_are_distinct(run_js):
+        result = run_js('''
+    const base={available:true,namespace:'acme',deployment:'orders',current_revision:2,previous_revision:1,
+     previous_health:'kubernetes_readiness',recovery_status:'review_candidate',candidate_revision:1,sources:[]};
+    const rows=[base,{...base,candidate_revision:2},{...base,candidate_revision:true},{...base,previous_health:'not_established'},
+     ...['inconsistent','not_established','invalid'].map(status=>({...base,rollout_complete:true,observation_consistency:{status}}))];
+    const reports=rows.map(row=>view([{type:'done',ok:true,inspection:[row]}]).inspection[0]);
+    const ui=load('src/components/inspection-result.tsx',{'react/jsx-runtime':require('react/jsx-runtime')});
+    console.log(JSON.stringify({reports,html:require('react-dom/server').renderToStaticMarkup(require('react').createElement(ui.InspectionResult,{reports:[reports[0]]}))}));
+    ''')
+        assert result["reports"][0]["recoveryStatus"] == "review_candidate"
+>       assert all(r["recoveryStatus"] == "not_established" for r in result["reports"][1:])
+E       assert False
+E        +  where False = all(<generator object test_recovery_positive_control_and_malformed_candidate_are_distinct.<locals>.<genexpr> at 0x104b17e00>)
+
+tests/test_local_run_dashboard.py:219: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_local_run_dashboard.py::test_recovery_positive_control_and_malformed_candidate_are_distinct
+1 failed in 0.23s

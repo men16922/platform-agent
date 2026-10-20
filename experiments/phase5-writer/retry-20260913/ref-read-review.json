@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "scope": "r2-ref-read-01",
+  "status": "PROPOSED_NOT_AUTHORIZED_NOT_EXECUTED",
+  "repository": "men16922/platform-agent-p5e-authz-r2",
+  "expected_identity": {
+    "app_id": 4924748,
+    "installation_id": 161238144,
+    "repository_id": 1367740190
+  },
+  "base_sha": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+  "branch": "p5e/20260913-03-ref-read",
+  "permissions_before": {
+    "single_file": "write",
+    "pull_requests": "write",
+    "metadata": "read"
+  },
+  "permissions_after": {
+    "single_file": "write",
+    "pull_requests": "write",
+    "metadata": "read",
+    "contents": "read"
+  },
+  "single_file_paths": [
+    "platform/tenants/acme.yaml"
+  ],
+  "repository_selection": [
+    1367740190
+  ],
+  "requests": [
+    {
+      "operation": "operator_create_ref",
+      "identity": "operator",
+      "method": "POST",
+      "path": "/repos/men16922/platform-agent-p5e-authz-r2/git/refs",
+      "body": {
+        "ref": "refs/heads/p5e/20260913-03-ref-read",
+        "sha": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c"
+      }
+    },
+    {
+      "operation": "write_target",
+      "identity": "installation-token",
+      "method": "PUT",
+      "path": "/repos/men16922/platform-agent-p5e-authz-r2/contents/platform/tenants/acme.yaml",
+      "body": {
+        "branch": "p5e/20260913-03-ref-read",
+        "sha": "398abe6c528238244a8e3713bc2b48523ae8b915",
+        "content": "IyBTeW50aGV0aWMgUDUtRSBmaXh0dXJlLiBObyBkZWxpdmVyeSBjb250cm9sbGVyIHdhdGNoZXMgdGhpcyByZXBvc2l0b3J5Lgppc29sYXRpb246IHNvZnQKbmFtaW5nX3ByZWZpeDogYWNtZQplbnZpcm9ubWVudHM6CiAgZGV2OgogICAgY2x1c3RlcjogcDVlLWRldgogICAgc3Vic3RyYXRlOiBraW5kCiAgICBkZWxpdmVyeTogYXJnb2NkCiAgICBhZGRvbnM6CiAgICAgIGxvZ2dpbmc6IGxva2kgNy4xLjAKICBwcm9kOgogICAgY2x1c3RlcjogcDVlLXByb2QKICAgIHN1YnN0cmF0ZTogazNzCiAgICBkZWxpdmVyeTogZmx1eAogICAgYWRkb25zOgogICAgICBvYnNlcnZhYmlsaXR5OiBrdWJlLXByb21ldGhldXMtc3RhY2sgODcuMTcuMAogICAgICBsb2dnaW5nOiBsb2tpIDcuMS4wCg==",
+        "message": "P5-E ref-read permission boundary probe"
+      },
+      "content_sha256": "50cf085d6531a03761189a434e8224fd01dc8eeedc6d2a6082314c08676dba92",
+      "expected_blob_sha": "9a88d6901ff18873745c272665e175921156ca9a"
+    },
+    {
+      "operation": "write_sibling",
+      "identity": "installation-token",
+      "method": "PUT",
+      "path": "/repos/men16922/platform-agent-p5e-authz-r2/contents/platform/tenants/globex.yaml",
+      "body": {
+        "branch": "p5e/20260913-03-ref-read",
+        "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4",
+        "content": "IyBTeW50aGV0aWMgUDUtRSBmaXh0dXJlLiBObyBkZWxpdmVyeSBjb250cm9sbGVyIHdhdGNoZXMgdGhpcyByZXBvc2l0b3J5Lgppc29sYXRpb246IHNvZnQKbmFtaW5nX3ByZWZpeDogZ2xvYmV4CmVudmlyb25tZW50czoKICBkZXY6CiAgICBjbHVzdGVyOiBwNWUtZGV2CiAgICBzdWJzdHJhdGU6IGtpbmQKICAgIGRlbGl2ZXJ5OiBhcmdvY2QKICAgIGFkZG9uczoKICAgICAgbG9nZ2luZzogbG9raSA3LjEuMAogIHByb2Q6CiAgICBjbHVzdGVyOiBwNWUtcHJvZAogICAgc3Vic3RyYXRlOiBrM3MKICAgIGRlbGl2ZXJ5OiBmbHV4CiAgICBhZGRvbnM6CiAgICAgIG9ic2VydmFiaWxpdHk6IGt1YmUtcHJvbWV0aGV1cy1zdGFjayA4Ny4xNy4wCiAgICAgIGxvZ2dpbmc6IGxva2kgNy4xLjAK",
+        "message": "P5-E ref-read permission boundary probe"
+      },
+      "content_sha256": "3ce597ab28f79ef896f6f826a3204ed01a8a0c42504f574792ec0ad9b5de3153",
+      "expected_blob_sha": "ffcc191c527430cb958c7267ebc5faa35985a0a5"
+    },
+    {
+      "operation": "create_pr",
+      "identity": "installation-token",
+      "method": "POST",
+      "path": "/repos/men16922/platform-agent-p5e-authz-r2/pulls",
+      "body": {
+        "title": "P5-E ref-read single-file permission probe",
+        "head": "p5e/20260913-03-ref-read",
+        "base": "main",
+        "body": "Synthetic authorization experiment. Do not merge.",
+        "draft": true,
+        "maintainer_can_modify": false
+      }
+    }
+  ],
+  "limits": {
+    "installation_tokens": 1,
+    "operator_create_ref": 1,
+    "write_target": 1,
+    "write_sibling": 1,
+    "create_pr": 1,
+    "revoke_token": 1,
+    "automatic_retries": 0,
+    "merge": 0,
+    "new_app_or_key": 0,
+    "resource_deletion": 0
+  }
+}

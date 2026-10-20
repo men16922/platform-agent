@@ -1,0 +1,37 @@
+F
+=================================== FAILURES ===================================
+___________ TestDefaultIsNothing.test_anonymous_caller_is_restricted ___________
+
+self = <tests.test_dashboard_visibility.TestDefaultIsNothing object at 0x1059b74d0>
+
+    def test_anonymous_caller_is_restricted(self):
+>       got = _run("console.log(JSON.stringify(v.resolveVisibility(null)))")
+
+tests/test_dashboard_visibility.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+script = 'console.log(JSON.stringify(v.resolveVisibility(null)))'
+
+    def _run(script: str):
+        """Compile visibility.ts standalone and evaluate `script` against it."""
+        with tempfile.TemporaryDirectory() as out:
+            # The `@/lib/auth` import is type-only and erases, so a standalone
+            # compile emits working JS; it reports the unresolved path alias and
+            # still writes the output, which is why the return code is not checked.
+            subprocess.run(
+                ["npx", "tsc", str(SRC), "--outDir", out, "--module", "commonjs",
+                 "--target", "es2020", "--skipLibCheck"],
+                capture_output=True, text=True, timeout=180,
+            )
+            emitted = Path(out) / "visibility.js"
+>           assert emitted.is_file(), "visibility.ts did not emit — cannot verify policy"
+E           AssertionError: visibility.ts did not emit — cannot verify policy
+E           assert False
+E            +  where False = is_file()
+E            +    where is_file = PosixPath('/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/tmpyyhslfkx/visibility.js').is_file
+
+tests/test_dashboard_visibility.py:45: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_dashboard_visibility.py::TestDefaultIsNothing::test_anonymous_caller_is_restricted
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 0.87s

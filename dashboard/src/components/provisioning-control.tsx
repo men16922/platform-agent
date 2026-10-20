@@ -7,6 +7,7 @@ import type { Deployment } from "@/lib/mock-data";
 import { ProviderLogo, providerBadgeStyles } from "@/components/provider-logo";
 
 const statusStyle: Record<string, string> = {
+  unknown: "text-[var(--muted)]",
   success: "text-[var(--success)]",
   failed: "text-[var(--danger)]",
   "rolling-back": "text-[var(--warning)]",

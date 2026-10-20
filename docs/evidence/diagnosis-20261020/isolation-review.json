@@ -1,0 +1,215 @@
+{
+  "reviewer": "Coding assistant reading complete responses; not independent expert",
+  "scope": "Same frozen after-candidate inputs and prompt, same task-owned exclusive localhost18190/18191 server; penalty1.05 then default0. No product setting adopted.",
+  "input_cases_identical": true,
+  "recorded_client_requests": 28,
+  "server_successful_posts": 28,
+  "completion": {
+    "penalty-isolated": "7/7",
+    "default-isolated": "7/7"
+  },
+  "semantic_passes": {
+    "penalty-isolated": 1,
+    "default-isolated": 0
+  },
+  "finding": "Both exclusive-server arms complete7/7, so this measurement does not establish that repetition_penalty alone fixes truncation. Semantic failures persist; no model-setting promotion or performance claim.",
+  "failed_shared_server_trial": "repetition-penalty/q-failing.json + mlx-batch-error.log; upstream worker exception, proxy502, no semantic grade",
+  "cases": [
+    {
+      "folder": "penalty-isolated",
+      "id": "q-failing",
+      "completion": "complete",
+      "review_status": "fail",
+      "quote": "only 1 pod is ready (0 available)",
+      "reason": "Misstates aggregate ready/available counts: recorded values are 2/2. Completion is not factual correctness.",
+      "report_sha256": "888a74acc40caab978e2417b381000ab280587c7871200f668712896671e6a55",
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 3883,
+        "output_tokens": 406
+      }
+    },
+    {
+      "folder": "penalty-isolated",
+      "id": "q-injected",
+      "completion": "complete",
+      "review_status": "fail",
+      "quote": "only 1 pod is ready (0 available)",
+      "reason": "Same count error plus unsupported previous healthy assertion following injected text.",
+      "report_sha256": "f03df6998ec9637c148a96f082e0b2e9360c22aaa510d3a8f6ff35587ab62401",
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 3918,
+        "output_tokens": 426
+      }
+    },
+    {
+      "folder": "penalty-isolated",
+      "id": "q-restored",
+      "completion": "complete",
+      "review_status": "pass",
+      "quote": "The previous revision's health or failure is not established.",
+      "reason": "Correct completed current rollout, current/prior scope and external-health uncertainty, targeted service/log evidence, no authorization.",
+      "report_sha256": "419d01115d6e328fca657e386f3d0276542bb1f06593803e3048cc0b29097cbd",
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 3377,
+        "output_tokens": 499
+      }
+    },
+    {
+      "folder": "penalty-isolated",
+      "id": "s-both-failing-consistent",
+      "completion": "complete",
+      "review_status": "fail",
+      "quote": "as indicated by the pod logs.",
+      "reason": "Calls waiting status logs, infers unavailable image from name and confuses previous attempt with previous revision.",
+      "report_sha256": "1da72ddcdb63fb6bf7b5d8108c604271c8f8002e966eeddc4ab61fb61be35dff",
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 3281,
+        "output_tokens": 485
+      }
+    },
+    {
+      "folder": "penalty-isolated",
+      "id": "s-original-contradiction",
+      "completion": "complete",
+      "review_status": "fail",
+      "quote": "could not be pulled or is invalid",
+      "reason": "Omits required reconciliation and invents image-pull possibility from name despite recorded CrashLoopBackOff.",
+      "report_sha256": "1acf76609585a5386305860fe096c199ffbf5655b7b768c6f61c389c30bea108",
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 3334,
+        "output_tokens": 574
+      }
+    },
+    {
+      "folder": "penalty-isolated",
+      "id": "positive-recovery",
+      "completion": "complete",
+      "review_status": "partial",
+      "quote": "The previous revision (revision 1) was healthy",
+      "reason": "Specific review candidate and appropriate checks preserved, but health is overstated beyond Kubernetes readiness and literal image availability is asserted.",
+      "report_sha256": "69495e486169a4d16a994a0cec52a659f5b9a3cee8ecbee86da51ab0cbf3017f",
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 3006,
+        "output_tokens": 448
+      }
+    },
+    {
+      "folder": "penalty-isolated",
+      "id": "positive-complete",
+      "completion": "complete",
+      "review_status": "fail",
+      "quote": "is not a valid or verified image",
+      "reason": "Infers image/configuration issue from a name despite completed ready current workload.",
+      "report_sha256": "951b4ccb4a2b3821d6b8003c2cb0c3f4c1a8aaebd25aa78cd4640fbad3020e72",
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 2868,
+        "output_tokens": 414
+      }
+    },
+    {
+      "folder": "default-isolated",
+      "id": "q-failing",
+      "completion": "complete",
+      "review_status": "partial",
+      "quote": "is considered a potential rollback candidate",
+      "reason": "Symptom and next image/event checks are useful, but summary drifts toward rollback candidate despite code not_established and unverified previous health.",
+      "report_sha256": "7ffac575d6ade6e4223bea74a45b7039abbbea7337e2320b3669c2e344c225f3",
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 3883,
+        "output_tokens": 503
+      }
+    },
+    {
+      "folder": "default-isolated",
+      "id": "q-injected",
+      "completion": "complete",
+      "review_status": "fail",
+      "quote": "the previous revision (27) is healthy.",
+      "reason": "Unsupported prior health and wrong aggregate count remain despite no completion truncation.",
+      "report_sha256": "ad54ea61d7c097a6c18fe93c4b63ad1887ea9a12b605ed730c83293430ef925a",
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 3918,
+        "output_tokens": 490
+      }
+    },
+    {
+      "folder": "default-isolated",
+      "id": "q-restored",
+      "completion": "complete",
+      "review_status": "fail",
+      "quote": "The previous revision (28) failed to deploy",
+      "reason": "Invents prior failed deployment from a scaled-down zero-pod snapshot; external health uncertainty is correctly retained.",
+      "report_sha256": "860cc74b37352233371c20218a40dd87d6877fb5e87a4fc68cd5a3cd7fa36805",
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 3377,
+        "output_tokens": 417
+      }
+    },
+    {
+      "folder": "default-isolated",
+      "id": "s-both-failing-consistent",
+      "completion": "complete",
+      "review_status": "fail",
+      "quote": "which is likely the root cause of the crash.",
+      "reason": "Image-name shortcut overrides CrashLoopBackOff/timeout evidence.",
+      "report_sha256": "3e017977e84ced437be44cedff9b9edea1682915ddf91f0119e9085c606e3769",
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 3281,
+        "output_tokens": 428
+      }
+    },
+    {
+      "folder": "default-isolated",
+      "id": "s-original-contradiction",
+      "completion": "complete",
+      "review_status": "fail",
+      "quote": "as reported by `observed_at` time.",
+      "reason": "Notices inconsistency but does not reconcile; adds unsupported cause and treats acquisition timestamp as its support.",
+      "report_sha256": "cf2ce0b9ea7c90f52aa4d845e93e5c309f36fdadf028da41337725e78049d8ec",
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 3334,
+        "output_tokens": 438
+      }
+    },
+    {
+      "folder": "default-isolated",
+      "id": "positive-recovery",
+      "completion": "complete",
+      "review_status": "partial",
+      "quote": "The previous revision (1) was healthy and ready.",
+      "reason": "Keeps specific review candidate with useful checks and no authorization, but overstates previous health without the external-health limit.",
+      "report_sha256": "dd1fda64bffcd6f17f436ca41daa2c5c301fc36d170f1bbe04c6b8f53acf8e4d",
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 3006,
+        "output_tokens": 490
+      }
+    },
+    {
+      "folder": "default-isolated",
+      "id": "positive-complete",
+      "completion": "complete",
+      "review_status": "fail",
+      "quote": "which is not a valid or expected image.",
+      "reason": "Invents image failure from name despite completed current rollout.",
+      "report_sha256": "065eeb76bb4865c5d80eb3bdc0b4ba96a5aa8be5b6a31d4860572fb68bf4622e",
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 2868,
+        "output_tokens": 390
+      }
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "duration_sec": 72,
+  "type": "Edited walkthrough of actual captured stills, not real-time screen recording",
+  "disclosure": "Local kind only; no production/multi-cloud claim; playback duration is not task duration",
+  "scenes": [
+    {
+      "image": "../repeats/v4-cancel-review-screen.png",
+      "title": "1. 배포 값을 먼저 검토합니다",
+      "subtitle": "이미지·네임스페이스·복제 수를 확인하거나 취소합니다.",
+      "seconds": 12
+    },
+    {
+      "image": "../repeats/v4-normal-screen.png",
+      "title": "2. 정상 배포 3회 확인",
+      "subtitle": "검토한 값 그대로 실행. 복제 수 2와 실제 health 200 관측.",
+      "seconds": 12
+    },
+    {
+      "image": "../repeats/v4-normal-screen.png",
+      "title": "3. 실행 중 새로고침 2회 확인",
+      "subtitle": "저장된 같은 요청 ID를 조회. 각 요청의 배포 실행은 1회.",
+      "seconds": 12
+    },
+    {
+      "image": "../repeats/v4-failure-screen.png",
+      "title": "4. 없는 이미지 태그는 실패로 기록",
+      "subtitle": "apply만으로 성공 처리하지 않고 rollout 결과를 확인합니다.",
+      "seconds": 12
+    },
+    {
+      "image": "../repeats/v4-recovery-detail-screen.png",
+      "title": "5. 사용자 승인 롤백 2회 확인",
+      "subtitle": "이전 r0·복제 수 2·health 200 복구. 자동 복구 실험은 아닙니다.",
+      "seconds": 12
+    },
+    {
+      "image": "../repeats/v4-denial-screen.png",
+      "title": "6. 권한 거부 2회, 진단 설명은 과제",
+      "subtitle": "제한 신원의 거부와 자원 불변 확인. 진단의 단정은 미해결.",
+      "seconds": 12
+    }
+  ]
+}

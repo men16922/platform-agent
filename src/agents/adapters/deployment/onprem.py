@@ -97,12 +97,17 @@ class OnPremClusterAdapter(ClusterAdapter):
             return DeployResult(status=DeployStatus.FAILED, error=str(exc))
 
         if result.returncode == 0:
+            # apply only acknowledges desired state. The model may omit the
+            # separate validation tool, so completion must be enforced here.
+            validation = self.validate(spec)
             return DeployResult(
-                status=DeployStatus.SUCCESS,
+                status=DeployStatus.SUCCESS if validation.healthy else DeployStatus.FAILED,
                 deployment_id=f"{spec.namespace}/{spec.name}",
                 namespace=spec.namespace,
                 replicas_desired=spec.replicas,
                 endpoint="http://localhost:80",
+                error="" if validation.healthy else (validation.error or "Applied, but rollout validation failed."),
+                metadata={"applied": True, "rollout_verified": validation.healthy},
             )
         return DeployResult(status=DeployStatus.FAILED, error=result.stderr)
 
@@ -128,7 +133,11 @@ class OnPremClusterAdapter(ClusterAdapter):
         rc, stdout, stderr = _run(cmd, timeout=60)
 
         if rc == 0:
-            return RollbackResult(success=True, rolled_back_to="previous")
+            validation = self.validate(spec)
+            return RollbackResult(
+                success=validation.healthy, rolled_back_to="previous",
+                error="" if validation.healthy else (validation.error or "Undo accepted, but rollout validation failed."),
+            )
         return RollbackResult(success=False, error=stderr)
 
     def status(self, spec: ServiceSpec) -> DeployResult:
@@ -174,10 +183,22 @@ class OnPremClusterAdapter(ClusterAdapter):
                         "template": {
                             "metadata": {"labels": {"app": spec.name}},
                             "spec": {
+                                # Match the restricted policy enforced by tenant
+                                # namespaces. The image supplies its numeric USER;
+                                # do not override every application's UID with the
+                                # platform-agent chart's own image UID.
+                                "securityContext": {
+                                    "runAsNonRoot": True,
+                                    "seccompProfile": {"type": "RuntimeDefault"},
+                                },
                                 "containers": [
                                     {
                                         "name": spec.name,
                                         "image": image_uri,
+                                        "securityContext": {
+                                            "allowPrivilegeEscalation": False,
+                                            "capabilities": {"drop": ["ALL"]},
+                                        },
                                         "ports": [{"containerPort": p} for p in spec.ports],
                                         "resources": {
                                             "requests": spec.resources,

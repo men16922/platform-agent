@@ -1,0 +1,130 @@
+{
+  "candidate": "candidate-v10-model-proxy.json",
+  "synthetic_no_tools": true,
+  "rows": [
+    {
+      "at": "2026-10-03T08:43:40.423642+00:00",
+      "request": {
+        "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Count from one to twenty, separated by spaces."
+          }
+        ],
+        "max_tokens": 1,
+        "temperature": 0,
+        "stream": false,
+        "stream_options": {
+          "include_usage": true
+        }
+      },
+      "status": 200,
+      "content_type": "application/json",
+      "body": "{\"id\": \"chatcmpl-413350c8-9957-4921-9056-c0c24ac07458\", \"object\": \"chat.completion\", \"created\": 0, \"model\": \"mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit\", \"choices\": [{\"index\": 0, \"message\": {\"role\": \"assistant\", \"content\": \"1\"}, \"finish_reason\": \"length\"}], \"usage\": {\"prompt_tokens\": 18, \"completion_tokens\": 1, \"total_tokens\": 19, \"prompt_tokens_details\": {\"cached_tokens\": 17}}}",
+      "seconds": 0.307,
+      "finish_reason": "length",
+      "usage": {
+        "prompt_tokens": 18,
+        "completion_tokens": 1,
+        "total_tokens": 19,
+        "prompt_tokens_details": {
+          "cached_tokens": 17
+        }
+      }
+    },
+    {
+      "at": "2026-10-03T08:43:40.517236+00:00",
+      "request": {
+        "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Count from one to twenty, separated by spaces."
+          }
+        ],
+        "max_tokens": 1,
+        "temperature": 0,
+        "stream": true,
+        "stream_options": {
+          "include_usage": true
+        }
+      },
+      "status": 200,
+      "content_type": "text/event-stream",
+      "body": "data: {\"id\": \"chatcmpl-383f2f9a-7e34-4c06-970b-8a2adf24c508\", \"object\": \"chat.completion.chunk\", \"created\": 0, \"model\": \"mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit\", \"choices\": [{\"index\": 0, \"delta\": {\"role\": \"assistant\", \"content\": \"1\"}, \"finish_reason\": \"length\"}]}\n\ndata: {\"id\": \"chatcmpl-383f2f9a-7e34-4c06-970b-8a2adf24c508\", \"object\": \"chat.completion.chunk\", \"created\": 0, \"model\": \"mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit\", \"choices\": [], \"usage\": {\"prompt_tokens\": 18, \"completion_tokens\": 1, \"total_tokens\": 19, \"prompt_tokens_details\": {\"cached_tokens\": 17}}}\n\ndata: [DONE]\n\n",
+      "seconds": 0.093,
+      "finish_reason": "length",
+      "usage": {
+        "prompt_tokens": 18,
+        "completion_tokens": 1,
+        "total_tokens": 19,
+        "prompt_tokens_details": {
+          "cached_tokens": 17
+        }
+      }
+    },
+    {
+      "at": "2026-10-03T08:43:40.664982+00:00",
+      "request": {
+        "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Reply exactly OK."
+          }
+        ],
+        "max_tokens": 16,
+        "temperature": 0,
+        "stream": false,
+        "stream_options": {
+          "include_usage": true
+        }
+      },
+      "status": 200,
+      "content_type": "application/json",
+      "body": "{\"id\": \"chatcmpl-5bcecc4c-6fce-4a39-991a-0ba4ab0fbaec\", \"object\": \"chat.completion\", \"created\": 0, \"model\": \"mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit\", \"choices\": [{\"index\": 0, \"message\": {\"role\": \"assistant\", \"content\": \"OK\"}, \"finish_reason\": \"stop\"}], \"usage\": {\"prompt_tokens\": 12, \"completion_tokens\": 2, \"total_tokens\": 14, \"prompt_tokens_details\": {\"cached_tokens\": 3}}}",
+      "seconds": 0.148,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 2,
+        "total_tokens": 14,
+        "prompt_tokens_details": {
+          "cached_tokens": 3
+        }
+      }
+    },
+    {
+      "at": "2026-10-03T08:43:40.771346+00:00",
+      "request": {
+        "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Reply exactly OK."
+          }
+        ],
+        "max_tokens": 16,
+        "temperature": 0,
+        "stream": true,
+        "stream_options": {
+          "include_usage": true
+        }
+      },
+      "status": 200,
+      "content_type": "text/event-stream",
+      "body": "data: {\"id\": \"chatcmpl-2584eaf1-f41c-4644-a4be-5eb16cf65f3e\", \"object\": \"chat.completion.chunk\", \"created\": 0, \"model\": \"mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit\", \"choices\": [{\"index\": 0, \"delta\": {\"role\": \"assistant\", \"content\": \"OK\"}, \"finish_reason\": \"stop\"}]}\n\ndata: {\"id\": \"chatcmpl-2584eaf1-f41c-4644-a4be-5eb16cf65f3e\", \"object\": \"chat.completion.chunk\", \"created\": 0, \"model\": \"mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit\", \"choices\": [], \"usage\": {\"prompt_tokens\": 12, \"completion_tokens\": 2, \"total_tokens\": 14, \"prompt_tokens_details\": {\"cached_tokens\": 11}}}\n\ndata: [DONE]\n\n",
+      "seconds": 0.106,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 12,
+        "completion_tokens": 2,
+        "total_tokens": 14,
+        "prompt_tokens_details": {
+          "cached_tokens": 11
+        }
+      }
+    }
+  ]
+}

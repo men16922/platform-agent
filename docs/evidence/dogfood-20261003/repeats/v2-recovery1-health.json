@@ -1,0 +1,4 @@
+{
+  "orders-api-dogfood-7b8fb6877d-ftvbc": "10.244.1.1 - - [03/Oct/2026 06:20:41] \"GET /healthz HTTP/1.1\" 200 -\n",
+  "orders-api-dogfood-7b8fb6877d-m4bgn": "10.244.2.1 - - [03/Oct/2026 06:20:36] \"GET /healthz HTTP/1.1\" 200 -\n"
+}

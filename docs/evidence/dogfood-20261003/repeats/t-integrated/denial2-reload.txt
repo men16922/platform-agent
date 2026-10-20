@@ -1,0 +1,262 @@
+- complementary:
+  - generic: ✦
+  - heading "Platform Agent" [level=1]
+  - paragraph: Autonomous cloud operations
+  - navigation:
+    - paragraph: Workspace
+    - link "⌘ Overview":
+      - /url: /
+      - generic: ⌘
+      - generic: Overview
+    - link "✦ Agents":
+      - /url: /agents
+      - generic: ✦
+      - generic: Agents
+    - link "⬡ Provisioning":
+      - /url: /provisioning
+      - generic: ⬡
+      - generic: Provisioning
+    - link "↗ Deployments":
+      - /url: /deployments
+      - generic: ↗
+      - generic: Deployments
+    - link "🕑 History":
+      - /url: /history
+      - generic: 🕑
+      - generic: History
+    - link "◈ Incidents":
+      - /url: /incidents
+      - generic: ◈
+      - generic: Incidents
+    - link "🛡 Audit Logs":
+      - /url: /audit
+      - generic: 🛡
+      - generic: Audit Logs
+    - link "👥 Users":
+      - /url: /users
+      - generic: 👥
+      - generic: Users
+  - generic: Operations workspace
+  - generic: Review recorded runs and observations.
+- main:
+  - paragraph: Platform Agent / Deployments
+  - paragraph: Operations workspace
+  - generic: Recorded activity
+  - button "Notifications": ⌁
+  - generic: admin
+  - button "L"
+  - paragraph: Guarded delivery pipeline
+  - heading "Deployments" [level=2]
+  - paragraph: AI Agent-driven deployments across 4 cloud providers
+  - generic: LIVE · ON-PREM
+  - paragraph: Deployment pipeline
+  - paragraph: Spec → plan → guard → deploy → validate
+  - generic: 34 runs today
+  - generic: Spec
+  - generic: →
+  - generic: Plan
+  - generic: →
+  - generic: Guard
+  - generic: →
+  - generic: Build
+  - generic: →
+  - generic: Push
+  - generic: →
+  - generic: Deploy
+  - generic: →
+  - generic: Validate
+  - paragraph: Deploy a prepared image
+  - paragraph: On-Prem Executor · review exact values, then apply and verify rollout.
+  - button "Deploy image"
+  - paragraph:
+    - text: Request
+    - code: a90947d8-ae72-4707-838b-a0451247d957
+    - text: ·
+    - strong: failed
+  - paragraph: "Deployment failed: Error from server (Forbidden): error when retrieving current configuration of: Resource: \"apps/v1, Resource=deployments\", GroupVersionKind: \"apps/v1, Kind=Deployment\" Name: \"orders-api-dogfood\", Namespace: \"globex-dev-observability\" from server for: \"STDIN\": deployments.apps \"orders-api-dogfood\" is forbidden: User \"system:serviceaccount:acme-dev-observability:platform-agent\" cannot get resource \"deployments\" in API group \"apps\" in the namespace \"globex-dev-observability\" Error from server (Forbidden): error when retrieving current configuration of: Resource: \"/v1, Resource=services\", GroupVersionKind: \"/v1, Kind=Service\" Name: \"orders-api-dogfood\", Namespace: \"globex-dev-observability\" from server for: \"STDIN\": services \"orders-api-dogfood\" is forbidden: User \"system:serviceaccount:acme-dev-observability:platform-agent\" cannot get resource \"services\" in API group \"\" in the namespace \"globex-dev-observability\""
+  - button "Check saved result"
+  - paragraph: Deployment logs (34 runs)
+  - table:
+    - rowgroup:
+      - row "ID Service Version Provider Environment Agent Status Duration Time Actions":
+        - columnheader "ID"
+        - columnheader "Service"
+        - columnheader "Version"
+        - columnheader "Provider"
+        - columnheader "Environment"
+        - columnheader "Agent"
+        - columnheader "Status"
+        - columnheader "Duration"
+        - columnheader "Time"
+        - columnheader "Actions"
+    - rowgroup:
+      - row "DEP-EF326505 orders-api-dogfood r0 Cloud Native Computing Foundation On-Premise dev On-Prem Executor ✗ failed 0.2s run 10:06:18 PM -":
+        - cell "DEP-EF326505"
+        - cell "orders-api-dogfood"
+        - cell "r0":
+          - code: r0
+        - cell "Cloud Native Computing Foundation On-Premise":
+          - img "Cloud Native Computing Foundation"
+          - text: On-Premise
+        - cell "dev"
+        - cell "On-Prem Executor":
+          - generic: On-Prem Executor
+        - cell "✗ failed":
+          - generic: ✗ failed
+        - cell "0.2s run"
+        - cell "10:06:18 PM"
+        - cell "-"
+      - row "DEP-8D72581B orders-api-dogfood r0 Cloud Native Computing Foundation On-Premise dev On-Prem Executor ✗ failed 0.3s run 10:05:32 PM -":
+        - cell "DEP-8D72581B"
+        - cell "orders-api-dogfood"
+        - cell "r0":
+          - code: r0
+        - cell "Cloud Native Computing Foundation On-Premise":
+          - img "Cloud Native Computing Foundation"
+          - text: On-Premise
+        - cell "dev"
+        - cell "On-Prem Executor":
+          - generic: On-Prem Executor
+        - cell "✗ failed":
+          - generic: ✗ failed
+        - cell "0.3s run"
+        - cell "10:05:32 PM"
+        - cell "-"
+      - row "DEP-430B078A orders-api-dogfood r0 Cloud Native Computing Foundation On-Premise dev On-Prem Executor ✓ success 4.6s run 10:02:22 PM Rollback":
+        - cell "DEP-430B078A"
+        - cell "orders-api-dogfood"
+        - cell "r0":
+          - code: r0
+        - cell "Cloud Native Computing Foundation On-Premise":
+          - img "Cloud Native Computing Foundation"
+          - text: On-Premise
+        - cell "dev"
+        - cell "On-Prem Executor":
+          - generic: On-Prem Executor
+        - cell "✓ success":
+          - generic: ✓ success
+        - cell "4.6s run"
+        - cell "10:02:22 PM"
+        - cell "Rollback":
+          - button "Rollback"
+      - row "DEP-D34C9BB1 orders-api-dogfood missing-r1 Cloud Native Computing Foundation On-Premise dev On-Prem Executor ↺ rolled-back Not measured 10:01:17 PM -":
+        - cell "DEP-D34C9BB1"
+        - cell "orders-api-dogfood"
+        - cell "missing-r1":
+          - code: missing-r1
+        - cell "Cloud Native Computing Foundation On-Premise":
+          - img "Cloud Native Computing Foundation"
+          - text: On-Premise
+        - cell "dev"
+        - cell "On-Prem Executor":
+          - generic: On-Prem Executor
+        - cell "↺ rolled-back":
+          - generic: ↺ rolled-back
+        - cell "Not measured"
+        - cell "10:01:17 PM"
+        - cell "-"
+      - row "DEP-D26A511A orders-api-dogfood missing-r1 Cloud Native Computing Foundation On-Premise dev On-Prem Executor ↺ rolled-back Not measured 9:58:23 PM -":
+        - cell "DEP-D26A511A"
+        - cell "orders-api-dogfood"
+        - cell "missing-r1":
+          - code: missing-r1
+        - cell "Cloud Native Computing Foundation On-Premise":
+          - img "Cloud Native Computing Foundation"
+          - text: On-Premise
+        - cell "dev"
+        - cell "On-Prem Executor":
+          - generic: On-Prem Executor
+        - cell "↺ rolled-back":
+          - generic: ↺ rolled-back
+        - cell "Not measured"
+        - cell "9:58:23 PM"
+        - cell "-"
+      - row "DEP-6CEDCC65 orders-api-dogfood r1 Cloud Native Computing Foundation On-Premise dev On-Prem Executor ✓ success 4.7s run 9:55:57 PM Rollback":
+        - cell "DEP-6CEDCC65"
+        - cell "orders-api-dogfood"
+        - cell "r1":
+          - code: r1
+        - cell "Cloud Native Computing Foundation On-Premise":
+          - img "Cloud Native Computing Foundation"
+          - text: On-Premise
+        - cell "dev"
+        - cell "On-Prem Executor":
+          - generic: On-Prem Executor
+        - cell "✓ success":
+          - generic: ✓ success
+        - cell "4.7s run"
+        - cell "9:55:57 PM"
+        - cell "Rollback":
+          - button "Rollback"
+      - row "DEP-57EEF307 orders-api-dogfood r0 Cloud Native Computing Foundation On-Premise dev On-Prem Executor ✓ success 3.1s run 9:55:03 PM Rollback":
+        - cell "DEP-57EEF307"
+        - cell "orders-api-dogfood"
+        - cell "r0":
+          - code: r0
+        - cell "Cloud Native Computing Foundation On-Premise":
+          - img "Cloud Native Computing Foundation"
+          - text: On-Premise
+        - cell "dev"
+        - cell "On-Prem Executor":
+          - generic: On-Prem Executor
+        - cell "✓ success":
+          - generic: ✓ success
+        - cell "3.1s run"
+        - cell "9:55:03 PM"
+        - cell "Rollback":
+          - button "Rollback"
+      - row "DEP-8E3CDB34 orders-api-dogfood r1 Cloud Native Computing Foundation On-Premise dev On-Prem Executor ✓ success 4.0s run 9:53:12 PM Rollback":
+        - cell "DEP-8E3CDB34"
+        - cell "orders-api-dogfood"
+        - cell "r1":
+          - code: r1
+        - cell "Cloud Native Computing Foundation On-Premise":
+          - img "Cloud Native Computing Foundation"
+          - text: On-Premise
+        - cell "dev"
+        - cell "On-Prem Executor":
+          - generic: On-Prem Executor
+        - cell "✓ success":
+          - generic: ✓ success
+        - cell "4.0s run"
+        - cell "9:53:12 PM"
+        - cell "Rollback":
+          - button "Rollback"
+      - row "DEP-06D6643F orders-api-dogfood missing-r1 Cloud Native Computing Foundation On-Premise dev On-Prem Executor ↺ rolled-back Not measured 8:11:04 PM -":
+        - cell "DEP-06D6643F"
+        - cell "orders-api-dogfood"
+        - cell "missing-r1":
+          - code: missing-r1
+        - cell "Cloud Native Computing Foundation On-Premise":
+          - img "Cloud Native Computing Foundation"
+          - text: On-Premise
+        - cell "dev"
+        - cell "On-Prem Executor":
+          - generic: On-Prem Executor
+        - cell "↺ rolled-back":
+          - generic: ↺ rolled-back
+        - cell "Not measured"
+        - cell "8:11:04 PM"
+        - cell "-"
+      - row "DEP-09D8589C orders-api-dogfood r0 Cloud Native Computing Foundation On-Premise dev On-Prem Executor ✗ failed 0.1s run 3:45:49 PM -":
+        - cell "DEP-09D8589C"
+        - cell "orders-api-dogfood"
+        - cell "r0":
+          - code: r0
+        - cell "Cloud Native Computing Foundation On-Premise":
+          - img "Cloud Native Computing Foundation"
+          - text: On-Premise
+        - cell "dev"
+        - cell "On-Prem Executor":
+          - generic: On-Prem Executor
+        - cell "✗ failed":
+          - generic: ✗ failed
+        - cell "0.1s run"
+        - cell "3:45:49 PM"
+        - cell "-"
+  - button "← Prev" [disabled]
+  - text: "1"
+  - generic: / 4
+  - button "Next →"
+- button "Open Next.js Dev Tools":
+- alert

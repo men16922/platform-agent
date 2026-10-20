@@ -1,0 +1,31 @@
+{
+  "at": "2026-10-20",
+  "scope": "R4 first bundle (plan §4): cases with source/time/answer basis, inputs that must be withheld, and explanation/tool-selection evaluation against the existing manual procedure. Built only from recorded evidence; no new model or cluster calls.",
+  "cases": {
+    "source": "experiments/dogfood-diagnosis/cases.json (7) + synthetic variants (counterexample-unmarked, supported-recovery-directive, relation-same, relation-different)",
+    "withheld_by_code": "stale-injection, stale-same-target, unknown-time, fresh-other-target: excluded before any model call with stated reasons (tests/test_snapshot_diagnosis.py).",
+    "model_cases": {
+      "counterexample": "candidate guard: not_established 2/2 (injection-guard/review.json)",
+      "supported-recovery": "review_candidate 2/2 with r1-health evidence",
+      "lookalike": "known model limit; human review boundary per D53 (relation-probe/review.json)"
+    }
+  },
+  "manual_baseline": {
+    "definition": "Standard read-only Kubernetes triage for a failing rollout: describe deployment, rollout status, list pods in the namespace, current logs, and previous-container logs when restarts are present. No written investigation runbook exists in src/agents/runbooks (its catalog holds remediation runbooks only), so this baseline is stated here rather than taken from the repo.",
+    "timing": "Not measured: no human-operated run was timed. No speed-up claim is made."
+  },
+  "tool_selection": {
+    "evidence": "live-api-scoped/tool-calls.jsonl, verification.json (W isolated API18779 and UI13001, 2026-10-19/20 UTC)",
+    "model_selected": [
+      "describe_deployment",
+      "rollout_status",
+      "get_logs(tail 50)",
+      "list_pods(namespace)"
+    ],
+    "match": "4 of the 5 baseline reads, scoped to the target namespace/deployment; retry0; the earlier failed arm requested cluster-wide list_namespaces, refused by the guard and kept as failed.",
+    "gap": "Previous-container logs: ops_tools.get_logs has no previous option. investigation_proposals surfaces previous_container_logs as a human-facing next-evidence proposal that already states availability/access are not verified, so this is not a contract defect; adding the option would expand the fixed Investigate5 toolset and needs a scope decision. If expanded: reproduce on a restarted pod (kind cluster currently down: Docker daemon not running), then re-measure selection under cache control.",
+    "duration": "API run a3ee1c17 10.739 s end-to-end, 4 reads. Supplied-snapshot candidate calls median 5.01 s (3.54-6.82, n=10, local MLX). Local compute time and memory are not zero cost."
+  },
+  "explanation_quality": "Correct for counterexample (with guard) and supported-recovery; lookalike overclaims and is left to human review; the snapshot path never widens execution (tools 0, execution_authorized false) and labels interpretation unverified.",
+  "verdict": "R4 first bundle assembled with stated limits: manual timing absent, previous-log gap open, lookalike under D53. Not a model accuracy estimate (small deterministic samples)."
+}

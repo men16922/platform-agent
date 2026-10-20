@@ -1,0 +1,37 @@
+[
+  {
+    "observed_at": "2026-10-03T11:09:25.874676+00:00",
+    "url": "http://127.0.0.1:5001/v2/orders-api-dogfood/manifests/missing-r1",
+    "status": 404,
+    "seconds": 0.061,
+    "content_type": "application/json; charset=utf-8",
+    "digest": null,
+    "body": {
+      "errors": [
+        {
+          "code": "MANIFEST_UNKNOWN",
+          "message": "manifest unknown",
+          "detail": {
+            "Tag": "missing-r1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "observed_at": "2026-10-03T11:09:25.935499+00:00",
+    "url": "http://127.0.0.1:5001/v2/orders-api-dogfood/manifests/r0",
+    "status": 404,
+    "seconds": 0.019,
+    "content_type": "application/json; charset=utf-8",
+    "digest": null,
+    "body": {
+      "errors": [
+        {
+          "code": "MANIFEST_UNKNOWN",
+          "message": "OCI index found, but accept header does not support OCI indexes"
+        }
+      ]
+    }
+  }
+]

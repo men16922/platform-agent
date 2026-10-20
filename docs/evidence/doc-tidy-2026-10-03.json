@@ -1,0 +1,157 @@
+{
+  "at": "2026-10-03T13:55:10.570559+00:00",
+  "scope": "Documentation organization only; paused implementation goal remains paused",
+  "before": {
+    "docs/AGENT_BRIEF.md": {
+      "lines": 59,
+      "characters": 6279,
+      "sha256": "d4342241230fe0518f2b2cfef00e5e315348a190e1175fde89e79f312ba13d1c"
+    },
+    "docs/STATUS.md": {
+      "lines": 115,
+      "characters": 10965,
+      "sha256": "76b9623ac36366aa3e7b4c738e4ca250cdf3a605f099aa9540476d9d54ecd7aa"
+    },
+    "docs/NEXT_PLAN.md": {
+      "lines": 112,
+      "characters": 9136,
+      "sha256": "de3a818620660d3eb6cae569ff61d77b20721b8cede90dffa52e3ea1da08db7b"
+    },
+    "docs/PROGRESS_LOG.md": {
+      "lines": 45,
+      "characters": 4811,
+      "sha256": "0d7464d1968103447cda7b7b0d1743b06df455540a4adb7896ced1fe6d794aaf"
+    },
+    "docs/COMPLETED_SUMMARY.md": {
+      "lines": 1516,
+      "characters": 93910,
+      "sha256": "118947347d7f75ac29cf1a3dbc7a96196b640a242205ff51669f3fe7a5dce5ee"
+    },
+    "docs/DOCS_POLICY.md": {
+      "lines": 76,
+      "characters": 2225,
+      "sha256": "e95ac274b736ab0f50d2707a61651dbc9d4050b78467f7c9fa82e35ea089cdf3"
+    },
+    "docs/LESSONS.md": {
+      "lines": 40,
+      "characters": 3015,
+      "sha256": "f19e267166282cde971b58698be1fa9d4d3f771a268e6e19bd542c151cf8c27e"
+    },
+    "docs/plans/2026-10-03-platform-agent-usage-and-evidence.md": {
+      "lines": 266,
+      "characters": 34375,
+      "sha256": "a4173376e582cbe941d13b6e1d219c316cb63f5df29e57fea445ba59118abcf9"
+    },
+    "docs/archive/progress-2026-10.md": {
+      "lines": 118,
+      "characters": 14469,
+      "sha256": "b40d3e1fe62d6a8e50230229acada3b023933d7d03f5df6b4f092cdef7dc04e1"
+    }
+  },
+  "archive": {
+    "path": "docs/archive/progress-2026-10.md",
+    "sections": [
+      {
+        "source": "docs/AGENT_BRIEF.md",
+        "anchor": "tidy-20261003-brief",
+        "sha256": "d4342241230fe0518f2b2cfef00e5e315348a190e1175fde89e79f312ba13d1c",
+        "lines": 59
+      },
+      {
+        "source": "docs/STATUS.md",
+        "anchor": "tidy-20261003-status",
+        "sha256": "76b9623ac36366aa3e7b4c738e4ca250cdf3a605f099aa9540476d9d54ecd7aa",
+        "lines": 115
+      },
+      {
+        "source": "docs/NEXT_PLAN.md",
+        "anchor": "tidy-20261003-next-plan",
+        "sha256": "de3a818620660d3eb6cae569ff61d77b20721b8cede90dffa52e3ea1da08db7b",
+        "lines": 112
+      },
+      {
+        "source": "docs/plans/2026-10-03-platform-agent-usage-and-evidence.md",
+        "anchor": "tidy-20261003-usage-plan",
+        "sha256": "85ccab50989a1696ed3fd06de02d1bffa1669cbdae4b30b3968ce7b67c6e2412",
+        "lines": 137
+      }
+    ]
+  },
+  "after": {
+    "docs/AGENT_BRIEF.md": {
+      "lines": 40,
+      "characters": 2746,
+      "sha256": "ff84adc29e9b0fce138447442ed00cc4136b8378cb7341ed92e8be36f9e1999d"
+    },
+    "docs/STATUS.md": {
+      "lines": 46,
+      "characters": 3717,
+      "sha256": "21df5c261b99fbe1ad12f22670a65612d65d67a3a535babfb28a493b4d361ab3"
+    },
+    "docs/NEXT_PLAN.md": {
+      "lines": 59,
+      "characters": 4230,
+      "sha256": "02211524c70efd64848edf72d9fecc9ebdf90816090854a1688c734c14015aef"
+    },
+    "docs/PROGRESS_LOG.md": {
+      "lines": 45,
+      "characters": 4811,
+      "sha256": "0d7464d1968103447cda7b7b0d1743b06df455540a4adb7896ced1fe6d794aaf"
+    },
+    "docs/COMPLETED_SUMMARY.md": {
+      "lines": 1525,
+      "characters": 94867,
+      "sha256": "3e2e04f1ec3f8900e82591a051f8f273be30fbf935bc5fff4c7a39c63a6693c3"
+    },
+    "docs/DOCS_POLICY.md": {
+      "lines": 77,
+      "characters": 2339,
+      "sha256": "382acb3e2e0df0729fa6d5d3f8079cc5b15bbb501b68c5812bdbfe91df273a70"
+    },
+    "docs/LESSONS.md": {
+      "lines": 40,
+      "characters": 3015,
+      "sha256": "f19e267166282cde971b58698be1fa9d4d3f771a268e6e19bd542c151cf8c27e"
+    },
+    "docs/plans/2026-10-03-platform-agent-usage-and-evidence.md": {
+      "lines": 175,
+      "characters": 15860,
+      "sha256": "0990749b3f245fbdb7033d3206637df01579c04ab7c9a2df982904cee34c15c5"
+    },
+    "docs/archive/progress-2026-10.md": {
+      "lines": 589,
+      "characters": 63749,
+      "sha256": "dec871ffc7df5fb278ea64eee2ca648dea03a84dfe4398ca2c96b63b11f752da"
+    }
+  },
+  "checks": {
+    "archive_prefix_preserved": true,
+    "archived_original_hashes_match": true,
+    "plan_sections_1_to_7_unchanged": true,
+    "existing_milestones_unchanged": true,
+    "progress_and_lessons_unchanged": true,
+    "broken_markdown_links": [],
+    "diff_check_exit_code": 0,
+    "documentation_tests": {
+      "passed": 73,
+      "seconds": 3.32
+    },
+    "runtime_O_and_worktree_R_287_sources_unchanged": true,
+    "full_gate": {
+      "command": "make check PY=/opt/anaconda3/bin/python",
+      "exit_code": 0,
+      "passed": 3364,
+      "skipped": 2,
+      "warnings": 20,
+      "seconds": 138.16,
+      "environment": "local macOS Python3.13.5 Node22.23.3 task-local npm prefix",
+      "log": "docs/evidence/doc-tidy-2026-10-03.log",
+      "sha256": "1a836a29c4ca7ad66c34ce80f5d73a9f586059a7c4cd2cc7e57f9e071a2b4d19"
+    },
+    "anchor_backreferences": "No pre-existing Markdown anchor references to rewritten entry documents or usage plan were found."
+  },
+  "goal_status": "paused",
+  "files_deleted_or_renamed": [],
+  "remaining_over_budget": [],
+  "completed_at": "2026-10-03T14:02:09.823316+00:00"
+}

@@ -1,0 +1,15 @@
+{
+  "head": "445d48d",
+  "scope": "Current WIP candidate, seven edited source/test paths frozen for this unit; not a clean HEAD export or activated router/dashboard release.",
+  "files": {
+    "src/agents/ai/deployment_evidence.py": "9f1460c54c8c93c4a6e85bc5912b7adbba31acdfd58eb800d925d756f792ebaa",
+    "src/agents/ai/inspection_report.py": "547bb5aa6364a28a1ef8c8edc7fa92c6e2b7e71efc5c7e8890de478a8a60c5ac",
+    "src/agents/ai/local_deployer.py": "55db62db9fb0405d5574f2308eecd229a0f991ce185f45e2b1e8ee72b8810e20",
+    "dashboard/src/lib/agent-run-view.ts": "639ea89e9d46301af598ae8e07ba43df9892aed1a6ef9d238e4e58566b45977d",
+    "dashboard/src/components/inspection-result.tsx": "98c30a8dbd3fbefc3f2e49b2bd572a87a8116724ed65dad952e7336480c668ef",
+    "tests/test_deployment_evidence.py": "551d3f8bb2a93da842bbc682245a30ba0f0e4222e0fb86b72f1e0cfd581f81b5",
+    "tests/test_local_run_dashboard.py": "cdae4c982945a028c27cd2b31a314151cf55d46af970a03977e9460bc64ecf09"
+  },
+  "baseline_normalizer": "../dogfood-20261003/repeats/s-proposal-enum-replay/deployment_evidence.py",
+  "baseline_normalizer_sha256": "c0ee58a5f665a6ad428f707b3e62aa4fd568724ed08b920b3d768c6c80c7b102"
+}

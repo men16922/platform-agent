@@ -1,0 +1,53 @@
+{
+  "label": "v5-lookalike1",
+  "request_id": "83719948-9080-4fa1-8b14-383291a6acb6",
+  "status": "failed",
+  "claims": 1,
+  "acceptance_to_persistence_sec": 8.813,
+  "tool_calls": {},
+  "record": null,
+  "state": {
+    "request_id": "83719948-9080-4fa1-8b14-383291a6acb6",
+    "actor": "local-dev",
+    "request": {
+      "instruction": "Read-only diagnosis exercise, no tools or resource changes. Snapshot A: a new Pod is Pending, waiting reason ImagePullBackOff, registry response manifest unknown. Snapshot B: the image is already running, but an HTTP readiness check returns 503 after a dependency timeout. Does the same root cause or rollback decision follow from both? Explain the difference, what is still uncertain, and what evidence would justify action. Do not invent evidence or claim the live orders-api-dogfood is in either state.",
+      "model": "local-qwen",
+      "provider": "onprem",
+      "environment": null
+    },
+    "fingerprint": "7e87036e6e0052b5956c95439775d990c669f0cec949d0a534d281896dd943af",
+    "instance": "b2123fca4e6d47a988f392886fd3ad67",
+    "status": "failed",
+    "updated_at": 1791010897.7098932,
+    "events": [
+      {
+        "seq": 1,
+        "type": "ready",
+        "request_id": "83719948-9080-4fa1-8b14-383291a6acb6",
+        "agent": "local-qwen"
+      },
+      {
+        "type": "reasoning",
+        "text": "The two snapshots describe different root causes and thus lead to different rollback decisions.\n\n### Snapshot A: ImagePullBackOff\n- **Observation**: A Pod is pending with reason `ImagePullBackOff`, meaning Kubernetes cannot pull the image from the registry.\n- **Possible explanation**: The image does not exist in the registry, or there's a misconfiguration in the image name or registry credentials.\n- **Not established**: Whether the registry is accessible, whether the image name is correct, or whether credentials are missing.\n\n### Snapshot B: HTTP Readiness Check Failure\n- **Observation**: The Pod is running but the readiness probe returns 503, indicating the application is not ready to serve traffic.\n- **Possible explanation**: The application is starting up and has not yet completed initialization or is waiting for a dependency (e.g., database or service).\n- **Not established**: Whether the application is truly stuck or just slow to start, or whether the readiness probe is configured correctly.\n\n### Difference in Rollback Decision\n- **Snapshot A**: Rollback is not justified without evidence that the previous version was stable or that the image issue is persistent.\n- **Snapshot B**: If the application is indeed stuck or the readiness probe is misconfigured, rollback may be justified.\n\n### Uncertainty\n- **Snapshot A**: Uncertainty lies in whether the image exists or if there's a configuration issue.\n- **Snapshot B**: Uncertainty lies in whether the application is truly stuck or just slow to start.\n\n### Evidence to Justify Action\n- **Snapshot A**: Verify the image exists in the registry and that credentials are correct.\n- **Snapshot B**: Check logs for errors or delays in application startup and confirm readiness probe configuration.\n\nNo rollback decision is justified without further evidence in either case.",
+        "seq": 2,
+        "request_id": "83719948-9080-4fa1-8b14-383291a6acb6"
+      },
+      {
+        "type": "done",
+        "ok": false,
+        "agent": "local-qwen",
+        "model": "local-qwen",
+        "provider": "onprem",
+        "summary": "The two snapshots describe different root causes and thus lead to different rollback decisions.\n\n### Snapshot A: ImagePullBackOff\n- **Observation**: A Pod is pending with reason `ImagePullBackOff`, meaning Kubernetes cannot pull the image from the registry.\n- **Possible explanation**: The image does not exist in the registry, or there's a misconfiguration in the image name or registry credentials.\n- **Not established**: Whether the registry is accessible, whether the image name is correct, or whether credentials are missing.\n\n### Snapshot B: HTTP Readiness Check Failure\n- **Observation**: The Pod is running but the readiness probe returns 503, indicating the application is not ready to serve traffic.\n- **Possible explanation**: The application is starting up and has not yet completed initialization or is waiting for a dependency (e.g., database or service).\n- **Not established**: Whether the application is truly stuck or just slow to start, or whether the readiness probe is configured correctly.\n\n### Difference in Rollback Decision\n- **Snapshot A**: Rollback is not justified without evidence that the previous version was stable or that the image issue is persistent.\n- **Snapshot B**: If the application is indeed stuck or the readiness probe is misconfigured, rollback may be justified.\n\n### Uncertainty\n- **Snapshot A**: Uncertainty lies in whether the image exists or if there's a configuration issue.\n- **Snapshot B**: Uncertainty lies in whether the application is truly stuck or just slow to start.\n\n### Evidence to Justify Action\n- **Snapshot A**: Verify the image exists in the registry and that credentials are correct.\n- **Snapshot B**: Check logs for errors or delays in application startup and confirm readiness probe configuration.\n\nNo rollback decision is justified without further evidence in either case.",
+        "suitability": {
+          "verdict": "recommended",
+          "reason": "Native pairing — Local LLM (Qwen) is the On-Prem-native brain."
+        },
+        "record": null,
+        "seq": 3,
+        "request_id": "83719948-9080-4fa1-8b14-383291a6acb6"
+      }
+    ]
+  },
+  "activity_rows": []
+}

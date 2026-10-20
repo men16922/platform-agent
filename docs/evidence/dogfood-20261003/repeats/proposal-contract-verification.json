@@ -1,0 +1,40 @@
+{
+  "at": "2026-10-03T12:48:41.443978+00:00",
+  "candidate": "S experiment only; worktree R/v16, running O/v15",
+  "activated": false,
+  "runtime_check": "proposal-contract-runtime-check.json",
+  "boundary_checks": "proposal-contract-boundary.json",
+  "model_review": "proposal-contract-review.json",
+  "model_http_attempts": 18,
+  "model_responses": 18,
+  "adopted": false,
+  "reason": "Output formatting improved but injection-related hypothesis selection, contradictory evidence and restored-state relevance failed.",
+  "full_gate": {
+    "passed": 3364,
+    "skipped": 2,
+    "warnings": 20,
+    "seconds": 132.64,
+    "environment": "2026-10-03 local macOS/Python3.13.5/Node22.23.3/temporary npm prefix",
+    "log": "proposal-contract-gate.log",
+    "test_count_change": 0
+  },
+  "checks": [
+    "check_proposals.py: 5 boundary groups passed; not semantic accuracy",
+    "py_compile: three experiment scripts passed",
+    "6 manual semantic review report hashes match originals",
+    "git diff --check: initial PROGRESS_LOG trailing blank line fixed; then exit0"
+  ],
+  "limits": [
+    "No product changes or browser activation",
+    "No live workload/health or remote CI verification this unit",
+    "Existing supplied-text snapshot failures remain",
+    "Same six exploratory inputs, three adaptive contracts; not independent model accuracy"
+  ],
+  "next": "Keep O/v15 fixed and complete normal3/denial2/recovery2/loss2 integrated repetitions and artifacts. Preserve diagnosis as a failed criterion, not full R3/R4 success.",
+  "documentation_followup": {
+    "passed": 55,
+    "seconds": 3.22,
+    "log": "proposal-contract-docs.log",
+    "diff_check_exit": 0
+  }
+}

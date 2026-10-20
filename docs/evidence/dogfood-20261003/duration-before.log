@@ -1,0 +1,134 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_____________ test_execution_delay_is_measured_and_persisted[sync] _____________
+
+store = PosixPath('/private/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/pytest-of-men1692/pytest-27/test_execution_delay_is_measur0/activity.jsonl')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109de6c40>
+transport = 'sync'
+
+    @pytest.mark.parametrize("transport", ["sync", "stream", "managed"])
+    def test_execution_delay_is_measured_and_persisted(store, monkeypatch, transport):
+        outcome = DeployOutcome(ok=True, model="local-qwen", provider="onprem", summary="Complete",
+                                steps=[{"tool": "deploy_to_cluster", "args": {"service_name": "orders-api"},
+                                        "result": {"success": True}}])
+    
+        async def run(*args, **kwargs):
+            await asyncio.sleep(0.03)
+            return outcome
+    
+        async def stream(*args, **kwargs):
+            yield {"type": "result", "outcome": await run()}
+    
+        monkeypatch.setattr(api, "route_deploy", run)
+        monkeypatch.setattr(api, "route_deploy_stream", stream)
+    
+        async def scenario():
+            req = api.DeployRequest(instruction="Deploy")
+            if transport == "sync":
+                await api.local_deploy(req, factory=None, front_door=None)
+            elif transport == "stream":
+                response = await api.local_deploy_stream(req, factory=None)
+                _ = [event async for event in response.body_iterator]
+            else:
+                _ = [event async for event in api._recorded_run_events(req, None)]
+    
+        asyncio.run(scenario())
+        row = next(json.loads(line) for line in store.read_text().splitlines() if json.loads(line)["PK"] == "DEPLOY")
+>       assert row["duration_sec"] >= 0.03
+E       assert 0 >= 0.03
+
+tests/test_deploy_duration.py:48: AssertionError
+____________ test_execution_delay_is_measured_and_persisted[stream] ____________
+
+store = PosixPath('/private/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/pytest-of-men1692/pytest-27/test_execution_delay_is_measur1/activity.jsonl')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109de6ea0>
+transport = 'stream'
+
+    @pytest.mark.parametrize("transport", ["sync", "stream", "managed"])
+    def test_execution_delay_is_measured_and_persisted(store, monkeypatch, transport):
+        outcome = DeployOutcome(ok=True, model="local-qwen", provider="onprem", summary="Complete",
+                                steps=[{"tool": "deploy_to_cluster", "args": {"service_name": "orders-api"},
+                                        "result": {"success": True}}])
+    
+        async def run(*args, **kwargs):
+            await asyncio.sleep(0.03)
+            return outcome
+    
+        async def stream(*args, **kwargs):
+            yield {"type": "result", "outcome": await run()}
+    
+        monkeypatch.setattr(api, "route_deploy", run)
+        monkeypatch.setattr(api, "route_deploy_stream", stream)
+    
+        async def scenario():
+            req = api.DeployRequest(instruction="Deploy")
+            if transport == "sync":
+                await api.local_deploy(req, factory=None, front_door=None)
+            elif transport == "stream":
+                response = await api.local_deploy_stream(req, factory=None)
+                _ = [event async for event in response.body_iterator]
+            else:
+                _ = [event async for event in api._recorded_run_events(req, None)]
+    
+        asyncio.run(scenario())
+        row = next(json.loads(line) for line in store.read_text().splitlines() if json.loads(line)["PK"] == "DEPLOY")
+>       assert row["duration_sec"] >= 0.03
+E       assert 0 >= 0.03
+
+tests/test_deploy_duration.py:48: AssertionError
+___________ test_execution_delay_is_measured_and_persisted[managed] ____________
+
+store = PosixPath('/private/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/pytest-of-men1692/pytest-27/test_execution_delay_is_measur2/activity.jsonl')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109eec050>
+transport = 'managed'
+
+    @pytest.mark.parametrize("transport", ["sync", "stream", "managed"])
+    def test_execution_delay_is_measured_and_persisted(store, monkeypatch, transport):
+        outcome = DeployOutcome(ok=True, model="local-qwen", provider="onprem", summary="Complete",
+                                steps=[{"tool": "deploy_to_cluster", "args": {"service_name": "orders-api"},
+                                        "result": {"success": True}}])
+    
+        async def run(*args, **kwargs):
+            await asyncio.sleep(0.03)
+            return outcome
+    
+        async def stream(*args, **kwargs):
+            yield {"type": "result", "outcome": await run()}
+    
+        monkeypatch.setattr(api, "route_deploy", run)
+        monkeypatch.setattr(api, "route_deploy_stream", stream)
+    
+        async def scenario():
+            req = api.DeployRequest(instruction="Deploy")
+            if transport == "sync":
+                await api.local_deploy(req, factory=None, front_door=None)
+            elif transport == "stream":
+                response = await api.local_deploy_stream(req, factory=None)
+                _ = [event async for event in response.body_iterator]
+            else:
+                _ = [event async for event in api._recorded_run_events(req, None)]
+    
+        asyncio.run(scenario())
+        row = next(json.loads(line) for line in store.read_text().splitlines() if json.loads(line)["PK"] == "DEPLOY")
+>       assert row["duration_sec"] >= 0.03
+E       assert 0 >= 0.03
+
+tests/test_deploy_duration.py:48: AssertionError
+_____________ test_unmeasured_phases_do_not_inherit_total_run_time _____________
+
+store = PosixPath('/private/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/pytest-of-men1692/pytest-27/test_unmeasured_phases_do_not_0/activity.jsonl')
+
+    def test_unmeasured_phases_do_not_inherit_total_run_time(store):
+>       rec.record_deploy(instruction="Provision then deploy", model="local-qwen", provider="onprem",
+                          summary="Complete", ok=True, duration_sec=10,
+                          steps=[{"tool": "provision_cluster", "args": {}, "result": {"success": True}},
+                                 {"tool": "deploy_to_cluster", "args": {}, "result": {"success": True}}])
+E       TypeError: record_deploy() got an unexpected keyword argument 'duration_sec'
+
+tests/test_deploy_duration.py:53: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_deploy_duration.py::test_execution_delay_is_measured_and_persisted[sync]
+FAILED tests/test_deploy_duration.py::test_execution_delay_is_measured_and_persisted[stream]
+FAILED tests/test_deploy_duration.py::test_execution_delay_is_measured_and_persisted[managed]
+FAILED tests/test_deploy_duration.py::test_unmeasured_phases_do_not_inherit_total_run_time
+4 failed in 0.99s

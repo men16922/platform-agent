@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-19T20:35:11.840249+00:00",
+  "head": "445d48d",
+  "scope": "W current WIP source after phase-contract factory/router/UI integration. Local tests, pinned local model, and bounded live reads; no product server release/cloud deployment/commit/push.",
+  "files": {
+    "src/agents/ai/deployment_evidence.py": "9f1460c54c8c93c4a6e85bc5912b7adbba31acdfd58eb800d925d756f792ebaa",
+    "src/agents/ai/inspection_report.py": "547bb5aa6364a28a1ef8c8edc7fa92c6e2b7e71efc5c7e8890de478a8a60c5ac",
+    "src/agents/ai/investigation_proposals.py": "67ecf22f5f1cefbf5736e747c403e7ac15563225b728ddab5a0b473d4e14e5b6",
+    "src/agents/ai/local_deployer.py": "f3710c3cf6c35252494b72b9f397b874a229b6fb27451dfeac38d740a4f462b5",
+    "src/agents/ai/model_router.py": "4756716f761220915d8abdfd94e4f33507ef90df09dd58b407aeeca33a655817",
+    "dashboard/src/lib/agent-run-view.ts": "d5a9104212258b0fbac2cebc728064014acce4336ae399c41ff1fc269ce4b497",
+    "dashboard/src/components/inspection-result.tsx": "b662b7f80099a62ef8fec9b894cd65133c98cb8644df60ba582e50f17e42d0ec",
+    "tests/test_deployment_evidence.py": "551d3f8bb2a93da842bbc682245a30ba0f0e4222e0fb86b72f1e0cfd581f81b5",
+    "tests/test_local_run_dashboard.py": "1637d4f585770a9911b777a1956f74145fd0944139f20d8ee5c9b7c401a5690f",
+    "tests/test_readonly_capability.py": "7fbd0924158f7f8f664da282dc962ee61882036ac26d82cb19f04d2188f557b6",
+    "tests/test_investigation_proposals.py": "93d28f9a4bb75d517ce499123631ae235a41f1075d1695d441fb31c92991a633"
+  }
+}

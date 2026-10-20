@@ -1,0 +1,27 @@
+{
+  "restored": true,
+  "source_sha256": "4bdcf4689aa07ded464412d9e875f445ceafc5afa0d826568c1d2f96eb0082c7",
+  "mutations": [
+    {
+      "mutation": "owner",
+      "exit_code": 1,
+      "log": "/tmp/platform-agent-m86-mutation-owner.log"
+    },
+    {
+      "mutation": "current_grant",
+      "exit_code": 1,
+      "log": "/tmp/platform-agent-m86-mutation-current_grant.log"
+    },
+    {
+      "mutation": "current_state",
+      "exit_code": 1,
+      "log": "/tmp/platform-agent-m86-mutation-current_state.log"
+    },
+    {
+      "mutation": "claim_reopened",
+      "exit_code": 1,
+      "log": "/tmp/platform-agent-m86-mutation-claim_reopened.log"
+    }
+  ],
+  "environment": "real DynamoDB Local on explicit loopback endpoint"
+}

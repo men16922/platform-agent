@@ -1,0 +1,113 @@
+{
+  "at": "2026-10-03T10:07:20.910101+00:00",
+  "goal": "우선순위에 따라 완료시까지 수행",
+  "goal_status": "active",
+  "required_scope_source": "docs/plans/2026-10-03-platform-agent-usage-and-evidence.md §§4,8; docs/NEXT_PLAN.md",
+  "completed_units": [
+    {
+      "scope": "Current official-source AI-agent research and project direction",
+      "evidence": "docs/plans/2026-10-03-platform-agent-usage-and-evidence.md §§2,3"
+    },
+    {
+      "scope": "R0 environment/identity/candidate observation and authorized local boundary",
+      "evidence": "../approved-runtime-verification.json"
+    },
+    {
+      "scope": "R1 observed failures and bounded R2 fixes; D prepared deployment/recovery/loss/denial repeats",
+      "evidence": "final-candidate-verification.json"
+    },
+    {
+      "scope": "Comparison, reproducibility guide, 72-second actual screenshot narrative",
+      "evidence": "../README.md; ../demo/verification.json"
+    },
+    {
+      "scope": "F inline rejection form and G reason persistence with actual Chrome/restart/file readback",
+      "evidence": "v6-rejection-verification.json; v7-rejection-verification.json"
+    },
+    {
+      "scope": "Writer gate concurrency failure reproduced and locally bounded lock-open fix",
+      "evidence": "writer-lock-verification.json",
+      "limit": "No remote writer operation; candidate H separate from actual UI candidate G."
+    },
+    {
+      "scope": "I actual rejection approval-to-incident ID/reason linkage, detail/reload/empty-reason UI and workload non-change",
+      "evidence": "v9-rejection-verification.json",
+      "limit": "Synthetic pending fixtures; normal JSONL writes, not live analysis/authentication or crash-atomic dual-store writes"
+    },
+    {
+      "scope": "R4 input envelope prototype and two cached-model exploratory comparisons",
+      "evidence": "r4-envelope-verification.json",
+      "limit": "Not integrated or promoted; semantic errors remain. Original runtime restored."
+    },
+    {
+      "scope": "J model proxy HTTP/error/finish_reason/usage fidelity and truncated tool suppression",
+      "evidence": "mlx-proxy-verification.json",
+      "limit": "Actual local HTTP fixtures plus live Qwen; not remote CI or diagnostic semantic success"
+    },
+    {
+      "scope": "Existing Scorecard replay of saved R4 cases with categorical positive/negative controls",
+      "evidence": "r4-proxy-j-scorecard.json; r4-replay-boundaries.log",
+      "limit": "Counterexample remains failed; four of seven cases do not call a model; no general accuracy claim"
+    },
+    {
+      "scope": "One bounded cached-reasoner4096-token/180s comparison and original model restoration",
+      "evidence": "r4-reasoning-lookalike/lookalike.json; r4-reasoning-budget-restored.json",
+      "limit": "One timeout, no completed response, tokens and quality unmeasured; owned comparison server stopped before restore"
+    },
+    {
+      "scope": "Structured revision/owner/readiness facts connected to existing describe_deployment and observed through actual Chrome/default router",
+      "evidence": "revision-evidence-verification.json",
+      "limit": "Actual UI model prose still fails health fidelity; code/readiness contract is not semantic completion"
+    },
+    {
+      "scope": "Code-derived observations/recovery are the durable summary and primary chat card; model text/completion is retained separately as unverified interpretation",
+      "evidence": "inspection-presentation-verification.json",
+      "limit": "Raw model health overstatement remains; display separation is not semantic accuracy or a read-only capability"
+    },
+    {
+      "scope": "Explicit read-only mode binds UI/API/durable request to investigation-only tools and bypasses unbounded delegation.",
+      "evidence": "readonly-capability-verification.json",
+      "limit": "Per-request tool capability is proven; diagnostic semantics and tenant isolation are separate."
+    }
+  ],
+  "unfinished_requirements": [
+    {
+      "scope": "R3 diagnostic uncertainty/evidence fidelity",
+      "evidence": "readonly-capability-verification.json",
+      "reason": "The actual M response preserves unknown health but adds unsupported explanations about the previous scaled-down revision. Sufficient/insufficient/contrary hypotheses and next-check evaluation remain."
+    },
+    {
+      "scope": "R3 final same-candidate scenario bundle",
+      "reason": "D deployment/recovery repeats and I rejection UI proof have different candidate hashes; no final integrated bundle after diagnostic work yet."
+    },
+    {
+      "scope": "R4 integrated evidence contract and useful supported/insufficient diagnosis comparison",
+      "reason": "K source collection,L presentation and M explicit read-only capability are integrated. Useful evidence-linked model explanations with positive/negative controls remain."
+    },
+    {
+      "scope": "R5 one justified extension",
+      "reason": "Not started; keep Phase5 remote scope and costs separate."
+    }
+  ],
+  "next_concrete_action": "Use the enforced read-only path for evidence-linked hypotheses and next checks; evaluate supported/insufficient/contrary cases without claiming general model accuracy or hiding incorrect prose. Correct static runtime readiness claims before final same-candidate scenarios.",
+  "completion_decision": "Not complete. Do not close the goal based on a passing code gate or narrower no-action/schema checks.",
+  "blocking_audit": "Previous L turn completed checkpoint evidence; current M turn implemented and verified request capability including actual Chrome. Concrete progress, no external/user-only impasse; goal active.",
+  "preserved": "All pre-existing WIP, labs, App/install/key/checkouts/branch/draft PR retained. No commit, push, remote deployment, permission expansion, or resource cleanup.",
+  "gate_status": {
+    "passed": 3345,
+    "skipped": 2,
+    "warnings": 20,
+    "seconds": 128.96,
+    "environment": "2026-10-03 local macOS/Python3.13.5/Node22.23.3/temporary npm prefix",
+    "evidence": "readonly-capability-gate.log",
+    "candidate": "candidate-v13-readonly-capability.json",
+    "documentation_followup": {
+      "passed": 55,
+      "seconds": 3.29,
+      "evidence": "readonly-capability-docs.log",
+      "diff_check": "git diff --check exit0",
+      "scope": "docs-only checkpoint follow-up; runtime sources unchanged after full gate"
+    }
+  },
+  "checkpoint": "readonly-capability-checkpoint.json:286 sources match;actual read and refusal/reload;UID/spec unchanged"
+}

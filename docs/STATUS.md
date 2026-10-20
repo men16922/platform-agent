@@ -1,119 +1,57 @@
 # STATUS — platform-agent
 
-최종 갱신: 2026-09-03
+최종 갱신: 2026-10-20
 
-> 현재 구현 상태 / 검증 baseline / active focus / open risks. **≤120줄** 유지.
-> ⚠️**압축본이다(2026-09-02)** — 상세는 **삭제가 아니라 이동**했다:
-> 옛 baseline은 `docs/archive/status-baseline-2026-09.md`,
-> Active Focus·Risk의 ⚠️/⛔ 상세는 `docs/archive/status-risk-detail-2026-09.md`가 **권위**다.
-> 여기 남은 건 **주장 한 줄 + 재개 조건**뿐이다. 요약만 읽고 결론 내지 말 것.
-
----
+> 현재 검증 baseline / active focus / risks. **≤120줄** 유지.
+> 상세 이력은 `COMPLETED_SUMMARY` **M0~M91** (`docs/COMPLETED_SUMMARY.md`)과 아카이브가 권위다. 아래 날짜는 관측일이며 현재 원격 상태를 뜻하지 않는다.
 
 ## 검증 Baseline (실제로 돌린 것만)
 
-- `make check` → **2410** (2026-09-03 로컬 macOS·py3.13 · **CI도 같은 게이트**, ubuntu·py3.13 —
-  **CI 숫자는 PR 체크가 권위**). **+3**: overnight-harness **1.2.0→1.4.0** — `docs/LESSONS.md`(≤40줄)가
-  세 선언 검사(라인·정책표·머리말)에 편입됐다. Makefile은 모델 라우팅(actor `claude-sonnet-5` /
-  critic `claude-fable-5-1`, `?=`)과 ledger·resume·trajectory 타깃을 얻었다. 코드 변경 0.
-- `make check` → **2407** (2026-09-02 로컬 macOS·py3.13 · **CI도 같은 게이트**, ubuntu·py3.13 —
-  **CI 숫자는 PR 체크가 권위**). **+10**: **`MEASURABLE`이 금액을 대신 묻는다**(M50) — 인쇄만 하던
-  분기가 질의를 돌리고, **PROMOTION을 나머지 크레딧과 갈라** 인쇄한다. ⚠️**첫 가드가 그 변이를
-  통과시켰다** — `= 'PROMOTION'`은 **`!= 'PROMOTION'`의 부분문자열**이라 한쪽을 지워도 다른 쪽이
-  대신 답했다(M48의 접두 함정과 같은 계열, Risk 12④). ⚠️**창을 전 행으로 재면 3일이 한 달로 보인다**
-  (계정 수준 Invoice 행 하나 때문 — 프로브가 제가 경고하는 오독을 할 뻔했다).
-- 이전 baseline — **2397**(09-02, M48) · **2392**(09-02, M47) · **2381~2339**(09-01, M40~M46) · **2332**(08-30, M39) ·
-  **1862 이하**(~08-13, M16~M18) · **1697 이하**(07-10~08-09) → `docs/archive/status-baseline-2026-09.md`
-  · `status-baseline-2026-0{7,8}.md` · `progress-2026-0{7,8,9}.md` · `COMPLETED_SUMMARY` M13·M14.
-  ⚠️**단조증가 지표가 아니다** — 08-30에 2337→**2332**로 내려갔고 **그게 옳다**(M39):
-  **결함이 닫히면 그 결함을 설명하던 줄도 사라진다.** 줄어든 숫자는 **분해해 적을 것**.
-  **여기 남길 함정 셋(08-09)**: 라이브 `gcloud` 호출(21.97s→0.02s — D49가 일반화해 집행) ·
-  반증 중 **`.pyc`에 속았다** · `spend-watch`는 **터미널을 안 열면 검사도 없다**.
+- 2026-10-20 W+삽입 지시 가드 `make check` → **3384** passed·3 skipped·20warnings,118.68초. 로컬 macOS·Python3.13.5·공식Node22.23.3/임시 npm prefix. 신규 snapshot 가드 단위4. 첫 실행은 문서 수치 미갱신으로 gate_number_claims 1 failed(3383/3)였고 문서 갱신 후 재실행한 값이다.
+
+- 2026-10-20 W `make check` → **3380** passed·3 skipped·20warnings,119.20초. 로컬 macOS·Python3.13.5·공식Node22.23.3/임시 npm prefix. 새 factory/router/SSE·SQLite9검사와 UI projection1검사 포함. skip2=온프렘serverless, skip1=기존Terraform도구/초기화 부재.
+
+- 2026-10-20 `make check` → **3370** passed·3 skipped·20 warnings,123.81초. macOS·Python3.13.5·공식 Node22.23.3/임시 npm prefix. 관련54·TypeScript 검사 통과. skip2=온프렘 serverless 미지원, skip1=기존 Terraform 도구/초기화 부재. 원격 CI/제품 서버 적용 검증은 아니다.
+
+- 2026-10-03 `make check` → **3364** passed·2 skipped·20 warnings, 133.83초. 로컬 macOS·Python3.13.5·Node22.23.3/임시 npm prefix, T에서 작업 트리R/v16 검사. 증감0.
+- 실행 O/v15의 자체 게이트는 같은 날 앞선 **3356 passed·2 skipped**, 138.14초. 작업 트리R 결과를 실행O의 결과로 바꾸어 쓰지 않는다. 두 후보 각각287소스 일치는 U checkpoint에 기록됐다.
+- T 실제 Chrome/로컬 kind: 정상3·거부2·실패 후 수동 복구2·실행 중 새로고침2. 각 준비 요청 claim1/deploy1. 최종 UID·전체 spec·r0/replicas2 복원, revision29→37. 합성 승인 거부2의 사유·APR↔INC·조치0도 확인.
+- 측정 한계: r0/r1은 같은 digest. health는 Pod liveness200 로그이며 외부 Service/의존성 검사가 아니다. 이전 Pod가 생존해 outage/MTTR로 세지 않는다. 제한 tenant SA의 거부는 공유 deployer 격리 증명이 아니다.
+- 증거 권위: `docs/evidence/dogfood-20261003/repeats/t-integrated/verification.json`과 같은 폴더 report, 데모는 evidence README의 T 항목. 마지막 workload 관측은 13:12 UTC이며 U에서 새로 조회하지 않았다.
+- M89(2026-09-13): AWS transport의 로컬 SDK/HTTP/DB·브라우저·변이·빌드 검증 완료. M91(2026-09-15): 인증 해소·원격 설정 읽기·로컬 후보 재생성. 운영 Invoke/배포/PR 발행·원격 CI는 별도다.
+- 과거 게이트 증감/환경 원문은 [10월 정리 아카이브](archive/progress-2026-10.md#tidy-20261003-status), 더 이전은 `docs/archive/status-baseline-2026-09.md` 참조. 테스트 수는 단조증가 지표가 아니다.
 
 ## Active Focus
 
-> **"무엇이 도는가"는 여기 적지 말 것** — `AGENT_BRIEF` **Snapshot**과 `COMPLETED_SUMMARY`
-> **M0~M45**이 권위다. 이 파일은 **무엇을 믿어도 되는가**만 답한다.
+**2026-10-20 사용자의 "잔여 작업 완료시까지 수행"으로 재개.** 기존 Qwen 고정, 계획서 §13이 권위다.
 
-**Phase 4 — 4a는 닫혔고(08-30) 접혔다(09-01)**: DoD 넷 + 실제 청구 **$0.00**(프리티어 `Always Free`
-40M) → 워크스페이스·IAM 사용자·키 **셋 다 삭제**. ⚠️**믿으면 안 되는 요약 셋이 있다 — 셋 다
-archive 상세에 적혀 있다**(*"어차피 공짜"* · 720h 가정 추정치 · *"$0.00이라 접었다"*).
-⚠️**D48은 안 죽었다**. 권위 = 계획서 **§10·§11** · **M38·M40** · **D50 Folded**. **다시 열지 말 것.**
+§12의 seed 동일 원문은 mlx_lm 0.31.3 서버가 생성 스레드에서 seed를 컴파일 sampler에 전달하지 못한 결과로 확정했다(모델 없는 재현·stock 대 개입 서버·proxy 배제, `sampler-boundary/review.json`). §12 0.7 arm은 표본이 아니었고, 개입 서버의 진짜 표본으로 재측정해도 counterexample 지시문 추종이 남아 0.7 미채택을 유지한다. 제품은 온도/seed를 보내지 않아 영향 없음.
 
-**과대 해석 금지(현재 유효한 것만)**
-- 스코프·배포 신원 · 이미지 서명 배포 게이트는 전부 **옵트인**(→ Risk 3·6).
-- 자격증명이 테넌트-바운드인 건 **온프렘뿐**(→ Risk 10) · 파티션된 읽기 경로는 **둘뿐**.
-- `main` 보호는 **게이트 집행**이지 리뷰 집행이 아니다(코드 소유자 리뷰 off → D43).
-- **어드미션 미도입** · **CODEOWNERS는 라우팅** · Phase 5는 **경계까지**(UI·PR 생성 없음).
+지시문 ablation은 두 cache 이력·진짜 표본에서 재현돼 원인으로 확인했다. 작업 트리에 삽입 지시 복구 가드를 채택했다: 표식 기반 탐지 주석(원문 불변)+`review_candidate`의 `recovery_evidence` 필수+지시 구간 인용 코드 거부. baseline 대비 counterexample·표식 제거 변형 4/4 정정, 양성 복구 2/2 유지, 지시문 덧붙인 양성 1/2 fail-closed 거부, lookalike 2/2 길이 초과 형식 무효 회귀. 의미 해결·R3/R4 통과가 아니다. `injection-guard/review.json`.
 
-**반복 확인**: 기록된 이유가 진짜 구속 조건이 아닐 때가 많다(M13→M15) — 단 **늘 그런 건 아니고
-성립한 쪽이 더 많았는데 그래도 값은 나왔다**. ⚠️**열린 항목 자체가 틀릴 수 있다**(08-15 ⓑ) ·
-⚠️**"선언됐는데 안 읽힌다"는 자동으로 결함이 아니다**(기준은 **읽는 쪽의 provider 간 비대칭**) ·
-**"없다"는 어떻게 봤는지까지**(→ Risk 4) · **직전 세션의 Next를 그대로 따라갈 것**.
-근거·사례는 **archive 상세의 "Active Focus — 반복 확인"이 권위**.
+lookalike는 관계 필드 실험까지 실패(relation-probe/review.json)해 사용자 결정 D53으로 사람 검토 경계에 둔다. R3 시나리오 묶음은 이 경계와 T 완료분으로 충족 처리(모델 의미 통과 아님), R4 첫 묶음은 수동 기준 대비 도구 선택 4/5·이전 컨테이너 로그 공백으로 정리했다(r4-first-bundle/review.json). R5·원격은 미승인.
 
 ## Open Risks / Gaps
 
-> 각 항목은 **주장 + 재개 조건**만이다. 경위·측정·⚠️/⛔ 문장은
-> `docs/archive/status-risk-detail-2026-09.md`의 **같은 번호**가 권위다.
+번호는 기존 인용을 위해 유지한다. 경위·반증·주의사항 전문은 `docs/archive/status-risk-detail-2026-09.md`의 같은 번호와 정리 전 원문에 있다.
 
-1. **CDK 배포 시 Vercel context 필수** — ⚠️미지정 배포가 **실제로 07-11 OIDC provider를 삭제**했다.
-   diff/deploy는 반드시 `-c vercelTeamSlug=men16922s-projects -c vercelProjectName=platform-agent`.
-2. **GCP/Azure 인시던트 스토어는 보관 정책이 없다 — 단 "실 데이터 삭제"는 틀렸다**: 코드 갭은 유효,
-   **스토어가 없어 지울 데이터 0**(08-30 재확인) → **Phase 4** 선행.
-   증거 `docs/evidence/gcp-azure-retention-nothing-to-delete.log`.
-3. **스코프·배포 신원은 집행 가능하지만 옵트인이다(D38·D39)** — 기본값 미설정이라
-   **"설정하면 집행되고, 안 하면 조용히 안 된다."** 묻기 `probe_scope_reachability.py`·`make
-   deploy-identity-check` · 켜기 `make scope-credentials`·`make deploy-identity`.
-   **남은 것**: 배포 신원의 테넌트 구분(결정 5 C/D) · 클라우드 3종은 Risk 10.
-4. **세 클라우드 다 기본값이 안심시키는 답을 준다** — 경위 **M16**, 측정 로그가 권위.
-   **지금(09-01 실측)**: AWS 총 **$0.2380**(08-20~09-01) 중 **Cost Explorer가 84%**이고 진짜 인프라는
-   **월 ≈$0.09** — **관측이 관측 대상을 만든다** · Azure는 **쟀다**(서버가 `clienttype-retry-after`로
-   대기 시간을 말한다, 5→**40** ⇒ ACR **₩76.67**) · **GCP도 이제 쟀다**(09-02 적재 도착 **730행**,
-   `MEASURABLE` — **M49**): 총사용액 **₩67.87** → 청구 **≈₩0**인데 ⚠️**상쇄의 99.4%가
-   `FreeTrialUpgrade` `PROMOTION` 크레딧이고 요율이 아니다**(티어성 `DISCOUNT`는 ₩0.39뿐) ⇒
-   ⛔*"GCP는 어차피 공짜"*로 요약 금지 — 절벽이 **크레딧 잔액**에 앉아 있고 **소진 시점은 내보내기가
-   말해 주지 않는다**. ⚠️**런레이트는 아직 못 잰다**: 창이 **3일**(마지막 날 미완)이고 총액의 **81%가
-   하루치 4행**이며 **90%가 다른 프로젝트 것**이다(결제계정 프로젝트 5개 중 **비용 행은 3개** ·
-   platform-agent 몫은 **₩6.55**) ⇒ **결제계정 총액을 이 레포 비용으로 읽으면 10배 틀린다**.
-   **며칠 뒤 재조회가 무료인 다음 측정.** 증거 `docs/evidence/the-gcp-zero-is-a-promotion-credit-not-a-rate.log`.
-   ⚠️**세 답의 모양이 다르다 — 하나로 요약하지 말 것.** ⚠️**세는 함정 여섯**(리전 한정 `[]` ·
-   `AccessDenied` · 429 · `bq show` 실패 · **빈 테이블** · **월별 집계가 없는 백필을 보여준다**) —
-   **전부 "없다"가 아니다.**
-   ⛔**4a 접기(D50)는 09-01에 완료** ⇒ AMP는 지출·관측에서 빠진다.
-5. **k3s는 집행하지만 proven 집합엔 없다 — D40으로 닫힘(08-01)** — 여는 조건: k3s-lab에 워크로드 →
-   D40 · `docs/plans/2026-08-01-k3s-proven-substrate.md`.
-6. **공급망: 생산자·소비자·CI 키리스는 섰고, 어드미션은 업스트림 대기** — **M15가 권위**.
-   ⛔**재개 조건 미충족(09-02 재측정) — 단 08-30까지 물고 있던 신호가 틀렸다**(**M51**):
-   `#1406`은 **2024-09-30 이후 멈춘 트래킹 이슈**이고 그 구현은 **`#1725`로 2025-04-23에
-   머지**됐다 — 우리가 08-08에 쓴 chart 0.10.6(=appVersion **0.13.1**)에 **이미 들어 있었다**
-   ⇒ **결론 유지, 근거 교체**(고치기 전 버전을 시험한 게 아니다). **새 조건 = 둘 중 먼저
-   오는 것**: ⓐ**`#1968`**(cosign v3 서명 검증 고침, **미머지**) 머지 · ⓑ**`#2007`**(2026-08-24
-   머지)을 담은 **릴리스** — 최신 v0.15.1은 **2026-03-26**이고 그 뒤 **51 커밋이 미출시**다.
-   증상 티켓 **`#1899`**가 우리 조합(cosign v3 서명 + 0.13.1) 그대로다.
-   ⚠️**"검증됨"이 도구마다 다르고 우리는 못 본다.** ⚠️**cosign 쪽 기록은 정확했다** —
-   `--new-bundle-format`은 v3.1.2의 **여섯 하위 명령 어디에도 없다**(v2 옵트인이었고 v3에선
-   기본이라 사라졌다) ⇒ **간극은 서명하는 쪽이 아니라 검증하는 쪽**이다.
-   증거 `docs/evidence/cosign-admission-kind-attempt.log` ·
-   `docs/evidence/the-resume-condition-was-watching-a-dead-issue.log`.
-7. **TS 타입은 네트워크 데이터를 보증하지 않는다** — 롤링 중 허브는 두 버전을 동시에 서빙 →
-   **푸시 신규 필드는 항상 optional + 폴백**.
-8. **PSS restricted 아래에서 애드온 차트는 기본값으로 안 돈다** — 파드는 거부되는데 **Argo는 Synced로
-   보인다**. **새 애드온마다** 렌더된 파드 스펙을 `kubectl apply --dry-run=server`로 API 서버에 물을 것.
-9. *(해소)* Capsule deprecation(08-02, D41) · GCP 예산 상시 발화 → ₩28,000(08-09) ·
-   리포트 스트림 분리(08-11, M17).
-10. **GCP/Azure 자격증명은 아직 테넌트-바운드가 아니다** — 스코프는 **어느 네임스페이스**만 정하고
-   토큰을 테넌트에 안 묶는다. 자격증명 자체가 경계인 건 **온프렘뿐** → Phase 4.
-   ⚠️**08-30부터 Azure 경로는 실제로 열려 있다**(M39) — 대상 자원이 0개라 blast radius가 0인 것이지
-   **경계가 생긴 게 아니다**.
-11. **Dashboard dependency audit — 해소됨(08-30). `npm audit` 0건.** ⚠️**"upstream 대기"로 다시 닫지
-   말 것** — 그 기록이 **세 군데 다 틀렸다**(실측은 critical 2·high 6이고 **런타임**이었다).
-   증거 `docs/evidence/the-dashboard-audit-record-described-a-different-risk.log`.
-12. **게이트의 초록에는 조건이 붙는다 — 아홉이 같은 계열(2026-08-08~09-01)**:
-   ①시간 ②환경(**skip은 실패가 아니다** ⇒ 게이트 숫자엔 **날짜와 잰 기계**를) ③하중(**새 가드는 지워
-   보고 red를 확인**) ④관측 지점(**가드는 독자가 읽는 그 물건에 대고 물을 것** — M17이 권위)
-   ⑤가드 자신의 값과 하네스 ⑥형제 집합(**세는 순간 전부 셀 것**) ⑦변이 하네스 자신(**변이·실행·복구는
-   한 스크립트에**) ⑧`make dev-up`이 새 클론에서 못 돌았다 ⑨**워크플로가 안 도는 것도 초록으로
-   보인다**(M43 — ⛔`main`은 무방비였던 적 없다).
-   **아홉의 경위·재발 기록은 archive 상세의 Risk 12가 권위** — 요약만 보고 고치지 말 것.
-- (그 밖의 해소 이력은 `PROGRESS_LOG`/`docs/archive/` 참조.)
+1. **CDK context:** diff/deploy에 `-c vercelTeamSlug=men16922s-projects -c vercelProjectName=platform-agent` 필수. 미지정으로 OIDC provider가 삭제된 실제 이력이 있다.
+2. **GCP/Azure 보관:** 90일 보관 정책 미구현. 2026-08-30에는 스토어가 없어 삭제 대상0이었다. Phase4에서 재개하며 현재도 0이라고 추정하지 않는다.
+3. **스코프·배포 신원(D38·D39):** 전체 구성은 옵트인. 온프렘 live 조치는 scope 누락 시 거부하지만 배포 신원 미설정은 ambient kubeconfig 경고/폴백이다. 공유 deployer의 tenant 구분·기본 on·서명키 custody/rotation 결정이 남았다.
+4. **비용:** 프로젝트·크레딧·사용 창을 분리한다. M54(2026-09-05) GCP 총사용액₩14.80, PROMOTION−₩12.36·기타−₩2.44·청구≈₩0. 미완 일자/서비스 구성 변화가 있어 월 런레이트와 새 GKE 견적으로 전용하지 않는다. 다음 관측은 같은 구성이 유지된 완결 일자다.
+5. **k3s(D40):** 집행 기능과 proven 집합을 구분한다. k3s-lab에 실제 workload가 생길 때만 승격 재검토한다.
+6. **Cosign 어드미션:** 2026-09-02 재측정 당시 업스트림 대기. 재개 신호는 `#1968` 머지 또는 `#2007`을 담은 릴리스다. `#1406`/`#1725`가 이미 구현된 일을 미지원으로 읽었던 근거 오류를 반복하지 않는다. 당시 v0.15.1·후속51커밋 수치는 현재 상태가 아니다.
+7. **TS/전송 호환:** 롤링 중 두 버전 공존. 새 push 필드는 optional+폴백이어야 한다.
+8. **PodSecurity:** 새 addon은 PSS restricted에서 server dry-run과 Pod 실제 상태를 확인한다. Argo Synced만으로 동작을 확정하지 않는다.
+9. **해소 이력:** Capsule deprecation(D41), GCP 예산 상시 발화, 리포트 스트림 분리는 완료 기록 참조. 현재 재개 작업이 아니다.
+10. **테넌트 자격증명:** GCP/Azure는 아직 tenant-bound 미증명. 온프렘 제한 신원의 경계와 공통 deployer를 구분한다. 대상 자원0은 격리의 증거가 아니다.
+11. **대시보드 audit:** 2026-08-30 `npm audit` 0건으로 해소. 과거 “upstream 대기” 기록은 세 군데 모두 틀렸다. 당시 결과를 현재 취약점 조회로 표시하지 않는다.
+12. **게이트 해석:** 날짜·환경·skip, 실제 소비 경계, 형제 전체, 변이 red와 WIP 복구까지 기록한다. 가드/픽스처/변이 하네스도 틀릴 수 있으며 선언·테스트 통과만으로 라이브 실행을 입증하지 않는다. 아홉 사례의 전문은 archive Risk12 참조.
+13. **모델 측정 재현성:** mlx_lm 0.31.3 서버에서 온도>0 seed는 독립 표본을 만들지 않고, 온도0 출력은 prompt-cache 이력·batch/nonbatch 경로에 따라 갈린다. 과거 단일 응답 대조(V·§11·W 형식)는 이 변수를 통제하지 않았다. 새 대조는 `cached_tokens`를 기록하고 arm별 cold 재기동+다른 이력으로 반복한다. 서버 logprobs는 출력 토큰과 어긋나 지표로 쓰지 않는다.
+
+## 닫힌 범위와 별도 경계
+
+- **Phase4a는 닫힘(M38·M40·D50).** AMP 실측798,331샘플·청구 **$0.00**, 이유는 **Always Free 40M/월**이었다. 계획의 프리티어 배제 근거가 틀렸으며 “어차피 공짜”가 아니다. 필터 없이는 한도128배 초과다. 접은 이유는 $0가 아니라 장기 키의 대가이며 D48은 유효하다.
+- **Phase5:** 독립 Lambda 실행 위치(D52)와 저장/준비/상태 UI는 정해졌다. M91 이후 남은 것은 계획 §13의 운영 실행 범위·전환/복구·보관 비용과 writer 경계다. 실행 위치 부재/Vercel 2FA를 현재 blocker로 반복하지 않는다.
+- **main 보호(D43):** PR+CI 게이트 집행이며 코드 소유자 리뷰 집행은 아니다. 어드미션·클라우드 테넌트 격리·production 발행 완료를 암시하지 않는다.
+- 다음 작업·기존 lab/App/키/checkout/branch/PR 보존 범위는 `docs/NEXT_PLAN.md`. 10-20 재개는 로컬 진단 작업이며 Phase5/4b 원격 실행 승인을 뜻하지 않는다.

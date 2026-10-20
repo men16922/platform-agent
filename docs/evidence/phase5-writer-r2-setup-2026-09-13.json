@@ -1,0 +1,69 @@
+{
+  "date": "2026-09-13",
+  "milestone": "M77_in_progress",
+  "authorization": "User said continue after R2 scope proposal; creation and scoped experiment authorized; retention required",
+  "repository": "men16922/platform-agent-p5e-authz-r2",
+  "repository_id": 1367740190,
+  "private": true,
+  "actions_enabled": false,
+  "seed_snapshot": {
+    "observer": "operator",
+    "complete": true,
+    "ref": "main",
+    "commit": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+    "main": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+    "parents": [],
+    "files": {
+      "platform/tenants/acme.yaml": {
+        "sha": "398abe6c528238244a8e3713bc2b48523ae8b915",
+        "mode": "100644"
+      },
+      "platform/tenants/globex.yaml": {
+        "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4",
+        "mode": "100644"
+      }
+    }
+  },
+  "checkout": "/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/platform-agent-p5e-r2-20260913-2m_rdfd1",
+  "app_slug": "men16922-platform-agent-p5e-r2",
+  "app_id": 4924748,
+  "installation_id": null,
+  "app_registration": "created with reviewed permissions; waiting for user private-key download",
+  "installation_token_calls": 0,
+  "pull_requests_created": 0,
+  "old_resources": "preserved; no old PEM or checkout access",
+  "next": "User downloads a new App PEM and supplies its path; then install on the R2 lab only and execute scoped probes",
+  "client_id": "Iv23lifKdTs0lYCOOL52",
+  "initial_gate": {
+    "passed": 3035,
+    "skipped": 2,
+    "failed": 3,
+    "reason": "in-progress milestone was named before a completed-summary entry existed; current pointers now say R2"
+  },
+  "app_settings_observer": "Authenticated GitHub owner settings UI; App registration succeeded",
+  "app_settings": {
+    "permissions": {
+      "single_file": "write",
+      "pull_requests": "write",
+      "metadata": "read"
+    },
+    "single_file_paths": [
+      "platform/tenants/acme.yaml"
+    ],
+    "webhook": false,
+    "oauth": false,
+    "only_this_account": true
+  },
+  "operator_get_app_status": 404,
+  "operator_get_app_limit": "Private App public metadata endpoint 404 does not contradict authenticated owner UI creation; JWT metadata check pending key",
+  "gate": {
+    "command": "make check",
+    "passed": 3038,
+    "skipped": 2,
+    "warnings": 21,
+    "seconds": 87.51,
+    "exit_code": 0,
+    "log": "/tmp/platform-agent-m77-setup-gate.log"
+  },
+  "followup": "docs/evidence/phase5-writer-r2-live-2026-09-13.json"
+}

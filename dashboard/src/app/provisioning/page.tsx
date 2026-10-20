@@ -1,3 +1,5 @@
+import { preparationAvailable } from '@/lib/registry-planner-connection';
+import { RegistryAttachmentPreview } from "@/components/registry-attachment-preview";
 import { DataSourceBadge } from "@/components/data-source-badge";
 import { getDeploymentFeed } from "@/lib/activity-data";
 import { ProvisioningControl } from "@/components/provisioning-control";
@@ -27,6 +29,7 @@ export default async function ProvisioningPage() {
       {/* Per-tenant/env view of the SAME platform layer, but observed rather than
           declared: pushed by each cluster's agent, two axes, absence made visible. */}
       <PlatformTenantSwitcher />
+      <RegistryAttachmentPreview preparationEnabled={preparationAvailable(process.env)} />
 
       {/* Platform layer stood up on top of the cluster (GitOps / observability /
           progressive delivery) — provisioning output, so it lives here. */}

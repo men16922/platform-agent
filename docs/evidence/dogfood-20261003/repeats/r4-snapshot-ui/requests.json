@@ -1,0 +1,37 @@
+[
+  {
+    "case_id": "lookalike",
+    "request_id": "fa0605a2-1f39-42a5-960f-5e6068743428",
+    "submitted_at": "2026-10-03T10:35:44.903Z"
+  },
+  {
+    "case_id": "stale-injection",
+    "request_id": "3b05b599-9dca-4edd-a03f-8ee644109848",
+    "submitted_at": "2026-10-03T10:36:35.720Z"
+  },
+  {
+    "case_id": "counterexample",
+    "request_id": "ade537f5-2040-4cbd-9eb7-e1c900f54c03",
+    "submitted_at": "2026-10-03T10:36:39.086Z"
+  },
+  {
+    "case_id": "supported-recovery",
+    "request_id": "c9db69f2-3b26-499e-99cf-f580960ffd3b",
+    "submitted_at": "2026-10-03T10:36:47.761Z"
+  },
+  {
+    "case_id": "stale-same-target",
+    "request_id": "f4ae4adf-6d16-4145-a08e-2d34bdaea0d0",
+    "submitted_at": "2026-10-03T10:37:19.635Z"
+  },
+  {
+    "case_id": "unknown-time",
+    "request_id": "6d685236-0cee-4abe-b961-f505c3c062d6",
+    "submitted_at": "2026-10-03T10:37:47.977Z"
+  },
+  {
+    "case_id": "fresh-other-target",
+    "request_id": "5b56e534-f230-4f43-a10d-294eb14e6337",
+    "submitted_at": "2026-10-03T10:37:48.555Z"
+  }
+]

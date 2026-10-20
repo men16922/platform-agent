@@ -1,0 +1,44 @@
+{
+  "observed_at": "2026-09-12T13:49:12.406542+00:00",
+  "status": "awaiting_user_private_key_download",
+  "repository": "men16922/platform-agent-p5e-authz-lab",
+  "repository_id": 1367338348,
+  "private": true,
+  "actions_enabled": false,
+  "app_slug": "men16922-platform-agent-p5e",
+  "app_id": 4921024,
+  "app_registration_ui_verified": {
+    "single_file": "write",
+    "single_file_path": "platform/tenants/acme.yaml",
+    "pull_requests": "write",
+    "metadata": "read",
+    "contents": "none",
+    "actions": "none",
+    "administration": "none",
+    "webhook": false,
+    "oauth_on_install": false,
+    "visibility": "only_this_account"
+  },
+  "seed_commit": "103e44f68adc78ebb325ddb0927f23f5622e97fc",
+  "seed_blobs": {
+    "platform/tenants/acme.yaml": "398abe6c528238244a8e3713bc2b48523ae8b915",
+    "platform/tenants/globex.yaml": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+  },
+  "seed_complete_tree_verified": true,
+  "installation_id": null,
+  "permission_probe_calls": 0,
+  "pull_requests_created": 0,
+  "production_repository_writes": 0,
+  "aws_deployments": 0,
+  "cleanup": "pending; new disposable App and lab retained for the active user key-download handoff",
+  "next": "User downloads the new App private key directly and provides only its local path; then install on the captured lab ID, verify token boundaries, run the scoped probes and clean up.",
+  "local_gate": {
+    "date": "2026-09-12",
+    "environment": "macOS 26.6.2 ARM64; Python 3.13.5",
+    "passed": 2831,
+    "skipped": 2,
+    "warnings": 21,
+    "seconds": 64.32,
+    "log": "/tmp/platform-agent-p5e-resume-20260912-gate.log"
+  }
+}

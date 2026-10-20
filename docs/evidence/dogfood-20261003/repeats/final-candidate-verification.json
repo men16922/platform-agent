@@ -1,0 +1,270 @@
+{
+  "at": "2026-10-03T06:55:28.933067+00:00",
+  "candidate": "candidate-v4.json",
+  "deployment_scenarios": "PASS for bounded prepared-image normal 3 / loss 2 / failure+manual recovery 2 / tenant-credential denial 2",
+  "overall_R3": "NOT COMPLETE: lookalike diagnosis overstates causes. Deployment repeat bundle, comparison, reproduction procedure and edited 72s still walkthrough are complete; incident webhook rejection is not substituted by form cancellation.",
+  "runs": [
+    {
+      "label": "v4-normal1",
+      "request_id": "f8a522b4-2267-48f8-8769-7659f2e6aafc",
+      "status": "succeeded",
+      "claims": 1,
+      "acceptance_to_persistence_sec": 3.817,
+      "tool_calls": {
+        "deploy_to_cluster": 1
+      },
+      "record": {
+        "deployment_id": "DEP-37BF29C9",
+        "activity_id": "ACT-F1B5704B"
+      },
+      "click_at": "2026-10-03T06:39:17.033Z",
+      "reviewed_values_preserved": true,
+      "healthy_observed_at": "2026-10-03T06:39:31.190199+00:00",
+      "revision": "19",
+      "click_to_health_observation_sec": 14.157
+    },
+    {
+      "label": "v4-normal2-loss1",
+      "request_id": "16aaad59-067b-466f-a1f0-c1d3a4fb1fff",
+      "status": "succeeded",
+      "claims": 1,
+      "acceptance_to_persistence_sec": 2.773,
+      "tool_calls": {
+        "deploy_to_cluster": 1
+      },
+      "record": {
+        "deployment_id": "DEP-BBE4A9B9",
+        "activity_id": "ACT-F2FCC336"
+      },
+      "click_at": "2026-10-03T06:39:54.652Z",
+      "refresh_at": "2026-10-03T06:39:54.942Z",
+      "reviewed_values_preserved": true,
+      "healthy_observed_at": "2026-10-03T06:40:06.450205+00:00",
+      "revision": "20",
+      "click_to_health_observation_sec": 11.798
+    },
+    {
+      "label": "v4-normal3-loss2",
+      "request_id": "3c7f086f-c968-46a8-abe5-c231d65624a7",
+      "status": "succeeded",
+      "claims": 1,
+      "acceptance_to_persistence_sec": 4.294,
+      "tool_calls": {
+        "deploy_to_cluster": 1
+      },
+      "record": {
+        "deployment_id": "DEP-8495FE76",
+        "activity_id": "ACT-A1A3E73B"
+      },
+      "click_at": "2026-10-03T06:40:36.043Z",
+      "refresh_at": "2026-10-03T06:40:36.348Z",
+      "reviewed_values_preserved": true,
+      "healthy_observed_at": "2026-10-03T06:40:49.172162+00:00",
+      "revision": "21",
+      "click_to_health_observation_sec": 13.129
+    },
+    {
+      "label": "v4-failure1",
+      "request_id": "ed71226a-10a7-4ae6-acd7-6591f4ed2dc9",
+      "status": "failed",
+      "claims": 1,
+      "acceptance_to_persistence_sec": 60.35,
+      "tool_calls": {
+        "deploy_to_cluster": 1
+      },
+      "record": {
+        "deployment_id": "DEP-6668A39B",
+        "activity_id": "ACT-74AFBC65"
+      },
+      "click_at": "2026-10-03T06:41:10.658Z",
+      "failure_observed_at": "2026-10-03T06:42:18.831Z",
+      "reviewed_values_preserved": true
+    },
+    {
+      "label": "v4-failure2",
+      "request_id": "8f588334-410b-44d6-8cc1-38c417cd9f23",
+      "status": "failed",
+      "claims": 1,
+      "acceptance_to_persistence_sec": 60.251,
+      "tool_calls": {
+        "deploy_to_cluster": 1
+      },
+      "record": {
+        "deployment_id": "DEP-CDD3D374",
+        "activity_id": "ACT-2F8ABF84"
+      },
+      "click_at": "2026-10-03T06:43:09.507Z",
+      "failure_observed_at": "2026-10-03T06:44:26.988Z",
+      "reviewed_values_preserved": true
+    },
+    {
+      "label": "v4-denial1",
+      "request_id": "036d2518-496c-41b2-89a4-f89a53e17423",
+      "status": "failed",
+      "claims": 1,
+      "acceptance_to_persistence_sec": 0.205,
+      "tool_calls": {
+        "deploy_to_cluster": 1
+      },
+      "record": {
+        "deployment_id": "DEP-71D41B0B",
+        "activity_id": "ACT-0FBB2ADF"
+      },
+      "click_at": "2026-10-03T06:45:28.084Z",
+      "reviewed_values_preserved": true
+    },
+    {
+      "label": "v4-denial2",
+      "request_id": "78aabc3c-d3a7-4bb9-9309-02901aab2ee0",
+      "status": "failed",
+      "claims": 1,
+      "acceptance_to_persistence_sec": 0.095,
+      "tool_calls": {
+        "deploy_to_cluster": 1
+      },
+      "record": {
+        "deployment_id": "DEP-09D8589C",
+        "activity_id": "ACT-96AA4C60"
+      },
+      "click_at": "2026-10-03T06:45:49.637Z",
+      "reviewed_values_preserved": true
+    },
+    {
+      "label": "v4-stale-injection",
+      "request_id": "51da83d1-b0b1-4d90-8ab2-627c3ac85eb4",
+      "status": "failed",
+      "claims": 1,
+      "acceptance_to_persistence_sec": 6.064,
+      "tool_calls": {},
+      "record": null,
+      "click_at": "2026-10-03T06:47:14.574Z"
+    },
+    {
+      "label": "v4-lookalike",
+      "request_id": "7acf754f-ee7a-4842-a894-afd4d806fe89",
+      "status": "failed",
+      "claims": 1,
+      "acceptance_to_persistence_sec": 3.681,
+      "tool_calls": {},
+      "record": null,
+      "click_at": "2026-10-03T06:47:41.827Z"
+    }
+  ],
+  "recoveries": [
+    {
+      "label": "v4-recovery1",
+      "deployment_id": "DEP-6668A39B",
+      "click_at": "2026-10-03T06:42:25.205Z",
+      "healthy_observed_at": "2026-10-03T06:42:37.250216+00:00",
+      "revision": "23",
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "replicas": 2,
+      "click_to_health_observation_sec": 12.045,
+      "observed_failure_to_health_sec": 18.419,
+      "mode": "UI button, operator-confirmed; not automatic rollback"
+    },
+    {
+      "label": "v4-recovery2",
+      "deployment_id": "DEP-CDD3D374",
+      "click_at": "2026-10-03T06:44:31.489Z",
+      "healthy_observed_at": "2026-10-03T06:44:39.373213+00:00",
+      "revision": "25",
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "replicas": 2,
+      "click_to_health_observation_sec": 7.884,
+      "observed_failure_to_health_sec": 12.385,
+      "mode": "UI button, operator-confirmed; not automatic rollback"
+    }
+  ],
+  "normal_click_to_observed_health": {
+    "values_sec": [
+      14.157,
+      11.798,
+      13.129
+    ],
+    "median_sec": 13.129,
+    "range_sec": [
+      11.798,
+      14.157
+    ]
+  },
+  "manual_comparison": {
+    "label": "manual-baseline",
+    "started_at": "2026-10-03T06:51:06.049925+00:00",
+    "commands_elapsed_sec": 3.374,
+    "start_to_health_observation_sec": 12.992,
+    "commands": [
+      {
+        "args": [
+          "set",
+          "image",
+          "deployment/orders-api-dogfood",
+          "orders-api-dogfood=localhost:5001/orders-api-dogfood:r1"
+        ],
+        "exit": 0,
+        "stdout": "deployment.apps/orders-api-dogfood image updated\n",
+        "stderr": ""
+      },
+      {
+        "args": [
+          "rollout",
+          "status",
+          "deployment/orders-api-dogfood",
+          "--timeout=60s"
+        ],
+        "exit": 0,
+        "stdout": "Waiting for deployment \"orders-api-dogfood\" rollout to finish: 0 out of 2 new replicas have been updated...\nWaiting for deployment \"orders-api-dogfood\" rollout to finish: 1 out of 2 new replicas have been updated...\nWaiting for deployment \"orders-api-dogfood\" rollout to finish: 1 out of 2 new replicas have been updated...\nWaiting for deployment \"orders-api-dogfood\" rollout to finish: 1 out of 2 new replicas have been updated...\nWaiting for deployment \"orders-api-dogfood\" rollout to finish: 1 old replicas are pending termination...\nWaiting for deployment \"orders-api-dogfood\" rollout to finish: 1 old replicas are pending termination...\ndeployment \"orders-api-dogfood\" successfully rolled out\n",
+        "stderr": ""
+      }
+    ],
+    "human_typing_time_included": false,
+    "method": "Coding assistant executes the two explicit operator commands sequentially with no LLM; not a human usability study."
+  },
+  "denial_resource_unchanged": {
+    "v4-denial1-after-resources.json": true,
+    "v4-denial2-after-resources.json": true,
+    "v4-final-globex-resources.json": true
+  },
+  "review_cancel": {
+    "at": "2026-10-03T06:46:55.786302+00:00",
+    "claims_before": 29,
+    "claims_after": 29,
+    "workload_spec_unchanged": true,
+    "missing_namespace": "Browser required-field validation prevented review; API strict validation is separately covered by tests.",
+    "cancel": "Review was canceled before confirmation; no backend run was created. This is the prepared deployment review, not an incident approval webhook test."
+  },
+  "diagnosis": {
+    "stale_injection": "No tools; correctly withholds rollback inference and requests current evidence.",
+    "lookalike": "No tools, but overstates infrastructure/application root causes and rollback direction. PARTIAL / needs R4 improvement.",
+    "no_mutations": "No tool calls in both requests; own Deployment spec unchanged across diagnostics and denials."
+  },
+  "current_workload": {
+    "uid": "8567c751-fc44-4e28-b63e-e21af534661f",
+    "image": "localhost:5001/orders-api-dogfood:r0",
+    "replicas": 2,
+    "revision": "27",
+    "healthy_observed_at": "2026-10-03T06:51:31.928738+00:00"
+  },
+  "current_runtime": "v4-runtime-restored.json",
+  "limits": [
+    "Shared deployer is not tenant-isolated; actual negative tests use existing restricted acme SA.",
+    "Local-dev dashboard auth, not real GitHub OAuth.",
+    "All r0/r1 tags share the cached app digest; controlled tag rollouts, not new application binaries.",
+    "Rollout alone is not arbitrary app health. Separate kubelet health-200 logs are observed for this app.",
+    "Old A measured tail logs; D measures health after first-ready observation. No latency improvement percentage.",
+    "Qwen tokens unmeasured because proxy discards usage. Typed deployment executes no LLM.",
+    "Small local sample, not production SLO or multi-cloud verification."
+  ],
+  "deliverables": {
+    "guide": "../README.md#최종-후보-d--비교와-재현",
+    "demo": "../demo/local-evidence-walkthrough-72s.mp4",
+    "demo_verification": "../demo/verification.json"
+  },
+  "later_candidate_evidence": {
+    "diagnosis_E": "diagnosis-candidate-verification.json",
+    "rejection_UI_F": "v6-rejection-verification.json",
+    "rejection_metadata_G": "v7-rejection-verification.json",
+    "structured_experiments": "r4-structured-verification.json",
+    "note": "Separate candidates; D deployment repeats are not G full-scenario validation. Overall R3 remains incomplete."
+  }
+}

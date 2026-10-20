@@ -1,0 +1,3 @@
+PASS TS Invoke payload bytes -> actual Python Lambda service/real DynamoDB Local -> TS response decoders
+PASS preview -> PREVIEW -> CLAIMED -> CLAIMED; repeated prepare409 and missing status404 survive both languages
+IPC contract exercise only: no AWS Invoke service, OIDC exchange, or remote deployment verified

@@ -1,0 +1,44 @@
+[
+  {
+    "label": "nodes",
+    "timestamp": "2026-10-03T03:14:04.727338+00:00",
+    "returncode": 0,
+    "stdout": "NAME                           STATUS   ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                         KERNEL-VERSION     CONTAINER-RUNTIME\nplatform-agent-control-plane   Ready    control-plane   74d   v1.34.0   172.23.0.2    <none>        Debian GNU/Linux 12 (bookworm)   6.10.14-linuxkit   containerd://2.1.3\nplatform-agent-worker          Ready    <none>          74d   v1.34.0   172.23.0.4    <none>        Debian GNU/Linux 12 (bookworm)   6.10.14-linuxkit   containerd://2.1.3\nplatform-agent-worker2         Ready    <none>          74d   v1.34.0   172.23.0.3    <none>        Debian GNU/Linux 12 (bookworm)   6.10.14-linuxkit   containerd://2.1.3\n",
+    "stderr": ""
+  },
+  {
+    "label": "deployments",
+    "timestamp": "2026-10-03T03:14:04.785054+00:00",
+    "returncode": 0,
+    "stdout": "NS                   NAME                                  READY   IMAGE\nacme-dev-logging     acme-dev-logging-loki-gateway         1       docker.io/nginxinc/nginx-unprivileged:1.29-alpine\nargo-rollouts        argo-rollouts                         2       quay.io/argoproj/argo-rollouts:v1.9.1\nargo-rollouts        argo-rollouts-dashboard               1       quay.io/argoproj/kubectl-argo-rollouts:v1.9.1\nargocd               argocd-applicationset-controller      1       quay.io/argoproj/argocd:v3.4.5\nargocd               argocd-redis                          1       ecr-public.aws.com/docker/library/redis:8.2.3-alpine\nargocd               argocd-repo-server                    1       quay.io/argoproj/argocd:v3.4.5\nargocd               argocd-server                         1       quay.io/argoproj/argocd:v3.4.5\ncapsule-system       capsule-controller-manager            1       ghcr.io/projectcapsule/capsule:v0.13.10\ncosign-system        policy-controller-webhook             1       ghcr.io/sigstore/policy-controller/policy-controller:v0.15.1\ndefault              pa-platform-agent-webhook             1       platform-agent:0.1.0\nkube-system          coredns                               2       registry.k8s.io/coredns/coredns:v1.12.1\nlocal-path-storage   local-path-provisioner                1       docker.io/kindest/local-path-provisioner:v20250214-acbabc1a\nmonitoring           loki-gateway                          1       docker.io/nginxinc/nginx-unprivileged:1.29-alpine\nmonitoring           monitoring-grafana                    1       quay.io/kiwigrid/k8s-sidecar:2.8.1,quay.io/kiwigrid/k8s-sidecar:2.8.1,docker.io/grafana/grafana:13.1.0\nmonitoring           monitoring-kube-prometheus-operator   1       quay.io/prometheus-operator/prometheus-operator:v0.92.1\nmonitoring           monitoring-kube-state-metrics         1       registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.19.1\n",
+    "stderr": ""
+  },
+  {
+    "label": "tenant-own-read",
+    "timestamp": "2026-10-03T03:14:04.819906+00:00",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "No resources found in acme-dev-observability namespace.\n"
+  },
+  {
+    "label": "tenant-other-denied",
+    "timestamp": "2026-10-03T03:14:04.853085+00:00",
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "Error from server (Forbidden): deployments.apps is forbidden: User \"system:serviceaccount:acme-dev-observability:platform-agent\" cannot list resource \"deployments\" in API group \"apps\" in the namespace \"globex-dev-observability\"\n"
+  },
+  {
+    "label": "deployer-secret-denied",
+    "timestamp": "2026-10-03T03:14:04.897843+00:00",
+    "returncode": 1,
+    "stdout": "no\n",
+    "stderr": ""
+  },
+  {
+    "label": "tenant-new-service-denied",
+    "timestamp": "2026-10-03T03:14:04.938797+00:00",
+    "returncode": 1,
+    "stdout": "no\n",
+    "stderr": ""
+  }
+]

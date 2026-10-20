@@ -1,0 +1,20 @@
+{
+  "mutations": [
+    {
+      "name": "target-check",
+      "exit_code": 1,
+      "detected": true
+    },
+    {
+      "name": "citation-check",
+      "exit_code": 1,
+      "detected": true
+    },
+    {
+      "name": "no-tools",
+      "exit_code": 1,
+      "detected": true
+    }
+  ],
+  "source_restored_byte_for_byte": true
+}

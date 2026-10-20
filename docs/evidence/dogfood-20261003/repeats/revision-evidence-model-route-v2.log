@@ -1,0 +1,44 @@
+{
+  "elapsed_sec": 5.086,
+  "http_attempts": [
+    {
+      "at": "2026-10-03T09:10:35.547918+00:00",
+      "status": 200
+    },
+    {
+      "at": "2026-10-03T09:10:36.787624+00:00",
+      "status": 200
+    }
+  ],
+  "usage": {
+    "input_tokens": 4500,
+    "cache_write_tokens": 0,
+    "cache_read_tokens": 3664,
+    "output_tokens": 281,
+    "input_audio_tokens": 0,
+    "cache_audio_read_tokens": 0,
+    "output_audio_tokens": 0,
+    "details": {},
+    "requests": 2,
+    "tool_calls": 1
+  }
+}
+The deployment `orders-api-dogfood` in namespace `acme-dev-observability` has revision 27, and the rollout is complete. The current revision is 27, and the previous revision is 26. The recovery assessment is not established, and rollback is not recommended at this time.
+
+### Summary of Findings:
+- **Current Revision:** 27
+- **Rollout Status:** Complete
+- **Recovery Assessment:** Not established
+- **Rollback Recommendation:** Not recommended at this time
+
+### Recovery Assessment Details:
+- The recovery status is not established due to lack of evidence regarding previous revision health and current revision health.
+- The previous revision (revision 26) has not been confirmed as healthy, and the current revision (27) has not been confirmed as healthy.
+- No rollback is recommended at this time due to insufficient evidence to support a rollback decision.
+
+### Limitations:
+- The assessment is based on point-in-time observations and not an atomic cluster snapshot or root cause analysis.
+- Kubernetes readiness does not confirm external service health.
+- Logs and annotations do not grant recovery eligibility.
+
+No changes were made to the deployment.

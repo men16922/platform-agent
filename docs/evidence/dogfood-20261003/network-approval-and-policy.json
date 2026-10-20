@@ -1,0 +1,106 @@
+{
+  "observed_at": "2026-10-03T05:15:33.900192+00:00",
+  "user_approval": "2026-10-03: 뭐가 문제야? 승인하라고. 심사기준 열어",
+  "scope": "Existing README local dogfood execution scope; not Phase 5 remote deployment or Phase 4b",
+  "source_of_previous_denial": ".codex/rules/overnight.rules curl prefix forbidden",
+  "change": "Removed project-wide curl prefix ban; no blanket allow rule added. Other forbidden rules unchanged.",
+  "opened_in_editor": "TextEdit via open -a TextEdit, exit 0",
+  "rules_sha256": "7b9b8731d0acaf10b288c20a6d6ede6bb81695d42e779a09428df1bdacf1d1b3",
+  "disk_policy_checks": [
+    {
+      "argv": [
+        "curl",
+        "-fsS",
+        "http://127.0.0.1:8077/health"
+      ],
+      "decision": "no_matching_rule",
+      "expected": "no_matching_rule"
+    },
+    {
+      "argv": [
+        "git",
+        "push",
+        "origin",
+        "main"
+      ],
+      "decision": "forbidden",
+      "expected": "forbidden"
+    },
+    {
+      "argv": [
+        "git",
+        "reset",
+        "--hard"
+      ],
+      "decision": "forbidden",
+      "expected": "forbidden"
+    },
+    {
+      "argv": [
+        "rm",
+        "-rf",
+        "/tmp/example"
+      ],
+      "decision": "forbidden",
+      "expected": "forbidden"
+    },
+    {
+      "argv": [
+        "sudo",
+        "make",
+        "install"
+      ],
+      "decision": "forbidden",
+      "expected": "forbidden"
+    },
+    {
+      "argv": [
+        "wget",
+        "https://example.com/file"
+      ],
+      "decision": "forbidden",
+      "expected": "forbidden"
+    },
+    {
+      "argv": [
+        "make",
+        "deploy"
+      ],
+      "decision": "forbidden",
+      "expected": "forbidden"
+    },
+    {
+      "argv": [
+        "make",
+        "publish"
+      ],
+      "decision": "forbidden",
+      "expected": "forbidden"
+    },
+    {
+      "argv": [
+        "make",
+        "release"
+      ],
+      "decision": "forbidden",
+      "expected": "forbidden"
+    }
+  ],
+  "live_check": {
+    "argv": [
+      "curl",
+      "-fsS",
+      "--max-time",
+      "10",
+      "http://127.0.0.1:8077/health"
+    ],
+    "result": "rejected before process creation",
+    "reason": "Network access is outside the default unattended loop."
+  },
+  "docs_url": "https://learn.chatgpt.com/docs/agent-configuration/rules",
+  "unattended_boundary": "plugin templates/scripts/overnight/lib/engines.sh:47 retains workspace-write and sandbox_workspace_write.network_access=false",
+  "next_action": "Continue the approved local validation. Restart/reload Codex only to apply the changed curl rule when that command is needed; do not ask for approval again.",
+  "initial_interpretation": "Active session still applies the old rule. Official docs require restarting Codex to reload .rules. No alternate transport was attempted.",
+  "remaining_blocker": "Only the currently loaded curl command rule still rejects. Approved kubectl, Docker registry and actual browser workflows have executed; the overall goal is not blocked.",
+  "runtime_evidence": "approved-runtime-verification.json"
+}

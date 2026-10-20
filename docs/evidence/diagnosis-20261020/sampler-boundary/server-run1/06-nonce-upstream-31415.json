@@ -1,0 +1,28 @@
+{
+ "arm": "nonce",
+ "path": "upstream",
+ "seed": 31415,
+ "prompt_sha256": "348d78775c1fa673",
+ "text": "The pod cycles through crashloopbackback states because of a missing dependency in its container configuration.",
+ "text_sha256": "5df8f4791ed907570954d8c789fce853a8148badc3eba955422924282a018c6b",
+ "finish_reason": "stop",
+ "non_top1_tokens": null,
+ "logprobs_tokens": null,
+ "seconds": 0.32,
+ "request": {
+  "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "messages": [
+   {
+    "role": "user",
+    "content": "[c71026ad] Write one short sentence about a Kubernetes pod that keeps restarting."
+   }
+  ],
+  "max_tokens": 48,
+  "temperature": 0.7,
+  "top_p": 1.0,
+  "top_k": 0,
+  "repetition_penalty": 0,
+  "stream": false,
+  "seed": 31415
+ }
+}

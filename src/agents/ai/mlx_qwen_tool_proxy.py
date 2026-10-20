@@ -22,7 +22,7 @@ import argparse
 import json
 import re
 import uuid
-from http.client import HTTPConnection
+from http.client import HTTPConnection, HTTPException
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.parse import urlparse
@@ -101,10 +101,18 @@ def _collect_sse_content(payload: str) -> tuple[str, list[dict[str, Any]], dict[
             continue
         try:
             event = json.loads(data)
-        except json.JSONDecodeError:
-            continue
-        metadata = event
+        except json.JSONDecodeError as exc:
+            raise ValueError("Malformed upstream SSE event") from exc
+        if not isinstance(event, dict):
+            raise ValueError("Upstream event must be an object")
+        # A final usage-only frame has choices=[]; do not let it erase the
+        # completion reason from the preceding frame (notably `length`).
+        for key in ("id", "model", "usage", "error"):
+            if event.get(key) is not None:
+                metadata[key] = event[key]
         for choice in event.get("choices", []):
+            if choice.get("finish_reason") is not None:
+                metadata["finish_reason"] = choice["finish_reason"]
             delta = choice.get("delta", {})
             if text := delta.get("content"):
                 content.append(text)
@@ -143,11 +151,11 @@ def _normalize_tool_calls(raw_tool_calls: list[dict[str, Any]]) -> list[dict[str
 
 def _extract_from_json(raw: str) -> tuple[str, list[dict[str, Any]], dict[str, Any]]:
     """Fallback for an upstream that answered with a non-streaming JSON body."""
-    try:
-        event = json.loads(raw)
-    except json.JSONDecodeError:
-        return "", [], {}
+    event = json.loads(raw)
+    if not isinstance(event, dict):
+        raise ValueError("Upstream response must be an object")
     choice = (event.get("choices") or [{}])[0]
+    event["finish_reason"] = choice.get("finish_reason")
     message = choice.get("message", {})
     content = message.get("content") or ""
     tool_calls = _normalize_tool_calls(message.get("tool_calls") or [])
@@ -168,26 +176,68 @@ class QwenToolProxyHandler(BaseHTTPRequestHandler):
         try:
             request = json.loads(body)
         except json.JSONDecodeError:
-            request = {}
+            self.send_error(400, "Expected a JSON object")
+            return
+        if not isinstance(request, dict):
+            self.send_error(400, "Expected a JSON object")
+            return
         client_wants_stream = bool(request.get("stream", False))
+        stream_options = request.get("stream_options") or {}
+        if not isinstance(stream_options, dict):
+            self.send_error(400, "Expected stream_options object")
+            return
+        client_wants_usage = bool(stream_options.get("include_usage", False))
 
         # Always stream from upstream so we can buffer + normalize uniformly,
         # regardless of what the client asked for.
         request["stream"] = True
+        request["stream_options"] = {**stream_options, "include_usage": True}
         upstream_body = json.dumps(request).encode("utf-8")
 
         upstream = urlparse(self.upstream)
         conn = HTTPConnection(upstream.hostname, upstream.port or 80, timeout=600)
-        conn.request("POST", self.path, body=upstream_body, headers={"Content-Type": "application/json"})
-        response = conn.getresponse()
-        raw = response.read().decode("utf-8")
+        try:
+            conn.request("POST", self.path, body=upstream_body, headers={"Content-Type": "application/json"})
+            response = conn.getresponse()
+            raw_bytes = response.read()
+        except (HTTPException, OSError):
+            self._upstream_error("upstream_transport_error")
+            return
+        finally:
+            conn.close()
 
-        content, tool_calls, metadata = _collect_sse_content(raw)
-        if not content and not tool_calls:
-            # Upstream ignored stream=true and answered with a JSON body.
-            content, tool_calls, metadata = _extract_from_json(raw)
+        if not 200 <= response.status < 300:
+            # The proxy must not turn a model/template/service error into an
+            # empty successful generation. Do not retry the upstream request.
+            self.send_response(response.status)
+            self.send_header("Content-Type", response.getheader("Content-Type") or "application/octet-stream")
+            self.send_header("Content-Length", str(len(raw_bytes)))
+            if retry_after := response.getheader("Retry-After"):
+                self.send_header("Retry-After", retry_after)
+            self.end_headers()
+            self.wfile.write(raw_bytes)
+            return
 
-        if not tool_calls:
+        try:
+            raw = raw_bytes.decode("utf-8")
+            is_sse = (response.getheader("Content-Type") or "").startswith("text/event-stream") or raw.lstrip().startswith("data:")
+            content, tool_calls, metadata = _collect_sse_content(raw) if is_sse else _extract_from_json(raw)
+            if metadata.get("error") is not None:
+                self._upstream_error("upstream_generation_error", error=metadata["error"])
+                return
+            finish_reason = metadata.get("finish_reason")
+            if not isinstance(finish_reason, str) or not finish_reason:
+                raise ValueError("Upstream did not report a terminal completion reason")
+        except (ValueError, TypeError, KeyError, AttributeError):
+            self._upstream_error("invalid_upstream_response")
+            return
+
+        if finish_reason not in ("stop", "tool_calls"):
+            # Even syntactically complete arguments in a truncated/filtered
+            # generation are not a completed tool request. Preserve the reason
+            # for the SDK, but never promote partial output to executable calls.
+            tool_calls = []
+        elif not tool_calls:
             parsed = parse_qwen_function_markup(content) or parse_json_tool_call(content)
             if parsed:
                 name, arguments = parsed
@@ -198,27 +248,45 @@ class QwenToolProxyHandler(BaseHTTPRequestHandler):
                     "function": {"name": name, "arguments": json.dumps(arguments)},
                 }]
 
+        if tool_calls and finish_reason == "stop":
+            finish_reason = "tool_calls"  # completed textual tool-call fallback
+
         model = metadata.get("model", "qwen-mlx")
         chunk_id = metadata.get("id", f"chatcmpl-{uuid.uuid4()}")
+        usage = metadata.get("usage")
+        if not isinstance(usage, dict):
+            usage = None  # absent accounting is unknown, never zero tokens
 
         if client_wants_stream:
-            self._respond_stream(chunk_id, model, content, tool_calls)
+            self._respond_stream(chunk_id, model, content, tool_calls, finish_reason, usage if client_wants_usage else None)
         else:
-            self._respond_json(chunk_id, model, content, tool_calls)
+            self._respond_json(chunk_id, model, content, tool_calls, finish_reason, usage)
 
-    def _respond_stream(self, chunk_id: str, model: str, content: str, tool_calls: list[dict[str, Any]]) -> None:
+    def _upstream_error(self, code: str, *, error: Any = None) -> None:
+        data = json.dumps({"error": error if error is not None else {
+            "code": code, "message": "The upstream model did not return a valid completed response.",
+        }}).encode("utf-8")
+        self.send_response(502)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def _respond_stream(self, chunk_id: str, model: str, content: str, tool_calls: list[dict[str, Any]], finish_reason: str, usage: dict[str, Any] | None) -> None:
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
         self.send_header("Cache-Control", "no-cache")
         self.end_headers()
         if tool_calls:
             self._event(chunk_id, model, {"role": "assistant", "tool_calls": tool_calls}, None)
-            self._event(chunk_id, model, {}, "tool_calls")
+            self._event(chunk_id, model, {}, finish_reason)
         else:
-            self._event(chunk_id, model, {"role": "assistant", "content": content}, "stop")
+            self._event(chunk_id, model, {"role": "assistant", "content": content}, finish_reason)
+        if usage is not None:
+            self._event(chunk_id, model, {}, None, usage=usage)
         self.wfile.write(b"data: [DONE]\n\n")
 
-    def _respond_json(self, chunk_id: str, model: str, content: str, tool_calls: list[dict[str, Any]]) -> None:
+    def _respond_json(self, chunk_id: str, model: str, content: str, tool_calls: list[dict[str, Any]], finish_reason: str, usage: dict[str, Any] | None) -> None:
         if tool_calls:
             # "index" is a streaming-delta concept; drop it from the final message.
             message = {
@@ -226,18 +294,17 @@ class QwenToolProxyHandler(BaseHTTPRequestHandler):
                 "content": None,
                 "tool_calls": [{k: v for k, v in tc.items() if k != "index"} for tc in tool_calls],
             }
-            finish_reason = "tool_calls"
         else:
             message = {"role": "assistant", "content": content}
-            finish_reason = "stop"
         payload = {
             "id": chunk_id,
             "object": "chat.completion",
             "created": 0,
             "model": model,
             "choices": [{"index": 0, "message": message, "finish_reason": finish_reason}],
-            "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
         }
+        if usage is not None:
+            payload["usage"] = usage
         data = json.dumps(payload).encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
@@ -245,8 +312,10 @@ class QwenToolProxyHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
-    def _event(self, chunk_id: str, model: str, delta: dict[str, Any], finish_reason: str | None) -> None:
+    def _event(self, chunk_id: str, model: str, delta: dict[str, Any], finish_reason: str | None, *, usage: dict[str, Any] | None = None) -> None:
         event = {"id": chunk_id, "object": "chat.completion.chunk", "created": 0, "model": model, "choices": [{"index": 0, "delta": delta, "finish_reason": finish_reason}]}
+        if usage is not None:
+            event.update(choices=[], usage=usage)
         self.wfile.write(f"data: {json.dumps(event)}\n\n".encode("utf-8"))
         self.wfile.flush()
 

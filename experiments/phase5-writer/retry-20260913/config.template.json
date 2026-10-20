@@ -1,0 +1,19 @@
+{
+  "expected_identity": {
+    "app_id": null,
+    "installation_id": null,
+    "repository_id": null
+  },
+  "mint_receipt": {
+    "permissions": {
+      "single_file": "write",
+      "pull_requests": "write",
+      "metadata": "read"
+    },
+    "repository_ids": [
+      null
+    ],
+    "expires_at": null,
+    "credential_fingerprint": null
+  }
+}

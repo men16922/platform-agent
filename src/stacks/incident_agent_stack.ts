@@ -229,7 +229,7 @@ export class IncidentAgentStack extends cdk.Stack {
             }
           },
         },
-        command: ['bash', '-c', 'pip install -r /asset-input/requirements-lambda.txt -t /asset-output && mkdir -p /asset-output/src && cp -r /asset-input/src/agents /asset-output/src/agents && cp -r /asset-input/src/step_functions /asset-output/src/step_functions && cp /asset-input/src/__init__.py /asset-output/src/__init__.py 2>/dev/null || true'],
+        command: ['bash', '-c', 'pip install -r /asset-input/requirements-lambda.txt -t /asset-output && mkdir -p /asset-output/src && cp -r /asset-input/src/agents /asset-output/src/agents && cp -r /asset-input/src/step_functions /asset-output/src/step_functions && (cp /asset-input/src/__init__.py /asset-output/src/__init__.py 2>/dev/null || true)'],
         platform: 'linux/arm64',
       },
       exclude: [

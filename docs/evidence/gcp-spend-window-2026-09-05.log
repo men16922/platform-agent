@@ -1,0 +1,254 @@
+2026-09-05 GCP billing export remeasurement
+
+Scope: existing billing export; AWS Cost Explorer calls=0; successful BigQuery SELECT jobs=3 (report + project/day + project/day/service). No resource mutation.
+The first report invocation mistakenly pinned a table ID where the helper requires a dataset ID; bq ls rejected it. Corrected pin to project:billing_export. This was not evidence of a missing table.
+
+Metadata (numBytes is table size, not job-reported bytes billed):
+{
+  "id": "project-ec7809f7-0fb5-45d4-b6d:billing_export.gcp_billing_export_v1_010556_A2B7AE_292490",
+  "numRows": "3053",
+  "numBytes": "1752841",
+  "lastModifiedTime": "1788598318605",
+  "location": "asia-northeast3"
+}
+lastModifiedTime UTC: 2026-09-05T08:51:58.605000+00:00
+
+Command: PLATFORM_GCP_BILLING_EXPORT=project-ec7809f7-0fb5-45d4-b6d:billing_export python3.13 -c "from scripts.probe_cloud_spend import report_gcp; report_gcp()"
+GCP 실사용
+    잴 수 있다 — 결제 내보내기 테이블 project-ec7809f7-0fb5-45d4-b6d:billing_export.gcp_billing_export_v1_010556_A2B7AE_292490
+    창 2026-08-24 ~ 2026-09-05 (3052행, 계정 수준 1행 제외) — 이 창 밖은 실리지 않았다. 곱해서 월액으로 읽지 말 것.
+    프로젝트별 (KRW)                     총사용액      PROMOTION     기타크레딧          청구
+      claude-study-501117                  225.44        -225.44           0.00          0.00
+      project-ec7809f7-0fb5-45d4-b6d        14.80         -12.36          -2.44          0.00
+      warranty-hack                          5.71          -3.30          -2.41          0.00
+      gen-lang-client-0983122780             5.23          -1.36          -3.86          0.01
+      gen-lang-client-0123174100             0.00           0.00           0.00          0.00
+      (계정 수준)                            0.00           0.00           0.00          0.00
+      (합계)                               251.18        -242.46          -8.71          0.01
+    주의: 청구액이 낮은 것은 요율이 아니다 — 상쇄의 96.5%가 PROMOTION 크레딧이고, 잔액이 마르면 총사용액이 그대로 청구된다.
+    소진 시점은 이 내보내기가 말해 주지 않는다.
+    주의: 이 결제 계정에는 다른 프로젝트도 붙어 있다 — 합계를 이 레포의 비용으로 읽지 말 것.
+    이 질의는 테이블 전체 1,752,841바이트를 스캔한다 (BigQuery 최소 과금 10MB · 무료 티어 1TB/월).
+
+Query (bq --project_id=project-ec7809f7-0fb5-45d4-b6d --format=json query --use_legacy_sql=false --maximum_bytes_billed=10485760):
+SELECT DATE(usage_start_time) AS day, currency, COUNT(*) AS rows_,
+ROUND(SUM(cost),6) AS gross,
+ROUND(SUM((SELECT IFNULL(SUM(c.amount),0) FROM UNNEST(credits) c WHERE c.type='PROMOTION')),6) AS promo,
+ROUND(SUM((SELECT IFNULL(SUM(c.amount),0) FROM UNNEST(credits) c WHERE IFNULL(c.type,'')!='PROMOTION')),6) AS other_credits,
+MAX(export_time) AS latest_export, MAX(usage_end_time) AS latest_usage_end
+FROM `project-ec7809f7-0fb5-45d4-b6d.billing_export.gcp_billing_export_v1_010556_A2B7AE_292490`
+WHERE project.id='project-ec7809f7-0fb5-45d4-b6d'
+GROUP BY day,currency ORDER BY day
+Result:
+[
+  {
+    "currency": "KRW",
+    "day": "2026-08-24",
+    "gross": "0.0",
+    "latest_export": "2026-09-02 11:32:54",
+    "latest_usage_end": "2026-08-25 00:00:00",
+    "other_credits": "0.0",
+    "promo": "0.0",
+    "rows_": "65"
+  },
+  {
+    "currency": "KRW",
+    "day": "2026-08-25",
+    "gross": "-1.0E-6",
+    "latest_export": "2026-09-02 21:28:25",
+    "latest_usage_end": "2026-08-26 00:00:00",
+    "other_credits": "0.0",
+    "promo": "-1.0E-6",
+    "rows_": "65"
+  },
+  {
+    "currency": "KRW",
+    "day": "2026-08-26",
+    "gross": "3.0E-6",
+    "latest_export": "2026-09-04 10:26:38",
+    "latest_usage_end": "2026-08-27 00:00:00",
+    "other_credits": "0.0",
+    "promo": "0.0",
+    "rows_": "68"
+  },
+  {
+    "currency": "KRW",
+    "day": "2026-08-27",
+    "gross": "0.0",
+    "latest_export": "2026-09-04 10:26:38",
+    "latest_usage_end": "2026-08-27 08:00:00",
+    "other_credits": "0.0",
+    "promo": "1.0E-6",
+    "rows_": "24"
+  },
+  {
+    "currency": "KRW",
+    "day": "2026-08-30",
+    "gross": "0.0",
+    "latest_export": "2026-09-01 13:43:05",
+    "latest_usage_end": "2026-08-31 00:00:00",
+    "other_credits": "0.0",
+    "promo": "0.0",
+    "rows_": "34"
+  },
+  {
+    "currency": "KRW",
+    "day": "2026-08-31",
+    "gross": "3.239696",
+    "latest_export": "2026-09-03 01:06:59",
+    "latest_usage_end": "2026-09-01 00:00:00",
+    "other_credits": "0.0",
+    "promo": "-3.239707",
+    "rows_": "102"
+  },
+  {
+    "currency": "KRW",
+    "day": "2026-09-01",
+    "gross": "3.31208",
+    "latest_export": "2026-09-04 21:27:11",
+    "latest_usage_end": "2026-09-02 00:00:00",
+    "other_credits": "0.0",
+    "promo": "-3.312094",
+    "rows_": "329"
+  },
+  {
+    "currency": "KRW",
+    "day": "2026-09-02",
+    "gross": "0.062387",
+    "latest_export": "2026-09-04 18:36:09",
+    "latest_usage_end": "2026-09-03 00:00:00",
+    "other_credits": "0.0",
+    "promo": "-0.062387",
+    "rows_": "294"
+  },
+  {
+    "currency": "KRW",
+    "day": "2026-09-03",
+    "gross": "0.062387",
+    "latest_export": "2026-09-04 06:57:27",
+    "latest_usage_end": "2026-09-04 00:00:00",
+    "other_credits": "0.0",
+    "promo": "-0.062387",
+    "rows_": "288"
+  },
+  {
+    "currency": "KRW",
+    "day": "2026-09-04",
+    "gross": "5.438911",
+    "latest_export": "2026-09-05 07:19:00",
+    "latest_usage_end": "2026-09-05 00:00:00",
+    "other_credits": "0.0",
+    "promo": "-5.438935",
+    "rows_": "288"
+  },
+  {
+    "currency": "KRW",
+    "day": "2026-09-05",
+    "gross": "2.685838",
+    "latest_export": "2026-09-05 08:33:58",
+    "latest_usage_end": "2026-09-05 04:00:00",
+    "other_credits": "-2.444753",
+    "promo": "-0.241091",
+    "rows_": "34"
+  }
+]
+
+Query (bq --project_id=project-ec7809f7-0fb5-45d4-b6d --format=json query --use_legacy_sql=false --maximum_bytes_billed=10485760):
+SELECT DATE(usage_start_time) AS day, service.description AS service, currency,
+ROUND(SUM(cost),6) AS gross,
+ROUND(SUM((SELECT IFNULL(SUM(c.amount),0) FROM UNNEST(credits) c WHERE c.type='PROMOTION')),6) AS promo,
+ROUND(SUM((SELECT IFNULL(SUM(c.amount),0) FROM UNNEST(credits) c WHERE IFNULL(c.type,'')!='PROMOTION')),6) AS other_credits,
+ARRAY_TO_STRING(ARRAY_AGG(DISTINCT (SELECT STRING_AGG(DISTINCT c.type) FROM UNNEST(credits) c) IGNORE NULLS),' / ') AS credit_types
+FROM `project-ec7809f7-0fb5-45d4-b6d.billing_export.gcp_billing_export_v1_010556_A2B7AE_292490`
+WHERE project.id='project-ec7809f7-0fb5-45d4-b6d' AND DATE(usage_start_time)>='2026-08-30'
+GROUP BY day,service,currency HAVING ABS(SUM(cost))>0.00001 ORDER BY day,service
+Result:
+[
+  {
+    "credit_types": "PROMOTION",
+    "currency": "KRW",
+    "day": "2026-08-31",
+    "gross": "3.239696",
+    "other_credits": "0.0",
+    "promo": "-3.239707",
+    "service": "Artifact Registry"
+  },
+  {
+    "credit_types": "PROMOTION",
+    "currency": "KRW",
+    "day": "2026-09-01",
+    "gross": "3.248718",
+    "other_credits": "0.0",
+    "promo": "-3.248732",
+    "service": "Artifact Registry"
+  },
+  {
+    "credit_types": "PROMOTION",
+    "currency": "KRW",
+    "day": "2026-09-01",
+    "gross": "0.063362",
+    "other_credits": "0.0",
+    "promo": "-0.063362",
+    "service": "Cloud Storage"
+  },
+  {
+    "credit_types": "PROMOTION",
+    "currency": "KRW",
+    "day": "2026-09-02",
+    "gross": "0.062387",
+    "other_credits": "0.0",
+    "promo": "-0.062387",
+    "service": "Cloud Storage"
+  },
+  {
+    "credit_types": "PROMOTION",
+    "currency": "KRW",
+    "day": "2026-09-03",
+    "gross": "0.062387",
+    "other_credits": "0.0",
+    "promo": "-0.062387",
+    "service": "Cloud Storage"
+  },
+  {
+    "credit_types": "PROMOTION",
+    "currency": "KRW",
+    "day": "2026-09-04",
+    "gross": "5.376524",
+    "other_credits": "0.0",
+    "promo": "-5.376548",
+    "service": "Artifact Registry"
+  },
+  {
+    "credit_types": "PROMOTION",
+    "currency": "KRW",
+    "day": "2026-09-04",
+    "gross": "0.062387",
+    "other_credits": "0.0",
+    "promo": "-0.062387",
+    "service": "Cloud Storage"
+  },
+  {
+    "credit_types": "PROMOTION",
+    "currency": "KRW",
+    "day": "2026-09-05",
+    "gross": "0.16406",
+    "other_credits": "0.0",
+    "promo": "-0.164061",
+    "service": "Artifact Registry"
+  },
+  {
+    "credit_types": "DISCOUNT / PROMOTION",
+    "currency": "KRW",
+    "day": "2026-09-05",
+    "gross": "2.521778",
+    "other_credits": "-2.444753",
+    "promo": "-0.07703",
+    "service": "Cloud Run"
+  }
+]
+
+Interpretation: project gross=14.801301 KRW; PROMOTION=-12.356601; other credits=-2.444753; displayed net approximately zero (microunit rounding). Calendar range alone is not a steady-state sample. 08-24..27 rows sum near zero; 09-05 has usage only through 04:00 UTC. Artifact Registry varies; Cloud Run appears on 09-05 with DISCOUNT and PROMOTION. No monthly rate was inferred and no credit expiry was inferred.
+
+Verification after documentation updates:
+Command: make check
+================ 2429 passed, 2 skipped, 21 warnings in 41.97s =================

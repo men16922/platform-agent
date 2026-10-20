@@ -1,0 +1,16 @@
+{
+  "source_id": "logs-orders-api-dogfood-7b8fb6877d-t7m6b",
+  "started_at": "2026-10-03T11:11:13.985225+00:00",
+  "completed_at": "2026-10-03T11:11:14.053798+00:00",
+  "seconds": 0.069,
+  "args": [
+    "logs",
+    "orders-api-dogfood-7b8fb6877d-t7m6b",
+    "--since=30s",
+    "--tail=100",
+    "--timestamps=true"
+  ],
+  "exit_code": 0,
+  "stdout": "2026-10-03T11:10:45.406861213Z 10.244.1.1 - - [03/Oct/2026 11:10:45] \"GET /healthz HTTP/1.1\" 200 -\n2026-10-03T11:10:55.407858926Z 10.244.1.1 - - [03/Oct/2026 11:10:55] \"GET /healthz HTTP/1.1\" 200 -\n2026-10-03T11:11:05.407974458Z 10.244.1.1 - - [03/Oct/2026 11:11:05] \"GET /healthz HTTP/1.1\" 200 -\n",
+  "stderr": ""
+}

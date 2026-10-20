@@ -1,0 +1,16 @@
+# Synthetic P5-E fixture. No delivery controller watches this repository.
+isolation: soft
+naming_prefix: globex
+environments:
+  dev:
+    cluster: p5e-dev
+    substrate: kind
+    delivery: argocd
+    addons:
+      logging: loki 7.1.0
+  prod:
+    cluster: p5e-prod
+    substrate: k3s
+    delivery: flux
+    addons:
+      observability: kube-prometheus-stack 87.17.0

@@ -189,6 +189,7 @@ def plan_addon_attachment(
     version: str,
     *,
     root: Path | None = None,
+    values_repo_root: Path | None = None,
 ) -> AddonAttachment:
     """Plan attaching ``capability`` to ``tenant``/``env``. Never writes to disk."""
     path = tenant_path(tenant, root=root)
@@ -196,7 +197,7 @@ def plan_addon_attachment(
 
     environment = registry.environment(tenant, env)   # raises if either is unknown
 
-    reason = registry.uninstallable_reason(capability)
+    reason = registry.uninstallable_reason(capability, repo_root=values_repo_root)
     if reason:
         raise RegistryWriteError(f"capability {capability!r} cannot be installed: {reason}")
 

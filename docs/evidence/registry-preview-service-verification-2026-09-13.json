@@ -1,0 +1,53 @@
+{
+  "date": "2026-09-13",
+  "milestone": "M72",
+  "scope": "local preview persistence and preparation only",
+  "machine": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "python": "3.13.5",
+  "gate": {
+    "command": "make check",
+    "exit_code": 0,
+    "passed": 2880,
+    "skipped": 2,
+    "warnings": 21,
+    "seconds": 63.58,
+    "log": "/tmp/platform-agent-m72-gate.log"
+  },
+  "focused_tests": {
+    "passed": 248,
+    "seconds": 4.26
+  },
+  "dashboard_build": {
+    "command": "npm run build",
+    "exit_code": 0,
+    "log": "/tmp/platform-agent-m72-build.log"
+  },
+  "local_service_evidence": "docs/evidence/registry-preview-service-local-2026-09-13.log",
+  "actual_http_evidence": "docs/evidence/registry-preview-http-2026-09-13.log",
+  "mutations": "docs/evidence/registry-preview-service-mutations-2026-09-13.json",
+  "cleanup": {
+    "owned_local_tables_removed": true,
+    "owned_next_server_stopped": true,
+    "owned_fixture_removed": true,
+    "owned_container_removed": "1c2c1c7747f450e29d15e96ecffbeb14bc02543b487d5f7ac654f19d59bd6603",
+    "retained_p5e_lab_pem_checkout": "not accessed or changed"
+  },
+  "limits": [
+    "CLAIMED means preparation only, published=false",
+    "production table/IAM/deployment and writer not connected",
+    "no automatic retry or reopening of CLAIMED",
+    "no commit or push"
+  ],
+  "sha256": {
+    "src/agents/platform/registry_planner.py": "867d9439decdffabe47fd55eefe73000d816aaa79fc2a2063c3c66eb10f89f8c",
+    "src/agents/platform/registry_preview_service.py": "ea4d6f8d31d571de29822249eb089095f3533d6efde4994779b64fad18dcfe02",
+    "src/agents/platform/registry_local.py": "5f8cf04de99cb4d3244701008a3ec810f3e99f43a3eb8b5f0663904bf59d8b9a",
+    "src/agents/platform/registry_plan_store.py": "44953f50ce7cbea0ca534e20736408a149f6d167e42688280521a9b970b84e18",
+    "dashboard/src/lib/registry-preview.ts": "20ae6be898c1a4ff101c686adfb176cb1ce4eb6579d0a45a5ac63fb8ab6d7489",
+    "dashboard/src/lib/registry-preview-contract.ts": "e174a5dc49c6464e5b3e9ce7cd45e5400edef10f149403b936561e66405b2288",
+    "dashboard/src/app/api/dashboard/platform/attach/prepare/route.ts": "ed85005b991f8a5e15f401b6f6db1070c1108eb8de1c90fa6f167b4cca19a155",
+    "scripts/verify_registry_plan_store_local.py": "df310b3411d3890f6b298d9f0de31da00fb6123650a1c7670321e5f497ccb9f5",
+    "tests/test_registry_preview_service.py": "2f1dddd3bdd741e9194f8d25c28fc2a4cbdc84a5bd8cda15b3dda206c4146b36",
+    "tests/test_registry_preview_ui.py": "eb7fd1904f5ab900040f22d4a601052ae60682020526ae34723c0a0e6f1f3d24"
+  }
+}

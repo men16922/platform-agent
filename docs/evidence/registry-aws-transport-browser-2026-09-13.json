@@ -1,0 +1,31 @@
+{
+  "scope": "local Next production build and Chrome",
+  "request_id": "99a8a787-9071-4a3b-b93f-f99c14167d4c",
+  "local_configured_controls_visible": true,
+  "aws_without_stored_opt_in_controls_hidden": true,
+  "lost_prepare_response": true,
+  "prepare_disabled_after_loss": true,
+  "status_recovered_claimed": true,
+  "publication_verified": false,
+  "browser_calls": [
+    {
+      "method": "POST",
+      "path": "/api/dashboard/platform/attach/preview",
+      "status": 200,
+      "dropped": false
+    },
+    {
+      "method": "POST",
+      "path": "/api/dashboard/platform/attach/prepare",
+      "status": 200,
+      "dropped": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/dashboard/platform/attach/status",
+      "status": 200,
+      "dropped": false
+    }
+  ],
+  "remote_aws_invocation_verified": false
+}

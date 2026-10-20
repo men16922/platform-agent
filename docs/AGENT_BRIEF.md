@@ -1,58 +1,40 @@
 # AGENT_BRIEF — platform-agent
 
-최종 갱신: 2026-09-03
+최종 갱신: 2026-10-20
 
-> ▶ NEXT SESSION: **첫 행동 = `[auto]` 씨앗 넷 중 하나** — `docs/NEXT_PLAN.md`의 «Overnight 씨앗» 절이 유일한 목록이다(②진입점 문서의 `docs/**/*.md` 지목 실존 · ③인용 `D<번호>` 실존 · ④문자 예산의 **유일 표기** · ⑤`STATUS` **줄** 예산). ⚠️**②③은 오늘 초록에서 시작한다**(dangling 0 · D 14개 전부 실재) — **청소 과제가 아니라 썩음을 막는 가드**다. ⚠️**②의 세는 함정은 씨앗 줄에 적혀 있다**: `bin/docs/…`에서 `docs/…`만 잘라내면 **없는 경로 3건이 오탐으로 생긴다**. 무인으로 돌리려면 `MAX_ITER=7 make overnight` — ⚠️**실측 이터당 ~12분·$3~7**이고 **마르면 멈춘다**(정상, 시간을 채우려 돌지 않는다). ⛔**이 세 가지는 끝났다 — 다시 열지 말 것**: GCP `numRows` 판정(**M49**) · `MEASURABLE` 금액 질의(**M50**) · Risk 6 재개 조건 교체(**M51**). ⚠️**GCP는 쟀지만 ₩0은 요율이 아니다** — 총사용액 **₩67.87** → 청구 **≈₩0**의 **99.4%가 `PROMOTION` 크레딧**이고 **소진 시점은 내보내기가 말해 주지 않는다** · ⚠️**런레이트는 아직 못 잰다**(창 3일 · **90%가 다른 프로젝트 것**, 이 레포 몫 **₩6.55**) ⇒ **며칠 뒤 `make spend-check`가 무료에 가까운 다음 측정**(⚠️전체는 AWS CE $0.01을 문다 — GCP만은 `report_gcp()` 직접 호출). 그다음 = **Phase 4 4b**(billable, **별 승인**) · **Phase 5 attach UI**(여는 조건 = **파이썬 플래너를 어디서 돌릴지**). ⚠️**셋 다 '쟀다'지만 답의 모양이 다르다 — 하나로 요약하지 말 것**(AWS는 **재측정 자체가 청구서** · Azure는 **간격을 지키면** · GCP는 **크레딧이 만든 ₩0**): 전문은 **`STATUS` Risk 4가 권위**다.
-> 실제 청구 **$0.00**(계량 798,331 샘플)이고 사유는 **AMP 프리티어가 `Always Free` 40M/월**이라
-> §3의 배제 근거가 **전건이 거짓**이었다는 것. ⚠️**"어차피 공짜"로 요약 금지** — 절벽이 요율→**한도**로
-> 옮겨 앉았을 뿐이고 필터 없음은 **128배 초과**다. ✅대시보드 취약점은 **0건**이다(08-30, Risk 11 — ⚠️"기록이 세 군데 틀렸다"를 지우지 말 것).
-> ✅**DoD 넷은 다 닫혔다**(08-17, M37) — 관리형은 **매니페스트를 내지 않고** read model이 그 부재를 설명한다(`applicable=False`·sync **n/a**). **새 매니페스트 종류는 발명하지 않았다.**
-> ✅**$0 선행 BQ 결제 내보내기는 켜졌고 적재도 도착했다**(09-01 켬 → 09-02 **730행**, M49) — ⚠️**소급 적용은 없었다**(실사용 데이터는 **08-30부터**). 절차는 `docs/GCP_BILLING_EXPORT_SETUP.md`.
-> **무과금으로 이어서 할 것**: ⛔**목록이 비었다 — 여섯이 닫혔다**(**ⓐ**·**ⓒ**·**`rollback_release`**·런북 walk ②·**`slack_live_approval`**·**`triggered_at`**, 08-15~08-17). **다시 열지 말 것** — 각 줄의 경위·⚠️/⛔ 전문은 `docs/archive/brief-detail-2026-09.md`가 **권위**다(⚠️요약만 읽고 다시 열지 말 것). ⚠️**"비었다"는 목록의 상태지 사실이 아니다**(아래 "소진은 여섯 번 틀렸다").
->
-> ⚠️ `main` 보호 — 직접 push 불가(소유자 포함), **PR + CI 통과로만 병합**(D43).
-> ⚠️ 초록에는 조건이 붙는다(Risk 12, 이제 **아홉**): **새 가드는 지워 보고 red를 확인**(③) · **skip은 실패가 아니다** — 게이트 숫자엔 **잰 기계**까지 붙일 것(②) · **가드는 독자가 읽는 그 물건에 대고 물을 것**(④ — **결함을 그 그림자로 세지 말 것**, **경고는 주장만 묻지 말고 지시까지**, **문은 넷**) · ⑤**가드 자신도 틀린다**(08-13: 픽스처로 고른 값이 **틀린 기본값과 같아** 결함을 통과시켰다 · 변이 하네스가 `git checkout --`로 **커밋 안 된 고침을 날리고** 있었다 — **초록으로 안 돌아오는 복구는 복구가 아니다**) · ⑦**변이 결과는 어디에 물었는지까지 말할 것**(08-15: **틀린 테스트 파일**에 물어 "가드 없음"으로 읽었는데 전체 스위트로는 red였다 · **변이·실행·복구는 한 스크립트 안에** 둘 것).
-> ⚠️ **"소진"은 이제 여섯 번 틀렸다** — 가장 값싼 다음 수는 대개 **직전 세션이 이미 적어 뒀다**. ⚠️**목록에 적힌 항목 자체가 틀릴 수도 있고**(08-15 ⓑ) **틀린 항목도 값이 난다** — 단 **`git log -L`로 "언제부터"까지** 물어야 stale과 오기를 가른다. ⚠️**"안 봤다"를 시험하면 결함이 아니라 범위가 나올 때도 있다.** ⚠️**형제 집합은 세는 순간 전부 셀 것**(08-13에 세 번 · 08-15에 둘 · **09-01에 하나 더 — 형제를 세는 가드 자신이었다**) — ⚠️**산문이 참이어도 임포트 줄이 범위다.** ⚠️**"선언됐는데 안 읽힌다"는 자동으로 결함이 아니다** — 기준은 **읽는 쪽의 provider 간 비대칭**이다. ⚠️**읽는 쪽을 고쳤으면 쓰는 쪽도 물을 것**(08-17) · **검증기가 둘이면 느슨한 쪽이 실제 경로다**. 상세는 **`STATUS` Risk 12가 권위**.
-> ⚠️ **추정표는 어느 칸이 측정이고 어느 칸이 가정인지 표시할 것**(08-15, 4a): 정가는 맞았는데 **안 잰 시계열 수**가 총액을 100배 지배했다 — **가정이 지배하는 추정은 추정이 아니라 그 가정이다.** 그리고 **권위 문서가 틀리면 복제본이 그것을 사실로 굳힌다**(진입점 3곳이 "$5"를 복제해 승인까지 갔다 — **복제 금지 규약이 겨냥한 실패**).
-> 직전 세션 → **09-02~03**: **M49**(GCP 적재 판정) · **M50**(`MEASURABLE`이 금액을 대신 묻는다, 게이트 +10) · **M51**(Risk 6 재개 조건이 2년 전에 멈춘 이슈를 보고 있었다) + **씨앗 다섯 충전**(PR #70~#73). ⛔**상세를 여기 다시 적지 말 것** — `PROGRESS_LOG` 상단이 권위다. ⚠️**M50·M51이 남긴 것 둘**: **가드 자신이 부분문자열에 속는다**(`= 'PROMOTION'` ⊂ `!= 'PROMOTION'`) · **열린 이슈는 '지원이 없다'의 증거가 아니다**(구현은 이미 머지돼 있었다).
->
-> 1분 압축 문맥. 에이전트 진입점. 이 파일은 **≤60줄**로 유지한다.
-> ⚠️**압축본이다(2026-09-02)** — 상세는 **삭제가 아니라 이동**했다: 닫힌 항목 여섯과 직전 세션
-> 전문은 `docs/archive/brief-detail-2026-09.md`가 **권위**다. 요약만 읽고 결론 내지 말 것.
+> ▶ NEXT SESSION: **기존 Qwen 고정.** `docs/plans/2026-10-03-platform-agent-usage-and-evidence.md` §13-1을 읽는다. R3는 D53(lookalike 사람 검토 경계)로 충족, R4 첫 묶음 정리. 열린 로컬 선택지는 `get_logs` previous 확장 여부(범위 결정). R5·원격은 미승인. 삽입 지시 가드 작업 트리 미커밋(전체 WIP 380항목과 얽혀 부분 커밋 불가 — 사용자 결정 필요).
+> 에이전트 진입점. **≤60줄** 유지. 다음 작업의 권위는 `docs/NEXT_PLAN.md`다.
 
 ## Read Path (순서대로, bulk-read 금지)
 
-1. `docs/AGENT_BRIEF.md` — 이 파일
-2. `docs/STATUS.md` — 현재 상태 / 검증 baseline / risks
-3. `docs/NEXT_PLAN.md` — 열린 작업만
-4. (필요 시) `docs/PROGRESS_LOG.md` 상단 — 최신 증분
-5. (필요 시) `docs/engineering/` — harness/loop/context 엔지니어링
-
-권위 순서: `NEXT_PLAN.md` (유일한 source of truth).
+1. `docs/AGENT_BRIEF.md` — 현재 문맥
+2. `docs/STATUS.md` — 검증 범위와 위험
+3. `docs/NEXT_PLAN.md` — 열린 작업과 재개 조건
+4. 필요 시 `docs/PROGRESS_LOG.md` 상단과 `docs/LESSONS.md`
+5. 해당 작업에 필요한 계획서·증거·`docs/engineering/`만 추가 조회
 
 ## Snapshot
 
-- **무엇:** AWS-native 플랫폼 에이전트. provision → deploy 검증 → detect → analyze → decide → execute → Slack 리포트.
-- **동작하는 것:** Operations 4단계 + 3-cloud AI Agent + **On-Prem Ops**(12도구, trace) + Terraform kind/실 Multipass VM Ansible k3s Provision + kagent↔Local Qwen A2A + Agents UI. **On-Prem 오프라인 완결**: Local **Qwen3-Coder-30B-A3B**(MoE·활성 3B, `Makefile:58`)로 NL provision→deploy→validate ~39s, 로컬 JSONL 기록 + 대시보드 **hybrid**(AWS+On-Prem 병합) + 실 **롤백**(app/cluster). **추적 IA**: activity에 `type`(provision/deploy)·`cluster` 연결키, 대시보드 **Provisioning/Deployments/History** 분리 + **중첩 상세**(provisioning⊃deploys), 롤백 **단일-row 승계**·**teardown→deploy cascade**, 자연어 rollback/teardown도 동일 라우팅.
-- **하네스:** overnight-harness 플러그인 기반 (5 engine). `make overnight-kiro-once` 로 smoke. `make dev-up`으로 로컬 스택(MLX+proxy+router+dashboard) 한 방 기동.
-- **Kiro 특화:** aws-ops / cdk-dev / overnight-harness 3개 에이전트 + safety hook + AWS MCP Server.
-- **검증:** `make check` → **2410 passed, 2 skipped** (**2026-09-03 로컬 macOS·py3.13** · CI도 **같은 게이트**, ubuntu·py3.13 — **CI 숫자는 PR 체크가 권위**, 여기 복제 금지; 게이트 숫자는 날짜와 **잰 기계** 없이는 주장이 아니다, Risk 12①②). ⚠️**08-30엔 2337→2332로 내려갔다**(M39, 정당화 7건 −14 / 새 가드 +9); **09-01은 M40~M46**(+7·+3·+3·+4·+8·+10·+13), **09-02는 M47**(+11)·**M48**(+5)·**M50**(+10 — ⚠️첫 가드는 `= 'PROMOTION'`이 `!= 'PROMOTION'`의 **부분문자열**이라 변이를 놓쳤다), **09-03은 harness 1.4.0**(+3 — `LESSONS.md` 예산이 세 선언 검사에 편입). **무엇이 늘고 줄었는지는 `STATUS` Baseline이 권위다 — 여기 복제 금지.** **결함이 닫히면 그 결함을 설명하던 줄도 사라진다 ⇒ 단조증가 지표가 아니다.** 내역은 `STATUS` Baseline. CI(`gate.yml`)가 **main 병합 조건**이고 **terraform 검증까지 실제로 돈다**. 이력·근거는 `STATUS` 검증 Baseline과 `COMPLETED_SUMMARY` **M10~M46**에 있다 — 여기에 다시 적지 말 것.
-- **현재 초점:** **Phase 4(billable, 별 승인)만 남았다.** 공급망은 생산자→소비자→CI 키리스까지 섰고 **어드미션만 업스트림 대기**(cosign v3 ↔ policy-controller 저장 위치 불일치, 양방향 실증). Phase 5는 **경계까지**(UI·PR 생성 없음). ⚠️**과대 해석 금지**: 스코프·배포 신원·이미지 서명 게이트는 전부 **옵트인** · 자격증명이 테넌트-바운드인 건 **온프렘뿐** · CODEOWNERS는 **라우팅** · `main` 보호는 **게이트 집행**이지 리뷰 집행이 아니다. **반복 확인된 것**: 새 항목은 **기록된 이유를 한 번 돌려 보고** 시작할 것 — 다만 **틀려 있을 때만 값이 나오는 게 아니다**(08-09 GCP 3건은 전부 성립했는데, 확인하는 과정에서 **프로브의 provider 누락**이 나왔다). 그리고 **읽는 쪽으로 갈 것**: "이 dict를 덮는 테스트가 있나"의 답은 "다섯 개 있다"였는데 **전부 dict의 모양만 물었고**, 읽는 쪽엔 두 provider에 복사된 **죽은 티어**가 있었다(08-13).
+- **목적:** AWS-native 플랫폼 에이전트. provision → deploy 검증 → detect → analyze → decide → execute → Slack 리포트.
+- **구현:** Operations·3-cloud AI Agent·온프렘 프로비저닝/배포/검증/롤백·kagent A2A·대시보드. Activity는 AWS+On-Prem을 병합하며 Provisioning/Deployments/History와 중첩 상세를 제공한다. 구현/과거 실증과 현재 운영 검증은 구분한다.
+- **로컬 모델:** Qwen3-Coder-30B-A3B. `make dev-up`은 MLX+proxy+router+dashboard를 기동한다. 모델 교체 실험은 미채택이다. mlx_lm 0.31.3 서버는 온도>0에서 seed를 무시하고(생성 스레드의 컴파일 sampler), 온도0 출력도 prompt-cache 이력에 따라 갈린다. 제품은 온도/seed 미지정(argmax).
+- **현재 후보:** 기존 앱 후보 O/v15, 작업 트리 W(10-20)+삽입 지시 복구 가드(`snapshot_diagnosis.py`, 미커밋). W는 격리 API18778(실패 보존)/18779(범위 설명 정렬)·UI13001에서 검증했으며 기존 앱/기본 포트는 전환하지 않았다. 원문/거부 응답을 보존한다. HEAD만으로 WIP 후보를 식별하지 않는다.
+- **최근 실측:** 10-20 같은 원래 SA UID의 1h 토큰만 task-private 갱신, 기존 workload 읽기. 현재 rev37/replicas2·Deployment UID/전체 spec은 T 최종값과 같다. 새 app/external health 증명 아님. T 반복/데모는 완료분으로 유지한다.
+- **검증:** `make check` → **3384 passed, 3 skipped**·20warnings·118.68초(2026-10-20 로컬 macOS·Python3.13.5·공식 Node22.23.3/임시 npm prefix). 삽입 지시 가드 단위4 신규·변이4 red. 모델 측정은 cold/warm 각5 case 단일 응답이며 의미 해결이 아니다(lookalike 형식 무효 회귀).
+- **Phase 5:** 독립 Python Lambda 설계와 저장/준비/상태 UI·AWS transport까지 로컬 완료. M91의 2026-09-15 인증 해소·배포 후보 검증은 운영 배포/Invoke/PR 발행 완료가 아니다.
 
 ## Guardrails
 
-- 에이전트=Python(**3.13**. ⛔`>=3.11`은 08-30에 재서 **거짓이었다** — fresh 3.11은 **2 failed**이고
-  같은 의존성의 fresh 3.13은 초록이다. 선언 셋을 3.13으로 맞췄다) / IaC=CDK TS / 모델은 `models.py` 한 곳.
-- IAM 최소 권한. ⚠️**`Resource:"*"` 전면 금지는 무조건 거짓이었다** — `incident_agent_stack.ts`의 **7건 전부** AWS가 리소스 타입을 주지 않는 액션이다(08-16 Service Authorization Reference 대조). 규칙은 **"이유를 주석으로 적지 않은 `*` 금지"**이고 이제 **가드가 집행한다**(`test_iam_wildcard_justified.py`). **만족 불가능한 규칙은 우회를 습관으로 만든다.**
-- `Delete/Drop/Terminate` 액션은 강제 APPROVE(**D48**로 계약화·집행).
-- 요청 이상 기능 추가 금지. 테스트 통과 전 완료 선언 금지.
-- Gate 명령: `make check`. **`main`은 보호됨** — 직접 push 불가, PR + CI 통과로만 병합(D43).
+- **보존:** lab 1367338348·checkout 및 R2 lab/App 4924748·설치161238144·키·branch·draft PR #1 보존. 추가 삭제 금지. 기존 WIP를 되돌리거나 정리 명목으로 덮어쓰지 않는다.
+- 로컬 dogfood는 승인됐고 10-20 사용자 지시로 재개했다. Phase 5 원격 실행과 Phase 4b 비용·기간·종료 조건은 별도 범위다.
+- Python **3.13**·IaC CDK TypeScript·모델 정의 `models.py`. 기존 온프렘 Terraform/Ansible 경로의 존재를 새 IaC 도입 근거로 쓰지 않는다.
+- IAM 최소 권한. `Resource:"*"`는 이유 없는 사용을 금지한다. `Delete/Drop/Terminate`는 강제 APPROVE(D48). 읽기 전용 도구 제한과 자격증명 격리는 별개다.
+- `main` 직접 push 금지, PR+CI로 병합(D43). 코드 소유자 리뷰는 별도다. 커밋/푸시·원격 변경은 기존 승인 범위 안에서만 수행한다.
+- 요청 범위 밖 기능 추가 금지. 원인 재현→구분 측정→수정→재측정. 테스트 수·형식/인용 통과를 의미 정확도로 승격하지 않는다. 변경 시 `make check`, 날짜·환경·skip·검증 범위를 함께 기록한다.
+- 새 가드는 실제 소비 경계에서 반증하고 WIP를 바이트 단위로 복원한다. 소진된 목록·과거 성공·오래된 재개 조건을 현재 사실로 단정하지 않는다(STATUS Risk12).
 
-## Skills (overnight-harness)
+## 이력과 도구
 
-- `/sync` — Read Path 따라 상태 복원(읽기 전용).
-- `/checkpoint` — PROGRESS_LOG append + current docs 갱신.
-- `/tidy-docs` — 문서 정리/압축.
-- `/overnight-report` — 루프 결과 리포트.
-- `/overnight-seed` — backlog 시드.
-- `/diagnose` — 루프 실패 진단.
+- 구현 이력은 `COMPLETED_SUMMARY` **M0~M91** (`docs/COMPLETED_SUMMARY.md`), 최신 증분은 `PROGRESS_LOG`가 권위다. 닫힌 항목의 경위·주의사항은 `docs/archive/brief-detail-2026-09.md` 참조.
+- 10-03 정리 전 원문은 [10월 아카이브](archive/progress-2026-10.md#tidy-20261003-brief)에 보존했다. 과거 비용·게이트·직전 세션 상세를 이 진입점에 다시 복제하지 않는다.
+- `/sync` 읽기 · `/checkpoint` 기록 · `/tidy-docs` 정리 · `/diagnose` 원인 규명 · `/overnight-report` 무인 결과 검수 · `/overnight-seed` 열린 작업 점검. 현재 열린 `[auto]` 씨앗은 없다.

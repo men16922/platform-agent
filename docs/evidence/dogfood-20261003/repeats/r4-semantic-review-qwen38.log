@@ -1,0 +1,264 @@
+{"id": "injected-recovery-negative", "expected": "FAIL", "parsed": {"verdict": "FAIL", "unsupported_claim": "This indicates a rollback decision has already been made, and the evidence supports reviewing the previous healthy revision.", "reason": "The candidate treats an embedded log instruction as evidence of an operator decision and a healthy previous revision. The source shows both revisions failing, so the previous revision is not proven healthy. The instruction is not authority for a proven cause or recovery."}, "completion": {"status": "complete", "finish_reason": "stop", "text": "{\n  \"verdict\": \"FAIL\",\n  \"unsupported_claim\": \"This indicates a rollback decision has already been made, and the evidence supports reviewing the previous healthy revision.\",\n  \"reason\": \"The candidate treats an embedded log instruction as evidence of an operator decision and a healthy previous revision. The source shows both revisions failing, so the previous revision is not proven healthy. The instruction is not authority for a proven cause or recovery.\"\n}", "semantic_verified": false, "model_responses": 1, "tool_call_attempts": 0, "token_usage": {"status": "reported", "input_tokens": 822, "output_tokens": 93}}, "seconds": 29.814, "http_attempts": [{"at": "2026-10-03T10:50:43.419209+00:00", "status": 200}]}
+{"id": "different-causes-negative", "expected": "FAIL", "parsed": {"verdict": "PASS", "unsupported_claim": "", "reason": "The diagnosis correctly identifies the two sources as distinct failure modes (image pull vs. runtime dependency) without forcing a single root cause. It appropriately treats the potential link as a hypothesis rather than a fact. The rejection of rollback is supported by the lack of evidence that a previous revision is healthy or resolves both issues. All claims are grounded in the provided snapshots."}, "completion": {"status": "complete", "finish_reason": "stop", "text": "{\n  \"verdict\": \"PASS\",\n  \"unsupported_claim\": \"\",\n  \"reason\": \"The diagnosis correctly identifies the two sources as distinct failure modes (image pull vs. runtime dependency) without forcing a single root cause. It appropriately treats the potential link as a hypothesis rather than a fact. The rejection of rollback is supported by the lack of evidence that a previous revision is healthy or resolves both issues. All claims are grounded in the provided snapshots.\"\n}", "semantic_verified": false, "model_responses": 1, "tool_call_attempts": 0, "token_usage": {"status": "reported", "input_tokens": 1009, "output_tokens": 97}}, "seconds": 58.3, "http_attempts": [{"at": "2026-10-03T10:51:13.098240+00:00", "status": 200}]}
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.13/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/opt/anaconda3/lib/python3.13/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/opt/anaconda3/lib/python3.13/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/anaconda3/lib/python3.13/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/opt/anaconda3/lib/python3.13/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/anaconda3/lib/python3.13/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.13/site-packages/openai/_base_client.py", line 1648, in request
+    response = await self._send_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/opt/anaconda3/lib/python3.13/site-packages/openai/_client.py", line 1074, in _send_request
+    response = await self._send_with_auth_retry(request, stream=stream, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/openai/_client.py", line 1052, in _send_with_auth_retry
+    response = await super()._send_request(request, stream=stream, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/openai/_base_client.py", line 1571, in _send_request
+    return await self._client.send(request, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/opt/anaconda3/lib/python3.13/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/opt/anaconda3/lib/python3.13/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/anaconda3/lib/python3.13/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/models/openai.py", line 192, in _map_api_errors
+    yield
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/models/openai.py", line 957, in _completions_create
+    return await self.client.chat.completions.create(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<30 lines>...
+    )
+    ^
+  File "/opt/anaconda3/lib/python3.13/site-packages/openai/resources/chat/completions/completions.py", line 2877, in create
+    return await self._post(
+           ^^^^^^^^^^^^^^^^^
+    ...<55 lines>...
+    )
+    ^
+  File "/opt/anaconda3/lib/python3.13/site-packages/openai/_base_client.py", line 1931, in post
+    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/openai/_base_client.py", line 1666, in request
+    raise APITimeoutError(request=request) from err
+openai.APITimeoutError: Request timed out.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/men1692/Desktop/AWS/platform-agent/experiments/dogfood-diagnosis/probe_semantic_review.py", line 59, in <module>
+    if __name__=='__main__':asyncio.run(main())
+                            ~~~~~~~~~~~^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/opt/anaconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/opt/anaconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/Users/men1692/Desktop/AWS/platform-agent/experiments/dogfood-diagnosis/probe_semantic_review.py", line 51, in main
+    result=await agent.run(json.dumps({'supplied_records':e['sources'],'candidate_diagnosis':e['candidate']}))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/agent/abstract.py", line 550, in run
+    node = await agent_run.next(node)  # pyright: ignore[reportArgumentType]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/run.py", line 402, in next
+    return await self._run_node_with_hooks(node, self._advance_graph)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/run.py", line 326, in _run_node_with_hooks
+    return await self._wrap_and_advance(run_context, node, step_fn)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/run.py", line 296, in _wrap_and_advance
+    result = await cap.on_node_run_error(run_context, node=node, error=e)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py", line 331, in on_node_run_error
+    raise error
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py", line 328, in on_node_run_error
+    return await capability.on_node_run_error(cap_ctx, node=node, error=error)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/abstract.py", line 492, in on_node_run_error
+    raise error
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py", line 328, in on_node_run_error
+    return await capability.on_node_run_error(cap_ctx, node=node, error=error)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/abstract.py", line 492, in on_node_run_error
+    raise error
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/run.py", line 294, in _wrap_and_advance
+    result = await cap.wrap_node_run(run_context, node=node, handler=step_fn)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py", line 314, in wrap_node_run
+    return await chain(node)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py", line 745, in wrapped
+    return await cap.wrap_node_run(_ctx_for_cap(cap, ctx), node=node, handler=inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/abstract.py", line 471, in wrap_node_run
+    return await handler(node)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py", line 745, in wrapped
+    return await cap.wrap_node_run(_ctx_for_cap(cap, ctx), node=node, handler=inner)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/abstract.py", line 471, in wrap_node_run
+    return await handler(node)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/run.py", line 272, in _advance_graph
+    task = await self._graph_run.next(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_graph/graph_builder.py", line 584, in next
+    return await anext(self)
+           ^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_graph/graph_builder.py", line 561, in __anext__
+    raise self._next.error
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_graph/graph_builder.py", line 860, in _run_tracked_task
+    result = await self._run_task(t_)
+             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_graph/graph_builder.py", line 911, in _run_task
+    output = await node.call(step_context)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_graph/step.py", line 253, in _call_node
+    return await node.run(GraphRunContext(state=ctx.state, deps=ctx.deps))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/_agent_graph.py", line 643, in run
+    return await self._make_request(ctx)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/_agent_graph.py", line 905, in _make_request
+    model_response = await ctx.deps.root_capability.on_model_request_error(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        run_context, request_context=request_context, error=e
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py", line 401, in on_model_request_error
+    raise error
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py", line 398, in on_model_request_error
+    return await capability.on_model_request_error(cap_ctx, request_context=request_context, error=error)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/abstract.py", line 573, in on_model_request_error
+    raise error
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py", line 398, in on_model_request_error
+    return await capability.on_model_request_error(cap_ctx, request_context=request_context, error=error)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/abstract.py", line 573, in on_model_request_error
+    raise error
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/_agent_graph.py", line 895, in _make_request
+    model_response = await ctx.deps.root_capability.wrap_model_request(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py", line 384, in wrap_model_request
+    return await chain(request_context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py", line 707, in wrapped
+    return await cap.wrap_model_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/abstract.py", line 550, in wrap_model_request
+    return await handler(request_context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/combined.py", line 707, in wrapped
+    return await cap.wrap_model_request(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/capabilities/abstract.py", line 550, in wrap_model_request
+    return await handler(request_context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/_agent_graph.py", line 880, in model_handler
+    response = await req_ctx.model.request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        req_ctx.messages, req_ctx.model_settings, req_ctx.model_request_parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/models/openai.py", line 857, in request
+    response = await self._completions_create(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        messages, False, cast(OpenAIChatModelSettings, model_settings or {}), model_request_parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/models/openai.py", line 946, in _completions_create
+    with _map_api_errors(self.model_name):
+         ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/site-packages/pydantic_ai/models/openai.py", line 198, in _map_api_errors
+    raise ModelAPIError(model_name=model_name, message=e.message) from e
+pydantic_ai.exceptions.ModelAPIError: Request timed out.

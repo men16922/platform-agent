@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-03T06:21:31.704705+00:00",
+  "previous_owned_pids": {
+    "mlx": 46760,
+    "proxy": 46761,
+    "router": 62609,
+    "dashboard": 62610
+  },
+  "identity": "existing acme-dev-observability/platform-agent SA",
+  "credential_file": "private/tenant.kubeconfig (not exported)",
+  "permissions_changed": false,
+  "candidate": "candidate-v2.json"
+}

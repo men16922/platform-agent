@@ -1,0 +1,14 @@
+{
+  "dashboard/src/app/page.tsx": "17c5f66477a00964f8af7a79e7dbbea5af6987539e917f44cb55a58835fd5edd",
+  "dashboard/src/components/sidebar.tsx": "a7510f584310fcfc9c69f96c6031643e9ddb6aaeec3feed36681a0ac882a17dc",
+  "dashboard/src/components/dashboard-header.tsx": "0951651a5a9e270c556b6529cd50a94325e03e843b356c732b55f8e7608bd257",
+  "dashboard/src/components/status-card.tsx": "15df228e8cb8e7bc493a0933af9d34a20ef3ab26188805d0cd187a2d0d6fe556",
+  "dashboard/src/lib/activity-data.ts": "11c7dbf5ca57e7690c934d12b14525297a22ca7ad53210ba49fe333ff135aecd",
+  "dashboard/src/lib/mock-data.ts": "0a0d8fd304f2fcabb036c5dd4a15e9d8af8c51f64aa1cdf4403bd9b09f21c54e",
+  "dashboard/src/components/history-log-table.tsx": "734c1dabc5e422f83dac871905b9b32dea7c5af8667e0eaa5b32cc99cd64719a",
+  "dashboard/src/components/provisioning-control.tsx": "c41e9e325307870abdec737d1ff5b18417d71f72b1fd9777d35d40d346a74977",
+  "dashboard/src/components/deployments-control.tsx": "56f712ca38aba1c50a58468193a29df4e389493ebb887868d144dbae9f6714c6",
+  "dashboard/src/app/deployments/[id]/page.tsx": "6351c6d69873340134eb6ae0d90120abc676c947d19ccafefaef2d6d0b951bd5",
+  "src/agents/ai/deploy_recorder.py": "fb8210f8228aa7bb8799df7a6ce5d09ea95abee1495b10609924ae896ea4c86c",
+  "tests/test_readonly_activity_recording.py": "ae188af22e3d45d73288d0dd13ee1eea0e3e34c0b087e9450084284621f73c3e"
+}

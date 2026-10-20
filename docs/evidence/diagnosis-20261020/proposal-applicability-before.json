@@ -1,0 +1,268 @@
+{
+  "scope": "Offline replay of four recorded S outputs against current normalization plus one synthetic valid-output control; no new model calls.",
+  "cases": [
+    {
+      "id": "q-injected",
+      "current_stage": {
+        "stage": "current_revision_waiting",
+        "next_evidence": [
+          "image_reference",
+          "registry_manifest",
+          "pod_events"
+        ],
+        "failure_hypotheses_applicable": true
+      },
+      "proposal": {
+        "hypotheses": [
+          {
+            "kind": "image_reference",
+            "evidence": [
+              "current-revision",
+              "desired-images"
+            ]
+          },
+          {
+            "kind": "registry_access",
+            "evidence": [
+              "pod-message-0"
+            ]
+          },
+          {
+            "kind": "application_change",
+            "evidence": [
+              "pod-message-0"
+            ]
+          }
+        ],
+        "next_checks": [
+          {
+            "kind": "registry_manifest",
+            "evidence": [
+              "desired-images"
+            ]
+          },
+          {
+            "kind": "image_reference",
+            "evidence": [
+              "current-revision"
+            ]
+          },
+          {
+            "kind": "pod_events",
+            "evidence": [
+              "pod-message-0"
+            ]
+          }
+        ]
+      },
+      "legacy_validator": "accepted",
+      "raw": "{\n  \"hypotheses\": [\n    {\n      \"kind\": \"image_reference\",\n      \"evidence\": [\"current-revision\", \"desired-images\"]\n    },\n    {\n      \"kind\": \"registry_access\",\n      \"evidence\": [\"pod-message-0\"]\n    },\n    {\n      \"kind\": \"application_change\",\n \"evidence\": [\"pod-message-0\"]\n    }\n  ],\n  \"next_checks\": [\n    {\n      \"kind\": \"registry_manifest\",\n      \"evidence\": [\"desired-images\"]\n    },\n    {\n      \"kind\": \"image_reference\",\n      \"evidence\": [\"current-revision\"]\n    },\n    {\n      \"kind\": \"pod_events\",\n      \"evidence\": [\"pod-message-0\"]\n    }\n  ]\n}",
+      "raw_sha256": "10be3a8dfbc42dc3d4709a2f22560b2b4e91b2a35a6a54d2737c0bf2969416a0"
+    },
+    {
+      "id": "q-restored",
+      "current_stage": {
+        "stage": "rollout_complete_service_health_unverified",
+        "next_evidence": [
+          "service_health"
+        ],
+        "failure_hypotheses_applicable": false
+      },
+      "proposal": {
+        "hypotheses": [
+          {
+            "kind": "image_reference",
+            "evidence": [
+              "current-revision",
+              "desired-images"
+            ]
+          },
+          {
+            "kind": "registry_access",
+            "evidence": [
+              "current-revision",
+              "desired-images"
+            ]
+          },
+          {
+            "kind": "workload_configuration",
+            "evidence": [
+              "current-revision"
+            ]
+          }
+        ],
+        "next_checks": [
+          {
+            "kind": "registry_manifest",
+            "evidence": [
+              "desired-images"
+            ]
+          },
+          {
+            "kind": "image_reference",
+            "evidence": [
+              "current-revision"
+            ]
+          },
+          {
+            "kind": "pod_events",
+            "evidence": [
+              "current-revision"
+            ]
+          }
+        ]
+      },
+      "legacy_validator": "accepted",
+      "raw": "{\n  \"hypotheses\": [\n    {\n      \"kind\": \"image_reference\",\n      \"evidence\": [\"current-revision\", \"desired-images\"]\n    },\n    {\n      \"kind\": \"registry_access\",\n \"evidence\": [\"current-revision\", \"desired-images\"]\n    },\n    {\n      \"kind\": \"workload_configuration\",\n \"evidence\": [\"current-revision\"]\n    }\n  ],\n  \"next_checks\": [\n    {\n      \"kind\": \"registry_manifest\",\n \"evidence\": [\"desired-images\"]\n    },\n    {\n      \"kind\": \"image_reference\",\n \"evidence\": [\"current-revision\"]\n    },\n    {\n      \"kind\": \"pod_events\",\n \"evidence\": [\"current-revision\"]\n    }\n  ]\n}",
+      "raw_sha256": "10c8a4378d1b3b574e873983e1c6705c9defa005d5d77976c0193250d07e0b89"
+    },
+    {
+      "id": "s-original-contradiction",
+      "current_stage": {
+        "stage": "reconcile_observations",
+        "next_evidence": [
+          "observation_consistency"
+        ],
+        "failure_hypotheses_applicable": false
+      },
+      "proposal": {
+        "hypotheses": [
+          {
+            "kind": "registry_access",
+            "evidence": [
+              "desired-images",
+              "current-revision"
+            ]
+          },
+          {
+            "kind": "network_path",
+            "evidence": [
+              "pod-message-0"
+            ]
+          },
+          {
+            "kind": "dependency_health",
+            "evidence": [
+              "pod-message-0"
+            ]
+          }
+        ],
+        "next_checks": [
+          {
+            "kind": "registry_manifest",
+            "evidence": [
+              "desired-images"
+            ]
+          },
+          {
+            "kind": "pod_events",
+            "evidence": [
+              "pod-message-0"
+            ]
+          },
+          {
+            "kind": "dependency_signals",
+            "evidence": [
+              "pod-message-0"
+            ]
+          }
+        ]
+      },
+      "legacy_validator": "accepted",
+      "raw": "{\n  \"hypotheses\": [\n    {\n      \"kind\": \"registry_access\",\n      \"evidence\": [\"desired-images\", \"current-revision\"]\n    },\n    {\n      \"kind\": \"network_path\",\n      \"evidence\": [\"pod-message-0\"]\n    },\n    {\n      \"kind\": \"dependency_health\",\n \"evidence\": [\"pod-message-0\"]\n    }\n  ],\n  \"next_checks\": [\n    {\n      \"kind\": \"registry_manifest\",\n      \"evidence\": [\"desired-images\"]\n    },\n    {\n      \"kind\": \"pod_events\",\n      \"evidence\": [\"pod-message-0\"]\n    },\n    {\n      \"kind\": \"dependency_signals\",\n \"evidence\": [\"pod-message-0\"]\n    }\n  ]\n}",
+      "raw_sha256": "c927fb4cb8b627f0f6e73639aa4db1a32b6e781cb8fb503f55b5c6be6011d35c"
+    },
+    {
+      "id": "s-both-failing-consistent",
+      "current_stage": {
+        "stage": "current_revision_waiting",
+        "next_evidence": [
+          "pod_events",
+          "readiness_configuration",
+          "previous_container_logs"
+        ],
+        "failure_hypotheses_applicable": true
+      },
+      "proposal": {
+        "hypotheses": [
+          {
+            "kind": "dependency_health",
+            "evidence": [
+              "pod-message-0"
+            ]
+          },
+          {
+            "kind": "network_path",
+            "evidence": [
+              "pod-message-0"
+            ]
+          },
+          {
+            "kind": "registry_access",
+            "evidence": [
+              "desired-images",
+              "current-revision"
+            ]
+          }
+        ],
+        "next_checks": [
+          {
+            "kind": "registry_manifest",
+            "evidence": [
+              "desired-images"
+            ]
+          },
+          {
+            "kind": "dependency_signals",
+            "evidence": [
+              "pod-message-0"
+            ]
+          },
+          {
+            "kind": "pod_events",
+            "evidence": [
+              "pod-message-0"
+            ]
+          }
+        ]
+      },
+      "legacy_validator": "accepted",
+      "raw": "{\n  \"hypotheses\": [\n    {\n      \"kind\": \"dependency_health\",\n      \"evidence\": [\"pod-message-0\"]\n    },\n    {\n      \"kind\": \"network_path\",\n      \"evidence\": [\"pod-message-0\"]\n    },\n    {\n      \"kind\": \"registry_access\",\n      \"evidence\": [\"desired-images\", \"current-revision\"]\n    }\n  ],\n  \"next_checks\": [\n    {\n      \"kind\": \"registry_manifest\",\n      \"evidence\": [\"desired-images\"]\n    },\n    {\n      \"kind\": \"dependency_signals\",\n \"evidence\": [\"pod-message-0\"]\n    },\n    {\n      \"kind\": \"pod_events\",\n \"evidence\": [\"pod-message-0\"]\n    }\n  ]\n}",
+      "raw_sha256": "9762ec3726b5bdb35b50aa5808a28a4cc5a49a5ed223dfafabb74ca99274ea20"
+    },
+    {
+      "id": "positive-recovery",
+      "provenance": "Explicit synthetic valid-output control; not a model response",
+      "current_stage": {
+        "stage": "current_revision_waiting",
+        "next_evidence": [
+          "image_reference",
+          "registry_manifest",
+          "pod_events"
+        ],
+        "failure_hypotheses_applicable": true
+      },
+      "proposal": {
+        "hypotheses": [
+          {
+            "kind": "image_reference",
+            "evidence": [
+              "current-revision"
+            ]
+          }
+        ],
+        "next_checks": [
+          {
+            "kind": "registry_manifest",
+            "evidence": [
+              "current-revision"
+            ]
+          }
+        ]
+      },
+      "legacy_validator": "accepted",
+      "raw": "{\"hypotheses\": [{\"kind\": \"image_reference\", \"evidence\": [\"current-revision\"]}], \"next_checks\": [{\"kind\": \"registry_manifest\", \"evidence\": [\"current-revision\"]}]}",
+      "raw_sha256": "2676f272d0ff87819ce24fffadd6e079930aeeb6c974dd56e35bec1c5713afd8"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "instruction": "Investigate the current rollout and revision observations of deployment orders-api-dogfood in namespace acme-dev-observability. Make no changes. Determine what health and recovery are established or uncertain, then suggest the next targeted read-only evidence. Stay within this namespace/workload.",
+  "read_only": true,
+  "request_id": "d16adb3b-0aca-463d-ba26-4ffaee3d84d5",
+  "model": "local-qwen",
+  "provider": "onprem"
+}

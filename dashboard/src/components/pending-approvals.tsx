@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import type { ApprovalRequest } from "@/lib/approval-data";
 import { canApprove } from "@/lib/auth";
 
@@ -11,13 +12,17 @@ interface PendingApprovalsProps {
 
 export function PendingApprovals({ initialApprovals }: PendingApprovalsProps) {
   const { data: session } = useSession();
+  const router = useRouter();
   const [approvals, setApprovals] = useState<ApprovalRequest[]>(initialApprovals);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
 
   const userRole = (session?.user as any)?.role || "viewer";
 
-  const handleDecision = async (approvalId: string, decision: "approve" | "reject", severity: "P1" | "P2" | "P3") => {
+  const handleDecision = async (approvalId: string, decision: "approve" | "reject", severity: "P1" | "P2" | "P3", reason = "") => {
+    if (loadingId) return;
     if (!session?.user) {
       setErrorMsg("Please sign in to perform actions.");
       return;
@@ -30,16 +35,6 @@ export function PendingApprovals({ initialApprovals }: PendingApprovalsProps) {
 
     setLoadingId(approvalId);
     setErrorMsg(null);
-
-    let reason = "";
-    if (decision === "reject") {
-      const input = prompt("Please provide a reason for rejection (optional):");
-      if (input === null) {
-        setLoadingId(null);
-        return; // cancelled
-      }
-      reason = input;
-    }
 
     try {
       const res = await fetch(`/api/dashboard/incidents/${approvalId}/approve`, {
@@ -54,7 +49,10 @@ export function PendingApprovals({ initialApprovals }: PendingApprovalsProps) {
       }
 
       // Remove approved/rejected item from view
-      setApprovals(approvals.filter((a) => a.approval_id !== approvalId));
+      setApprovals((current) => current.filter((a) => a.approval_id !== approvalId));
+      setRejectingId(null);
+      setRejectionReason("");
+      router.refresh();
     } catch (err: any) {
       setErrorMsg(err.message || "An error occurred");
     } finally {
@@ -140,14 +138,20 @@ export function PendingApprovals({ initialApprovals }: PendingApprovalsProps) {
                 </span>
                 <div className="flex gap-2">
                   <button
-                    disabled={isPending}
-                    onClick={() => handleDecision(req.approval_id, "reject", req.severity)}
+                    disabled={loadingId !== null || !isAllowed}
+                    aria-expanded={rejectingId === req.approval_id}
+                    aria-controls={`reject-${req.approval_id}`}
+                    onClick={() => {
+                      setRejectingId(req.approval_id);
+                      setRejectionReason("");
+                      setErrorMsg(null);
+                    }}
                     className="rounded-lg border border-white/10 bg-white/[0.025] px-3 py-1.5 text-xs font-semibold text-[var(--muted)] hover:bg-white/5 hover:text-white transition-all disabled:opacity-50 disabled:pointer-events-none"
                   >
                     Reject
                   </button>
                   <button
-                    disabled={isPending || !isAllowed}
+                    disabled={loadingId !== null || rejectingId === req.approval_id || !isAllowed}
                     onClick={() => handleDecision(req.approval_id, "approve", req.severity)}
                     className={`rounded-lg px-3 py-1.5 text-xs font-semibold shadow-sm transition-all disabled:opacity-50 disabled:pointer-events-none ${
                       isAllowed
@@ -160,6 +164,49 @@ export function PendingApprovals({ initialApprovals }: PendingApprovalsProps) {
                   </button>
                 </div>
               </div>
+              {rejectingId === req.approval_id && (
+                <form
+                  id={`reject-${req.approval_id}`}
+                  className="mt-4 space-y-3 border-t border-white/10 pt-4"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void handleDecision(req.approval_id, "reject", req.severity, rejectionReason);
+                  }}
+                >
+                  <p className="text-xs text-[var(--muted)]">
+                    Reject {req.approval_id}? Its proposed remediation will not run.
+                  </p>
+                  <label className="block text-xs text-[#cbd6e9]">
+                    Rejection reason (optional)
+                    <textarea
+                      autoFocus
+                      value={rejectionReason}
+                      maxLength={2000}
+                      onChange={(event) => setRejectionReason(event.target.value)}
+                      disabled={isPending}
+                      rows={2}
+                      className="mt-2 w-full rounded-lg border border-white/15 bg-black/20 p-2 text-sm text-white focus:border-sky-400 focus:outline-none"
+                    />
+                  </label>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      disabled={isPending}
+                      onClick={() => { setRejectingId(null); setRejectionReason(""); }}
+                      className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-[var(--muted)] disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isPending || !isAllowed}
+                      className="rounded-lg border border-red-400/40 bg-red-950/30 px-3 py-1.5 text-xs font-semibold text-red-200 disabled:opacity-50"
+                    >
+                      {isPending ? "Rejecting…" : "Confirm rejection"}
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           );
         })}

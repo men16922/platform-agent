@@ -1,0 +1,112 @@
+- complementary:
+  - generic: ✦
+  - heading "Platform Agent" [level=1]
+  - paragraph: Autonomous cloud operations
+  - navigation:
+    - paragraph: Workspace
+    - link "⌘ Overview":
+      - /url: /
+      - generic: ⌘
+      - generic: Overview
+    - link "✦ Agents":
+      - /url: /agents
+      - generic: ✦
+      - generic: Agents
+    - link "⬡ Provisioning":
+      - /url: /provisioning
+      - generic: ⬡
+      - generic: Provisioning
+    - link "↗ Deployments":
+      - /url: /deployments
+      - generic: ↗
+      - generic: Deployments
+    - link "🕑 History":
+      - /url: /history
+      - generic: 🕑
+      - generic: History
+    - link "◈ Incidents":
+      - /url: /incidents
+      - generic: ◈
+      - generic: Incidents
+  - generic: Operations workspace
+  - generic: Review recorded runs and observations.
+- main:
+  - paragraph: Platform Agent / Agent activity
+  - paragraph: Operations workspace
+  - generic: Recorded activity
+  - button "Notifications": ⌁
+  - paragraph: Reasoning and execution trace
+  - heading "Agent activity" [level=2]
+  - paragraph: AI Agent autonomous tool-calling log — each agent selects and executes tools without human intervention
+  - generic: LIVE · ON-PREM
+  - heading "1. Select execution agent" [level=3]
+  - generic: The selection controls runtime and chat context.
+  - img "AWS"
+  - generic: Strands Agent
+  - generic: AWS
+  - generic: Bedrock Claude
+  - button "🔧 Tools 5":
+    - text: 🔧 Tools
+    - generic: "5"
+  - img "Google Cloud"
+  - generic: ADK Agent
+  - generic: Google Cloud
+  - generic: Gemini 3.5 Flash
+  - button "🔧 Tools 5":
+    - text: 🔧 Tools
+    - generic: "5"
+  - img "Microsoft Azure"
+  - generic: MS Agent
+  - generic: Microsoft Azure
+  - generic: GPT-5.4
+  - button "🔧 Tools 5":
+    - text: 🔧 Tools
+    - generic: "5"
+  - generic: ✓ SELECTED
+  - img "Cloud Native Computing Foundation"
+  - generic: On-Prem Agent
+  - generic: On-Premise
+  - generic: Local Qwen + kagent
+  - button "🔧 Tools 13":
+    - text: 🔧 Tools
+    - generic: "13"
+  - paragraph: 2. Selected runtime
+  - heading "On-Prem Agent · Local Qwen" [level=3]
+  - paragraph: Local Qwen handles the request, the supervisor selects the specialist, and kagent owns Kubernetes diagnostics.
+  - generic: Router offline
+  - generic "AI model": AI
+  - generic: Selected AI model
+  - generic: Applies to On-Prem Agent; supervisor and kagent use their configured runtime.
+  - combobox
+  - generic: "01"
+  - generic: READY PATH
+  - generic "AI model": AI
+  - text: Local Qwen
+  - generic: native model selection
+  - generic: "02"
+  - generic: READY PATH
+  - generic: Supervisor
+  - generic: Route + policy boundary
+  - generic: "03"
+  - generic: READY PATH
+  - generic: kagent A2A
+  - generic: Kubernetes tools + trace
+  - paragraph: Qwen → supervisor → kagent
+  - heading "Ask On-Prem Agent" [level=3]
+  - paragraph: Runs with the Agent and AI Model selected above. Investigate, deploy, or recover with a live trace.
+  - generic: Sign in as Operator/Admin to deploy.
+  - paragraph: Describe an operational goal. The selected agent can inspect systems, provision infrastructure, deploy services, diagnose incidents, and run governed recovery actions — every reasoning step and tool call streams here.
+  - textbox "Ask the agent — e.g. 'list pods in default' or 'deploy orders-api v1.4.2 with 2 replicas'" [disabled]
+  - button "Run" [disabled]
+  - heading "Recent activity" [level=3]
+  - generic: Latest 1 of 1 verified actions
+  - img "Cloud Native Computing Foundation"
+  - text: ONPREM
+  - generic "Local LLM (Qwen)":
+    - img "Local LLM (Qwen)"
+  - generic: On-Prem Agent (Local LLM (Qwen))
+  - generic: —
+  - generic: 읽기 전용 점검입니다. acme-dev-observability 네임스페이스의 Pod 목록을 조회해 현재 상태와 확인되지 않은 점을 한국어로 알려주세요. 생성·수정·배포·삭제·프로비저닝은 하지 마세요.
+  - generic: 12:16:22 PM
+  - generic: COMPLETE
+  - code: list_pods

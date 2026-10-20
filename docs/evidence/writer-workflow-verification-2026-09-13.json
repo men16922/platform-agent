@@ -1,0 +1,41 @@
+{
+  "date": "2026-09-13",
+  "milestone": "M75",
+  "scope": "actual loopback HTTP with synthetic independently fetched Git observations",
+  "focused_tests": {
+    "passed": 153,
+    "seconds": 4.14
+  },
+  "gate": {
+    "command": "make check",
+    "passed": 2988,
+    "skipped": 2,
+    "warnings": 21,
+    "seconds": 79.87,
+    "exit_code": 0
+  },
+  "remote_write_calls": 0,
+  "remote_read_audit": {
+    "calls": 4,
+    "repository_id": 1367338348,
+    "private": true,
+    "actions_enabled": false,
+    "pull_requests": 0,
+    "main": "103e44f68adc78ebb325ddb0927f23f5622e97fc",
+    "diagnostic_head": "0e3d3bf54e2e585b092927f1f3001e78aeea6d92"
+  },
+  "pem_and_existing_checkout": "not accessed or changed",
+  "machine": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "mutations": "docs/evidence/writer-workflow-mutations-2026-09-13.json",
+  "sha256": {
+    "src/agents/platform/writer_workflow.py": "df6d9608ed568221f5ef55471e2319c50157e7a1e74db8b608c062bed1b24365",
+    "src/agents/platform/writer_evidence.py": "bc9e275837efa781b058ce2e9fa919c796df8a37eabd84a0c8e1da683e05dba6",
+    "tests/test_writer_workflow.py": "0cf7601007ca5d89586b0dc1205f222a1a83dbaa9406f6b74da841350bcf9a2b"
+  },
+  "limits": [
+    "transport and observer in tests are loopback HTTP with synthetic Git data",
+    "no real GitHub token or permission proof from these tests",
+    "production preview writer/deployment not connected",
+    "no commit, push or remote write"
+  ]
+}

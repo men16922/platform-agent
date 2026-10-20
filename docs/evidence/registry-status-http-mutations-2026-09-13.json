@@ -1,0 +1,22 @@
+{
+  "scope": "local TypeScript contract via tsc and Node",
+  "mutations": [
+    {
+      "guard": "request_id",
+      "exit_code": 1,
+      "summary": "1 failed, 12 passed, 68 deselected in 0.70s"
+    },
+    {
+      "guard": "publication",
+      "exit_code": 1,
+      "summary": "1 failed, 12 passed, 68 deselected in 0.70s"
+    },
+    {
+      "guard": "private_fields",
+      "exit_code": 1,
+      "summary": "2 failed, 11 passed, 68 deselected in 0.70s"
+    }
+  ],
+  "source_restored": true,
+  "source_sha256": "817d7ba815e2eefdccaf30bc9308fe679eb92ddf5babc81b1749553f7491b355"
+}

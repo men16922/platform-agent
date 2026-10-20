@@ -97,6 +97,8 @@ export async function POST(
           service: service_name,
           version,
           environment,
+          // This button invokes the executor directly; no language model runs.
+          model: "onprem-executor",
         }),
       });
       const data = await res.json();

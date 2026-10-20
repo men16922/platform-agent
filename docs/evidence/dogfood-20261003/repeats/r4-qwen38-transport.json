@@ -1,0 +1,30 @@
+{
+  "at": "2026-10-03T08:20:13.796966+00:00",
+  "kind": "direct loopback model transport diagnostic, synthetic input only",
+  "status": 200,
+  "body": {
+    "id": "chatcmpl-fe94006c-f5cb-48d0-b4b2-cf99f2a4e6c9",
+    "system_fingerprint": "0.31.3-0.32.0-macOS-26.6.2-arm64-arm-64bit-Mach-O-applegpu_g16s",
+    "object": "chat.completion",
+    "model": "mlx-community/Qwen3.8-27B-4bit",
+    "created": 1791015611,
+    "choices": [
+      {
+        "index": 0,
+        "finish_reason": "length",
+        "message": {
+          "role": "assistant",
+          "reasoning": "We need to respond to user: \"Reply with"
+        }
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 56,
+      "completion_tokens": 10,
+      "total_tokens": 66,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    }
+  }
+}

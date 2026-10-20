@@ -1,0 +1,14 @@
+[
+  {
+    "name": "health-payload",
+    "test": "tests/test_local_run_dashboard.py::test_router_connection_check_requires_the_expected_health_payload",
+    "exit_code": 1,
+    "restored_sha256": "1f297dafd1c2b597d7ae9f2027f4f6611ed387283d2661998afb648b498073eb"
+  },
+  {
+    "name": "ready-claim",
+    "test": "tests/test_local_run_dashboard.py::test_runtime_panel_never_promotes_connection_to_model_or_delegation_readiness",
+    "exit_code": 1,
+    "restored_sha256": "52b8c39f075004fed17f767a5f0430528ab45d4e884348a360a3d3d1eb2946fb"
+  }
+]

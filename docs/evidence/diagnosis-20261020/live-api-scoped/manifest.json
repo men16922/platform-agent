@@ -1,0 +1,13 @@
+{
+  "target": {
+    "namespace": "acme-dev-observability",
+    "deployment": "orders-api-dogfood"
+  },
+  "model_endpoint": "http://127.0.0.1:18191/v1",
+  "max_tokens": 1024,
+  "temperature": 0,
+  "request_limit": 5,
+  "tool_limit": 4,
+  "retries": 0,
+  "scope": "Actual current kind target and same renewed ServiceAccount, all five Investigate tools registered, bounded workload guard. Not unrestricted tenant isolation or cloud operation."
+}

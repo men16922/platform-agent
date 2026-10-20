@@ -1,0 +1,3 @@
+PASS official Lambda Python 3.13 Linux ARM64: eight packaged modules and native PyYAML imported
+PASS actual handler rejects invalid input; packaged SDK ignores endpoint overrides and disables automatic retries
+Network disabled; no Lambda deployment or AWS API execution

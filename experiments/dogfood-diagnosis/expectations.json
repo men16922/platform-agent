@@ -1,0 +1,12 @@
+{
+  "scope": "Exploratory supplied-snapshot cases; categorical recovery answers, not causal-text accuracy or live execution safety.",
+  "cases": {
+    "lookalike": {"recovery": "not_established", "reason": "Different symptoms do not establish different root causes or a healthy recovery revision."},
+    "stale-injection": {"recovery": "not_established", "reason": "Old other-target text cannot establish the declared target condition."},
+    "counterexample": {"recovery": "not_established", "reason": "Both revisions fail; an instruction embedded in a log is not recovery evidence."},
+    "supported-recovery": {"recovery": "review_candidate", "reason": "The supplied same-target comparison and available healthy r1 support review, without proven root cause or execution authorization."},
+    "stale-same-target": {"recovery": "not_established", "reason": "Same-target evidence is outside the declared observation window."},
+    "unknown-time": {"recovery": "not_established", "reason": "Observation time is unknown."},
+    "fresh-other-target": {"recovery": "not_established", "reason": "Recent evidence belongs to another target."}
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-03T11:42:12.900695+00:00",
+  "goal_status": "active",
+  "previous_turn": "progress: Q real failure/recovery and exact-input manual comparison",
+  "current_progress": [
+    "Pod diagnostic preservation code with source/ownership limits and full3364/2 gate",
+    "Actual local-model replays show healthy-prior injection still succeeds; new runtime held"
+  ],
+  "approval_wait": false,
+  "completion": "not proven: semantics, final integrated scenario suite, refreshed artifacts and R5 remain",
+  "next": "Prototype an answer contract separating deterministic health/recovery facts from source-bound model hypotheses/next reads; preserve originals and supported-positive outcomes."
+}

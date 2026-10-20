@@ -1,0 +1,16 @@
+[pod/orders-api-dogfood-7fd548c97-7qbw8/orders-api-dogfood] 10.244.1.1 - - [03/Oct/2026 05:59:50] "GET /healthz HTTP/1.1" 200 -
+[pod/orders-api-dogfood-7fd548c97-7qbw8/orders-api-dogfood] 10.244.1.1 - - [03/Oct/2026 06:00:00] "GET /healthz HTTP/1.1" 200 -
+[pod/orders-api-dogfood-7fd548c97-7qbw8/orders-api-dogfood] 10.244.1.1 - - [03/Oct/2026 06:00:10] "GET /healthz HTTP/1.1" 200 -
+[pod/orders-api-dogfood-7fd548c97-7qbw8/orders-api-dogfood] 10.244.1.1 - - [03/Oct/2026 06:00:20] "GET /healthz HTTP/1.1" 200 -
+[pod/orders-api-dogfood-7fd548c97-7qbw8/orders-api-dogfood] 10.244.1.1 - - [03/Oct/2026 06:00:30] "GET /healthz HTTP/1.1" 200 -
+[pod/orders-api-dogfood-7fd548c97-7qbw8/orders-api-dogfood] 10.244.1.1 - - [03/Oct/2026 06:00:40] "GET /healthz HTTP/1.1" 200 -
+[pod/orders-api-dogfood-7fd548c97-vfrs4/orders-api-dogfood]  * Debug mode: off
+[pod/orders-api-dogfood-7fd548c97-vfrs4/orders-api-dogfood] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+[pod/orders-api-dogfood-7fd548c97-vfrs4/orders-api-dogfood]  * Running on all addresses (0.0.0.0)
+[pod/orders-api-dogfood-7fd548c97-vfrs4/orders-api-dogfood]  * Running on http://127.0.0.1:8080
+[pod/orders-api-dogfood-7fd548c97-vfrs4/orders-api-dogfood]  * Running on http://10.244.2.17:8080
+[pod/orders-api-dogfood-7fd548c97-vfrs4/orders-api-dogfood] [33mPress CTRL+C to quit[0m
+[pod/orders-api-dogfood-7fd548c97-vfrs4/orders-api-dogfood] 10.244.2.1 - - [03/Oct/2026 06:00:10] "GET /healthz HTTP/1.1" 200 -
+[pod/orders-api-dogfood-7fd548c97-vfrs4/orders-api-dogfood] 10.244.2.1 - - [03/Oct/2026 06:00:20] "GET /healthz HTTP/1.1" 200 -
+[pod/orders-api-dogfood-7fd548c97-vfrs4/orders-api-dogfood] 10.244.2.1 - - [03/Oct/2026 06:00:30] "GET /healthz HTTP/1.1" 200 -
+[pod/orders-api-dogfood-7fd548c97-vfrs4/orders-api-dogfood] 10.244.2.1 - - [03/Oct/2026 06:00:40] "GET /healthz HTTP/1.1" 200 -

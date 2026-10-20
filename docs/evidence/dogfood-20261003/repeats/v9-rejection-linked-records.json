@@ -1,0 +1,100 @@
+[
+  {
+    "approval": {
+      "PK": "APPROVAL",
+      "approval_id": "APR-5E68FD70",
+      "status": "rejected",
+      "created_at": "2026-10-03T08:24:19.330359+00:00",
+      "updated_at": "2026-10-03T08:27:34.498380+00:00",
+      "service": "orders-api-dogfood — synthetic rejection linkage check",
+      "severity": "P2",
+      "runbook_id": "dogfood-reject-only",
+      "remediation_mode": "APPROVE",
+      "actions": [
+        "ONPREM-RolloutRestartWorkload"
+      ],
+      "decision": {
+        "analyzer": {
+          "root_cause": "Synthetic fixture for rejection record linkage; no observed outage or model diagnosis.",
+          "confidence": 0.0
+        },
+        "remediation_mode": "APPROVE",
+        "actions": [
+          "ONPREM-RolloutRestartWorkload"
+        ]
+      },
+      "incident_id": "INC-EE9D12BA",
+      "rejection_reason": "합성 검증 요청: 현재 장애와 재시작 필요성이 확인되지 않았습니다.\n서비스 변경 없이 요청과 사건의 연결을 확인합니다.",
+      "reported_by": "local-dev"
+    },
+    "incident": {
+      "PK": "INCIDENT",
+      "incident_id": "INC-EE9D12BA",
+      "alarm_name": "orders-api-dogfood — synthetic rejection linkage check",
+      "provider": "onprem",
+      "severity": "P2",
+      "mode": "APPROVE",
+      "root_cause": "Synthetic fixture for rejection record linkage; no observed outage or model diagnosis.",
+      "runbook_id": "dogfood-reject-only",
+      "resolved": false,
+      "executed_actions": [],
+      "confidence": 0.0,
+      "trace_id": null,
+      "created_at": "2026-10-03T08:27:34.504513+00:00",
+      "approval_id": "APR-5E68FD70",
+      "approval_decision": "rejected",
+      "approval_decided_at": "2026-10-03T08:27:34.498380+00:00",
+      "rejection_reason": "합성 검증 요청: 현재 장애와 재시작 필요성이 확인되지 않았습니다.\n서비스 변경 없이 요청과 사건의 연결을 확인합니다.",
+      "reported_by": "local-dev"
+    }
+  },
+  {
+    "approval": {
+      "PK": "APPROVAL",
+      "approval_id": "APR-FD75E2D5",
+      "status": "rejected",
+      "created_at": "2026-10-03T08:24:19.330208+00:00",
+      "updated_at": "2026-10-03T08:27:50.062673+00:00",
+      "service": "orders-api-dogfood — synthetic rejection linkage check",
+      "severity": "P2",
+      "runbook_id": "dogfood-reject-only",
+      "remediation_mode": "APPROVE",
+      "actions": [
+        "ONPREM-RolloutRestartWorkload"
+      ],
+      "decision": {
+        "analyzer": {
+          "root_cause": "Synthetic fixture for rejection record linkage; no observed outage or model diagnosis.",
+          "confidence": 0.0
+        },
+        "remediation_mode": "APPROVE",
+        "actions": [
+          "ONPREM-RolloutRestartWorkload"
+        ]
+      },
+      "incident_id": "INC-594DCDE0",
+      "rejection_reason": "",
+      "reported_by": "local-dev"
+    },
+    "incident": {
+      "PK": "INCIDENT",
+      "incident_id": "INC-594DCDE0",
+      "alarm_name": "orders-api-dogfood — synthetic rejection linkage check",
+      "provider": "onprem",
+      "severity": "P2",
+      "mode": "APPROVE",
+      "root_cause": "Synthetic fixture for rejection record linkage; no observed outage or model diagnosis.",
+      "runbook_id": "dogfood-reject-only",
+      "resolved": false,
+      "executed_actions": [],
+      "confidence": 0.0,
+      "trace_id": null,
+      "created_at": "2026-10-03T08:27:50.063990+00:00",
+      "approval_id": "APR-FD75E2D5",
+      "approval_decision": "rejected",
+      "approval_decided_at": "2026-10-03T08:27:50.062673+00:00",
+      "rejection_reason": "",
+      "reported_by": "local-dev"
+    }
+  }
+]

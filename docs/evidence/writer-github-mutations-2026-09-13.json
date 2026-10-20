@@ -1,0 +1,44 @@
+{
+  "date": "2026-09-13",
+  "milestone": "M76",
+  "source": "src/agents/platform/writer_github.py",
+  "original_sha256": "af681dec40cbcf19fb21ba7b67b1a7e76a2276af3855ed26cd2cf5e6ca2d4637",
+  "restored_sha256": "af681dec40cbcf19fb21ba7b67b1a7e76a2276af3855ed26cd2cf5e6ca2d4637",
+  "mutations": [
+    {
+      "mutation": "truncated_tree",
+      "test": "tests/test_writer_github.py::test_snapshot_normalizer_rejects_incomplete_or_changed_trees[truncated]",
+      "exit_code": 1,
+      "detected": true,
+      "log": "/tmp/platform-agent-m76-mutation-truncated_tree.log"
+    },
+    {
+      "mutation": "author_app_from_expectation",
+      "test": "tests/test_writer_github.py::test_pr_author_and_file_observations_are_not_filled_from_expectations[other_app]",
+      "exit_code": 1,
+      "detected": true,
+      "log": "/tmp/platform-agent-m76-mutation-author_app_from_expectation.log"
+    },
+    {
+      "mutation": "request_binding",
+      "test": "tests/test_writer_github.py::test_send_rejects_an_unreviewed_request_before_network",
+      "exit_code": 1,
+      "detected": true,
+      "log": "/tmp/platform-agent-m76-mutation-request_binding.log"
+    },
+    {
+      "mutation": "redirect_follow",
+      "test": "tests/test_writer_github.py::test_redirect_is_observed_but_never_followed",
+      "exit_code": 1,
+      "detected": true,
+      "log": "/tmp/platform-agent-m76-mutation-redirect_follow.log"
+    },
+    {
+      "mutation": "pr_files_pagination",
+      "test": "tests/test_writer_github.py::test_pr_author_and_file_observations_are_not_filled_from_expectations[files_link]",
+      "exit_code": 1,
+      "detected": true,
+      "log": "/tmp/platform-agent-m76-mutation-pr_files_pagination.log"
+    }
+  ]
+}

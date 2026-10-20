@@ -134,7 +134,7 @@ class TestTheDeployPathRefusesBeforeItDeploys:
              patch.object(local_deployer, "get_deployment_adapters", return_value=adapters):
             result = local_deployer.deploy_to_cluster(
                 service_name="orders-api", image="orders-api", version="1.0.0",
-                image_uri=IMAGE, provider="onprem",
+                image_uri=IMAGE, provider="onprem", replicas=1,
             )
 
         adapters.cluster.deploy.assert_not_called()
@@ -157,7 +157,7 @@ class TestTheDeployPathRefusesBeforeItDeploys:
              patch.object(local_deployer, "get_deployment_adapters", return_value=adapters):
             result = local_deployer.deploy_to_cluster(
                 service_name="orders-api", image="orders-api", version="1.0.0",
-                image_uri=IMAGE, provider="onprem",
+                image_uri=IMAGE, provider="onprem", replicas=1,
             )
 
         adapters.cluster.deploy.assert_called_once()
@@ -176,7 +176,7 @@ class TestTheDeployPathRefusesBeforeItDeploys:
              patch.object(local_deployer, "get_deployment_adapters", return_value=adapters):
             result = local_deployer.deploy_to_cluster(
                 service_name="orders-api", image="orders-api", version="1.0.0",
-                image_uri=IMAGE, provider="onprem",
+                image_uri=IMAGE, provider="onprem", replicas=1,
             )
 
         run.assert_not_called()

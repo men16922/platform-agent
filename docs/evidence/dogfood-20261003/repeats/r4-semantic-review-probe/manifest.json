@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-03T10:48:31.932663+00:00",
+  "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "tools": 0,
+  "max_tokens": 512,
+  "timeout_seconds": 60,
+  "http_retries": 0,
+  "case_count": 4,
+  "cases_sha256": "904c387d039884190333c079fbaa3822beabb67177f2d367321e1ac916d0993f",
+  "prompt_sha256": "a426f5541c65aece9be60f03e3cb0a70ea66b2161674feb7f9b0ad0029879bd6",
+  "limits": "Four exploratory calibration controls, no independent expert evaluation or product publication gate."
+}

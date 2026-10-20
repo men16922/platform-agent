@@ -1,0 +1,26 @@
+F.                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_invalid_model_output_is_preserved_without_execution_or_semantic_promotion[citation] _
+
+invalid = 'citation'
+
+    @pytest.mark.parametrize('invalid',['citation','tool'])
+    def test_invalid_model_output_is_preserved_without_execution_or_semantic_promotion(invalid):
+        calls=[]
+        def transform(value):
+            if invalid=='tool':return ToolCallPart('rollback_deployment',{},tool_call_id='attempt')
+            value['observations'][0]['quote']='Fabricated prior health evidence.'
+            return value
+        data=CASES[2]['input']
+        out=asyncio.run(mr.route_deploy(data['question'],'local-qwen','onprem',read_only=True,snapshot=data,agent_factory=factory_with(calls,transform)))
+        assert len(calls)==1 and not out.ok and out.steps==[]
+>       assert out.snapshot_analysis['status']=='invalid_model_output' and out.snapshot_analysis['diagnosis'] is None
+E       AssertionError: assert ('interpreted' == 'invalid_model_output'
+E         
+E         - invalid_model_output
+E         + interpreted)
+
+tests/test_snapshot_diagnosis.py:106: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_snapshot_diagnosis.py::test_invalid_model_output_is_preserved_without_execution_or_semantic_promotion[citation]
+1 failed, 1 passed, 6 deselected in 0.79s

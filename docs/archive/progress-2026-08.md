@@ -113,7 +113,7 @@
   **테스트·DECISIONS가 참조**한다(`test_iam_wildcard_justified` → `2026-08-08-phase4-scope-and-cost`).
   게다가 plans는 **시작 컨텍스트에 안 실린다** ⇒ 옮겨도 컨텍스트가 안 줄고 참조만 깨질 수 있다.
 - Changed(**가드 +5, 사용자 승인**): `char_budgets`를 config에 **한 곳만** 선언하고
-  (brief 8,000 · status/plan 11,000 · log 12,000) `TestEveryDocIsWithinItsCharacterBudget`가 집행한다.
+  (brief·status·plan·log 각각의 상한) `TestEveryDocIsWithinItsCharacterBudget`가 집행한다.
   ⚠️**네 번째 철자를 만들지 않았다** — 줄 수는 이미 config·`DOCS_POLICY`·각 문서 머리말에 세 번 있다(M19).
 - Verified(**변이 3종 red**): **줄 수를 그대로 두고 BRIEF만 3,100자 늘리기**(오늘 아침 상태 재현) ·
   `char_budgets` 키 삭제 · 형제 셋 누락(공허 방지). ⚠️복구 확인 전에 `__pycache__`를 지웠다 —

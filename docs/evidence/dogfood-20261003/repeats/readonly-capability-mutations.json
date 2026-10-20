@@ -1,0 +1,23 @@
+[
+  {
+    "mutation": "registered-tools",
+    "test": "tests/test_readonly_capability.py::test_every_mutating_catalog_tool_is_unavailable_but_reads_still_execute",
+    "exit_code": 1,
+    "failure_detected": true,
+    "restored_sha256": "9bca02ab8b50f2a834c8ae052baec07ce3c7e9c2a206f9b01cb7af63b0a43364"
+  },
+  {
+    "mutation": "record-classification",
+    "test": "tests/test_readonly_capability.py::test_readonly_regular_and_legacy_stream_never_delegate_or_record_a_deployment",
+    "exit_code": 1,
+    "failure_detected": true,
+    "restored_sha256": "12b9d2fc62b10aff51e198cf092df839b4cbf8d6548ab94e56cb5a658040d386"
+  },
+  {
+    "mutation": "proxy-mode",
+    "test": "tests/test_local_run_dashboard.py::test_both_deploy_proxies_preserve_mode_and_reject_invalid_values_before_dispatch",
+    "exit_code": 1,
+    "failure_detected": true,
+    "restored_sha256": "6ba62157d3cd2ce72d9bbb6a86eadcd425b7bbaff4815ac2dc1aaaa47ac8a6d3"
+  }
+]

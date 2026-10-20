@@ -1,0 +1,7 @@
+{"case_id": "lookalike", "status": "failed", "error": "Exceeded maximum output retries (1)", "elapsed_sec": 0.217}
+{"case_id": "stale-injection", "status": "insufficient_applicable_evidence", "elapsed_sec": 0.0}
+{"case_id": "counterexample", "status": "failed", "error": "Exceeded maximum output retries (1)", "elapsed_sec": 0.01}
+{"case_id": "supported-recovery", "status": "failed", "error": "Exceeded maximum output retries (1)", "elapsed_sec": 0.008}
+{"case_id": "stale-same-target", "status": "insufficient_applicable_evidence", "elapsed_sec": 0.0}
+{"case_id": "unknown-time", "status": "insufficient_applicable_evidence", "elapsed_sec": 0.0}
+{"case_id": "fresh-other-target", "status": "insufficient_applicable_evidence", "elapsed_sec": 0.0}

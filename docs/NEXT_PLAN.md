@@ -1,118 +1,60 @@
 # NEXT_PLAN — platform-agent
 
-최종 갱신: 2026-09-03
+최종 갱신: 2026-10-20
 
-> **열린 작업만.** 완료 이력은 `COMPLETED_SUMMARY.md`(**M15=공급망 0→집행 + Phase 5 경계 +
-> `main` 보호**, M14=결정 6건, M13=미소비 14건) / `PROGRESS_LOG.md`(+`docs/archive/`). **≤120줄**.
-> ⚠️**압축본이다(2026-09-02)** — 상세는 **삭제가 아니라 이동**했다:
-> 각 항목의 경위·측정·⚠️/⛔ 문장은 `docs/archive/next-plan-detail-2026-09.md`가 **권위**이고
-> 거기 있는 블록은 **한 글자도 안 고치고 옮긴 것**이다. 여기 남은 건 **주장 한 줄 + 재개 조건**뿐.
-> **요약만 읽고 결론 내지 말 것** — ⚠️/⛔ 문장은 틀린 요약이 사실로 굳는 것을 막으려고 쓴 것이다.
+> **열린 작업만. ≤120줄.** 다음 작업의 유일한 권위다. 완료 이력은 `docs/COMPLETED_SUMMARY.md`, 최신 증분은 `docs/PROGRESS_LOG.md`.
+> 정리 전 원문·주의사항은 [10월 아카이브](archive/progress-2026-10.md#tidy-20261003-next-plan)와 `docs/archive/next-plan-detail-2026-09.md`에 보존했다.
 
-## 현재 상태 (2026-09-03, gate 2410 — 로컬 macOS·py3.13 · CI도 같은 게이트, ubuntu·py3.13)
+## 현재 상태 (2026-10-20, gate 3384·3 skipped — 로컬 macOS·Python3.13.5·공식 Node22.23.3/임시 npm prefix)
 
-**Phase 0·1a·1b·2·3 완결**(M10~M12) + **잔여 소진**(M13) + **결정 7건 닫힘**(D36·D38~D43).
-**공급망은 닫을 수 있는 만큼 닫혔다**(어드미션만 업스트림 대기) · **`main`은 보호된다**
-(PR + CI 통과로만 병합, D43) · **Phase 5는 경계까지** 섰고 커밋도 **경로 한정**이다.
-**남은 건 Phase 4(billable)뿐** — 단 "무과금 소진"은 **여섯 번 틀렸다**. **소진은 목록의 상태지
-사실이 아니다** — 목록 밖에도 있고 **가장 값싼 다음 수는 대개 직전 세션이 적어 뒀다**.
-⚠️**목록에 적힌 항목 자체가 틀릴 수도 있고**(M19 ⓑ) **그래도 시험하면 값이 난다**(`git log -L`로
-**"언제부터"**까지) · **직전 고침이 남긴 기준이 다음 결함을 찾는다**(M19→M26, 여섯 층 연속).
+**10-20 "잔여 작업 완료시까지 수행"으로 재개.** sampler 경계는 규명 완료(계획서 §13), 작업 트리에 삽입 지시 복구 가드를 채택했다(미커밋). 의미 품질은 미충족이며 열린 `[auto]` 씨앗은 없다.
 
-## 사용자 게이트 — 전부 닫힘 (재개 조건만)
+기존 앱 후보 O/v15와 작업 트리 W(10-20)를 구분한다. W는 제품 서버 미활성화, S 응답 계약도 미채택이다. 게이트는 작업 트리 기준이며 실행 후보 검증/원격 CI와 같지 않다. 완료한 Phase0·1a·1b·2·3 및 이후의 제한·재개 조건은 M10~M15와 각 계획서를 따른다.
 
-> 결정 1~6 = **D36·D38~D42**, 브랜치 보호 = **D43**. 근거는 `DECISIONS.md`·`docs/plans/*`, 완료
-> 요약은 `COMPLETED_SUMMARY` **M14·M15**. **재개 조건만 아래 남긴다.**
+## 재개 후 첫 우선순위 — 진단 R3/R4
 
-- 라우터에 인증이 서면 **결정 5 C**와 **결정 1의 파티션**이 열린다 · k3s-lab에 워크로드가 서면
-  **결정 4**(경로=옵션 A) · 두 번째 리뷰어가 생기면 **CODEOWNERS 리뷰 필수**를 켠다(D43).
-- [ ] **(별도 계획) GitAIOps 후속편 아티클** — 논지=오프라인 Qwen로 루프를 무인으로 닫는다.
-  소재·사례집·③의 산 사례(M39)는 **archive 상세가 권위**. ⛔**집필·발행은 착수하지 않는다**(지시 2026-07-25).
-- [ ] (선택) **Azure Foundry 정리** — 유휴 ≈$0는 **참**. 단 ACR Basic이 월 ~₩6,600 고정이고 **다른 프로젝트 것**(08-12).
+- [x] **Supplied snapshot 의미 오류:** 지시문 추종은 가드 후보로 4/4 정정(미커밋). lookalike는 D53(사람 검토 경계)로 R3 기준 충족 처리, 모델 의미 통과 아님. 계획서 §13-1.
+- [ ] **이전 컨테이너 로그(선택, 범위 결정 필요):** investigation_proposals의 `previous_container_logs`는 사람에게 보이는 다음 증거 제안(가용성 미검증 명시)이며, 고정 Investigate5의 `get_logs`에는 previous 옵션이 없다. 계약 결함이 아니라 도구 확장 여부의 결정이다. 확장 시 재시작 Pod 재현(kind 기동 필요)→cache 통제 하 선택 재측정. `r4-first-bundle/review.json`.
+- [ ] **측정 통제:** 단일 응답 대조는 `cached_tokens` 기록·arm별 cold 재기동+다른 이력 반복으로만 해석한다(STATUS Risk13). 진짜 표본이 필요하면 sampler 개입 서버(`sampler-boundary/patched_server.py`)를 측정 도구로만 쓰고 제품에 넣지 않는다. 가드 후보의 진짜 표본 측정은 아직 없다.
+- [x] **진단 기준 재검증:** 원문·양성 복구·삽입 지시·유사 증상·근거 부족 기준을 유지한 채 cold/warm·진짜 표본으로 재측정했다(§13). 형식 통과·전건 보류를 성공으로 세지 않았다.
+- [ ] **R5 조건부 비교 — 사용자 미승인(10-20 "None now"/lookalike는 D53 선택):** R3 충족 후 대상이지만 HolmesGPT 설치·호출은 승인 전 하지 않는다.
 
-## 진행 중 — 멀티테넌트/멀티-클라우드 플랫폼 + per-env Add-on
+권위: `docs/plans/2026-10-03-platform-agent-usage-and-evidence.md` §4·§12. 새 자료는 `docs/evidence/diagnosis-20261020/production-contract-final/`, 과거 U checkpoint도 보존한다. T의 정상3·거부2·복구2·새로고침2 및 데모를 다시 반복하지 않는다. 다음 수정의 검증 범위는 실제 변경으로 정한다.
 
-**설계**: `docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5) · **MAD**: 같은 폴더 `-mad-history.md`.
-확정 아키텍처: **capability, implementation-pluggable** — Tenant=격리 티어 정책, Env=cluster(멀티클라우드),
-Delivery=ArgoCD|Flux|Config Sync 어댑터, SSOT=per-tenant git 레지스트리. **최우선 불변식**:
-blast radius=1 tenant/env(자격증명이 경계) — **집행 가능하지만 옵트인**(D38).
+## 별도 원격 우선순위
 
-- [ ] **Phase 5 = 경계까지 섰다(2026-08-08, → M15)** — UI가 아니라 **"PR은 그 테넌트 파일 하나만 건드린다"**를 세웠다. **남은 것 = attach UI인데 기록된 이유가 틀렸다(실측)**: 진짜 구속 조건은 **쓰기 대상이 git 파일**인데
-  **UI는 Vercel이라 파일시스템·git·python이 없다**(FastAPI 층은 **아예 없다**) → "실제 PR 생성"은 별개 잔여가 아니라 **이 항목의 구속 조건**. 우회 없음(OAuth `repo`는 blast radius=1과 충돌 · TS 이식은 **두 번째 진실
-  공급원**). ⇒ 여는 조건 = **파이썬 플래너를 어디서 돌릴지**.
-- [ ] **Phase 4 남은 것 = 4b**(자격증명 파티션 미증명=Risk 10 · 30분 TTL 가드가 상시와 안 맞는다, **billable·별 승인**). ✅**GCP는 이제 쟀다**(09-02, **M49**): 적재 도착 **730행**, 프로브 `MEASURABLE`. 총사용액 **₩67.87** → 청구 **≈₩0**인데
-  ⚠️**상쇄의 99.4%가 `FreeTrialUpgrade` `PROMOTION` 크레딧이고 요율이 아니다** ⇒ ⛔*"어차피 공짜"*로 요약 금지(절벽은 **크레딧 잔액**이고 **소진 시점은 내보내기가 말해 주지 않는다**). ⚠️**런레이트는 아직
-  못 잰다** — 창 **3일**(마지막 날 미완) · 총액의 **81%가 하루치 4행** · **90%가 다른 프로젝트 것**(프로젝트 5개 중 비용 행 3개, platform-agent 몫 **₩6.55**) ⇒ **며칠 뒤 재조회가 무료인 다음 측정**.
-  ⚠️**월별 집계만 보면 없는 8월 백필이 보인다**(08-01의 1행은 `project=null` Invoice 행 — 실제 사용은 08-30부터) ⇒ 설정 문서 **§0은 성립한다**. 증거 `docs/evidence/the-gcp-zero-is-a-promotion-credit-not-a-rate.log`. ✅**Azure는 쟀다** — 서버가 `clienttype-retry-after`로 대기 시간을 말한다(5→**40**) ⇒ ACR **₩76.67**.
-  ⚠️**"재시도가 답이 아니었다"는 간격이 서버 요구값 아래였던 것**(20초<40초) — **고정 간격 재시도는 영구 실패와 구분되지 않는다**. **경위·측정 전문은 archive 상세가 권위.**
-- ⛔**다시 열지 말 것 — 닫힌 항목 아홉**(각 줄의 경위·⚠️/⛔ 문장은 **archive 상세의 같은 제목**이 권위): **Phase 4 / 4a**(08-30 닫힘 M38 · 09-01 접힘 M40·D50 — ⚠️**$0.00이 접은 이유가 아니다**, 대가는 **장기 키** ·
-  ⚠️**D48은 안 죽었다**) · **Azure 자동 재시도**(09-02, M47 — ⚠️**헤더가 없으면 재시도하지 않는다**) · **대시보드 취약점**(08-30, `npm audit` 0건 — ⚠️`STATUS` Risk 11의 *"기록이 세 군데 다 틀렸다"*를 지우지 말 것) ·
-  **`onprem` extra의 `mlx-lm`**(09-01, M41 — ⚠️`.venv-mlx` 분리는 **설계**지 "안 쓰여서"가 아니다) · **정적검사는 게이트에 안 들어간다**(09-01, D51 — ⚠️**"쓸모없다"로 요약 금지**: 실제 결함 둘을 찾은 건
-  **mypy**이고 테스트는 둘 다 놓쳤다. 결정된 건 *가치*가 아니라 **상주 값어치**다) · **Azure executor 배선**(08-30, M39 — ⚠️**"이제 안전하다"로 요약 금지**: 열린 건 **경로**고 오늘 blast radius가 0인 건 대상이
-  0개여서다) · **`spend-check`의 `MEASURABLE` 금액 질의**(09-02, M50 — ⚠️**크레딧을 한 컬럼으로 합치지 말 것**: 프로모션은 마르는 잔액이고 DISCOUNT는 요율의 성질이다 · ⚠️**창은 계정 수준 행을 빼고 잰다**, 안 그러면 3일이 한 달로 보인다) · **capability 스캔 셋**(08-17, M35~M37) · **`cost_metrics`**(08-18 — ⚠️**면제는 목록이 아니라 경계다**).
-- [ ] **Phase 1b 잔여**: loki/tempo/pa 이관은 **볼륨 스냅샷 선행**(kind엔 CSI 스냅샷터 부재).
-- **2차 잔여 = 하나**: **스포크의 읽기 신원** — 공유 `argocd` ns를 맨 kubectl로 읽어 테넌트 구분이 **코드 필터**다(쓰기는 401, 읽기는 안 막는다).
-  **시끄럽게만** 해 뒀고(`warn_if_ambient_read`, M17), seam은 **인클러스터 배포·민팅 선행**이라 인프라 결정.
+- [ ] **Phase5 운영 연결:** D52·M53의 독립 Lambda 설계와 M71~M89 로컬 구현은 완료. M91(2026-09-15)의 인증 해소·설정 조회·후보 재생성을 유지하고 실행 위치/2FA 문제를 다시 열지 않는다. 다음은 `docs/plans/2026-09-05-phase5-planner-runtime.md` §13의 새 함수/테이블/IAM·본인 men16922/acme 권한·production 설정/후보 전환·복구·보관 비용 범위 확인이다. 승인 후 현재 신원/해시/복구 대상을 재확인하며 로컬 dogfood 승인과 혼동하지 않는다.
+- [ ] **PR writer:** 같은 계획 §5·§12의 자격증명 경계·실험 부분 판정 유지. production PR 발행·tenant별 repo 이관·추가 쓰기/민팅/권한 확대는 자동 재개하지 않는다. M83 실험 PR을 보존한다.
+- [ ] **Phase4b:** 새 상시 GKE 비용·기간·종료 장치, 30분 TTL과 상시 운영의 충돌, 클라우드 자격증명 파티션을 먼저 결정한다. `docs/plans/2026-08-08-phase4-scope-and-cost.md` §5·§6. M54의 기존 사용액은 새 GKE 견적이 아니다.
+- [ ] **GCP 비용 후속:** 같은 서비스 구성이 유지된 완결 일자가 쌓였을 때 관측한다. 기존 프로젝트/크레딧/사용 창과 수치는 `STATUS` Risk4가 권위다.
 
-## 잔여 — 완료 항목에서 의도적으로 남긴 것
+## 조건이 남은 기존 백로그
 
-> 완료분은 `COMPLETED_SUMMARY.md` **M12**·**M13** · `PROGRESS_LOG.md` · `docs/evidence/`.
-> ⚠️각 항목의 **측정·반증·세는 함정**은 `docs/archive/next-plan-detail-2026-09.md`가 권위다.
+기본 설계는 `docs/plans/2026-07-21-multi-tenant-env-addons.md`(v5). capability별 구현 교체·tenant/env별 git registry와 blast radius=1 tenant/env를 유지하며 자격증명 집행은 옵트인(D38)이다.
 
-- [ ] **DUAL 모드 조건부 리다이렉트** — `slack_live_approval`은 닫혔고(08-16) 이것만 남았다. **하중을 못 받는 가드**가 되므로 안 만들었다.
-- [ ] ⚠️**Phase 3② — 남은 건 AWS뿐이고 그건 "러너가 없다"이다**(SSM Automation 경로). GCP(08-18)·Azure(08-30) 배선 완료, 추가 API 호출 0. ⚠️**M31이 고친 건 목록이고 호출 지점을 세는 가드가 없었다**(M18이 한 층 위에서
-  재발) · ⚠️**가드 자신이 한 번 틀렸다**(문자열 검사 → **AST로 실제 호출**을 센다). 증거 `docs/evidence/phase-dod-verification-2026-08-18.log`.
-- [ ] **⚠️`msft_deployer`가 진짜 라이브러리에서 깨진다(08-30 재측정)** — ✅설치 조건은 열렸다(`.[azure]` 31.5초). ⛔`AzureOpenAIResponsesClient`은 **버전 지연이 아니다**(`agent_framework*`에 0개, 업스트림 docstring 한 줄뿐).
-  **여전히 안 고친다 — 대체 심볼이 없어 추측은 발명.** ⚠️테스트가 `sys.modules`를 스텁해 초록이다. 증거 `docs/evidence/the-azure-extra-cannot-be-installed.log`.
-- [ ] **GCP/Azure 90일 보관** — **`STATUS` Risk 2가 권위**(스토어가 없어 지울 데이터 0 → Phase 4).
-  ⚠️"`resolved_at`은 읽는 쪽이 없다"는 **틀렸다**(08-16 재측정): `oncall_reporter._minutes_between`이
-  `started_at`과 짝지어 읽고 `aws/reporting.py:239`가 넘긴다 · **analyzer 폴백 severity는 정책**.
-- [ ] **k3s 승격은 닫혔다(D40) — 여는 조건 "k3s-lab에 워크로드"** — **`STATUS` Risk 5**가 권위.
-  경로는 **옵션 A**(네임스페이스·netpol만, 비용 0) — ⚠️**실체 없는 선언 2건**을 더하므로 재평가.
-- [ ] **스코프·배포 신원은 옵트인(D38 이후)** — 상태는 `probe_scope_reachability.py`·`make
-  deploy-identity-check`가 답한다. **남은 결정**: 기본 on 여부 · 서명키 custody·rotation ·
-  배포 신원의 테넌트 구분(결정 5 C/D).
-- [ ] **MCP 게이트웨이는 포트에 안 붙어 있다** — 결론 유지, **근거는 틀렸다(재측정)**: `bridge.py:35`에
-  폴백이 있고 그 `McpA2aBridge`를 만드는 건 **테스트뿐**. ⚠️**세는 함정 다섯**(`cdk.out` · docstring 예시 ·
-  `git grep -E`의 `\s` · **리전 한정 `[]`** · **`AccessDenied`**) — **전부 "없다"가 아니다.** 전문은 archive.
-- [ ] **A2A 인증 실집행 결정** — 남은 건 **기본값 on 여부**(라이브 kagent 왕복이 익명이라
-  opt-in — 그 "익명"은 **나가는 쪽**이다, D39).
-- [ ] **Cosign 어드미션 = 업스트림 대기** — **`STATUS` Risk 6이 권위**. ⛔**09-02 재측정: 아직 — 단 물고 있던 신호가 틀렸다**(**M51**): `#1406`은 2024-09-30에 멈춘 트래킹 이슈이고 그 구현은 `#1725`로 **2025-04-23에 머지**됐다(우리가 쓴 appVersion 0.13.1에 이미 들어 있었다) ⇒ **결론 유지, 근거 교체**. **새 조건 = `#1968` 머지 또는 `#2007`을 담은 릴리스**(최신 v0.15.1은 2026-03-26, 그 뒤 51 커밋 미출시). — **이 날짜부터 볼 것.**
+| 열린 항목 | 재개 조건·범위 |
+| --- | --- |
+| Phase1b loki/tempo/pa 이관 | 볼륨 스냅샷 선행. kind에는 CSI 스냅샷터 부재 |
+| 스포크 읽기 신원 | 공유 argocd 읽기의 코드 필터 한계. 인클러스터 배포·민팅과 결정5 C/D 선행 |
+| scope·배포 신원 기본 on | `probe_scope_reachability.py`·`make deploy-identity-check`로 적용 상태 확인. tenant 구분·서명키 custody/rotation 별도 결정 |
+| A2A 인증 기본 on | D39. 현재 라이브 kagent 왕복의 나가는 익명 경로와 실제 집행 조건 대조 |
+| DUAL 조건부 리다이렉트 | slack_live_approval 완료분과 분리. 실제 하중을 받는 조건이 생길 때 |
+| Phase3② AWS 실행 | SSM Automation 러너가 없음. GCP/Azure 배선 완료를 AWS 완료로 세지 않음 |
+| msft_deployer | 대체 심볼 근거 필요. 08-30 AzureOpenAIResponsesClient 부재는 버전 지연이 아니었고 stub 테스트는 실제 호환성을 보장하지 않음 |
+| GCP/Azure 90일 보관 | Phase4·실제 스토어 범위 확정. STATUS Risk2 |
+| k3s proven 승격 | k3s-lab에 workload가 생길 때(D40). 미존재 상태의 선언 추가 금지 |
+| MCP 게이트웨이 | 실제 호출자/포트 연결 필요. bridge.py 폴백은 있지만 생성 호출은 테스트뿐이라는 기존 측정 유지 |
+| Cosign 어드미션 | STATUS Risk6의 #1968 머지 또는 #2007 포함 릴리스를 재조회. 과거 #1406 부재 근거는 재사용 금지 |
+| CODEOWNERS 리뷰 필수 | 두 번째 리뷰어가 생기면 재검토(D43) |
+| ADK 재평가 | adk_deployer의 workflow-graph 개선 근거가 있을 때. 클라우드 중립 코어 교체 아님 |
+| GitAIOps 후속편 | 2026-07-25 지시로 집필/발행 착수 금지. 소재는 archive에 보존 |
+| Azure Foundry 정리(선택) | 다른 프로젝트 ACR Basic 비용과 구분. 현행 자원 상태를 먼저 확인 |
 
-## 유지 규약 (완료된 리팩토링에서 나온 "하지 말 것")
+## 보존·작업 규칙
 
-> ⚠️**근거 전문은 `docs/archive/next-plan-detail-2026-09.md`의 "유지 규약 — 근거 전문"이 권위다.**
-> 규칙만 읽고 고치지 말 것 — 각 줄은 **재서 얻은 것**이고 근거가 규칙보다 길다.
-
-`_k8s_rest`는 restart/scale만 공유(rollback은 GKE/AKS 시맨틱 상이) · detector/analyzer/decision은 SDK가 90%+ 상이해 **의도적으로 DRY 안 함**(⚠️08-30 실측 — **결정 유지, 근거는 정확히**: `analyzer` **51%**·
-`decision` **56%**가 글자 그대로 두 벌 = **계약**이고, 바이트 동일 **7쌍을 `test_cross_provider_contract_parity.py`가 표로 박았다**) · `approval_bridge` 추가 분해 금지(D15) ·
-포괄 `gcloud:*`류 allow 금지(D16→D22). ⚠️**"DRY 안 함"이 덮지 않는 것(M18·M19)**: 공유되는 게 **SDK가 아니라 계약**인 블록은 **계약
-모듈에 한 벌만** 두고(`runbooks/schema.py::fits_resource`) **provider 간 일치를 묻는 가드**로 묶는다(`test_capability_catalog_scan.py`) · **의무가 분류마다 뒤집히는 규칙은 양쪽을 다 물을 것**.
-⚠️**"선언됐는데 안 읽힌다"는 자동으로 결함이 아니다(M19)** — **기준은 읽는 쪽의 provider 간 비대칭**이다. ⚠️**가드의 임포트를 그 파일이 주장하는 범위와 맞댈 것** · **형제는 provider가 아닐 수도**(M21) ·
-**다수가 옳고 하나가 뒤처질 수도**(M23). ⛔`triggered_at`·`metric_name`은 **닫혔다**(M21 §8) — 다시 열지 말 것.
-
-## 캘린더 / 메모
-
-- **ADK 재평가(2026-03 GA 후)**: workflow-graph API가 Gemini 서브에이전트 경로(`adk_deployer.py`)를 개선하는지 — 우리 Orchestrator는 클라우드-중립이라 코어 대체 아님.
-- 안티패턴(범위 밖): A2A "Dynamic Autonomy"·agents-cli(GCP lock-in·Pre-GA)·CMA 베타 API 채택 금지 · 정적 무조건 fan-out · 자유텍스트 spawn_subagent 금지.
-
-## Overnight 씨앗 (`[auto]` — 무인 루프가 집어간다)
-
-> 1 이터 = `[auto]` 하나 = 커밋 하나. **마르면 멈춘다**(정상). `MAX_ITER`는 씨앗 수보다 크게.
-> ⚠️**압축 씨앗의 "삭제 금지"를 완화하지 말 것** — ⚠️/⛔ 문장은 틀린 요약이 사실로 굳는 것을 막는다.
-
-- [x] [auto] `docs/PROGRESS_LOG.md`를 문자 예산 90% 이하로 (2026-09-03 체크포인트에서 충족, 11,114 → **9,729자 = 81%**). ⚠️**옮기는 것이지 지우는 게 아니다** — 오래된 항목을 `docs/archive/progress-2026-09.md`로. ⚠️**루프가 매 이터마다 여기에 쓴다** — 그래서 첫 이터에 둔다.
-- [ ] [auto] 진입점 문서가 지목하는 `docs/**/*.md` 경로의 실존 가드. Done: BRIEF·STATUS·NEXT_PLAN·PROGRESS_LOG·COMPLETED_SUMMARY·DECISIONS의 `docs/….md` 인용이 전부 실존(**오늘 dangling 0 — 초록에서 시작한다**). ⚠️**경계를 넣을 것**: `bin/docs/…`에서 `docs/…`만 잘라내면 없는 경로 3건이 **오탐으로 생긴다**(09-03 실측). ⚠️**2026-07 archive의 8건은 제외** — 그때 있던 파일을 적은 이력이지 지금의 주장이 아니다(M48이 주석을 뺀 것과 같은 이유).
-- [ ] [auto] 진입점 문서가 인용하는 `D<번호>`의 실존 가드. Done: BRIEF·STATUS·NEXT_PLAN이 인용하는 D번호 **14개**가 `DECISIONS.md`에 실재(**오늘 전부 실재 — 초록에서 시작**). `test_milestone_pointer_claims`(M번호)의 **형제이고, 형제 집합은 세는 순간 전부 셀 것**.
-- [ ] [auto] 문자 예산 숫자의 **유일 표기** 가드. Done: `harness-config.json` 밖에서 문자 예산(8,000·11,000·12,000)을 적는 문서가 0. 현재 archive **4곳**이 복제 중이고 09-02 로그가 *"선행 사례, 이번 범위 밖"*으로 이미 지목했다. ⚠️**줄 예산은 의도적으로 3곳**(config·`DOCS_POLICY`·문서 헤더)이고 기존 가드가 일치를 묻는다 — **문자 예산만 유일 표기다**(M19).
-- [ ] [auto] `docs/STATUS.md`의 **줄** 예산 여유 회복. Done: ≤108줄(현재 115/120). ⚠️**문자는 58%라 여유롭다 — 이건 줄 문제다** ⇒ 인접 줄을 합쳐 문단을 넓히는 방향(09-02 NEXT_PLAN 압축이 *"두 예산은 반대 방향으로 당긴다"*를 남겼다). ⚠️**⚠️/⛔ 문장은 한 글자도 지우지 말 것.**
-- [x] [auto] Azure 429 자동 재시도 (2026-09-02, **M47이 권위**).
-- [x] [auto] 스크립트가 인쇄하는 레포-상대 경로의 실존 가드 (2026-09-02, **M48이 권위**). ⚠️**존재는 git에게 묻는다** — `exists()`면 gitignore된 경로가 CI에서만 red다.
-- [x] [auto] `docs/STATUS.md` 압축 (2026-09-02, 10,994→**5,197자**). ⚠️**예산 단위는 문자다 — `wc -c`는 바이트라 초과로 착각한다.**
-- [x] [auto] `docs/NEXT_PLAN.md` 압축 (2026-09-02, 10,777→**8,003자**). ⚠️**옮긴 절반은 `/sync` 읽기 경로에 없다** — 그게 압축의 대가고, 그래서 헤더가 archive를 **지목만** 하고 요약하지 않는다.
-- [x] [auto] `docs/AGENT_BRIEF.md` 압축 (2026-09-02, 7,606 → **7,049자** = 88.1%). ⚠️**첫 판 7,199는 통과였지 여유가 아니었다** — 1,058자짜리 최장 줄(문자 예산 가드가 겨눈 그 병리)을 한 번 더 접어 908로. ⚠️**남은 여유는 151자다.** 옮긴 상세는 `docs/archive/brief-detail-2026-09.md`.
-
-## 작업 규칙
-
-- 멀티파일 변경 후 `make check` 실행, pass/fail 보고 · 묶음 완료 시 `/checkpoint`.
-- 요청 범위 밖 기능 추가 금지. 하드-투-리버스(클러스터 변경/클라우드/대규모 리팩터)는 승인 후.
+- **lab 1367338348·checkout 및 R2 lab/App4924748·설치161238144·키·branch·draft PR #1 보존. 추가 삭제 금지.** 기존 mixed WIP·기록·실험 후보도 보존한다.
+- Phase4a(M38·M40·D50), 공급망 완료분(M15), Azure 재시도·dependency 분리·executor 배선 등 닫힌 항목은 `COMPLETED_SUMMARY`와 archive를 먼저 읽는다. 닫힌 목록의 재개 조건을 문서 정리로 완화하지 않는다.
+- `_k8s_rest`는 restart/scale만 공유. provider별 rollback 의미를 유지하며 SDK 차이를 무리하게 DRY하지 않는다. 공통 계약은 한 모듈과 실제 호출 경계에서 검증한다. `approval_bridge` 추가 분해 금지(D15), 포괄 gcloud allow 금지(D16·D22).
+- A2A Dynamic Autonomy·agents-cli/CMA 베타·정적 무조건 fan-out·자유텍스트 spawn_subagent 도입은 범위 밖이다. 요청 이상 기능을 추가하지 않는다.
+- 변경 후 `make check`와 관련 실제 경로를 검증하고 `/checkpoint`. 게이트 날짜/환경/skip과 로컬/원격 증거를 구분한다. 커밋·푸시·원격 변경은 기존 승인 범위 안에서만 수행한다.
+- Overnight는 `[auto]` 하나당 한 이터/로컬 커밋이며 씨앗이 없으면 중지한다. R0~R5는 대화형 트랙이고 10-20 재개도 새 `[auto]` 씨앗 등록이 아니다.

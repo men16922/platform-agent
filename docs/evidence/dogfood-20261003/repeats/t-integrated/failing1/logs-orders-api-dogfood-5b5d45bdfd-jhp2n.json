@@ -1,0 +1,16 @@
+{
+  "source_id": "logs-orders-api-dogfood-5b5d45bdfd-jhp2n",
+  "started_at": "2026-10-03T12:56:52.395247+00:00",
+  "completed_at": "2026-10-03T12:56:52.432178+00:00",
+  "seconds": 0.037,
+  "args": [
+    "logs",
+    "orders-api-dogfood-5b5d45bdfd-jhp2n",
+    "--since=30s",
+    "--tail=100",
+    "--timestamps=true"
+  ],
+  "exit_code": 1,
+  "stdout": "",
+  "stderr": "Error from server (BadRequest): container \"orders-api-dogfood\" in pod \"orders-api-dogfood-5b5d45bdfd-jhp2n\" is waiting to start: trying and failing to pull image\n"
+}

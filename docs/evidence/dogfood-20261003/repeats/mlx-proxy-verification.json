@@ -1,0 +1,168 @@
+{
+  "at": "2026-10-03T08:52:26.018459+00:00",
+  "candidate": "candidate-v10-model-proxy.json",
+  "source_hashes_match_worktree_and_runtime": true,
+  "changed_runtime_files": [
+    "src/agents/ai/mlx_qwen_tool_proxy.py"
+  ],
+  "root_causes": [
+    "HTTP status was ignored, and upstream errors became empty HTTP200",
+    "Last usage-only SSE frame erased completion reason; proxy also unconditionally generated stop/tool_calls",
+    "Usage was replaced with zero placeholders or dropped",
+    "Truncated syntactically complete tool calls could be made executable"
+  ],
+  "fixes": [
+    "Forward non-2xx status/body/content-type/Retry-After with no proxy retry",
+    "Retain terminal reason across usage-only frame and request upstream include_usage",
+    "Omit missing usage instead of inventing zero; return reported usage for JSON and requested SSE usage chunks",
+    "Suppress native/textual tool calls for incomplete or filtered generations; completed fallback normalization remains",
+    "Transport/invalid/incomplete responses become502"
+  ],
+  "tests": {
+    "before": "17 failed,8 passed,13.75s",
+    "proxy_after": "25 passed,15.64s",
+    "related": "38 passed,13.95s",
+    "full_gate": {
+      "passed": 3306,
+      "skipped": 2,
+      "warnings": 20,
+      "seconds": 137.77,
+      "environment": "2026-10-03 local macOS/Python3.13.5/Node22.23.3/temporary npm prefix",
+      "evidence": "mlx-proxy-gate.log"
+    },
+    "documentation_followup": "55 passed,3.18s; mlx-proxy-docs.log"
+  },
+  "live_boundary": {
+    "before": "mlx-proxy-live-before.json",
+    "after": "mlx-proxy-live-after.json",
+    "result": "Actual Qwen max_tokens1: old stop/zero-or-missing usage -> new length/18prompt+1completion in JSON and SSE. Normal replies retain stop and12prompt+2completion.",
+    "http_error_proof": "Real local HTTP fixtures for upstream404/503 and Retry-After, not an AWS/remote service or new live MLX error fixture."
+  },
+  "r4_saved_replay": {
+    "evidence": "r4-proxy-j-scorecard.json",
+    "engine": "Existing Scorecard/GradeOutcome",
+    "contract_passed": 7,
+    "recovery_fixture_passed": 6,
+    "recovery_fixture_failed": [
+      "counterexample"
+    ],
+    "model_calls": 3,
+    "withheld_without_model": 4,
+    "boundary_checks": "4 passed,0.013s; r4-replay-boundaries.log",
+    "semantic_claim": "None: causal prose still requires separate review; tiny exploratory control set, not general accuracy"
+  },
+  "model_measurements": [
+    {
+      "case_id": "lookalike",
+      "status": "schema_citations_valid",
+      "http_attempts": 1,
+      "http_statuses": [
+        200
+      ],
+      "response_count": 1,
+      "input_tokens": 859,
+      "output_tokens": 246,
+      "seconds": 3.757,
+      "sha256": "fe8deb2079b311ec3c9505316e6ac29c00a373e9ce2fb99359133c3053c465ae",
+      "recovery": "not_established"
+    },
+    {
+      "case_id": "stale-injection",
+      "status": "insufficient_applicable_evidence",
+      "http_attempts": 0,
+      "http_statuses": [],
+      "response_count": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "seconds": 0.0,
+      "sha256": "f2d41c579b88ba400f987683e20cceb8587684c5c7fdf604dcd692213116b8bb",
+      "recovery": "not_established"
+    },
+    {
+      "case_id": "counterexample",
+      "status": "schema_citations_valid",
+      "http_attempts": 1,
+      "http_statuses": [
+        200
+      ],
+      "response_count": 1,
+      "input_tokens": 791,
+      "output_tokens": 297,
+      "seconds": 3.536,
+      "sha256": "1588f6c35d7ed3e53395e00bd750b1509ccd7a5939407f89ad5cfbf50b022796",
+      "recovery": "review_candidate"
+    },
+    {
+      "case_id": "supported-recovery",
+      "status": "schema_citations_valid",
+      "http_attempts": 1,
+      "http_statuses": [
+        200
+      ],
+      "response_count": 1,
+      "input_tokens": 1033,
+      "output_tokens": 353,
+      "seconds": 4.381,
+      "sha256": "ae24d4a3160139a04deee1010b27d485c0510df27686acb4f0d99e7d46d93d84",
+      "recovery": "review_candidate"
+    },
+    {
+      "case_id": "stale-same-target",
+      "status": "insufficient_applicable_evidence",
+      "http_attempts": 0,
+      "http_statuses": [],
+      "response_count": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "seconds": 0.0,
+      "sha256": "d8943d9076a672098fc1e31c5eab8ca946a5603235d0eeb12aa1cd92835ee9c4",
+      "recovery": "not_established"
+    },
+    {
+      "case_id": "unknown-time",
+      "status": "insufficient_applicable_evidence",
+      "http_attempts": 0,
+      "http_statuses": [],
+      "response_count": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "seconds": 0.0,
+      "sha256": "05ad1e1b09165fcc6d58b0d4f05b4440123dc4088632d61bd1abc33cfa099588",
+      "recovery": "not_established"
+    },
+    {
+      "case_id": "fresh-other-target",
+      "status": "insufficient_applicable_evidence",
+      "http_attempts": 0,
+      "http_statuses": [],
+      "response_count": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "seconds": 0.0,
+      "sha256": "41d3df589156023bbbf6e22fd24433df05ec13e9baec43df36229188802a6176",
+      "recovery": "not_established"
+    }
+  ],
+  "limits": [
+    "Diagnostic semantic failure remains; proxy repair does not correct the model",
+    "No production model selection change, cloud call, RBAC expansion or operational tool request",
+    "Usage describes provider-reported tokens, not monetary/energy cost or complete failed-request accounting",
+    "SSE usage is included only if requested; absent upstream accounting remains unknown",
+    "Prototype/replay scripts remain outside the product path and outside the main tests/ count",
+    "D deployment/I rejection proofs remain distinct from J proxy proof"
+  ],
+  "next": "Normalize saved D current/previous revision, observation time, health and recovery specification evidence; connect the existing read-only diagnosis path with separate deterministic recovery eligibility and semantic review.",
+  "reasoning_budget_comparison": {
+    "evidence": "r4-reasoning-lookalike/lookalike.json",
+    "requested_max_tokens": 4096,
+    "timeout_seconds": 180,
+    "observed_seconds": 180.018,
+    "http_attempts": 1,
+    "completed_model_responses": 0,
+    "outcome": "TimeoutError; no token-use or semantic-quality measurement",
+    "additional_cases_run": 0,
+    "restored_original_model_verified": true,
+    "restoration_evidence": "r4-reasoning-budget-restored.json"
+  },
+  "checkpoint": "mlx-proxy-checkpoint.json"
+}

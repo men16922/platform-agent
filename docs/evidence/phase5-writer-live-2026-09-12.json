@@ -1,0 +1,929 @@
+{
+  "started_at": "2026-09-12T14:16:05.741513+00:00",
+  "normalized": {
+    "schema_version": 1,
+    "synthetic": false,
+    "repository": "men16922/platform-agent-p5e-authz-lab",
+    "expected_identity": {
+      "app_id": 4921024,
+      "installation_id": 161148520,
+      "repository_id": 1367338348
+    },
+    "branch_origin": "operator",
+    "selected_branch": "p5e/20260905-01-diagnostic",
+    "credential_control": {
+      "identity": "installation-token",
+      "status": 200,
+      "repository": "men16922/platform-agent-p5e-authz-lab",
+      "app_id": 4921024,
+      "installation_id": 161148520,
+      "repository_id": 1367338348,
+      "permissions": {
+        "metadata": "read",
+        "single_file": "write",
+        "pull_requests": "write"
+      },
+      "single_file_paths": [
+        "platform/tenants/acme.yaml"
+      ],
+      "repository_selection": [
+        1367338348
+      ]
+    },
+    "seed": {
+      "observer": "operator",
+      "complete": true,
+      "ref": "main",
+      "commit": "103e44f68adc78ebb325ddb0927f23f5622e97fc",
+      "main": "103e44f68adc78ebb325ddb0927f23f5622e97fc",
+      "parents": [],
+      "files": {
+        "platform/tenants/acme.yaml": {
+          "mode": "100644",
+          "sha": "398abe6c528238244a8e3713bc2b48523ae8b915"
+        },
+        "platform/tenants/globex.yaml": {
+          "mode": "100644",
+          "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+        }
+      }
+    },
+    "branch": {
+      "identity": "installation-token",
+      "method": "POST",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/refs",
+      "body": {
+        "ref": "refs/heads/p5e/20260905-01",
+        "sha": "103e44f68adc78ebb325ddb0927f23f5622e97fc"
+      },
+      "status": 403,
+      "denial_controls": {
+        "token_valid": true,
+        "target_exists": true,
+        "sha_matches": true,
+        "rate_limit_excluded": true
+      },
+      "observed_absent": true,
+      "main_sha": "103e44f68adc78ebb325ddb0927f23f5622e97fc"
+    },
+    "branch_snapshot": {
+      "observer": "operator",
+      "complete": true,
+      "ref": "p5e/20260905-01-diagnostic",
+      "commit": "103e44f68adc78ebb325ddb0927f23f5622e97fc",
+      "main": "103e44f68adc78ebb325ddb0927f23f5622e97fc",
+      "parents": [],
+      "files": {
+        "platform/tenants/acme.yaml": {
+          "mode": "100644",
+          "sha": "398abe6c528238244a8e3713bc2b48523ae8b915"
+        },
+        "platform/tenants/globex.yaml": {
+          "mode": "100644",
+          "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+        }
+      }
+    },
+    "target": {
+      "identity": "installation-token",
+      "method": "PUT",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/contents/platform/tenants/acme.yaml",
+      "body": {
+        "branch": "p5e/20260905-01-diagnostic",
+        "sha": "398abe6c528238244a8e3713bc2b48523ae8b915",
+        "content": "IyBTeW50aGV0aWMgUDUtRSBmaXh0dXJlLiBObyBkZWxpdmVyeSBjb250cm9sbGVyIHdhdGNoZXMgdGhpcyByZXBvc2l0b3J5Lgppc29sYXRpb246IHNvZnQKbmFtaW5nX3ByZWZpeDogYWNtZQplbnZpcm9ubWVudHM6CiAgZGV2OgogICAgY2x1c3RlcjogcDVlLWRldgogICAgc3Vic3RyYXRlOiBraW5kCiAgICBkZWxpdmVyeTogYXJnb2NkCiAgICBhZGRvbnM6CiAgICAgIGxvZ2dpbmc6IGxva2kgNy4xLjAKICBwcm9kOgogICAgY2x1c3RlcjogcDVlLXByb2QKICAgIHN1YnN0cmF0ZTogazNzCiAgICBkZWxpdmVyeTogZmx1eAogICAgYWRkb25zOgogICAgICBvYnNlcnZhYmlsaXR5OiBrdWJlLXByb21ldGhldXMtc3RhY2sgODcuMTcuMAogICAgICBsb2dnaW5nOiBsb2tpIDcuMS4wCg=="
+      },
+      "status": 200,
+      "before": {
+        "observer": "operator",
+        "complete": true,
+        "ref": "p5e/20260905-01-diagnostic",
+        "commit": "103e44f68adc78ebb325ddb0927f23f5622e97fc",
+        "main": "103e44f68adc78ebb325ddb0927f23f5622e97fc",
+        "parents": [],
+        "files": {
+          "platform/tenants/acme.yaml": {
+            "mode": "100644",
+            "sha": "398abe6c528238244a8e3713bc2b48523ae8b915"
+          },
+          "platform/tenants/globex.yaml": {
+            "mode": "100644",
+            "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+          }
+        }
+      },
+      "after": {
+        "observer": "operator",
+        "complete": true,
+        "ref": "p5e/20260905-01-diagnostic",
+        "commit": "0e3d3bf54e2e585b092927f1f3001e78aeea6d92",
+        "main": "103e44f68adc78ebb325ddb0927f23f5622e97fc",
+        "parents": [
+          "103e44f68adc78ebb325ddb0927f23f5622e97fc"
+        ],
+        "files": {
+          "platform/tenants/acme.yaml": {
+            "mode": "100644",
+            "sha": "9a88d6901ff18873745c272665e175921156ca9a"
+          },
+          "platform/tenants/globex.yaml": {
+            "mode": "100644",
+            "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+          }
+        }
+      },
+      "response": {
+        "commit_sha": "0e3d3bf54e2e585b092927f1f3001e78aeea6d92",
+        "blob_sha": "9a88d6901ff18873745c272665e175921156ca9a"
+      }
+    },
+    "sibling": {
+      "identity": "installation-token",
+      "method": "PUT",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/contents/platform/tenants/globex.yaml",
+      "body": {
+        "branch": "p5e/20260905-01-diagnostic",
+        "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4",
+        "content": "IyBTeW50aGV0aWMgUDUtRSBmaXh0dXJlLiBObyBkZWxpdmVyeSBjb250cm9sbGVyIHdhdGNoZXMgdGhpcyByZXBvc2l0b3J5Lgppc29sYXRpb246IHNvZnQKbmFtaW5nX3ByZWZpeDogZ2xvYmV4CmVudmlyb25tZW50czoKICBkZXY6CiAgICBjbHVzdGVyOiBwNWUtZGV2CiAgICBzdWJzdHJhdGU6IGtpbmQKICAgIGRlbGl2ZXJ5OiBhcmdvY2QKICAgIGFkZG9uczoKICAgICAgbG9nZ2luZzogbG9raSA3LjEuMAogIHByb2Q6CiAgICBjbHVzdGVyOiBwNWUtcHJvZAogICAgc3Vic3RyYXRlOiBrM3MKICAgIGRlbGl2ZXJ5OiBmbHV4CiAgICBhZGRvbnM6CiAgICAgIG9ic2VydmFiaWxpdHk6IGt1YmUtcHJvbWV0aGV1cy1zdGFjayA4Ny4xNy4wCiAgICAgIGxvZ2dpbmc6IGxva2kgNy4xLjAK"
+      },
+      "status": 403,
+      "before": {
+        "observer": "operator",
+        "complete": true,
+        "ref": "p5e/20260905-01-diagnostic",
+        "commit": "0e3d3bf54e2e585b092927f1f3001e78aeea6d92",
+        "main": "103e44f68adc78ebb325ddb0927f23f5622e97fc",
+        "parents": [
+          "103e44f68adc78ebb325ddb0927f23f5622e97fc"
+        ],
+        "files": {
+          "platform/tenants/acme.yaml": {
+            "mode": "100644",
+            "sha": "9a88d6901ff18873745c272665e175921156ca9a"
+          },
+          "platform/tenants/globex.yaml": {
+            "mode": "100644",
+            "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+          }
+        }
+      },
+      "after": {
+        "observer": "operator",
+        "complete": true,
+        "ref": "p5e/20260905-01-diagnostic",
+        "commit": "0e3d3bf54e2e585b092927f1f3001e78aeea6d92",
+        "main": "103e44f68adc78ebb325ddb0927f23f5622e97fc",
+        "parents": [
+          "103e44f68adc78ebb325ddb0927f23f5622e97fc"
+        ],
+        "files": {
+          "platform/tenants/acme.yaml": {
+            "mode": "100644",
+            "sha": "9a88d6901ff18873745c272665e175921156ca9a"
+          },
+          "platform/tenants/globex.yaml": {
+            "mode": "100644",
+            "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+          }
+        }
+      },
+      "denial_controls": {
+        "token_valid": true,
+        "target_exists": true,
+        "sha_matches": true,
+        "rate_limit_excluded": true
+      }
+    },
+    "pull_request": {
+      "identity": "installation-token",
+      "method": "POST",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/pulls",
+      "body": {
+        "head": "p5e/20260905-01-diagnostic",
+        "base": "main",
+        "draft": true,
+        "maintainer_can_modify": false
+      },
+      "status": 422,
+      "after": {
+        "observer": "operator",
+        "complete": true,
+        "ref": "p5e/20260905-01-diagnostic",
+        "commit": "0e3d3bf54e2e585b092927f1f3001e78aeea6d92",
+        "main": "103e44f68adc78ebb325ddb0927f23f5622e97fc",
+        "parents": [
+          "103e44f68adc78ebb325ddb0927f23f5622e97fc"
+        ],
+        "files": {
+          "platform/tenants/acme.yaml": {
+            "mode": "100644",
+            "sha": "9a88d6901ff18873745c272665e175921156ca9a"
+          },
+          "platform/tenants/globex.yaml": {
+            "mode": "100644",
+            "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+          }
+        }
+      }
+    }
+  },
+  "observations": [
+    {
+      "at": "2026-09-12T14:16:06.245367+00:00",
+      "identity": "app-jwt",
+      "method": "GET",
+      "path": "/app",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:06 GMT",
+        "x-github-request-id": "C48F:10B31A:58B2FD:7EFFBB:6AA55EA5"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:06.508952+00:00",
+      "identity": "app-jwt",
+      "method": "GET",
+      "path": "/app/installations/161148520",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:06 GMT",
+        "x-github-request-id": "C48F:10B31A:58B31B:7EFFE0:6AA55EA6"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:06.911845+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:06 GMT",
+        "x-github-request-id": "C490:2329EF:553CE8:7B828E:6AA55EA6",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4992",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:07.244007+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/actions/permissions",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:07 GMT",
+        "x-github-request-id": "C490:2329EF:553D0A:7B82C6:6AA55EA6",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4998",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:07.638807+00:00",
+      "identity": "app-jwt",
+      "method": "POST",
+      "path": "/app/installations/161148520/access_tokens",
+      "status": 201,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:07 GMT",
+        "x-github-request-id": "C48F:10B31A:58B379:7F0056:6AA55EA6"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:07.957178+00:00",
+      "identity": "installation-token",
+      "method": "GET",
+      "path": "/installation/repositories",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:07 GMT",
+        "x-github-request-id": "C492:8D6E:574313:7D8B66:6AA55EA7",
+        "x-accepted-github-permissions": "allows_permissionless_access=true",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4999",
+        "x-ratelimit-reset": "1789226167"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:08.367122+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/main",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:08 GMT",
+        "x-github-request-id": "C490:2329EF:553D70:7B8342:6AA55EA7",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4991",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:08.744434+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/main",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:08 GMT",
+        "x-github-request-id": "C490:2329EF:553D99:7B8373:6AA55EA8",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4990",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:09.082385+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/commits/103e44f68adc78ebb325ddb0927f23f5622e97fc",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:08 GMT",
+        "x-github-request-id": "C490:2329EF:553DC2:7B83A1:6AA55EA8",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4989",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:09.470621+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/trees/2320324b3576eed10ef79522daa3cbcb95bfa94d?recursive=1",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:09 GMT",
+        "x-github-request-id": "C490:2329EF:553DD9:7B83C9:6AA55EA9",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4988",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:09.970906+00:00",
+      "identity": "installation-token",
+      "method": "POST",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/refs",
+      "status": 403,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:09 GMT",
+        "x-github-request-id": "C492:8D6E:5743AE:7D8C6E:6AA55EA7",
+        "x-accepted-github-permissions": "contents=write; contents=write,workflows=write",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4998",
+        "x-ratelimit-reset": "1789226167"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:10.329690+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/commits/103e44f68adc78ebb325ddb0927f23f5622e97fc",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:10 GMT",
+        "x-github-request-id": "C490:2329EF:553E23:7B842F:6AA55EA9",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4987",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:10.782685+00:00",
+      "identity": "installation-token",
+      "method": "GET",
+      "path": "/installation/repositories",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:10 GMT",
+        "x-github-request-id": "C492:8D6E:5743EC:7D8CBE:6AA55EA9",
+        "x-accepted-github-permissions": "allows_permissionless_access=true",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4997",
+        "x-ratelimit-reset": "1789226167"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:11.132033+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/p5e/20260905-01",
+      "status": 404,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:11 GMT",
+        "x-github-request-id": "C490:2329EF:553E66:7B848A:6AA55EAA",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4986",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:11.495395+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/main",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:11 GMT",
+        "x-github-request-id": "C490:2329EF:553E8D:7B84B8:6AA55EAB",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4985",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:12.153640+00:00",
+      "identity": "operator",
+      "method": "POST",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/refs",
+      "status": 201,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:12 GMT",
+        "x-github-request-id": "C490:2329EF:553EA5:7B84E3:6AA55EAB",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4997",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:12.500492+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/main",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:12 GMT",
+        "x-github-request-id": "C490:2329EF:553EDB:7B8530:6AA55EAC",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4984",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:12.825388+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/p5e/20260905-01-diagnostic",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:12 GMT",
+        "x-github-request-id": "C490:2329EF:553EFD:7B857C:6AA55EAC",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4983",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:13.179873+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/commits/103e44f68adc78ebb325ddb0927f23f5622e97fc",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:13 GMT",
+        "x-github-request-id": "C490:2329EF:553F1A:7B85A6:6AA55EAC",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4982",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:13.507976+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/trees/2320324b3576eed10ef79522daa3cbcb95bfa94d?recursive=1",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:13 GMT",
+        "x-github-request-id": "C490:2329EF:553F37:7B85D7:6AA55EAD",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4981",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:13.837017+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/main",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:13 GMT",
+        "x-github-request-id": "C490:2329EF:553F50:7B85FE:6AA55EAD",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4980",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:14.204037+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/p5e/20260905-01-diagnostic",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:14 GMT",
+        "x-github-request-id": "C490:2329EF:553F75:7B8627:6AA55EAD",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4979",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:14.564120+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/commits/103e44f68adc78ebb325ddb0927f23f5622e97fc",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:14 GMT",
+        "x-github-request-id": "C490:2329EF:553F9B:7B8657:6AA55EAE",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4978",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:14.920829+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/trees/2320324b3576eed10ef79522daa3cbcb95bfa94d?recursive=1",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:14 GMT",
+        "x-github-request-id": "C490:2329EF:553FBE:7B8680:6AA55EAE",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4977",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:15.953088+00:00",
+      "identity": "installation-token",
+      "method": "PUT",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/contents/platform/tenants/acme.yaml",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:15 GMT",
+        "x-github-request-id": "C492:8D6E:57458D:7D8EEB:6AA55EAA",
+        "x-accepted-github-permissions": "contents=write; contents=write,workflows=write",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4996",
+        "x-ratelimit-reset": "1789226167"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:16.273823+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/main",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:16 GMT",
+        "x-github-request-id": "C490:2329EF:554029:7B870E:6AA55EAE",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4976",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:16.661618+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/p5e/20260905-01-diagnostic",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:16 GMT",
+        "x-github-request-id": "C490:2329EF:55403B:7B872D:6AA55EB0",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4975",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:17.004018+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/commits/0e3d3bf54e2e585b092927f1f3001e78aeea6d92",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:16 GMT",
+        "x-github-request-id": "C490:2329EF:554060:7B8755:6AA55EB0",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4974",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:17.321028+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/trees/4faa3cfedba556a91e56c4d9b4b4c8463182e891?recursive=1",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:17 GMT",
+        "x-github-request-id": "C490:2329EF:55407C:7B8782:6AA55EB1",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4973",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:17.669872+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/main",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:17 GMT",
+        "x-github-request-id": "C490:2329EF:554098:7B87A9:6AA55EB1",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4972",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:17.990025+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/p5e/20260905-01-diagnostic",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:17 GMT",
+        "x-github-request-id": "C490:2329EF:5540BD:7B87DB:6AA55EB1",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4971",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:18.318757+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/commits/0e3d3bf54e2e585b092927f1f3001e78aeea6d92",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:18 GMT",
+        "x-github-request-id": "C490:2329EF:5540E0:7B880A:6AA55EB1",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4970",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:18.643558+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/trees/4faa3cfedba556a91e56c4d9b4b4c8463182e891?recursive=1",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:18 GMT",
+        "x-github-request-id": "C490:2329EF:5540FF:7B8843:6AA55EB2",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4969",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:18.974376+00:00",
+      "identity": "installation-token",
+      "method": "PUT",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/contents/platform/tenants/globex.yaml",
+      "status": 403,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:18 GMT",
+        "x-github-request-id": "C492:8D6E:5746EC:7D90B6:6AA55EAF",
+        "x-accepted-github-permissions": "contents=write; contents=write,workflows=write",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4995",
+        "x-ratelimit-reset": "1789226167"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:19.324240+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/main",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:19 GMT",
+        "x-github-request-id": "C490:2329EF:554158:7B889B:6AA55EB2",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4968",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:19.646849+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/p5e/20260905-01-diagnostic",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:19 GMT",
+        "x-github-request-id": "C490:2329EF:554180:7B88CD:6AA55EB3",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4967",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:19.978458+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/commits/0e3d3bf54e2e585b092927f1f3001e78aeea6d92",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:19 GMT",
+        "x-github-request-id": "C490:2329EF:5541A5:7B88F5:6AA55EB3",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4966",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:20.315978+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/trees/4faa3cfedba556a91e56c4d9b4b4c8463182e891?recursive=1",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:20 GMT",
+        "x-github-request-id": "C490:2329EF:5541BA:7B891E:6AA55EB3",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4965",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:20.711896+00:00",
+      "identity": "installation-token",
+      "method": "GET",
+      "path": "/installation/repositories",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:20 GMT",
+        "x-github-request-id": "C492:8D6E:57476C:7D9179:6AA55EB2",
+        "x-accepted-github-permissions": "allows_permissionless_access=true",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4999",
+        "x-ratelimit-reset": "1789226180"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:21.235806+00:00",
+      "identity": "installation-token",
+      "method": "POST",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/pulls",
+      "status": 422,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:21 GMT",
+        "x-github-request-id": "C492:8D6E:574791:7D91A4:6AA55EB4",
+        "x-accepted-github-permissions": "pull_requests=write",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4994",
+        "x-ratelimit-reset": "1789226167"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:21.572058+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/main",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:21 GMT",
+        "x-github-request-id": "C490:2329EF:554226:7B89AE:6AA55EB4",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4964",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:21.908390+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/ref/heads/p5e/20260905-01-diagnostic",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:21 GMT",
+        "x-github-request-id": "C490:2329EF:554244:7B89E1:6AA55EB5",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4963",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:22.250670+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/commits/0e3d3bf54e2e585b092927f1f3001e78aeea6d92",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:22 GMT",
+        "x-github-request-id": "C490:2329EF:554268:7B8A0E:6AA55EB5",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4962",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:22.572549+00:00",
+      "identity": "operator",
+      "method": "GET",
+      "path": "/repos/men16922/platform-agent-p5e-authz-lab/git/trees/4faa3cfedba556a91e56c4d9b4b4c8463182e891?recursive=1",
+      "status": 200,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:22 GMT",
+        "x-github-request-id": "C490:2329EF:554289:7B8A37:6AA55EB6",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4961",
+        "x-ratelimit-reset": "1789225922"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:22.919451+00:00",
+      "identity": "installation-token",
+      "method": "DELETE",
+      "path": "/installation/token",
+      "status": 204,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:22 GMT",
+        "x-github-request-id": "C492:8D6E:574841:7D92AA:6AA55EB5",
+        "x-accepted-github-permissions": "allows_permissionless_access=true",
+        "x-ratelimit-limit": "5000",
+        "x-ratelimit-remaining": "4994",
+        "x-ratelimit-reset": "1789226167"
+      }
+    },
+    {
+      "at": "2026-09-12T14:16:23.116665+00:00",
+      "identity": "installation-token",
+      "method": "GET",
+      "path": "/installation/repositories",
+      "status": 401,
+      "headers": {
+        "date": "Sat, 12 Sep 2026 14:16:23 GMT",
+        "x-github-request-id": "C492:8D6E:574868:7D92D5:6AA55EB6"
+      }
+    }
+  ],
+  "cleanup": {
+    "token_revoke_status": 204,
+    "revoked_token_read_status": 401,
+    "operator_pr_list": [],
+    "uninstall_status": 202,
+    "uninstall_poll_statuses": [
+      404
+    ],
+    "installation_absent_api": true,
+    "lab_api_delete_exit": 1,
+    "lab_api_delete_status": 403,
+    "installation_absent_owner_ui": true,
+    "app_deleted_owner_ui": true,
+    "app_absent_owner_list": true,
+    "app_settings_404_owner_ui": true,
+    "key_invalidated_by_app_deletion": true,
+    "lab_preserved_at_user_request": true,
+    "local_key_preserved_at_user_request": true,
+    "local_checkout_preserved": true,
+    "cleanup_status": "paused_by_user; repository and local key/checkout retained"
+  },
+  "status": "probes_completed",
+  "installation": {
+    "id": 161148520,
+    "app_id": 4921024,
+    "repository_selection": "selected",
+    "permissions": {
+      "metadata": "read",
+      "single_file": "write",
+      "pull_requests": "write"
+    },
+    "single_file_name": "platform/tenants/acme.yaml",
+    "single_file_paths": [
+      "platform/tenants/acme.yaml"
+    ],
+    "suspended_at": null
+  },
+  "mint": {
+    "permissions": {
+      "metadata": "read",
+      "pull_requests": "write",
+      "single_file": "write"
+    },
+    "repository_ids": [
+      1367338348
+    ],
+    "expires_at": "2026-09-12T15:16:07Z"
+  },
+  "judgment": {
+    "scope": "offline_evidence_consistency",
+    "verdict": "inconclusive",
+    "reason": "pr_creation_not_proven",
+    "sibling_boundary": "supported",
+    "live_verified": false,
+    "diagnostic_only": true
+  },
+  "diagnostic_limit": "PR 422 response body was not persisted by the runner. Exact cause cannot be reconstructed; no write request repeated."
+}

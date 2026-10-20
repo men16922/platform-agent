@@ -1,0 +1,69 @@
+2026-09-05 P5-C Lambda runtime, readers, packaging, CDK (M57)
+
+Implementation: registry_lambda.handler -> P5-B -> P5-A
+Production readers: current DynamoDB GetItem ConsistentRead=True; public GitHub
+fixed repository/branch -> commit -> nonrecursive trees -> regular YAML blobs.
+No GitHub token/private repository adapter; no secret read/mint permissions.
+
+Build: python3.13 scripts/build_registry_planner.py --output /tmp/platform-agent-p5c-asset
+Linux manylinux2014_aarch64/cp313 wheels, requirements-registry-planner.txt.
+Six planner modules as namespace packages; no broad agent/cluster imports.
+Initial botocore version guess failed resolution. Actual boto3 1.42.0 metadata
+requires botocore >=1.41.6,<1.42.0; pin corrected to 1.41.6 and build succeeded.
+Dependencies installed only in the temporary asset directory, not host env.
+Command: npm run build --prefix src/stacks -> tsc success.
+CDK Template.fromStack synthesis -> standalone template generated; existing
+IncidentAgentStack not instantiated. Exact table/log group/function resources;
+production-only OIDC subject; no Function URL, secret or managed policy.
+Template: /tmp/platform-agent-p5c-template.json (local review artifact)
+
+Actual SDK integration:
+Command: python3.13 -I -S scripts/verify_registry_planner_local.py --asset /tmp/platform-agent-p5c-asset --endpoint http://127.0.0.1:51702
+Runtime imports from isolated Linux asset; macOS uses PyYAML pure-Python fallback.
+packaged Lambda + real DynamoDB Local: explicit grant -> 200
+admin with read grant only -> 403
+deleted user -> 403
+missing table (real SDK exception) -> sanitized 503
+temporary table deleted; no cloud endpoint used
+
+Owned local container platform-agent-p5c-dynamodb stopped (auto-remove).
+No AWS endpoint called. GitHub API responses use Git object fixtures with actual
+repository YAML bytes. HTTP redirect/size/rate-limit exercised on loopback.
+
+Focused gate:
+....................................                                     [100%]
+36 passed in 4.05s
+
+Mutations: first unequal-size blob mutation was also caught by length, so it
+failed to prove the SHA check. Replaced with same-size content tampering.
+strong consistency: 1; 1 failed, 25 deselected in 0.09s
+tree truncation: 1; 1 failed, 10 passed, 15 deselected in 0.11s
+commit identity: 1; 1 failed, 10 passed, 15 deselected in 0.11s
+blob hash: 1; 1 failed, 10 passed, 15 deselected in 0.09s
+production trust: 1; 1 failed, 5 deselected in 1.71s
+invoke ARN: 1; 1 failed, 5 deselected in 1.33s
+GetItem scope: 1; 1 failed, 5 deselected in 1.32s
+Source byte-restored: True
+
+Limits: no remote Lambda/IAM enforcement or live GitHub/API permission test.
+CDK tests explicitly skip without src/stacks npm deps; CI enforcement unproven.
+No cloud deployment, real user grants/config changes, commits, pushes or PRs.
+
+Official contracts inspected:
+https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_GetItem.html
+https://docs.github.com/en/rest/git/trees
+https://docs.github.com/en/rest/git/blobs
+https://vercel.com/docs/oidc/reference
+
+CLI synthesis also passed using the standalone app, --lookups false, and
+explicit example account/region/provider/table context. No deployment ran.
+First full gate: 1 failed, 2626 passed, 2 skipped in 52.27s.
+Cause: new scripts absent from REPORT/DOCUMENT/DUAL inventory.
+Added REPORT declarations, stdout failure verdicts, merged pip diagnostics,
+and two real-process negative-path tests (+2).
+
+Recovered focused run (runtime/CDK/report stream tests): 84 passed in 5.84s.
+Final full local gate: make check
+2629 passed, 2 skipped, 21 warnings in 51.37s.
+Final packaged source byte comparison: all six modules match final source.
+Owned DynamoDB Local container absent after cleanup.

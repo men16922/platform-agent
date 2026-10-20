@@ -46,6 +46,11 @@ export interface Incident {
   // defaulting it to the row's own creation time — which they used to do, making
   // every incident look resolved the instant it was filed.
   resolved_at?: string;
+  approval_id?: string;
+  approval_decision?: "approved" | "rejected";
+  approval_decided_at?: string;
+  rejection_reason?: string;
+  reported_by?: string;
 }
 
 // Domain of a row (which page it belongs to). Rollback is a STATUS, not a type,
@@ -67,9 +72,11 @@ export interface Deployment {
    * row written before it was recorded), and the UI must not substitute "default".
    */
   namespace?: string;
-  status: "success" | "failed" | "rolling-back" | "rolled-back";
+  status: "success" | "failed" | "rolling-back" | "rolled-back" | "unknown";
   agent: string;
-  duration_sec: number;
+  duration_sec?: number;
+  duration_scope?: "agent_run" | "executor_run";
+  applied?: boolean;
   created_at: string;
 }
 

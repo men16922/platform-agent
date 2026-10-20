@@ -1,0 +1,28 @@
+{
+  "at": "2026-10-03T08:44:35.627058+00:00",
+  "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+  "endpoint": "http://127.0.0.1:18091/v1",
+  "multiple_system_messages": false,
+  "model_settings": {
+    "max_tokens": 1024,
+    "extra_body": {
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      }
+    }
+  },
+  "pydantic_ai_distributions": {
+    "pydantic-ai-slim": "2.9.0"
+  },
+  "operational_tools": 0,
+  "request_limit": 2,
+  "timeout_per_case_seconds": 60,
+  "sdk_http_retries": 0,
+  "http_accounting": "Request hook counts attempts, including those with no response headers; no headers or credentials recorded.",
+  "files": {
+    "experiments/dogfood-diagnosis/cases.json": "0a0492556093c6dc485ecf5c31646560f471e6749c1eb57cd9a26c1a8ddcbf19",
+    "/Users/men1692/Desktop/AWS/platform-agent/experiments/dogfood-diagnosis/run_local.py": "9658d57a33fad8fb72eed7e0025eb56fd09169c5ccf3dca2f16d52dd2c3224f1",
+    "/Users/men1692/Desktop/AWS/platform-agent/experiments/dogfood-diagnosis/contract.py": "cd5135ab4a5da54c824b124ee99cee6f05f6636e67bb128db75cd4e7b2fb3b04"
+  },
+  "interpretation": "Prototype only; citation/metadata validity does not prove semantic correctness."
+}

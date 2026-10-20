@@ -1,0 +1,29 @@
+{
+  "id": "different-causes-negative",
+  "expected": "FAIL",
+  "parsed": {
+    "verdict": "PASS",
+    "unsupported_claim": "",
+    "reason": "The diagnosis correctly identifies the two sources as distinct failure modes (image pull vs. runtime dependency) without forcing a single root cause. It appropriately treats the potential link as a hypothesis rather than a fact. The rejection of rollback is supported by the lack of evidence that a previous revision is healthy or resolves both issues. All claims are grounded in the provided snapshots."
+  },
+  "completion": {
+    "status": "complete",
+    "finish_reason": "stop",
+    "text": "{\n  \"verdict\": \"PASS\",\n  \"unsupported_claim\": \"\",\n  \"reason\": \"The diagnosis correctly identifies the two sources as distinct failure modes (image pull vs. runtime dependency) without forcing a single root cause. It appropriately treats the potential link as a hypothesis rather than a fact. The rejection of rollback is supported by the lack of evidence that a previous revision is healthy or resolves both issues. All claims are grounded in the provided snapshots.\"\n}",
+    "semantic_verified": false,
+    "model_responses": 1,
+    "tool_call_attempts": 0,
+    "token_usage": {
+      "status": "reported",
+      "input_tokens": 1009,
+      "output_tokens": 97
+    }
+  },
+  "seconds": 58.3,
+  "http_attempts": [
+    {
+      "at": "2026-10-03T10:51:13.098240+00:00",
+      "status": 200
+    }
+  ]
+}

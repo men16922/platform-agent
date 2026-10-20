@@ -33,6 +33,7 @@ export function modelIdFromAgent(agent: string): string | null {
 }
 
 export function ModelLogo({ model, size = "sm" }: { model: string | null | undefined; size?: "sm" | "md" }) {
+  if (!model) return null;
   const mark = (model && MODEL_MARKS[model]) || FALLBACK;
   const dim = size === "sm" ? "h-4 w-4 text-[9px]" : "h-5 w-5 text-[10px]";
   return (

@@ -1,0 +1,11 @@
+{
+  "stopped_owned_pids": {
+    "router": 35396,
+    "dashboard": 35397
+  },
+  "files": {
+    "src/agents/ai/deploy_recorder.py": "18d15ca33f8a0bb46bd6c02613cd8f9f16eb514a12e8ef43678d8317dcbcc076",
+    "src/agents/adapters/deployment/onprem.py": "e1c5ed974bca6b8327f79dfa45351626e2ce9e0ad043b0c80658652076c1ac77",
+    "src/agents/ai/local_deployer.py": "89cb3206e7b8500fc7632cdf340cb75cae0decfc2f26ba169bad1161d18a277d"
+  }
+}

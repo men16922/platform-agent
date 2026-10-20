@@ -28,10 +28,10 @@ export function DashboardHeader() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#8ab4f8]/35 bg-[var(--accent-soft)] text-sm text-[#c4ddff] md:hidden">✦</div>
-          <div><p className="text-xs text-[var(--muted)]">Platform Agent / <span className="text-[#c9d4e7]">{label}</span></p><p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--muted)]">Production workspace</p></div>
+          <div><p className="text-xs text-[var(--muted)]">Platform Agent / <span className="text-[#c9d4e7]">{label}</span></p><p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--muted)]">Operations workspace</p></div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="hidden items-center gap-2 rounded-lg border border-white/7 bg-white/[0.025] px-3 py-2 text-xs text-[var(--muted)] sm:flex"><span className="pulse-dot" />All systems nominal</div>
+          <div className="hidden items-center gap-2 rounded-lg border border-white/7 bg-white/[0.025] px-3 py-2 text-xs text-[var(--muted)] sm:flex">Recorded activity</div>
           <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/8 bg-white/[0.025] text-sm text-[var(--muted)] transition-colors hover:text-white" aria-label="Notifications">⌁</button>
           <UserAvatar session={session} status={status} />
         </div>

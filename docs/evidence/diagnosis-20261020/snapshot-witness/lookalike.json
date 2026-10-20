@@ -1,0 +1,55 @@
+{
+  "case_id": "lookalike",
+  "request": {
+    "target": {
+      "cluster": "kind-platform-agent",
+      "namespace": "acme-dev-observability",
+      "service": "orders-api-dogfood"
+    },
+    "window_start": "2026-10-03T06:59:00+00:00",
+    "as_of": "2026-10-03T07:03:00+00:00",
+    "interpretation": "Analysis of supplied records at the declared time; not a live observation or action approval.",
+    "sources": [
+      {
+        "source_id": "A",
+        "target": {
+          "cluster": "kind-platform-agent",
+          "namespace": "acme-dev-observability",
+          "service": "orders-api-dogfood"
+        },
+        "observed_at": "2026-10-03T07:00:00Z",
+        "provenance": "supplied_snapshot",
+        "text": "A new Pod is Pending, waiting reason ImagePullBackOff, registry response manifest unknown."
+      },
+      {
+        "source_id": "B",
+        "target": {
+          "cluster": "kind-platform-agent",
+          "namespace": "acme-dev-observability",
+          "service": "orders-api-dogfood"
+        },
+        "observed_at": "2026-10-03T07:01:00Z",
+        "provenance": "supplied_snapshot",
+        "text": "The image is already running, but an HTTP readiness check returns 503 after a dependency timeout."
+      }
+    ],
+    "excluded": []
+  },
+  "raw": "{\n  \"current_revision_failed\": {\n    \"assessment\": \"supported\",\n    \"observations\": [\n      {\n        \"source_id\": \"A\",\n        \"quote\": \"A new Pod is Pending, waiting reason ImagePullBackOff, registry response manifest unknown.\"\n      }\n    ]\n  },\n  \"previous_revision_healthy\": {\n    \"assessment\": \"not_in_evidence\",\n    \"observations\": []\n  },\n  \"previous_revision_restorable\": {\n    \"assessment\": \"not_in_evidence\",\n    \" observations\": []\n  }\n}",
+  "completion": {
+    "status": "complete",
+    "finish_reason": "stop",
+    "text": "{\n  \"current_revision_failed\": {\n    \"assessment\": \"supported\",\n    \"observations\": [\n      {\n        \"source_id\": \"A\",\n        \"quote\": \"A new Pod is Pending, waiting reason ImagePullBackOff, registry response manifest unknown.\"\n      }\n    ]\n  },\n  \"previous_revision_healthy\": {\n    \"assessment\": \"not_in_evidence\",\n    \"observations\": []\n  },\n  \"previous_revision_restorable\": {\n    \"assessment\": \"not_in_evidence\",\n    \" observations\": []\n  }\n}",
+    "semantic_verified": false,
+    "model_responses": 1,
+    "tool_call_attempts": 0,
+    "token_usage": {
+      "status": "reported",
+      "input_tokens": 805,
+      "output_tokens": 111
+    }
+  },
+  "parsed": null,
+  "binding_valid": false,
+  "error": "ValidationError"
+}

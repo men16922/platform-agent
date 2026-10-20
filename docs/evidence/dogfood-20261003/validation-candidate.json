@@ -1,0 +1,10 @@
+{
+  "stopped_owned_pids": {
+    "router": 42440,
+    "dashboard": 42441
+  },
+  "files": {
+    "src/agents/ai/pipeline.py": "7f7bf2c44709fb9d633cf826521e3bcd5fcedd9bac13649af491a6afd771b3b4",
+    "src/agents/ai/model_router.py": "39d254ba3d65992ee6ea1681ae8c12cfa8cb04032826c25935645a752baa6beb"
+  }
+}

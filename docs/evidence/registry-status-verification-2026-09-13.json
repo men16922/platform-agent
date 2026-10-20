@@ -1,0 +1,37 @@
+{
+  "milestone": "M86",
+  "status": "LOCAL_STATUS_SERVICE_VERIFIED",
+  "changes": [
+    "Own PREVIEW/CLAIMED status with current authorization and immutable payload validation",
+    "Re-read after authorization; observe concurrent claim and reject reopening",
+    "Expired rows remain readable without extending TTL or reopening claim",
+    "Explicit local --status transport; no production route or publication adapter"
+  ],
+  "related": {
+    "passed": 60,
+    "new_tests": 20,
+    "log": "/tmp/platform-agent-m86-related.log"
+  },
+  "integration": {
+    "environment": "real DynamoDB Local; explicit loopback; local Git; separate Python CLI processes",
+    "log": "docs/evidence/registry-status-local-2026-09-13.log",
+    "passed": true,
+    "temporary_tables_removed": true,
+    "temporary_container_removed": true
+  },
+  "mutations": "docs/evidence/registry-status-mutations-2026-09-13.json",
+  "remote_aws_calls": 0,
+  "github_calls": 0,
+  "preserved_resources": "Existing lab/App/key/installation/PR/branches/checkouts untouched",
+  "gate": {
+    "status": "PASSED",
+    "command": "make check",
+    "environment": "2026-09-13 local macOS Python 3.13",
+    "remote_ci": "not run",
+    "passed": 3174,
+    "skipped": 2,
+    "warnings": 21,
+    "seconds": 91.86,
+    "log": "/tmp/platform-agent-m86-gate.log"
+  }
+}

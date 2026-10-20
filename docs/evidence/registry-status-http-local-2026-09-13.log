@@ -1,0 +1,7 @@
+PASS actual Auth.js session -> preview -> status PREVIEW -> prepare -> status CLAIMED; published=false; repeated prepare409
+PASS forged authority/state422, cross-origin403, anonymous401, oversized413 and no-store
+PASS current grant revocation403; foreign/missing request404 through the same signed session
+READY_FOR_BROWSER http://localhost:52687
+PASS actual missing plan table503; status never became publication success
+PASS owned HTTP servers, local table and synthetic fixture removed; existing resources preserved
+PASS owned table empty and owned test container removed; four existing kind containers retained

@@ -1,0 +1,20 @@
+[
+  {
+    "mutation": "claim_cas_removed",
+    "exit": 1,
+    "stdout": "PASS new process reads complete server payload\nPASS duplicate request_id cannot overwrite\n",
+    "stderr": "Traceback (most recent call last):\n  File \"/Users/men1692/Desktop/AWS/platform-agent/scripts/verify_registry_plan_store_local.py\", line 139, in <module>\n    main()\n    ~~~~^^\n  File \"/Users/men1692/Desktop/AWS/platform-agent/scripts/verify_registry_plan_store_local.py\", line 99, in main\n    assert counts=={'claimed':1,'conflicts':7}, counts\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: {'claimed': 8, 'conflicts': 0}\n"
+  },
+  {
+    "mutation": "claim_expiry_removed",
+    "exit": 1,
+    "stdout": "PASS new process reads complete server payload\nPASS duplicate request_id cannot overwrite\nPASS 8 concurrent consumers -> 1 claim, 7 conflicts; retry remains closed\nPASS subject swap cannot consume another preview\nPASS current grant revocation precedes claim\nPASS changed base revision requires replan\n",
+    "stderr": "Traceback (most recent call last):\n  File \"/Users/men1692/Desktop/AWS/platform-agent/scripts/verify_registry_plan_store_local.py\", line 139, in <module>\n    main()\n    ~~~~^^\n  File \"/Users/men1692/Desktop/AWS/platform-agent/scripts/verify_registry_plan_store_local.py\", line 116, in main\n    assert consume('late',clock=lambda:next(ticks)).get('error')=='plan_conflict'\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+  },
+  {
+    "mutation": "claimed_ttl_retained",
+    "exit": 1,
+    "stdout": "PASS new process reads complete server payload\nPASS duplicate request_id cannot overwrite\n",
+    "stderr": "Traceback (most recent call last):\n  File \"/Users/men1692/Desktop/AWS/platform-agent/scripts/verify_registry_plan_store_local.py\", line 139, in <module>\n    main()\n    ~~~~^^\n  File \"/Users/men1692/Desktop/AWS/platform-agent/scripts/verify_registry_plan_store_local.py\", line 101, in main\n    assert 'ttl' not in store.get('race'), 'claimed records must survive preview TTL'\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: claimed records must survive preview TTL\n"
+  }
+]

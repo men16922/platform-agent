@@ -1,0 +1,5 @@
+{
+  "decision": "superseded by t-integrated-v2",
+  "reason": "Portrait layout left a large unused area for these wide screenshots; revised to1920x1080 without altering screenshots",
+  "source_format": "JPEG screenshot bytes saved under historical .png filenames; decoded by content"
+}

@@ -1,0 +1,117 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+______ test_rejected_mutation_and_successful_read_are_a_failed_run[False] ______
+
+streaming = False
+
+    @pytest.mark.parametrize("streaming", [False, True])
+    def test_rejected_mutation_and_successful_read_are_a_failed_run(streaming):
+        mutations = []
+    
+        def deploy_to_cluster(ports: list[int]) -> dict:
+            mutations.append(ports)
+            return {"status": "success"}
+    
+        def validate_deployment() -> dict:
+            return {"healthy": True}
+    
+        def respond(messages, info):
+            if len(messages) == 1:
+                return ModelResponse(parts=[
+                    ToolCallPart("deploy_to_cluster", {"ports": "[8080]"}, "bad-args"),
+                    ToolCallPart("validate_deployment", {}, "read-only"),
+                ])
+            return ModelResponse(parts=[TextPart("Done")])
+    
+        async def respond_stream(messages, info):
+            response = respond(messages, info)
+            if isinstance(response.parts[0], TextPart):
+                yield "Done"
+            else:
+                yield {i: DeltaToolCall(name=part.tool_name, json_args=json.dumps(part.args), tool_call_id=part.tool_call_id)
+                       for i, part in enumerate(response.parts)}
+    
+        def factory(**kwargs):
+            return Agent(FunctionModel(respond, stream_function=respond_stream), tools=[deploy_to_cluster, validate_deployment])
+    
+        async def run():
+            if streaming:
+                events = [e async for e in router.route_deploy_stream("deploy", "local-qwen", "onprem", agent_factory=factory)]
+                tool_result = next(e for e in events if e["type"] == "tool_result" and e["tool"] == "deploy_to_cluster")
+                assert tool_result["ok"] is False
+                return events[-1]["outcome"]
+            return await router.route_deploy("deploy", "local-qwen", "onprem", agent_factory=factory)
+    
+        outcome = asyncio.run(run())
+        assert mutations == []
+>       assert outcome.ok is False
+E       AssertionError: assert True is False
+E        +  where True = DeployOutcome(ok=True, model='local-qwen', provider='onprem', summary='Done', steps=[{'tool': 'deploy_to_cluster', 'ar... '[8080]'}, 'result': None}, {'kind': 'tool', 'tool': 'validate_deployment', 'args': {}, 'result': {'healthy': True}}]).ok
+
+tests/test_tool_validation_failure.py:53: AssertionError
+______ test_rejected_mutation_and_successful_read_are_a_failed_run[True] _______
+
+streaming = True
+
+    @pytest.mark.parametrize("streaming", [False, True])
+    def test_rejected_mutation_and_successful_read_are_a_failed_run(streaming):
+        mutations = []
+    
+        def deploy_to_cluster(ports: list[int]) -> dict:
+            mutations.append(ports)
+            return {"status": "success"}
+    
+        def validate_deployment() -> dict:
+            return {"healthy": True}
+    
+        def respond(messages, info):
+            if len(messages) == 1:
+                return ModelResponse(parts=[
+                    ToolCallPart("deploy_to_cluster", {"ports": "[8080]"}, "bad-args"),
+                    ToolCallPart("validate_deployment", {}, "read-only"),
+                ])
+            return ModelResponse(parts=[TextPart("Done")])
+    
+        async def respond_stream(messages, info):
+            response = respond(messages, info)
+            if isinstance(response.parts[0], TextPart):
+                yield "Done"
+            else:
+                yield {i: DeltaToolCall(name=part.tool_name, json_args=json.dumps(part.args), tool_call_id=part.tool_call_id)
+                       for i, part in enumerate(response.parts)}
+    
+        def factory(**kwargs):
+            return Agent(FunctionModel(respond, stream_function=respond_stream), tools=[deploy_to_cluster, validate_deployment])
+    
+        async def run():
+            if streaming:
+                events = [e async for e in router.route_deploy_stream("deploy", "local-qwen", "onprem", agent_factory=factory)]
+                tool_result = next(e for e in events if e["type"] == "tool_result" and e["tool"] == "deploy_to_cluster")
+                assert tool_result["ok"] is False
+                return events[-1]["outcome"]
+            return await router.route_deploy("deploy", "local-qwen", "onprem", agent_factory=factory)
+    
+>       outcome = asyncio.run(run())
+
+tests/test_tool_validation_failure.py:51: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/opt/anaconda3/lib/python3.13/asyncio/runners.py:195: in run
+    return runner.run(main)
+/opt/anaconda3/lib/python3.13/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+/opt/anaconda3/lib/python3.13/asyncio/base_events.py:725: in run_until_complete
+    return future.result()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    async def run():
+        if streaming:
+            events = [e async for e in router.route_deploy_stream("deploy", "local-qwen", "onprem", agent_factory=factory)]
+            tool_result = next(e for e in events if e["type"] == "tool_result" and e["tool"] == "deploy_to_cluster")
+>           assert tool_result["ok"] is False
+E           assert True is False
+
+tests/test_tool_validation_failure.py:47: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_tool_validation_failure.py::test_rejected_mutation_and_successful_read_are_a_failed_run[False]
+FAILED tests/test_tool_validation_failure.py::test_rejected_mutation_and_successful_read_are_a_failed_run[True]
+2 failed in 1.90s

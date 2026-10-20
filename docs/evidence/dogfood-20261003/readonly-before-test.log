@@ -1,0 +1,53 @@
+FF.                                                                      [100%]
+=================================== FAILURES ===================================
+_________ test_readonly_run_records_activity_without_deployment[True] __________
+
+tmp_path = PosixPath('/private/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/pytest-of-men1692/pytest-7/test_readonly_run_records_acti0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x105078640>, ok = True
+
+    @pytest.mark.parametrize("ok", [True, False])
+    def test_readonly_run_records_activity_without_deployment(tmp_path, monkeypatch, ok):
+        store = tmp_path / "activity.jsonl"
+        monkeypatch.delenv("PLATFORM_ACTIVITY_TABLE", raising=False)
+        monkeypatch.setenv("PLATFORM_ACTIVITY_FILE", str(store))
+        steps = [{"tool": "list_pods", "args": {"namespace": "acme-dev-observability"},
+                  "result": {"ok": ok, "output": "No resources found" if ok else "Forbidden"}}]
+        ids = rec.record_deploy(instruction="Read pods only", model="local-qwen", provider="onprem",
+                                summary="No changes", steps=steps, ok=ok)
+        rows = [json.loads(line) for line in store.read_text().splitlines()]
+>       assert [row["PK"] for row in rows] == ["ACTIVITY"]
+E       AssertionError: assert ['DEPLOY', 'ACTIVITY'] == ['ACTIVITY']
+E         
+E         At index 0 diff: 'DEPLOY' != 'ACTIVITY'
+E         Left contains one more item: 'ACTIVITY'
+E         Use -v to get more diff
+
+tests/test_readonly_activity_recording.py:19: AssertionError
+_________ test_readonly_run_records_activity_without_deployment[False] _________
+
+tmp_path = PosixPath('/private/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/pytest-of-men1692/pytest-7/test_readonly_run_records_acti1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x105078180>
+ok = False
+
+    @pytest.mark.parametrize("ok", [True, False])
+    def test_readonly_run_records_activity_without_deployment(tmp_path, monkeypatch, ok):
+        store = tmp_path / "activity.jsonl"
+        monkeypatch.delenv("PLATFORM_ACTIVITY_TABLE", raising=False)
+        monkeypatch.setenv("PLATFORM_ACTIVITY_FILE", str(store))
+        steps = [{"tool": "list_pods", "args": {"namespace": "acme-dev-observability"},
+                  "result": {"ok": ok, "output": "No resources found" if ok else "Forbidden"}}]
+        ids = rec.record_deploy(instruction="Read pods only", model="local-qwen", provider="onprem",
+                                summary="No changes", steps=steps, ok=ok)
+        rows = [json.loads(line) for line in store.read_text().splitlines()]
+>       assert [row["PK"] for row in rows] == ["ACTIVITY"]
+E       AssertionError: assert ['DEPLOY', 'ACTIVITY'] == ['ACTIVITY']
+E         
+E         At index 0 diff: 'DEPLOY' != 'ACTIVITY'
+E         Left contains one more item: 'ACTIVITY'
+E         Use -v to get more diff
+
+tests/test_readonly_activity_recording.py:19: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_readonly_activity_recording.py::test_readonly_run_records_activity_without_deployment[True]
+FAILED tests/test_readonly_activity_recording.py::test_readonly_run_records_activity_without_deployment[False]
+2 failed, 1 passed in 0.03s

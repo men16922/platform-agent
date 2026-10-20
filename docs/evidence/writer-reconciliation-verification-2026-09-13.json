@@ -1,0 +1,38 @@
+{
+  "milestone": "M85",
+  "evaluation": "offline historical replay at the recorded M84 observation time, not a fresh remote observation",
+  "related_tests": {
+    "passed": 55,
+    "new_tests": 55,
+    "log": "/tmp/platform-agent-m85-related.log"
+  },
+  "mutations": "docs/evidence/writer-reconciliation-mutations-2026-09-13.json",
+  "result": "docs/evidence/writer-reconciliation-result-2026-09-13.json",
+  "cli_repeat_identical": true,
+  "input_sha256_unchanged": {
+    "experiments/phase5-writer/retry-20260913/ref-read-review.json": "a47f64681fcdab183691545f11d4d0260fa92dd76347d15feecc9c839c7b5825",
+    "experiments/phase5-writer/retry-20260913/ref-read-observations.json": "dfe3e3daca95914467b12fca04472717124151349b93eb451930ade9757d617a",
+    "docs/evidence/phase5-writer-ref-read-live-2026-09-13.json": "6dd087dbe88da39a590445e98152a56de78bd93fe086725d635d587b92173dc4",
+    "docs/evidence/phase5-writer-pr-author-live-2026-09-13.json": "b8bbabf3f58fd005fbb2f672ea2db7f656443151420b68462067d2417da887c7"
+  },
+  "network_calls": 0,
+  "credentials_read": 0,
+  "gate": {
+    "status": "PASSED",
+    "command": "make check",
+    "environment": "2026-09-13 local macOS Python 3.13",
+    "remote_ci": "not run",
+    "passed": 3154,
+    "skipped": 2,
+    "warnings": 21,
+    "seconds": 87.21,
+    "log": "/tmp/platform-agent-m85-gate-final.log"
+  },
+  "first_gate": {
+    "failed": 1,
+    "passed": 3153,
+    "skipped": 2,
+    "reason": "New JSON CLI missing DOCUMENT classification",
+    "log": "/tmp/platform-agent-m85-gate.log"
+  }
+}

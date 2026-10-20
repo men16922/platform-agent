@@ -1,0 +1,19 @@
+{
+  "repo": {
+    "exit_code": 1,
+    "not_found": true
+  },
+  "app": {
+    "exit_code": 1,
+    "not_found": true
+  },
+  "owner_list_absent": true,
+  "ui_repo_deleted_success": true,
+  "ui_app_owner_list_absent": true,
+  "ui_app_settings_not_found": true,
+  "app_installed": false,
+  "token_minted": false,
+  "seed_pushed": false,
+  "test_api_calls": 0,
+  "pr_created": false
+}

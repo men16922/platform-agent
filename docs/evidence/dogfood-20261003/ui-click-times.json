@@ -1,0 +1,11 @@
+{
+  "failureClickAt": "2026-10-03T05:42:25.062Z",
+  "recoveryClickAt": "2026-10-03T05:43:40.894Z",
+  "failureAfterClickAt": "2026-10-03T05:46:44.722Z",
+  "failureRecoveryClickAt": "2026-10-03T05:50:44.388Z",
+  "recoveryAfterClickAt": "2026-10-03T05:52:37.645Z",
+  "normalAfterClickAt": "2026-10-03T05:53:40.697Z",
+  "validationAfterClickAt": "2026-10-03T05:58:21.966Z",
+  "normalRestoreClickAt": "2026-10-03T05:59:55.086Z",
+  "scope": "Wall clock immediately before actual UI click; not inferred health-completion timestamps."
+}

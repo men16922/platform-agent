@@ -1,0 +1,66 @@
+M66: clean Linux Node 22 dependency validation and targeted lockfile refresh
+Date: 2026-09-06. Local validation only; no commit, push, remote CI or deploy.
+
+Environment
+- Docker linux/amd64, Debian bookworm; Node 22.23.2, npm 10.9.8, Python 3.13.15, pytest 8.3.4.
+- Local image sha256:9c1d80a063f20893ce0f39f3b68f6a8c1564efd29763b56bde3468c97839ba4c.
+- node:22-bookworm-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5
+- python:3.13-slim-bookworm@sha256:ed86c82274b3c69b52fb5820f358f0bd7df0b603332063cb5c6e32bd220c3e6e
+- Scratch source mount only; no user home, .env, AWS or GitHub credentials mounted.
+
+Baseline
+- Both node_modules and npm cache absent before first npm ci in dashboard and src/stacks.
+- Both installs succeeded; original manifests and lockfiles remained byte-identical.
+- CI=true GITHUB_ACTIONS=true python -m pytest -q tests/test_registry_preview_ui.py tests/test_registry_planner_stack.py tests/test_ci_ts_dependency_guard.py
+- Docker --network none: 69 passed, 0 skipped in 28.90s.
+- npm audit: dashboard high=1, stacks high=3. Raw baseline audit JSON retained alongside this log.
+
+Targeted changes (existing package.json ranges unchanged)
+- npm update browserslist --package-lock-only --ignore-scripts: 4.28.5 -> 4.28.9.
+- npm update aws-cdk-lib --package-lock-only --ignore-scripts: 2.248.0 -> 2.268.0.
+- npm update aws-cdk --package-lock-only --ignore-scripts: CLI 2.1118.0 -> 2.1140.0.
+- bundled brace-expansion 5.0.5 -> 5.0.9; old fast-uri subtree removed.
+- Dashboard resolver also materialized six already-declared optional nested WASI dependencies.
+- No npm audit fix; no root dependency range, script permission or global config change.
+- Primary advisories: https://github.com/advisories/GHSA-c83g-rgw3-j3cx
+  https://github.com/advisories/GHSA-vcrf-j523-4mrf
+  https://github.com/advisories/GHSA-rgw5-rvv9-x895
+  https://github.com/advisories/GHSA-jqff-g426-hqxp
+- Known advisory counts do not establish exploitability; no NodejsFunction usage found in project stacks.
+
+Updated verification
+- Fresh Linux npm ci succeeded for both updated lockfiles: each reported 0 vulnerabilities.
+- Same three test files, CI selectors enabled and network disabled: 69 passed in 33.30s.
+- Linux dashboard npm run build succeeded (Next.js 16.3.3); TypeScript and production page collection passed.
+- Build used demo data, disposable AUTH_SECRET and disabled telemetry/AWS metadata; network permitted for Next Google fonts.
+- Build warns that Edge Runtime is deprecated; no live HTTP session or deployed application verified here.
+- Initial updated cloud assembly rejected by old CLI: schema 54 versus maximum 53.
+- Updated CLI 2.1140.0 successfully synthesized the assembled output with --quiet --no-lookups.
+- This is NOT verification of the default npm run synth / ts-node entrypoint.
+
+Main incident stack template comparison
+- Same source, fake account 111111111111/ap-northeast-2, actual src/stacks/cdk.json context.
+- Explicit cx.BUNDLING_STACKS=[] in both runs: application Lambda packaging was disabled.
+- Before used original CDK JS dependencies mounted read-only; after used fresh Linux dependencies.
+- 98 resources before and after; exactly two differing fields in final actual-context comparison:
+  RunbookSeedProviderframeworkonEvent0531AB6C Properties.Runtime: nodejs22.x -> nodejs24.x
+  same provider Properties.Code.S3Key changed (exact values in template-diff.json).
+- All other template fields matched, including IAM, state machines and application Lambda properties.
+- Earlier comparison without repository context is superseded; no live Lambda artifact/deploy proof.
+
+Original workspace
+- Copied only the two reviewed lockfiles after checking original inputs had not changed.
+- Refreshed original node_modules with npm ci: both reported 0 vulnerabilities.
+- Host npm warned about unrs-resolver postinstall permission; permission unchanged, ResolverFactory loaded as function.
+- Existing mixed WIP preserved; package.json contents unchanged relative to start of this unit.
+
+Remaining boundary
+- GitHub registration task tab is now absent; completion of Confirm access reauthentication is unverified.
+- P5-E exact remote creation/installation/test/cleanup scope remains pending user confirmation.
+- Remote GitHub CI, original push, cloud deployment, actual App token permission experiment: not performed.
+
+Supporting files: docs/evidence/ci-node22-lockfile-refresh-2026-09-06/
+
+Final original gate: make check, exit 0; 2825 passed, 2 skipped, 21 warnings in 55.56s (local macOS, Python 3.13).
+Post-checkpoint documentation checks: 50 passed in 0.20s with /opt/anaconda3/bin/python3.13; git diff --check passed.
+The default python3 resolves to .venv-mlx without pytest; used the gate-compatible Python 3.13 interpreter for focused doc checks.

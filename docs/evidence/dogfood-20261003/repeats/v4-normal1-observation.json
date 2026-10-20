@@ -1,0 +1,67 @@
+{
+  "label": "v4-normal1",
+  "healthy_observed_at": "2026-10-03T06:39:31.190199+00:00",
+  "revision": "19",
+  "uid": "8567c751-fc44-4e28-b63e-e21af534661f",
+  "replicas": 2,
+  "image": "localhost:5001/orders-api-dogfood:r0",
+  "observations": [
+    {
+      "at": "2026-10-03T06:39:23.864247+00:00",
+      "revision": "19",
+      "generation": 20,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:39:25.146467+00:00",
+      "revision": "19",
+      "generation": 20,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:39:26.325214+00:00",
+      "revision": "19",
+      "generation": 20,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:39:27.499252+00:00",
+      "revision": "19",
+      "generation": 20,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:39:28.657688+00:00",
+      "revision": "19",
+      "generation": 20,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:39:29.841438+00:00",
+      "revision": "19",
+      "generation": 20,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": false
+    },
+    {
+      "at": "2026-10-03T06:39:31.012194+00:00",
+      "revision": "19",
+      "generation": 20,
+      "ready": true,
+      "image": "localhost:5001/orders-api-dogfood:r0",
+      "health_observed": true
+    }
+  ],
+  "method": "Read-only 1s polling and actual kubelet health-200 log from each current Pod; not browser HTTP."
+}

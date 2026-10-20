@@ -1,0 +1,12 @@
+const cdk=require('/workspace/src/stacks/node_modules/aws-cdk-lib');
+const cx=require('/workspace/src/stacks/node_modules/aws-cdk-lib/cx-api');
+const {Template}=require('/workspace/src/stacks/node_modules/aws-cdk-lib/assertions');
+const {IncidentAgentStack}=require('/workspace/src/stacks/incident_agent_stack');
+const label=process.env.REVIEW_LABEL || 'after';
+const context={...require('/review/cdk-context.json').context,[cx.BUNDLING_STACKS]:[]};
+const app=new cdk.App({autoSynth:false,outdir:'/tmp/cdk-'+label,context});
+const stack=new IncidentAgentStack(app,'IncidentAgentStack',{env:{account:'111111111111',region:'ap-northeast-2'}});
+const template=Template.fromStack(stack).toJSON();
+require('fs').writeFileSync('/review/incident-context-'+label+'.json',JSON.stringify(template,null,2));
+app.synth();
+console.log('Resources:',Object.keys(template.Resources).length,'Bundling:',stack.bundlingRequired);

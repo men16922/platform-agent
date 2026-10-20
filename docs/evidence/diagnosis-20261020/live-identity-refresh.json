@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-19T20:29:47.885847+00:00",
+  "subject": "system:serviceaccount:platform-agent-system:platform-agent-deployer",
+  "serviceaccount_uid": "4163b0ef-31c1-48d4-bed7-4e00873bcb54",
+  "same_original_uid": true,
+  "expired_at": "2026-10-19T21:29:47+00:00",
+  "duration_requested": "1h",
+  "original_credential_preserved": true,
+  "rbac_changes": 0,
+  "target_context": "kind-platform-agent",
+  "scope": "Existing authorized local identity renewal, not a new role or permission grant."
+}

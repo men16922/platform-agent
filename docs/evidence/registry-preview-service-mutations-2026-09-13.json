@@ -1,0 +1,32 @@
+{
+  "date": "2026-09-13",
+  "scope": "local only",
+  "mutations": [
+    {
+      "mutation": "skip_preview_persistence",
+      "exit_code": 1,
+      "tail": [
+        "FAILED: AssertionError"
+      ]
+    },
+    {
+      "mutation": "accept_prepare_authority_fields",
+      "exit_code": 1,
+      "tail": [
+        "FAILED tests/test_registry_preview_service.py::test_bad_input_rejected_before_dependencies[prepare-event5-422]",
+        "FAILED tests/test_registry_preview_service.py::test_bad_input_rejected_before_dependencies[prepare-event9-422]",
+        "4 failed, 17 passed in 0.12s"
+      ]
+    },
+    {
+      "mutation": "skip_current_grant_recheck",
+      "exit_code": 1,
+      "tail": [
+        "PASS 8 concurrent consumers -> 1 claim, 7 conflicts; retry remains closed",
+        "PASS subject swap cannot consume another preview",
+        "FAILED: AssertionError"
+      ]
+    }
+  ],
+  "source_bytes_restored": true
+}

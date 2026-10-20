@@ -1,0 +1,78 @@
+{
+  "at": "2026-10-03T10:26:57.280938+00:00",
+  "candidate": "candidate-v14b-runtime-observation.json",
+  "completed": "Measured router connection replaces static READY/delegation claims; durable model responses retain provider usage and attempted tool count; completed zero-tool replies display NO TOOL CALLS and unverified interpretation.",
+  "verification": {
+    "related": "28 passed in 3.51s; runtime-observation-related-v2.log",
+    "typescript": "tsc --noEmit exit0; runtime-observation-typescript-v2.log",
+    "new_test_count": 3,
+    "full_gate": {
+      "passed": 3348,
+      "skipped": 2,
+      "warnings": 20,
+      "seconds": 135.23,
+      "environment": "2026-10-03 local macOS/Python3.13.5/Node22.23.3/temporary npm prefix",
+      "evidence": "runtime-observation-gate-v2.log"
+    },
+    "mutations": "2 runtime payload/READY boundaries detected and original bytes restored; runtime-observation-mutations.json",
+    "review_checks": "4 altered input/hash/quote/partial mutations detected using isolated copies; r4-readonly-ui-review-checks.json",
+    "documentation_followup": {
+      "passed": 55,
+      "seconds": 3.21,
+      "evidence": "runtime-observation-docs.log",
+      "diff_check": "git diff --check exit0",
+      "runtime_sources_unchanged_after_full_gate": true
+    }
+  },
+  "actual_ui": {
+    "cases": 7,
+    "claims": 7,
+    "model_responses": 7,
+    "tools": 0,
+    "deployment_records": 0,
+    "completion": "7 complete/stop",
+    "review_counts": {
+      "pass": 1,
+      "partial": 3,
+      "fail": 3
+    },
+    "review_is_not_general_accuracy": true,
+    "reviewer": "coding assistant, not independent expert/model judge",
+    "report": "r4-readonly-ui-scorecard-v2.json",
+    "originals": "r4-readonly-ui/",
+    "browser": "Actual Chrome. Each reply shows NO TOOL CALLS and Unverified. Last request 696e3573-b17d-421f-8c0e-68c721f183ab/mode/result persisted after reload; runtime-observation-reload.txt; runtime-observation-panel.png and runtime-observation-ui.png"
+  },
+  "input_difference": "Single-line HTML input removes one separator LF before JSON. Exact byte metric 0/7 retained in original scorecard. V2 only accepts that one observed transform; source JSON and all other content remain exact. No requests were resubmitted.",
+  "nonchange_and_usage": {
+    "at": "2026-10-03T10:25:16.949195+00:00",
+    "candidate": "candidate-v14b-runtime-observation.json",
+    "runtime_source_count": 286,
+    "worktree_and_runtime_hashes_match": true,
+    "deployment_uid": "8567c751-fc44-4e28-b63e-e21af534661f",
+    "deployment_spec_unchanged": true,
+    "revision": "27",
+    "replicas": 2,
+    "new_http_health_observation": false,
+    "model_responses": 7,
+    "input_tokens": 11458,
+    "output_tokens": 2455,
+    "duration_min_sec": 3.7,
+    "duration_max_sec": 8.329,
+    "duration_sum_sec": 36.068,
+    "claims": 7,
+    "tool_calls": 0,
+    "deployment_records": 0
+  },
+  "activation": "runtime-observation-activation.json; owned router5123/dashboard5124 only; 286 hashes match runtime/worktree; model/proxy/webhook unchanged",
+  "limits": [
+    "The three clear failures concern stale time, absent time and wrong namespace. Unknown-time promotes an embedded SYSTEM instruction to team belief and recovery-review evidence. No tools executed.",
+    "Three partial answers get the recovery direction right but omit requested source IDs; stale-injection also omits age/window distinction. Partial is FAIL in Scorecard.",
+    "Positive supported recovery is recognized; this is not unconditional abstention. Root cause and actual live recovery remain unproven.",
+    "Provider usage sums positive reported counters only. Missing/partial/default-zero counters stay unknown. Model responses do not count SDK HTTP attempts, cost, or general latency.",
+    "Backend durable failed/ok=false remains action-centric for zero-tool replies; UI no longer presents that as a failed deployment. No action success is claimed.",
+    "Supplied metadata is not authenticated telemetry; these cases are exploratory, not blind independent evaluation.",
+    "Current candidate is not the final integrated normal/denial/recovery/loss bundle. R3/R4/R5 remain open. No commit/push/cloud/RBAC/resource cleanup."
+  ],
+  "next": "Apply the existing source target/time/provenance contract to the actual diagnostic input path, preserve eligible positive evidence and useful next checks, and replay the failed outputs. Avoid additional prompt-only retries or claiming semantics from source IDs alone.",
+  "checkpoint_at": "2026-10-03T10:27:19.408870+00:00"
+}

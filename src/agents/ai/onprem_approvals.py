@@ -120,7 +120,9 @@ def get(approval_id: str) -> dict[str, Any] | None:
 
 
 def resolve(
-    approval_id: str, status: str, *, executor_out: dict[str, Any] | None = None
+    approval_id: str, status: str, *, executor_out: dict[str, Any] | None = None,
+    rejection_reason: str | None = None, reported_by: str | None = None,
+    incident_id: str | None = None,
 ) -> dict[str, Any] | None:
     """Append a resolved (approved/rejected) row for ``approval_id``.
 
@@ -130,6 +132,13 @@ def resolve(
     if current is None or current.get("status") != "pending":
         return None
     updated = {**current, "status": status, "updated_at": _now()}
+    if incident_id is not None:
+        updated["incident_id"] = incident_id
+    if rejection_reason is not None:
+        updated["rejection_reason"] = rejection_reason
+    if reported_by is not None:
+        # Caller-reported attribution, not authentication of the webhook caller.
+        updated["reported_by"] = reported_by
     if executor_out is not None:
         updated["incident_id"] = executor_out.get("incident_id")
         updated["executed_actions"] = executor_out.get("executed_actions", [])

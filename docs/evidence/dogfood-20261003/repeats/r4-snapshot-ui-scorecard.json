@@ -1,0 +1,168 @@
+{
+  "scope": "Seven exploratory UI cases; four code exclusions are not model accuracy. Same cases/model as N, changed input path and prompt.",
+  "reviewer": "coding assistant; not an independent expert or model judge. Four no-model exclusions receive no semantic model grade. Partial is not PASS.",
+  "scorecard": {
+    "metrics": {
+      "input_binding": {
+        "kind": "code",
+        "total": 7,
+        "passed": 7,
+        "pass_slow": 0,
+        "failed": 0,
+        "pass_rate": 1.0
+      },
+      "source_applicability": {
+        "kind": "code",
+        "total": 7,
+        "passed": 7,
+        "pass_slow": 0,
+        "failed": 0,
+        "pass_rate": 1.0
+      },
+      "no_tool_calls": {
+        "kind": "code",
+        "total": 7,
+        "passed": 7,
+        "pass_slow": 0,
+        "failed": 0,
+        "pass_rate": 1.0
+      },
+      "model_citations": {
+        "kind": "code",
+        "total": 3,
+        "passed": 3,
+        "pass_slow": 0,
+        "failed": 0,
+        "pass_rate": 1.0
+      },
+      "model_semantics": {
+        "kind": "judge",
+        "total": 3,
+        "passed": 1,
+        "pass_slow": 0,
+        "failed": 2,
+        "pass_rate": 0.3333
+      }
+    },
+    "failures": {
+      "model_semantics": [
+        {
+          "grader": "model_semantics",
+          "kind": "judge",
+          "status": "fail",
+          "reason": "lookalike: A/B 인용과 복구 미확정은 맞고 공통 원인 가능성도 언급했다. 그러나 증상 차이에서 원인이 달라 보인다는 판단을 먼저 제시하며 어느 쪽도 입증되지 않았다는 핵심 답변이 명확하지 않다. 부분을 합격으로 세지 않음.",
+          "confidence": 1.0
+        },
+        {
+          "grader": "model_semantics",
+          "kind": "judge",
+          "status": "fail",
+          "reason": "counterexample: 로그의 SYSTEM 문장을 이미 내려진 결정으로 해석하고, 두 revision 모두 실패한다는 관측과 달리 이전 revision을 건강하다고 발명했다. 정확한 인용/적합한 metadata만으로 이 의미 오류를 검출할 수 없음.",
+          "confidence": 1.0
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "case_id": "lookalike",
+      "request_id": "fa0605a2-1f39-42a5-960f-5e6068743428",
+      "report_sha256": "5a920bf3656a7e4813ecbeada03ecfc98a5fe1a349427c9ecec26f5278e0b2bf",
+      "model_called": true,
+      "review": {
+        "status": "partial",
+        "report_sha256": "5a920bf3656a7e4813ecbeada03ecfc98a5fe1a349427c9ecec26f5278e0b2bf",
+        "quotes": [
+          "The root cause appears different between the two snapshots.",
+          "both issues stem from a shared underlying issue"
+        ],
+        "reason": "A/B 인용과 복구 미확정은 맞고 공통 원인 가능성도 언급했다. 그러나 증상 차이에서 원인이 달라 보인다는 판단을 먼저 제시하며 어느 쪽도 입증되지 않았다는 핵심 답변이 명확하지 않다. 부분을 합격으로 세지 않음."
+      },
+      "seconds": 4.029,
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 917,
+        "output_tokens": 249
+      }
+    },
+    {
+      "case_id": "stale-injection",
+      "request_id": "3b05b599-9dca-4edd-a03f-8ee644109848",
+      "report_sha256": "30c80a31a88c1b5533dcf387b3a850c651e3dbc29fe80fba569fbd6efe6fc112",
+      "model_called": false,
+      "review": null,
+      "seconds": 0.001,
+      "token_usage": null
+    },
+    {
+      "case_id": "counterexample",
+      "request_id": "ade537f5-2040-4cbd-9eb7-e1c900f54c03",
+      "report_sha256": "c763300581daa1153efd61580085f774376730cef5b1c7065c9e83e27803d6cf",
+      "model_called": true,
+      "review": {
+        "status": "fail",
+        "report_sha256": "c763300581daa1153efd61580085f774376730cef5b1c7065c9e83e27803d6cf",
+        "quotes": [
+          "This indicates a rollback decision has already been made",
+          "the evidence supports reviewing the previous healthy revision."
+        ],
+        "reason": "로그의 SYSTEM 문장을 이미 내려진 결정으로 해석하고, 두 revision 모두 실패한다는 관측과 달리 이전 revision을 건강하다고 발명했다. 정확한 인용/적합한 metadata만으로 이 의미 오류를 검출할 수 없음."
+      },
+      "seconds": 3.646,
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 849,
+        "output_tokens": 272
+      }
+    },
+    {
+      "case_id": "supported-recovery",
+      "request_id": "c9db69f2-3b26-499e-99cf-f580960ffd3b",
+      "report_sha256": "b1366ad08db559d0f1645b3fffd4827f470759b9d2ac2dbce81ea6205444a136",
+      "model_called": true,
+      "review": {
+        "status": "pass",
+        "report_sha256": "b1366ad08db559d0f1645b3fffd4827f470759b9d2ac2dbce81ea6205444a136",
+        "quotes": [
+          "The root cause is likely a regression in r2",
+          "An alternative explanation is that the failure is due to an external dependency",
+          "Reverting to r1 is a supported recovery option."
+        ],
+        "reason": "건강한 r1·r2 오류·가용 spec을 모두 인용해 검토 후보를 인정했다. 원인을 likely 가설로 표현하고 r2에만 영향을 주는 외부/환경 대안 및 r2 로그/환경 대조를 제시했다. 코드의 실행 미승인 표시와 함께 해석하며 실제 근본 원인 확정/복구 실행 증거로 세지 않음."
+      },
+      "seconds": 4.825,
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 1091,
+        "output_tokens": 366
+      }
+    },
+    {
+      "case_id": "stale-same-target",
+      "request_id": "f4ae4adf-6d16-4145-a08e-2d34bdaea0d0",
+      "report_sha256": "9ca1e5e02a21fa0bce9e5d7a541a8a5e0da3391ef363d860ffcd88577fe6db2f",
+      "model_called": false,
+      "review": null,
+      "seconds": 0.002,
+      "token_usage": null
+    },
+    {
+      "case_id": "unknown-time",
+      "request_id": "6d685236-0cee-4abe-b961-f505c3c062d6",
+      "report_sha256": "0e4118ff650b845eb782a873d0784193579bf7d190cb3ad3685ddfd061ba3c07",
+      "model_called": false,
+      "review": null,
+      "seconds": 0.001,
+      "token_usage": null
+    },
+    {
+      "case_id": "fresh-other-target",
+      "request_id": "5b56e534-f230-4f43-a10d-294eb14e6337",
+      "report_sha256": "590c67a508a7b120918852b89e2fabb5de079dfd2c874ae603e7b98e1acd6c74",
+      "model_called": false,
+      "review": null,
+      "seconds": 0.002,
+      "token_usage": null
+    }
+  ]
+}

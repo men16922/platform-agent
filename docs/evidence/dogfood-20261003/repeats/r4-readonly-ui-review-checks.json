@@ -1,0 +1,22 @@
+{
+  "checks": [
+    {
+      "case": "altered-input-resealed",
+      "detected": true
+    },
+    {
+      "case": "wrong-report-hash",
+      "detected": true
+    },
+    {
+      "case": "fabricated-quote",
+      "detected": true
+    },
+    {
+      "case": "partial-is-not-pass",
+      "detected": true
+    }
+  ],
+  "source_fixtures_unchanged": true,
+  "isolated_copy": true
+}

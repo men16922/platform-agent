@@ -1,0 +1,8 @@
+{
+  "at": "2026-10-03T06:46:55.786302+00:00",
+  "claims_before": 29,
+  "claims_after": 29,
+  "workload_spec_unchanged": true,
+  "missing_namespace": "Browser required-field validation prevented review; API strict validation is separately covered by tests.",
+  "cancel": "Review was canceled before confirmation; no backend run was created. This is the prepared deployment review, not an incident approval webhook test."
+}

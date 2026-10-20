@@ -1,0 +1,154 @@
+- complementary:
+  - generic: ✦
+  - heading "Platform Agent" [level=1]
+  - paragraph: Autonomous cloud operations
+  - navigation:
+    - paragraph: Workspace
+    - link "⌘ Overview":
+      - /url: /
+      - generic: ⌘
+      - generic: Overview
+    - link "✦ Agents":
+      - /url: /agents
+      - generic: ✦
+      - generic: Agents
+    - link "⬡ Provisioning":
+      - /url: /provisioning
+      - generic: ⬡
+      - generic: Provisioning
+    - link "↗ Deployments":
+      - /url: /deployments
+      - generic: ↗
+      - generic: Deployments
+    - link "🕑 History":
+      - /url: /history
+      - generic: 🕑
+      - generic: History
+    - link "◈ Incidents":
+      - /url: /incidents
+      - generic: ◈
+      - generic: Incidents
+  - generic: Operations workspace
+  - generic: Review recorded runs and observations.
+- main:
+  - paragraph: Platform Agent / Overview
+  - paragraph: Operations workspace
+  - generic: Recorded activity
+  - button "Notifications": ⌁
+  - paragraph: Operations command center
+  - heading "Platform overview" [level=2]
+  - paragraph: Autonomous visibility across AWS, GCP, Azure, and your on-prem estate.
+  - paragraph: Incident telemetry
+  - paragraph: Read-only feed
+  - generic: LIVE · ON-PREM
+  - generic: Operations workflow
+  - heading "Review the evidence behind each action." [level=3]
+  - paragraph: Follow recorded incidents and deployments, then inspect the execution trace before deciding what to do next.
+  - paragraph: Detect
+  - paragraph: Signals
+  - paragraph: Analyze
+  - paragraph: Analysis
+  - paragraph: Decide
+  - paragraph: Policy
+  - paragraph: Execute
+  - paragraph: Validate
+  - paragraph: Latest deployment record
+  - generic: LIVE · ON-PREM
+  - paragraph: fixture-missing-status v1
+  - term: Recorded status
+  - definition: unknown
+  - term: Namespace
+  - definition: Not recorded
+  - term: Recorded at
+  - definition: 2026-10-01T01:00:00Z
+  - link "Review deployment →":
+    - /url: /deployments
+  - paragraph: Recorded results do not establish current cluster health.
+  - heading "Provider health" [level=3]
+  - generic: LIVE · ON-PREM
+  - paragraph: No provider health observations available. Local deployment records do not include provider health reports.
+  - generic: Incidents observed
+  - generic: "0"
+  - generic: Current incident feed
+  - generic: Resolved records
+  - generic: "0"
+  - generic: Marked resolved in this feed
+  - generic: Deployments in feed
+  - generic: "4"
+  - generic: 2 need attention
+  - generic: Reported successful
+  - generic: "1"
+  - generic: Deployment records marked success
+  - heading "Incident feed" [level=3]
+  - link "View all →":
+    - /url: /incidents
+  - heading "Deployment posture" [level=3]
+  - paragraph: Autonomous delivery control
+  - generic: AI ORCHESTRATED
+  - paragraph: fixture-missing-status v1
+  - paragraph: "Recorded status: unknown"
+  - paragraph: Review the execution trace and current workload state before recovery.
+  - link "Review deployment →":
+    - /url: /deployments
+  - paragraph: Successful records
+  - generic: 1 in feed
+  - generic: ✓
+  - paragraph: fixture-success v1
+  - paragraph: ONPREM · 7s
+  - paragraph: Deployment register
+  - paragraph: Recent deployment records
+  - generic: Latest records in feed
+  - table:
+    - rowgroup:
+      - row "Service Version Provider Agent Status Duration":
+        - columnheader "Service"
+        - columnheader "Version"
+        - columnheader "Provider"
+        - columnheader "Agent"
+        - columnheader "Status"
+        - columnheader "Duration"
+    - rowgroup:
+      - row "fixture-missing-status v1 Cloud Native Computing Foundation ON-PREM UI fixture (not a live deploy) · unknown 0s":
+        - cell "fixture-missing-status"
+        - cell "v1":
+          - code: v1
+        - cell "Cloud Native Computing Foundation ON-PREM":
+          - img "Cloud Native Computing Foundation"
+          - text: ON-PREM
+        - cell "UI fixture (not a live deploy)"
+        - cell "· unknown":
+          - generic: · unknown
+        - cell "0s"
+      - row "fixture-build-failed v1 Cloud Native Computing Foundation ON-PREM UI fixture (not a live deploy) ✗ failed 7s":
+        - cell "fixture-build-failed"
+        - cell "v1":
+          - code: v1
+        - cell "Cloud Native Computing Foundation ON-PREM":
+          - img "Cloud Native Computing Foundation"
+          - text: ON-PREM
+        - cell "UI fixture (not a live deploy)"
+        - cell "✗ failed":
+          - generic: ✗ failed
+        - cell "7s"
+      - row "fixture-success v1 Cloud Native Computing Foundation ON-PREM UI fixture (not a live deploy) ✓ success 7s":
+        - cell "fixture-success"
+        - cell "v1":
+          - code: v1
+        - cell "Cloud Native Computing Foundation ON-PREM":
+          - img "Cloud Native Computing Foundation"
+          - text: ON-PREM
+        - cell "UI fixture (not a live deploy)"
+        - cell "✓ success":
+          - generic: ✓ success
+        - cell "7s"
+      - row "fixture-rolled-back v1 Cloud Native Computing Foundation ON-PREM UI fixture (not a live deploy) · rolled-back 7s":
+        - cell "fixture-rolled-back"
+        - cell "v1":
+          - code: v1
+        - cell "Cloud Native Computing Foundation ON-PREM":
+          - img "Cloud Native Computing Foundation"
+          - text: ON-PREM
+        - cell "UI fixture (not a live deploy)"
+        - cell "· rolled-back":
+          - generic: · rolled-back
+        - cell "7s"

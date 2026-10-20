@@ -15,22 +15,35 @@ export async function POST(request: Request) {
     return Response.json({ error: "Unauthorized: Please sign in." }, { status: 401 });
   }
   const userRole = ((session.user as { role?: Role }).role as Role) || "viewer";
-  if (userRole === "viewer") {
+  if (userRole !== "admin" && userRole !== "operator") {
     return Response.json({ error: "Forbidden: Viewer role cannot trigger deployments." }, { status: 403 });
   }
 
-  let body: { instruction?: string; model?: string; provider?: string } = {};
+  let body: { instruction?: string; model?: string; provider?: string; request_id?: string; read_only?: boolean; snapshot?: unknown } = {};
   try {
     body = await request.json();
   } catch {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const instruction = (body.instruction || "").trim();
-  const model = body.model || "local-qwen";
-  const provider = body.provider || "onprem";
+  const instruction = typeof body?.instruction === "string" ? body.instruction.trim() : "";
+  const model = body?.model || "local-qwen";
+  const provider = body?.provider || "onprem";
+  if (body?.read_only !== undefined && typeof body.read_only !== "boolean") {
+    return Response.json({ error: "read_only must be a boolean." }, { status: 400 });
+  }
+  const readOnly = body?.read_only ?? false;
+  if (readOnly && (model !== "local-qwen" || provider !== "onprem")) {
+    return Response.json({ error: "Read-only inspection is supported only for local-qwen/onprem." }, { status: 400 });
+  }
+  if (body?.snapshot !== undefined && (body.snapshot === null || typeof body.snapshot !== "object" || Array.isArray(body.snapshot) || !readOnly)) {
+    return Response.json({ error: "Snapshot analysis requires a snapshot object and read-only mode." }, { status: 400 });
+  }
   if (!instruction) {
     return Response.json({ error: "Missing 'instruction'." }, { status: 400 });
+  }
+  if (typeof body.request_id !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.request_id)) {
+    return Response.json({ error: "A stable request_id UUID is required." }, { status: 400 });
   }
 
   // Best-effort audit of the authorized initiation (final status is recorded by
@@ -50,8 +63,10 @@ export async function POST(request: Request) {
   try {
     upstream = await fetch(`${LOCAL_API}/api/local-deploy/stream`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ instruction, model, provider }),
+      // Only the authenticated session supplies the actor, never a caller header/body.
+      headers: { "Content-Type": "application/json", "X-Platform-Actor": session.user.username },
+      body: JSON.stringify({ instruction, model, provider, request_id: body.request_id, read_only: readOnly, ...(body.snapshot !== undefined ? { snapshot: body.snapshot } : {}) }),
+      cache: "no-store",
     });
   } catch {
     return Response.json(
@@ -65,7 +80,7 @@ export async function POST(request: Request) {
 
   if (!upstream.ok || !upstream.body) {
     const detail = await upstream.text().catch(() => "");
-    return Response.json({ error: "Router API error", detail }, { status: 502 });
+    return Response.json({ error: "Router API error", detail }, { status: upstream.ok ? 502 : upstream.status });
   }
 
   return new Response(upstream.body, {

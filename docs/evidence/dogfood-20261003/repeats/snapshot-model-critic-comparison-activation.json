@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-03T10:50:20.139369+00:00",
+  "old_pid": 36807,
+  "pid": 40430,
+  "model": "mlx-community/Qwen3.8-27B-4bit",
+  "cached_revision": "3e6447f082e89cc7f0bc6e5441afd38dfce760ff",
+  "cache_only": true,
+  "application_model_setting_changed": false,
+  "other_processes_unchanged": true,
+  "mode": "comparison",
+  "listening": true,
+  "listening_at": "2026-10-03T10:50:21.368980+00:00"
+}

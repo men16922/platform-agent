@@ -1,0 +1,25 @@
+{
+  "at": "2026-10-03T06:59:59.990858+00:00",
+  "type": "Edited actual stills, not real-time screen recording",
+  "ffprobe": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1080,
+        "height": 1260
+      }
+    ],
+    "format": {
+      "duration": "72.000000",
+      "size": "712297"
+    }
+  },
+  "visual_review": [
+    "qa-frame-05.png: exact review values and disclosure readable",
+    "qa-frame-54.png: failed deploy + successful rollback and disclosure readable"
+  ],
+  "sha256": "166805f427d2bdd01cb482cd3ad871c35c370297c777b31008342ac2b6a9b938",
+  "scope": "candidate-v4 only; later diagnosis work is not included"
+}

@@ -1,0 +1,28 @@
+{
+  "at": "2026-10-03T13:15:19.773101+00:00",
+  "candidate": "O/v15",
+  "scope": "Actual live-mode runner calls with scope=None; no alert ingestion or credential minting",
+  "results": [
+    {
+      "action": "ONPREM-RolloutRestartWorkload",
+      "refused": true,
+      "reason": "refusing live action 'ONPREM-RolloutRestartWorkload' without a scoped credential (ambient credential execution was removed in Phase 1a)"
+    },
+    {
+      "action": "ONPREM-ArgoRolloutRollback",
+      "refused": true,
+      "reason": "refusing live action 'ONPREM-ArgoRolloutRollback' without a scoped credential (ambient credential execution was removed in Phase 1a)"
+    }
+  ],
+  "dispatch_attempts": [],
+  "logs": [
+    {
+      "event": "onprem_runner.no_scope",
+      "action": "ONPREM-RolloutRestartWorkload"
+    },
+    {
+      "event": "onprem_runner.no_scope",
+      "action": "ONPREM-ArgoRolloutRollback"
+    }
+  ]
+}

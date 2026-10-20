@@ -1,0 +1,193 @@
+- complementary:
+  - generic: ✦
+  - heading "Platform Agent" [level=1]
+  - paragraph: Autonomous cloud operations
+  - navigation:
+    - paragraph: Workspace
+    - link "⌘ Overview":
+      - /url: /
+      - generic: ⌘
+      - generic: Overview
+    - link "✦ Agents":
+      - /url: /agents
+      - generic: ✦
+      - generic: Agents
+    - link "⬡ Provisioning":
+      - /url: /provisioning
+      - generic: ⬡
+      - generic: Provisioning
+    - link "↗ Deployments":
+      - /url: /deployments
+      - generic: ↗
+      - generic: Deployments
+    - link "🕑 History":
+      - /url: /history
+      - generic: 🕑
+      - generic: History
+    - link "◈ Incidents":
+      - /url: /incidents
+      - generic: ◈
+      - generic: Incidents
+    - link "🛡 Audit Logs":
+      - /url: /audit
+      - generic: 🛡
+      - generic: Audit Logs
+    - link "👥 Users":
+      - /url: /users
+      - generic: 👥
+      - generic: Users
+  - generic: Operations workspace
+  - generic: Review recorded runs and observations.
+- main:
+  - paragraph: Platform Agent / Agent activity
+  - paragraph: Operations workspace
+  - generic: Recorded activity
+  - button "Notifications": ⌁
+  - generic: admin
+  - button "L"
+  - paragraph: Reasoning and execution trace
+  - heading "Agent activity" [level=2]
+  - paragraph: AI Agent autonomous tool-calling log — each agent selects and executes tools without human intervention
+  - generic: LIVE · ON-PREM
+  - heading "1. Select execution agent" [level=3]
+  - generic: The selection controls runtime and chat context.
+  - img "AWS"
+  - generic: Strands Agent
+  - generic: AWS
+  - generic: Bedrock Claude
+  - button "🔧 Tools 5":
+    - text: 🔧 Tools
+    - generic: "5"
+  - img "Google Cloud"
+  - generic: ADK Agent
+  - generic: Google Cloud
+  - generic: Gemini 3.5 Flash
+  - button "🔧 Tools 5":
+    - text: 🔧 Tools
+    - generic: "5"
+  - img "Microsoft Azure"
+  - generic: MS Agent
+  - generic: Microsoft Azure
+  - generic: GPT-5.4
+  - button "🔧 Tools 5":
+    - text: 🔧 Tools
+    - generic: "5"
+  - generic: ✓ SELECTED
+  - img "Cloud Native Computing Foundation"
+  - generic: On-Prem Agent
+  - generic: On-Premise
+  - generic: Local Qwen
+  - button "🔧 Tools 13":
+    - text: 🔧 Tools
+    - generic: "13"
+  - paragraph: 2. Model and connection
+  - heading "On-Prem Agent · Local LLM (Qwen)" [level=3]
+  - paragraph: The connection check reaches the local router. Model responses and Kubernetes access are verified by individual runs.
+  - generic: Router connected
+  - generic "Local LLM (Qwen)":
+    - img "Local LLM (Qwen)"
+  - generic: Selected AI model
+  - generic: Applies to new chat requests. Availability is established by the result of each run.
+  - combobox:
+    - option "Local LLM (Qwen) — recommended" [selected]
+    - option "Azure OpenAI GPT — allowed"
+    - option "Bedrock Claude — allowed"
+    - option "Vertex Gemini — allowed"
+  - generic: "01"
+  - generic: SELECTED
+  - generic "Local LLM (Qwen)":
+    - img "Local LLM (Qwen)"
+  - text: Qwen2.5/3-Coder (MLX)
+  - generic: Model selection is not a readiness check.
+  - generic: "02"
+  - generic: CONNECTED
+  - generic: Local router
+  - generic: Connection checked at 2026-10-03T11:07:12.820Z
+  - generic: "03"
+  - generic: PER REQUEST
+  - generic: Request tools
+  - generic: Select read-only inspection below to exclude operational actions. Completed calls appear in the run trace.
+  - paragraph: Use the recorded request and tool trace to confirm what ran. This panel does not verify supervisor or specialist delegation.
+  - heading "Ask On-Prem Agent" [level=3]
+  - paragraph: Runs with the Agent and AI Model selected above. Investigate, deploy, or recover with a live trace.
+  - generic "Local LLM (Qwen)":
+    - img "Local LLM (Qwen)"
+  - generic: recommended
+  - generic: Native pairing — Local LLM (Qwen) is the On-Prem-native brain.
+  - generic: onprem
+  - text: ·
+  - generic: local-qwen
+  - generic: · Read-only requested
+  - text: Investigate the latest rollout of orders-api-dogfood in namespace acme-dev-observability on the configured local cluster. Use at most three read-only tool calls and make no changes. Choose the tools needed to distinguish current rollout observations from possible explanations. Report what is actually established about the new revision, the previous revision, application health, and whether rollback is a supported review candidate. State missing evidence and the next targeted read-only check; do not treat a completed rollout or a running Pod alone as proof of application health.
+  - generic: RUNNING
+  - generic "Local LLM (Qwen)":
+    - img "Local LLM (Qwen)"
+  - text: local-qwen
+  - checkbox "Read-only inspection" [checked] [disabled]
+  - text: Read-only inspection
+  - paragraph: Only inspection tools are available for this request. Deploy, rollback and provisioning are disabled.
+  - checkbox "Analyze supplied snapshot" [disabled]
+  - text: Analyze supplied snapshot
+  - textbox "Ask the agent — e.g. 'list pods in default' or 'deploy orders-api v1.4.2 with 2 replicas'" [disabled]: Investigate the latest rollout of orders-api-dogfood in namespace acme-dev-observability on the configured local cluster. Use at most three read-only tool calls and make no changes. Choose the tools needed to distinguish current rollout observations from possible explanations. Report what is actually established about the new revision, the previous revision, application health, and whether rollback is a supported review candidate. State missing evidence and the next targeted read-only check; do not treat a completed rollout or a running Pod alone as proof of application health.
+  - button "Running…" [disabled]
+  - paragraph: "Request: fb3cdde2-fb86-48ec-bf0f-561668d02666"
+  - paragraph: Result unconfirmed. Check this request and the workload before starting new work.
+  - button "Check recorded result" [disabled]
+  - heading "Recent activity" [level=3]
+  - generic: Latest 5 of 38 verified actions
+  - img "Cloud Native Computing Foundation"
+  - text: ONPREM
+  - generic "Local LLM (Qwen)":
+    - img "Local LLM (Qwen)"
+  - generic: On-Prem Agent (Local LLM (Qwen))
+  - generic: —
+  - generic: Call describe_deployment exactly once for orders-api-dogfood in namespace acme-dev-observability. Report current and previous revisions, rol
+  - generic: 7:02:17 PM
+  - generic: COMPLETE
+  - code: describe_deployment
+  - img "Cloud Native Computing Foundation"
+  - text: ONPREM
+  - generic "Local LLM (Qwen)":
+    - img "Local LLM (Qwen)"
+  - generic: On-Prem Agent (Local LLM (Qwen))
+  - generic: —
+  - generic: "Read-only inspection: call describe_deployment exactly once for deployment orders-api-dogfood in namespace acme-dev-observability. Do not de"
+  - generic: 6:37:03 PM
+  - generic: COMPLETE
+  - code: describe_deployment
+  - img "Cloud Native Computing Foundation"
+  - text: ONPREM
+  - generic "Local LLM (Qwen)":
+    - img "Local LLM (Qwen)"
+  - generic: On-Prem Agent (Local LLM (Qwen))
+  - generic: —
+  - generic: "Read-only inspection: call describe_deployment exactly once for deployment orders-api-dogfood in namespace acme-dev-observability. Do not de"
+  - generic: 6:13:05 PM
+  - generic: COMPLETE
+  - code: describe_deployment
+  - 'link "Cloud Native Computing Foundation ONPREM AI On-Prem Executor — Deploy reviewed image: {\"environment\": \"dev\", \"image_uri\": \"localhost:5001/orders-api-dogfood:r0\", \"namespace\": \"globex-dev-observability\", 3:45:49 PM FAILED deploy_to_cluster View trace →"':
+    - /url: /deployments/DEP-09D8589C
+    - img "Cloud Native Computing Foundation"
+    - text: ONPREM
+    - generic "AI model": AI
+    - generic: On-Prem Executor
+    - generic: —
+    - generic: "Deploy reviewed image: {\"environment\": \"dev\", \"image_uri\": \"localhost:5001/orders-api-dogfood:r0\", \"namespace\": \"globex-dev-observability\","
+    - generic: 3:45:49 PM
+    - generic: FAILED
+    - code: deploy_to_cluster
+    - generic: View trace →
+  - 'link "Cloud Native Computing Foundation ONPREM AI On-Prem Executor — Deploy reviewed image: {\"environment\": \"dev\", \"image_uri\": \"localhost:5001/orders-api-dogfood:r0\", \"namespace\": \"globex-dev-observability\", 3:45:28 PM FAILED deploy_to_cluster View trace →"':
+    - /url: /deployments/DEP-71D41B0B
+    - img "Cloud Native Computing Foundation"
+    - text: ONPREM
+    - generic "AI model": AI
+    - generic: On-Prem Executor
+    - generic: —
+    - generic: "Deploy reviewed image: {\"environment\": \"dev\", \"image_uri\": \"localhost:5001/orders-api-dogfood:r0\", \"namespace\": \"globex-dev-observability\","
+    - generic: 3:45:28 PM
+    - generic: FAILED
+    - code: deploy_to_cluster
+    - generic: View trace →
+- button "Open Next.js Dev Tools":
+- alert

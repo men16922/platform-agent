@@ -1,0 +1,27 @@
+{
+  "at": "2026-10-03T13:34:19.390509+00:00",
+  "runtime": "O/v15",
+  "worktree": "R/v16",
+  "source_checks": {
+    "candidate-v15-snapshot-contract.json": {
+      "source_count": 287,
+      "mismatches": []
+    },
+    "candidate-v16-pod-diagnostics.json": {
+      "source_count": 287,
+      "mismatches": []
+    }
+  },
+  "owned_processes": {
+    "mlx": 45929,
+    "proxy": 80940,
+    "router": 66081,
+    "dashboard": 66082,
+    "rejection_webhook": 57777
+  },
+  "ps": "45929 /Users/men1692/Desktop/AWS/platform-agent/.venv-mlx/bin/python\n57777 /opt/anaconda3/bin/python\n66081 /opt/anaconda3/bin/python\n66082 /opt/homebrew/opt/node@22/bin/node\n80940 /opt/anaconda3/bin/python\n",
+  "product_source_changes_this_unit": 0,
+  "new_model_calls_this_unit": 0,
+  "last_workload_snapshot": "final/manifest.json",
+  "last_workload_state": "same UID/full spec r0 replicas2 revision37; latest capture 13:12 UTC, no new health query in this audit"
+}

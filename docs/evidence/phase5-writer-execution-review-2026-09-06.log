@@ -1,0 +1,49 @@
+M65 — P5-E execution review and strict JSON evidence, 2026-09-06
+Goal turn: progress. Current objective remains active; remote experiment incomplete.
+Environment: local macOS / Python 3.13. No new repository/App/token/PR created.
+
+Read-only remote review:
+- gh api user: men16922.
+- lab repository GET: 404. Paginated owner-repository listing: two result pages,
+  zero matching men16922/platform-agent-p5e-authz-lab. No global name-availability claim.
+- App GET: 404. Authenticated Settings/GitHub Apps UI: no matching P5-E App.
+- GET /versions: [2026-03-10, 2022-11-28]; proposal version is supported.
+- App registration URL in Chrome reaches GitHub Confirm access (passkey/mobile/TOTP).
+  No authentication button pressed, no secret requested or read. User re-auth needed.
+- Official GitHub docs still expose single_file registration path parameters,
+  while create-reference and update-file endpoint tables require Contents write.
+  This is the hypothesis for the planned live probe, not measured denial.
+References:
+https://docs.github.com/en/apps/sharing-github-apps/registering-a-github-app-using-url-parameters
+https://docs.github.com/en/rest/git/refs#create-a-reference
+https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents
+
+Concrete proposal: experiments/phase5-writer/execution-review.md.
+One new private lab + one private App, selected lab only, single acme path write,
+PR write and metadata read, no Contents permission expansion. Four bounded calls,
+optional operator diagnostic branch only after proven App ref denial, max one
+unmerged draft PR, captured-ID-only cleanup with absence verification.
+Registration re-authentication and confirmation of that remote scope remain open.
+
+Input bug reproduction (real judge/CLI):
+- additions=True and deletions=False were both accepted as supported.
+- contradictory duplicate branch_origin (operator then app) produced supported/exit 0.
+- new regressions before fix: 12 failed, 104 deselected in 0.27s.
+Fix: JSON-type-aware comparisons and integer statuses; duplicate object keys and
+nonfinite JSON numbers rejected at file parsing, with fixed error text on stderr.
+Focused after fix: 116 passed in 0.51s (+12).
+Mutation results, each exit 1 and bytes restored in finally:
+- Python loose equality: 6 failed, 110 passed.
+- duplicate key parser disabled: 2 failed, 114 passed.
+- nonfinite-number rejection disabled: 3 failed, 113 passed.
+- PR status integer guard removed: 1 failed, 115 passed.
+- credential status integer guard removed: 1 failed, 115 passed.
+Full gate: make check exit 0, 2825 passed, 2 skipped, 21 warnings in 54.14s.
+Log: scripts/overnight/logs/phase5-writer-execution-review-gate.log.
+Registration tab re-read after review: still Confirm access.
+No remote mutations, original commit, push, deployment, or unrelated cleanup.
+
+Final source SHA256:
+853ebd003bf003d099cf7e17305579bfdd89f86ebc27521f1a07347bf5cf67be  src/agents/platform/writer_evidence.py
+9884c36ab529673bf3a11e2f2e9fbdf6030a6d3ad250b1ec9b9a2439b6c5599a  scripts/judge_registry_writer.py
+b6f1fdc2cfdb8144a33ca7c977685f377bca07d7eaad9b86fba0304b02b1c896  tests/test_writer_evidence.py

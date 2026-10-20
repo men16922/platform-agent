@@ -1,0 +1,77 @@
+{
+  "at": "2026-10-03T10:04:58.884606+00:00",
+  "candidate": "candidate-v13-readonly-capability.json",
+  "completed": "Explicit read-only mode binds UI/API/durable request to investigation-only tools and bypasses unbounded delegation.",
+  "changes": [
+    "Strict boolean; reject non-local-qwen/onprem before delegation or durable acceptance",
+    "Factory registers only 5 Investigate tools; prompt inventory uses the same selection; ordinary mode remains available",
+    "read_only is part of durable request fingerprint; same ID cannot flip mode; both regular and streaming dashboard proxies retain it",
+    "ready/done retain server mode and replay shows READ-ONLY TOOLS; legacy runs without the field are not relabelled",
+    "Rejected model mutation names in a read-only run can only record ACTIVITY, never create or supersede a DEPLOY row"
+  ],
+  "verification": {
+    "related": "46 passed,3.29s; readonly-capability-related.log",
+    "typescript": "tsc --noEmit exit0; readonly-capability-typescript.log",
+    "new_test_count": 10,
+    "full_gate": {
+      "passed": 3345,
+      "skipped": 2,
+      "warnings": 20,
+      "seconds": 128.96,
+      "environment": "2026-10-03 local macOS/Python3.13.5/Node22.23.3/temporary npm prefix",
+      "evidence": "readonly-capability-gate.log"
+    },
+    "controls": "Both real Pydantic AI routes reject each of 10 excluded catalog tools, execute all 5 reads, and execute an instrumented rollback in normal mode. Local SQLite/API tests bind mode, preserve replay, reject actor mismatch and skip A2A delegation. These are offline local controls, not live AWS mocks.",
+    "mutations": "3 removed boundaries detected as failures; files restored byte-for-byte before the passing full gate. readonly-capability-mutations.json",
+    "documentation_followup": {
+      "passed": 55,
+      "seconds": 3.29,
+      "evidence": "readonly-capability-docs.log",
+      "diff_check": "git diff --check exit0",
+      "scope": "docs-only checkpoint follow-up; runtime sources unchanged after full gate"
+    }
+  },
+  "actual_ui": [
+    {
+      "label": "readonly-capability-inspection",
+      "request_id": "868f454b-f84f-4ec1-97b3-7341cbb85b95",
+      "status": "succeeded",
+      "claims": 1,
+      "acceptance_to_persistence_sec": 8.757,
+      "tool_calls": {
+        "describe_deployment": 1
+      },
+      "record": {
+        "activity_id": "ACT-082C4CAE"
+      }
+    },
+    {
+      "label": "readonly-capability-refusal",
+      "request_id": "4a74ee4b-0bf5-4752-9704-6e83effb1f9f",
+      "status": "failed",
+      "claims": 1,
+      "acceptance_to_persistence_sec": 1.982,
+      "tool_calls": {},
+      "record": null
+    }
+  ],
+  "browser": "Actual Chrome selected checkbox before each request; both saved request modes/results survived reload. readonly-capability-inspection-{live,reload}.txt and readonly-capability-refusal-{live,reload}.txt; screenshot readonly-capability-ui.png",
+  "model_review": {
+    "inspection": "Partial: correctly preserves health/recovery not established, but speculates that zero ready pods for a scaled-down prior revision may indicate failure/rollback without evidence. Not semantic completion.",
+    "refusal": "Declined mutation and made no tool call. The explanation calls the environment read-only and suggests another client; the actual boundary is this request tool capability, not reduced Kubernetes RBAC.",
+    "completion": "Both stop/complete; semantic_verified remains false."
+  },
+  "activation": "readonly-capability-activation.json: owned router78632/dashboard78633; model/proxy/webhook unchanged;286 source hashes matched",
+  "nonchange": "readonly-capability-checkpoint.json and before/after Deployment: same UID/spec,r0/rev27/2 replicas;no new HTTP health observation",
+  "limits": [
+    "Request-level tool exclusion, not tenant/credential isolation; shared deployer and existing permissions unchanged",
+    "A real refusal with zero tools has a durable failed request record and no activity/deploy row; failed means the requested action was not completed",
+    "Same-ID mode flip and forced attempts at excluded tool names were tested offline; actual Chrome model declined before attempting a tool",
+    "Older saved requests are readable; POSTing an old ID whose original request omitted read_only may return409 because the new explicit field changes the fingerprint; no automatic replay/migration",
+    "Agents page still contains static supervisor/kagent READY labels; these do not prove that path and require correction before final presentation",
+    "D/I deployment/rejection proof remains separate; final same-candidate bundle and R5 comparison remain",
+    "No commit/push/remote cloud mutation/RBAC expansion/resource cleanup"
+  ],
+  "next": "Use the enforced read-only path for evidence-linked hypotheses and next checks; evaluate supported/insufficient/contrary cases without claiming general model accuracy or hiding incorrect prose. Correct static runtime readiness claims before final same-candidate scenarios.",
+  "checkpoint_at": "2026-10-03T10:07:20.909611+00:00"
+}

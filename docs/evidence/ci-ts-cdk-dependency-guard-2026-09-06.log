@@ -1,0 +1,64 @@
+M61 — CI TS/CDK dependency guard, 2026-09-06 local macOS / Python 3.13
+Scope: .github/workflows/gate.yml, tests/_ts_toolchain.py (new),
+tests/test_registry_preview_ui.py, tests/test_registry_planner_stack.py,
+tests/test_ci_ts_dependency_guard.py (new). The commit also updates six
+status/plan/lesson documents and this evidence file (12 files total).
+
+Problem measured: gate.yml never set up Node/npm for dashboard/ or
+src/stacks/, so tests/test_registry_preview_ui.py and
+tests/test_registry_planner_stack.py each `pytest.skip` when
+node_modules/.bin/tsc is absent. On a runner without that toolchain both
+files would skip on every run and the TS request/Invoke contract and the
+planner CDK synthesis would never actually be checked in CI, while
+`gh pr checks` shows the same green as a real pass (Risk 12(2)).
+
+Fix, in two independent halves:
+1. gate.yml: actions/setup-node@v4 (node 22, cache: npm,
+   cache-dependency-path = dashboard/package-lock.json +
+   src/stacks/package-lock.json) followed by `npm ci` in each of
+   dashboard/ and src/stacks/, before `make check` runs. Mirrors the
+   existing terraform-init step's reasoning (comment left in gate.yml).
+2. tests/_ts_toolchain.py: require_ts_toolchain(compiler, node_available,
+   hint) — returns silently if present; otherwise pytest.skip() unless
+   CI or GITHUB_ACTIONS is set in the environment, in which case
+   pytest.fail(). Both contract test files now call this instead of a
+   bare `if not compiler.exists(): pytest.skip(...)`.
+
+Regression coverage (tests/test_ci_ts_dependency_guard.py, 7 new tests):
+- present toolchain -> no skip, no fail
+- missing toolchain, CI/GITHUB_ACTIONS unset -> pytest.skip.Exception
+- missing toolchain, CI=true -> pytest.fail.Exception
+- missing toolchain, GITHUB_ACTIONS=true -> pytest.fail.Exception
+- compiler present but node missing, CI=true -> pytest.fail.Exception
+- both contract files are grepped for the literal call
+  `require_ts_toolchain(` so a future revert to a bare `pytest.skip` is
+  intended to cause a gate failure. M62 later reproduced a false green
+  when the call text remained only in a comment; see the follow-up log.
+
+Local verification actually performed (no network fetch, no npm
+install/ci run, no remote CI, no push, no deploy):
+- dashboard/node_modules and src/stacks/node_modules were already present
+  in this worktree from prior local work, so the TS contract and CDK
+  synthesis tests ran for real (not skipped) both before and after this
+  change: `tsc` compiled, `node` executed the contract script /
+  Template.fromStack() synthesis, and every assertion in both files
+  passed.
+- `make check` before this change: 2679 passed, 2 skipped
+  (docs/STATUS.md baseline, same machine).
+- `make check` after this change: 2686 passed, 2 skipped, 2688
+  collected (+7, exactly the new guard-behaviour tests; the two
+  contract files' own test counts are unchanged because their fixtures
+  still resolve the same local toolchain).
+- Did not run `npm ci`/`npm install` here — the toolchain used was
+  whatever this worktree already had installed. Whether `npm ci` itself
+  succeeds against the committed lockfiles on a fresh ubuntu-latest
+  runner is therefore unverified by this session; that is the
+  "npm 다운로드·원격 CI 실행" the task explicitly excluded from this
+  iteration's scope.
+
+File hashes (sha256) at the point this log was written:
+0deccb45900cafe830c8d1bbfe5856878587a7d791ccc3d694ba4b9327cce5dc  .github/workflows/gate.yml
+f846ad6296a5b842fb50a86d5c682897525e42446cde4973994ab3f71bc8fef8  tests/_ts_toolchain.py
+bb79806da3644c53841fba464b2e2f0e31d2077389705fa7e0fe7ecc901d7cda  tests/test_registry_preview_ui.py
+15fefbad3413bf961936389a8360e282a2cf1d690a73bde9dbca732e325c4b34  tests/test_registry_planner_stack.py
+3efd0eab85e7272666aeca4bc3a97ef915afe74ca0d112b1c404afaaa6fd34bb  tests/test_ci_ts_dependency_guard.py

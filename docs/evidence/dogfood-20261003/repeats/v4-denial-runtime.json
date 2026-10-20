@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-03T06:44:59.672516+00:00",
+  "candidate": "candidate-v4.json",
+  "identity": "system:serviceaccount:acme-dev-observability:platform-agent",
+  "permissions_changed": false,
+  "pids": {
+    "mlx": 46760,
+    "proxy": 46761,
+    "router": 86608,
+    "dashboard": 86609
+  }
+}

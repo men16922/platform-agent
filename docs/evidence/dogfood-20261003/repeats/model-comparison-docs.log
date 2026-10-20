@@ -1,0 +1,21 @@
+........................F..............................                  [100%]
+=================================== FAILURES ===================================
+____ test_every_entry_document_path_exists_in_git_and_on_disk[NEXT_PLAN.md] ____
+
+path = PosixPath('/Users/men1692/Desktop/AWS/platform-agent/docs/NEXT_PLAN.md')
+
+    @pytest.mark.parametrize("path", DOCS, ids=lambda p: p.name)
+    def test_every_entry_document_path_exists_in_git_and_on_disk(path):
+        text = path.read_text(encoding="utf-8")
+        assert _paths(text), f"{path.name}: citation sweep found nothing"
+>       assert not (missing := _missing(text, _tracked())), (
+            f"{path.relative_to(ROOT)} points at missing/untracked Markdown: {missing}. "
+            "Restore the target or correct the reference; local ignored files do not ship in CI."
+        )
+E       AssertionError: docs/NEXT_PLAN.md points at missing/untracked Markdown: ['docs/evidence/dogfood-20261003/repeats/model-comparison-review.md']. Restore the target or correct the reference; local ignored files do not ship in CI.
+E       assert not ['docs/evidence/dogfood-20261003/repeats/model-comparison-review.md']
+
+tests/test_doc_paths_resolve.py:46: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_doc_paths_resolve.py::test_every_entry_document_path_exists_in_git_and_on_disk[NEXT_PLAN.md]
+1 failed, 54 passed in 3.46s

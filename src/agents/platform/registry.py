@@ -262,7 +262,7 @@ class Registry:
             and not self.values_for(name)
         )
 
-    def uninstallable_reason(self, capability: str) -> str | None:
+    def uninstallable_reason(self, capability: str, *, repo_root: Path | None = None) -> str | None:
         """Why this add-on cannot be installed as rendered, or None if it can.
 
         Asked before printing or applying rather than after, because both gaps fail
@@ -276,7 +276,7 @@ class Registry:
         """
         if not self.repo_for(capability):
             return "no self_hosted_repo in the catalog — nowhere to fetch the chart from"
-        if not self.values_for(capability):
+        if not self.values_for(capability, repo_root=repo_root):
             return "declared values file did not resolve to a mapping"
         return None
 

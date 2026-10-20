@@ -1,0 +1,70 @@
+2026-09-05 Phase 5 planner runtime investigation
+
+Python: 3.13.5
+Planner: existing plan_addon_attachment, implementation unchanged
+Input snapshot: catalog.yaml + tenants/acme.yaml only; no .git, no other tenants
+PATH=/nonexistent; audit hook rejects subprocess.Popen and socket.connect
+Changed path: tenants/acme.yaml
+Title: acme/prod: attach logging (loki 7.1.0)
+Output YAML bytes: 1538
+Original input unchanged: True
+Backend: loki
+Workspace registry unchanged: True
+
+Existing tests: /opt/anaconda3/bin/python3.13 -m pytest tests/test_registry_write.py -q
+.........................                                                [100%]
+25 passed in 1.12s
+
+Reproduction (PYTHONPATH=. python3.13, from repository root):
+from pathlib import Path
+import tempfile,shutil,hashlib,sys,os
+from src.agents.platform.registry_write import plan_addon_attachment
+
+def deny_external(event,args):
+ if event in {'subprocess.Popen','socket.connect'}:
+  raise AssertionError('planner attempted forbidden external operation: '+event)
+sys.addaudithook(deny_external)
+os.environ['PATH']='/nonexistent'
+source=Path('platform'); before={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in source.rglob('*.yaml')}
+with tempfile.TemporaryDirectory(prefix='platform-attach-design-') as tmp:
+ root=(Path(tmp)/'platform').resolve();(root/'tenants').mkdir(parents=True)
+ for rel in ('catalog.yaml','tenants/acme.yaml'):shutil.copy2(source/rel,root/rel)
+ plan=plan_addon_attachment('acme','prod','logging','7.1.0',root=root)
+ assert not (root/'.git').exists()
+ assert not (root/'tenants/globex.yaml').exists()
+ assert plan.path.read_text()==plan.original
+ print('Python:',sys.version.split()[0])
+ print('Planner: existing plan_addon_attachment, implementation unchanged')
+ print('Input snapshot: catalog.yaml + tenants/acme.yaml only; no .git, no other tenants')
+ print('PATH=/nonexistent; audit hook rejects subprocess.Popen and socket.connect')
+ print('Changed path:',str(plan.path.relative_to(root)))
+ print('Title:',plan.title)
+ print('Output YAML bytes:',len(plan.updated.encode()))
+ print('Original input unchanged:',plan.path.read_text()==plan.original)
+ print('Backend:',plan.backend)
+ assert before=={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in source.rglob('*.yaml')}
+ print('Workspace registry unchanged: True')
+
+Official references inspected 2026-09-05:
+https://vercel.com/docs/functions/runtimes/python
+https://vercel.com/docs/functions/runtimes
+https://docs.aws.amazon.com/lambda/latest/api/API_Invoke.html
+https://docs.github.com/en/rest/apps/apps#create-an-installation-access-token-for-an-app
+https://docs.github.com/en/rest/git/refs#create-a-reference
+
+Interpretation: single_file permission exists; create-reference documents Contents write. No live App permission/branch/PR test was performed. No Lambda or IAM resource was created.
+
+Verification after documentation updates:
+Command: make check
+================ 2429 passed, 2 skipped, 21 warnings in 41.97s =================
+
+Correction after P5-A isolation test (M55, 2026-09-05):
+The initial two-file experiment did not intercept filesystem reads outside the
+snapshot. Registry.values_for() defaulted to DEFAULT_REGISTRY_ROOT.parent and
+read infra/onprem/addons/values/loki.yaml from the host checkout.
+Workspace fallback: SUCCESS.
+DEFAULT_REGISTRY_ROOT changed to an isolated empty root: RegistryWriteError,
+"declared values file did not resolve to a mapping".
+The no-git finding holds; the two-files-only dependency claim does not.
+P5-A now snapshots the catalog, tenant and selected values at one commit and
+passes values_repo_root explicitly. See phase5-snapshot-planner-2026-09-05.log.

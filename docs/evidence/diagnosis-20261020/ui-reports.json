@@ -1,0 +1,163 @@
+[
+  {
+    "available": true,
+    "deployment": "orders",
+    "namespace": "acme",
+    "context": "recorded-local-context",
+    "uid": "deployment-uid",
+    "observed_at": "2026-10-03T07:00:00+00:00",
+    "current_revision": 2,
+    "previous_revision": 1,
+    "rollout_complete": false,
+    "desired_replicas": 1,
+    "rollout_counts": {
+      "replicas": 2,
+      "updatedReplicas": 1,
+      "readyReplicas": 1,
+      "availableReplicas": 1
+    },
+    "observation_consistency": {
+      "status": "inconsistent",
+      "disagreements": [
+        {
+          "scope": "deployment_vs_owned_pods",
+          "field": "readyReplicas",
+          "reported": 1,
+          "observed": 0
+        },
+        {
+          "scope": "deployment_vs_owned_replicasets",
+          "field": "availableReplicas",
+          "reported": 1,
+          "observed": 0
+        }
+      ],
+      "unknown": []
+    },
+    "current_health": "not_established",
+    "previous_health": "not_established",
+    "recovery_status": "not_established",
+    "candidate_revision": null,
+    "recovery_reasons": [
+      "Deployment, ReplicaSet and Pod observations disagree; re-read the same target before concluding completion or reviewing recovery.",
+      "The previous revision's health is not established."
+    ],
+    "execution_authorized": false,
+    "sources": [
+      {
+        "source_id": "deployment",
+        "sha256": "8cb79b27bc8ea21c72c48499e51b407e81ce41e692fc1e24629f3ce7f9abfd6c",
+        "observed_at": "2026-10-03T07:00:00+00:00"
+      },
+      {
+        "source_id": "replicasets-pods",
+        "sha256": "9a70f6afc22e6dc1e43bd545b8c58ab762cd18e53c6b97e319e9c39fdf460703",
+        "observed_at": "2026-10-03T07:00:00+00:00"
+      }
+    ],
+    "limits": [
+      "Point-in-time observations, not an atomic cluster snapshot or a root-cause finding.",
+      "Kubernetes readiness is not an external service/dependency health check.",
+      "A preserved template is not a verified available image/configuration or rollback authorization.",
+      "Logs, annotations and model proposals cannot grant recovery eligibility."
+    ]
+  },
+  {
+    "available": true,
+    "deployment": "orders",
+    "namespace": "acme",
+    "context": "recorded-local-context",
+    "uid": "deployment-uid",
+    "observed_at": "2026-10-03T07:00:00+00:00",
+    "current_revision": 2,
+    "previous_revision": 1,
+    "rollout_complete": false,
+    "desired_replicas": 1,
+    "rollout_counts": {
+      "replicas": 2,
+      "updatedReplicas": 1,
+      "readyReplicas": 1,
+      "availableReplicas": 1
+    },
+    "observation_consistency": {
+      "status": "consistent",
+      "disagreements": [],
+      "unknown": []
+    },
+    "current_health": "not_established",
+    "previous_health": "kubernetes_readiness",
+    "recovery_status": "review_candidate",
+    "candidate_revision": 1,
+    "recovery_reasons": [],
+    "execution_authorized": false,
+    "sources": [
+      {
+        "source_id": "deployment",
+        "sha256": "8cb79b27bc8ea21c72c48499e51b407e81ce41e692fc1e24629f3ce7f9abfd6c",
+        "observed_at": "2026-10-03T07:00:00+00:00"
+      },
+      {
+        "source_id": "replicasets-pods",
+        "sha256": "ab91d684ea88280794cf074cfa1cb13544fd4564a1a1e9ddd1a43b8ce5be02f8",
+        "observed_at": "2026-10-03T07:00:00+00:00"
+      }
+    ],
+    "limits": [
+      "Point-in-time observations, not an atomic cluster snapshot or a root-cause finding.",
+      "Kubernetes readiness is not an external service/dependency health check.",
+      "A preserved template is not a verified available image/configuration or rollback authorization.",
+      "Logs, annotations and model proposals cannot grant recovery eligibility."
+    ]
+  },
+  {
+    "available": true,
+    "deployment": "orders-api-dogfood",
+    "namespace": "acme-dev-observability",
+    "context": "recorded-local-context",
+    "uid": "8567c751-fc44-4e28-b63e-e21af534661f",
+    "observed_at": "2026-10-03T11:11:14.115023+00:00",
+    "current_revision": 29,
+    "previous_revision": 28,
+    "rollout_complete": true,
+    "desired_replicas": 2,
+    "rollout_counts": {
+      "replicas": 2,
+      "updatedReplicas": 2,
+      "readyReplicas": 2,
+      "availableReplicas": 2
+    },
+    "observation_consistency": {
+      "status": "consistent",
+      "disagreements": [],
+      "unknown": []
+    },
+    "current_health": "not_established",
+    "previous_health": "not_established",
+    "recovery_status": "not_established",
+    "candidate_revision": null,
+    "recovery_reasons": [
+      "The current rollout is complete; these observations do not establish a need to roll back.",
+      "A failure of the current revision is not established.",
+      "The previous revision's health is not established."
+    ],
+    "execution_authorized": false,
+    "sources": [
+      {
+        "source_id": "deployment",
+        "sha256": "fa143e8cc43dedd32035aec21053aead1c33a5d38bba6fa2bdebf03076d65bf2",
+        "observed_at": "2026-10-03T11:11:13.585205+00:00"
+      },
+      {
+        "source_id": "replicasets-pods",
+        "sha256": "790a353ced296da109b375050f41bab500269681526ceeac51ebde360c08cd10",
+        "observed_at": "2026-10-03T11:11:13.658400+00:00"
+      }
+    ],
+    "limits": [
+      "Point-in-time observations, not an atomic cluster snapshot or a root-cause finding.",
+      "Kubernetes readiness is not an external service/dependency health check.",
+      "A preserved template is not a verified available image/configuration or rollback authorization.",
+      "Logs, annotations and model proposals cannot grant recovery eligibility."
+    ]
+  }
+]

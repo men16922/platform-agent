@@ -1,0 +1,97 @@
+{
+  "at": "2026-10-03T12:52:11.590657+00:00",
+  "window_start": "2026-10-03T12:52:11.229630+00:00",
+  "target": {
+    "context": "kind-platform-agent",
+    "identity_context": "dogfood-deployer",
+    "namespace": "acme-dev-observability",
+    "deployment": "orders-api-dogfood",
+    "uid": "8567c751-fc44-4e28-b63e-e21af534661f"
+  },
+  "revision": "29",
+  "images": [
+    "localhost:5001/orders-api-dogfood:r0"
+  ],
+  "replicas": 2,
+  "reads": [
+    {
+      "source_id": "deployment-before",
+      "file": "deployment-before.json",
+      "sha256": "351fc856f3b6586a2d14ef8082b5590b52218aedfe7fcdf333bfb762835c5317",
+      "started_at": "2026-10-03T12:52:11.229769+00:00",
+      "completed_at": "2026-10-03T12:52:11.269970+00:00",
+      "exit_code": 0
+    },
+    {
+      "source_id": "replicasets-pods",
+      "file": "replicasets-pods.json",
+      "sha256": "b49d96ecf93a3b5870b1eb4c11c5253909e40f515e8480c7bbe3302f9930c4d7",
+      "started_at": "2026-10-03T12:52:11.270449+00:00",
+      "completed_at": "2026-10-03T12:52:11.314098+00:00",
+      "exit_code": 0
+    },
+    {
+      "source_id": "describe",
+      "file": "describe.json",
+      "sha256": "da167ba475375c8c2f9f0309f952a3aa8e53751204001ffa8bad7591c0927a60",
+      "started_at": "2026-10-03T12:52:11.314713+00:00",
+      "completed_at": "2026-10-03T12:52:11.357990+00:00",
+      "exit_code": 0
+    },
+    {
+      "source_id": "pod-list",
+      "file": "pod-list.json",
+      "sha256": "23eab17201873839e4b77bbddc83af109d670e741d5705d56b85fe13a3b53b1e",
+      "started_at": "2026-10-03T12:52:11.358345+00:00",
+      "completed_at": "2026-10-03T12:52:11.397210+00:00",
+      "exit_code": 0
+    },
+    {
+      "source_id": "events-orders-api-dogfood-7b8fb6877d-8m6m8",
+      "file": "events-orders-api-dogfood-7b8fb6877d-8m6m8.json",
+      "sha256": "4fd851fc29adae08f3a0ad5202cf8aee8424e2f247b66a27c04171bd1ba42e9f",
+      "started_at": "2026-10-03T12:52:11.397725+00:00",
+      "completed_at": "2026-10-03T12:52:11.434467+00:00",
+      "exit_code": 0
+    },
+    {
+      "source_id": "logs-orders-api-dogfood-7b8fb6877d-8m6m8",
+      "file": "logs-orders-api-dogfood-7b8fb6877d-8m6m8.json",
+      "sha256": "9f3c5308bc395c3efe9eadff6a625f1bd6d057087afd8452ed32ebe8a18b4413",
+      "started_at": "2026-10-03T12:52:11.434881+00:00",
+      "completed_at": "2026-10-03T12:52:11.479390+00:00",
+      "exit_code": 0
+    },
+    {
+      "source_id": "events-orders-api-dogfood-7b8fb6877d-t7m6b",
+      "file": "events-orders-api-dogfood-7b8fb6877d-t7m6b.json",
+      "sha256": "2b87e800d4111be97437ad1de84b6ba31241ae650717293ca9adc8ef981a18a0",
+      "started_at": "2026-10-03T12:52:11.479769+00:00",
+      "completed_at": "2026-10-03T12:52:11.513390+00:00",
+      "exit_code": 0
+    },
+    {
+      "source_id": "logs-orders-api-dogfood-7b8fb6877d-t7m6b",
+      "file": "logs-orders-api-dogfood-7b8fb6877d-t7m6b.json",
+      "sha256": "679bd96d0cdde6cfcb36d119b764ed1577d0bf24917fc80ed07480ef347d10a7",
+      "started_at": "2026-10-03T12:52:11.514000+00:00",
+      "completed_at": "2026-10-03T12:52:11.556690+00:00",
+      "exit_code": 0
+    },
+    {
+      "source_id": "deployment-after",
+      "file": "deployment-after.json",
+      "sha256": "3410d0a0d4ed98f0a3bbcbe56542d56e4a41db1d30796e9dd931fddac1a95e15",
+      "started_at": "2026-10-03T12:52:11.557088+00:00",
+      "completed_at": "2026-10-03T12:52:11.590181+00:00",
+      "exit_code": 0
+    }
+  ],
+  "deployment_identity_generation_resource_version_stable": true,
+  "limits": [
+    "Sequential observations, not an atomic snapshot. Sources retain their own acquisition times.",
+    "Log capture requests the last 30 seconds; log timestamps are distinct from acquisition time.",
+    "HTTP 200 in one Pod log does not prove that a failed new revision is healthy or that a service had an outage."
+  ],
+  "mutations": 0
+}

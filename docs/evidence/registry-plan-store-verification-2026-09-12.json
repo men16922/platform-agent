@@ -1,0 +1,18 @@
+{
+  "verified_at": "2026-09-12T14:47:14.966728+00:00",
+  "gate": "make check",
+  "environment": "macOS 26.6.2 ARM64; Python 3.13.5",
+  "passed": 2845,
+  "skipped": 2,
+  "warnings": 21,
+  "seconds": 57.55,
+  "full_log": "/tmp/platform-agent-m71-verified-gate.log",
+  "local_dynamodb_log": "docs/evidence/registry-plan-store-local-2026-09-12.log",
+  "mutation_evidence": "docs/evidence/registry-plan-store-mutations-2026-09-12.json",
+  "mutations_caught": 3,
+  "production_preview_connected": false,
+  "github_writer_connected": false,
+  "new_remote_writes_in_followup": 0,
+  "user_retained_lab_key_checkout": "preserved",
+  "dedicated_local_test_container": "removed"
+}

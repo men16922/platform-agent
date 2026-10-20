@@ -1,0 +1,26 @@
+{
+  "date": "2026-09-13",
+  "milestone": "M73",
+  "scope": "synthetic inputs, actual local files/processes and loopback HTTP",
+  "focused_tests": {
+    "passed": 208,
+    "seconds": 5.02
+  },
+  "gate": {
+    "command": "make check",
+    "passed": 2926,
+    "skipped": 2,
+    "warnings": 21,
+    "seconds": 62.78,
+    "exit_code": 0
+  },
+  "remote_api_calls": 0,
+  "retained_p5e_resources": "not accessed or changed",
+  "machine": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "mutations": "docs/evidence/writer-capture-mutations-2026-09-13.json",
+  "sha256": {
+    "src/agents/platform/writer_capture.py": "d90583592b0ae5b7625de4167ab45a2646a0eda5776616b0f7075f5325903298",
+    "scripts/capture_registry_writer_response.py": "8f9cdb20ba711956522b7e11e3684bb1927a35bae5148cde87544362741beff0",
+    "tests/test_writer_capture.py": "d5d19260a503a0f90c8b9c6c05000d68df8c432d7037c6c6147a5af2e4d139da"
+  }
+}

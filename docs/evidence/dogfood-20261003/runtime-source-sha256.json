@@ -1,0 +1,7 @@
+{
+  "src/agents/adapters/deployment/onprem.py": "ce0d6446fc2fa57b4fca473b5973f7061efb340cbedc99f4157dd4f50df6cd0b",
+  "src/agents/ai/local_deploy_api.py": "ddce94e40f55d2f81fd972c77f4ce44e6bd86f869e16305d8195df54966a1382",
+  "examples/orders-api/Dockerfile": "3370fc665120bc5413adca7979144b58faa8e5f574919bec6cafa944e0aaab7d",
+  "tests/test_deployment_adapters.py": "6562c30655fc133ff277a915135ca2287522751b584e139f090902706c036c24",
+  "tests/test_deploy_stream_heartbeat.py": "9b5c15e1197cf3b1c41a77d072871f31c5b0bb344b9fd8b6ddd0024d645ab2ce"
+}

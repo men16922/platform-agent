@@ -1,0 +1,9 @@
+{
+  "at": "2026-10-03T11:04:32.593643+00:00",
+  "subject": "system:serviceaccount:platform-agent-system:platform-agent-deployer",
+  "duration_seconds": 7200,
+  "expires_at": "2026-10-03T13:04:32+00:00",
+  "same_subject": true,
+  "rbac_change": false,
+  "scope": "existing owned dogfood deployer kubeconfig only"
+}

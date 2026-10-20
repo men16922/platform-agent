@@ -1,7 +1,7 @@
 # STATUS 검증 Baseline — 아카이브 (2026-08)
 
 > `docs/STATUS.md`의 **검증 Baseline** 절에서 옮겨 온 항목. **삭제가 아니라 이동**이다 —
-> STATUS는 문자 예산(11,000)이 있고, 그 절은 오래된 것부터 여기로 내려온다.
+> STATUS는 문자 예산(`harness-config.json`의 `char_budgets.status`)이 있고, 그 절은 오래된 것부터 여기로 내려온다.
 > 각 줄의 권위는 줄 안에 적힌 **M번호**와 `docs/evidence/*`가 그대로 유지한다.
 
 ---

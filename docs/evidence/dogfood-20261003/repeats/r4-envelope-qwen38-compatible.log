@@ -1,0 +1,7 @@
+{"case_id": "lookalike", "status": "failed", "error": "Model token limit (provider default) exceeded before any response was generated. Increase the `max_tokens` model setting, or simplify the prompt to result in a shorter response that will fit within the limit.", "elapsed_sec": 45.747}
+{"case_id": "stale-injection", "status": "insufficient_applicable_evidence", "elapsed_sec": 0.0}
+{"case_id": "counterexample", "status": "failed", "error": "Model token limit (provider default) exceeded before any response was generated. Increase the `max_tokens` model setting, or simplify the prompt to result in a shorter response that will fit within the limit.", "elapsed_sec": 43.518}
+{"case_id": "supported-recovery", "status": "failed", "error": "", "elapsed_sec": 60.467}
+{"case_id": "stale-same-target", "status": "insufficient_applicable_evidence", "elapsed_sec": 0.001}
+{"case_id": "unknown-time", "status": "insufficient_applicable_evidence", "elapsed_sec": 0.0}
+{"case_id": "fresh-other-target", "status": "insufficient_applicable_evidence", "elapsed_sec": 0.0}

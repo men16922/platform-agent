@@ -1,0 +1,81 @@
+{
+  "at": "2026-10-03T06:13:10.056450+00:00",
+  "checks": [
+    {
+      "args": [
+        "auth",
+        "whoami",
+        "-o",
+        "json"
+      ],
+      "rc": 0,
+      "stdout": "{\n    \"kind\": \"SelfSubjectReview\",\n    \"apiVersion\": \"authentication.k8s.io/v1\",\n    \"metadata\": {\n        \"creationTimestamp\": \"2026-10-03T06:13:10Z\"\n    },\n    \"status\": {\n        \"userInfo\": {\n            \"username\": \"system:serviceaccount:acme-dev-observability:platform-agent\",\n            \"uid\": \"01d5cca2-9b03-4340-b8b7-75aac9c7312d\",\n            \"groups\": [\n                \"system:serviceaccounts\",\n                \"system:serviceaccounts:acme-dev-observability\",\n                \"system:authenticated\"\n            ],\n            \"extra\": {\n                \"authentication.kubernetes.io/credential-id\": [\n                    \"JTI=d2cb9eb2-0256-4610-a224-91b88552c771\"\n                ]\n            }\n        }\n    }\n}",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "auth",
+        "can-i",
+        "get",
+        "pods",
+        "-n",
+        "globex-dev-observability"
+      ],
+      "rc": 1,
+      "stdout": "no",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "auth",
+        "can-i",
+        "get",
+        "deployments",
+        "-n",
+        "globex-dev-observability"
+      ],
+      "rc": 1,
+      "stdout": "no",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "auth",
+        "can-i",
+        "create",
+        "deployments",
+        "-n",
+        "globex-dev-observability"
+      ],
+      "rc": 1,
+      "stdout": "no",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "auth",
+        "can-i",
+        "patch",
+        "deployments",
+        "-n",
+        "globex-dev-observability"
+      ],
+      "rc": 1,
+      "stdout": "no",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "auth",
+        "can-i",
+        "create",
+        "services",
+        "-n",
+        "globex-dev-observability"
+      ],
+      "rc": 1,
+      "stdout": "no",
+      "stderr": ""
+    }
+  ]
+}

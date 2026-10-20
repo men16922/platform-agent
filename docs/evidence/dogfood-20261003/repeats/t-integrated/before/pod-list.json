@@ -1,0 +1,17 @@
+{
+  "source_id": "pod-list",
+  "started_at": "2026-10-03T12:52:11.358345+00:00",
+  "completed_at": "2026-10-03T12:52:11.397210+00:00",
+  "seconds": 0.039,
+  "args": [
+    "get",
+    "pods",
+    "-l",
+    "app=orders-api-dogfood",
+    "-o",
+    "wide"
+  ],
+  "exit_code": 0,
+  "stdout": "NAME                                  READY   STATUS    RESTARTS   AGE   IP            NODE                     NOMINATED NODE   READINESS GATES\norders-api-dogfood-7b8fb6877d-8m6m8   1/1     Running   0          6h    10.244.2.28   platform-agent-worker2   <none>           <none>\norders-api-dogfood-7b8fb6877d-t7m6b   1/1     Running   0          6h    10.244.1.37   platform-agent-worker    <none>           <none>\n",
+  "stderr": ""
+}

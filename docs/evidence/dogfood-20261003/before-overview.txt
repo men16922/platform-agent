@@ -1,0 +1,112 @@
+- complementary:
+  - generic: ✦
+  - heading "Platform Agent" [level=1]
+  - paragraph: Autonomous cloud operations
+  - navigation:
+    - paragraph: Workspace
+    - link "⌘ Overview":
+      - /url: /
+      - generic: ⌘
+      - generic: Overview
+    - link "✦ Agents":
+      - /url: /agents
+      - generic: ✦
+      - generic: Agents
+    - link "⬡ Provisioning":
+      - /url: /provisioning
+      - generic: ⬡
+      - generic: Provisioning
+    - link "↗ Deployments":
+      - /url: /deployments
+      - generic: ↗
+      - generic: Deployments
+    - link "🕑 History":
+      - /url: /history
+      - generic: 🕑
+      - generic: History
+    - link "◈ Incidents":
+      - /url: /incidents
+      - generic: ◈
+      - generic: Incidents
+    - link "🛡 Audit Logs":
+      - /url: /audit
+      - generic: 🛡
+      - generic: Audit Logs
+    - link "👥 Users":
+      - /url: /users
+      - generic: 👥
+      - generic: Users
+  - generic: System operational
+  - generic: 4 providers connected
+  - generic: 490 checks passing
+- main:
+  - paragraph: Platform Agent / Overview
+  - paragraph: Production workspace
+  - generic: All systems nominal
+  - button "Notifications": ⌁
+  - generic: admin
+  - button "L"
+  - paragraph: Operations command center
+  - heading "Platform overview" [level=2]
+  - paragraph: Autonomous visibility across AWS, GCP, Azure, and your on-prem estate.
+  - paragraph: Incident telemetry
+  - paragraph: Read-only feed
+  - generic: LIVE · ON-PREM
+  - generic: Autonomous control plane
+  - heading "Signals become verified actions — without losing human control." [level=3]
+  - paragraph: Every incident is evaluated against a provider-aware runbook, policy guard, and validation step before it reaches production.
+  - paragraph: Detect
+  - paragraph: Signals
+  - paragraph: Analyze
+  - paragraph: Root cause
+  - paragraph: Decide
+  - paragraph: Policy
+  - paragraph: Execute
+  - paragraph: Validate
+  - paragraph: Active run
+  - paragraph: AWS remediation workflow
+  - generic: VALIDATED
+  - generic "Response telemetry trend"
+  - paragraph: Response time
+  - paragraph: 1m 24s
+  - paragraph: Guard checks
+  - paragraph: 4 / 4
+  - paragraph: Mode
+  - paragraph: AUTO
+  - heading "Provider health" [level=3]
+  - generic: 4 regions monitored
+  - generic: Incidents observed
+  - generic: "0"
+  - generic: Current incident feed
+  - generic: Autonomously resolved
+  - generic: "0"
+  - generic: Resolved by runbook
+  - generic: Deployments today
+  - generic: "0"
+  - generic: No needs attention
+  - generic: Validation checks
+  - generic: "490"
+  - generic: All passing
+  - heading "Incident feed" [level=3]
+  - link "View all →":
+    - /url: /incidents
+  - heading "Deployment posture" [level=3]
+  - paragraph: Autonomous delivery control
+  - generic: AI ORCHESTRATED
+  - paragraph: Verified today
+  - generic: 4 successful
+  - paragraph: Deployment register
+  - paragraph: Recent validated changes
+  - generic: Last 24 hours
+  - table:
+    - rowgroup:
+      - row "Service Version Provider Agent Status Duration":
+        - columnheader "Service"
+        - columnheader "Version"
+        - columnheader "Provider"
+        - columnheader "Agent"
+        - columnheader "Status"
+        - columnheader "Duration"
+    - rowgroup
+- button "Open Next.js Dev Tools":
+- alert

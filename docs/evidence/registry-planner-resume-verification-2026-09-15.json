@@ -1,0 +1,523 @@
+{
+  "milestone": "M91",
+  "observed_at": "2026-09-15T14:15:51.511068+00:00",
+  "previous_turn_classification": "no progress: context restore only",
+  "authentication": "Vercel device login completed; CLI whoami=men16922",
+  "prior_temporary_candidate_exists": false,
+  "candidate_directory": "/Users/men1692/Desktop/AWS/platform-agent/_workspace/planner-release-20260915",
+  "source": {
+    "file_count": 106,
+    "all_match_M90": true,
+    "overlays": 12,
+    "base_commit": "445d48df8eebd73199521719a5f7e98f40f074a2",
+    "archive_sha256": "95ae1678e8e13894ec9a2601246f460c263519f73cc6b3f5d6f2352aa78a69b3",
+    "manifest_sha256": "d2eac266ba7384bebbfdcdf6e8ae3563a1e1c80b736c2f167d25639974fcedbc"
+  },
+  "lambda_asset": {
+    "hash": "45be035a9c9f0a7c6e79b14bb737e5e866fba2986070f03a5b72ba6982df2ce1",
+    "file_count": 2138,
+    "all_files_match_M90": true,
+    "M90_only_files": "192 .pyc files; no missing source or dependency files",
+    "source_modules": 8,
+    "build_exit_code": 0,
+    "build_interpreter": "Python 3.13.5",
+    "first_attempt": {
+      "interpreter": "Apple Python 3.9",
+      "exit_code": 1,
+      "cause": "pip environment markers evaluated on build host; botocore selected urllib3 <1.27 marker"
+    },
+    "network_disabled_readonly_runtime_check": {
+      "python": "3.13.15 (main, Sep 11 2026, 13:10:56) [GCC 11.5.0 20240719 (Red Hat 11.5.0-5)]",
+      "imported": [
+        "registry",
+        "registry_write",
+        "registry_planner",
+        "registry_authorization",
+        "registry_readers",
+        "registry_lambda",
+        "registry_plan_store",
+        "registry_preview_service"
+      ],
+      "native_yaml": true,
+      "invalid_request": {
+        "ok": false,
+        "status": 422,
+        "error": "invalid_invoke_request"
+      }
+    }
+  },
+  "build": {
+    "exit_code": 0,
+    "platform": "Linux ARM64",
+    "node": "24.21.0",
+    "npm": "11.19.0",
+    "image_digest": "sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553",
+    "clean_npm_ci": true,
+    "real_credentials_supplied": false,
+    "npm_audit_vulnerabilities": 0,
+    "remaining_warning": "npm install-scripts: unrs-resolver postinstall not covered by allowScripts"
+  },
+  "cdk": {
+    "exit_code": 0,
+    "lookups": false,
+    "resource_count": 8,
+    "template_sha256": "f7953ba5564dd9ba6dabbf9a081178a04a0bd2acd5a4bda0148827350168755f",
+    "assembly_manifest_sha256": "d8e5a7229b5a9ad22b92719152be5a8512cd8d20fdeda0a12d062698a96693ab",
+    "same_serialized_M90_template_except_asset_hash": true,
+    "changes": [
+      "Lambda Code.S3Key",
+      "Lambda Metadata aws:asset:path"
+    ],
+    "comparison_note": "CDK stdout YAML omits Rules; exact old-template SHA was recovered by replacing only asset hash in current on-disk JSON"
+  },
+  "vercel_project": {
+    "id": "prj_zvAvIBSR99TCVXhaxeAaXeTCahfp",
+    "name": "platform-agent",
+    "accountId": "team_jxycTlFuqaY9gfAGxEWeOxJV",
+    "rootDirectory": "dashboard",
+    "nodeVersion": "24.x",
+    "framework": "nextjs",
+    "buildCommand": null,
+    "installCommand": null,
+    "outputDirectory": null,
+    "oidcTokenConfig": {
+      "enabled": true,
+      "issuerMode": "team"
+    },
+    "ssoProtection": null,
+    "passwordProtection": null,
+    "alias": [],
+    "productionDeploymentsFastLane": true,
+    "autoAssignCustomDomains": true,
+    "targets": {
+      "production": {
+        "id": "dpl_4CU8BcSRKVroq2hAfLAUNs2aqPE8",
+        "url": "platform-agent-2gvolp02v-men16922s-projects.vercel.app",
+        "readyState": "READY",
+        "target": "production",
+        "createdAt": 1788442902271,
+        "alias": [
+          "platform-agent-red.vercel.app",
+          "platform-agent-men16922s-projects.vercel.app",
+          "platform-agent-git-main-men16922s-projects.vercel.app"
+        ],
+        "aliasAssigned": 1788442931342,
+        "gitSource": null
+      },
+      "preview": {
+        "id": "dpl_94JcF5PBbBrhWtqn6V7hWTKZbAgh",
+        "url": "platform-agent-h5u0t9ljg-men16922s-projects.vercel.app",
+        "readyState": "READY",
+        "target": null,
+        "createdAt": 1788442758400,
+        "alias": [
+          "platform-agent-git-chore-harness-140-men16922s-projects.vercel.app"
+        ],
+        "aliasAssigned": 1788442786930,
+        "gitSource": null
+      }
+    },
+    "env_keys": [
+      {
+        "key": "DASHBOARD_DATA_SOURCE",
+        "target": [
+          "production"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "key": "DASHBOARD_DATA_SOURCE",
+        "target": [
+          "preview"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "key": "PLATFORM_AWS_REGION",
+        "target": [
+          "production"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "key": "PLATFORM_AWS_REGION",
+        "target": [
+          "preview"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "key": "DASHBOARD_INCIDENT_TABLE",
+        "target": [
+          "production"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "key": "DASHBOARD_INCIDENT_TABLE",
+        "target": [
+          "preview"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "key": "AWS_ROLE_ARN",
+        "target": [
+          "production"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "key": "AWS_ROLE_ARN",
+        "target": [
+          "preview"
+        ],
+        "type": "encrypted"
+      },
+      {
+        "key": "DASHBOARD_ACTIVITY_TABLE",
+        "target": [
+          "production"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "key": "AUTH_SECRET",
+        "target": [
+          "production"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "key": "AUTH_GITHUB_SECRET",
+        "target": [
+          "production"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "key": "AUTH_TRUST_HOST",
+        "target": [
+          "production"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "key": "AUTH_GITHUB_ID",
+        "target": [
+          "production"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "key": "DASHBOARD_USERS_TABLE",
+        "target": [
+          "production"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "key": "DASHBOARD_USERS_TABLE",
+        "target": [
+          "preview"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "key": "DASHBOARD_AUDIT_TABLE",
+        "target": [
+          "production"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "key": "DASHBOARD_AUDIT_TABLE",
+        "target": [
+          "preview"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "key": "DASHBOARD_APPROVAL_TABLE",
+        "target": [
+          "production"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "key": "DASHBOARD_APPROVAL_TABLE",
+        "target": [
+          "preview"
+        ],
+        "type": "sensitive"
+      },
+      {
+        "key": "DASHBOARD_ACTIVITY_TABLE",
+        "target": [
+          "preview"
+        ],
+        "type": "sensitive"
+      }
+    ]
+  },
+  "vercel_live": {
+    "domains": {
+      "domains": [
+        {
+          "name": "platform-agent-red.vercel.app",
+          "verified": true,
+          "redirect": null,
+          "redirectStatusCode": null,
+          "gitBranch": null,
+          "customEnvironmentId": null
+        }
+      ],
+      "pagination": {
+        "count": 1,
+        "next": null,
+        "prev": 1783719329307
+      }
+    },
+    "deployment": {
+      "id": "dpl_4CU8BcSRKVroq2hAfLAUNs2aqPE8",
+      "url": "platform-agent-2gvolp02v-men16922s-projects.vercel.app",
+      "projectId": "prj_zvAvIBSR99TCVXhaxeAaXeTCahfp",
+      "readyState": "READY",
+      "target": "production",
+      "alias": [
+        "platform-agent-red.vercel.app",
+        "platform-agent-men16922s-projects.vercel.app",
+        "platform-agent-git-main-men16922s-projects.vercel.app"
+      ],
+      "aliasAssigned": true,
+      "createdAt": 1788442902271,
+      "regions": [
+        "iad1"
+      ],
+      "nodeVersion": null,
+      "oidcTokenClaims": {
+        "sub": "owner:men16922s-projects:project:platform-agent:environment:production",
+        "iss": "https://oidc.vercel.com/men16922s-projects",
+        "scope": "owner:men16922s-projects:project:platform-agent:environment:production",
+        "aud": "https://vercel.com/men16922s-projects",
+        "owner": "men16922s-projects",
+        "owner_id": "team_jxycTlFuqaY9gfAGxEWeOxJV",
+        "project": "platform-agent",
+        "project_id": "prj_zvAvIBSR99TCVXhaxeAaXeTCahfp",
+        "environment": "production",
+        "plan": "hobby"
+      },
+      "isInConcurrentBuildsQueue": false,
+      "readyStateReason": null,
+      "projectSettings": {
+        "buildCommand": null,
+        "devCommand": null,
+        "framework": "nextjs",
+        "commandForIgnoringBuildStep": null,
+        "installCommand": null,
+        "outputDirectory": null,
+        "speedInsights": {
+          "id": "T8iE5ugEoul6CEChjB3kQ3W08A0",
+          "hasData": false
+        },
+        "webAnalytics": {
+          "id": "zdGVfaB9mbtslxqAkO0UoyIbi"
+        },
+        "nodeVersion": "24.x"
+      }
+    },
+    "team": {
+      "id": "team_jxycTlFuqaY9gfAGxEWeOxJV",
+      "slug": "men16922s-projects",
+      "billing": {
+        "plan": "hobby",
+        "status": "active"
+      }
+    },
+    "http": [
+      {
+        "url": "https://platform-agent-red.vercel.app/",
+        "status": 200,
+        "final_url": "https://platform-agent-red.vercel.app/",
+        "content_type": "text/html; charset=utf-8"
+      },
+      {
+        "url": "https://platform-agent-red.vercel.app/api/auth/providers",
+        "status": 200,
+        "final_url": "https://platform-agent-red.vercel.app/api/auth/providers",
+        "content_type": "application/json",
+        "github": {
+          "id": "github",
+          "type": "oauth",
+          "signinUrl": "https://platform-agent-red.vercel.app/api/auth/signin/github",
+          "callbackUrl": "https://platform-agent-red.vercel.app/api/auth/callback/github"
+        }
+      },
+      {
+        "url": "https://platform-agent-2gvolp02v-men16922s-projects.vercel.app/",
+        "status": 200,
+        "final_url": "https://platform-agent-2gvolp02v-men16922s-projects.vercel.app/",
+        "content_type": "text/html; charset=utf-8"
+      },
+      {
+        "url": "https://platform-agent-2gvolp02v-men16922s-projects.vercel.app/api/auth/providers",
+        "status": 200,
+        "final_url": "https://platform-agent-2gvolp02v-men16922s-projects.vercel.app/api/auth/providers",
+        "content_type": "application/json",
+        "github": {
+          "id": "github",
+          "type": "oauth",
+          "signinUrl": "https://platform-agent-2gvolp02v-men16922s-projects.vercel.app/api/auth/signin/github",
+          "callbackUrl": "https://platform-agent-2gvolp02v-men16922s-projects.vercel.app/api/auth/callback/github"
+        }
+      }
+    ]
+  },
+  "aws_readonly": {
+    "users_table": {
+      "http_status": 200,
+      "table": {
+        "TableName": "platform-agent-users",
+        "TableArn": "arn:aws:dynamodb:us-east-1:908601828278:table/platform-agent-users",
+        "TableStatus": "ACTIVE",
+        "KeySchema": [
+          {
+            "AttributeName": "username",
+            "KeyType": "HASH"
+          }
+        ]
+      }
+    },
+    "self_record": {
+      "http_status": 200,
+      "item_present": false,
+      "item": null
+    },
+    "stack": {
+      "http_status": 400,
+      "error": {
+        "Type": "Sender",
+        "Code": "ValidationError",
+        "Message": "Stack with id RegistryPlannerStack does not exist"
+      }
+    },
+    "bootstrap": {
+      "http_status": 200,
+      "stacks": [
+        {
+          "StackName": "CDKToolkit",
+          "StackStatus": "CREATE_COMPLETE",
+          "Outputs": [
+            {
+              "OutputKey": "ImageRepositoryName",
+              "OutputValue": "cdk-hnb659fds-container-assets-908601828278-us-east-1",
+              "Description": "The name of the ECR repository which hosts docker image assets"
+            },
+            {
+              "OutputKey": "BucketName",
+              "OutputValue": "cdk-hnb659fds-assets-908601828278-us-east-1",
+              "Description": "The name of the S3 bucket owned by the CDK toolkit stack"
+            },
+            {
+              "OutputKey": "BootstrapVersion",
+              "OutputValue": "31",
+              "Description": "The version of the bootstrap resources that are currently mastered in this stack"
+            },
+            {
+              "OutputKey": "BucketDomainName",
+              "OutputValue": "cdk-hnb659fds-assets-908601828278-us-east-1.s3.us-east-1.amazonaws.com",
+              "Description": "The domain name of the S3 bucket owned by the CDK toolkit stack"
+            },
+            {
+              "OutputKey": "FileAssetKeyArn",
+              "OutputValue": "AWS_MANAGED_KEY",
+              "Description": "The ARN of the KMS key used to encrypt the asset bucket (deprecated)",
+              "ExportName": "CdkBootstrap-hnb659fds-FileAssetKeyArn"
+            }
+          ]
+        }
+      ]
+    },
+    "oidc": {
+      "http_status": 200,
+      "Url": "oidc.vercel.com/men16922s-projects",
+      "ClientIDList": [
+        "https://vercel.com/men16922s-projects"
+      ],
+      "ThumbprintList": [
+        "ee44782835d8fb31394da5ceb840dc93849bcf5a"
+      ]
+    },
+    "observed_at": "2026-09-15T14:11:32.217390+00:00"
+  },
+  "authorization_boundaries": {
+    "remote_resource_writes": false,
+    "planner_invoke": false,
+    "github_write": false,
+    "oauth_registered_callback_verified": false,
+    "production_signin_E2E": false,
+    "previous_lab_resources_preserved": true,
+    "committed_or_pushed": false,
+    "remote_execution_approval": "requested; no answer received"
+  },
+  "gate": {
+    "command": "make check PY=/opt/anaconda3/bin/python",
+    "status": "passed",
+    "exit_code": 0,
+    "passed": 3252,
+    "skipped": 2,
+    "warnings": 21,
+    "seconds": 98.96,
+    "platform": "2026-09-15 local macOS Python 3.13.5",
+    "first_attempt": {
+      "command": "make check PY=/opt/anaconda3/bin/python",
+      "exit_code": 2,
+      "failed": 1,
+      "passed": 3251,
+      "skipped": 2,
+      "warnings": 21,
+      "seconds": 104.45,
+      "failure": "STATUS.md character budget exceeded by 129; duplicate summary shortened to 10961 characters"
+    },
+    "second_attempt": {
+      "exit_code": 2,
+      "failed": 1,
+      "passed": 3251,
+      "skipped": 2,
+      "warnings": 21,
+      "seconds": 97.37,
+      "failure": "measured overage wording interpreted as budget declaration; rephrased without changing the 129-character observation"
+    },
+    "doc_checks": {
+      "passed": 61,
+      "seconds": 2.26
+    },
+    "remote_ci": false,
+    "checkpoint_doc_checks": {
+      "passed": 61,
+      "seconds": 1.62,
+      "git_diff_check_exit_code": 0
+    }
+  },
+  "github_main_readback": {
+    "command": "git ls-remote --heads origin main",
+    "sha": "445d48df8eebd73199521719a5f7e98f40f074a2",
+    "matches_candidate_base": true
+  },
+  "aws_readonly_collection": {
+    "initial_cli_read_calls": 5,
+    "initial_collection_error": "CLI returned no JSON for empty projected GetItem; no success evidence promoted",
+    "sdk_repeat_calls": 5,
+    "identity_calls": 1
+  },
+  "evidence_credential_pattern_scan": {
+    "files": 6,
+    "hits": 0
+  },
+  "aws_default_region": "us-west-2 (aws configure get region, 2026-09-15)",
+  "worktree_overlay_after_gate": {
+    "checked": 12,
+    "all_match_candidate": true
+  },
+  "next_action": "Await explicit approval of section 13 remote execution scope; recheck identity, source/assembly hashes and current production rollback target before deployment."
+}

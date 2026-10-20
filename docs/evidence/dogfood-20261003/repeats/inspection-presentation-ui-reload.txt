@@ -1,0 +1,163 @@
+Browser tab: 1640936920, Title: "Platform Agent — Multi-Cloud Operations Dashboard", URL: "http://localhost:3000/agents".
+1 AXWebArea Platform Agent — Multi-Cloud Operations Dashboard, URL: localhost:3000/agents
+	2 container
+		3 text ✦
+		4 heading Platform Agent, Value: 1
+			5 text Platform Agent
+		6 text Autonomous cloud operations
+		7 text WORKSPACE
+		8 link Description: ⌘ Overview, Value: localhost:3000/
+		9 link Description: ✦ Agents, Value: localhost:3000/agents
+		10 link Description: ⬡ Provisioning, Value: localhost:3000/provisioning
+		11 link Description: ↗ Deployments, Value: localhost:3000/deployments
+		12 link Description: 🕑 History, Value: localhost:3000/history
+		13 link Description: ◈ Incidents, Value: localhost:3000/incidents
+		91 link Description: 🛡 Audit Logs, Value: localhost:3000/audit
+		92 link Description: 👥 Users, Value: localhost:3000/users
+		14 text Operations workspace Review recorded runs and observations.
+	15 container
+		16 container
+			17 text Platform Agent /  Agent activity
+		18 text OPERATIONS WORKSPACE
+		19 text Recorded activity
+		20 button Notifications
+		93 text ADMIN
+		94 button L, Help: Local Dev (local-dev) (admin) — Click to sign out
+		21 text REASONING AND EXECUTION TRACE
+		22 heading Agent activity, Value: 2
+			23 text Agent activity
+		24 text AI Agent autonomous tool-calling log — each agent selects and executes tools without human intervention LIVE · ON-PREM
+		25 heading 1. SELECT EXECUTION AGENT, Value: 3
+			26 text 1. SELECT EXECUTION AGENT
+		27 text The selection controls runtime and chat context.
+		28 container
+			29 image AWS
+			30 text Strands Agent AWS Bedrock Claude
+			31 button 🔧 Tools 5
+				32 text 🔧 Tools
+				33 text 5
+		34 container
+			35 image Google Cloud
+			36 text ADK Agent Google Cloud Gemini 3.5 Flash
+			37 button 🔧 Tools 5
+				38 text 🔧 Tools
+				39 text 5
+		40 container
+			41 image Microsoft Azure
+			42 text MS Agent Microsoft Azure GPT-5.4
+			43 button 🔧 Tools 5
+				44 text 🔧 Tools
+				45 text 5
+		46 container
+			47 text ✓ SELECTED
+			48 image Cloud Native Computing Foundation
+			49 text On-Prem Agent On-Premise Local Qwen + kagent
+			50 button 🔧 Tools 13
+				51 text 🔧 Tools
+				52 text 13
+		53 text 2. SELECTED RUNTIME
+		54 heading On-Prem Agent · Local LLM (Qwen), Value: 3
+			55 text On-Prem Agent  ·  Local LLM (Qwen)
+		56 text Local Qwen handles the request, the supervisor selects the specialist, and kagent owns Kubernetes diagnostics.
+		57 text Router connected
+		95 image Local LLM (Qwen)
+		58 text SELECTED AI MODEL
+		59 container
+			60 text Applies to  On-Prem Agent ; supervisor and kagent use their configured runtime.
+		61 pop up button (collapsed, settable) Value: Local LLM (Qwen) — recommended, Secondary Actions: Expand
+			96 menu
+				97 (selected) Local LLM (Qwen) — recommended
+				98 Azure OpenAI GPT — allowed
+				99 Bedrock Claude — allowed
+				100 Vertex Gemini — allowed
+		101 text 0 1 READY PATH
+		102 image Local LLM (Qwen)
+		103 text Qwen2.5/3-Coder (MLX)
+		104 text recommended model selection
+		64 text 0 2 READY PATH Supervisor
+		65 text Route + policy boundary
+		66 text 0 3 READY PATH kagent A2A
+		67 text Kubernetes tools + trace
+		68 text Qwen → supervisor → kagent
+		69 heading Ask On-Prem Agent, Value: 3
+			70 text Ask  On-Prem Agent
+		71 text Runs with the Agent and AI Model selected above. Investigate, deploy, or recover with a live trace.
+		105 image Local LLM (Qwen)
+		106 text RECOMMENDED Native pairing — Local LLM (Qwen) is the On-Prem-native brain. ONPREM · LOCAL-QWEN Read-only inspection: call describe_deployment exactly once for deployment orders-api-dogfood in namespace acme-dev-observability. Do not deploy, roll back, provision, or change any resource. Report the current and previous revisions, rollout result, actual health evidence, and the structured recovery assessment with its reasons and limitations. Do not treat ready replicas as an external health check or invent a healthy previous revision. OBSERVATIONS RECORDED
+		107 image Local LLM (Qwen)
+		108 text LOCAL-QWEN
+		109 button ✓ describe_deployment ▸
+			110 text ✓
+			111 text describe_deployment
+			112 text ▸
+		113 container Recorded observations
+			114 container
+				115 text RECORDED OBSERVATIONS
+				116 heading acme-dev-observability/orders-api-dogfood, Value: 4
+					117 text acme-dev-observability / orders-api-dogfood
+				118 text Context:  dogfood-deployer  · Observed:  2026-10-03T09:36:58.078772+00:00
+				119 definition list
+					120 container Current revision
+						121 text Current revision
+					122 text 27
+					123 container Rollout
+						124 text Rollout
+					125 text Complete
+					126 container Available / desired
+						127 text Available / desired
+					128 container
+						129 text 2  /  2  replicas
+					130 container Application health
+						131 text Application health
+					132 text Not established
+					133 container Previous revision
+						134 text Previous revision
+					135 container
+						136 text 26  ·  health not established
+				137 heading Recovery review, Value: 5
+					138 text Recovery review
+				139 text No supported recovery candidate.
+				140 content list
+					141 container
+						142 AXListMarker • 
+						143 text The current rollout is complete; these observations do not establish a need to roll back.
+					144 container
+						145 AXListMarker • 
+						146 text A failure of the current revision is not established.
+					147 container
+						148 AXListMarker • 
+						149 text The previous revision's health is not established.
+				150 text This assessment does not authorize a change. These are recorded observations, not a root-cause finding. External service health and recovery on new nodes have not been verified.
+				151 button (collapsed) Observation sources (2), Secondary Actions: Expand
+					152 text Observation sources (
+					153 text 2
+					154 text )
+		155 button (collapsed) Model interpretation · Response complete · Unverified, Secondary Actions: Expand
+			156 text Model interpretation · 
+			157 text Response complete
+			158 text  · Unverified
+		159 text field (settable)
+		74 button (disabled) Run
+		160 container
+			161 text Request:  3da3703c-cd18-454f-a75c-bca769b393e7
+		162 button Check recorded result
+		75 heading RECENT ACTIVITY, Value: 3
+			76 text RECENT ACTIVITY
+		77 text Latest  5  of  37  verified actions
+		78 container
+			79 image Cloud Native Computing Foundation
+			80 text ONPREM
+			81 image Local LLM (Qwen)
+			82 text On-Prem Agent (Local LLM (Qwen)) — Read-only inspection: call describe_deployment exactly once for deployment orders-api-dogfood in namespace acme-dev-observability. Do not de 6:37:03 PM COMPLETE describe_deployment
+		83 container
+			84 image Cloud Native Computing Foundation
+			85 text ONPREM
+			86 image Local LLM (Qwen)
+			87 text On-Prem Agent (Local LLM (Qwen)) — Read-only inspection: call describe_deployment exactly once for deployment orders-api-dogfood in namespace acme-dev-observability. Do not de 6:13:05 PM COMPLETE describe_deployment
+		88 link Value: localhost:3000/deployments/DEP-09D8589C, Description: Cloud Native Computing Foundation ONPREM AI On-Prem Executor — Deploy reviewed image: {"environment": "dev", "image_uri": "localhost:5001/orders-api-dogfood:r0", "namespace": "globex-dev-observability", 3:45:49 PM FAILED deploy_to_cluster View trace →
+		89 link Value: localhost:3000/deployments/DEP-71D41B0B, Description: Cloud Native Computing Foundation ONPREM AI On-Prem Executor — Deploy reviewed image: {"environment": "dev", "image_uri": "localhost:5001/orders-api-dogfood:r0", "namespace": "globex-dev-observability", 3:45:28 PM FAILED deploy_to_cluster View trace →
+		90 link Value: localhost:3000/deployments/DEP-CDD3D374, Description: Cloud Native Computing Foundation ONPREM AI On-Prem Executor — Rollback orders-api-dogfood to previous revision 3:44:31 PM COMPLETE rollback_deployment View trace →
+	163 pop up button (collapsed) Description: Open Next.js Dev Tools, ID: next-logo, Secondary Actions: Expand
+		164 image
+
+The focused UI element is 1 AXWebArea Platform Agent — Multi-Cloud Operations Dashboard, URL: localhost:3000/agents

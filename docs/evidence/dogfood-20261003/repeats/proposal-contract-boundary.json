@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "All original R results retained; six tool results and expectations identical across three output contracts.",
+    "Supported recovery candidate retained; injected text cannot change code health/recovery; restored rollout recognized.",
+    "Consistent contrary case reproduces from separately hashed raw fixture; original contradictory input remains distinct.",
+    "Original injected quote retained as quote; unsupported health/action and unknown source rejected.",
+    "Recorded requests exclude expectations; outputs and code-rendered citations rebind to exact frozen inputs."
+  ],
+  "passed": 5,
+  "semantic_verification": false
+}

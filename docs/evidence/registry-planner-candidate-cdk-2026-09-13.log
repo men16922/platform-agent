@@ -1,0 +1,167 @@
+AI agent detected, using --progress "errors-only" (set --progress or the "progress" key in cdk.json to change)
+Resources:
+  Plans9BAA8338:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: request_id
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      DeletionProtectionEnabled: true
+      KeySchema:
+        - AttributeName: request_id
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: RegistryPlannerStack/Plans/Resource
+  Logs6819BB44:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 30
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: RegistryPlannerStack/Logs/Resource
+  ExecutionRole605A040B:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: RegistryPlannerStack/ExecutionRole/Resource
+  ExecutionRoleDefaultPolicyA5B92313:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: dynamodb:GetItem
+            Effect: Allow
+            Resource: arn:aws:dynamodb:us-east-1:908601828278:table/platform-agent-users
+          - Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - Plans9BAA8338
+                - Arn
+          - Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - Logs6819BB44
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: ExecutionRoleDefaultPolicyA5B92313
+      Roles:
+        - Ref: ExecutionRole605A040B
+    Metadata:
+      aws:cdk:path: RegistryPlannerStack/ExecutionRole/DefaultPolicy/Resource
+  PlannerD1424F44:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+        - arm64
+      Code:
+        S3Bucket: cdk-hnb659fds-assets-908601828278-us-east-1
+        S3Key: 149d5bbc35a8a1247aaac2916998cb3f0567feddb552759b0f9b6bd254cedf4e.zip
+      Environment:
+        Variables:
+          REGISTRY_USERS_TABLE: platform-agent-users
+          REGISTRY_PLANS_TABLE:
+            Ref: Plans9BAA8338
+          REGISTRY_REPOSITORY: men16922/platform-agent
+          REGISTRY_BRANCH: main
+      Handler: src.agents.platform.registry_lambda.handler
+      LoggingConfig:
+        LogGroup:
+          Ref: Logs6819BB44
+      MemorySize: 256
+      Role:
+        Fn::GetAtt:
+          - ExecutionRole605A040B
+          - Arn
+      Runtime: python3.13
+      Timeout: 60
+    DependsOn:
+      - ExecutionRoleDefaultPolicyA5B92313
+      - ExecutionRole605A040B
+    Metadata:
+      aws:cdk:path: RegistryPlannerStack/Planner/Resource
+      aws:asset:path: asset.149d5bbc35a8a1247aaac2916998cb3f0567feddb552759b0f9b6bd254cedf4e
+      aws:asset:is-bundled: false
+      aws:asset:property: Code
+  ProductionInvokeRole99DDC4FF:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                oidc.vercel.com/men16922s-projects:aud: https://vercel.com/men16922s-projects
+                oidc.vercel.com/men16922s-projects:sub: owner:men16922s-projects:project:platform-agent:environment:production
+            Effect: Allow
+            Principal:
+              Federated: arn:aws:iam::908601828278:oidc-provider/oidc.vercel.com/men16922s-projects
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: RegistryPlannerStack/ProductionInvokeRole/Resource
+  ProductionInvokeRoleDefaultPolicy9895D62A:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: lambda:InvokeFunction
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - PlannerD1424F44
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: ProductionInvokeRoleDefaultPolicy9895D62A
+      Roles:
+        - Ref: ProductionInvokeRole99DDC4FF
+    Metadata:
+      aws:cdk:path: RegistryPlannerStack/ProductionInvokeRole/DefaultPolicy/Resource
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/zVPSwrCMBA9i/t0lIrFrQq6EZTqXqZJLLFtRjqJUkLvbtLi6v3mm0NebGG1wC9nUjVZayoIN4eyEdF6BDVY7EhF845Vq8XhaScyipZqhnCm+tSTf6fgz0dhsINQ0lw/4ZVaI4ckZxb7sasUQjh6K50hm7I/HwWvH8isHcMuQdSw97LRbo8cl5eayfdSiymN99bG1mnCxbu3d6OwpDS8ePnJC9jE/15sTNZ760ynoZzxB+XA4fb8AAAA
+    Metadata:
+      aws:cdk:path: RegistryPlannerStack/CDKMetadata/Default
+Outputs:
+  PlansTableName:
+    Value:
+      Ref: Plans9BAA8338
+  PlannerArn:
+    Value:
+      Fn::GetAtt:
+        - PlannerD1424F44
+        - Arn
+  ProductionInvokeRoleArn:
+    Value:
+      Fn::GetAtt:
+        - ProductionInvokeRole99DDC4FF
+        - Arn
+Parameters:
+  BootstrapVersion:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cdk-bootstrap/hnb659fds/version
+    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
+
+78 feature flags are not configured. Run 'cdk flags --unstable=flags' to learn more.

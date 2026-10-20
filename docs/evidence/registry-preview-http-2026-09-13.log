@@ -1,0 +1,17 @@
+M72 / 2026-09-13 / local production Next server + actual Auth.js dev session
+Command: python /tmp/platform-agent-m72-http.py (manual verification runner)
+Procedure: build dashboard; create isolated Git fixture + users JSON + UUID DynamoDB Local table;
+start loopback next start with explicit local planner/store configuration; GET auth csrf and
+POST dev-credentials callback; use its cookie for preview/prepare HTTP requests. No cookie/token logged.
+Verify saved envelope against real GetItem, then authority injection, revocation, expiry, concurrency,
+base revision advancement and actual table deletion. Fixture grant edits affect only the local JSON.
+Next process, fixture and table cleaned in finally; owned DynamoDB container subsequently removed.
+No remote writes or retained P5-E resource/key access.
+
+PASS actual Auth.js session -> HTTP preview persisted -> prepare CLAIMED, published=false; retry409
+PASS HTTP body authority injection422, cross-origin403, anonymous401, no-store
+PASS same session after grant revocation403; preview remains unclaimed
+PASS foreign subject404 and expired stored preview409 through actual HTTP
+PASS 8 HTTP consumers -> one200, seven409
+PASS committed base change409; real missing plan table503 for both HTTP routes
+PASS owned Next process, fixture checkout and local table removed; no remote calls or key access

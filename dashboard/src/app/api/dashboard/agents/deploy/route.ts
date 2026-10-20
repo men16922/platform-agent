@@ -18,21 +18,31 @@ export async function POST(request: Request) {
 
   const username = session.user.username;
   const userEmail = session.user.email || undefined;
-  const userRole = ((session.user as any).role as Role) || "viewer";
-  if (userRole === "viewer") {
+  const userRole = ((session.user as { role?: Role }).role as Role) || "viewer";
+  if (userRole !== "admin" && userRole !== "operator") {
     return Response.json({ error: "Forbidden: Viewer role cannot trigger deployments." }, { status: 403 });
   }
 
-  let body: { instruction?: string; model?: string; provider?: string } = {};
+  let body: { instruction?: string; model?: string; provider?: string; read_only?: boolean; snapshot?: unknown } = {};
   try {
     body = await request.json();
   } catch {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const instruction = (body.instruction || "").trim();
-  const model = body.model || "local-qwen";
-  const provider = body.provider || "onprem";
+  const instruction = typeof body?.instruction === "string" ? body.instruction.trim() : "";
+  const model = body?.model || "local-qwen";
+  const provider = body?.provider || "onprem";
+  if (body?.read_only !== undefined && typeof body.read_only !== "boolean") {
+    return Response.json({ error: "read_only must be a boolean." }, { status: 400 });
+  }
+  const readOnly = body?.read_only ?? false;
+  if (readOnly && (model !== "local-qwen" || provider !== "onprem")) {
+    return Response.json({ error: "Read-only inspection is supported only for local-qwen/onprem." }, { status: 400 });
+  }
+  if (body?.snapshot !== undefined && (body.snapshot === null || typeof body.snapshot !== "object" || Array.isArray(body.snapshot) || !readOnly)) {
+    return Response.json({ error: "Snapshot analysis requires a snapshot object and read-only mode." }, { status: 400 });
+  }
   if (!instruction) {
     return Response.json({ error: "Missing 'instruction'." }, { status: 400 });
   }
@@ -46,7 +56,7 @@ export async function POST(request: Request) {
     const res = await fetch(`${LOCAL_API}/api/local-deploy`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ instruction, model, provider }),
+      body: JSON.stringify({ instruction, model, provider, read_only: readOnly, ...(body.snapshot !== undefined ? { snapshot: body.snapshot } : {}) }),
       cache: "no-store",
     });
     const data = await res.json();

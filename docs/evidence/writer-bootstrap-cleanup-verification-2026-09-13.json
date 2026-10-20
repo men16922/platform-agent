@@ -1,0 +1,31 @@
+{
+  "milestone": "M81",
+  "date": "2026-09-13",
+  "scope": "actual loopback HTTP and local files; no GitHub calls or credential discovery",
+  "before": {
+    "failed": 7,
+    "passed": 7,
+    "log": "/tmp/platform-agent-m81-before.log"
+  },
+  "after": {
+    "related_passed": 70,
+    "new_tests": 16,
+    "log": "/tmp/platform-agent-m81-restored.log"
+  },
+  "behavior": {
+    "execute_local_validation_failure": "revoke supplied installation token and require same-token GET 401",
+    "offline": "zero API calls",
+    "private_journal_unavailable": "credential not accepted; caller remains responsible",
+    "repeated_invalid_credential": "readback only, no second DELETE"
+  },
+  "gate": {
+    "command": "make check",
+    "environment": "2026-09-13 local macOS Python 3.13",
+    "passed": 3074,
+    "skipped": 2,
+    "warnings": 21,
+    "seconds": 86.79,
+    "log": "/tmp/platform-agent-m81-gate.log",
+    "remote_ci": "not run"
+  }
+}

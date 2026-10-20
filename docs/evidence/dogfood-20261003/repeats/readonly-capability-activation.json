@@ -1,0 +1,15 @@
+{
+  "at": "2026-10-03T10:01:43.901560+00:00",
+  "candidate": "candidate-v13-readonly-capability.json",
+  "old_pids": {
+    "router": 47342,
+    "dashboard": 47343
+  },
+  "new_pids": {
+    "router": 78632,
+    "dashboard": 78633
+  },
+  "source_count": 286,
+  "all_runtime_source_hashes_match": true,
+  "model_proxy_webhook_restarted": false
+}

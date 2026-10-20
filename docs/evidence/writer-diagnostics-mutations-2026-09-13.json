@@ -1,0 +1,28 @@
+{
+  "date": "2026-09-13",
+  "milestone": "M78",
+  "mutations": [
+    {
+      "mutation": "redaction",
+      "test": "tests/test_writer_diagnostics.py::test_credentials_are_removed_before_excerpt_truncation[literal]",
+      "exit_code": 1,
+      "detected": true
+    },
+    {
+      "mutation": "transport_wiring",
+      "test": "tests/test_writer_github.py::test_opt_in_custom_error_capture_is_on_real_http_path_and_never_changes_authority[enabled]",
+      "exit_code": 1,
+      "detected": true
+    },
+    {
+      "mutation": "storage_failure",
+      "test": "tests/test_writer_github.py::test_opt_in_custom_error_capture_is_on_real_http_path_and_never_changes_authority[storage_failure]",
+      "exit_code": 1,
+      "detected": true
+    }
+  ],
+  "restored_sha256": {
+    "src/agents/platform/writer_diagnostics.py": "f5735f509ad79395ee35e24fa68acd7056d963500fbdd9a5fdac2e95c2ebd1b8",
+    "src/agents/platform/writer_github.py": "d5e3247fa627e5eca30d925008b729c9db21a218f639c8d6d8cc040f3c93c6a6"
+  }
+}

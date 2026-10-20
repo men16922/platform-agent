@@ -1,0 +1,16 @@
+PASS own status returns minimal observation without changing storage or reading GitHub
+PASS new process reads complete server payload
+PASS duplicate request_id cannot overwrite
+PASS 8 concurrent consumers -> 1 claim, 7 conflicts; retry remains closed
+PASS status sees concurrent claim after authorization; expired claim remains retained
+PASS status refuses a claim reopened during its read window
+PASS subject swap cannot consume another preview
+PASS current grant revocation precedes claim
+PASS changed base revision requires replan
+PASS TTL deletion not required; expiry during authorization/read also rejects
+PASS stored output corruption rejected
+PASS service never returns expired success after planning or persistence
+PASS real Git + separate CLI preview/prepare processes; missing storage never succeeds
+PASS real missing users table fails closed before claim
+PASS real missing plan table rejects reads/writes; no publication adapter invoked
+PASS temporary local tables removed; no AWS endpoint or GitHub write used

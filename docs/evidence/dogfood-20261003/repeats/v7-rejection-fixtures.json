@@ -1,0 +1,55 @@
+{
+  "at": "2026-10-03T07:29:11.816628+00:00",
+  "candidate": "candidate-v7-rejection-metadata.json",
+  "fixture_kind": "manually parked synthetic rejection only; no actual outage/detection",
+  "records": [
+    {
+      "PK": "APPROVAL",
+      "approval_id": "APR-995861A4",
+      "status": "pending",
+      "created_at": "2026-10-03T07:29:11.816269+00:00",
+      "updated_at": "2026-10-03T07:29:11.816269+00:00",
+      "service": "orders-api-dogfood \u2014 synthetic rejection metadata check",
+      "severity": "P2",
+      "runbook_id": "dogfood-reject-only",
+      "remediation_mode": "APPROVE",
+      "actions": [
+        "ONPREM-RolloutRestartWorkload"
+      ],
+      "decision": {
+        "analyzer": {
+          "root_cause": "Synthetic rejection fixture, not an observed outage. No remediation should execute.",
+          "confidence": 0.0
+        },
+        "remediation_mode": "APPROVE",
+        "actions": [
+          "ONPREM-RolloutRestartWorkload"
+        ]
+      }
+    },
+    {
+      "PK": "APPROVAL",
+      "approval_id": "APR-AB875982",
+      "status": "pending",
+      "created_at": "2026-10-03T07:29:11.816552+00:00",
+      "updated_at": "2026-10-03T07:29:11.816552+00:00",
+      "service": "orders-api-dogfood \u2014 synthetic rejection metadata check",
+      "severity": "P2",
+      "runbook_id": "dogfood-reject-only",
+      "remediation_mode": "APPROVE",
+      "actions": [
+        "ONPREM-RolloutRestartWorkload"
+      ],
+      "decision": {
+        "analyzer": {
+          "root_cause": "Synthetic rejection fixture, not an observed outage. No remediation should execute.",
+          "confidence": 0.0
+        },
+        "remediation_mode": "APPROVE",
+        "actions": [
+          "ONPREM-RolloutRestartWorkload"
+        ]
+      }
+    }
+  ]
+}

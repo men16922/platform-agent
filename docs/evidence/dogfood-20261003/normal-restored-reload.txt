@@ -1,0 +1,191 @@
+- complementary:
+  - generic: ✦
+  - heading "Platform Agent" [level=1]
+  - paragraph: Autonomous cloud operations
+  - navigation:
+    - paragraph: Workspace
+    - link "⌘ Overview":
+      - /url: /
+      - generic: ⌘
+      - generic: Overview
+    - link "✦ Agents":
+      - /url: /agents
+      - generic: ✦
+      - generic: Agents
+    - link "⬡ Provisioning":
+      - /url: /provisioning
+      - generic: ⬡
+      - generic: Provisioning
+    - link "↗ Deployments":
+      - /url: /deployments
+      - generic: ↗
+      - generic: Deployments
+    - link "🕑 History":
+      - /url: /history
+      - generic: 🕑
+      - generic: History
+    - link "◈ Incidents":
+      - /url: /incidents
+      - generic: ◈
+      - generic: Incidents
+  - generic: Operations workspace
+  - generic: Review recorded runs and observations.
+- main:
+  - paragraph: Platform Agent / Deployments
+  - paragraph: Operations workspace
+  - generic: Recorded activity
+  - button "Notifications": ⌁
+  - paragraph: Guarded delivery pipeline
+  - heading "Deployments" [level=2]
+  - paragraph: AI Agent-driven deployments across 4 cloud providers
+  - generic: LIVE · ON-PREM
+  - paragraph: Deployment pipeline
+  - paragraph: Spec → plan → guard → deploy → validate
+  - generic: 7 runs today
+  - generic: Spec
+  - generic: →
+  - generic: Plan
+  - generic: →
+  - generic: Guard
+  - generic: →
+  - generic: Build
+  - generic: →
+  - generic: Push
+  - generic: →
+  - generic: Deploy
+  - generic: →
+  - generic: Validate
+  - paragraph: Deployment logs (7 runs)
+  - generic: Sign in as Operator/Admin to trigger deployments or rollbacks.
+  - table:
+    - rowgroup:
+      - row "ID Service Version Provider Environment Agent Status Duration Time":
+        - columnheader "ID"
+        - columnheader "Service"
+        - columnheader "Version"
+        - columnheader "Provider"
+        - columnheader "Environment"
+        - columnheader "Agent"
+        - columnheader "Status"
+        - columnheader "Duration"
+        - columnheader "Time"
+    - rowgroup:
+      - row "DEP-5A88BA0A orders-api-dogfood r1 Cloud Native Computing Foundation On-Premise — Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen)) ✓ success 7.4s run 3:00:02 PM":
+        - cell "DEP-5A88BA0A"
+        - cell "orders-api-dogfood"
+        - cell "r1":
+          - code: r1
+        - cell "Cloud Native Computing Foundation On-Premise":
+          - img "Cloud Native Computing Foundation"
+          - text: On-Premise
+        - cell "—"
+        - cell "Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen))":
+          - generic "Local LLM (Qwen)":
+            - img "Local LLM (Qwen)"
+          - text: On-Prem Agent (Local LLM (Qwen))
+        - cell "✓ success":
+          - generic: ✓ success
+        - cell "7.4s run"
+        - cell "3:00:02 PM"
+      - row "DEP-A4D63B57 orders-api-dogfood r1 Cloud Native Computing Foundation On-Premise — Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen)) ✗ failed 15.4s run 2:58:38 PM":
+        - cell "DEP-A4D63B57"
+        - cell "orders-api-dogfood"
+        - cell "r1":
+          - code: r1
+        - cell "Cloud Native Computing Foundation On-Premise":
+          - img "Cloud Native Computing Foundation"
+          - text: On-Premise
+        - cell "—"
+        - cell "Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen))":
+          - generic "Local LLM (Qwen)":
+            - img "Local LLM (Qwen)"
+          - text: On-Prem Agent (Local LLM (Qwen))
+        - cell "✗ failed":
+          - generic: ✗ failed
+        - cell "15.4s run"
+        - cell "2:58:38 PM"
+      - row "DEP-C17FB962 orders-api-dogfood r1 Cloud Native Computing Foundation On-Premise — Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen)) ✓ success 21.1s run 2:54:02 PM":
+        - cell "DEP-C17FB962"
+        - cell "orders-api-dogfood"
+        - cell "r1":
+          - code: r1
+        - cell "Cloud Native Computing Foundation On-Premise":
+          - img "Cloud Native Computing Foundation"
+          - text: On-Premise
+        - cell "—"
+        - cell "Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen))":
+          - generic "Local LLM (Qwen)":
+            - img "Local LLM (Qwen)"
+          - text: On-Prem Agent (Local LLM (Qwen))
+        - cell "✓ success":
+          - generic: ✓ success
+        - cell "21.1s run"
+        - cell "2:54:02 PM"
+      - row "DEP-ED8855BD orders-api-dogfood missing-r1 Cloud Native Computing Foundation On-Premise — Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen)) ↺ rolled-back Not measured 2:52:41 PM":
+        - cell "DEP-ED8855BD"
+        - cell "orders-api-dogfood"
+        - cell "missing-r1":
+          - code: missing-r1
+        - cell "Cloud Native Computing Foundation On-Premise":
+          - img "Cloud Native Computing Foundation"
+          - text: On-Premise
+        - cell "—"
+        - cell "Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen))":
+          - generic "Local LLM (Qwen)":
+            - img "Local LLM (Qwen)"
+          - text: On-Prem Agent (Local LLM (Qwen))
+        - cell "↺ rolled-back":
+          - generic: ↺ rolled-back
+        - cell "Not measured"
+        - cell "2:52:41 PM"
+      - row "DEP-2E116163 orders-api-dogfood missing-r1 Cloud Native Computing Foundation On-Premise — Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen)) ✗ failed 68.5s run 2:47:53 PM":
+        - cell "DEP-2E116163"
+        - cell "orders-api-dogfood"
+        - cell "missing-r1":
+          - code: missing-r1
+        - cell "Cloud Native Computing Foundation On-Premise":
+          - img "Cloud Native Computing Foundation"
+          - text: On-Premise
+        - cell "—"
+        - cell "Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen))":
+          - generic "Local LLM (Qwen)":
+            - img "Local LLM (Qwen)"
+          - text: On-Prem Agent (Local LLM (Qwen))
+        - cell "✗ failed":
+          - generic: ✗ failed
+        - cell "68.5s run"
+        - cell "2:47:53 PM"
+      - row "DEP-699EF7A6 orders-api-dogfood missing-r1 Cloud Native Computing Foundation On-Premise — Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen)) ↺ rolled-back Not measured 2:43:45 PM":
+        - cell "DEP-699EF7A6"
+        - cell "orders-api-dogfood"
+        - cell "missing-r1":
+          - code: missing-r1
+        - cell "Cloud Native Computing Foundation On-Premise":
+          - img "Cloud Native Computing Foundation"
+          - text: On-Premise
+        - cell "—"
+        - cell "Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen))":
+          - generic "Local LLM (Qwen)":
+            - img "Local LLM (Qwen)"
+          - text: On-Prem Agent (Local LLM (Qwen))
+        - cell "↺ rolled-back":
+          - generic: ↺ rolled-back
+        - cell "Not measured"
+        - cell "2:43:45 PM"
+      - row "DEP-102149DB orders-api-dogfood r1 Cloud Native Computing Foundation On-Premise — Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen)) ✓ success Not measured 2:24:22 PM":
+        - cell "DEP-102149DB"
+        - cell "orders-api-dogfood"
+        - cell "r1":
+          - code: r1
+        - cell "Cloud Native Computing Foundation On-Premise":
+          - img "Cloud Native Computing Foundation"
+          - text: On-Premise
+        - cell "—"
+        - cell "Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen))":
+          - generic "Local LLM (Qwen)":
+            - img "Local LLM (Qwen)"
+          - text: On-Prem Agent (Local LLM (Qwen))
+        - cell "✓ success":
+          - generic: ✓ success
+        - cell "Not measured"
+        - cell "2:24:22 PM"

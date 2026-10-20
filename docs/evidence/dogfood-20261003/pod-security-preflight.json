@@ -1,0 +1,6 @@
+{
+  "dry_run": true,
+  "returncode": 1,
+  "stdout": "",
+  "stderr": "Error from server (Forbidden): error when creating \"STDIN\": pods \"orders-api-dogfood-preflight\" is forbidden: violates PodSecurity \"restricted:latest\": allowPrivilegeEscalation != false (container \"orders-api-dogfood\" must set securityContext.allowPrivilegeEscalation=false), unrestricted capabilities (container \"orders-api-dogfood\" must set securityContext.capabilities.drop=[\"ALL\"]), runAsNonRoot != true (pod or container \"orders-api-dogfood\" must set securityContext.runAsNonRoot=true), seccompProfile (pod or container \"orders-api-dogfood\" must set securityContext.seccompProfile.type to \"RuntimeDefault\" or \"Localhost\")\n"
+}

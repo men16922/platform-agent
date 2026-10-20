@@ -273,6 +273,7 @@ class TestTheGrantCoversWhatTheAdaptersActuallyRun:
         "logs": {"get"},
         "describe": {"get", "list"},
         "rollout": {"get", "list", "patch"},
+        "config.current-context": set(),  # Local kubeconfig read, no API/RBAC operation.
     }
 
     def _subcommands(self):
@@ -286,9 +287,20 @@ class TestTheGrantCoversWhatTheAdaptersActuallyRun:
                     continue
                 if node.func.id != "deploy_kubectl" or not node.args:
                     continue
-                first = node.args[0]
+                args = list(node.args)
+                while (len(args) >= 2 and isinstance(args[0], ast.Constant)
+                       and args[0].value in {"--context", "--kubeconfig"}):
+                    args = args[2:]
+                if not args:
+                    continue
+                first = args[0]
                 if isinstance(first, ast.Constant) and isinstance(first.value, str):
-                    found.add(first.value)
+                    if first.value == "config":
+                        second = args[1] if len(args) > 1 else None
+                        found.add("config." + (second.value if isinstance(second, ast.Constant)
+                                               and isinstance(second.value, str) else "unknown"))
+                    else:
+                        found.add(first.value)
         return found
 
     def test_every_subcommand_the_adapters_use_is_understood(self):

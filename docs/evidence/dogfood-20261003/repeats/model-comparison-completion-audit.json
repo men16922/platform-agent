@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-03T11:00:47.869175+00:00",
+  "goal_status": "active",
+  "previous_turn": "progress: O snapshot contract and actual UI evidence",
+  "current_progress": [
+    "Same-contract cached generation model comparison completed",
+    "Frozen critic controls reveal false acceptance; model restored and actual response verified"
+  ],
+  "approval_wait": false,
+  "remaining": "R3/R4, final same-candidate scenario bundle and refreshed reproduction/comparison/demo, and R5 remain incomplete.",
+  "next": "Fill missing RS/Pod/time evidence during one already-authorized failure/recovery cycle; freeze same-window observations and compare manual investigation with read-only model tool selection. Do not use current reads as evidence for past snapshots."
+}

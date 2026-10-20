@@ -1,0 +1,74 @@
+- complementary:
+  - generic: ✦
+  - heading "Platform Agent" [level=1]
+  - paragraph: Autonomous cloud operations
+  - navigation:
+    - paragraph: Workspace
+    - link "⌘ Overview":
+      - /url: /
+      - generic: ⌘
+      - generic: Overview
+    - link "✦ Agents":
+      - /url: /agents
+      - generic: ✦
+      - generic: Agents
+    - link "⬡ Provisioning":
+      - /url: /provisioning
+      - generic: ⬡
+      - generic: Provisioning
+    - link "↗ Deployments":
+      - /url: /deployments
+      - generic: ↗
+      - generic: Deployments
+    - link "🕑 History":
+      - /url: /history
+      - generic: 🕑
+      - generic: History
+    - link "◈ Incidents":
+      - /url: /incidents
+      - generic: ◈
+      - generic: Incidents
+  - generic: Operations workspace
+  - generic: Review recorded runs and observations.
+- main:
+  - paragraph: Platform Agent / Platform Agent
+  - paragraph: Operations workspace
+  - generic: Recorded activity
+  - button "Notifications": ⌁
+  - link "← Incidents":
+    - /url: /incidents
+  - generic: LIVE · ON-PREM
+  - paragraph: Autonomous response record
+  - generic: P2
+  - heading "orders-api-dogfood — synthetic rejection linkage check" [level=2]
+  - img "Cloud Native Computing Foundation"
+  - text: ON-PREM
+  - code: INC-EE9D12BA
+  - generic: APPROVE
+  - generic: ● OPEN
+  - generic "When this record was written": 10/3/2026, 5:27:34 PM
+  - heading "Recorded analysis" [level=3]: Recorded analysis
+  - generic: Analysis source not recorded
+  - generic: confidence 0%
+  - paragraph: Synthetic fixture for rejection record linkage; no observed outage or model diagnosis.
+  - heading "Decision" [level=3]: Decision
+  - paragraph: Severity
+  - paragraph: P2
+  - paragraph: Remediation mode
+  - paragraph: APPROVE
+  - paragraph: Runbook
+  - paragraph: dogfood-reject-only
+  - paragraph: Status
+  - paragraph: Open
+  - heading "Approval decision" [level=3]: Approval decision
+  - paragraph: Remediation rejected
+  - paragraph:
+    - text: Request
+    - code: APR-5E68FD70
+  - paragraph: "Reported reviewer: local-dev"
+  - paragraph: "Decision recorded: 10/3/2026, 5:27:34 PM"
+  - paragraph: "합성 검증 요청: 현재 장애와 재시작 필요성이 확인되지 않았습니다. 서비스 변경 없이 요청과 사건의 연결을 확인합니다."
+  - heading "Executed actions — 0" [level=3]:
+    - text: Executed actions
+    - generic: — 0
+  - generic: No actions executed — remediation was approval-gated.

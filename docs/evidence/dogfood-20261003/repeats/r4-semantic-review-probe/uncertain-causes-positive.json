@@ -1,0 +1,29 @@
+{
+  "id": "uncertain-causes-positive",
+  "expected": "PASS",
+  "parsed": {
+    "verdict": "FAIL",
+    "unsupported_claim": "These are different observable failure modes",
+    "reason": "The candidate claims the failures are different observable modes, but does not provide evidence to support this claim. The source records show a pod pending due to image pull failure and another pod running with readiness check failure, but do not confirm distinct root causes. The claim of different failure modes is unsupported."
+  },
+  "completion": {
+    "status": "complete",
+    "finish_reason": "stop",
+    "text": "{\n  \"verdict\": \"FAIL\",\n  \"unsupported_claim\": \"These are different observable failure modes\",\n  \"reason\": \"The candidate claims the failures are different observable modes, but does not provide evidence to support this claim. The source records show a pod pending due to image pull failure and another pod running with readiness check failure, but do not confirm distinct root causes. The claim of different failure modes is unsupported.\"\n}",
+    "semantic_verified": false,
+    "model_responses": 1,
+    "tool_call_attempts": 0,
+    "token_usage": {
+      "status": "reported",
+      "input_tokens": 761,
+      "output_tokens": 87
+    }
+  },
+  "seconds": 1.142,
+  "http_attempts": [
+    {
+      "at": "2026-10-03T10:48:36.864212+00:00",
+      "status": 200
+    }
+  ]
+}

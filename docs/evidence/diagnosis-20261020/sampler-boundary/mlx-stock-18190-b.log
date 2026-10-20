@@ -1,0 +1,20 @@
+/Users/men1692/Desktop/AWS/platform-agent/.venv-mlx/lib/python3.13/site-packages/mlx_lm/server.py:1723: UserWarning: mlx_lm.server is not recommended for production as it only implements basic security checks.
+  warnings.warn(
+2026-10-20 19:45:10,679 - INFO - Starting httpd at 127.0.0.1 on port 18190...
+127.0.0.1 - - [20/Oct/2026 19:45:13] "GET /v1/models HTTP/1.1" 200 -
+127.0.0.1 - - [20/Oct/2026 19:45:13] "POST /v1/chat/completions HTTP/1.1" 200 -
+2026-10-20 19:45:13,596 - INFO - Prompt Cache: 0 sequences, 0.00 GB
+2026-10-20 19:45:13,596 - INFO - - assistant: 0 sequences, 0.00 GB
+2026-10-20 19:45:13,596 - INFO - - user: 0 sequences, 0.00 GB
+2026-10-20 19:45:13,596 - INFO - - system: 0 sequences, 0.00 GB
+2026-10-20 19:45:13,662 - INFO - Prompt processing progress: 0/849
+2026-10-20 19:45:15,143 - INFO - Prompt processing progress: 848/849
+2026-10-20 19:45:15,163 - INFO - Prompt processing progress: 849/849
+127.0.0.1 - - [20/Oct/2026 19:45:18] "POST /v1/chat/completions HTTP/1.1" 200 -
+2026-10-20 19:45:18,296 - INFO - Prompt Cache: 1 sequences, 0.13 GB
+2026-10-20 19:45:18,297 - INFO - - assistant: 1 sequences, 0.13 GB
+2026-10-20 19:45:18,297 - INFO - - user: 0 sequences, 0.00 GB
+2026-10-20 19:45:18,297 - INFO - - system: 0 sequences, 0.00 GB
+2026-10-20 19:45:18,362 - INFO - Prompt processing progress: 0/351
+2026-10-20 19:45:18,628 - INFO - Prompt processing progress: 350/351
+2026-10-20 19:45:18,645 - INFO - Prompt processing progress: 351/351

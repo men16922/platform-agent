@@ -1,0 +1,106 @@
+{
+  "at": "2026-10-03T13:10:20.021778+00:00",
+  "records": [
+    {
+      "approval": {
+        "PK": "APPROVAL",
+        "approval_id": "APR-F5856134",
+        "status": "rejected",
+        "created_at": "2026-10-03T13:07:58.476217+00:00",
+        "updated_at": "2026-10-03T13:08:44.413563+00:00",
+        "service": "orders-api-dogfood — T synthetic rejection 1",
+        "severity": "P2",
+        "runbook_id": "dogfood-reject-only",
+        "remediation_mode": "APPROVE",
+        "actions": [
+          "ONPREM-RolloutRestartWorkload"
+        ],
+        "decision": {
+          "analyzer": {
+            "root_cause": "Synthetic T rejection record check; no observed outage or model diagnosis.",
+            "confidence": 0.0
+          },
+          "remediation_mode": "APPROVE",
+          "actions": [
+            "ONPREM-RolloutRestartWorkload"
+          ]
+        },
+        "incident_id": "INC-BFB4CE02",
+        "rejection_reason": "통합 반복 검증: 합성 요청입니다.\n실제 장애 근거가 없어 조치를 거부합니다.",
+        "reported_by": "local-dev"
+      },
+      "incident": {
+        "PK": "INCIDENT",
+        "incident_id": "INC-BFB4CE02",
+        "alarm_name": "orders-api-dogfood — T synthetic rejection 1",
+        "provider": "onprem",
+        "severity": "P2",
+        "mode": "APPROVE",
+        "root_cause": "Synthetic T rejection record check; no observed outage or model diagnosis.",
+        "runbook_id": "dogfood-reject-only",
+        "resolved": false,
+        "executed_actions": [],
+        "confidence": 0.0,
+        "trace_id": null,
+        "created_at": "2026-10-03T13:08:44.415178+00:00",
+        "approval_id": "APR-F5856134",
+        "approval_decision": "rejected",
+        "approval_decided_at": "2026-10-03T13:08:44.413563+00:00",
+        "rejection_reason": "통합 반복 검증: 합성 요청입니다.\n실제 장애 근거가 없어 조치를 거부합니다.",
+        "reported_by": "local-dev"
+      }
+    },
+    {
+      "approval": {
+        "PK": "APPROVAL",
+        "approval_id": "APR-5EEAB04C",
+        "status": "rejected",
+        "created_at": "2026-10-03T13:07:58.476583+00:00",
+        "updated_at": "2026-10-03T13:09:37.526414+00:00",
+        "service": "orders-api-dogfood — T synthetic rejection 2",
+        "severity": "P2",
+        "runbook_id": "dogfood-reject-only",
+        "remediation_mode": "APPROVE",
+        "actions": [
+          "ONPREM-RolloutRestartWorkload"
+        ],
+        "decision": {
+          "analyzer": {
+            "root_cause": "Synthetic T rejection record check; no observed outage or model diagnosis.",
+            "confidence": 0.0
+          },
+          "remediation_mode": "APPROVE",
+          "actions": [
+            "ONPREM-RolloutRestartWorkload"
+          ]
+        },
+        "incident_id": "INC-773D2C44",
+        "rejection_reason": "",
+        "reported_by": "local-dev"
+      },
+      "incident": {
+        "PK": "INCIDENT",
+        "incident_id": "INC-773D2C44",
+        "alarm_name": "orders-api-dogfood — T synthetic rejection 2",
+        "provider": "onprem",
+        "severity": "P2",
+        "mode": "APPROVE",
+        "root_cause": "Synthetic T rejection record check; no observed outage or model diagnosis.",
+        "runbook_id": "dogfood-reject-only",
+        "resolved": false,
+        "executed_actions": [],
+        "confidence": 0.0,
+        "trace_id": null,
+        "created_at": "2026-10-03T13:09:37.526687+00:00",
+        "approval_id": "APR-5EEAB04C",
+        "approval_decision": "rejected",
+        "approval_decided_at": "2026-10-03T13:09:37.526414+00:00",
+        "rejection_reason": "",
+        "reported_by": "local-dev"
+      }
+    }
+  ],
+  "pending_total": 0,
+  "actual_newline_count": 1,
+  "literal_backslash_n_count": 0
+}

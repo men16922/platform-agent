@@ -1,0 +1,1030 @@
+[
+  {
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": {
+      "creationTimestamp": "2026-10-03T06:35:06Z",
+      "deletionGracePeriodSeconds": 30,
+      "deletionTimestamp": "2026-10-03T06:36:06Z",
+      "generateName": "orders-api-dogfood-7b8fb6877d-",
+      "generation": 2,
+      "labels": {
+        "app": "orders-api-dogfood",
+        "capsule.clastix.io/managed-by": "acme-dev",
+        "pod-template-hash": "7b8fb6877d",
+        "projectcapsule.dev/tenant": "acme-dev"
+      },
+      "name": "orders-api-dogfood-7b8fb6877d-5wjbn",
+      "namespace": "acme-dev-observability",
+      "ownerReferences": [
+        {
+          "apiVersion": "apps/v1",
+          "blockOwnerDeletion": true,
+          "controller": true,
+          "kind": "ReplicaSet",
+          "name": "orders-api-dogfood-7b8fb6877d",
+          "uid": "d18d8102-6a21-4ff0-bca3-34434a02bb65"
+        }
+      ],
+      "resourceVersion": "4298906",
+      "uid": "07e4c6d5-1dc7-4645-938b-c436f2cc17bd"
+    },
+    "spec": {
+      "containers": [
+        {
+          "image": "localhost:5001/orders-api-dogfood:r0",
+          "imagePullPolicy": "IfNotPresent",
+          "livenessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/healthz",
+              "port": 8080,
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 5,
+            "periodSeconds": 10,
+            "successThreshold": 1,
+            "timeoutSeconds": 1
+          },
+          "name": "orders-api-dogfood",
+          "ports": [
+            {
+              "containerPort": 8080,
+              "protocol": "TCP"
+            }
+          ],
+          "resources": {
+            "limits": {
+              "cpu": "250m",
+              "memory": "256Mi"
+            },
+            "requests": {
+              "cpu": "250m",
+              "memory": "256Mi"
+            }
+          },
+          "securityContext": {
+            "allowPrivilegeEscalation": false,
+            "capabilities": {
+              "drop": [
+                "ALL"
+              ]
+            }
+          },
+          "terminationMessagePath": "/dev/termination-log",
+          "terminationMessagePolicy": "File",
+          "volumeMounts": [
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-jfspj",
+              "readOnly": true
+            }
+          ]
+        }
+      ],
+      "dnsPolicy": "ClusterFirst",
+      "enableServiceLinks": true,
+      "nodeName": "platform-agent-worker2",
+      "preemptionPolicy": "PreemptLowerPriority",
+      "priority": 0,
+      "restartPolicy": "Always",
+      "schedulerName": "default-scheduler",
+      "securityContext": {
+        "runAsNonRoot": true,
+        "seccompProfile": {
+          "type": "RuntimeDefault"
+        }
+      },
+      "serviceAccount": "default",
+      "serviceAccountName": "default",
+      "terminationGracePeriodSeconds": 30,
+      "tolerations": [
+        {
+          "effect": "NoExecute",
+          "key": "node.kubernetes.io/not-ready",
+          "operator": "Exists",
+          "tolerationSeconds": 300
+        },
+        {
+          "effect": "NoExecute",
+          "key": "node.kubernetes.io/unreachable",
+          "operator": "Exists",
+          "tolerationSeconds": 300
+        }
+      ],
+      "volumes": [
+        {
+          "name": "kube-api-access-jfspj",
+          "projected": {
+            "defaultMode": 420,
+            "sources": [
+              {
+                "serviceAccountToken": {
+                  "expirationSeconds": 3607,
+                  "path": "token"
+                }
+              },
+              {
+                "configMap": {
+                  "items": [
+                    {
+                      "key": "ca.crt",
+                      "path": "ca.crt"
+                    }
+                  ],
+                  "name": "kube-root-ca.crt"
+                }
+              },
+              {
+                "downwardAPI": {
+                  "items": [
+                    {
+                      "fieldRef": {
+                        "apiVersion": "v1",
+                        "fieldPath": "metadata.namespace"
+                      },
+                      "path": "namespace"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "status": {
+      "conditions": [
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:08Z",
+          "observedGeneration": 2,
+          "status": "True",
+          "type": "PodReadyToStartContainers"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:07Z",
+          "observedGeneration": 2,
+          "status": "True",
+          "type": "Initialized"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:08Z",
+          "observedGeneration": 2,
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:08Z",
+          "observedGeneration": 2,
+          "status": "True",
+          "type": "ContainersReady"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:07Z",
+          "observedGeneration": 2,
+          "status": "True",
+          "type": "PodScheduled"
+        }
+      ],
+      "containerStatuses": [
+        {
+          "allocatedResources": {
+            "cpu": "250m",
+            "memory": "256Mi"
+          },
+          "containerID": "containerd://eec35a0baa502fe16866a07fa31fde7b45f6cb8c001cb586632fcc007fc30c2b",
+          "image": "localhost:5001/orders-api-dogfood:r0",
+          "imageID": "localhost:5001/orders-api-dogfood@sha256:51915981952d0204d0a8964acfd23cb9905e56bce46bc79a34bced1f3f2e5496",
+          "lastState": {},
+          "name": "orders-api-dogfood",
+          "ready": true,
+          "resources": {
+            "limits": {
+              "cpu": "250m",
+              "memory": "256Mi"
+            },
+            "requests": {
+              "cpu": "250m",
+              "memory": "256Mi"
+            }
+          },
+          "restartCount": 0,
+          "started": true,
+          "state": {
+            "running": {
+              "startedAt": "2026-10-03T06:35:07Z"
+            }
+          },
+          "user": {
+            "linux": {
+              "gid": 0,
+              "supplementalGroups": [
+                0
+              ],
+              "uid": 10001
+            }
+          },
+          "volumeMounts": [
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-jfspj",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            }
+          ]
+        }
+      ],
+      "hostIP": "172.23.0.3",
+      "hostIPs": [
+        {
+          "ip": "172.23.0.3"
+        }
+      ],
+      "observedGeneration": 2,
+      "phase": "Running",
+      "podIP": "10.244.2.22",
+      "podIPs": [
+        {
+          "ip": "10.244.2.22"
+        }
+      ],
+      "qosClass": "Guaranteed",
+      "startTime": "2026-10-03T06:35:07Z"
+    }
+  },
+  {
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": {
+      "creationTimestamp": "2026-10-03T06:35:05Z",
+      "deletionGracePeriodSeconds": 30,
+      "deletionTimestamp": "2026-10-03T06:36:03Z",
+      "generateName": "orders-api-dogfood-7b8fb6877d-",
+      "generation": 2,
+      "labels": {
+        "app": "orders-api-dogfood",
+        "capsule.clastix.io/managed-by": "acme-dev",
+        "pod-template-hash": "7b8fb6877d",
+        "projectcapsule.dev/tenant": "acme-dev"
+      },
+      "name": "orders-api-dogfood-7b8fb6877d-88chq",
+      "namespace": "acme-dev-observability",
+      "ownerReferences": [
+        {
+          "apiVersion": "apps/v1",
+          "blockOwnerDeletion": true,
+          "controller": true,
+          "kind": "ReplicaSet",
+          "name": "orders-api-dogfood-7b8fb6877d",
+          "uid": "d18d8102-6a21-4ff0-bca3-34434a02bb65"
+        }
+      ],
+      "resourceVersion": "4298850",
+      "uid": "72d6b88f-474d-448b-88f6-1b78122109f9"
+    },
+    "spec": {
+      "containers": [
+        {
+          "image": "localhost:5001/orders-api-dogfood:r0",
+          "imagePullPolicy": "IfNotPresent",
+          "livenessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/healthz",
+              "port": 8080,
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 5,
+            "periodSeconds": 10,
+            "successThreshold": 1,
+            "timeoutSeconds": 1
+          },
+          "name": "orders-api-dogfood",
+          "ports": [
+            {
+              "containerPort": 8080,
+              "protocol": "TCP"
+            }
+          ],
+          "resources": {
+            "limits": {
+              "cpu": "250m",
+              "memory": "256Mi"
+            },
+            "requests": {
+              "cpu": "250m",
+              "memory": "256Mi"
+            }
+          },
+          "securityContext": {
+            "allowPrivilegeEscalation": false,
+            "capabilities": {
+              "drop": [
+                "ALL"
+              ]
+            }
+          },
+          "terminationMessagePath": "/dev/termination-log",
+          "terminationMessagePolicy": "File",
+          "volumeMounts": [
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-7r4ft",
+              "readOnly": true
+            }
+          ]
+        }
+      ],
+      "dnsPolicy": "ClusterFirst",
+      "enableServiceLinks": true,
+      "nodeName": "platform-agent-worker",
+      "preemptionPolicy": "PreemptLowerPriority",
+      "priority": 0,
+      "restartPolicy": "Always",
+      "schedulerName": "default-scheduler",
+      "securityContext": {
+        "runAsNonRoot": true,
+        "seccompProfile": {
+          "type": "RuntimeDefault"
+        }
+      },
+      "serviceAccount": "default",
+      "serviceAccountName": "default",
+      "terminationGracePeriodSeconds": 30,
+      "tolerations": [
+        {
+          "effect": "NoExecute",
+          "key": "node.kubernetes.io/not-ready",
+          "operator": "Exists",
+          "tolerationSeconds": 300
+        },
+        {
+          "effect": "NoExecute",
+          "key": "node.kubernetes.io/unreachable",
+          "operator": "Exists",
+          "tolerationSeconds": 300
+        }
+      ],
+      "volumes": [
+        {
+          "name": "kube-api-access-7r4ft",
+          "projected": {
+            "defaultMode": 420,
+            "sources": [
+              {
+                "serviceAccountToken": {
+                  "expirationSeconds": 3607,
+                  "path": "token"
+                }
+              },
+              {
+                "configMap": {
+                  "items": [
+                    {
+                      "key": "ca.crt",
+                      "path": "ca.crt"
+                    }
+                  ],
+                  "name": "kube-root-ca.crt"
+                }
+              },
+              {
+                "downwardAPI": {
+                  "items": [
+                    {
+                      "fieldRef": {
+                        "apiVersion": "v1",
+                        "fieldPath": "metadata.namespace"
+                      },
+                      "path": "namespace"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "status": {
+      "conditions": [
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:06Z",
+          "observedGeneration": 2,
+          "status": "True",
+          "type": "PodReadyToStartContainers"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:05Z",
+          "observedGeneration": 2,
+          "status": "True",
+          "type": "Initialized"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:06Z",
+          "observedGeneration": 2,
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:06Z",
+          "observedGeneration": 2,
+          "status": "True",
+          "type": "ContainersReady"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:05Z",
+          "observedGeneration": 2,
+          "status": "True",
+          "type": "PodScheduled"
+        }
+      ],
+      "containerStatuses": [
+        {
+          "allocatedResources": {
+            "cpu": "250m",
+            "memory": "256Mi"
+          },
+          "containerID": "containerd://f97ae11ea61a179fde768976721dc49c4a90fc9a4e3cae0a36bb6293a8c50dca",
+          "image": "localhost:5001/orders-api-dogfood:r0",
+          "imageID": "localhost:5001/orders-api-dogfood@sha256:51915981952d0204d0a8964acfd23cb9905e56bce46bc79a34bced1f3f2e5496",
+          "lastState": {},
+          "name": "orders-api-dogfood",
+          "ready": true,
+          "resources": {
+            "limits": {
+              "cpu": "250m",
+              "memory": "256Mi"
+            },
+            "requests": {
+              "cpu": "250m",
+              "memory": "256Mi"
+            }
+          },
+          "restartCount": 0,
+          "started": true,
+          "state": {
+            "running": {
+              "startedAt": "2026-10-03T06:35:05Z"
+            }
+          },
+          "user": {
+            "linux": {
+              "gid": 0,
+              "supplementalGroups": [
+                0
+              ],
+              "uid": 10001
+            }
+          },
+          "volumeMounts": [
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-7r4ft",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            }
+          ]
+        }
+      ],
+      "hostIP": "172.23.0.4",
+      "hostIPs": [
+        {
+          "ip": "172.23.0.4"
+        }
+      ],
+      "observedGeneration": 2,
+      "phase": "Running",
+      "podIP": "10.244.1.28",
+      "podIPs": [
+        {
+          "ip": "10.244.1.28"
+        }
+      ],
+      "qosClass": "Guaranteed",
+      "startTime": "2026-10-03T06:35:05Z"
+    }
+  },
+  {
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": {
+      "creationTimestamp": "2026-10-03T06:35:34Z",
+      "generateName": "orders-api-dogfood-7fd548c97-",
+      "generation": 1,
+      "labels": {
+        "app": "orders-api-dogfood",
+        "capsule.clastix.io/managed-by": "acme-dev",
+        "pod-template-hash": "7fd548c97",
+        "projectcapsule.dev/tenant": "acme-dev"
+      },
+      "name": "orders-api-dogfood-7fd548c97-gjdqc",
+      "namespace": "acme-dev-observability",
+      "ownerReferences": [
+        {
+          "apiVersion": "apps/v1",
+          "blockOwnerDeletion": true,
+          "controller": true,
+          "kind": "ReplicaSet",
+          "name": "orders-api-dogfood-7fd548c97",
+          "uid": "6b83d25b-1b37-41ef-847d-bc6ba4a77ea3"
+        }
+      ],
+      "resourceVersion": "4298889",
+      "uid": "79e8e150-a2e1-4089-82f5-c49848eebc3f"
+    },
+    "spec": {
+      "containers": [
+        {
+          "image": "localhost:5001/orders-api-dogfood:r1",
+          "imagePullPolicy": "IfNotPresent",
+          "livenessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/healthz",
+              "port": 8080,
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 5,
+            "periodSeconds": 10,
+            "successThreshold": 1,
+            "timeoutSeconds": 1
+          },
+          "name": "orders-api-dogfood",
+          "ports": [
+            {
+              "containerPort": 8080,
+              "protocol": "TCP"
+            }
+          ],
+          "resources": {
+            "limits": {
+              "cpu": "250m",
+              "memory": "256Mi"
+            },
+            "requests": {
+              "cpu": "250m",
+              "memory": "256Mi"
+            }
+          },
+          "securityContext": {
+            "allowPrivilegeEscalation": false,
+            "capabilities": {
+              "drop": [
+                "ALL"
+              ]
+            }
+          },
+          "terminationMessagePath": "/dev/termination-log",
+          "terminationMessagePolicy": "File",
+          "volumeMounts": [
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-vxts8",
+              "readOnly": true
+            }
+          ]
+        }
+      ],
+      "dnsPolicy": "ClusterFirst",
+      "enableServiceLinks": true,
+      "nodeName": "platform-agent-worker2",
+      "preemptionPolicy": "PreemptLowerPriority",
+      "priority": 0,
+      "restartPolicy": "Always",
+      "schedulerName": "default-scheduler",
+      "securityContext": {
+        "runAsNonRoot": true,
+        "seccompProfile": {
+          "type": "RuntimeDefault"
+        }
+      },
+      "serviceAccount": "default",
+      "serviceAccountName": "default",
+      "terminationGracePeriodSeconds": 30,
+      "tolerations": [
+        {
+          "effect": "NoExecute",
+          "key": "node.kubernetes.io/not-ready",
+          "operator": "Exists",
+          "tolerationSeconds": 300
+        },
+        {
+          "effect": "NoExecute",
+          "key": "node.kubernetes.io/unreachable",
+          "operator": "Exists",
+          "tolerationSeconds": 300
+        }
+      ],
+      "volumes": [
+        {
+          "name": "kube-api-access-vxts8",
+          "projected": {
+            "defaultMode": 420,
+            "sources": [
+              {
+                "serviceAccountToken": {
+                  "expirationSeconds": 3607,
+                  "path": "token"
+                }
+              },
+              {
+                "configMap": {
+                  "items": [
+                    {
+                      "key": "ca.crt",
+                      "path": "ca.crt"
+                    }
+                  ],
+                  "name": "kube-root-ca.crt"
+                }
+              },
+              {
+                "downwardAPI": {
+                  "items": [
+                    {
+                      "fieldRef": {
+                        "apiVersion": "v1",
+                        "fieldPath": "metadata.namespace"
+                      },
+                      "path": "namespace"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "status": {
+      "conditions": [
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:35Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "PodReadyToStartContainers"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:34Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "Initialized"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:35Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:35Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "ContainersReady"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:34Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "PodScheduled"
+        }
+      ],
+      "containerStatuses": [
+        {
+          "allocatedResources": {
+            "cpu": "250m",
+            "memory": "256Mi"
+          },
+          "containerID": "containerd://86f6b41e83d8434711b8974348e607da9879328713ce9b0f6d951071d49f4fcf",
+          "image": "localhost:5001/orders-api-dogfood:r0",
+          "imageID": "localhost:5001/orders-api-dogfood@sha256:51915981952d0204d0a8964acfd23cb9905e56bce46bc79a34bced1f3f2e5496",
+          "lastState": {},
+          "name": "orders-api-dogfood",
+          "ready": true,
+          "resources": {
+            "limits": {
+              "cpu": "250m",
+              "memory": "256Mi"
+            },
+            "requests": {
+              "cpu": "250m",
+              "memory": "256Mi"
+            }
+          },
+          "restartCount": 0,
+          "started": true,
+          "state": {
+            "running": {
+              "startedAt": "2026-10-03T06:35:34Z"
+            }
+          },
+          "user": {
+            "linux": {
+              "gid": 0,
+              "supplementalGroups": [
+                0
+              ],
+              "uid": 10001
+            }
+          },
+          "volumeMounts": [
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-vxts8",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            }
+          ]
+        }
+      ],
+      "hostIP": "172.23.0.3",
+      "hostIPs": [
+        {
+          "ip": "172.23.0.3"
+        }
+      ],
+      "observedGeneration": 1,
+      "phase": "Running",
+      "podIP": "10.244.2.23",
+      "podIPs": [
+        {
+          "ip": "10.244.2.23"
+        }
+      ],
+      "qosClass": "Guaranteed",
+      "startTime": "2026-10-03T06:35:34Z"
+    }
+  },
+  {
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": {
+      "creationTimestamp": "2026-10-03T06:35:31Z",
+      "generateName": "orders-api-dogfood-7fd548c97-",
+      "generation": 1,
+      "labels": {
+        "app": "orders-api-dogfood",
+        "capsule.clastix.io/managed-by": "acme-dev",
+        "pod-template-hash": "7fd548c97",
+        "projectcapsule.dev/tenant": "acme-dev"
+      },
+      "name": "orders-api-dogfood-7fd548c97-x9mg2",
+      "namespace": "acme-dev-observability",
+      "ownerReferences": [
+        {
+          "apiVersion": "apps/v1",
+          "blockOwnerDeletion": true,
+          "controller": true,
+          "kind": "ReplicaSet",
+          "name": "orders-api-dogfood-7fd548c97",
+          "uid": "6b83d25b-1b37-41ef-847d-bc6ba4a77ea3"
+        }
+      ],
+      "resourceVersion": "4298826",
+      "uid": "ee8f16e9-7bce-4e6c-89c2-5e38e5c1f191"
+    },
+    "spec": {
+      "containers": [
+        {
+          "image": "localhost:5001/orders-api-dogfood:r1",
+          "imagePullPolicy": "IfNotPresent",
+          "livenessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/healthz",
+              "port": 8080,
+              "scheme": "HTTP"
+            },
+            "initialDelaySeconds": 5,
+            "periodSeconds": 10,
+            "successThreshold": 1,
+            "timeoutSeconds": 1
+          },
+          "name": "orders-api-dogfood",
+          "ports": [
+            {
+              "containerPort": 8080,
+              "protocol": "TCP"
+            }
+          ],
+          "resources": {
+            "limits": {
+              "cpu": "250m",
+              "memory": "256Mi"
+            },
+            "requests": {
+              "cpu": "250m",
+              "memory": "256Mi"
+            }
+          },
+          "securityContext": {
+            "allowPrivilegeEscalation": false,
+            "capabilities": {
+              "drop": [
+                "ALL"
+              ]
+            }
+          },
+          "terminationMessagePath": "/dev/termination-log",
+          "terminationMessagePolicy": "File",
+          "volumeMounts": [
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-kc96h",
+              "readOnly": true
+            }
+          ]
+        }
+      ],
+      "dnsPolicy": "ClusterFirst",
+      "enableServiceLinks": true,
+      "nodeName": "platform-agent-worker",
+      "preemptionPolicy": "PreemptLowerPriority",
+      "priority": 0,
+      "restartPolicy": "Always",
+      "schedulerName": "default-scheduler",
+      "securityContext": {
+        "runAsNonRoot": true,
+        "seccompProfile": {
+          "type": "RuntimeDefault"
+        }
+      },
+      "serviceAccount": "default",
+      "serviceAccountName": "default",
+      "terminationGracePeriodSeconds": 30,
+      "tolerations": [
+        {
+          "effect": "NoExecute",
+          "key": "node.kubernetes.io/not-ready",
+          "operator": "Exists",
+          "tolerationSeconds": 300
+        },
+        {
+          "effect": "NoExecute",
+          "key": "node.kubernetes.io/unreachable",
+          "operator": "Exists",
+          "tolerationSeconds": 300
+        }
+      ],
+      "volumes": [
+        {
+          "name": "kube-api-access-kc96h",
+          "projected": {
+            "defaultMode": 420,
+            "sources": [
+              {
+                "serviceAccountToken": {
+                  "expirationSeconds": 3607,
+                  "path": "token"
+                }
+              },
+              {
+                "configMap": {
+                  "items": [
+                    {
+                      "key": "ca.crt",
+                      "path": "ca.crt"
+                    }
+                  ],
+                  "name": "kube-root-ca.crt"
+                }
+              },
+              {
+                "downwardAPI": {
+                  "items": [
+                    {
+                      "fieldRef": {
+                        "apiVersion": "v1",
+                        "fieldPath": "metadata.namespace"
+                      },
+                      "path": "namespace"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "status": {
+      "conditions": [
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:32Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "PodReadyToStartContainers"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:31Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "Initialized"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:32Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:32Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "ContainersReady"
+        },
+        {
+          "lastProbeTime": null,
+          "lastTransitionTime": "2026-10-03T06:35:31Z",
+          "observedGeneration": 1,
+          "status": "True",
+          "type": "PodScheduled"
+        }
+      ],
+      "containerStatuses": [
+        {
+          "allocatedResources": {
+            "cpu": "250m",
+            "memory": "256Mi"
+          },
+          "containerID": "containerd://d9fdf7ca852cf63353ba884d75b417bcfe3f05ba23eb4c5772422e94a117209d",
+          "image": "localhost:5001/orders-api-dogfood:r0",
+          "imageID": "localhost:5001/orders-api-dogfood@sha256:51915981952d0204d0a8964acfd23cb9905e56bce46bc79a34bced1f3f2e5496",
+          "lastState": {},
+          "name": "orders-api-dogfood",
+          "ready": true,
+          "resources": {
+            "limits": {
+              "cpu": "250m",
+              "memory": "256Mi"
+            },
+            "requests": {
+              "cpu": "250m",
+              "memory": "256Mi"
+            }
+          },
+          "restartCount": 0,
+          "started": true,
+          "state": {
+            "running": {
+              "startedAt": "2026-10-03T06:35:32Z"
+            }
+          },
+          "user": {
+            "linux": {
+              "gid": 0,
+              "supplementalGroups": [
+                0
+              ],
+              "uid": 10001
+            }
+          },
+          "volumeMounts": [
+            {
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
+              "name": "kube-api-access-kc96h",
+              "readOnly": true,
+              "recursiveReadOnly": "Disabled"
+            }
+          ]
+        }
+      ],
+      "hostIP": "172.23.0.4",
+      "hostIPs": [
+        {
+          "ip": "172.23.0.4"
+        }
+      ],
+      "observedGeneration": 1,
+      "phase": "Running",
+      "podIP": "10.244.1.29",
+      "podIPs": [
+        {
+          "ip": "10.244.1.29"
+        }
+      ],
+      "qosClass": "Guaranteed",
+      "startTime": "2026-10-03T06:35:31Z"
+    }
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "at": "2026-10-03T09:07:22.206561+00:00",
+  "identity": "platform-agent-system/platform-agent-deployer",
+  "requested_duration": "2h",
+  "reason": "Existing bounded local validation; read-only structured observations",
+  "rbac_changed": false,
+  "token_logged": false,
+  "file_mode": "0600"
+}

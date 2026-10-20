@@ -30,9 +30,15 @@ export async function POST(
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return Response.json({ error: "Body must be a JSON object" }, { status: 400 });
+  }
   const { decision, reason = "" } = body;
   if (!decision || (decision !== "approve" && decision !== "reject")) {
     return Response.json({ error: "Decision must be either 'approve' or 'reject'" }, { status: 400 });
+  }
+  if (typeof reason !== "string" || reason.length > 2000) {
+    return Response.json({ error: "Reason must be text of at most 2000 characters" }, { status: 400 });
   }
 
   // 2. Lookup the approval request

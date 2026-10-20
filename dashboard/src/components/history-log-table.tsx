@@ -8,6 +8,7 @@ import { ProviderLogo, providerBadgeStyles } from "@/components/provider-logo";
 const PAGE_SIZE = 10;
 
 const statusStyle: Record<string, string> = {
+  unknown: "text-[var(--muted)]",
   success: "text-[var(--success)]",
   failed: "text-[var(--danger)]",
   "rolling-back": "text-[var(--warning)]",

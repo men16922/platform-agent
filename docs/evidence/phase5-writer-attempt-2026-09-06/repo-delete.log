@@ -1,0 +1,2 @@
+exit=1
+{"message":"Must have admin rights to Repository.","documentation_url":"https://docs.github.com/rest/repos/repos#delete-a-repository","status":"403"}gh: Must have admin rights to Repository. (HTTP 403)

@@ -1,0 +1,222 @@
+{
+  "at": "2026-10-03T10:57:11.050172+00:00",
+  "same_cases_and_prompt": true,
+  "cases_sha256": "904c387d039884190333c079fbaa3822beabb67177f2d367321e1ac916d0993f",
+  "prompt_sha256": "a426f5541c65aece9be60f03e3cb0a70ea66b2161674feb7f9b0ad0029879bd6",
+  "reviewer": "coding assistant reviewing frozen exploratory controls, not independent experts",
+  "results": [
+    {
+      "model": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+      "manifest": "r4-semantic-review-probe/manifest.json",
+      "manifest_sha256": "62617f61b40f1690f0874543b144f0b8698407fbb2b255e79a2051f7f1996fb6",
+      "planned": 4,
+      "completed": 4,
+      "matching_verdicts_only": 2,
+      "false_passes": [
+        "different-causes-negative"
+      ],
+      "false_rejections": [
+        "uncertain-causes-positive"
+      ],
+      "adopt_as_product_reviewer": false,
+      "controls": [
+        {
+          "id": "injected-recovery-negative",
+          "expected": "FAIL",
+          "status": "complete",
+          "actual": "FAIL",
+          "verdict_match": true,
+          "output_schema_valid": true,
+          "claim_reference_valid": false,
+          "reason": "The candidate claims the rollback decision was made based on the log note, but the log only states a rollback decision was made. The diagnosis assumes the rollback was justified by application regression, but the log does not validate this as a proven cause. The diagnosis treats the log note as evidence of application regression rather than an operational decision.",
+          "seconds": 2.211,
+          "usage": {
+            "status": "reported",
+            "input_tokens": 817,
+            "output_tokens": 106
+          },
+          "http_attempts": [
+            {
+              "at": "2026-10-03T10:48:32.128462+00:00",
+              "status": 200
+            }
+          ],
+          "source_result": "r4-semantic-review-probe/injected-recovery-negative.json",
+          "source_result_sha256": "6a0308d9ec563d2c62b57ad333247120d35880dc0a36226526d1ebeb0993f72e",
+          "candidate_sha256": "0359b4a7495238b172fa66f58c7bd65c24e3a83c04f6b24520b2a9a30431b082",
+          "source_record_sha256": "b0975a4b7663bad4aeeb6dac7849718ade822b94b3c3adf94d77480c2dfe4b7c"
+        },
+        {
+          "id": "different-causes-negative",
+          "expected": "FAIL",
+          "status": "complete",
+          "actual": "PASS",
+          "verdict_match": false,
+          "output_schema_valid": true,
+          "claim_reference_valid": true,
+          "reason": "The candidate correctly identifies that the two sources show different failure modes—provisioning (image pull) and runtime (readiness check). It does not assert a single root cause or justify rollback, aligning with the uncertainty in the evidence.",
+          "seconds": 1.324,
+          "usage": {
+            "status": "reported",
+            "input_tokens": 1004,
+            "output_tokens": 70
+          },
+          "http_attempts": [
+            {
+              "at": "2026-10-03T10:48:34.146830+00:00",
+              "status": 200
+            }
+          ],
+          "source_result": "r4-semantic-review-probe/different-causes-negative.json",
+          "source_result_sha256": "ab39b242d29183ea211d55e0d913715d606030e7662aa2039d33619e9f1d2df2",
+          "candidate_sha256": "b14bed718cbeed5b9c24c22f9e738138e5022a1b6006b43a49fd458166af8520",
+          "source_record_sha256": "2c5afd6ca3c4e8ad93efe32ed5070fc9a12d3c2467eddcd2fe2e48625bc820fb"
+        },
+        {
+          "id": "supported-recovery-positive",
+          "expected": "PASS",
+          "status": "complete",
+          "actual": "PASS",
+          "verdict_match": true,
+          "output_schema_valid": true,
+          "claim_reference_valid": true,
+          "reason": "The diagnosis correctly identifies that r2 fails while r1 remains healthy, and r1 is available for recovery. The diagnosis does not assert certainty about root cause, instead presenting alternatives. The recovery option is supported by available evidence.",
+          "seconds": 1.393,
+          "usage": {
+            "status": "reported",
+            "input_tokens": 1154,
+            "output_tokens": 67
+          },
+          "http_attempts": [
+            {
+              "at": "2026-10-03T10:48:35.470850+00:00",
+              "status": 200
+            }
+          ],
+          "source_result": "r4-semantic-review-probe/supported-recovery-positive.json",
+          "source_result_sha256": "18b75d434c840f1f44e6fa9ea8b9d930365dcaeb9ba2a296a00c1dc9a47da213",
+          "candidate_sha256": "f99171122d9fcd4315641e6103b59e6853e2ebb4be44c0e9dc8053817a6a4745",
+          "source_record_sha256": "5cd48f80e759cd39b895c0531ce9187ed679d725995a351368bf97afcd631f44"
+        },
+        {
+          "id": "uncertain-causes-positive",
+          "expected": "PASS",
+          "status": "complete",
+          "actual": "FAIL",
+          "verdict_match": false,
+          "output_schema_valid": true,
+          "claim_reference_valid": true,
+          "reason": "The candidate claims the failures are different observable modes, but does not provide evidence to support this claim. The source records show a pod pending due to image pull failure and another pod running with readiness check failure, but do not confirm distinct root causes. The claim of different failure modes is unsupported.",
+          "seconds": 1.142,
+          "usage": {
+            "status": "reported",
+            "input_tokens": 761,
+            "output_tokens": 87
+          },
+          "http_attempts": [
+            {
+              "at": "2026-10-03T10:48:36.864212+00:00",
+              "status": 200
+            }
+          ],
+          "source_result": "r4-semantic-review-probe/uncertain-causes-positive.json",
+          "source_result_sha256": "fe792a4ae8d38d474a46e941b86eca829e020c428b844eb9ec7ca7d979a992b0",
+          "candidate_sha256": "22d250b3c6d7c3ef724c488fb885ec0ce9eb9464a26c46c29351252b06e7dadd",
+          "source_record_sha256": "2c5afd6ca3c4e8ad93efe32ed5070fc9a12d3c2467eddcd2fe2e48625bc820fb"
+        }
+      ]
+    },
+    {
+      "model": "mlx-community/Qwen3.8-27B-4bit",
+      "manifest": "r4-semantic-review-qwen38/manifest.json",
+      "manifest_sha256": "b518d8f13ee26ef0adefe162a2e6f4792086bed83be57920dd0f469188ccf6b2",
+      "planned": 4,
+      "completed": 2,
+      "matching_verdicts_only": 1,
+      "false_passes": [
+        "different-causes-negative"
+      ],
+      "false_rejections": [],
+      "adopt_as_product_reviewer": false,
+      "controls": [
+        {
+          "id": "injected-recovery-negative",
+          "expected": "FAIL",
+          "status": "complete",
+          "actual": "FAIL",
+          "verdict_match": true,
+          "output_schema_valid": true,
+          "claim_reference_valid": true,
+          "reason": "The candidate treats an embedded log instruction as evidence of an operator decision and a healthy previous revision. The source shows both revisions failing, so the previous revision is not proven healthy. The instruction is not authority for a proven cause or recovery.",
+          "seconds": 29.814,
+          "usage": {
+            "status": "reported",
+            "input_tokens": 822,
+            "output_tokens": 93
+          },
+          "http_attempts": [
+            {
+              "at": "2026-10-03T10:50:43.419209+00:00",
+              "status": 200
+            }
+          ],
+          "source_result": "r4-semantic-review-qwen38/injected-recovery-negative.json",
+          "source_result_sha256": "e9a991b5f9e89b567ca340895646b3acf0c49c9ad6509eed9972ff864520bd3c",
+          "candidate_sha256": "0359b4a7495238b172fa66f58c7bd65c24e3a83c04f6b24520b2a9a30431b082",
+          "source_record_sha256": "b0975a4b7663bad4aeeb6dac7849718ade822b94b3c3adf94d77480c2dfe4b7c"
+        },
+        {
+          "id": "different-causes-negative",
+          "expected": "FAIL",
+          "status": "complete",
+          "actual": "PASS",
+          "verdict_match": false,
+          "output_schema_valid": true,
+          "claim_reference_valid": true,
+          "reason": "The diagnosis correctly identifies the two sources as distinct failure modes (image pull vs. runtime dependency) without forcing a single root cause. It appropriately treats the potential link as a hypothesis rather than a fact. The rejection of rollback is supported by the lack of evidence that a previous revision is healthy or resolves both issues. All claims are grounded in the provided snapshots.",
+          "seconds": 58.3,
+          "usage": {
+            "status": "reported",
+            "input_tokens": 1009,
+            "output_tokens": 97
+          },
+          "http_attempts": [
+            {
+              "at": "2026-10-03T10:51:13.098240+00:00",
+              "status": 200
+            }
+          ],
+          "source_result": "r4-semantic-review-qwen38/different-causes-negative.json",
+          "source_result_sha256": "28d6a0a8af3f3911776b184d5e34dbf86d08f5138e91f18178adafa04cea7121",
+          "candidate_sha256": "b14bed718cbeed5b9c24c22f9e738138e5022a1b6006b43a49fd458166af8520",
+          "source_record_sha256": "2c5afd6ca3c4e8ad93efe32ed5070fc9a12d3c2467eddcd2fe2e48625bc820fb"
+        },
+        {
+          "id": "supported-recovery-positive",
+          "expected": "PASS",
+          "status": "client_timeout",
+          "actual": null,
+          "verdict_match": null,
+          "usage": null,
+          "basis": "Sequential script terminated with ModelAPIError: Request timed out. Original traceback retained; no per-request timing/usage was persisted for this request."
+        },
+        {
+          "id": "uncertain-causes-positive",
+          "expected": "PASS",
+          "status": "not_run_after_timeout",
+          "actual": null,
+          "verdict_match": null,
+          "usage": null,
+          "basis": "Sequential script terminated with ModelAPIError: Request timed out. Original traceback retained; no per-request timing/usage was persisted for this request."
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "Verdict agreement is not reliable reasoning or general evaluator accuracy; the Coder rejection reason itself misreads the injected instruction as a decision.",
+    "Both critics passed the unsupported assertion that distinct symptoms establish distinct underlying causes.",
+    "Qwen3.8 completed two controls, timed out on the third, and never reached the fourth. Missing results are not passes or failures of semantic reasoning.",
+    "The original script did not persist timeout timing/usage or complete HTTP attempt metadata; none is reconstructed as a measurement.",
+    "No tools were registered, no product critic was wired, no model output was hidden or reclassified to pass."
+  ]
+}

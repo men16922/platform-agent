@@ -62,7 +62,9 @@ export interface DeploymentRecordCore {
   version: string;
   status: "success" | "failed" | "rolling-back" | "rolled-back";
   agent: string;
-  duration_sec: number;
+  duration_sec?: number;
+  duration_scope?: "agent_run" | "executor_run";
+  applied?: boolean;
   created_at: string; // ISO 8601
 }
 

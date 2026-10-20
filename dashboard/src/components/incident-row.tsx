@@ -23,6 +23,11 @@ export function IncidentRow({ incident }: { incident: Incident }) {
           {incident.provider === "gcp" ? "GOOGLE CLOUD" : incident.provider === "azure" ? "MICROSOFT AZURE" : incident.provider === "onprem" ? "ON-PREM" : "AWS"}
         </span>
         <span className="rounded bg-black/15 px-1.5 py-1 text-[10px] font-bold tracking-wide text-[#d8dde5]">{incident.mode}</span>
+        {incident.approval_decision && (
+          <span className="rounded border border-white/15 px-1.5 py-1 text-[10px] font-bold uppercase text-[#d8dde5]">
+            Remediation {incident.approval_decision}
+          </span>
+        )}
         {confidencePct !== null && (
           <span className="rounded bg-[#c4b5fd]/15 px-1.5 py-1 text-[10px] font-bold text-[#d9ccff]" title="LLM analysis confidence">🧠 {confidencePct}%</span>
         )}

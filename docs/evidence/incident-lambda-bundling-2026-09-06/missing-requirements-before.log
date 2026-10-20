@@ -1,0 +1,4 @@
+ERROR: Could not open requirements file: [Errno 2] No such file or directory: '/var/folders/sm/qhl7_nzn5g76zvvb6pk6v0n80000gn/T/platform-agent-lambda-bundle-sxz5wi6j/missing-input/requirements-lambda.txt'
+
+exit=0
+output_files=0

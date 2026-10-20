@@ -1,0 +1,226 @@
+- complementary:
+  - generic: ✦
+  - heading "Platform Agent" [level=1]
+  - paragraph: Autonomous cloud operations
+  - navigation:
+    - paragraph: Workspace
+    - link "⌘ Overview":
+      - /url: /
+      - generic: ⌘
+      - generic: Overview
+    - link "✦ Agents":
+      - /url: /agents
+      - generic: ✦
+      - generic: Agents
+    - link "⬡ Provisioning":
+      - /url: /provisioning
+      - generic: ⬡
+      - generic: Provisioning
+    - link "↗ Deployments":
+      - /url: /deployments
+      - generic: ↗
+      - generic: Deployments
+    - link "🕑 History":
+      - /url: /history
+      - generic: 🕑
+      - generic: History
+    - link "◈ Incidents":
+      - /url: /incidents
+      - generic: ◈
+      - generic: Incidents
+    - link "🛡 Audit Logs":
+      - /url: /audit
+      - generic: 🛡
+      - generic: Audit Logs
+    - link "👥 Users":
+      - /url: /users
+      - generic: 👥
+      - generic: Users
+  - generic: Operations workspace
+  - generic: Review recorded runs and observations.
+- main:
+  - paragraph: Platform Agent / Agent activity
+  - paragraph: Operations workspace
+  - generic: Recorded activity
+  - button "Notifications": ⌁
+  - generic: admin
+  - button "L"
+  - paragraph: Reasoning and execution trace
+  - heading "Agent activity" [level=2]
+  - paragraph: AI Agent autonomous tool-calling log — each agent selects and executes tools without human intervention
+  - generic: LIVE · ON-PREM
+  - heading "1. Select execution agent" [level=3]
+  - generic: The selection controls runtime and chat context.
+  - img "AWS"
+  - generic: Strands Agent
+  - generic: AWS
+  - generic: Bedrock Claude
+  - button "🔧 Tools 5":
+    - text: 🔧 Tools
+    - generic: "5"
+  - img "Google Cloud"
+  - generic: ADK Agent
+  - generic: Google Cloud
+  - generic: Gemini 3.5 Flash
+  - button "🔧 Tools 5":
+    - text: 🔧 Tools
+    - generic: "5"
+  - img "Microsoft Azure"
+  - generic: MS Agent
+  - generic: Microsoft Azure
+  - generic: GPT-5.4
+  - button "🔧 Tools 5":
+    - text: 🔧 Tools
+    - generic: "5"
+  - generic: ✓ SELECTED
+  - img "Cloud Native Computing Foundation"
+  - generic: On-Prem Agent
+  - generic: On-Premise
+  - generic: Local Qwen + kagent
+  - button "🔧 Tools 13":
+    - text: 🔧 Tools
+    - generic: "13"
+  - paragraph: 2. Selected runtime
+  - heading "On-Prem Agent · Local LLM (Qwen)" [level=3]
+  - paragraph: Local Qwen handles the request, the supervisor selects the specialist, and kagent owns Kubernetes diagnostics.
+  - generic: Router connected
+  - generic "Local LLM (Qwen)":
+    - img "Local LLM (Qwen)"
+  - generic: Selected AI model
+  - generic: Applies to On-Prem Agent; supervisor and kagent use their configured runtime.
+  - combobox:
+    - option "Local LLM (Qwen) — recommended" [selected]
+    - option "Azure OpenAI GPT — allowed"
+    - option "Bedrock Claude — allowed"
+    - option "Vertex Gemini — allowed"
+  - generic: "01"
+  - generic: READY PATH
+  - generic "Local LLM (Qwen)":
+    - img "Local LLM (Qwen)"
+  - text: Qwen2.5/3-Coder (MLX)
+  - generic: recommended model selection
+  - generic: "02"
+  - generic: READY PATH
+  - generic: Supervisor
+  - generic: Route + policy boundary
+  - generic: "03"
+  - generic: READY PATH
+  - generic: kagent A2A
+  - generic: Kubernetes tools + trace
+  - paragraph: Qwen → supervisor → kagent
+  - heading "Ask On-Prem Agent" [level=3]
+  - paragraph: Runs with the Agent and AI Model selected above. Investigate, deploy, or recover with a live trace.
+  - generic "Local LLM (Qwen)":
+    - img "Local LLM (Qwen)"
+  - generic: recommended
+  - generic: Native pairing — Local LLM (Qwen) is the On-Prem-native brain.
+  - generic: onprem
+  - text: ·
+  - generic: local-qwen
+  - text: 승인된 로컬 실패 검증입니다. orders-api-dogfood만 변경하세요. deploy_to_cluster를 service_name=orders-api-dogfood, image=orders-api-dogfood, version=missing-r1, image_uri=localhost:5001/orders-api-dogfood:missing-r1, provider=onprem, namespace=acme-dev-observability, replicas=2, health_path=/healthz, ports=[8080]으로 한 번 호출한 뒤 validate_deployment로 같은 대상만 검증하세요. 이 로컬 태그는 의도적으로 없으며 검증 실패가 예상됩니다. build/push/provision/삭제/롤백/자동 재시도는 하지 마세요. 다른 자원은 변경하지 마세요. 실패를 성공으로 요약하지 말고 실제 결과를 짧게 보고하세요.
+  - generic: FAILED
+  - generic "Local LLM (Qwen)":
+    - img "Local LLM (Qwen)"
+  - text: local-qwen
+  - button "✗ deploy_to_cluster ▸":
+    - generic: ✗
+    - code: deploy_to_cluster
+    - generic: ▸
+  - button "✗ validate_deployment ▸":
+    - generic: ✗
+    - code: validate_deployment
+    - generic: ▸
+  - paragraph: deploy_to_cluster failed with "timed out waiting for the condition" and the deployment was not rolled back. The validation also failed with "timed out waiting for the condition". The deployment failed as expected due to the missing image. No rollback occurred. The deployment was not rolled back. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due
+  - paragraph: deploy_to_cluster failed with "timed out waiting for the condition" and the deployment was not rolled back. The validation also failed with "timed out waiting for the condition". The deployment failed as expected due to the missing image. No rollback occurred. The deployment was not rolled back. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due to the missing image. No rollback occurred. The deployment failed as expected due
+  - generic: onprem
+  - text: ·
+  - generic: local-qwen
+  - text: 승인된 로컬 배포 검증입니다. 이미 localhost registry에 push된 image_uri=localhost:5001/orders-api-dogfood:r1을 사용하세요. deploy_to_cluster를 service_name=orders-api-dogfood, image=orders-api-dogfood, version=r1, provider=onprem, namespace=acme-dev-observability, replicas=2, health_path=/healthz, ports=[8080]으로 한 번 호출한 뒤 validate_deployment로 같은 대상을 검증하세요. build_image/push_image/deploy_service/provision/삭제는 호출하지 마세요. 다른 namespace나 서비스는 변경하지 마세요. 도구 결과에 근거해 요약하세요.
+  - generic: SUCCESS
+  - generic "Local LLM (Qwen)":
+    - img "Local LLM (Qwen)"
+  - text: local-qwen
+  - button "✓ deploy_to_cluster ▸":
+    - generic: ✓
+    - code: deploy_to_cluster
+    - generic: ▸
+  - button "✓ validate_deployment ▸":
+    - generic: ✓
+    - code: validate_deployment
+    - generic: ▸
+  - paragraph: deploy_to_cluster 호출에서 port parameter가 list type이어야 한다고 오류가 발생しました. port parameter를 list type으로 수정하여 다시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시
+  - paragraph: deploy_to_cluster 호출에서 port parameter가 list type이어야 한다고 오류가 발생しました. port parameter를 list type으로 수정하여 다시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시 시
+  - textbox "Ask the agent — e.g. 'list pods in default' or 'deploy orders-api v1.4.2 with 2 replicas'": 승인된 로컬 배포 검증입니다. 이미 localhost registry에 push된 image_uri=localhost:5001/orders-api-dogfood:r1을 사용하세요. deploy_to_cluster를 service_name=orders-api-dogfood, image=orders-api-dogfood, version=r1, provider=onprem, namespace=acme-dev-observability, replicas=2, health_path=/healthz, ports=[8080]으로 한 번 호출한 뒤 validate_deployment로 같은 대상을 검증하세요. build_image/push_image/deploy_service/provision/삭제는 호출하지 마세요. 다른 namespace나 서비스는 변경하지 마세요. 도구 결과에 근거해 요약하세요.
+  - button "Run"
+  - paragraph: "Request: 4cbcda1b-bc08-4633-a1c1-2f0e8154683f"
+  - button "Check recorded result"
+  - heading "Recent activity" [level=3]
+  - generic: Latest 5 of 8 verified actions
+  - link "Cloud Native Computing Foundation ONPREM Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen)) — Rollback orders-api-dogfood to previous revision 오후 2:52:41 COMPLETE rollback_deployment View trace →":
+    - /url: /deployments/DEP-ED8855BD
+    - img "Cloud Native Computing Foundation"
+    - text: ONPREM
+    - generic "Local LLM (Qwen)":
+      - img "Local LLM (Qwen)"
+    - generic: On-Prem Agent (Local LLM (Qwen))
+    - generic: —
+    - generic: Rollback orders-api-dogfood to previous revision
+    - generic: 오후 2:52:41
+    - generic: COMPLETE
+    - code: rollback_deployment
+    - generic: View trace →
+  - link "Cloud Native Computing Foundation ONPREM Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen)) — 승인된 로컬 실패 검증입니다. orders-api-dogfood만 변경하세요. deploy_to_cluster를 service_name=orders-api-dogfood, image=orders-api-dogfood, version=missing-r1 오후 2:52:04 FAILED deploy_to_cluster validate_deployment View trace →":
+    - /url: /deployments/DEP-ED8855BD
+    - img "Cloud Native Computing Foundation"
+    - text: ONPREM
+    - generic "Local LLM (Qwen)":
+      - img "Local LLM (Qwen)"
+    - generic: On-Prem Agent (Local LLM (Qwen))
+    - generic: —
+    - generic: 승인된 로컬 실패 검증입니다. orders-api-dogfood만 변경하세요. deploy_to_cluster를 service_name=orders-api-dogfood, image=orders-api-dogfood, version=missing-r1
+    - generic: 오후 2:52:04
+    - generic: FAILED
+    - code: deploy_to_cluster
+    - code: validate_deployment
+    - generic: View trace →
+  - link "Cloud Native Computing Foundation ONPREM Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen)) — 승인된 로컬 실패 검증입니다. orders-api-dogfood만 변경하세요. deploy_to_cluster를 service_name=orders-api-dogfood, image=orders-api-dogfood, version=missing-r1 오후 2:47:53 FAILED deploy_to_cluster View trace →":
+    - /url: /deployments/DEP-2E116163
+    - img "Cloud Native Computing Foundation"
+    - text: ONPREM
+    - generic "Local LLM (Qwen)":
+      - img "Local LLM (Qwen)"
+    - generic: On-Prem Agent (Local LLM (Qwen))
+    - generic: —
+    - generic: 승인된 로컬 실패 검증입니다. orders-api-dogfood만 변경하세요. deploy_to_cluster를 service_name=orders-api-dogfood, image=orders-api-dogfood, version=missing-r1
+    - generic: 오후 2:47:53
+    - generic: FAILED
+    - code: deploy_to_cluster
+    - generic: View trace →
+  - link "Cloud Native Computing Foundation ONPREM Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen)) — Rollback orders-api-dogfood to previous revision 오후 2:43:45 COMPLETE rollback_deployment View trace →":
+    - /url: /deployments/DEP-699EF7A6
+    - img "Cloud Native Computing Foundation"
+    - text: ONPREM
+    - generic "Local LLM (Qwen)":
+      - img "Local LLM (Qwen)"
+    - generic: On-Prem Agent (Local LLM (Qwen))
+    - generic: —
+    - generic: Rollback orders-api-dogfood to previous revision
+    - generic: 오후 2:43:45
+    - generic: COMPLETE
+    - code: rollback_deployment
+    - generic: View trace →
+  - link "Cloud Native Computing Foundation ONPREM Local LLM (Qwen) On-Prem Agent (Local LLM (Qwen)) — 승인된 로컬 실패 검증입니다. orders-api-dogfood만 변경하세요. deploy_to_cluster를 service_name=orders-api-dogfood, image=orders-api-dogfood, version=missing-r1 오후 2:42:34 COMPLETE deploy_to_cluster View trace →":
+    - /url: /deployments/DEP-699EF7A6
+    - img "Cloud Native Computing Foundation"
+    - text: ONPREM
+    - generic "Local LLM (Qwen)":
+      - img "Local LLM (Qwen)"
+    - generic: On-Prem Agent (Local LLM (Qwen))
+    - generic: —
+    - generic: 승인된 로컬 실패 검증입니다. orders-api-dogfood만 변경하세요. deploy_to_cluster를 service_name=orders-api-dogfood, image=orders-api-dogfood, version=missing-r1
+    - generic: 오후 2:42:34
+    - generic: COMPLETE
+    - code: deploy_to_cluster
+    - generic: View trace →
+- button "Open Next.js Dev Tools":
+- alert

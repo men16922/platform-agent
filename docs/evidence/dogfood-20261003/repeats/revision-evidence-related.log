@@ -1,0 +1,27 @@
+.................................F...........                            [100%]
+=================================== FAILURES ===================================
+_ TestTheGrantCoversWhatTheAdaptersActuallyRun.test_every_subcommand_the_adapters_use_is_understood _
+
+self = <tests.test_deploy_identity.TestTheGrantCoversWhatTheAdaptersActuallyRun object at 0x104331f90>
+
+    def test_every_subcommand_the_adapters_use_is_understood(self):
+        """If a new kubectl verb shows up, this file must decide what it needs —
+        rather than the grant silently not covering it."""
+        unknown = self._subcommands() - set(self.VERBS_FOR)
+>       assert not unknown, (
+            f"the adapters run `kubectl {unknown}` and this guard has no verb mapping "
+            "for it, so nothing checked whether the deploy identity may do it"
+        )
+E       AssertionError: the adapters run `kubectl {'config', '--context'}` and this guard has no verb mapping for it, so nothing checked whether the deploy identity may do it
+E       assert not {'--context', 'config'}
+
+tests/test_deploy_identity.py:298: AssertionError
+=============================== warnings summary ===============================
+tests/test_local_deployer.py::test_local_deployer_drives_tools_with_test_model
+  /opt/anaconda3/lib/python3.13/site-packages/pydantic_graph/_utils.py:53: DeprecationWarning: There is no current event loop
+    event_loop = asyncio.get_event_loop()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_deploy_identity.py::TestTheGrantCoversWhatTheAdaptersActuallyRun::test_every_subcommand_the_adapters_use_is_understood
+1 failed, 44 passed, 1 warning in 0.83s

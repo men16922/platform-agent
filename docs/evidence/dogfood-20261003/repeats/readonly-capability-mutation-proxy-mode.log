@@ -1,0 +1,30 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_ test_both_deploy_proxies_preserve_mode_and_reject_invalid_values_before_dispatch _
+
+run_js = <function run_js.<locals>.run at 0x102bb2480>
+
+    def test_both_deploy_proxies_preserve_mode_and_reject_invalid_values_before_dispatch(run_js):
+        result = run_js('''
+    let role='operator'; const calls=[],statuses=[];
+    const dependencies={'@/auth':{auth:async()=>({user:{username:'alice',role}})},'@/lib/audit-data':{writeAuditLog:async()=>{}}};
+    for (const file of ['src/app/api/dashboard/agents/deploy/stream/route.ts','src/app/api/dashboard/agents/deploy/route.ts']) {
+     const post=load(file,dependencies,{fetch:async(url,options)=>{calls.push({url,...options});return Response.json({ok:true});}}).POST;
+     const base={instruction:'inspect',model:'local-qwen',provider:'onprem',request_id:'7e9c73ce-557c-41d8-9d58-ce1b2d805bdc'};
+     const send=body=>post(new Request('http://test/api',{method:'POST',body:JSON.stringify(body)}));
+     statuses.push((await send({...base,read_only:true})).status,(await send({...base,read_only:false})).status);
+     for (const value of ['true','false',1,0,null]) statuses.push((await send({...base,read_only:value})).status);
+     statuses.push((await send({...base,read_only:true,provider:'aws'})).status);
+     for (const denied of ['viewer','unexpected']) { role=denied;statuses.push((await send({...base,read_only:true})).status); }
+     role='operator';
+    }
+    console.log(JSON.stringify({calls,statuses}));
+    ''')
+        assert result["statuses"] == [200, 200, 400, 400, 400, 400, 400, 400, 403, 403] * 2
+>       assert [json.loads(call["body"])["read_only"] for call in result["calls"]] == [True, False, True, False]
+E       KeyError: 'read_only'
+
+tests/test_local_run_dashboard.py:94: KeyError
+=========================== short test summary info ============================
+FAILED tests/test_local_run_dashboard.py::test_both_deploy_proxies_preserve_mode_and_reject_invalid_values_before_dispatch
+1 failed in 0.22s

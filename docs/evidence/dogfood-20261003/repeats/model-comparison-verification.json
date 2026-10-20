@@ -1,0 +1,82 @@
+{
+  "at": "2026-10-03T11:00:47.869175+00:00",
+  "candidate": "candidate-v15-snapshot-contract.json",
+  "goal_status": "active",
+  "production_changes": 0,
+  "generation_comparison": {
+    "path": "Same route_deploy snapshot factory, not browser",
+    "model": "mlx-community/Qwen3.8-27B-4bit",
+    "tools": 0,
+    "settings": {
+      "max_tokens": 1024,
+      "enable_thinking": false,
+      "http_retries": 0
+    },
+    "http_attempts": 3,
+    "completed_responses": 3,
+    "schema_citations_valid": 1,
+    "semantic_review": {
+      "pass": 1,
+      "partial": 1,
+      "fail": 1
+    },
+    "reported_usage": {
+      "input_tokens": 2884,
+      "output_tokens": 1371
+    },
+    "review": "r4-snapshot-qwen38-review.json",
+    "adopt_default_model": false
+  },
+  "critic_calibration": {
+    "report": "r4-semantic-review-calibration.json",
+    "same_frozen_cases_and_prompt": true,
+    "coder_completed": 4,
+    "coder_verdict_matches_only": 2,
+    "qwen38_completed": 2,
+    "qwen38_verdict_matches_only": 1,
+    "qwen38_third": "client timeout, execution exit1",
+    "qwen38_fourth": "not run",
+    "adopt_critic": false,
+    "reason": "Both reviewers pass unsupported different-root-cause claim; Coder also rejects correct uncertainty. Agreement is not general accuracy."
+  },
+  "restoration": {
+    "evidence": "snapshot-model-critic-restore-activation.json",
+    "actual_response": "OK/stop",
+    "owned_mlx_pid": 45929,
+    "all_recorded_owned_processes_exist": true,
+    "application_model_setting_changed": false
+  },
+  "source_validation": {
+    "manifest": "candidate-v15-snapshot-contract.json",
+    "runtime_files": 287,
+    "worktree_and_running_candidate_hashes_match": true,
+    "record": "model-comparison-checkpoint.json"
+  },
+  "full_gate": {
+    "status": "previously run on unchanged O product sources, not rerun in P",
+    "passed": 3356,
+    "skipped": 2,
+    "warnings": 20,
+    "seconds": 138.14,
+    "environment": "2026-10-03 local macOS/Python3.13.5/Node22.23.3/temporary npm prefix",
+    "evidence": "snapshot-contract-gate.log"
+  },
+  "limits": [
+    "Exploratory controls and coding-assistant review, not independent expert benchmark.",
+    "Qwen3.8 model and no-thinking setting differ together; no model-only causal improvement claim.",
+    "The timed-out request has no saved timing or usage; unknown is not zero.",
+    "No new browser/workload health/remote CI/tenant isolation proof. No model download, global setting, cloud, RBAC, commit, push or deletion.",
+    "R3/R4, final same-candidate scenario bundle and refreshed reproduction/comparison/demo, and R5 remain incomplete."
+  ],
+  "next": "Fill missing RS/Pod/time evidence during one already-authorized failure/recovery cycle; freeze same-window observations and compare manual investigation with read-only model tool selection. Do not use current reads as evidence for past snapshots.",
+  "documentation_followup": {
+    "initial": "54 passed, 1 failed in 3.46s: entrypoint linked a new Markdown file outside the tracked doc set",
+    "correction": "Entry point now references the canonical plan section and JSON verification record; detailed Markdown remains linked through evidence README. No index or staged WIP changes.",
+    "final": "55 passed in 3.07s",
+    "evidence": "model-comparison-docs-final.log",
+    "initial_evidence": "model-comparison-docs.log",
+    "diff_check": "git diff --check exit0",
+    "runtime_files_still_match": 287
+  },
+  "checkpoint_at": "2026-10-03T11:02:34.340566+00:00"
+}

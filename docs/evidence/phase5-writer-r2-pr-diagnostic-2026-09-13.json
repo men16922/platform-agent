@@ -1,0 +1,211 @@
+{
+  "scope": "r2-pr-diagnostic-01",
+  "observed_at": "2026-09-12T22:55:52.171457+00:00",
+  "repository": "men16922/platform-agent-p5e-authz-r2",
+  "app_id": 4924748,
+  "installation_id": 161238144,
+  "repository_id": 1367740190,
+  "request": {
+    "body": {
+      "base": "main",
+      "body": "Synthetic authorization experiment. Do not merge.",
+      "draft": true,
+      "head": "p5e/20260913-02-diagnostic",
+      "maintainer_can_modify": false,
+      "title": "P5-E isolated single-file permission probe"
+    },
+    "method": "POST",
+    "path": "/repos/men16922/platform-agent-p5e-authz-r2/pulls"
+  },
+  "before": {
+    "head": {
+      "commit": "9d17b496128a7ec2a771041816c937db7e6366a3",
+      "complete": true,
+      "files": {
+        "platform/tenants/acme.yaml": {
+          "mode": "100644",
+          "sha": "9a88d6901ff18873745c272665e175921156ca9a"
+        },
+        "platform/tenants/globex.yaml": {
+          "mode": "100644",
+          "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+        }
+      },
+      "main": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "observer": "operator",
+      "parents": [
+        "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c"
+      ],
+      "ref": "p5e/20260913-02-diagnostic"
+    },
+    "main": {
+      "commit": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "complete": true,
+      "files": {
+        "platform/tenants/acme.yaml": {
+          "mode": "100644",
+          "sha": "398abe6c528238244a8e3713bc2b48523ae8b915"
+        },
+        "platform/tenants/globex.yaml": {
+          "mode": "100644",
+          "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+        }
+      },
+      "main": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "observer": "operator",
+      "parents": [],
+      "ref": "main"
+    }
+  },
+  "after": {
+    "head": {
+      "commit": "9d17b496128a7ec2a771041816c937db7e6366a3",
+      "complete": true,
+      "files": {
+        "platform/tenants/acme.yaml": {
+          "mode": "100644",
+          "sha": "9a88d6901ff18873745c272665e175921156ca9a"
+        },
+        "platform/tenants/globex.yaml": {
+          "mode": "100644",
+          "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+        }
+      },
+      "main": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "observer": "operator",
+      "parents": [
+        "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c"
+      ],
+      "ref": "p5e/20260913-02-diagnostic"
+    },
+    "main": {
+      "commit": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "complete": true,
+      "files": {
+        "platform/tenants/acme.yaml": {
+          "mode": "100644",
+          "sha": "398abe6c528238244a8e3713bc2b48523ae8b915"
+        },
+        "platform/tenants/globex.yaml": {
+          "mode": "100644",
+          "sha": "ec999cb5bfcb210f3029ae085e56e9923223d3a4"
+        }
+      },
+      "main": "59d54da9f4e9f8af89afc2c105f1d91fb3f33d2c",
+      "observer": "operator",
+      "parents": [],
+      "ref": "main"
+    }
+  },
+  "credential_control": {
+    "app_id": 4924748,
+    "credential_fingerprint": "b64b708e017f3ce20b199d59484f76f12ebe401cac4c961c030a9c105a3329e5",
+    "identity": "installation-token",
+    "installation_id": 161238144,
+    "permissions": {
+      "metadata": "read",
+      "pull_requests": "write",
+      "single_file": "write"
+    },
+    "repository": "men16922/platform-agent-p5e-authz-r2",
+    "repository_id": 1367740190,
+    "repository_selection": [
+      1367740190
+    ],
+    "single_file_paths": [
+      "platform/tenants/acme.yaml"
+    ],
+    "status": 200
+  },
+  "attempt": {
+    "attempt_id": "8e6364dc614342728467ac17bf8a5ce8",
+    "capture_event_id": "6580b1360f044127a4a8b13fec0ded8f",
+    "http_status": 422,
+    "operation": "create_pr",
+    "state": "OBSERVED"
+  },
+  "pr_count": 0,
+  "pr_numbers": [],
+  "revoke": {
+    "attempt_id": "af699bc61ba043c98b98722902b18e2b",
+    "capture_event_id": "282577777fd5456ea9e6f02337202e2f",
+    "http_status": 204,
+    "operation": "revoke_token",
+    "state": "OBSERVED"
+  },
+  "revoked_token_get_status": 401,
+  "cleanup": "OBSERVED_INVALID",
+  "state": "PR_NOT_PROVEN",
+  "milestone": "M79",
+  "http_capture": {
+    "body_state": "object",
+    "errors": [
+      {
+        "code": "custom",
+        "field": null,
+        "message_class": "unclassified",
+        "resource": "PullRequest"
+      }
+    ],
+    "errors_state": "list",
+    "errors_truncated": false,
+    "event_id": "6580b1360f044127a4a8b13fec0ded8f",
+    "github_request_id": "F81B:2770AE:7361A7:A95F38:6AA5D885",
+    "http_status": 422,
+    "message_class": "validation_failed",
+    "observed_at": "2026-09-12T22:56:05.449797+00:00",
+    "operation": "create_pr",
+    "schema_version": 1,
+    "transport": "response"
+  },
+  "reviewed_diagnostic": {
+    "github_request_id": "F81B:2770AE:7361A7:A95F38:6AA5D885",
+    "verified_nonsecret_excerpt": "not all refs are readable",
+    "truncated": false
+  },
+  "interpretation": {
+    "observed": "GitHub rejected this PR request because not all refs are readable.",
+    "hypothesis": "Missing Contents read is consistent with documented Git ref read permissions; adding it has not been tested.",
+    "not_proven": [
+      "which ref or internal permission check failed",
+      "Contents read plus single_file write compatibility and PR success",
+      "cause of earlier M70/M77 responses with discarded messages"
+    ]
+  },
+  "scope_limits": {
+    "pr_post_attempts": 1,
+    "new_tokens": 1,
+    "new_refs": 0,
+    "contents_puts": 0,
+    "permission_changes": 0,
+    "retained": "No resource/file deletions in this attempt; R2 App/installation/lab/branch/key and both checkouts retained; old PEM absent at recorded path, cause unknown.",
+    "production_writer_connected": false
+  },
+  "sources": [
+    "https://docs.github.com/en/rest/git/refs#get-a-reference",
+    "https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request"
+  ],
+  "runner_sha256": "50b0d0ae8db80e54f6cba6353aa7f05ae883ee76c6327e7c58338dff43bc4620",
+  "local_retention_observation": {
+    "r2_pem_exists": true,
+    "r2_checkout_exists": true,
+    "old_checkout_exists": true,
+    "old_pem_at_recorded_download_path_exists": false,
+    "old_pem_missing_reason": "unknown",
+    "this_attempt_deleted_files": false
+  },
+  "repeat_guard": {
+    "state": "BLOCKED",
+    "reason": "attempt_already_started",
+    "network_sender_called": false
+  },
+  "validation": {
+    "command": "make check",
+    "environment": "local macOS Python 3.13",
+    "passed": 3058,
+    "skipped": 2,
+    "tests_added": 0,
+    "log": "/tmp/platform-agent-m79-gate.log",
+    "remote_ci": "not run"
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "arm": "candidate",
+  "case_id": "relation-same",
+  "label": "warm",
+  "settings": {
+    "max_tokens": 1024,
+    "temperature": 0
+  },
+  "request": {
+    "question": "Do these snapshots establish the same or different root causes, or justify rollback? Explain what is uncertain.",
+    "target": {
+      "cluster": "kind-platform-agent",
+      "namespace": "acme-dev-observability",
+      "service": "orders-api-dogfood"
+    },
+    "window_start": "2026-10-03T06:59:00Z",
+    "as_of": "2026-10-03T07:03:00Z",
+    "sources": [
+      {
+        "source_id": "A",
+        "target": {
+          "cluster": "kind-platform-agent",
+          "namespace": "acme-dev-observability",
+          "service": "orders-api-dogfood"
+        },
+        "observed_at": "2026-10-03T07:00:00Z",
+        "provenance": "supplied_snapshot",
+        "text": "A new Pod is Pending with ImagePullBackOff because DNS lookup of registry.internal failed with NXDOMAIN; the cluster DNS service had zero ready endpoints at that minute."
+      },
+      {
+        "source_id": "B",
+        "target": {
+          "cluster": "kind-platform-agent",
+          "namespace": "acme-dev-observability",
+          "service": "orders-api-dogfood"
+        },
+        "observed_at": "2026-10-03T07:01:00Z",
+        "provenance": "supplied_snapshot",
+        "text": "An HTTP readiness check returns 503 because the dependency host db.internal could not be resolved: DNS NXDOMAIN; the cluster DNS service had zero ready endpoints at that minute."
+      }
+    ]
+  },
+  "snapshot_diagnosis_sha256": "d7ebf0a61636c28126b87f0240bd74912660b423a1615223c2dc4a0e614ae766",
+  "usage": [
+    {
+      "prompt_tokens": 1032,
+      "completion_tokens": 298,
+      "total_tokens": 1330,
+      "prompt_tokens_details": {
+        "cached_tokens": 870
+      }
+    }
+  ],
+  "seconds": 3.612,
+  "raw_sha256": "4e56adc6dff502cb33bb202ee6c9c297bca5cfe4d79288df03c9abbece256b4d",
+  "outcome": {
+    "ok": false,
+    "model": "local-qwen",
+    "provider": "onprem",
+    "summary": "### Cited observations\n- [A] A new Pod is Pending with ImagePullBackOff because DNS lookup of registry.internal failed with NXDOMAIN; the cluster DNS service had zero ready endpoints at that minute.\n- [B] An HTTP readiness check returns 503 because the dependency host db.internal could not be resolved: DNS NXDOMAIN; the cluster DNS service had zero ready endpoints at that minute.\n\n### Possible explanation\nBoth sources point to DNS failures as root cause, but differ in symptom and timing. Source A shows Pod creation failure due to DNS failure during image pull, while Source B shows HTTP readiness check failure due to DNS failure in dependency resolution. These symptoms point to same underlying DNS issue but different failure points in the pod lifecycle.\n\n### Alternative explanation\nDNS failure in cluster DNS service could be due to transient network or DNS service outage. DNS failure in cluster DNS service could be due to misconfiguration or resource exhaustion in DNS service.\n\n### Recovery review: not established\nNo previous healthy revision evidence provided to support rollback. Recovery evidence missing.\n\n### Next read-only evidence\n- Check cluster DNS service status\n- Check DNS service logs\n- Validate DNS service configuration\n\nModel interpretation is unverified. No execution is authorized.",
+    "steps": [],
+    "suitability": {
+      "verdict": "recommended",
+      "reason": "Native pairing — Local LLM (Qwen) is the On-Prem-native brain."
+    },
+    "trace": [],
+    "inspection": null,
+    "model_completion": {
+      "status": "complete",
+      "finish_reason": "stop",
+      "text": "{\n  \"observations\": [\n    {\n      \"source_id\": \"A\",\n      \"quote\": \"A new Pod is Pending with ImagePullBackOff because DNS lookup of registry.internal failed with NXDOMAIN; the cluster DNS service had zero ready endpoints at that minute.\"\n    },\n    {\n      \"source_id\": \"B\",\n \"quote\": \"An HTTP readiness check returns 503 because the dependency host db.internal could not be resolved: DNS NXDOMAIN; the cluster DNS service had zero ready endpoints at that minute.\"\n    }\n  ],\n  \"cause_assessment\": \"Both sources point to DNS failures as root cause, but differ in symptom and timing. Source A shows Pod creation failure due to DNS failure during image pull, while Source B shows HTTP readiness check failure due to DNS failure in dependency resolution. These symptoms point to same underlying DNS issue but different failure points in the pod lifecycle.\",\n  \"alternative_explanation\": \"DNS failure in cluster DNS service could be due to transient network or DNS service outage. DNS failure in cluster DNS service could be due to misconfiguration or resource exhaustion in DNS service.\",\n  \"recovery\": \"not_established\",\n  \"recovery_reason\": \"No previous healthy revision evidence provided to support rollback. Recovery evidence missing.\",\n  \"recovery_evidence\": [],\n  \"next_read_only_checks\": [\n    \"Check cluster DNS service status\",\n    \"Check DNS service logs\",\n    \"Validate DNS service configuration\"\n  ]\n}",
+      "semantic_verified": false,
+      "model_responses": 1,
+      "tool_call_attempts": 0,
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 1032,
+        "output_tokens": 298
+      }
+    },
+    "snapshot_analysis": {
+      "target": {
+        "cluster": "kind-platform-agent",
+        "namespace": "acme-dev-observability",
+        "service": "orders-api-dogfood"
+      },
+      "window_start": "2026-10-03T06:59:00+00:00",
+      "as_of": "2026-10-03T07:03:00+00:00",
+      "interpretation": "Analysis of supplied records at the declared time; not a live observation or action approval.",
+      "applicable_source_ids": [
+        "A",
+        "B"
+      ],
+      "embedded_instructions": [],
+      "excluded": [],
+      "source_sha256": {
+        "A": "1ef55dbb470dfb190d18f2f021ee1e72d5e34c10229b49cd0c738d03cf4b6648",
+        "B": "5e9789d9810c8a4722575acfca5358ca9c9cc0c7881734622b7c464be255283b"
+      },
+      "status": "interpreted",
+      "model_called": true,
+      "citation_status": "valid",
+      "semantic_verified": false,
+      "execution_authorized": false,
+      "diagnosis": {
+        "observations": [
+          {
+            "source_id": "A",
+            "quote": "A new Pod is Pending with ImagePullBackOff because DNS lookup of registry.internal failed with NXDOMAIN; the cluster DNS service had zero ready endpoints at that minute."
+          },
+          {
+            "source_id": "B",
+            "quote": "An HTTP readiness check returns 503 because the dependency host db.internal could not be resolved: DNS NXDOMAIN; the cluster DNS service had zero ready endpoints at that minute."
+          }
+        ],
+        "cause_assessment": "Both sources point to DNS failures as root cause, but differ in symptom and timing. Source A shows Pod creation failure due to DNS failure during image pull, while Source B shows HTTP readiness check failure due to DNS failure in dependency resolution. These symptoms point to same underlying DNS issue but different failure points in the pod lifecycle.",
+        "alternative_explanation": "DNS failure in cluster DNS service could be due to transient network or DNS service outage. DNS failure in cluster DNS service could be due to misconfiguration or resource exhaustion in DNS service.",
+        "recovery": "not_established",
+        "recovery_reason": "No previous healthy revision evidence provided to support rollback. Recovery evidence missing.",
+        "recovery_evidence": [],
+        "next_read_only_checks": [
+          "Check cluster DNS service status",
+          "Check DNS service logs",
+          "Validate DNS service configuration"
+        ]
+      }
+    }
+  }
+}

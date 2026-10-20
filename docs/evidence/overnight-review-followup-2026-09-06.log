@@ -1,0 +1,49 @@
+M62 overnight review/follow-up — 2026-09-06 local macOS / Python 3.13
+Reviewed branch: overnight/20260906-ci-coverage
+Baseline snapshot: d39c5fddd0394bbd8b6f5cd652f09cb4b2044395
+Run result: 2e81799e0a6d9740562a2dc0501526921faeafd4
+Exit: DONE (drained), 2026-09-06 00:50:38 +0900, 2 iterations, 1 result commit.
+Independent make check at result HEAD: exit 0, 2686 passed, 2 skipped,
+21 warnings in 51.44s. Log: isolated worktree scripts/overnight/logs/review-gate.log.
+Run checklist: isolated worktree docs/test/history/0906-0050-overnight-review-checklist.md.
+
+Original worktree received only baseline-to-result delta (12 files).
+Three-way merge preserved tests/test_registry_preview_ui.py's removed os import.
+The separate tests/test_registry_runtime.py removed DynamoCurrentUsers import was untouched.
+No snapshot commit merge, staging, original commit, push, remote CI, npm download,
+cloud operation, GitHub App/lab operation, or unrelated worktree cleanup performed.
+
+Regression experiment before fix: replace both fixture guard calls with bare skip
+and retain require_ts_toolchain( in a comment. Existing guard tests: 7 passed.
+Fix: run both actual fixture functions with temporary toolchain paths; test compiler
+and node absence, local mode, CI alone, GITHUB_ACTIONS alone. Both exception kinds
+are caught so an erroneous CI skip fails the test assertion. CI vars reset per test.
+Normal focused run: 17 passed.
+Mutation results (both outer CI variables set; per-test isolation still holds):
+- bare skip + call text in comment: exit 1, 8 failed, 9 passed.
+- remove CI selector: exit 1, 4 failed, 11 passed, 2 skipped.
+- remove GITHUB_ACTIONS selector: exit 1, 4 failed, 12 passed, 1 skipped.
+All mutated source bytes restored in finally blocks.
+
+Documentation corrected: M61 was overnight with a local commit, not direct/no-commit.
+Historical M61 gate/hash data retained; current follow-up evidence is this file.
+Completed auto removed from open plan; M57/M56 progress entries archived verbatim.
+New runner npm ci and actual remote CI remain unverified.
+
+First integrated make check: exit 2, 1 failed, 2695 passed, 2 skipped,
+21 warnings in 52.81s. Only failure: test_claimed_total_matches_collection,
+old entry-doc total 2688 versus measured collection 2698. Entry-doc counts
+updated together to the new target; full gate rerun pending.
+
+Final integrated make check: exit 0, 2696 passed, 2 skipped, 21 warnings
+in 49.76s. Log: scripts/overnight/logs/review-followup-final-gate.log.
+Existing original WIP hash audit: no unexpected modified snapshot files.
+Original main HEAD remains 445d48df8eebd73199521719a5f7e98f40f074a2.
+Reviewed isolated worktree remains clean at 2e81799.
+
+Final code SHA256:
+e30ef47d4557ceb39d6c497312f1c6cc9a643ee6194e6efc9c8f9bde4c65037e  .github/workflows/gate.yml
+f846ad6296a5b842fb50a86d5c682897525e42446cde4973994ab3f71bc8fef8  tests/_ts_toolchain.py
+61ecc63745a4a0264eed905e8446148f953f42ae6293a225b23d82088a757463  tests/test_ci_ts_dependency_guard.py
+49be6356955a1a3a46b5bff5d4e8dde1009d2aacaefb020fea519d8bcf414b43  tests/test_registry_preview_ui.py
+15fefbad3413bf961936389a8360e282a2cf1d690a73bde9dbca732e325c4b34  tests/test_registry_planner_stack.py

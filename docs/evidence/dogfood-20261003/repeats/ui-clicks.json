@@ -1,0 +1,182 @@
+[
+  {
+    "label": "normal1",
+    "request_id": "a0d33346-b2a0-4fdc-9bbd-d09b7df697a6",
+    "click_at": "2026-10-03T06:08:55.736Z",
+    "refresh_during_run": false
+  },
+  {
+    "label": "normal2-loss1",
+    "request_id": "3ec5ff7d-c3a6-46a1-b6dd-fc07e4012a8e",
+    "click_at": "2026-10-03T06:10:09.921Z",
+    "refresh_at": "2026-10-03T06:10:10.200Z",
+    "refresh_during_run": true
+  },
+  {
+    "label": "normal3-loss2",
+    "request_id": "ed75e087-4e17-42f7-bb11-7dad436317bd",
+    "click_at": "2026-10-03T06:10:58.631Z",
+    "refresh_at": "2026-10-03T06:10:58.917Z",
+    "refresh_during_run": true
+  },
+  {
+    "label": "failure1",
+    "request_id": "e5b326c4-efab-4e9d-b483-3aa2673b9612",
+    "click_at": "2026-10-03T06:11:46.395Z"
+  },
+  {
+    "label": "recovery1",
+    "deployment_id": "DEP-0239F536",
+    "click_at": "2026-10-03T06:13:35.385Z",
+    "manual_confirmation_clicks": 1
+  },
+  {
+    "label": "v2-normal1",
+    "request_id": "ff6b8fdc-e73d-401f-9a9d-6420494f26a0",
+    "click_at": "2026-10-03T06:17:35.279Z",
+    "refresh_during_run": false
+  },
+  {
+    "label": "v2-recovery1",
+    "deployment_id": "DEP-4FED4073",
+    "click_at": "2026-10-03T06:20:30.944Z",
+    "manual_confirmation_clicks": 1
+  },
+  {
+    "label": "denial1-write",
+    "request_id": "7b353f6b-5b67-42a8-9d00-f99b4f54a157",
+    "click_at": "2026-10-03T06:21:46.293Z",
+    "identity": "acme tenant"
+  },
+  {
+    "label": "denial2-write",
+    "request_id": "8e0ca490-0f3a-4421-904b-8eca86d4512c",
+    "click_at": "2026-10-03T06:22:36.811Z",
+    "identity": "acme tenant"
+  },
+  {
+    "label": "denial-read",
+    "request_id": "b0ccdcc9-9336-439b-9723-9b4f2671f677",
+    "click_at": "2026-10-03T06:23:02.492Z",
+    "identity": "acme tenant"
+  },
+  {
+    "label": "insufficient-stale-injection",
+    "request_id": "3b551e25-e01a-4f7a-aa06-5a6e28452b54",
+    "click_at": "2026-10-03T06:23:28.922Z",
+    "identity": "acme tenant"
+  },
+  {
+    "label": "insufficient-lookalike",
+    "request_id": "fe50a420-030e-4b8b-a4cc-126a1e37f824",
+    "click_at": "2026-10-03T06:24:19.714Z",
+    "identity": "acme tenant"
+  },
+  {
+    "label": "v3-normal1",
+    "click_at": "2026-10-03T06:34:26.715Z",
+    "request_id": "cba2a663-9259-4f41-8638-725c0c34e328"
+  },
+  {
+    "label": "v3-normal2-loss1",
+    "click_at": "2026-10-03T06:35:04.812Z",
+    "refresh_at": "2026-10-03T06:35:05.114Z",
+    "request_id": "6b028b1a-bbc9-41aa-8c7e-141ef7911b31"
+  },
+  {
+    "label": "v3-normal3-loss2",
+    "click_at": "2026-10-03T06:35:31.382Z",
+    "refresh_at": "2026-10-03T06:35:31.676Z",
+    "request_id": "52b31300-43c7-4349-b2a6-299b26338422"
+  },
+  {
+    "label": "v3-failure1",
+    "click_at": "2026-10-03T06:36:06.496Z",
+    "request_id": "a6af6bfb-d07e-4e29-ac72-a4c430d1c310",
+    "failure_observed_at": "2026-10-03T06:37:25.595Z"
+  },
+  {
+    "label": "v3-recovery1",
+    "deployment_id": "DEP-D3BCA661",
+    "click_at": "2026-10-03T06:37:31.346Z"
+  },
+  {
+    "label": "v4-normal1",
+    "click_at": "2026-10-03T06:39:17.033Z",
+    "request_id": "f8a522b4-2267-48f8-8769-7659f2e6aafc"
+  },
+  {
+    "label": "v4-normal2-loss1",
+    "click_at": "2026-10-03T06:39:54.652Z",
+    "refresh_at": "2026-10-03T06:39:54.942Z",
+    "request_id": "16aaad59-067b-466f-a1f0-c1d3a4fb1fff"
+  },
+  {
+    "label": "v4-normal3-loss2",
+    "click_at": "2026-10-03T06:40:36.043Z",
+    "refresh_at": "2026-10-03T06:40:36.348Z",
+    "request_id": "3c7f086f-c968-46a8-abe5-c231d65624a7"
+  },
+  {
+    "label": "v4-failure1",
+    "click_at": "2026-10-03T06:41:10.658Z",
+    "request_id": "ed71226a-10a7-4ae6-acd7-6591f4ed2dc9",
+    "failure_observed_at": "2026-10-03T06:42:18.831Z"
+  },
+  {
+    "label": "v4-recovery1",
+    "deployment_id": "DEP-6668A39B",
+    "click_at": "2026-10-03T06:42:25.205Z"
+  },
+  {
+    "label": "v4-failure2",
+    "click_at": "2026-10-03T06:43:09.507Z",
+    "request_id": "8f588334-410b-44d6-8cc1-38c417cd9f23",
+    "failure_observed_at": "2026-10-03T06:44:26.988Z"
+  },
+  {
+    "label": "v4-recovery2",
+    "deployment_id": "DEP-CDD3D374",
+    "click_at": "2026-10-03T06:44:31.489Z"
+  },
+  {
+    "label": "v4-denial1",
+    "click_at": "2026-10-03T06:45:28.084Z",
+    "request_id": "036d2518-496c-41b2-89a4-f89a53e17423"
+  },
+  {
+    "label": "v4-denial2",
+    "click_at": "2026-10-03T06:45:49.637Z",
+    "request_id": "78aabc3c-d3a7-4bb9-9309-02901aab2ee0"
+  },
+  {
+    "label": "v4-review-cancel",
+    "click_at": "2026-10-03T06:46:30.486Z"
+  },
+  {
+    "label": "v4-stale-injection",
+    "click_at": "2026-10-03T06:47:14.574Z",
+    "request_id": "51da83d1-b0b1-4d90-8ab2-627c3ac85eb4"
+  },
+  {
+    "label": "v4-lookalike",
+    "click_at": "2026-10-03T06:47:41.827Z",
+    "request_id": "7acf754f-ee7a-4842-a894-afd4d806fe89"
+  },
+  {
+    "label": "v5-lookalike1",
+    "click_at": "2026-10-03T07:01:28.097Z"
+  },
+  {
+    "label": "v5-lookalike2",
+    "click_at": "2026-10-03T07:02:17.045Z"
+  },
+  {
+    "label": "v5-stale-injection",
+    "click_at": "2026-10-03T07:02:39.343Z"
+  },
+  {
+    "label": "v5-counterexample",
+    "click_at": "2026-10-03T07:03:14.251Z"
+  }
+]

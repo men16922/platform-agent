@@ -1,6 +1,6 @@
 # DOCS_POLICY — platform-agent
 
-최종 갱신: 2026-07-17
+최종 갱신: 2026-10-03
 
 > 문서 운영 규칙(context budget). overnight-harness 기반.
 
@@ -26,7 +26,7 @@ docs/AGENT_BRIEF.md
 | `AGENT_BRIEF.md` | ≤ 60줄 | 1분 압축 문맥, snapshot, 현재 초점, guardrails |
 | `STATUS.md` | ≤ 120줄 | 현재 구현 상태, 검증 baseline, active focus, open risks |
 | `NEXT_PLAN.md` | ≤ 120줄 | **열린 작업만** (완료 이력 아님) |
-| `PROGRESS_LOG.md` | ≤ 120줄 | 최신 3–5개 증분. 넘치면 `COMPLETED_SUMMARY.md`로 압축 |
+| `PROGRESS_LOG.md` | ≤ 120줄 | 최신 3–5개 증분. 이전 원문은 월별 archive에 보존, 완료 범위는 `COMPLETED_SUMMARY.md`로 요약 |
 | `LESSONS.md` | ≤ 40줄 | 에이전트의 메모리 — 문서에 없던 레포 사실 한 줄씩(harness 1.4.0). 넘치면 `/tidy-docs`가 `DECISIONS`/`COMPLETED_SUMMARY`로 압축 |
 | `COMPLETED_SUMMARY.md` | 압축 | 완료 milestone 압축 |
 | `DECISIONS.md` | 누적 | 되돌리기 어려운 결정만 (Decision/Reason/Impact) |
@@ -34,10 +34,11 @@ docs/AGENT_BRIEF.md
 **⚠️ 줄만으로는 부족하다 — 글자 예산도 있다(2026-08-30 추가).** 위 표를 하루 종일 통과하면서
 `AGENT_BRIEF.md`가 **9,783자**까지 자랐고 **한 줄이 3,621자**(파일의 37%)였다. 스스로를
 *"1분 압축 문맥"*이라 부르는 문서가 그럴 수는 없는데, **가드는 개행만 세어서 볼 수 없었다.**
-상한은 `.claude/harness-config.json`의 **`char_budgets`에만** 선언한다(brief 8,000 ·
-status/plan 11,000 · log 12,000) — 이 표와 각 문서 머리말이 이미 줄 수를 두 번 적고 있고,
+상한은 `.claude/harness-config.json`의 **`char_budgets`에만** 선언한다.
+문서에는 숫자를 복제하지 않는다 — 이 표와 각 문서 머리말이 이미 줄 수를 두 번 적고 있고,
 **같은 수의 네 번째 철자는 드리프트가 시작되는 자리**다(M19). 집행은
-`tests/test_doc_budgets.py::TestEveryDocIsWithinItsCharacterBudget`.
+`tests/test_doc_budgets.py::TestEveryDocIsWithinItsCharacterBudget`. 숫자 복제는
+`tests/test_char_budget_single_source.py`가 archive까지 검사한다.
 
 ## 3. 권위 순서
 
@@ -47,6 +48,7 @@ status/plan 11,000 · log 12,000) — 이 표와 각 문서 머리말이 이미 
 ## 4. 기록 규칙
 
 - 완료 체크리스트는 `COMPLETED_SUMMARY.md`로 압축.
+- 이전 진행 원문은 `docs/archive/progress-YYYY-MM.md`에 보존하고, 현재 계획의 중지/재개 상태와 과거의 다음 행동을 구분한다.
 - 되돌리기 어려운 선택은 `DECISIONS.md`에 Decision/Reason/Impact.
 - 한국어로 쓰되 **식별자/명령/경로는 원문 그대로.**
 

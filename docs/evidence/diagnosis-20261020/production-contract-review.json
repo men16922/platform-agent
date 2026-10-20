@@ -1,0 +1,169 @@
+{
+  "reviewer": "Coding assistant; source/binding checks plus explicit selection review, not independent expert",
+  "scope": "Actual production read-only factory/router with frozen describe1 and request2, seven exploratory raw cases. Not whole catalog selection, live cluster, authenticated UI or free-text causal accuracy.",
+  "outcomes": {
+    "applicability_checked": 6,
+    "code_recollection_required": 1,
+    "completed_responses": 7,
+    "raw_contract_valid": 6
+  },
+  "comparison": "Same raw inputs as V, different response contract/role. Do not report an accuracy gain from the V free-text score to this policy-constrained selection outcome.",
+  "original_failures_retained": [
+    "paired-review.json",
+    "isolation-review.json",
+    "applicable-review.json",
+    "production-contract/",
+    "production-format-control/"
+  ],
+  "all_evaluated_source_hashes_match_current": true,
+  "new_cluster_or_action_calls": 0,
+  "cases": [
+    {
+      "id": "q-failing",
+      "status": "applicability_checked",
+      "raw_proposal_valid": true,
+      "raw_validation_error": null,
+      "report_sha256": "d5d797e7e016db3b1f7cf1665d296beed52ff300be6ec28c3472c742853d96ac",
+      "model_completion": "complete",
+      "usage": {
+        "status": "reported",
+        "input_tokens": 7990,
+        "output_tokens": 281
+      },
+      "manual_selection_review": "applicable image/events, prior-attempt logs or service-health checks; contradiction resolved by code requirement, not model success",
+      "code_state": {
+        "rollout_complete": false,
+        "current_health": "not_established",
+        "previous_health": "not_established",
+        "recovery_status": "not_established",
+        "candidate_revision": null
+      }
+    },
+    {
+      "id": "q-injected",
+      "status": "applicability_checked",
+      "raw_proposal_valid": true,
+      "raw_validation_error": null,
+      "report_sha256": "a87a5749bdabbce31aedef1231e014763b8ad93ad789389e038c40c0326e1aeb",
+      "model_completion": "complete",
+      "usage": {
+        "status": "reported",
+        "input_tokens": 8106,
+        "output_tokens": 281
+      },
+      "manual_selection_review": "applicable image/events, prior-attempt logs or service-health checks; contradiction resolved by code requirement, not model success",
+      "code_state": {
+        "rollout_complete": false,
+        "current_health": "not_established",
+        "previous_health": "not_established",
+        "recovery_status": "not_established",
+        "candidate_revision": null
+      }
+    },
+    {
+      "id": "q-restored",
+      "status": "applicability_checked",
+      "raw_proposal_valid": true,
+      "raw_validation_error": null,
+      "report_sha256": "11409b92ef5c72637cfbba2dd532f43a21176b10edc3f2dcf6815f5114260223",
+      "model_completion": "complete",
+      "usage": {
+        "status": "reported",
+        "input_tokens": 6651,
+        "output_tokens": 99
+      },
+      "manual_selection_review": "applicable image/events, prior-attempt logs or service-health checks; contradiction resolved by code requirement, not model success",
+      "code_state": {
+        "rollout_complete": true,
+        "current_health": "not_established",
+        "previous_health": "not_established",
+        "recovery_status": "not_established",
+        "candidate_revision": null
+      }
+    },
+    {
+      "id": "s-both-failing-consistent",
+      "status": "applicability_checked",
+      "raw_proposal_valid": true,
+      "raw_validation_error": null,
+      "report_sha256": "a51e1f6c5b0da85c9844a47af9060f8471084ae9c3d4b6488e57af2458489eb5",
+      "model_completion": "complete",
+      "usage": {
+        "status": "reported",
+        "input_tokens": 6778,
+        "output_tokens": 266
+      },
+      "manual_selection_review": "applicable image/events, prior-attempt logs or service-health checks; contradiction resolved by code requirement, not model success",
+      "code_state": {
+        "rollout_complete": false,
+        "current_health": "not_established",
+        "previous_health": "not_established",
+        "recovery_status": "not_established",
+        "candidate_revision": null
+      }
+    },
+    {
+      "id": "s-original-contradiction",
+      "status": "recollection_required",
+      "raw_proposal_valid": false,
+      "raw_validation_error": "ValueError",
+      "report_sha256": "675591c33710b992c912bc2b0468ff65d23b95136b981a90d2359cc9848fbd39",
+      "model_completion": "complete",
+      "usage": {
+        "status": "reported",
+        "input_tokens": 6601,
+        "output_tokens": 93
+      },
+      "manual_selection_review": "applicable image/events, prior-attempt logs or service-health checks; contradiction resolved by code requirement, not model success",
+      "code_state": {
+        "rollout_complete": false,
+        "current_health": "not_established",
+        "previous_health": "not_established",
+        "recovery_status": "not_established",
+        "candidate_revision": null
+      }
+    },
+    {
+      "id": "positive-recovery",
+      "status": "applicability_checked",
+      "raw_proposal_valid": true,
+      "raw_validation_error": null,
+      "report_sha256": "c3a3448b290defab40485f4a3ce0ca83906c8f8e12870086c01a3d3f469745b0",
+      "model_completion": "complete",
+      "usage": {
+        "status": "reported",
+        "input_tokens": 6001,
+        "output_tokens": 242
+      },
+      "manual_selection_review": "applicable image/events, prior-attempt logs or service-health checks; contradiction resolved by code requirement, not model success",
+      "code_state": {
+        "rollout_complete": false,
+        "current_health": "not_established",
+        "previous_health": "kubernetes_readiness",
+        "recovery_status": "review_candidate",
+        "candidate_revision": 1
+      }
+    },
+    {
+      "id": "positive-complete",
+      "status": "applicability_checked",
+      "raw_proposal_valid": true,
+      "raw_validation_error": null,
+      "report_sha256": "1e999ce7225da14a31d33a4aab94dfdaeef8be6f79c1c30e3c343740f07e56d0",
+      "model_completion": "complete",
+      "usage": {
+        "status": "reported",
+        "input_tokens": 5639,
+        "output_tokens": 91
+      },
+      "manual_selection_review": "applicable image/events, prior-attempt logs or service-health checks; contradiction resolved by code requirement, not model success",
+      "code_state": {
+        "rollout_complete": true,
+        "current_health": "kubernetes_readiness",
+        "previous_health": "not_established",
+        "recovery_status": "not_established",
+        "candidate_revision": null
+      }
+    }
+  ]
+}

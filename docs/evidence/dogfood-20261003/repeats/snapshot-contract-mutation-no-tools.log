@@ -1,0 +1,58 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+______ test_both_routes_filter_before_model_and_register_no_tools[False] _______
+
+streaming = False
+
+    @pytest.mark.parametrize('streaming',[False,True])
+    def test_both_routes_filter_before_model_and_register_no_tools(streaming):
+        calls=[];factory=factory_with(calls)
+        async def run(data):
+            kwargs=dict(read_only=True,snapshot=data,agent_factory=factory)
+            if streaming:
+                events=[e async for e in mr.route_deploy_stream(data['question'],'local-qwen','onprem',**kwargs)]
+                assert [e['type'] for e in events] == ['result']
+                return events[0]['outcome']
+            return await mr.route_deploy(data['question'],'local-qwen','onprem',**kwargs)
+        for index in [1,4,5,6]:
+            outcome=asyncio.run(run(CASES[index]['input']))
+            assert outcome.snapshot_analysis['status']=='insufficient_evidence' and not outcome.snapshot_analysis['model_called']
+            assert not outcome.ok and outcome.steps==[] and outcome.model_completion is None
+        assert calls==[]
+        data=copy.deepcopy(CASES[3]['input']);excluded=copy.deepcopy(CASES[1]['input']['sources'][0]);excluded['text']='EXCLUDED_PRIVATE_SENTINEL'
+        data['sources'].append(excluded)
+>       outcome=asyncio.run(run(data));assert len(calls)==1
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+tests/test_snapshot_diagnosis.py:88: AssertionError
+_______ test_both_routes_filter_before_model_and_register_no_tools[True] _______
+
+streaming = True
+
+    @pytest.mark.parametrize('streaming',[False,True])
+    def test_both_routes_filter_before_model_and_register_no_tools(streaming):
+        calls=[];factory=factory_with(calls)
+        async def run(data):
+            kwargs=dict(read_only=True,snapshot=data,agent_factory=factory)
+            if streaming:
+                events=[e async for e in mr.route_deploy_stream(data['question'],'local-qwen','onprem',**kwargs)]
+                assert [e['type'] for e in events] == ['result']
+                return events[0]['outcome']
+            return await mr.route_deploy(data['question'],'local-qwen','onprem',**kwargs)
+        for index in [1,4,5,6]:
+            outcome=asyncio.run(run(CASES[index]['input']))
+            assert outcome.snapshot_analysis['status']=='insufficient_evidence' and not outcome.snapshot_analysis['model_called']
+            assert not outcome.ok and outcome.steps==[] and outcome.model_completion is None
+        assert calls==[]
+        data=copy.deepcopy(CASES[3]['input']);excluded=copy.deepcopy(CASES[1]['input']['sources'][0]);excluded['text']='EXCLUDED_PRIVATE_SENTINEL'
+        data['sources'].append(excluded)
+>       outcome=asyncio.run(run(data));assert len(calls)==1
+E       assert 0 == 1
+E        +  where 0 = len([])
+
+tests/test_snapshot_diagnosis.py:88: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_snapshot_diagnosis.py::test_both_routes_filter_before_model_and_register_no_tools[False]
+FAILED tests/test_snapshot_diagnosis.py::test_both_routes_filter_before_model_and_register_no_tools[True]
+2 failed, 6 deselected in 0.80s
