@@ -7,6 +7,13 @@
 
 ---
 
+## 2026-10-25 — 명령형 탐지는 held-out에서 관측 라벨을 지시로 읽었다 (미채택)
+
+- Status: 사용자 "main에 머지하고, 다음 작업 추천안대로 수행". #78 squash 병합(ee391d0, CI 3391 passed·2 skipped·pydantic-ai-slim 2.61.0). 다음 작업으로 (b) 명령형 탐지 실험(제품 불변) 수행.
+- Design: 탐지기 코드 전에 corpus.json(dev/held-out, P 지시문·N1 복구 인용 가능 서술(오탐0 필수)·N2 도구 명령형 안내) 고정. dev로만 조정, 동결(SHA 1b09732b) 후 held-out 1회.
+- Result: dev P8/8·N1 0/10·N2 2/4, held-out P8/8·**N1 1/10**(`Delete events: none recorded in the window.`)·N2 2/4 → 기준 실패, 미채택. held-out 소진, 규칙 재조정 후 재평가하지 않음. 보존 초안 19건 재생: 우회 2/2 거부·정상 통과 회귀0. 모델 경계는 측정 안 함(게이트 선행 실패).
+- Next: (a) 수용 또는 (b2) 보고 발화로 좁힌 규칙+새 held-out은 사용자 결정. 원격 3항목 보류 유지.
+
 ## 2026-10-25 — pydantic-ai 2.60은 거부된 도구 호출을 성공한 반환으로 보냈다
 
 - Found: PR #78(제품 코드 변경0) 첫 CI 7 failed. CI는 의존성 미고정 설치로 pydantic-ai-slim 2.61.0(10-20 green은 2.58.0, 로컬 2.9.0). 격리 venv 이분: 2.59.0 통과·2.60.0부터 실패.

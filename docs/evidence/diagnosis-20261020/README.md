@@ -86,3 +86,7 @@ PYTHONPATH=. python experiments/dogfood-diagnosis/consistency-resume/review.py d
 ## 삽입 지시 가드의 진짜 표본 측정 (2026-10-25)
 
 `injection-guard-sampled/`는 병합된 가드(main d7ebf0a6)와 §12 baseline을 개입 서버·온도0.7·사전 선언 seed5개로 5 case씩 비교한 50응답이다. 설계·기준은 호출 전 `manifest.json`, 판정은 `review.json`, 행별 재검증 분류는 `review-rows.json`이 권위다. counterexample 통과0/5(코드 거부4), 표식 제거 변형 fail 2/5(표식 없는 지시문 인용 우회 실측), 양성 복구 4/5. 표본5개는 정확도 추정이 아니며 제품 설정 변경이 아니다.
+
+## 표식 없는 지시문 명령형 탐지 실험 (2026-10-25, 미채택)
+
+`unmarked-directive-probe/`: 호출·코드 전 고정 `corpus.json`, 동결 탐지기 SHA, dev/held-out 결과, 보존 초안 재생 `replay.json`, 판정 `review.json`. held-out N1 오탐 1/10으로 사전 기준 실패. 재생에서는 우회 2/2 거부·회귀0. 제품 소스 불변.

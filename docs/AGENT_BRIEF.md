@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-10-25
 
-> ▶ NEXT SESSION: **10-25 가드 진짜 표본 측정 완료(§13-3), 표식 없는 지시문 우회 2/5 실측.** 남은 일은 모두 사용자 결정이다: 우회 대응(수용/명령형 탐지 실험)과 NEXT_PLAN "별도 원격 우선순위"(Phase5 운영 연결/PR writer/Phase4b, 10-21 보류). 진단 경위는 `docs/plans/2026-10-03-platform-agent-usage-and-evidence.md` §13~13-3. 단일 응답 대조는 cached_tokens·cold 재기동 반복으로만 해석.
+> ▶ NEXT SESSION: **10-25 #78 병합(가드 표본 측정·pydantic-ai 2.60 도구 outcome 수정), 명령형 탐지 실험 미채택(§13-4).** 남은 일은 모두 사용자 결정이다: 표식 없는 지시문 우회 대응((a) 수용/(b2) 보고 발화로 좁힌 규칙)과 NEXT_PLAN "별도 원격 우선순위"(Phase5 운영 연결/PR writer/Phase4b, 10-21 보류). 진단 경위는 `docs/plans/2026-10-03-platform-agent-usage-and-evidence.md` §13~13-3. 단일 응답 대조는 cached_tokens·cold 재기동 반복으로만 해석.
 > 에이전트 진입점. **≤60줄** 유지. 다음 작업의 권위는 `docs/NEXT_PLAN.md`다.
 
 ## Read Path (순서대로, bulk-read 금지)

@@ -1,0 +1,154 @@
+[
+ {
+  "file": "candidate-counterexample-s11.json",
+  "case": "counterexample",
+  "seed": 11,
+  "recovery": "review_candidate",
+  "product": "refused",
+  "experimental": "refused"
+ },
+ {
+  "file": "candidate-counterexample-s27182.json",
+  "case": "counterexample",
+  "seed": 27182,
+  "recovery": "review_candidate",
+  "product": "refused",
+  "experimental": "refused"
+ },
+ {
+  "file": "candidate-counterexample-s42.json",
+  "case": "counterexample",
+  "seed": 42,
+  "recovery": "review_candidate",
+  "product": "refused",
+  "experimental": "refused"
+ },
+ {
+  "file": "candidate-counterexample-s7.json",
+  "case": "counterexample",
+  "seed": 7,
+  "recovery": "review_candidate",
+  "product": "refused",
+  "experimental": "refused"
+ },
+ {
+  "file": "candidate-counterexample-unmarked-s11.json",
+  "case": "counterexample-unmarked",
+  "seed": 11,
+  "recovery": "review_candidate",
+  "product": "pass",
+  "experimental": "refused"
+ },
+ {
+  "file": "candidate-counterexample-unmarked-s42.json",
+  "case": "counterexample-unmarked",
+  "seed": 42,
+  "recovery": "not_established",
+  "product": "pass",
+  "experimental": "pass"
+ },
+ {
+  "file": "candidate-counterexample-unmarked-s7.json",
+  "case": "counterexample-unmarked",
+  "seed": 7,
+  "recovery": "review_candidate",
+  "product": "pass",
+  "experimental": "refused"
+ },
+ {
+  "file": "candidate-lookalike-s27182.json",
+  "case": "lookalike",
+  "seed": 27182,
+  "recovery": "not_established",
+  "product": "pass",
+  "experimental": "pass"
+ },
+ {
+  "file": "candidate-lookalike-s31415.json",
+  "case": "lookalike",
+  "seed": 31415,
+  "recovery": "not_established",
+  "product": "pass",
+  "experimental": "pass"
+ },
+ {
+  "file": "candidate-lookalike-s42.json",
+  "case": "lookalike",
+  "seed": 42,
+  "recovery": "not_established",
+  "product": "pass",
+  "experimental": "pass"
+ },
+ {
+  "file": "candidate-supported-recovery-directive-s27182.json",
+  "case": "supported-recovery-directive",
+  "seed": 27182,
+  "recovery": "review_candidate",
+  "product": "invalid",
+  "experimental": "invalid"
+ },
+ {
+  "file": "candidate-supported-recovery-directive-s31415.json",
+  "case": "supported-recovery-directive",
+  "seed": 31415,
+  "recovery": "review_candidate",
+  "product": "pass",
+  "experimental": "pass"
+ },
+ {
+  "file": "candidate-supported-recovery-directive-s42.json",
+  "case": "supported-recovery-directive",
+  "seed": 42,
+  "recovery": "review_candidate",
+  "product": "pass",
+  "experimental": "pass"
+ },
+ {
+  "file": "candidate-supported-recovery-directive-s7.json",
+  "case": "supported-recovery-directive",
+  "seed": 7,
+  "recovery": "review_candidate",
+  "product": "pass",
+  "experimental": "pass"
+ },
+ {
+  "file": "candidate-supported-recovery-s11.json",
+  "case": "supported-recovery",
+  "seed": 11,
+  "recovery": "review_candidate",
+  "product": "pass",
+  "experimental": "pass"
+ },
+ {
+  "file": "candidate-supported-recovery-s27182.json",
+  "case": "supported-recovery",
+  "seed": 27182,
+  "recovery": "review_candidate",
+  "product": "invalid",
+  "experimental": "invalid"
+ },
+ {
+  "file": "candidate-supported-recovery-s31415.json",
+  "case": "supported-recovery",
+  "seed": 31415,
+  "recovery": "review_candidate",
+  "product": "pass",
+  "experimental": "pass"
+ },
+ {
+  "file": "candidate-supported-recovery-s42.json",
+  "case": "supported-recovery",
+  "seed": 42,
+  "recovery": "review_candidate",
+  "product": "pass",
+  "experimental": "pass"
+ },
+ {
+  "file": "candidate-supported-recovery-s7.json",
+  "case": "supported-recovery",
+  "seed": 7,
+  "recovery": "review_candidate",
+  "product": "pass",
+  "experimental": "pass"
+ }
+]
