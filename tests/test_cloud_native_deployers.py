@@ -28,9 +28,9 @@ sys.modules.setdefault("google.adk.agents.llm_agent", _mock_adk_agents)
 # Mock agent_framework
 _mock_af = MagicMock()
 _mock_af.tool = MagicMock(side_effect=lambda **kwargs: lambda fn: fn)
-_mock_af_azure = MagicMock()
+_mock_af_foundry = MagicMock()
 sys.modules.setdefault("agent_framework", _mock_af)
-sys.modules.setdefault("agent_framework.azure", _mock_af_azure)
+sys.modules.setdefault("agent_framework.foundry", _mock_af_foundry)
 
 # Mock azure.identity
 _mock_azure_identity = MagicMock()
@@ -432,15 +432,22 @@ class TestMsftDeployerAgent:
     def test_creates_agent(self):
         mock_client = MagicMock()
         mock_client.as_agent.return_value = MagicMock()
-        _mock_af_azure.AzureOpenAIResponsesClient.return_value = mock_client
+        _mock_af_foundry.FoundryChatClient.return_value = mock_client
 
         from src.agents.ai.msft_deployer import create_msft_deployer_agent
 
+        credential = MagicMock()
         agent = create_msft_deployer_agent(
-            endpoint="https://test.openai.azure.com",
+            endpoint="https://test.services.ai.azure.com/api/projects/p",
             deployment_name="gpt-4o",
-            credential=MagicMock(),
+            credential=credential,
         )
+
+        assert _mock_af_foundry.FoundryChatClient.call_args[1] == {
+            "project_endpoint": "https://test.services.ai.azure.com/api/projects/p",
+            "model": "gpt-4o",
+            "credential": credential,
+        }
 
         mock_client.as_agent.assert_called_once()
         call_kwargs = mock_client.as_agent.call_args[1]

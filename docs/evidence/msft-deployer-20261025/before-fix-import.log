@@ -1,0 +1,1 @@
+ImportError: cannot import name 'AzureOpenAIResponsesClient' from 'agent_framework.azure' (/private/tmp/claude-501/-Users-men1692-Desktop-AWS-platform-agent/52603d1a-8cd2-40c5-adf9-4df3bc127678/scratchpad/venv-az/lib/python3.13/site-packages/agent_framework/azure/__init__.py)
