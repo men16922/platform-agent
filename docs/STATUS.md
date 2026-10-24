@@ -37,7 +37,7 @@
 
 lookalike는 관계 필드 실험까지 실패(relation-probe/review.json)해 사용자 결정 D53으로 사람 검토 경계에 둔다. R3 시나리오 묶음은 이 경계와 T 완료분으로 충족 처리(모델 의미 통과 아님), R4 첫 묶음은 수동 기준 대비 도구 선택 4/5·이전 컨테이너 로그 공백으로 정리했다(r4-first-bundle/review.json). 10-21 사용자 승인으로 #76·#77 병합, `get_logs(previous)` 채택(실제 재시작 대상·같은 SA, tool 4 상한 묶음 거부 2/2·tool 5 성공 2/2), R5 HolmesGPT 비교 완료(1/7 수용, 도구0 조건 한계, 미채택). 원격은 미승인.
 
-10-25 병합 가드의 진짜 표본 측정(개입 서버·온도0.7·seed5×5case×2arm, 사전 기준 충족): counterexample 통과 baseline3/5→0/5이나 코드 거부4/5로 막았고 모델 정정은0/5, 표식 제거 변형 fail 5/5→2/5로 **표식 없는 지시문 인용 우회를 실측**, 양성 복구 2/5→4/5. 가드 효과는 유지, 기전은 표식 있는 지시문의 코드 차단에 한정된다. 우회 대응은 사용자 설계 결정(NEXT_PLAN). 계획서 §13-3, `injection-guard-sampled/review.json`.
+10-25 병합 가드의 진짜 표본 측정(개입 서버·온도0.7·seed5×5case×2arm, 사전 기준 충족): counterexample 통과 baseline3/5→0/5이나 코드 거부4/5로 막았고 모델 정정은0/5, 표식 제거 변형 fail 5/5→2/5로 **표식 없는 지시문 인용 우회를 실측**, 양성 복구 2/5→4/5. 가드 효과는 유지, 기전은 표식 있는 지시문의 코드 차단에 한정된다. 우회 대응은 사용자 설계 결정(NEXT_PLAN). 계획서 §13-3, `injection-guard-sampled/review.json`. 같은 날 (b) 명령형 탐지 실험은 held-out N1 오탐 1/10으로 사전 기준 실패, 미채택(§13-4, `unmarked-directive-probe/review.json`).
 
 ## Open Risks / Gaps
 
