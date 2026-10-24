@@ -7,6 +7,8 @@
 
 ## 검증 Baseline (실제로 돌린 것만)
 
+- 2026-10-25 pydantic-ai 2.60 도구 outcome 수정 `make check` → **3390** passed·3 skipped·20warnings,116.70초(로컬 2.9.0) / CI와 같은 pydantic-ai-slim 2.61.0 격리 venv 3390 passed·3 skipped·109.12초. 로컬 macOS·Python3.13.5·Homebrew Node26.11.0. 신규 회귀5, 변이(수정 제거) 4 red. PR #78 첫 CI 7 failed의 원인 수정.
+
 - 2026-10-25 가드 표본 측정 브랜치 `make check` → **3385** passed·3 skipped·20warnings,116.73초. 2026-10-25 로컬 macOS·Python3.13.5·Homebrew Node26.11.0(이전 공식Node22.23.3 임시 경로 소실). 제품 코드 변경0(실험 스크립트2·evidence·문서), 증감0. 문서 수치 반영 후 재실행도 3385/3·111.47초. `injection-guard-sampled/gate.log`·`gate-final.log`.
 
 - 2026-10-21 main+`get_logs(previous)` `make check` → **3385** passed·3 skipped·20warnings,107.20초. 로컬 macOS·Python3.13.5·공식Node22.23.3/임시 npm prefix. 신규 previous 조건부 테스트1. 원격 CI는 PR에서 확인.

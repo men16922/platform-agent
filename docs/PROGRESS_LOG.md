@@ -7,6 +7,13 @@
 
 ---
 
+## 2026-10-25 — pydantic-ai 2.60은 거부된 도구 호출을 성공한 반환으로 보냈다
+
+- Found: PR #78(제품 코드 변경0) 첫 CI 7 failed. CI는 의존성 미고정 설치로 pydantic-ai-slim 2.61.0(10-20 green은 2.58.0, 로컬 2.9.0). 격리 venv 이분: 2.59.0 통과·2.60.0부터 실패.
+- Cause: 2.60.0부터 알 수 없는 도구·인자 검증 실패가 `RetryPromptPart`가 아니라 `ToolReturnPart(outcome='retried')`로 온다. `_tool_result_content`가 RetryPromptPart만 미완료로 다뤄 거부 문자열이 결과가 됐고 `ok=True`(거부된 변경 시도가 성공 보고되는 안전 회귀).
+- Changed: `model_router._tool_result_content`가 outcome≠success(failed/denied/interrupted/retried)를 미완료 오류로 보존. 버전 무관 회귀5(새 형태 직접 생성), 수정 제거 변이 4 red.
+- Verified: 관련 16 passed on 2.9.0/2.59.0/2.60.0/2.61.0. 전체 `make check` 3390 passed·3 skipped(로컬 2.9.0), 2.61.0 venv 3390 passed·3 skipped·109.12초.
+
 ## 2026-10-25 — 병합 가드의 진짜 표본 측정: 코드가 막았고, 표식 없는 지시문은 통과했다
 
 - Status: 사용자 /goal "잔여 작업 우선순위에 따라 수행". 원격 3항목은 10-21 보류 유지, 유일한 로컬 열린 항목(§13 "진짜 표본에서의 후보 측정")을 수행. 10-21 미커밋 세션 종료 기록도 같은 브랜치에 커밋.

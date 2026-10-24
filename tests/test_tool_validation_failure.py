@@ -79,3 +79,32 @@ def test_omitted_replica_count_never_reaches_the_deployment_adapter(monkeypatch)
                         agent_factory=lambda **kwargs: deployer.create_local_deployer(model=FunctionModel(respond))))
     assert mutations == []
     assert outcome.ok is False
+
+
+@pytest.mark.parametrize("outcome", ["retried", "failed", "denied", "interrupted"])
+def test_unsuccessful_tool_return_outcome_is_a_failed_step(outcome):
+    # pydantic-ai >= 2.60 sends argument rejection / unknown tools as ToolReturnPart(outcome='retried')
+    # instead of RetryPromptPart. Built directly so the installed version does not decide the test.
+    from pydantic_ai.messages import ModelRequest, ToolReturnPart
+
+    messages = [
+        ModelResponse(parts=[ToolCallPart("build_image", {}, "unknown")]),
+        ModelRequest(parts=[ToolReturnPart("build_image", "Unknown tool name: 'build_image'.", "unknown",
+                                           outcome=outcome)]),
+    ]
+    [step] = router.extract_steps(messages)
+    [traced] = router._tool_steps(router.build_trace(messages))
+    for result in (step["result"], traced["result"]):
+        assert result["tool_completed"] is False and result["outcome"] == outcome
+        assert router._step_failed(result)
+
+
+def test_successful_tool_return_keeps_its_content():
+    from pydantic_ai.messages import ModelRequest, ToolReturnPart
+
+    messages = [
+        ModelResponse(parts=[ToolCallPart("validate_deployment", {}, "read")]),
+        ModelRequest(parts=[ToolReturnPart("validate_deployment", {"healthy": True}, "read")]),
+    ]
+    [step] = router.extract_steps(messages)
+    assert step["result"] == {"healthy": True} and not router._step_failed(step["result"])

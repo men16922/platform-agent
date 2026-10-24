@@ -241,6 +241,12 @@ def _tool_result_content(part: Any) -> Any:
         # it in both the live stream and final trace. A tool-requested retry may
         # follow effects, so do not claim that every retry means no execution.
         return {"error": "Tool call did not complete.", "tool_completed": False, "details": part.content}
+    outcome = getattr(part, "outcome", "success")
+    if outcome != "success":
+        # pydantic-ai >= 2.60 reports the same rejection as ToolReturnPart(outcome='retried'), and
+        # failed/denied/interrupted calls the same way; the content is an error, not a tool result.
+        return {"error": "Tool call did not complete.", "tool_completed": False, "outcome": outcome,
+                "details": part.content}
     return getattr(part, "content", None)
 
 

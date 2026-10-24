@@ -5,7 +5,7 @@
 > **열린 작업만. ≤120줄.** 다음 작업의 유일한 권위다. 완료 이력은 `docs/COMPLETED_SUMMARY.md`, 최신 증분은 `docs/PROGRESS_LOG.md`.
 > 정리 전 원문·주의사항은 [10월 아카이브](archive/progress-2026-10.md#tidy-20261003-next-plan)와 `docs/archive/next-plan-detail-2026-09.md`에 보존했다.
 
-## 현재 상태 (2026-10-25, gate 3385·3 skipped — 2026-10-25 로컬 macOS·Python3.13.5·Homebrew Node26.11.0(이전 공식Node22.23.3 임시 경로 소실))
+## 현재 상태 (2026-10-25, gate 3390·3 skipped — 2026-10-25 로컬 macOS·Python3.13.5·Homebrew Node26.11.0(이전 공식Node22.23.3 임시 경로 소실))
 
 **10-21 로컬 진단 트랙(R3/R4 첫 묶음/R5) 정리 완료, 10-25 가드 진짜 표본 측정 완료.** sampler 경계·삽입 지시 가드(#76 병합)·이전 컨테이너 로그·R5 비교·표본 측정(계획서 §13~13-3). 원격 범위는 사용자 미승인으로 유지. 의미 품질은 미충족이며 열린 `[auto]` 씨앗은 없다.
 
