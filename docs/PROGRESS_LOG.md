@@ -7,6 +7,13 @@
 
 ---
 
+## 2026-10-21 — 세션 종료: 로컬 잔여 작업 완료, 원격 보류
+
+- Status: "잔여 작업 완료시까지 수행" 목표의 로컬 범위 완료. #76(4be35d5)·#77(d44f742) CI 통과 후 squash 병합.
+- Blockers: Phase5 운영 연결·PR writer·Phase4b는 사용자 결정으로 보류("None now"), 승인 전 시작하지 않는다.
+- Cleanup: 세션 소유 MLX/proxy/task 서버 종료, Docker(kind) 사용자 요청으로 다시 중지, ~/.holmes 캐시 삭제. 갱신한 SA 토큰은 task-private 파일에만 있으며 1h 후 만료.
+- Next: 원격 항목 중 사용자 선택. 로컬 진단 트랙 열린 `[auto]` 씨앗 없음.
+
 ## 2026-10-21 — #76 병합, get_logs(previous) 채택, R5 HolmesGPT 비교
 
 - Status: 사용자 승인(병합·previous·R5)분 완료. 원격 범위는 미승인 유지.

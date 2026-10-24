@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-10-21
 
-> ▶ NEXT SESSION: **로컬 진단 트랙 정리 완료, 원격은 미승인.** `docs/plans/2026-10-03-platform-agent-usage-and-evidence.md` §13~13-2. 삽입 지시 가드는 #76으로 병합, `get_logs(previous)`·R5 비교(미채택) 완료. 다음 후보는 NEXT_PLAN의 별도 원격 우선순위(Phase5/PR writer/4b, 각각 승인 필요)다. 단일 응답 대조는 cached_tokens·cold 재기동 반복으로만 해석.
+> ▶ NEXT SESSION: **로컬 잔여 작업 완료, 원격 3항목은 사용자 결정으로 보류(10-21).** #76·#77 main 병합. 다음 작업은 사용자 승인 대상인 NEXT_PLAN "별도 원격 우선순위"(Phase5 운영 연결/PR writer/Phase4b) 중 선택이다. 진단 경위는 `docs/plans/2026-10-03-platform-agent-usage-and-evidence.md` §13~13-2. 단일 응답 대조는 cached_tokens·cold 재기동 반복으로만 해석.
 > 에이전트 진입점. **≤60줄** 유지. 다음 작업의 권위는 `docs/NEXT_PLAN.md`다.
 
 ## Read Path (순서대로, bulk-read 금지)
