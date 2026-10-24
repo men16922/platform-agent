@@ -44,7 +44,7 @@ gcp = [
     "google-cloud-monitoring>=2.19",   # detector — monitoring_v3 metrics
 ]
 azure = [
-    "agent-framework>=1.0",
+    "agent-framework>=1.22",           # msft_deployer FoundryChatClient — verified on the real library at 1.22
     "azure-identity>=1.15",
     "azure-ai-projects>=1.0",
     "azure-cosmos>=4.6",               # analyzer/decision/executor — incident store

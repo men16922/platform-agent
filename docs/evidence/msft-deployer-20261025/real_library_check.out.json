@@ -1,0 +1,20 @@
+{
+ "versions": {
+  "agent-framework": "1.22.0",
+  "agent-framework-core": "1.22.0",
+  "agent-framework-foundry": "1.15.0",
+  "azure-ai-projects": "2.7.0",
+  "azure-identity": "1.26.0"
+ },
+ "agent_type": "agent_framework._agents.Agent",
+ "agent_name": "AzureDeployer",
+ "client_type": "agent_framework_foundry._chat_client.FoundryChatClient",
+ "client_model": "gpt-5-4",
+ "tools": {
+  "build_image_azure": "never_require",
+  "push_image_azure": "never_require",
+  "deploy_to_aks": "never_require",
+  "validate_aks_deployment": "never_require",
+  "rollback_aks_deployment": "always_require"
+ }
+}

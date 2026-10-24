@@ -16,7 +16,9 @@ from __future__ import annotations
 from typing import Any
 
 from agent_framework import tool
-from agent_framework.azure import AzureOpenAIResponsesClient
+# agent_framework.azure exports no AzureOpenAIResponsesClient (checked 1.16, 1.22, 1.23); the Responses
+# API over a Foundry project endpoint is FoundryChatClient (agent-framework-foundry).
+from agent_framework.foundry import FoundryChatClient
 
 from src.agents.ai.tools.azure_build import azure_build_image
 from src.agents.ai.tools.azure_push import azure_push_image
@@ -158,9 +160,9 @@ def create_msft_deployer_agent(
         "AZURE_OPENAI_RESPONSES_DEPLOYMENT_NAME", "gpt-5-4"
     )
 
-    client = AzureOpenAIResponsesClient(
+    client = FoundryChatClient(
         project_endpoint=endpoint,
-        deployment_name=deployment_name,
+        model=deployment_name,
         credential=credential,
     )
 

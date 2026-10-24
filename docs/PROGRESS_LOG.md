@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-10-25 — msft_deployer는 없는 클래스를 import하고 있었다: FoundryChatClient로 복구
+
+- Status: 사용자 "다음 잔여작업 계속". (a) 표식 없는 지시문 현 경계 수용(추천안, STATUS Risk14). 원격 3항목은 개별 승인 전 미착수. 조건부 백로그 중 공개 정보로 확인 가능한 두 항목을 재조회.
+- Cosign: #1968 OPEN·최신 릴리스 v0.15.1(main +61커밋) → 미충족, Risk6에 관측일 기록.
+- msft_deployer 재개 조건(대체 심볼 근거) 충족: agent-framework 1.23.0 휠에도 `agent_framework.azure`에 `AzureOpenAI*Client` 0개. 기존 호출(`project_endpoint`=AZURE_AI_PROJECT_ENDPOINT, deployment, credential)과 같은 의미의 `FoundryChatClient(project_endpoint, model, credential)`(Foundry 프로젝트 Responses API)를 docstring·시그니처로 확인.
+- Changed: import/생성자 교체, 스텁 테스트를 새 심볼과 전달 인자 검증으로, azure extra `agent-framework>=1.22`(검증 버전).
+- Verified: 격리 venv `.[azure,dev]`(agent-framework 1.22.0) 실제 라이브러리에서 수정 전 ImportError 재현, 수정 후 Agent 생성·FoundryChatClient·도구5 승인 모드 유지(rollback always_require), 토큰 요청0. `msft-deployer-20261025/`. 실제 Azure 호출·배포는 미검증.
+
 ## 2026-10-25 — 명령형 탐지는 held-out에서 관측 라벨을 지시로 읽었다 (미채택)
 
 - Status: 사용자 "main에 머지하고, 다음 작업 추천안대로 수행". #78 squash 병합(ee391d0, CI 3391 passed·2 skipped·pydantic-ai-slim 2.61.0). 다음 작업으로 (b) 명령형 탐지 실험(제품 불변) 수행.
