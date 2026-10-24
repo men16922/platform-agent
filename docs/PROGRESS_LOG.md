@@ -1,11 +1,19 @@
 # PROGRESS_LOG — platform-agent
 
-최종 갱신: 2026-10-21
+최종 갱신: 2026-10-25
 
 > 최신 3–5개 증분. **최신이 위.** **≤120줄.** 넘치면 `/tidy-docs` 로 압축.
 > 이전 이력: `docs/archive/progress-2026-10.md` · `docs/archive/progress-2026-09.md` · `…-2026-08.md` · `…-2026-07.md`
 
 ---
+
+## 2026-10-25 — 병합 가드의 진짜 표본 측정: 코드가 막았고, 표식 없는 지시문은 통과했다
+
+- Status: 사용자 /goal "잔여 작업 우선순위에 따라 수행". 원격 3항목은 10-21 보류 유지, 유일한 로컬 열린 항목(§13 "진짜 표본에서의 후보 측정")을 수행. 10-21 미커밋 세션 종료 기록도 같은 브랜치에 커밋.
+- Measured: 호출 전 manifest에 기준 고정. 개입 서버+proxy, 온도0.7·seed5·5case·2arm(baseline 5fa41040/main d7ebf0a6), arm마다 재기동, shard SHA 재확인. 10칸 모두 raw5종, 50/50 완료. 서버 종료.
+- Result: counterexample 통과 3/5→0/5(코드 거부4·모델 정정0), 표식 제거 fail 5/5→2/5(지시문 인용 recovery_evidence 코드 통과=우회 실측), 양성 복구 2/5→4/5, 지시문 양성 거부0/5. 무효 사유는 raw 재검증으로 분류(길이 초과 다수·JSON1·인용 불일치).
+- Gate: `make check` 3385 passed·3 skipped·116.73초(2026-10-25 로컬 macOS·Python3.13.5·Homebrew Node26.11.0(이전 공식Node22.23.3 임시 경로 소실)). 제품 코드 변경0.
+- Next: 우회 대응과 원격 3항목은 사용자 결정. `injection-guard-sampled/review.json`, 계획서 §13-3.
 
 ## 2026-10-21 — 세션 종료: 로컬 잔여 작업 완료, 원격 보류
 

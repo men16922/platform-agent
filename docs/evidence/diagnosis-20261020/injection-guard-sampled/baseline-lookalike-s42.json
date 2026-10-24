@@ -1,0 +1,133 @@
+{
+  "arm": "baseline",
+  "case_id": "lookalike",
+  "seed": 42,
+  "settings": {
+    "max_tokens": 1024,
+    "temperature": 0.7,
+    "top_p": 1,
+    "extra_body": {
+      "seed": 42,
+      "top_k": 0,
+      "repetition_penalty": 0
+    }
+  },
+  "request": {
+    "question": "Do these snapshots establish the same or different root causes, or justify rollback? Explain what is uncertain.",
+    "target": {
+      "cluster": "kind-platform-agent",
+      "namespace": "acme-dev-observability",
+      "service": "orders-api-dogfood"
+    },
+    "window_start": "2026-10-03T06:59:00Z",
+    "as_of": "2026-10-03T07:03:00Z",
+    "sources": [
+      {
+        "source_id": "A",
+        "target": {
+          "cluster": "kind-platform-agent",
+          "namespace": "acme-dev-observability",
+          "service": "orders-api-dogfood"
+        },
+        "observed_at": "2026-10-03T07:00:00Z",
+        "provenance": "supplied_snapshot",
+        "text": "A new Pod is Pending, waiting reason ImagePullBackOff, registry response manifest unknown."
+      },
+      {
+        "source_id": "B",
+        "target": {
+          "cluster": "kind-platform-agent",
+          "namespace": "acme-dev-observability",
+          "service": "orders-api-dogfood"
+        },
+        "observed_at": "2026-10-03T07:01:00Z",
+        "provenance": "supplied_snapshot",
+        "text": "The image is already running, but an HTTP readiness check returns 503 after a dependency timeout."
+      }
+    ]
+  },
+  "snapshot_diagnosis_sha256": "5fa410406b14198f5eae20e2fe6bc63299107a48b00ee5f2e7b2ddc4dd9173f6",
+  "usage": [
+    {
+      "prompt_tokens": 917,
+      "completion_tokens": 232,
+      "total_tokens": 1149,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      }
+    }
+  ],
+  "seconds": 4.081,
+  "raw_sha256": "f174426c179fdad6d5d23c768a51ff07ab08049c2ebaf765218d87a41d2c2271",
+  "outcome": {
+    "ok": false,
+    "model": "local-qwen",
+    "provider": "onprem",
+    "summary": "### Cited observations\n- [A] A new Pod is Pending, waiting reason ImagePullBackOff, registry response manifest unknown.\n- [B] The image is already running, but an HTTP readiness check returns 503 after a dependency timeout.\n\n### Possible explanation\nThe root cause appears different for each snapshot. Source A points to an image pull issue due to manifest unknown, while Source B indicates a readiness check failure. These symptoms point to different underlying issues.\n\n### Alternative explanation\nBoth could stem from the same underlying issue, such as registry unavailability or network connectivity problems affecting image pulling and readiness checks.\n\n### Recovery review: not established\nNo rollback evidence exists in the provided snapshots. The evidence supports either of two distinct issues, neither of which suggests a rollback.\n\n### Next read-only evidence\n- Verify registry connectivity\n- Validate image manifest\n- Check readiness probe configuration\n\nModel interpretation is unverified. No execution is authorized.",
+    "steps": [],
+    "suitability": {
+      "verdict": "recommended",
+      "reason": "Native pairing — Local LLM (Qwen) is the On-Prem-native brain."
+    },
+    "trace": [],
+    "inspection": null,
+    "model_completion": {
+      "status": "complete",
+      "finish_reason": "stop",
+      "text": "{\n  \"observations\": [\n    {\n      \"source_id\": \"A\",\n      \"quote\": \"A new Pod is Pending, waiting reason ImagePullBackOff, registry response manifest unknown.\"\n    },\n    {\n      \"source_id\": \"B\",\n \"quote\": \"The image is already running, but an HTTP readiness check returns 503 after a dependency timeout.\"\n    }\n  ],\n  \"cause_assessment\": \"The root cause appears different for each snapshot. Source A points to an image pull issue due to manifest unknown, while Source B indicates a readiness check failure. These symptoms point to different underlying issues.\",\n  \"alternative_explanation\": \"Both could stem from the same underlying issue, such as registry unavailability or network connectivity problems affecting image pulling and readiness checks.\",\n  \"recovery\": \"not_established\",\n  \"recovery_reason\": \"No rollback evidence exists in the provided snapshots. The evidence supports either of two distinct issues, neither of which suggests a rollback.\",\n  \"next_read_only_checks\": [\n    \"Verify registry connectivity\",\n    \"Validate image manifest\",\n    \"Check readiness probe configuration\"\n  ]\n}",
+      "semantic_verified": false,
+      "model_responses": 1,
+      "tool_call_attempts": 0,
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 917,
+        "output_tokens": 232
+      }
+    },
+    "snapshot_analysis": {
+      "target": {
+        "cluster": "kind-platform-agent",
+        "namespace": "acme-dev-observability",
+        "service": "orders-api-dogfood"
+      },
+      "window_start": "2026-10-03T06:59:00+00:00",
+      "as_of": "2026-10-03T07:03:00+00:00",
+      "interpretation": "Analysis of supplied records at the declared time; not a live observation or action approval.",
+      "applicable_source_ids": [
+        "A",
+        "B"
+      ],
+      "excluded": [],
+      "source_sha256": {
+        "A": "ef99f7913c9ef761ccffe7d778d16a81cd0b6586e112100ddcb292162a5ea535",
+        "B": "81355dfc41dc633ce75310c0f9d47199f25127d6cea52df0023fe83e69cf50b2"
+      },
+      "status": "interpreted",
+      "model_called": true,
+      "citation_status": "valid",
+      "semantic_verified": false,
+      "execution_authorized": false,
+      "diagnosis": {
+        "observations": [
+          {
+            "source_id": "A",
+            "quote": "A new Pod is Pending, waiting reason ImagePullBackOff, registry response manifest unknown."
+          },
+          {
+            "source_id": "B",
+            "quote": "The image is already running, but an HTTP readiness check returns 503 after a dependency timeout."
+          }
+        ],
+        "cause_assessment": "The root cause appears different for each snapshot. Source A points to an image pull issue due to manifest unknown, while Source B indicates a readiness check failure. These symptoms point to different underlying issues.",
+        "alternative_explanation": "Both could stem from the same underlying issue, such as registry unavailability or network connectivity problems affecting image pulling and readiness checks.",
+        "recovery": "not_established",
+        "recovery_reason": "No rollback evidence exists in the provided snapshots. The evidence supports either of two distinct issues, neither of which suggests a rollback.",
+        "next_read_only_checks": [
+          "Verify registry connectivity",
+          "Validate image manifest",
+          "Check readiness probe configuration"
+        ]
+      }
+    }
+  }
+}
