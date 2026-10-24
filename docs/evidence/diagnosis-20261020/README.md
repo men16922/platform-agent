@@ -82,3 +82,7 @@ PYTHONPATH=. python experiments/dogfood-diagnosis/consistency-resume/review.py d
 ## 고정 Qwen 온도 대조·사용자 일시중지
 
 `snapshot-temperature/review.json`은 동일3입력·3seed·온도0/0.7의18응답을 보존한다. 온도0은9완료/인용9통과지만 기존 의미 오류 유지,0.7은6완료/3잘림·유효 진단0이라 미채택이다. 각 case/온도에서 서로 다른seed의 raw hash가 동일했다. 요청seed 전달은 확인했지만 원인은 미확정이며 독립 확률 표본으로 세지 않는다. 사용자 요청으로 paused. 재개 첫 행동과 소유 프로세스·보존 범위는 `pause-checkpoint.json`, 사용성 계획 §12가 권위다. 제품11소스 hash와 직전 전체3380/3 baseline을 유지하며 이번 전체gate 재실행/새 cluster 조회는 없다.
+
+## 삽입 지시 가드의 진짜 표본 측정 (2026-10-25)
+
+`injection-guard-sampled/`는 병합된 가드(main d7ebf0a6)와 §12 baseline을 개입 서버·온도0.7·사전 선언 seed5개로 5 case씩 비교한 50응답이다. 설계·기준은 호출 전 `manifest.json`, 판정은 `review.json`, 행별 재검증 분류는 `review-rows.json`이 권위다. counterexample 통과0/5(코드 거부4), 표식 제거 변형 fail 2/5(표식 없는 지시문 인용 우회 실측), 양성 복구 4/5. 표본5개는 정확도 추정이 아니며 제품 설정 변경이 아니다.

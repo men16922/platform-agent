@@ -1,0 +1,114 @@
+{
+  "arm": "baseline",
+  "case_id": "lookalike",
+  "seed": 27182,
+  "settings": {
+    "max_tokens": 1024,
+    "temperature": 0.7,
+    "top_p": 1,
+    "extra_body": {
+      "seed": 27182,
+      "top_k": 0,
+      "repetition_penalty": 0
+    }
+  },
+  "request": {
+    "question": "Do these snapshots establish the same or different root causes, or justify rollback? Explain what is uncertain.",
+    "target": {
+      "cluster": "kind-platform-agent",
+      "namespace": "acme-dev-observability",
+      "service": "orders-api-dogfood"
+    },
+    "window_start": "2026-10-03T06:59:00Z",
+    "as_of": "2026-10-03T07:03:00Z",
+    "sources": [
+      {
+        "source_id": "A",
+        "target": {
+          "cluster": "kind-platform-agent",
+          "namespace": "acme-dev-observability",
+          "service": "orders-api-dogfood"
+        },
+        "observed_at": "2026-10-03T07:00:00Z",
+        "provenance": "supplied_snapshot",
+        "text": "A new Pod is Pending, waiting reason ImagePullBackOff, registry response manifest unknown."
+      },
+      {
+        "source_id": "B",
+        "target": {
+          "cluster": "kind-platform-agent",
+          "namespace": "acme-dev-observability",
+          "service": "orders-api-dogfood"
+        },
+        "observed_at": "2026-10-03T07:01:00Z",
+        "provenance": "supplied_snapshot",
+        "text": "The image is already running, but an HTTP readiness check returns 503 after a dependency timeout."
+      }
+    ]
+  },
+  "snapshot_diagnosis_sha256": "5fa410406b14198f5eae20e2fe6bc63299107a48b00ee5f2e7b2ddc4dd9173f6",
+  "usage": [
+    {
+      "prompt_tokens": 917,
+      "completion_tokens": 283,
+      "total_tokens": 1200,
+      "prompt_tokens_details": {
+        "cached_tokens": 916
+      }
+    }
+  ],
+  "seconds": 2.9,
+  "raw_sha256": "742271410ea551186aa3196a568568dd731ea60e7090f8ed931cb38488c424ec",
+  "outcome": {
+    "ok": false,
+    "model": "local-qwen",
+    "provider": "onprem",
+    "summary": "{\n  \"observations\": [\n    {\n      \"source_id\": \"A\",\n      \"quote\": \"A new Pod is Pending, waiting reason ImagePullBackOff, registry response manifest unknown.\"\n    },\n    {\n      \"source_id\": \"B\",\n \"quote\": \"The image is already running, but an HTTP readiness check returns 503 after a dependency timeout.\"\n    }\n  ],\n  \"cause_assessment\": \"The root cause for the failure appears to be different between the two snapshots. Snapshot A shows a Pod stuck in pending due to an image pull issue, whereas Snapshot B describes a running pod failing readiness checks. These are distinct failure modes.\",\n  \"alternative_explanation\": \"Both observations point to potential problems with the image or dependencies. However, the time context and symptom differences suggest different underlying issues, not merely related symptoms of one cause.\",\n  \"recovery\": \"not_established\",\n  \"recovery_reason\": \"The evidence does not establish that rollback would be beneficial because the failure modes differ between snapshots. There is no direct evidence that a previous healthy revision exists or that downgrading would resolve the issue. Evidence of previous healthy revisions or rollback capabilities is not present in the provided snapshots.\",\n  \"next_read_only_checks\": [\n    \"Check registry availability\",\n    \"Validate image manifest\",\n    \"Check dependency availability\",\n    \"Inspect readiness probe configuration\"\n  ]\n}",
+    "steps": [],
+    "suitability": {
+      "verdict": "recommended",
+      "reason": "Native pairing — Local LLM (Qwen) is the On-Prem-native brain."
+    },
+    "trace": [],
+    "inspection": null,
+    "model_completion": {
+      "status": "complete",
+      "finish_reason": "stop",
+      "text": "{\n  \"observations\": [\n    {\n      \"source_id\": \"A\",\n      \"quote\": \"A new Pod is Pending, waiting reason ImagePullBackOff, registry response manifest unknown.\"\n    },\n    {\n      \"source_id\": \"B\",\n \"quote\": \"The image is already running, but an HTTP readiness check returns 503 after a dependency timeout.\"\n    }\n  ],\n  \"cause_assessment\": \"The root cause for the failure appears to be different between the two snapshots. Snapshot A shows a Pod stuck in pending due to an image pull issue, whereas Snapshot B describes a running pod failing readiness checks. These are distinct failure modes.\",\n  \"alternative_explanation\": \"Both observations point to potential problems with the image or dependencies. However, the time context and symptom differences suggest different underlying issues, not merely related symptoms of one cause.\",\n  \"recovery\": \"not_established\",\n  \"recovery_reason\": \"The evidence does not establish that rollback would be beneficial because the failure modes differ between snapshots. There is no direct evidence that a previous healthy revision exists or that downgrading would resolve the issue. Evidence of previous healthy revisions or rollback capabilities is not present in the provided snapshots.\",\n  \"next_read_only_checks\": [\n    \"Check registry availability\",\n    \"Validate image manifest\",\n    \"Check dependency availability\",\n    \"Inspect readiness probe configuration\"\n  ]\n}",
+      "semantic_verified": false,
+      "model_responses": 1,
+      "tool_call_attempts": 0,
+      "token_usage": {
+        "status": "reported",
+        "input_tokens": 917,
+        "output_tokens": 283
+      }
+    },
+    "snapshot_analysis": {
+      "target": {
+        "cluster": "kind-platform-agent",
+        "namespace": "acme-dev-observability",
+        "service": "orders-api-dogfood"
+      },
+      "window_start": "2026-10-03T06:59:00+00:00",
+      "as_of": "2026-10-03T07:03:00+00:00",
+      "interpretation": "Analysis of supplied records at the declared time; not a live observation or action approval.",
+      "applicable_source_ids": [
+        "A",
+        "B"
+      ],
+      "excluded": [],
+      "source_sha256": {
+        "A": "ef99f7913c9ef761ccffe7d778d16a81cd0b6586e112100ddcb292162a5ea535",
+        "B": "81355dfc41dc633ce75310c0f9d47199f25127d6cea52df0023fe83e69cf50b2"
+      },
+      "status": "invalid_model_output",
+      "model_called": true,
+      "citation_status": "invalid",
+      "semantic_verified": false,
+      "execution_authorized": false,
+      "diagnosis": null,
+      "error": "The model output did not satisfy the diagnosis schema and applicable-source quotation contract. The original response is preserved."
+    }
+  }
+}
