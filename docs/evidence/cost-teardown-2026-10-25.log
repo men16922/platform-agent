@@ -1,0 +1,52 @@
+2026-10-25 — "비용 나가는거 다 내려": 세 클라우드 정리 기록
+============================================================
+
+사용자 지시: "비용 나가는거 다 내려." 같은 턴 중 "Azure는 이제 크레딧 없어서 사용하면안돼."
+GCP 저장 정리는 AskUserQuestion으로 네 항목 모두 선택(HF 모델 캐시·run-sources 비우기·AR 미사용 이미지·
+Secret 이전 버전). Phase5 운영 연결은 같은 질문에서 "보류" 선택 — 배포·읽기 범위 확인 모두 미착수.
+보존 대상(lab 1367338348·checkout·R2 lab/App 4924748·설치 161238144·키·branch·draft PR #1)은 손대지 않았다.
+
+----------------------------------------------------------------------------
+1. GCP — 크레딧이 더는 상쇄하지 않는다
+----------------------------------------------------------------------------
+
+BQ 결제 내보내기(STATUS Risk4의 테이블)에서 10-15 이후 모든 행이 net=cost(실청구). 정리 전 결제계정 전체
+~₩1,100/일, 최대 항목은 이 레포 밖 프로젝트(claude-study-501117)의 Cloud Run agent-chief minScale=1(₩650~900/일).
+
+- agent-chief: minScale 1 → 0 (서비스 유지, 요청 시 콜드 스타트).
+- HF 모델 캐시 버킷(gemma-4-31B, 62.6GB): soft-delete 정책 해제(--clear-soft-delete) 후 버킷 삭제.
+  ⚠️ GCS soft-delete는 지운 객체도 보관 기간(7일) 동안 과금한다 — 먼저 해제하지 않으면 삭제가 곧 절감이 아니다.
+- run-sources 버킷: 객체 58개 삭제(버킷 유지).
+- Secret Manager: 이전 버전 파기 16 → 8. cloudops-auto-config v7·v8은 서비스가 버전을 고정 마운트하므로 유지,
+  tether는 latest(v3) 유지.
+- Artifact Registry: 4개 프로젝트 128 → 19개, ~18.6GB → ~2.6GB (109개 삭제, 실패 0).
+  유지 규칙: 트래픽 percent>0 리비전의 status.imageDigest 17개 + Cloud Functions v2 gcf-artifacts 저장소.
+  사전 확인: 유지 digest 전부 자기 프로젝트 AR에 존재(교차 프로젝트 참조 0), Cloud Run jobs 0,
+  모든 이미지가 단일 manifest(index 없음 → 유지 이미지의 하위 manifest 삭제 위험 없음).
+  사후 확인: 남은 수 = 계획의 유지 수(9·4·5·1), Cloud Run 서비스 21개 전부 Ready=True.
+  대가: 트래픽 없는 옛 리비전으로는 롤백할 수 없다.
+  ⚠️ `gcloud functions list`는 API가 꺼진 프로젝트에서 enable 프롬프트를 띄우고 stdin을 기다린다 — 첫 계획
+  스크립트가 그 자리에서 4시간 멈췄다. 비대화 실행은 --quiet + stdin 차단 + timeout.
+
+다음 관측: 같은 구성이 유지된 완결 일자를 BQ에서 일별로 다시 읽는다(MTD로 답하지 않는다).
+
+----------------------------------------------------------------------------
+2. AWS (908601828278)
+----------------------------------------------------------------------------
+
+- us-west-2 disabled AMI(DemoImage, 2026-01)와 그 스냅샷 8GB(EC2-Other ~$0.0027/일) 삭제.
+  ⚠️ 스냅샷 삭제가 InUse로 실패한 원인은 disabled AMI였고, `describe-images`는 `--include-disabled` 없이
+  그 AMI를 보여 주지 않는다. AMI 등록 해제 → 스냅샷 삭제 순서.
+- us-east-1 AWS Config 기록기(10-11 시작, 규칙 0) 중지.
+- 유지: IncidentAgentStack(제품, OIDC provider 동반 — Risk1)·GpuFitPlanner·rehearsal-serverless·
+  n8n-healthcheck 스택과 AgentCore 런타임 2개. 유휴 과금 0이라 삭제하지 않았다.
+- 남은 상시 비용: S3·ECR 저장 ~$0.03/월. CE 조회는 Credit/Refund 레코드를 제외해 읽었다(조회당 $0.01).
+
+----------------------------------------------------------------------------
+3. Azure — 크레딧 없음, 사용 금지
+----------------------------------------------------------------------------
+
+- platform-agent-foundry-rg(AI Foundry, 배포 gpt-5.4-mini) 삭제 + Cognitive Services soft-delete purge.
+- 남은 것: 무료 NetworkWatcher 2개. 최근 30일 Azure 실비용 $0(호출 시에만 과금되던 구조).
+- 이후 Azure 모델 호출·자원 생성·라이브 테스트는 하지 않는다. msft_deployer(#80)는 코드·로컬 실제 라이브러리
+  검증까지만이며 실제 Azure 실행은 이 제약으로 미검증으로 남는다.

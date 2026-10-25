@@ -18,6 +18,8 @@ Not for: task status (that is `docs/PROGRESS_LOG.md`), open work (`docs/NEXT_PLA
 decisions with rationale (`docs/DECISIONS.md`).
 
 ## Entries
+- 2026-10-25 클라우드 정리: "없다"·"지웠다"가 과금 종료가 아니었다. disabled AMI는 `describe-images`에 `--include-disabled` 없이 안 보이고 그 스냅샷 삭제는 InUse로 실패한다. GCS soft-delete는 지운 객체를 7일 과금하니 `--clear-soft-delete`를 먼저 한다. Applies to: `docs/evidence/cost-teardown-2026-10-25.log`.
+- 2026-10-25 gcloud 비대화 실행: API가 꺼진 프로젝트의 `gcloud functions list`는 enable 프롬프트로 stdin을 기다려 스크립트가 4시간 멈췄다. 스크립트 호출은 `--quiet`+stdin 차단+timeout, 먼저 `services list --enabled`로 거른다. Applies to: gcloud 전수 조회 스크립트.
 - 2026-10-25 의존성 표류: `pydantic-ai-slim>=2.9` 미고정이라 CI는 매번 최신을 받는다. 2.60.0부터 거부된 도구 호출이 `RetryPromptPart` 대신 `ToolReturnPart(outcome='retried')`로 와서 거부가 성공으로 보고됐다(PR #78). 메시지 part는 타입이 아니라 outcome까지 보고, CI 실패는 먼저 CI 설치 버전을 격리 venv에서 이분한다. Applies to: `src/agents/ai/model_router.py`, `.github/workflows/gate.yml`.
 - 2026-10-20 CI 전용 실패: 저장소 루트의 `npx tsc`는 TypeScript가 아니라 npm의 `tsc@2.0.4`로 해석된다(setup-node 도입 후 PR #76 34건). `dashboard/node_modules/.bin/tsc`+`require_ts_toolchain`을 쓴다. 또 pytest는 node id를 `PYTEST_CURRENT_TEST`로 내보내므로 131KB 매개변수 id는 Linux에서 subprocess E2BIG가 된다(macOS 통과). 긴 값에는 짧은 ids를 준다. Applies to: `tests/test_dashboard_*.py`, `tests/test_writer_capture.py`.
 - 2026-10-20 MLX 측정: mlx_lm 0.31.3 서버는 온도>0에서 요청 seed를 무시한다(컴파일 sampler가 import 스레드 RNG 상태에 묶임). 온도0도 prompt-cache 이력·seed 유무로 출력이 갈린다. 단일 응답 대조는 cached_tokens 기록과 cold 재기동 반복으로만 해석한다. Applies to: `docs/evidence/diagnosis-20261020/sampler-boundary/`.

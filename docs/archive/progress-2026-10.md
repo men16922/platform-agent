@@ -117,6 +117,15 @@
 - Verified: source/candidate/prompt hash를 묶은 r4-semantic-review-calibration.json. 소유 MLX를 기존 Coder로 복원하고 실제 OK/stop(input12/output2) 확인, 앱 설정 불변. O의 287개 작업 트리/실행 후보 소스 일치. 기존 전체 gate3356/2는 O 실행이며 이번에 다시 돌린 결과가 아니다. 문서 검사 첫54통과/1실패는 진입점의 미추적 Markdown 참조를 계획/검증 기록으로 정정해55통과(3.07초), diff check 통과.
 - Failed/Next: 생성 모델 교체·자동 critic 모두 미채택. model-comparison-review.md 참조. D에서 빠진 RS/Pod·시각을 승인된 실패/복구 1회에서 보완해 수동 조사와 모델의 도구 선택을 대조한다. 의미 오류·R3/R4·최종 후보 묶음/R5 미완료, 목표 active. 승인 대기/커밋/푸시/클라우드/RBAC 변경 없음.
 
+## 2026-10-20 — 집계 모순 재현·수정과 모델 전후 실패 보존
+
+- Status: 잔여 작업 완료 지시로 로컬 목표 재개. T 반복/데모는 유지, 진단/R3/R4 전체/R5는 미완료.
+- Changed: V는 Deployment 집계·소유 RS/Pod 불일치와 unknown을 별도 기록해 거짓 완료/복구 후보를 막는다. current 컨테이너의 현재/이전 시도 로그 적용 근거·단계별 다음 증거, UI/영속 요약의 불일치 값 표시. 원문/모델 오류 응답 보존.
+- Verified: Q/S raw와 양성7종 전후 대조. 집계만 완료+실패Pod의 true→false, 실제 복구 완료와 revision1 후보 유지. 관련54·TS 검사·Chrome 실제 컴포넌트 새로고침 통과(과거 raw, 인증앱/클러스터 E2E 아님). 전체 make check3370통과·3skip·20warnings·123.81초(로컬 macOS·py3.13.5·공식Node22.23.3/임시prefix), gate-final.log.
+- Actual: 동일 raw·모델 revision·1024/temperature0·HTTP2/frozen describe1/retry0, 각7사례. 코드 경계7/7씩·응답완료6/7→4/7·의미0/7→1/7. 삽입문/이미지 이름/시작 전 로그/이력 오독/잘림 유지, 진단 성공 미선언. lexical 대조3건은 이름 민감성을 보였지만 원래 실패를 대체하지 않음.
+- Environment: 과거 Coder revision task-local 복원/LFS SHA 검증·소유 MLX/proxy 기동. Node22 공식 SHA 검증/임시 npm prefix 사용. Homebrew dylib·npx 경로로 초기 gate 실패를 보존. 제품 후보 미활성화, 새 cluster/유료API/원격변경/삭제/commit/push0.
+- Evidence/Next: `docs/evidence/diagnosis-20261020/paired-review.json`, 사용성 계획 §9. MLX 반복 억제 한 변수 실험을 먼저 검토하고 종료 안정성과 의미를 분리한다. 전체 Investigate 선택·supplied-text·인증 UI 진단/R5는 남음.
+
 ## 2026-10-03 tidy-docs - preserved pre-tidy source
 
 Historical snapshots only. Current pause/resume state is in docs/NEXT_PLAN.md. Source text below is preserved verbatim; old active/next statements are dated history.

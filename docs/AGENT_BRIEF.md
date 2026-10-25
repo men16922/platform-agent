@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-10-25
 
-> ▶ NEXT SESSION: **10-25 #78·#79 병합, 표식 없는 지시문은 (a) 수용(Risk14), msft_deployer를 실제 라이브러리의 FoundryChatClient로 복구.** Cosign 재개 조건은 10-25 미충족. 남은 일은 사용자 승인 대상: NEXT_PLAN "별도 원격 우선순위"(Phase5 운영 연결/PR writer/Phase4b, 10-21 보류). 진단 경위는 `docs/plans/2026-10-03-platform-agent-usage-and-evidence.md` §13~13-3. 단일 응답 대조는 cached_tokens·cold 재기동 반복으로만 해석.
+> ▶ NEXT SESSION: **10-25 사용자 지시로 세 클라우드 비용 정리 완료, Phase5 운영 연결은 사용자 "보류". Azure는 크레딧이 없어 사용 금지**(`docs/evidence/cost-teardown-2026-10-25.log`). #78~#80 병합, 표식 없는 지시문은 (a) 수용(Risk14). 남은 원격 항목(Phase5/PR writer/Phase4b)은 모두 보류이며 각각 새 승인 전 미착수. 진단 경위는 `docs/plans/2026-10-03-platform-agent-usage-and-evidence.md` §13~13-3. 단일 응답 대조는 cached_tokens·cold 재기동 반복으로만 해석.
 > 에이전트 진입점. **≤60줄** 유지. 다음 작업의 권위는 `docs/NEXT_PLAN.md`다.
 
 ## Read Path (순서대로, bulk-read 금지)
