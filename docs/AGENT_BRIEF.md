@@ -2,7 +2,7 @@
 
 최종 갱신: 2026-10-25
 
-> ▶ NEXT SESSION: **10-25 사용자 지시로 세 클라우드 비용 정리 완료, Phase5 운영 연결은 사용자 "보류". Azure는 크레딧이 없어 사용 금지**(`docs/evidence/cost-teardown-2026-10-25.log`). #78~#80 병합, 표식 없는 지시문은 (a) 수용(Risk14). 남은 원격 항목(Phase5/PR writer/Phase4b)은 모두 보류이며 각각 새 승인 전 미착수. 진단 경위는 `docs/plans/2026-10-03-platform-agent-usage-and-evidence.md` §13~13-3. 단일 응답 대조는 cached_tokens·cold 재기동 반복으로만 해석.
+> ▶ NEXT SESSION: **10-25 사용자 지시로 세 클라우드 비용 정리 완료, Phase5 운영 연결은 사용자 "보류". Azure는 크레딧이 없어 사용 금지**(`docs/evidence/cost-teardown-2026-10-25.log`). #78~#82 병합(#82: 공개 README를 검증 범위에 맞춤), 표식 없는 지시문은 (a) 수용(Risk14). 첫 행동: 10-27 이후 BQ 일별로 정리 효과 확인, LICENSE 파일 부재(README는 MIT 표기)는 소유자 결정. 남은 원격 항목(Phase5/PR writer/Phase4b)은 모두 보류이며 각각 새 승인 전 미착수. 진단 경위는 `docs/plans/2026-10-03-platform-agent-usage-and-evidence.md` §13~13-3. 단일 응답 대조는 cached_tokens·cold 재기동 반복으로만 해석.
 > 에이전트 진입점. **≤60줄** 유지. 다음 작업의 권위는 `docs/NEXT_PLAN.md`다.
 
 ## Read Path (순서대로, bulk-read 금지)
