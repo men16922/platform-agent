@@ -46,7 +46,7 @@ lookalike는 관계 필드 실험까지 실패(relation-probe/review.json)해 �
 1. **CDK context:** diff/deploy에 `-c vercelTeamSlug=men16922s-projects -c vercelProjectName=platform-agent` 필수. 미지정으로 OIDC provider가 삭제된 실제 이력이 있다.
 2. **GCP/Azure 보관:** 90일 보관 정책 미구현. 2026-08-30에는 스토어가 없어 삭제 대상0이었다. Phase4에서 재개하며 현재도 0이라고 추정하지 않는다.
 3. **스코프·배포 신원(D38·D39):** 전체 구성은 옵트인. 온프렘 live 조치는 scope 누락 시 거부하지만 배포 신원 미설정은 ambient kubeconfig 경고/폴백이다. 공유 deployer의 tenant 구분·기본 on·서명키 custody/rotation 결정이 남았다.
-4. **비용:** 프로젝트·크레딧·사용 창을 분리한다. M54(2026-09-05) GCP 총사용액₩14.80, PROMOTION−₩12.36·기타−₩2.44·청구≈₩0. 미완 일자/서비스 구성 변화가 있어 월 런레이트와 새 GKE 견적으로 전용하지 않는다. 다음 관측은 같은 구성이 유지된 완결 일자다.
+4. **비용:** 프로젝트·크레딧·사용 창을 분리한다. M54(2026-09-05) GCP 총사용액₩14.80, PROMOTION−₩12.36·기타−₩2.44·청구≈₩0. 미완 일자/서비스 구성 변화가 있어 월 런레이트와 새 GKE 견적으로 전용하지 않는다. 다음 관측은 같은 구성이 유지된 완결 일자다. **10-25:** GCP 크레딧 소진(10-15 이후 net=cost, 정리 전 결제계정 ~₩1,100/일). 사용자 지시로 agent-chief min0·HF 캐시 버킷62.6GB 삭제·run-sources 비움·AR 128→19개(~2.6GB)·Secret 이전 버전 파기, AWS disabled AMI 스냅샷·Config 기록기 정리, Azure RG 삭제·purge 및 **사용 금지**(크레딧 없음). `docs/evidence/cost-teardown-2026-10-25.log`.
 5. **k3s(D40):** 집행 기능과 proven 집합을 구분한다. k3s-lab에 실제 workload가 생길 때만 승격 재검토한다.
 6. **Cosign 어드미션:** 2026-09-02 재측정 당시 업스트림 대기. 재개 신호는 `#1968` 머지 또는 `#2007`을 담은 릴리스다. `#1406`/`#1725`가 이미 구현된 일을 미지원으로 읽었던 근거 오류를 반복하지 않는다. 당시 v0.15.1·후속51커밋 수치는 현재 상태가 아니다. 2026-10-25 재조회: #1968 OPEN·#1899 OPEN, 최신 릴리스 여전히 v0.15.1(main이 61커밋 앞섬, 마지막 10-21) → 미충족.
 7. **TS/전송 호환:** 롤링 중 두 버전 공존. 새 push 필드는 optional+폴백이어야 한다.

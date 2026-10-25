@@ -7,6 +7,13 @@
 
 ---
 
+## 2026-10-25 — 비용 정리: 크레딧이 끝난 세 클라우드를 내리고 Phase5는 보류
+
+- Status: 사용자 "다음 작업 추천안으로 수행해. 그리고 비용 나가는거 다 내려." 중간에 "Azure는 이제 크레딧 없어서 사용하면안돼." Phase5는 승인된 읽기 전용 재확인(신원·테이블·스택 부재·bootstrap v31·OIDC·후보 해시3·도메인200, Vercel 배포 ID는 인증 만료로 미확인) 뒤 사용자 "보류" 선택 → 배포 미착수.
+- GCP(크레딧 소진, 10-15 이후 net=cost): agent-chief min1→0, HF 캐시 버킷62.6GB 삭제(soft-delete 해제 선행), run-sources 58객체, Secret 16→8(고정 마운트 v7·v8 유지), AR 128→19개·~2.6GB(트래픽 리비전 digest·gcf-artifacts만 유지, 109삭제·실패0, 서비스21 Ready).
+- AWS: disabled AMI+스냅샷8GB 삭제, Config 기록기 중지. 유휴 과금0 스택·AgentCore는 유지(IncidentAgentStack은 OIDC 동반). Azure: foundry RG 삭제·purge, 이후 사용 금지.
+- Evidence/Next: `docs/evidence/cost-teardown-2026-10-25.log`. 정리 뒤 완결 일자를 BQ 일별로 관측. 코드 변경0, 보존 대상 미변경.
+
 ## 2026-10-25 — msft_deployer는 없는 클래스를 import하고 있었다: FoundryChatClient로 복구
 
 - Status: 사용자 "다음 잔여작업 계속". (a) 표식 없는 지시문 현 경계 수용(추천안, STATUS Risk14). 원격 3항목은 개별 승인 전 미착수. 조건부 백로그 중 공개 정보로 확인 가능한 두 항목을 재조회.
@@ -103,12 +110,3 @@
 - Measured: 기존 S 잘못된4제안은 출처ID만으로 통과했다. 새 경계는4거부·양성 복구 유지·합성6유효 유지. prototype 모델6/7유효·모순1거부. W 실제7건은 제안5·재수집1·형식거부1, 상충 prose/JSON 지시만 제거한 대조는 해당1건 통과. 최종 동일후보7건은 제안6/코드 재수집1·응답완료7, 원문ID 오타는 그대로 보존.
 - Verified: 새 factory/router·SSE/SQLite9검사와 UI projection1검사·기존 관련79/TS 통과. 전체 W make check3380/3·20warnings·119.20초(로컬 macOS·py3.13.5·공식Node22.23.3/임시prefix) 통과. 코드/형식 통과는 인과 정확도가 아니다.
 - Evidence/Next: production-contract*/ · applicable-review.json · isolation-review.json. 전용 기본/반복 억제 둘 다7/7완료라 설정 변화 미채택. 기존 앱 전환/유료API/삭제/commit/push0. 격리 API18778의 실제5도구 read는 describe/rollout/list_pods dispatch3·list_namespaces 거부1로 failed. 같은 원래 SA UID의1h 토큰만 task-private 갱신·RBAC/자원 변경0, 현재 UID/full spec/rev37/replicas2는 T와 일치. 다음은 scope 광고/모델 불준수 가설 분리이며 live-api/review.json과 resume-checkpoint.json 참조.
-
-## 2026-10-20 — 집계 모순 재현·수정과 모델 전후 실패 보존
-
-- Status: 잔여 작업 완료 지시로 로컬 목표 재개. T 반복/데모는 유지, 진단/R3/R4 전체/R5는 미완료.
-- Changed: V는 Deployment 집계·소유 RS/Pod 불일치와 unknown을 별도 기록해 거짓 완료/복구 후보를 막는다. current 컨테이너의 현재/이전 시도 로그 적용 근거·단계별 다음 증거, UI/영속 요약의 불일치 값 표시. 원문/모델 오류 응답 보존.
-- Verified: Q/S raw와 양성7종 전후 대조. 집계만 완료+실패Pod의 true→false, 실제 복구 완료와 revision1 후보 유지. 관련54·TS 검사·Chrome 실제 컴포넌트 새로고침 통과(과거 raw, 인증앱/클러스터 E2E 아님). 전체 make check3370통과·3skip·20warnings·123.81초(로컬 macOS·py3.13.5·공식Node22.23.3/임시prefix), gate-final.log.
-- Actual: 동일 raw·모델 revision·1024/temperature0·HTTP2/frozen describe1/retry0, 각7사례. 코드 경계7/7씩·응답완료6/7→4/7·의미0/7→1/7. 삽입문/이미지 이름/시작 전 로그/이력 오독/잘림 유지, 진단 성공 미선언. lexical 대조3건은 이름 민감성을 보였지만 원래 실패를 대체하지 않음.
-- Environment: 과거 Coder revision task-local 복원/LFS SHA 검증·소유 MLX/proxy 기동. Node22 공식 SHA 검증/임시 npm prefix 사용. Homebrew dylib·npx 경로로 초기 gate 실패를 보존. 제품 후보 미활성화, 새 cluster/유료API/원격변경/삭제/commit/push0.
-- Evidence/Next: `docs/evidence/diagnosis-20261020/paired-review.json`, 사용성 계획 §9. MLX 반복 억제 한 변수 실험을 먼저 검토하고 종료 안정성과 의미를 분리한다. 전체 Investigate 선택·supplied-text·인증 UI 진단/R5는 남음.
