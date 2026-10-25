@@ -7,6 +7,13 @@
 
 ---
 
+## 2026-10-25 — 공개 README를 검증 범위에 맞췄다
+
+- Status: 사용자 "진행해"(추천안: AGENTS.md 목표2 공개용 README, 비용 없는 로컬 작업). 레포는 PUBLIC.
+- Found: Python 3.11+(실제 >=3.13)·테스트 329개·`your-org` clone·깨진 링크·경로 3(소문자 status 문서, 레포에 없는 하네스 엔지니어링 문서와 agents 문서), GCP/Azure 라이브 연결·WIF·failover를 라이브 완료로 표기(실제는 단위 테스트, 2026-07-11 기록 "Mock 모드"), "production-ready/Live-Only" 과장.
+- Changed: README만. 검증 현황 표(라이브 실행 vs 단위 테스트, 증거 파일), 알려진 한계(Risk14·AWS rollback runner 부재·tenant 자격증명·Phase5 미배포·Cosign·Azure 미사용), 로컬 스택 실행법, CDK Vercel context 필수 경고, 열린 로드맵. 상대 링크·증거 파일명 전수 존재 확인.
+- Not done: LICENSE 파일이 없는데 README는 MIT라고 적는다 — 라이선스 결정은 사용자 몫이라 그대로 두었다.
+
 ## 2026-10-25 — 비용 정리: 크레딧이 끝난 세 클라우드를 내리고 Phase5는 보류
 
 - Status: 사용자 "다음 작업 추천안으로 수행해. 그리고 비용 나가는거 다 내려." 중간에 "Azure는 이제 크레딧 없어서 사용하면안돼." Phase5는 승인된 읽기 전용 재확인(신원·테이블·스택 부재·bootstrap v31·OIDC·후보 해시3·도메인200, Vercel 배포 ID는 인증 만료로 미확인) 뒤 사용자 "보류" 선택 → 배포 미착수.
